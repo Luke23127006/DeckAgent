@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "spreadsheetId": "1Ot5lOjMZlpQpq6wvNfLN7GGR8vG8Wae5ohBd1waHi8c",
+  "snapshotDir": "../../.project-hub/snapshot",
+  "schemaDefaults": {
+    "headerRow": 2,
+    "idColumn": "id",
+    "unknownColumns": "ignore",
+    "dropIdOnlyRows": true
+  },
+  "tables": {
+    "actors": {
+      "sheet": "Actors",
+      "file": "actors.tsv",
+      "idPattern": "^ACT-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Actor", "name": "actor", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Primary", "Secondary", "External", "System"]},
+        {"source": "Goal", "name": "goal"},
+        {"source": "Needs / Pain Points", "name": "needs_pain_points"},
+        {"source": "Knowledge / Context", "name": "knowledge_context"},
+        {"source": "Permissions / Capabilities", "name": "permissions_capabilities"},
+        {"source": "Constraints", "name": "constraints"},
+        {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "use_cases": {
+      "sheet": "Use Cases",
+      "file": "use-cases.tsv",
+      "idPattern": "^UC-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Use Case", "name": "use_case", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Active", "Changed", "Deprecated"]},
+        {"source": "Primary Actor", "name": "primary_actor_id", "required": true, "references": ["actors"]},
+        {"source": "Goal / Outcome", "name": "goal_outcome"},
+        {"source": "Trigger", "name": "trigger"},
+        {"source": "Preconditions", "name": "preconditions"},
+        {"source": "Main Flow", "name": "main_flow"},
+        {"source": "Alternative / Failure Flows", "name": "alternative_failure_flows"},
+        {"source": "Postconditions", "name": "postconditions"},
+        {"source": "Related Requirements", "name": "related_requirement_ids", "references": ["requirements"]},
+        {"source": "Related Business Rules", "name": "related_business_rule_ids", "references": ["business_rules"]},
+        {"source": "Related Constraints", "name": "related_constraint_ids", "references": ["constraints"]},
+        {"source": "Related Work", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Open Questions", "name": "open_questions"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "requirements": {
+      "sheet": "Requirements",
+      "file": "requirements.tsv",
+      "idPattern": "^R-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Requirement", "name": "requirement", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Functional", "Quality", "Constraint", "Interface", "Data"]},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Deprecated"]},
+        {"source": "Scope", "name": "scope", "required": true, "allowedValues": ["Product", "V1", "Later"]},
+        {"source": "Source", "name": "source"},
+        {"source": "Acceptance Note", "name": "acceptance_note"},
+        {"source": "Depends On (IDs)", "name": "depends_on_ids", "references": ["requirements", "assumptions"], "noSelfReference": true},
+        {"source": "Impacts", "name": "impacts"},
+        {"source": "Related Work (IDs)", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Related Tests", "name": "related_tests"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "constraints": {
+      "sheet": "Constraints",
+      "file": "constraints.tsv",
+      "idPattern": "^C-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Constraint", "name": "constraint", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Technical", "Product", "Time", "Resource", "Platform", "Academic", "External"]},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Retired"]},
+        {"source": "Source", "name": "source"},
+        {"source": "Reason / Context", "name": "reason_context"},
+        {"source": "Impacts", "name": "impacts"},
+        {"source": "Related Requirements", "name": "related_requirement_ids", "references": ["requirements"]},
+        {"source": "Related Decisions", "name": "related_decision_ids", "references": ["decisions"]},
+        {"source": "Review Trigger", "name": "review_trigger"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "business_rules": {
+      "sheet": "Business Rules",
+      "file": "business-rules.tsv",
+      "idPattern": "^BR-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Rule", "name": "rule", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Deprecated"]},
+        {"source": "Scope", "name": "scope"},
+        {"source": "Source", "name": "source"},
+        {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]},
+        {"source": "Related Requirements", "name": "related_requirement_ids", "references": ["requirements"]},
+        {"source": "Related Decisions", "name": "related_decision_ids", "references": ["decisions"]},
+        {"source": "Exceptions", "name": "exceptions"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "assumptions": {
+      "sheet": "Assumptions",
+      "file": "assumptions.tsv",
+      "idPattern": "^A-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Assumption", "name": "assumption", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Open", "Supported", "Invalidated", "Retired"]},
+        {"source": "Evidence", "name": "evidence_ids", "references": ["evidence"]},
+        {"source": "Used By (IDs)", "name": "used_by_ids", "references": ["requirements", "decisions"]},
+        {"source": "Review Trigger", "name": "review_trigger"},
+        {"source": "Impacts", "name": "impacts"},
+        {"source": "Related Work (IDs)", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "decisions": {
+      "sheet": "Decisions",
+      "file": "decisions.tsv",
+      "idPattern": "^D-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Decision", "name": "decision", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Active", "Reopened", "Superseded"]},
+        {"source": "Context", "name": "context"},
+        {"source": "Requirement chính", "name": "primary_requirement_ids", "references": ["requirements"]},
+        {"source": "Assumption chính", "name": "primary_assumption_ids", "references": ["assumptions"]},
+        {"source": "Related IDs", "name": "related_ids", "references": ["requirements", "assumptions", "decisions", "sprints", "work", "bugs", "evidence", "documents"], "noSelfReference": true},
+        {"source": "Rationale / Evidence", "name": "rationale_evidence"},
+        {"source": "Reopen When", "name": "reopen_when"},
+        {"source": "Related Work", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Detailed Doc", "name": "document_ids", "references": ["documents"]},
+        {"source": "Date", "name": "date"},
+        {"source": "Recorded By", "name": "recorded_by"}
+      ]
+    },
+    "learnings": {
+      "sheet": "Learnings",
+      "file": "learnings.tsv",
+      "idPattern": "^L-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Learning Question", "name": "learning_question", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Open", "Testing", "Learned", "Inconclusive", "Superseded"]},
+        {"source": "Context", "name": "context"},
+        {"source": "Hypothesis", "name": "hypothesis"},
+        {"source": "How We Test", "name": "how_we_test"},
+        {"source": "Related Use Case", "name": "related_use_case_ids", "references": ["use_cases"]},
+        {"source": "Related Assumption", "name": "related_assumption_ids", "references": ["assumptions"]},
+        {"source": "Related Work", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Evidence", "name": "evidence_ids", "references": ["evidence"]},
+        {"source": "Result", "name": "result"},
+        {"source": "Implication", "name": "implication"},
+        {"source": "Decision / Follow-up", "name": "decision_ids", "references": ["decisions"]},
+        {"source": "Date", "name": "date"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "risks": {
+      "sheet": "Risks",
+      "file": "risks.tsv",
+      "idPattern": "^RK-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Risk", "name": "risk", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Open", "Watching", "Mitigated", "Materialized", "Closed"]},
+        {"source": "Category", "name": "category", "allowedValues": ["Product", "Technical", "Schedule", "Quality", "Dependency", "People", "External"]},
+        {"source": "Probability", "name": "probability", "allowedValues": ["High", "Medium", "Low"]},
+        {"source": "Impact", "name": "impact", "allowedValues": ["High", "Medium", "Low"]},
+        {"source": "Affected Area", "name": "affected_area"},
+        {"source": "Trigger / Early Signal", "name": "trigger_early_signal"},
+        {"source": "Mitigation", "name": "mitigation"},
+        {"source": "Fallback / Recovery", "name": "fallback_recovery"},
+        {"source": "Owner", "name": "owner"},
+        {"source": "Related IDs", "name": "related_ids", "references": ["actors", "use_cases", "requirements", "constraints", "business_rules", "assumptions", "decisions", "learnings", "risks", "sprints", "work", "bugs", "traceability", "evidence", "daily", "weekly", "documents"], "noSelfReference": true},
+        {"source": "Last Reviewed", "name": "last_reviewed"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "sprints": {
+      "sheet": "Sprints",
+      "file": "sprints.tsv",
+      "idPattern": "^SP-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Sprint", "name": "sprint", "required": true},
+        {"source": "Goal", "name": "goal", "required": true},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Planned", "Active", "Completed", "Cancelled"]},
+        {"source": "Start Date", "name": "start_date"},
+        {"source": "End Date", "name": "end_date"},
+        {"source": "Scope / Outcome", "name": "scope_outcome"},
+        {"source": "Definition of Done", "name": "definition_of_done"},
+        {"source": "Owner", "name": "owner"},
+        {"source": "Review / Outcome", "name": "review_outcome"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "work": {
+      "sheet": "Work",
+      "file": "work.tsv",
+      "idPattern": "^W-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Người phụ trách", "name": "assignee", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Story", "Task", "Spike", "Research", "Doc"]},
+        {"source": "Area", "name": "area", "allowedValues": ["Core", "Input", "Planning", "Editing", "Export", "Web", "Testing", "CI/Infra", "Data", "AI"]},
+        {"source": "Tiêu đề", "name": "title", "required": true},
+        {"source": "Mô tả", "name": "description"},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Backlog", "Ready", "In Progress", "Review", "Done"]},
+        {"source": "Priority", "name": "priority", "allowedValues": ["Critical", "High", "Medium", "Low"]},
+        {"source": "Outcome", "name": "outcome"},
+        {"source": "Acceptance Criteria", "name": "acceptance_criteria"},
+        {"source": "Requirement chính", "name": "primary_requirement_ids", "references": ["requirements"]},
+        {"source": "Assumption liên quan", "name": "related_assumption_ids", "references": ["assumptions"]},
+        {"source": "Decision liên quan", "name": "related_decision_ids", "references": ["decisions"]},
+        {"source": "Dependency / Blocker", "name": "dependency_blocker_ids", "references": ["work", "bugs"], "noSelfReference": true},
+        {"source": "PR", "name": "pull_request"},
+        {"source": "Evidence", "name": "evidence_ids", "references": ["evidence"]},
+        {"source": "Sprint", "name": "sprint_id", "references": ["sprints"]},
+        {"source": "Deadline / Milestone", "name": "deadline_milestone"},
+        {"source": "Reviewer", "name": "reviewer"}
+      ]
+    },
+    "bugs": {
+      "sheet": "Bugs",
+      "file": "bugs.tsv",
+      "idPattern": "^B-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Ngày phát hiện", "name": "discovered_date"},
+        {"source": "Người báo", "name": "reporter"},
+        {"source": "Area", "name": "area", "allowedValues": ["Core", "Input", "Planning", "Editing", "Export", "Web", "Testing", "CI/Infra", "Data", "AI"]},
+        {"source": "Tiêu đề", "name": "title", "required": true},
+        {"source": "Severity", "name": "severity", "required": true, "allowedValues": ["Critical", "High", "Medium", "Low"]},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Open", "Fixing", "Review", "Closed", "Reopened"]},
+        {"source": "Expected", "name": "expected"},
+        {"source": "Actual", "name": "actual"},
+        {"source": "Reproduction", "name": "reproduction"},
+        {"source": "Requirement liên quan", "name": "related_requirement_ids", "references": ["requirements"]},
+        {"source": "Work liên quan", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Assignee", "name": "assignee"},
+        {"source": "PR", "name": "pull_request"},
+        {"source": "Regression Test", "name": "regression_test"},
+        {"source": "Evidence", "name": "evidence_ids", "references": ["evidence"]},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "traceability": {
+      "sheet": "Traceability",
+      "file": "traceability.tsv",
+      "idPattern": "^TR-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Requirement", "name": "requirement_id", "required": true, "references": ["requirements"]},
+        {"source": "Critical Behavior", "name": "critical_behavior"},
+        {"source": "Work", "name": "work_id", "references": ["work"]},
+        {"source": "Test Path / Name", "name": "test_path_or_name"},
+        {"source": "Bug", "name": "bug_id", "references": ["bugs"]},
+        {"source": "Evidence", "name": "evidence_id", "references": ["evidence"]},
+        {"source": "CI / PR", "name": "ci_or_pr"},
+        {"source": "Latest Status", "name": "latest_status", "allowedValues": ["Pass", "Fail", "Needs Review", "Not Run"]},
+        {"source": "Last Checked", "name": "last_checked"},
+        {"source": "Notes", "name": "notes"}
+      ],
+      "rowRules": [
+        {"kind": "atLeastOne", "fields": ["work_id", "test_path_or_name", "bug_id", "evidence_id"]}
+      ]
+    },
+    "evidence": {
+      "sheet": "Evidence",
+      "file": "evidence.tsv",
+      "idPattern": "^EV-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Date", "name": "date", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Screenshot", "Preview", "CI", "PR", "Test Result", "Bug", "Experiment", "Advisor Feedback", "Demo"]},
+        {"source": "Title", "name": "title", "required": true},
+        {"source": "Requirement", "name": "requirement_ids", "references": ["requirements"]},
+        {"source": "Work", "name": "work_ids", "references": ["work"]},
+        {"source": "Bug", "name": "bug_ids", "references": ["bugs"]},
+        {"source": "Decision", "name": "decision_ids", "references": ["decisions"]},
+        {"source": "Link", "name": "link"},
+        {"source": "Description", "name": "description"},
+        {"source": "Keep for Report?", "name": "keep_for_report", "allowedValues": ["Yes", "No"]},
+        {"source": "Milestone", "name": "milestone_id", "references": ["sprints"]}
+      ]
+    },
+    "daily": {
+      "sheet": "Daily",
+      "file": "daily.tsv",
+      "idPattern": "^DL-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Date", "name": "date", "required": true},
+        {"source": "Member", "name": "member", "required": true},
+        {"source": "Sprint", "name": "sprint_id", "references": ["sprints"]},
+        {"source": "Work (IDs)", "name": "work_ids", "references": ["work"]},
+        {"source": "Progress / Done", "name": "progress_done"},
+        {"source": "Next", "name": "next"},
+        {"source": "Blocker", "name": "blocker"},
+        {"source": "Need Support?", "name": "need_support", "allowedValues": ["Yes", "No"]},
+        {"source": "Support Needed", "name": "support_needed"},
+        {"source": "Risk / Change", "name": "risk_change"},
+        {"source": "Link / Evidence", "name": "link_evidence"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "weekly": {
+      "sheet": "Weekly",
+      "file": "weekly.tsv",
+      "idPattern": "^WL-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Date", "name": "date", "required": true},
+        {"source": "Week / Milestone", "name": "week_milestone", "required": true},
+        {"source": "Requirement Changes", "name": "requirement_change_ids", "references": ["requirements"]},
+        {"source": "New Assumptions", "name": "new_assumption_ids", "references": ["assumptions"]},
+        {"source": "Decisions", "name": "decision_ids", "references": ["decisions"]},
+        {"source": "Important Blockers", "name": "blocker_ids", "references": ["work", "bugs"]},
+        {"source": "Testing / Bugs", "name": "bug_ids", "references": ["bugs"]},
+        {"source": "Advisor Feedback", "name": "advisor_feedback"},
+        {"source": "Follow-up Work", "name": "follow_up_work_ids", "references": ["work"]},
+        {"source": "Notes", "name": "notes"}
+      ]
+    },
+    "documents": {
+      "sheet": "Documents",
+      "file": "documents.tsv",
+      "idPattern": "^DOC-\\d{3,}$",
+      "columns": [
+        {"source": "ID", "name": "id", "required": true},
+        {"source": "Document", "name": "document", "required": true},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Proposal", "Product Scope", "Architecture", "Interface / Contract", "Design", "Meeting", "Test Strategy", "Test Plan", "Test Summary", "Research", "Report Material", "Advisor Feedback"]},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Active", "Archived"]},
+        {"source": "Scope", "name": "scope", "allowedValues": ["Project", "V1", "Milestone", "Final"]},
+        {"source": "Requirement", "name": "requirement_ids", "references": ["requirements"]},
+        {"source": "Decision", "name": "decision_ids", "references": ["decisions"]},
+        {"source": "Owner", "name": "owner"},
+        {"source": "Link", "name": "link"},
+        {"source": "Last Updated", "name": "last_updated"},
+        {"source": "Notes", "name": "notes"}
+      ]
+    }
+  }
+}
