@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(dirname -- "$SCRIPT_DIR")
+TOOL_ROOT="$REPO_ROOT/tools/project_hub"
+CONFIG_PATH="$TOOL_ROOT/config/project-hub.json"
+
+if [ -x "$TOOL_ROOT/.venv/bin/project-hub" ]; then
+  exec "$TOOL_ROOT/.venv/bin/project-hub" --config "$CONFIG_PATH" "$@"
+fi
+
+if command -v uv >/dev/null 2>&1; then
+  exec uv run --project "$TOOL_ROOT" project-hub --config "$CONFIG_PATH" "$@"
+fi
+
+PYTHONPATH="$TOOL_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python -m project_hub --config "$CONFIG_PATH" "$@"
