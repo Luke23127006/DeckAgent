@@ -2,6 +2,7 @@
 /.project-hub/
 **/.env
 **/.env.*
+!**/.env.example
 /Project Hub - DeckAgent.xlsx
 
 # Google OAuth credentials must never be committed
@@ -12,7 +13,11 @@ token.json
 # Python
 __pycache__/
 *.py[cod]
-/.pytest_cache/
-/.ruff_cache/
+.pytest_cache/
+.ruff_cache/
 **/.venv/
 *.egg-info/
+
+# Project Hub package build output
+/tools/project_hub/build/
+/tools/project_hub/dist/

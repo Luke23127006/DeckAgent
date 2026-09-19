@@ -1,6 +1,6 @@
 ---
 paths:
-  - "docs/architecture/**"
+  - "docs/architecture.md"
   - "diagrams/**"
 ---
 

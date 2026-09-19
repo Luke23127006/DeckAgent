@@ -67,10 +67,14 @@ name or link the private storage location.
    ```
 
 During `auth`, sign in with **your own** Google account that has access to the private Project Hub.
-Each member receives a separate OAuth token at `token.json` beside their local client file. Never
+Each member receives a separate OAuth token at `token.json` in the auth directory described below. Never
 share member tokens, commit the client JSON, or commit `.project-hub/snapshot/`. A validation exit
 code of 1 can represent deterministic issues in current project data; it is distinct from an OAuth,
 remote-access, or schema failure (exit code 2).
+
+Dependency error messages that suggest `pip install -e .` assume the working directory is
+`tools/project_hub/`, which contains the tool's `pyproject.toml`. The repository root has no
+`pyproject.toml`; use the repository-root uv setup command above for the documented onboarding path.
 
 ## OAuth application setup (maintainers only)
 
@@ -96,6 +100,11 @@ Default client/token directory:
 | Linux | `${XDG_CONFIG_HOME:-~/.config}/project-hub/` |
 
 The client definition is normally named `client_secret.json`; the generated token is `token.json`.
+`PROJECT_HUB_AUTH_DIR` overrides this directory for both the token and default client file. Keep the
+override outside the repository. `PROJECT_HUB_GOOGLE_CLIENT_FILE` overrides only the client file,
+and `auth --client-secrets PATH` takes precedence over that client-file variable; neither changes
+the token directory.
+
 The tool attempts owner-only permissions and writes token updates atomically. On Windows, protection
 also depends on the current user's directory ACL.
 
@@ -161,7 +170,7 @@ for ordinary rows, reordered columns, mapped fields, or standard new tables.
 
 ## Daily use
 
-Install and test:
+Install dependencies, authenticate, synchronize, and validate the snapshot from the repository root:
 
 ```bash
 uv sync --project tools/project_hub --extra dev
@@ -170,9 +179,16 @@ uv sync --project tools/project_hub --extra dev
 ./scripts/project-hub validate
 ```
 
-On Windows PowerShell, replace the wrapper with `./scripts/project-hub.ps1`. The root wrappers
-contain no Project Hub behavior; they delegate to the isolated uv project under
-`tools/project_hub/`.
+`auth` establishes the user's Google credentials; `sync` fetches Sheets data and writes the local
+snapshot; `validate` checks that snapshot. Software tests are separate: see the
+[Development Guide](../development.md#development-commands) for the pytest command and its working
+directory.
+
+On Windows PowerShell, replace the wrapper with `./scripts/project-hub.ps1`. The wrappers pass the
+committed config path and arguments to the tool. They first use the CLI in `tools/project_hub/.venv/`
+if available, otherwise use `uv run` when uv is available, then fall back to `python -m project_hub`
+with the tool's source directory prepended to `PYTHONPATH`. The uv path may create or update the
+tool environment; the direct-Python fallback relies on dependencies already available to Python.
 
 `sync` always performs a full remote metadata read plus one batched values read, so running it is the
 force-refresh operation. It asks Google for `FORMATTED_VALUE`: formulas are returned as their
