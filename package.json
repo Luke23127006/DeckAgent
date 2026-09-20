@@ -1,0 +1,15 @@
+{
+  "name": "deckagent-tooling",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "ocr": "ocr",
+    "ocr:preview": "ocr delegate preview --format json",
+    "ocr:rules": "ocr delegate rule --format json"
+  },
+  "devDependencies": {
+    "@alibaba-group/open-code-review": "1.12.7"
+  }
+}

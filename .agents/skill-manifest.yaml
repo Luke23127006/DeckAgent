@@ -1,9 +1,17 @@
 {
   "schema_version": 1,
-  "scope": "Initial project-owned development skills; not product runtime capabilities.",
-  "review_date": "2026-09-17",
+  "scope": "Repository-owned, cross-tool agent skills; not product runtime capabilities.",
+  "review_date": "2026-09-20",
   "canonical_path": ".agents/skills",
-  "mirrors": "Deferred to the separate cross-tool setup task.",
+  "mirrors": {
+    "paths": [
+      ".claude/skills",
+      ".codex/skills"
+    ],
+    "sync_command": "python .agents/scripts/sync_skill_mirrors.py",
+    "check_command": "python .agents/scripts/sync_skill_mirrors.py --check",
+    "policy": "Edit canonical skills only. Mirror-only skills block synchronization until promoted, so synchronization never silently drops a skill."
+  },
   "skills": [
     {
       "name": "domain-modeling",
@@ -122,6 +130,107 @@
         "Include upstream MIT license."
       ],
       "status": "installed"
+    },
+    {
+      "name": "mermaid-diagram",
+      "source_repository": "repository-local",
+      "source_path": ".claude/skills/mermaid-diagram",
+      "installed_path": ".agents/skills/mermaid-diagram",
+      "decision": "Promote",
+      "reason": "Make the existing standalone Mermaid workflow available to Claude, Codex, and other agents from one canonical source.",
+      "compatibility": "Removed Claude-only allowed-tools metadata; workflow behavior is preserved in tool-neutral instructions.",
+      "dependencies": [
+        "Optional Mermaid CLI for syntax and render verification."
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "mermaid-markdown",
+      "source_repository": "repository-local",
+      "source_path": ".claude/skills/mermaid-markdown",
+      "installed_path": ".agents/skills/mermaid-markdown",
+      "decision": "Promote",
+      "reason": "Make the existing repository Markdown Mermaid workflow available to every supported agent.",
+      "compatibility": "Removed Claude-only allowed-tools metadata; workflow behavior is preserved in tool-neutral instructions.",
+      "dependencies": [
+        "Optional repository documentation renderer or Mermaid CLI for verification."
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "project-hub-audit",
+      "source_repository": "repository-local",
+      "source_path": ".claude/skills/project-hub-audit",
+      "installed_path": ".agents/skills/project-hub-audit",
+      "decision": "Promote and adjust",
+      "reason": "Expose the existing broad Project Hub audit workflow to all agents.",
+      "compatibility": "Replaced the Claude-specific subagent preference with capability- and authorization-aware delegation wording.",
+      "dependencies": [
+        "docs/agents/workflows/project-hub-audit.md",
+        "Project Hub local snapshot and CLI"
+      ],
+      "reviewed_resources": [
+        "SKILL.md",
+        "docs/agents/workflows/project-hub-audit.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "project-hub-review",
+      "source_repository": "repository-local",
+      "source_path": ".claude/skills/project-hub-review",
+      "installed_path": ".agents/skills/project-hub-review",
+      "decision": "Promote",
+      "reason": "Expose the existing targeted Project Hub review workflow to all agents.",
+      "compatibility": "Tool-neutral as written; AGENTS.md remains authoritative.",
+      "dependencies": [
+        "docs/agents/workflows/project-hub-review.md",
+        "Project Hub local snapshot and CLI"
+      ],
+      "reviewed_resources": [
+        "SKILL.md",
+        "docs/agents/workflows/project-hub-review.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "open-code-review-delegate",
+      "source_repository": "https://github.com/alibaba/open-code-review",
+      "source_path": "skills/open-code-review-delegate",
+      "source_commit": "85cecfe5f935da2b2aae8f91ce4fee8ed343a681",
+      "source_version": "v1.12.7",
+      "installed_path": ".agents/skills/open-code-review-delegate",
+      "license": "Apache-2.0",
+      "license_source": "https://github.com/alibaba/open-code-review/blob/v1.12.7/LICENSE",
+      "license_copy": ".agents/skills/open-code-review-delegate/LICENSE",
+      "decision": "Adjust",
+      "reason": "Use OCR's deterministic file selection and rule resolution while the active coding agent performs the review without a separate OCR LLM endpoint.",
+      "compatibility": "Compatible after replacing global CLI installation with the pinned repository-local npm dependency and supported frontmatter.",
+      "dependencies": [
+        "Git >= 2.41",
+        "Node.js >= 18 and npm",
+        "Workspace dev dependency @alibaba-group/open-code-review 1.12.7"
+      ],
+      "reviewed_resources": [
+        "SKILL.md",
+        "LICENSE",
+        "package.json",
+        ".opencodereview/rule.json"
+      ],
+      "local_adaptations": [
+        "Invoke the CLI through repository npm scripts instead of a global installation.",
+        "Remove unsupported compatibility frontmatter and retain compatibility guidance in the skill body.",
+        "Require npm ci when the local binary is missing; the skill may not install or upgrade packages during review.",
+        "Use delegation mode only, so OCR does not require a separate LLM configuration.",
+        "Apply DeckAgent-specific review filters and rules from .opencodereview/rule.json."
+      ],
+      "status": "installed"
     }
   ],
   "additional_source_review": {
@@ -137,13 +246,6 @@
       "condition": "Commit to PPTX output, then review dependencies and visual validation.",
       "status": "not_installed",
       "reason": "Output format is not decided; a presentation artifact workflow is not needed for the current agent setup."
-    },
-    {
-      "name": "code-review",
-      "decision": "Adjust",
-      "condition": "Remove issue-tracker and mandatory parallel-agent assumptions.",
-      "status": "not_installed",
-      "reason": "Existing global review rules cover initial needs; tracker and parallel-agent assumptions need review before adoption."
     },
     {
       "name": "research",

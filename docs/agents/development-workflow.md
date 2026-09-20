@@ -30,6 +30,11 @@ to invent permanent boundaries.
 | Interface or design seam needs work | Affected code, tests, contracts, decisions | [codebase-design](../../.agents/skills/codebase-design/SKILL.md) | Small design proposal or implementation seam with assumptions stated |
 | Building or changing testable behavior | Acceptance criteria, affected code, existing tests | [tdd](../../.agents/skills/tdd/SKILL.md) | Observable tests and the smallest change that satisfies them |
 | Reproducible defect, regression, failed export or slow path | Reproduction steps, safe logs, test output or artifact | [diagnosing-bugs](../../.agents/skills/diagnosing-bugs/SKILL.md) | Evidence-based diagnosis and an authorized fix with regression coverage where feasible |
+| Reviewing workspace changes, a commit, or a branch range | Requested review target, task context, relevant contracts and tests | [open-code-review-delegate](../../.agents/skills/open-code-review-delegate/SKILL.md) | Complete file accounting and severity-ranked findings with repository evidence |
+| Mermaid embedded in repository Markdown | Target document, authoritative content, renderer constraints | [mermaid-markdown](../../.agents/skills/mermaid-markdown/SKILL.md) | Portable, semantically accurate Mermaid in the target Markdown file |
+| Standalone Mermaid source or rendered artifact | Authoritative content, requested format and viewing context | [mermaid-diagram](../../.agents/skills/mermaid-diagram/SKILL.md) | Verified Mermaid source and requested rendered outputs |
+| Targeted Project Hub comparison | Current validated snapshot, stable IDs, relevant GitHub artifact | [project-hub-review](../../.agents/skills/project-hub-review/SKILL.md) | Alignment findings with stable IDs and repository evidence |
+| Broad Project Hub consistency audit | Current validated snapshot and audit scope | [project-hub-audit](../../.agents/skills/project-hub-audit/SKILL.md) | Read-only findings for contradictions, relation gaps, and missing evidence |
 
 No specialised workflow is needed for routine edits. Do not load all skills by
 default or invent product concepts, module rules, or architecture during setup.
@@ -42,15 +47,23 @@ to canonical skills, record the adaptation in the manifest and review the diff.
 Upstream updates require a fresh source/license/dependency review before changing
 the recorded commit.
 
-Edit only `.agents/skills/`. Generated `.claude/skills/` and `.codex/skills/`,
-their sync command, and mirror-drift validation remain a later cross-tool task.
+Edit only `.agents/skills/`. Then run
+`python .agents/scripts/sync_skill_mirrors.py` to regenerate the committed
+`.claude/skills/` and `.codex/skills/` mirrors. Run the same command with
+`--check` in validation or CI to detect drift. The synchronizer refuses to
+remove a skill that exists only in a mirror; promote that skill into
+`.agents/skills/` first.
 
-The four initial skills come from `mattpocock/skills`. The supplied
-`ComposioHQ/awesome-claude-skills` catalog was consulted, but no additional skill
-was adopted. The manifest records decisions and reconsideration conditions for
-`pptx`, `code-review`, `research`, and `webapp-testing`. The optional debugging shell
-template needs Bash (for example Git Bash or WSL); native commands or a manual
-reproduction can be used when Bash is unavailable. No runtime dependency was added.
+The four initial engineering skills come from `mattpocock/skills`. The four
+repository-local Mermaid and Project Hub skills were promoted from the existing
+Claude configuration into the canonical collection. The OpenCodeReview delegation
+skill comes from `alibaba/open-code-review` and is adapted to the repository-local,
+pinned npm tooling. The supplied `ComposioHQ/awesome-claude-skills` catalog was
+consulted, but no skill from that catalog was adopted. The manifest records
+reconsideration conditions for `pptx`, `research`, and `webapp-testing`. The optional
+debugging shell template needs Bash (for example Git Bash or WSL); native commands
+or a manual reproduction can be used when Bash is unavailable. OpenCodeReview is a
+development dependency only; no DeckAgent product runtime dependency was added.
 
 Before adopting another external skill, review its entrypoint, bundled resources,
 scripts, dependencies and license against a concrete DeckAgent task and `AGENTS.md`.
