@@ -52,7 +52,9 @@ Edit only `.agents/skills/`. Then run
 `.claude/skills/` and `.codex/skills/` mirrors. Run the same command with
 `--check` in validation or CI to detect drift. The synchronizer refuses to
 remove a skill that exists only in a mirror; promote that skill into
-`.agents/skills/` first.
+`.agents/skills/` first. It also refuses to replace a mirror with tracked,
+untracked, or ignored local changes. Restore or promote those changes first;
+use `--force` only to discard them explicitly.
 
 The four initial engineering skills come from `mattpocock/skills`. The four
 repository-local Mermaid and Project Hub skills were promoted from the existing

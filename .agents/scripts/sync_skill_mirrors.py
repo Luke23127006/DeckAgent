@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import filecmp
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -60,6 +61,30 @@ def unknown_mirror_skills(canonical: set[str]) -> list[str]:
     return errors
 
 
+def uncommitted_changes(path: Path) -> list[str]:
+    """Return tracked, untracked, and ignored changes below a mirror path."""
+    relative = path.resolve().relative_to(REPOSITORY_ROOT).as_posix()
+    result = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--ignored=matching",
+            "--",
+            relative,
+        ],
+        cwd=REPOSITORY_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or "git status failed"
+        raise RuntimeError(f"Cannot inspect {relative} before synchronization: {detail}")
+    return [line for line in result.stdout.splitlines() if line]
+
+
 def check(canonical: set[str]) -> list[str]:
     errors = unknown_mirror_skills(canonical)
     for mirror_root in MIRROR_ROOTS:
@@ -74,8 +99,26 @@ def check(canonical: set[str]) -> list[str]:
     return errors
 
 
-def sync(canonical: set[str]) -> None:
+def sync(canonical: set[str], *, force: bool = False) -> None:
     errors = unknown_mirror_skills(canonical)
+    if not force:
+        for mirror_root in MIRROR_ROOTS:
+            for name in sorted(canonical):
+                source = CANONICAL_ROOT / name
+                destination = mirror_root / name
+                ensure_inside_repository(destination)
+                if directory_matches(source, destination):
+                    continue
+                changes = uncommitted_changes(destination)
+                if changes:
+                    rendered_changes = "\n".join(f"  {change}" for change in changes)
+                    relative = destination.relative_to(REPOSITORY_ROOT)
+                    errors.append(
+                        f"{relative} has uncommitted changes; sync would replace them:\n"
+                        f"{rendered_changes}\n"
+                        "Move the changes into .agents/skills, restore the mirror, or "
+                        "rerun with --force to discard them explicitly"
+                    )
     if errors:
         raise RuntimeError("\n".join(errors))
 
@@ -86,6 +129,8 @@ def sync(canonical: set[str]) -> None:
             source = CANONICAL_ROOT / name
             destination = mirror_root / name
             ensure_inside_repository(destination)
+            if directory_matches(source, destination):
+                continue
             if destination.exists():
                 shutil.rmtree(destination)
             shutil.copytree(source, destination)
@@ -100,7 +145,15 @@ def main() -> int:
         action="store_true",
         help="report drift without changing files",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="discard uncommitted mirror changes while synchronizing",
+    )
     args = parser.parse_args()
+
+    if args.check and args.force:
+        parser.error("--check and --force cannot be used together")
 
     canonical = skill_names(CANONICAL_ROOT)
     if not canonical:
@@ -109,7 +162,7 @@ def main() -> int:
 
     if not args.check:
         try:
-            sync(canonical)
+            sync(canonical, force=args.force)
         except RuntimeError as error:
             print(error, file=sys.stderr)
             return 1

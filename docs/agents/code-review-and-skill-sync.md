@@ -98,6 +98,9 @@ On macOS or Linux, replace `npm.cmd` with `npm`. Project-specific filters and ru
 7. Review `git status --short` and commit the canonical skill, manifest, router, and both generated mirrors together.
 
 The synchronizer refuses to remove a skill that exists only in a mirror. Promote that skill into `.agents/skills/` before syncing.
+It also refuses to replace a mirror containing tracked, untracked, or ignored local
+changes. Move intended edits into `.agents/skills/` or restore the mirror first.
+Use `--force` only when those mirror-only changes are known to be disposable.
 
 ## Team update workflow
 

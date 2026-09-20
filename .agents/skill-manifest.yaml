@@ -10,7 +10,7 @@
     ],
     "sync_command": "python .agents/scripts/sync_skill_mirrors.py",
     "check_command": "python .agents/scripts/sync_skill_mirrors.py --check",
-    "policy": "Edit canonical skills only. Mirror-only skills block synchronization until promoted, so synchronization never silently drops a skill."
+    "policy": "Edit canonical skills only. Mirror-only skills and uncommitted mirror changes block synchronization until promoted or restored; --force is required to discard mirror changes explicitly."
   },
   "skills": [
     {
