@@ -82,12 +82,9 @@ sequenceDiagram
 
     Note over User,State: Phase 3 - Preview, review, and refinement
     Note over User,State: Continue when a valid current working state exists
-    loop Review until acceptance or the user stops participating
-        State-->>User: Preview valid current working state
-        alt User accepts current working state
-            User->>State: Accept current working state
-            State->>State: Current working state becomes accepted state
-        else User requests deck-level / broad refinement
+    State-->>User: Preview valid current working state
+    loop While the user continues review/refinement without accepting
+        alt User requests deck-level / broad refinement
             User->>Generate: Refinement request, retain active constraints
             Note over User,State: Previous valid state remains available during refinement
             opt Request is materially unclear
@@ -115,22 +112,28 @@ sequenceDiagram
                     end
                 end
             end
-        else User does not accept current result
-            Note over User,State: Continue review/refinement or stop participating
+        else User continues reviewing current result
+            Note over User,State: Keep the valid current working state under review
         end
     end
 
-    Note over User,Export: Phase 4 - Acceptance and export
-    opt An accepted state exists and user chooses export
-        User->>Export: Select supported editable or rendered output
-        State->>Export: Export accepted state
-        Export->>Export: Validate artifact and disclose known degradation
-        alt Export fails or output is invalid
-            Export->>Recovery: Report export failure
-            Recovery->>State: Retain accepted state
-        else Output is valid
-            Export-->>User: Deliver usable artifact
+    alt User accepts current working state
+        Note over User,Export: Phase 4 - Acceptance and export
+        User->>State: Accept current working state
+        State->>State: Current working state becomes accepted state
+        opt User chooses export from accepted state
+            User->>Export: Select supported editable or rendered output
+            State->>Export: Export accepted state
+            Export->>Export: Validate artifact and disclose known degradation
+            alt Export fails or output is invalid
+                Export->>Recovery: Report export failure
+                Recovery->>State: Retain accepted state
+            else Output is valid
+                Export-->>User: Deliver usable artifact
+            end
         end
+    else User stops participating
+        Note over User,State: This interaction ends without acceptance or export
     end
 ```
 
