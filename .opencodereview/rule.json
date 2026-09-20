@@ -1,6 +1,7 @@
 {
   "include": [
-    "tools/project_hub/tests/**/*.py"
+    "tools/project_hub/tests/**/*.py",
+    ".agents/**/*"
   ],
   "exclude": [
     ".claude/skills/**",
