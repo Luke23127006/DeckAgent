@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "scope": "Initial project-owned development skills; not product runtime capabilities.",
+  "review_date": "2026-09-17",
+  "canonical_path": ".agents/skills",
+  "mirrors": "Deferred to the separate cross-tool setup task.",
+  "skills": [
+    {
+      "name": "domain-modeling",
+      "source_repository": "https://github.com/mattpocock/skills",
+      "source_path": "skills/engineering/domain-modeling",
+      "source_commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+      "installed_path": ".agents/skills/domain-modeling",
+      "license": "MIT",
+      "license_source": "https://github.com/mattpocock/skills/blob/74ca5fe077456a0b3b2f5310cf9430999fd0b5fd/LICENSE",
+      "license_copy": ".agents/skills/domain-modeling/LICENSE",
+      "decision": "Adjust",
+      "reason": "Clarify unresolved brief, outline, slide plan, template, render and evaluation terminology. Adopted with the compatibility adaptations listed below.",
+      "compatibility": "Compatible after listed local adaptations; AGENTS.md remains authoritative.",
+      "dependencies": [
+        "No executable helpers or package dependencies; examples do not select the project stack."
+      ],
+      "reviewed_resources": [
+        "ADR-FORMAT.md",
+        "CONTEXT-FORMAT.md",
+        "LICENSE",
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "local_adaptations": [
+        "Add project precedence note.",
+        "Require explicit proposed/accepted ADR status; acceptance needs a recorded team decision.",
+        "Include upstream MIT license."
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "codebase-design",
+      "source_repository": "https://github.com/mattpocock/skills",
+      "source_path": "skills/engineering/codebase-design",
+      "source_commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+      "installed_path": ".agents/skills/codebase-design",
+      "license": "MIT",
+      "license_source": "https://github.com/mattpocock/skills/blob/74ca5fe077456a0b3b2f5310cf9430999fd0b5fd/LICENSE",
+      "license_copy": ".agents/skills/codebase-design/LICENSE",
+      "decision": "Adjust",
+      "reason": "Support small testable interfaces without assuming final architecture. Adopted with the compatibility adaptations listed below.",
+      "compatibility": "Compatible after listed local adaptations; AGENTS.md remains authoritative.",
+      "dependencies": [
+        "No executable helpers or package dependencies; examples do not select the project stack."
+      ],
+      "reviewed_resources": [
+        "DEEPENING.md",
+        "DESIGN-IT-TWICE.md",
+        "LICENSE",
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "local_adaptations": [
+        "Add project precedence note; preserve recorded terminology.",
+        "Replace blanket test deletion with coverage-preserving, justified replacement.",
+        "Default interface alternatives to sequential work; delegation requires explicit task authorization.",
+        "Include upstream MIT license."
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "tdd",
+      "source_repository": "https://github.com/mattpocock/skills",
+      "source_path": "skills/engineering/tdd",
+      "source_commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+      "installed_path": ".agents/skills/tdd",
+      "license": "MIT",
+      "license_source": "https://github.com/mattpocock/skills/blob/74ca5fe077456a0b3b2f5310cf9430999fd0b5fd/LICENSE",
+      "license_copy": ".agents/skills/tdd/LICENSE",
+      "decision": "Adjust",
+      "reason": "Verify observable behavior with focused automated tests. Adopted with the compatibility adaptations listed below.",
+      "compatibility": "Compatible after listed local adaptations; AGENTS.md remains authoritative.",
+      "dependencies": [
+        "No executable helpers or package dependencies; examples do not select the project stack."
+      ],
+      "reviewed_resources": [
+        "LICENSE",
+        "SKILL.md",
+        "agents/openai.yaml",
+        "mocking.md",
+        "tests.md"
+      ],
+      "local_adaptations": [
+        "Add project precedence note.",
+        "Use established public interfaces without repeated approval; escalate system-wide choices per AGENTS.md.",
+        "Replace tool-specific Skill invocation with a relative file link.",
+        "Remove dependency on deferred code-review skill; allow focused refactoring after green.",
+        "Include upstream MIT license."
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "diagnosing-bugs",
+      "source_repository": "https://github.com/mattpocock/skills",
+      "source_path": "skills/engineering/diagnosing-bugs",
+      "source_commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+      "installed_path": ".agents/skills/diagnosing-bugs",
+      "license": "MIT",
+      "license_source": "https://github.com/mattpocock/skills/blob/74ca5fe077456a0b3b2f5310cf9430999fd0b5fd/LICENSE",
+      "license_copy": ".agents/skills/diagnosing-bugs/LICENSE",
+      "decision": "Adjust",
+      "reason": "Require reproducible evidence before diagnosing defects, regressions or export failures. Adopted with the compatibility adaptations listed below.",
+      "compatibility": "Compatible after listed local adaptations; AGENTS.md remains authoritative.",
+      "dependencies": [
+        "Optional Bash for scripts/hitl-loop.template.sh; no package dependencies."
+      ],
+      "reviewed_resources": [
+        "LICENSE",
+        "SKILL.md",
+        "agents/openai.yaml",
+        "scripts/hitl-loop.template.sh"
+      ],
+      "local_adaptations": [
+        "Add project precedence note.",
+        "Make Bash template optional and allow structured manual/native reproduction on Windows.",
+        "Include upstream MIT license."
+      ],
+      "status": "installed"
+    }
+  ],
+  "additional_source_review": {
+    "repository": "https://github.com/ComposioHQ/awesome-claude-skills",
+    "review_scope": "Catalog only; no skill code or dependency audit performed for deferred candidates.",
+    "decision": "No installation in the initial four-skill setup.",
+    "reason": "Initial scope is limited to four reviewed Matt Pocock skills; no additional catalog skill is needed for W-012, W-013 or W-014."
+  },
+  "deferred": [
+    {
+      "name": "pptx",
+      "decision": "Adjust",
+      "condition": "Commit to PPTX output, then review dependencies and visual validation.",
+      "status": "not_installed",
+      "reason": "Output format is not decided; a presentation artifact workflow is not needed for the current agent setup."
+    },
+    {
+      "name": "code-review",
+      "decision": "Adjust",
+      "condition": "Remove issue-tracker and mandatory parallel-agent assumptions.",
+      "status": "not_installed",
+      "reason": "Existing global review rules cover initial needs; tracker and parallel-agent assumptions need review before adoption."
+    },
+    {
+      "name": "research",
+      "decision": "Adjust",
+      "condition": "Adopt for a concrete technical question needing durable cited findings.",
+      "status": "not_installed",
+      "reason": "No concrete research workflow requiring this additional skill has been identified for the initial setup."
+    },
+    {
+      "name": "webapp-testing",
+      "decision": "Reject",
+      "condition": "Consider when a web editor or dashboard exists.",
+      "status": "not_installed",
+      "reason": "No web editor or dashboard exists in this repository to exercise this workflow.",
+      "decision_scope": "Initial adoption only; reconsider when the recorded condition is met."
+    }
+  ]
+}
