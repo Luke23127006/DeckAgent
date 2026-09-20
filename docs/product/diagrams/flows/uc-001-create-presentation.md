@@ -82,42 +82,42 @@ sequenceDiagram
 
     Note over User,State: Phase 3 - Preview, review, and refinement
     Note over User,State: Continue when a valid current working state exists
-    State-->>User: Preview valid current working state
-    Note over User,State: Review and refinement may continue until acceptance or the user stops participating
-    alt User accepts current working state
-        User->>State: Accept current working state
-        State->>State: Current working state becomes accepted state
-    else User requests deck-level / broad refinement
-        User->>Generate: Refinement request, retain active constraints
-        Note over User,State: Previous valid state remains available during refinement
-        opt Request is materially unclear
-            Generate-->>User: Request clarification
-            User->>Generate: Clarify refinement request
-        end
-        Generate->>Generate: Run broad-scope refinement
-        alt Refinement fails
-            Generate->>Recovery: Report predictable failure
-            Recovery->>State: Preserve or restore last valid working or accepted state
-            State-->>User: Preview retained valid state
-        else Candidate refined
-            Generate->>Validate: Candidate refined result - not yet validated
-            alt Validation fails
-                Validate->>Recovery: Report validation failure
+    loop Review until acceptance or the user stops participating
+        State-->>User: Preview valid current working state
+        alt User accepts current working state
+            User->>State: Accept current working state
+            State->>State: Current working state becomes accepted state
+        else User requests deck-level / broad refinement
+            User->>Generate: Refinement request, retain active constraints
+            Note over User,State: Previous valid state remains available during refinement
+            opt Request is materially unclear
+                Generate-->>User: Request clarification
+                User->>Generate: Clarify refinement request
+            end
+            Generate->>Generate: Run broad-scope refinement
+            alt Refinement fails
+                Generate->>Recovery: Report predictable failure
                 Recovery->>State: Preserve or restore last valid working or accepted state
                 State-->>User: Preview retained valid state
-            else Validation passes
-                Validate->>State: Candidate becomes valid current working state
-                State-->>User: Preview refined working state
-                opt User declines new refinement result
-                    User->>State: Decline new refinement result
-                    State->>State: Return to previous valid working state
-                    State-->>User: Preview previous valid working state
+            else Candidate refined
+                Generate->>Validate: Candidate refined result - not yet validated
+                alt Validation fails
+                    Validate->>Recovery: Report validation failure
+                    Recovery->>State: Preserve or restore last valid working or accepted state
+                    State-->>User: Preview retained valid state
+                else Validation passes
+                    Validate->>State: Candidate becomes valid current working state
+                    State-->>User: Preview refined working state
+                    opt User declines new refinement result
+                        User->>State: Decline new refinement result
+                        State->>State: Return to previous valid working state
+                        State-->>User: Preview previous valid working state
+                    end
                 end
-                Note over User,State: Return to review and require explicit acceptance
             end
+        else User does not accept current result
+            Note over User,State: Continue review/refinement or stop participating
         end
-    else User does not accept current result
-        Note over User,State: Continue review/refinement or stop participating
     end
 
     Note over User,Export: Phase 4 - Acceptance and export
