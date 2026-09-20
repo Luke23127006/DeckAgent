@@ -80,60 +80,63 @@ sequenceDiagram
         end
     end
 
-    Note over User,State: Phase 3 - Preview, review, and refinement
-    Note over User,State: Continue when a valid current working state exists
-    State-->>User: Preview valid current working state
-    loop While the user continues review/refinement without accepting
-        alt User requests deck-level / broad refinement
-            User->>Generate: Refinement request, retain active constraints
-            Note over User,State: Previous valid state remains available during refinement
-            opt Request is materially unclear
-                Generate-->>User: Request clarification
-                User->>Generate: Clarify refinement request
-            end
-            Generate->>Generate: Run broad-scope refinement
-            alt Refinement fails
-                Generate->>Recovery: Report predictable failure
-                Recovery->>State: Preserve or restore last valid working or accepted state
-                State-->>User: Preview retained valid state
-            else Candidate refined
-                Generate->>Validate: Candidate refined result - not yet validated
-                alt Validation fails
-                    Validate->>Recovery: Report validation failure
+    alt A valid current working state is available after Phase 2
+        Note over User,State: Phase 3 - Preview, review, and refinement
+        State-->>User: Preview valid current working state
+        loop While the user continues review/refinement without accepting
+            alt User requests deck-level / broad refinement
+                User->>Generate: Refinement request, retain active constraints
+                Note over User,State: Previous valid state remains available during refinement
+                opt Request is materially unclear
+                    Generate-->>User: Request clarification
+                    User->>Generate: Clarify refinement request
+                end
+                Generate->>Generate: Run broad-scope refinement
+                alt Refinement fails
+                    Generate->>Recovery: Report predictable failure
                     Recovery->>State: Preserve or restore last valid working or accepted state
                     State-->>User: Preview retained valid state
-                else Validation passes
-                    Validate->>State: Candidate becomes valid current working state
-                    State-->>User: Preview refined working state
-                    opt User declines new refinement result
-                        User->>State: Decline new refinement result
-                        State->>State: Return to previous valid working state
-                        State-->>User: Preview previous valid working state
+                else Candidate refined
+                    Generate->>Validate: Candidate refined result - not yet validated
+                    alt Validation fails
+                        Validate->>Recovery: Report validation failure
+                        Recovery->>State: Preserve or restore last valid working or accepted state
+                        State-->>User: Preview retained valid state
+                    else Validation passes
+                        Validate->>State: Candidate becomes valid current working state
+                        State-->>User: Preview refined working state
+                        opt User declines new refinement result
+                            User->>State: Decline new refinement result
+                            State->>State: Return to previous valid working state
+                            State-->>User: Preview previous valid working state
+                        end
                     end
                 end
+            else User continues reviewing current result
+                Note over User,State: Keep the valid current working state under review
             end
-        else User continues reviewing current result
-            Note over User,State: Keep the valid current working state under review
         end
-    end
 
-    alt User accepts current working state
-        Note over User,Export: Phase 4 - Acceptance and export
-        User->>State: Accept current working state
-        State->>State: Current working state becomes accepted state
-        opt User chooses export from accepted state
-            User->>Export: Select supported editable or rendered output
-            State->>Export: Export accepted state
-            Export->>Export: Validate artifact and disclose known degradation
-            alt Export fails or output is invalid
-                Export->>Recovery: Report export failure
-                Recovery->>State: Retain accepted state
-            else Output is valid
-                Export-->>User: Deliver usable artifact
+        alt User accepts current working state
+            Note over User,Export: Phase 4 - Acceptance and export
+            User->>State: Accept current working state
+            State->>State: Current working state becomes accepted state
+            opt User chooses export from accepted state
+                User->>Export: Select supported editable or rendered output
+                State->>Export: Export accepted state
+                Export->>Export: Validate artifact and disclose known degradation
+                alt Export fails or output is invalid
+                    Export->>Recovery: Report export failure
+                    Recovery->>State: Retain accepted state
+                else Output is valid
+                    Export-->>User: Deliver usable artifact
+                end
             end
+        else User stops participating
+            Note over User,State: This interaction ends without acceptance or export
         end
-    else User stops participating
-        Note over User,State: This interaction ends without acceptance or export
+    else No valid current working state is available
+        Note over User,Input: This attempt ends before review, acceptance, or export
     end
 ```
 
