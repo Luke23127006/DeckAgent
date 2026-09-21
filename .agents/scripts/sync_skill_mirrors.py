@@ -50,15 +50,20 @@ def ensure_inside_repository(path: Path) -> None:
     path.resolve().relative_to(REPOSITORY_ROOT)
 
 
-def unknown_mirror_skills(canonical: set[str]) -> list[str]:
-    errors: list[str] = []
+def mirror_only_skill_paths(canonical: set[str]) -> list[Path]:
+    paths: list[Path] = []
     for mirror_root in MIRROR_ROOTS:
         for name in sorted(skill_names(mirror_root) - canonical):
-            errors.append(
-                f"{mirror_root.relative_to(REPOSITORY_ROOT)}/{name} exists only in a mirror; "
-                "promote it to .agents/skills before syncing"
-            )
-    return errors
+            paths.append(mirror_root / name)
+    return paths
+
+
+def unknown_mirror_skills(canonical: set[str]) -> list[str]:
+    return [
+        f"{path.relative_to(REPOSITORY_ROOT)} exists only in a mirror; "
+        "promote it to .agents/skills or rerun with --prune to retire it"
+        for path in mirror_only_skill_paths(canonical)
+    ]
 
 
 def uncommitted_changes(path: Path) -> list[str]:
@@ -99,9 +104,13 @@ def check(canonical: set[str]) -> list[str]:
     return errors
 
 
-def sync(canonical: set[str], *, force: bool = False) -> None:
-    errors = unknown_mirror_skills(canonical)
+def sync(
+    canonical: set[str], *, force: bool = False, prune: bool = False
+) -> list[Path]:
+    mirror_only = mirror_only_skill_paths(canonical)
+    errors = [] if prune else unknown_mirror_skills(canonical)
     if not force:
+        replacements: list[tuple[Path, str]] = []
         for mirror_root in MIRROR_ROOTS:
             for name in sorted(canonical):
                 source = CANONICAL_ROOT / name
@@ -109,18 +118,32 @@ def sync(canonical: set[str], *, force: bool = False) -> None:
                 ensure_inside_repository(destination)
                 if directory_matches(source, destination):
                     continue
-                changes = uncommitted_changes(destination)
-                if changes:
-                    rendered_changes = "\n".join(f"  {change}" for change in changes)
-                    relative = destination.relative_to(REPOSITORY_ROOT)
-                    errors.append(
-                        f"{relative} has uncommitted changes; sync would replace them:\n"
-                        f"{rendered_changes}\n"
-                        "Move the changes into .agents/skills, restore the mirror, or "
-                        "rerun with --force to discard them explicitly"
-                    )
+                replacements.append((destination, "replace"))
+        if prune:
+            replacements.extend((destination, "remove") for destination in mirror_only)
+
+        for destination, action in replacements:
+            ensure_inside_repository(destination)
+            changes = uncommitted_changes(destination)
+            if changes:
+                rendered_changes = "\n".join(f"  {change}" for change in changes)
+                relative = destination.relative_to(REPOSITORY_ROOT)
+                errors.append(
+                    f"{relative} has uncommitted changes; sync would {action} it:\n"
+                    f"{rendered_changes}\n"
+                    "Move intended changes into .agents/skills, restore the mirror, "
+                    "or rerun with --force to discard them explicitly"
+                )
     if errors:
         raise RuntimeError("\n".join(errors))
+
+    pruned: list[Path] = []
+    if prune:
+        for destination in mirror_only:
+            ensure_inside_repository(destination)
+            if destination.exists():
+                shutil.rmtree(destination)
+                pruned.append(destination.relative_to(REPOSITORY_ROOT))
 
     for mirror_root in MIRROR_ROOTS:
         ensure_inside_repository(mirror_root)
@@ -134,6 +157,7 @@ def sync(canonical: set[str], *, force: bool = False) -> None:
             if destination.exists():
                 shutil.rmtree(destination)
             shutil.copytree(source, destination)
+    return pruned
 
 
 def main() -> int:
@@ -150,19 +174,25 @@ def main() -> int:
         action="store_true",
         help="discard uncommitted mirror changes while synchronizing",
     )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="remove clean mirror skills that no longer exist in .agents/skills",
+    )
     args = parser.parse_args()
 
-    if args.check and args.force:
-        parser.error("--check and --force cannot be used together")
+    if args.check and (args.force or args.prune):
+        parser.error("--check cannot be combined with --force or --prune")
 
     canonical = skill_names(CANONICAL_ROOT)
     if not canonical:
         print("No canonical skills found in .agents/skills", file=sys.stderr)
         return 1
 
+    pruned: list[Path] = []
     if not args.check:
         try:
-            sync(canonical, force=args.force)
+            pruned = sync(canonical, force=args.force, prune=args.prune)
         except RuntimeError as error:
             print(error, file=sys.stderr)
             return 1
@@ -179,6 +209,10 @@ def main() -> int:
         str(path.relative_to(REPOSITORY_ROOT)) for path in MIRROR_ROOTS
     )
     print(f"{action} {len(canonical)} skills across {mirrors}")
+    if pruned:
+        print("Pruned mirror skill directories:")
+        for path in pruned:
+            print(f"- {path}")
     return 0
 
 

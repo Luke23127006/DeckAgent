@@ -12,7 +12,7 @@ If the target directory or one of its parent directories contains another `AGENT
 
 Read a contract, schema, or design document only when the task changes an API, database structure, shared type, configuration contract, or another module boundary.
 
-Use a skill only when the task needs a specialised workflow. Choose skills by the type of work, not by the AI tool. After reading affected code, tests, and relevant decisions, consult `docs/agents/development-workflow.md` when a specialised workflow is needed, then load only the relevant `SKILL.md` from `.agents/skills/`.
+Use a skill only when the task needs a specialised workflow. Choose skills by the type of work, not by the AI tool. After reading affected code, tests, and relevant decisions, consult `docs/agents/skill-router.md` when a specialised workflow is needed, then load only the relevant `SKILL.md` from `.agents/skills/`.
 
 Load the minimum context needed for the task. If the required architecture or contract does not exist, inspect the current codebase first; do not assume an architecture or create a new boundary without evidence.
 
@@ -22,7 +22,7 @@ Preserve existing repository instructions unless the requested change explicitly
 
 - `AGENTS.md` is the authoritative location for portable repository invariants shared by coding agents, including the Project Hub boundaries below.
 - `CLAUDE.md` is a thin Claude-specific adapter that references this file; do not duplicate portable rules or long workflows there.
-- `.agents/skills/` is the canonical, tool-neutral skill collection. `.claude/skills/` and `.codex/skills/` are generated mirrors; do not edit them directly. After changing canonical skills, run `python .agents/scripts/sync_skill_mirrors.py` and verify with `python .agents/scripts/sync_skill_mirrors.py --check`.
+- `.agents/skills/` is the canonical, tool-neutral skill collection. `.claude/skills/` and `.codex/skills/` are generated mirrors; do not edit them directly. After changing canonical skills, run `python .agents/scripts/sync_skill_mirrors.py` and verify with `python .agents/scripts/sync_skill_mirrors.py --check`. After intentionally removing a canonical skill, use `--prune`; use `--force` only to discard inspected mirror changes explicitly.
 - Canonical multi-step procedures shared by skills live in `docs/agents/workflows/` so every agent can reuse them.
 - `.claude/agents/` contains specialised Claude subagent roles; `.claude/rules/` contains conditional, path-scoped reminders.
 

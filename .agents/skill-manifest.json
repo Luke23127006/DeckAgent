@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scope": "Repository-owned, cross-tool agent skills; not product runtime capabilities.",
-  "review_date": "2026-09-20",
+  "review_date": "2026-09-21",
   "canonical_path": ".agents/skills",
   "mirrors": {
     "paths": [
@@ -10,7 +10,7 @@
     ],
     "sync_command": "python .agents/scripts/sync_skill_mirrors.py",
     "check_command": "python .agents/scripts/sync_skill_mirrors.py --check",
-    "policy": "Edit canonical skills only. Mirror-only skills and uncommitted mirror changes block synchronization until promoted or restored; --force is required to discard mirror changes explicitly."
+    "policy": "Edit canonical skills only. Mirror-only skills require explicit --prune, and uncommitted mirror changes require restoration or explicit --force before replacement or removal."
   },
   "skills": [
     {
@@ -237,7 +237,7 @@
     "repository": "https://github.com/ComposioHQ/awesome-claude-skills",
     "review_scope": "Catalog only; no skill code or dependency audit performed for deferred candidates.",
     "decision": "No installation in the initial four-skill setup.",
-    "reason": "Initial scope is limited to four reviewed Matt Pocock skills; no additional catalog skill is needed for W-012, W-013 or W-014."
+    "reason": "For the original W-012-W-014 adoption, the selected external set was limited to four reviewed Matt Pocock skills; no skill from this catalog was installed."
   },
   "deferred": [
     {

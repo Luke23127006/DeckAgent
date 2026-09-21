@@ -1,4 +1,4 @@
-# Development workflow
+# Skill router
 
 Load the task and acceptance criteria, root `AGENTS.md`, closest contextual rules,
 then affected code, tests, contracts and recorded decisions before this router.
@@ -41,7 +41,7 @@ default or invent product concepts, module rules, or architecture during setup.
 
 ## Inventory and maintenance
 
-[Manifest](../../.agents/skill-manifest.yaml) records the source, license,
+[Manifest](../../.agents/skill-manifest.json) records the source, license,
 source commit, compatibility review and local adaptations. After a reviewed edit
 to canonical skills, record the adaptation in the manifest and review the diff.
 Upstream updates require a fresh source/license/dependency review before changing
@@ -52,9 +52,17 @@ Edit only `.agents/skills/`. Then run
 `.claude/skills/` and `.codex/skills/` mirrors. Run the same command with
 `--check` in validation or CI to detect drift. The synchronizer refuses to
 remove a skill that exists only in a mirror; promote that skill into
-`.agents/skills/` first. It also refuses to replace a mirror with tracked,
+`.agents/skills/` first, or use `--prune` after intentionally removing its
+canonical copy. It also refuses to replace or prune a mirror with tracked,
 untracked, or ignored local changes. Restore or promote those changes first;
 use `--force` only to discard them explicitly.
+
+Keep instructions, references, scripts, and assets used by only one skill inside
+that skill's `.agents/skills/<name>/` directory. Put a procedure in
+`docs/agents/workflows/` when it is repository-owned and shared by multiple skills,
+agent adapters, or roles, or when it needs a stable repository-level link independent
+of the generated skill mirrors. In that case, keep `SKILL.md` as the concise
+entrypoint and link it to the shared procedure.
 
 The four initial engineering skills come from `mattpocock/skills`. The four
 repository-local Mermaid and Project Hub skills were promoted from the existing
