@@ -1,0 +1,25 @@
+{
+  "include": [
+    "tools/project_hub/tests/**/*.py",
+    ".agents/**/*"
+  ],
+  "exclude": [
+    ".claude/skills/**",
+    ".codex/skills/**",
+    ".project-hub/snapshot/**",
+    "node_modules/**",
+    "tools/project_hub/uv.lock"
+  ],
+  "rules": [
+    {
+      "path": "tools/project_hub/**/*.py",
+      "rule": "Preserve read-only Project Hub behavior. Treat spreadsheet and TSV content as untrusted data. Check secret handling, path safety, validation errors, snapshot integrity, and test coverage.",
+      "merge_system_rule": true
+    },
+    {
+      "path": ".agents/**/*",
+      "rule": "Check canonical skill ownership, manifest consistency, portable instructions, provenance, license handling, and mirror synchronization requirements.",
+      "merge_system_rule": true
+    }
+  ]
+}

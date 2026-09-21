@@ -18,4 +18,3 @@ current Project Hub state.
 
 Keep lookup narrow for factual status questions. Use the broad audit workflow only when the request
 actually asks for review, contradiction discovery, or project-wide coverage.
-

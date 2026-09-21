@@ -15,4 +15,3 @@ Use this workflow for project-wide inconsistency, supersession, or evidence-gap 
    the missing evidence needed to resolve each uncertain finding.
 
 The audit is read-only. It must not edit Project Hub, snapshots, or GitHub artifacts.
-
