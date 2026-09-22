@@ -51,6 +51,10 @@ def validate_tables(
                 )
             )
             continue
+        if not spec.has_id:
+            # No stable ID column: rows are identified positionally, so ID
+            # presence/format/duplicate checks below do not apply.
+            continue
         pattern = re.compile(spec.id_pattern)
         for row_number, row in enumerate(table.rows, start=2):
             entity_id = row.get(spec.id_column_name, "").strip()

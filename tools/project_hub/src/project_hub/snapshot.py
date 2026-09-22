@@ -108,11 +108,19 @@ def write_snapshot(
             "hash": digest,
         }
 
+    known_filenames = {spec.filename for spec in config.tables}
+    removed: list[str] = []
+    for existing in sorted(snapshot_dir.glob("*.tsv")):
+        if existing.name not in known_filenames:
+            existing.unlink()
+            removed.append(existing.name)
+
     synced_at = (now or datetime.now(UTC)).astimezone(UTC).isoformat().replace("+00:00", "Z")
     manifest = {
         "schemaVersion": config.schema_version,
         "syncedAt": synced_at,
         "changedTables": changed,
+        "removedFiles": removed,
         "tables": manifest_tables,
     }
     manifest_bytes = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")

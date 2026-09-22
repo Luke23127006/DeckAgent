@@ -46,6 +46,7 @@ class TableSpec:
     header_row: int | None = None
     unknown_columns: str = "error"
     drop_id_only_rows: bool = True
+    has_id: bool = True
 
     @property
     def source_headers(self) -> tuple[str, ...]:
@@ -57,6 +58,11 @@ class TableSpec:
 
     @property
     def id_column(self) -> ColumnSpec:
+        if not self.has_id:
+            raise ConfigError(
+                f"Table {self.key!r} has no stable ID column (hasId=false); "
+                "rows are identified positionally, not by ID"
+            )
         for column in self.columns:
             if column.name == self.id_column_name:
                 return column
@@ -135,19 +141,24 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
         try:
             sheet = str(table_raw["sheet"]).strip()
             filename = str(table_raw.get("file", f"{key}.tsv")).strip()
-            id_pattern = str(table_raw["idPattern"])
             columns_raw = table_raw["columns"]
         except KeyError as exc:
             raise ConfigError(f"Table {key!r} is missing {exc.args[0]!r}") from exc
 
-        if not sheet or not filename or not id_pattern:
-            raise ConfigError(f"Table {key!r} has an empty sheet, file, or idPattern")
+        has_id = bool(table_raw.get("hasId", schema_defaults.get("hasId", True)))
+        id_pattern = str(table_raw.get("idPattern", "")).strip()
+        if has_id and not id_pattern:
+            raise ConfigError(f"Table {key!r} is missing 'idPattern' (required unless hasId=false)")
+
+        if not sheet or not filename:
+            raise ConfigError(f"Table {key!r} has an empty sheet or file")
         if Path(filename).name != filename or not filename.endswith(".tsv"):
             raise ConfigError(f"Table {key!r} file must be a plain .tsv filename")
-        try:
-            re.compile(id_pattern)
-        except re.error as exc:
-            raise ConfigError(f"Table {key!r} has invalid idPattern: {exc}") from exc
+        if has_id:
+            try:
+                re.compile(id_pattern)
+            except re.error as exc:
+                raise ConfigError(f"Table {key!r} has invalid idPattern: {exc}") from exc
         if filename in filenames:
             raise ConfigError(f"Duplicate snapshot filename: {filename}")
         if sheet in sheets:
@@ -217,13 +228,14 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
                 )
             )
 
-        if id_column_name not in canonical_names:
-            raise ConfigError(
-                f"Table {key!r} must map one column to configured ID name {id_column_name!r}"
-            )
-        id_column = next(column for column in columns if column.name == id_column_name)
-        if not id_column.header_required:
-            raise ConfigError(f"Table {key!r} ID header must be required")
+        if has_id:
+            if id_column_name not in canonical_names:
+                raise ConfigError(
+                    f"Table {key!r} must map one column to configured ID name {id_column_name!r}"
+                )
+            id_column = next(column for column in columns if column.name == id_column_name)
+            if not id_column.header_required:
+                raise ConfigError(f"Table {key!r} ID header must be required")
 
         row_rules: list[RowRule] = []
         for rule_raw in table_raw.get("rowRules", []):
@@ -254,6 +266,7 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
                 header_row=header_row,
                 unknown_columns=unknown_columns,
                 drop_id_only_rows=drop_id_only_rows,
+                has_id=has_id,
             )
         )
 

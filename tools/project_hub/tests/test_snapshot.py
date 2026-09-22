@@ -52,3 +52,17 @@ def test_hash_change_and_unchanged_table_is_not_rewritten(small_config) -> None:
     assert errors == []
     assert loaded["requirements"].rows[0]["requirement"] == "Changed"
     assert verify_manifest(small_config) == []
+
+
+def test_write_snapshot_removes_stale_tsv_files_no_longer_in_config(small_config) -> None:
+    small_config.snapshot_dir.mkdir(parents=True, exist_ok=True)
+    stale_path = small_config.snapshot_dir / "legacy-table.tsv"
+    stale_path.write_text("id\tvalue\n", encoding="utf-8")
+
+    manifest = write_snapshot(small_config, _tables())
+
+    assert not stale_path.exists()
+    assert manifest["removedFiles"] == ["legacy-table.tsv"]
+    # Tables still declared in config are unaffected by the cleanup.
+    assert (small_config.snapshot_dir / "requirements.tsv").is_file()
+    assert (small_config.snapshot_dir / "work.tsv").is_file()

@@ -135,11 +135,22 @@ def _command_sync(config) -> int:
     remote = fetch_project_hub(build_service(credentials), spreadsheet_id, config.tables)
     tables = normalize_all(config.tables, remote.values_by_sheet)
     issues = run_validation(config, tables)
-    manifest = write_snapshot(config, tables)
-    changed = manifest["changedTables"]
     print(f"Synced read-only Google spreadsheet: {remote.title or '(untitled)'}")
     print(f"Snapshot: {config.snapshot_dir}")
-    print("Changed tables: " + (", ".join(changed) if changed else "none (TSV files untouched)"))
+    if issues:
+        # Invalid remote data must never overwrite a last-known-good snapshot:
+        # skip publication entirely so callers relying on .project-hub/snapshot/
+        # keep reading the previous validated state.
+        print("Candidate snapshot not published: validation failed, previous snapshot preserved.")
+    else:
+        manifest = write_snapshot(config, tables)
+        changed = manifest["changedTables"]
+        removed = manifest["removedFiles"]
+        print(
+            "Changed tables: " + (", ".join(changed) if changed else "none (TSV files untouched)")
+        )
+        if removed:
+            print("Removed stale files (no longer in config): " + ", ".join(removed))
     print(format_issues_text(issues))
     return 1 if issues else 0
 
