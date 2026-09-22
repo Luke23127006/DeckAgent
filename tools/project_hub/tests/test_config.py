@@ -129,6 +129,53 @@ def test_table_without_has_id_flag_still_requires_id_pattern(tmp_path: Path) -> 
         load_config(config_path)
 
 
+def test_has_id_must_be_a_json_boolean(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path,
+        {
+            "updates": {
+                "sheet": "Updates",
+                "file": "updates.tsv",
+                "hasId": "false",
+                "columns": [
+                    {"source": "Date", "name": "date", "required": True},
+                ],
+            }
+        },
+    )
+
+    with pytest.raises(ConfigError, match="hasId must be a boolean"):
+        load_config(config_path)
+
+
+def test_column_cannot_reference_a_table_without_a_stable_id(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path,
+        {
+            "updates": {
+                "sheet": "Updates",
+                "file": "updates.tsv",
+                "hasId": False,
+                "columns": [
+                    {"source": "Date", "name": "date", "required": True},
+                ],
+            },
+            "notes": {
+                "sheet": "Notes",
+                "file": "notes.tsv",
+                "idPattern": r"^N-\d{3,}$",
+                "columns": [
+                    {"source": "ID", "name": "id", "required": True},
+                    {"source": "Update", "name": "update_id", "references": ["updates"]},
+                ],
+            },
+        },
+    )
+
+    with pytest.raises(ConfigError, match="hasId=false"):
+        load_config(config_path)
+
+
 def test_committed_project_hub_config_loads_and_declares_every_table() -> None:
     config = load_config(REPO_CONFIG_PATH)
 

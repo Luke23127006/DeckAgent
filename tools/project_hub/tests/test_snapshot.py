@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
+import pytest
+
+from project_hub.errors import SnapshotError
 from project_hub.normalize import NormalizedTable
 from project_hub.snapshot import read_snapshot, verify_manifest, write_snapshot
 
@@ -66,3 +70,24 @@ def test_write_snapshot_removes_stale_tsv_files_no_longer_in_config(small_config
     # Tables still declared in config are unaffected by the cleanup.
     assert (small_config.snapshot_dir / "requirements.tsv").is_file()
     assert (small_config.snapshot_dir / "work.tsv").is_file()
+
+
+def test_write_snapshot_wraps_stale_file_removal_errors(monkeypatch, small_config) -> None:
+    small_config.snapshot_dir.mkdir(parents=True, exist_ok=True)
+    stale_path = small_config.snapshot_dir / "legacy-table.tsv"
+    stale_path.write_text("id\tvalue\n", encoding="utf-8")
+
+    original_unlink = Path.unlink
+
+    def _flaky_unlink(self, *args, **kwargs):
+        if self.name == "legacy-table.tsv":
+            raise OSError("permission denied")
+        return original_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", _flaky_unlink)
+
+    with pytest.raises(SnapshotError, match="Cannot remove stale snapshot file"):
+        write_snapshot(small_config, _tables())
+
+    # The stale file must still be present: the failed removal was not swallowed.
+    assert stale_path.exists()

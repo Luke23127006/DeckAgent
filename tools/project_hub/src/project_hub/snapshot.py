@@ -112,7 +112,10 @@ def write_snapshot(
     removed: list[str] = []
     for existing in sorted(snapshot_dir.glob("*.tsv")):
         if existing.name not in known_filenames:
-            existing.unlink()
+            try:
+                existing.unlink()
+            except OSError as exc:
+                raise SnapshotError(f"Cannot remove stale snapshot file {existing}: {exc}") from exc
             removed.append(existing.name)
 
     synced_at = (now or datetime.now(UTC)).astimezone(UTC).isoformat().replace("+00:00", "Z")

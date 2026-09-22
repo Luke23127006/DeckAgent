@@ -145,7 +145,10 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
         except KeyError as exc:
             raise ConfigError(f"Table {key!r} is missing {exc.args[0]!r}") from exc
 
-        has_id = bool(table_raw.get("hasId", schema_defaults.get("hasId", True)))
+        has_id_raw = table_raw.get("hasId", schema_defaults.get("hasId", True))
+        if not isinstance(has_id_raw, bool):
+            raise ConfigError(f"Table {key!r} hasId must be a boolean")
+        has_id = has_id_raw
         id_pattern = str(table_raw.get("idPattern", "")).strip()
         if has_id and not id_pattern:
             raise ConfigError(f"Table {key!r} is missing 'idPattern' (required unless hasId=false)")
@@ -271,6 +274,7 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
         )
 
     table_keys = {table.key for table in tables}
+    table_map = {table.key: table for table in tables}
     for table in tables:
         for column in table.columns:
             unknown_targets = sorted(set(column.references) - table_keys)
@@ -278,6 +282,14 @@ def load_config(path: Path | str | None = None) -> ProjectConfig:
                 raise ConfigError(
                     f"Table {table.key!r} column {column.name!r} references unknown tables: "
                     f"{', '.join(unknown_targets)}"
+                )
+            id_less_targets = sorted(
+                target for target in column.references if not table_map[target].has_id
+            )
+            if id_less_targets:
+                raise ConfigError(
+                    f"Table {table.key!r} column {column.name!r} references table(s) without a "
+                    f"stable ID column (hasId=false): {', '.join(id_less_targets)}"
                 )
 
     return ProjectConfig(
