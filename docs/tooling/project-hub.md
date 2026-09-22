@@ -191,10 +191,12 @@ effective/calculated values in the spreadsheet locale, not as formula text. It t
 3. normalizes tabs/newlines/whitespace inside cells;
 4. converts valid multi-ID fields to sorted, deduplicated semicolon lists;
 5. validates IDs, required fields, references, enums, and traceability edges;
-6. only if validation passes: removes any `.tsv` file for a table no longer declared in config
-   (before touching declared tables, so a removal failure leaves the previous snapshot fully
-   intact), hashes canonical UTF-8 TSV bytes and rewrites changed table files, then updates
-   `manifest.json` with UTC sync time, row counts, hashes, changed tables, and removed files.
+6. only if validation passes: commits stale-file removal (for tables no longer declared in
+   config), changed table rewrites, and the `manifest.json` update (UTC sync time, row counts,
+   hashes, changed tables, removed files) as one unit — every file touched is backed up first,
+   and if any step fails, everything touched in that attempt is restored to its prior content
+   (or removed, if it did not exist before), so a failed sync never leaves a mix of new and old
+   snapshot state.
 
 A data validation failure does not touch `.project-hub/snapshot/` at all: the previously published,
 already-validated snapshot is left exactly as it was, sync reports the issues, and it returns exit
