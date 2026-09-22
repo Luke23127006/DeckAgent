@@ -79,6 +79,19 @@ def write_snapshot(
     if not isinstance(previous_tables, dict):
         previous_tables = {}
 
+    # Remove stale files before writing any table so a mid-operation failure here
+    # leaves the previous snapshot (files + manifest) fully intact instead of
+    # publishing a partial mix of new table content and a stale manifest.
+    known_filenames = {spec.filename for spec in config.tables}
+    removed: list[str] = []
+    for existing in sorted(snapshot_dir.glob("*.tsv")):
+        if existing.name not in known_filenames:
+            try:
+                existing.unlink()
+            except OSError as exc:
+                raise SnapshotError(f"Cannot remove stale snapshot file {existing}: {exc}") from exc
+            removed.append(existing.name)
+
     changed: list[str] = []
     manifest_tables: dict[str, dict[str, Any]] = {}
     for spec in config.tables:
@@ -107,16 +120,6 @@ def write_snapshot(
             "rows": len(table.rows),
             "hash": digest,
         }
-
-    known_filenames = {spec.filename for spec in config.tables}
-    removed: list[str] = []
-    for existing in sorted(snapshot_dir.glob("*.tsv")):
-        if existing.name not in known_filenames:
-            try:
-                existing.unlink()
-            except OSError as exc:
-                raise SnapshotError(f"Cannot remove stale snapshot file {existing}: {exc}") from exc
-            removed.append(existing.name)
 
     synced_at = (now or datetime.now(UTC)).astimezone(UTC).isoformat().replace("+00:00", "Z")
     manifest = {
