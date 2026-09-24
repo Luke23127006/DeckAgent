@@ -27,6 +27,7 @@ from project_hub.snapshot import (
 from project_hub.validation import (
     format_issues_json,
     format_issues_text,
+    has_errors,
     run_validation,
     structural_issue,
 )
@@ -137,10 +138,10 @@ def _command_sync(config) -> int:
     issues = run_validation(config, tables)
     print(f"Synced read-only Google spreadsheet: {remote.title or '(untitled)'}")
     print(f"Snapshot: {config.snapshot_dir}")
-    if issues:
+    if has_errors(issues):
         # Invalid remote data must never overwrite a last-known-good snapshot:
         # skip publication entirely so callers relying on .project-hub/snapshot/
-        # keep reading the previous validated state.
+        # keep reading the previous validated state. Warnings do not block.
         print("Candidate snapshot not published: validation failed, previous snapshot preserved.")
     else:
         manifest = write_snapshot(config, tables)
@@ -152,7 +153,7 @@ def _command_sync(config) -> int:
         if removed:
             print("Removed stale files (no longer in config): " + ", ".join(removed))
     print(format_issues_text(issues))
-    return 1 if issues else 0
+    return 1 if has_errors(issues) else 0
 
 
 def _command_validate(config, args: argparse.Namespace) -> int:
@@ -168,7 +169,7 @@ def _command_validate(config, args: argparse.Namespace) -> int:
     )
     output = format_issues_json(issues) if args.format == "json" else format_issues_text(issues)
     print(output)
-    return 1 if issues else 0
+    return 1 if has_errors(issues) else 0
 
 
 def _command_status(config, args: argparse.Namespace) -> int:

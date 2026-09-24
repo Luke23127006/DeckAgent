@@ -96,3 +96,26 @@ def test_console_streams_are_configured_for_utf8(monkeypatch) -> None:
     expected = [{"encoding": "utf-8", "errors": "backslashreplace"}]
     assert stdout.calls == expected
     assert stderr.calls == expected
+
+
+def test_sync_publishes_when_only_warnings(monkeypatch, small_config, capsys) -> None:
+    monkeypatch.setattr(cli, "load_config", lambda _path=None: small_config)
+    monkeypatch.setattr(cli, "load_credentials", lambda: object())
+    monkeypatch.setattr(cli, "build_service", lambda credentials: object())
+    values = {
+        "Requirements": [["ID", "Requirement"], ["R-001", "First"]],
+        "Work": [["ID", "Title", "Requirement"], ["W-001", "Build", "Many requirements, export"]],
+    }
+    monkeypatch.setattr(
+        cli, "fetch_project_hub", lambda *a, **k: RemoteSpreadsheet("Test Sheet", values)
+    )
+
+    assert cli.main(["sync"]) == 0
+    out = capsys.readouterr().out
+    assert "not published" not in out
+    assert "WARNING malformed_reference" in out
+    assert "Validation passed with 1 warning(s)." in out
+    work = (small_config.snapshot_dir / "work.tsv").read_text(encoding="utf-8")
+    assert "Many requirements, export" in work
+
+    assert cli.main(["validate"]) == 0

@@ -106,3 +106,18 @@ def test_id_like_text_is_only_validated_in_configured_relationship_fields(small_
     )
 
     assert run_validation(small_config, tables) == []
+
+
+def test_malformed_reference_is_a_warning_and_other_codes_are_errors(small_config) -> None:
+    tables = _tables(
+        [{"id": "R-001", "requirement": "First"}],
+        [
+            {"id": "W-001", "title": "Note", "requirement_ids": "Many requirements, see doc"},
+            {"id": "W-002", "title": "Broken", "requirement_ids": "R-999"},
+        ],
+    )
+
+    severities = {issue.code: issue.severity for issue in run_validation(small_config, tables)}
+
+    assert severities["malformed_reference"] == "warning"
+    assert severities["broken_reference"] == "error"

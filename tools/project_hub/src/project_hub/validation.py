@@ -8,6 +8,11 @@ from dataclasses import asdict, dataclass
 from project_hub.config import ProjectConfig, TableSpec
 from project_hub.normalize import NormalizedTable, parse_reference_tokens
 
+# Issue codes that are reported but never block publication or fail the exit code.
+# Free-text notes inside a relation column are an intentional authoring choice in the
+# source sheet; normalize_reference_value keeps such cells verbatim in the snapshot.
+WARNING_CODES = frozenset({"malformed_reference"})
+
 
 @dataclass(frozen=True, order=True)
 class ValidationIssue:
@@ -17,6 +22,15 @@ class ValidationIssue:
     field: str
     entity_id: str
     message: str
+    severity: str = "error"
+
+    @property
+    def is_error(self) -> bool:
+        return self.severity == "error"
+
+
+def has_errors(issues: Iterable[ValidationIssue]) -> bool:
+    return any(issue.is_error for issue in issues)
 
 
 def structural_issue(message: str, *, table: str = "snapshot") -> ValidationIssue:
@@ -242,15 +256,29 @@ def format_issues_text(issues: Iterable[ValidationIssue]) -> str:
             location += f":{issue.row}"
         identity = f" {issue.entity_id}" if issue.entity_id else ""
         field = f" [{issue.field}]" if issue.field else ""
-        lines.append(f"ERROR {issue.code} {location}{identity}{field}: {issue.message}")
-    lines.append(f"Validation failed: {len(values)} issue(s).")
+        lines.append(
+            f"{issue.severity.upper()} {issue.code} {location}{identity}{field}: {issue.message}"
+        )
+    errors = sum(issue.is_error for issue in values)
+    warnings = len(values) - errors
+    if errors:
+        lines.append(f"Validation failed: {errors} error(s), {warnings} warning(s).")
+    else:
+        lines.append(f"Validation passed with {warnings} warning(s).")
     return "\n".join(lines)
 
 
 def format_issues_json(issues: Iterable[ValidationIssue]) -> str:
     values = list(issues)
+    errors = sum(issue.is_error for issue in values)
     return json.dumps(
-        {"valid": not values, "issueCount": len(values), "issues": [asdict(v) for v in values]},
+        {
+            "valid": not errors,
+            "issueCount": len(values),
+            "errorCount": errors,
+            "warningCount": len(values) - errors,
+            "issues": [asdict(v) for v in values],
+        },
         ensure_ascii=False,
         indent=2,
     )
@@ -264,4 +292,5 @@ def _issue(
     entity_id: str,
     message: str,
 ) -> ValidationIssue:
-    return ValidationIssue(table, row, code, field, entity_id, message)
+    severity = "warning" if code in WARNING_CODES else "error"
+    return ValidationIssue(table, row, code, field, entity_id, message, severity)

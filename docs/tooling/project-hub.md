@@ -204,6 +204,12 @@ code 1. This keeps an invalid remote edit from silently clobbering the last-know
 snapshot; fix the source data and rerun `sync` to publish. A remote schema mismatch does not update
 the snapshot and returns exit code 2.
 
+Some issue codes are warnings rather than errors. Currently the only one is
+`malformed_reference`: a relation cell that holds free text instead of IDs (for example
+`Nhiều requirement về editing, export`). Warnings print as `WARNING ...`, do not block
+publication, and do not change the exit code. The cell is written to the snapshot verbatim. Its
+contents are not checked as IDs, so the cell contributes no traceability edges.
+
 `validate` never calls Google. It validates local TSV headers, row widths, stable IDs, required
 fields, relation target types, broken IDs, canonical multi-value syntax, traceability targets, and
 manifest hashes. Exit code 0 means valid; 1 means deterministic validation failed; 2 means a tool,
