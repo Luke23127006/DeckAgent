@@ -25,7 +25,7 @@
     `R-028`, `R-031`, `R-032`, `R-033`
   - Business Rules: `BR-005`, `BR-006`
   - Assumptions: `A-017`, `A-021`, `A-023`
-  - Decisions: `D-011`, `D-012`, `D-014`, `D-016`, `D-017`
+  - Decisions: `D-011`, `D-012`, `D-014`, `D-016`, `D-017`, `D-026`
 - Source-table SHA-256:
   - `use_cases`: `sha256:94080163bf1eeabab7b9007754a5137fdf60bad800d17be6b0fb9d723b3c523f`
   - `requirements`: `sha256:a2081f6d6acdbb8a832668cca6c3d2a72322f14fe6d40531dee419d55a152002`
@@ -88,7 +88,8 @@ PPTX-first/HTML-first approaches, or providers/models.
 
 - `Open point` — The concrete validation mechanism and minimum-quality rubric are unspecified
   (`R-021`, `R-033`, `D-011`).
-- `Open point` — The rendered V1 export target remains unresolved (`A-023`, `D-016`).
+- `Resolved` — The V1 output baseline is PPTX (editable) and PDF (rendered/static); broader
+  output formats remain a later direction (`A-023`, `D-026`, superseding `D-016`).
 
 ## Review triggers
 
