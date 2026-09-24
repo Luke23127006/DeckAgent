@@ -115,7 +115,7 @@ meet AC-05 with any of these.
 
 | ID | Kind | Short name | Researched through |
 |---|---|---|---|
-| AC-01 | Gate | V1 Core Flow completeness | RQ-04, RQ-08 |
+| AC-01 | Gate | V1 Core Flow completeness | RQ-04, RQ-08, RQ-11 |
 | AC-02 | Gate | Source content handled as data | RQ-01 |
 | AC-03 | Gate | Source-derived vs other content kept distinct | RQ-05 |
 | AC-04 | Gate | Active constraints remain available | RQ-03, RQ-08 |
