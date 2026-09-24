@@ -114,6 +114,47 @@ def test_duplicate_header_is_rejected() -> None:
         normalize_table(_spec(), values)
 
 
+def test_table_without_stable_id_keeps_rows_with_any_data() -> None:
+    spec = TableSpec(
+        key="updates",
+        sheet="Updates",
+        filename="updates.tsv",
+        id_pattern="",
+        columns=(
+            ColumnSpec("Date", "date", required=True),
+            ColumnSpec("Member", "member", required=True),
+            ColumnSpec("Work", "work_id", references=("work",)),
+        ),
+        header_row=2,
+        has_id=False,
+    )
+    values = [
+        ["Project Hub"],
+        ["Date", "Member", "Work"],
+        ["2026-09-22", "Duy", "W-001"],
+        ["", "", ""],
+    ]
+
+    table = normalize_table(spec, values)
+
+    assert table.headers == ("date", "member", "work_id")
+    assert table.rows == ({"date": "2026-09-22", "member": "Duy", "work_id": "W-001"},)
+
+
+def test_table_without_stable_id_requires_explicit_header_row() -> None:
+    spec = TableSpec(
+        key="updates",
+        sheet="Updates",
+        filename="updates.tsv",
+        id_pattern="",
+        columns=(ColumnSpec("Date", "date", required=True),),
+        has_id=False,
+    )
+
+    with pytest.raises(SchemaError, match="headerRow must be configured explicitly"):
+        normalize_table(spec, [["Date"], ["2026-09-22"]])
+
+
 def test_tsv_normalizes_tabs_and_newlines_to_one_physical_line() -> None:
     table = NormalizedTable(
         key="work",

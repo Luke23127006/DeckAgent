@@ -79,8 +79,16 @@ def write_snapshot(
     if not isinstance(previous_tables, dict):
         previous_tables = {}
 
+    known_filenames = {spec.filename for spec in config.tables}
+    stale_paths = [
+        path for path in sorted(snapshot_dir.glob("*.tsv")) if path.name not in known_filenames
+    ]
+
+    # Compute the full new state without mutating disk yet, so a failure partway
+    # through the commit phase below has something known-good to roll back to.
     changed: list[str] = []
     manifest_tables: dict[str, dict[str, Any]] = {}
+    pending_writes: list[tuple[Path, bytes]] = []
     for spec in config.tables:
         try:
             table = tables[spec.key]
@@ -100,7 +108,7 @@ def write_snapshot(
                     f"Cannot read existing snapshot table {output_path}: {exc}"
                 ) from exc
         if old_hash != digest or existing_hash != digest:
-            _atomic_write(output_path, content)
+            pending_writes.append((output_path, content))
             changed.append(spec.key)
         manifest_tables[spec.key] = {
             "file": spec.filename,
@@ -113,11 +121,57 @@ def write_snapshot(
         "schemaVersion": config.schema_version,
         "syncedAt": synced_at,
         "changedTables": changed,
+        "removedFiles": [path.name for path in stale_paths],
         "tables": manifest_tables,
     }
     manifest_bytes = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    _atomic_write(snapshot_dir / MANIFEST_FILENAME, manifest_bytes)
+    manifest_path = snapshot_dir / MANIFEST_FILENAME
+
+    _commit_snapshot(stale_paths, pending_writes, manifest_path, manifest_bytes)
     return manifest
+
+
+def _commit_snapshot(
+    stale_paths: list[Path],
+    pending_writes: list[tuple[Path, bytes]],
+    manifest_path: Path,
+    manifest_bytes: bytes,
+) -> None:
+    """Apply stale-file removals, table writes, and the manifest update as one unit.
+
+    Every file this touches is backed up first. If any step fails, every touched
+    file is restored to its prior content (or removed, if it did not previously
+    exist) so a failed sync never leaves a mix of new and old snapshot state.
+    """
+    touched_paths = [*stale_paths, *(path for path, _content in pending_writes), manifest_path]
+    backups = [(path, _read_bytes_or_none(path)) for path in touched_paths]
+
+    try:
+        for path in stale_paths:
+            try:
+                path.unlink()
+            except OSError as exc:
+                raise SnapshotError(f"Cannot remove stale snapshot file {path}: {exc}") from exc
+        for path, content in pending_writes:
+            _atomic_write(path, content)
+        _atomic_write(manifest_path, manifest_bytes)
+    except SnapshotError:
+        for path, original in reversed(backups):
+            with suppress(OSError, SnapshotError):
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    _atomic_write(path, original)
+        raise
+
+
+def _read_bytes_or_none(path: Path) -> bytes | None:
+    if not path.is_file():
+        return None
+    try:
+        return path.read_bytes()
+    except OSError as exc:
+        raise SnapshotError(f"Cannot back up {path} before writing: {exc}") from exc
 
 
 def read_snapshot(config: ProjectConfig) -> tuple[dict[str, NormalizedTable], list[str]]:

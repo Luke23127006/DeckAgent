@@ -59,6 +59,12 @@ def _locate_header_row(values: Sequence[Sequence[Any]], spec: TableSpec) -> int:
             )
         return index
 
+    if not spec.has_id:
+        raise SchemaError(
+            f"Sheet {spec.sheet!r}: headerRow must be configured explicitly for tables "
+            "without a stable ID column (hasId=false)"
+        )
+
     candidates: list[tuple[int, list[str]]] = []
     for index, row in enumerate(values[:25]):
         normalized = [normalize_cell(value) for value in row]
@@ -114,10 +120,15 @@ def normalize_table(spec: TableSpec, values: Sequence[Sequence[Any]]) -> Normali
         # Formula-filled template ranges can expose a calculated ID even when the
         # rest of the semantic record is empty. The per-table policy keeps those
         # placeholders out while still retaining rows with data but a missing ID
-        # so deterministic validation can report them.
-        non_id_values = (value for name, value in mapped.items() if name != spec.id_column_name)
-        if spec.drop_id_only_rows and not any(non_id_values):
-            continue
+        # so deterministic validation can report them. Tables without a stable ID
+        # column have no such placeholder to filter, so only the blanket
+        # empty-row check above applies to them.
+        if spec.has_id and spec.drop_id_only_rows:
+            non_id_values = (
+                value for name, value in mapped.items() if name != spec.id_column_name
+            )
+            if not any(non_id_values):
+                continue
         rows.append(mapped)
 
     return NormalizedTable(key=spec.key, headers=spec.headers, rows=tuple(rows))

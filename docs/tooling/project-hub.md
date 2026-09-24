@@ -105,7 +105,7 @@ the URL but still requires opening it on the same machine; deprecated copy/paste
 ## Repository configuration
 
 The committed configuration at `tools/project_hub/config/project-hub.json` points to DeckAgent's
-private Project Hub Spreadsheet ID, `1Ot5lOjMZlpQpq6wvNfLN7GGR8vG8Wae5ohBd1waHi8c`. The ID is a
+private Project Hub Spreadsheet ID, `13CmZuYEccwQ3zOHTjPiFdSjV-ypW7hmMnWBZQyGejcM`. The ID is a
 resource identifier, not an authorization secret; Google still enforces the private spreadsheet
 ACL for each authenticated member.
 
@@ -154,10 +154,18 @@ The maintenance contract is:
   `ABC-001`-style grammar require config only; a different token grammar requires a small parser
   change and tests rather than silent auto-detection.
 
-Table-level `headerRow`, `idColumn`, `unknownColumns`, and `dropIdOnlyRows` values may override the
-defaults when a real Sheet convention differs. Python changes are reserved for a genuinely new
-normalization primitive, validation rule kind, Google API behavior, or reference token grammar—not
-for ordinary rows, reordered columns, mapped fields, or standard new tables.
+Table-level `headerRow`, `idColumn`, `unknownColumns`, `dropIdOnlyRows`, and `hasId` values may
+override the defaults when a real Sheet convention differs. Python changes are reserved for a
+genuinely new normalization primitive, validation rule kind, Google API behavior, or reference
+token grammar—not for ordinary rows, reordered columns, mapped fields, or standard new tables.
+
+- **A logical table has no stable ID column** (for example a plain activity log): set
+  `"hasId": false` on that table and omit `idPattern`. `headerRow` must then be configured
+  explicitly (table-level or via `schemaDefaults`) because header auto-detection relies on
+  locating the configured ID column's source header. ID presence/format/duplicate checks and
+  `dropIdOnlyRows` template filtering are skipped for that table; required-field, controlled-value,
+  and relationship validation still run normally. No other logical table may declare a `references`
+  target pointing at an ID-less table, since it has no stable ID for other rows to point to.
 
 ## Daily use
 
@@ -183,12 +191,24 @@ effective/calculated values in the spreadsheet locale, not as formula text. It t
 3. normalizes tabs/newlines/whitespace inside cells;
 4. converts valid multi-ID fields to sorted, deduplicated semicolon lists;
 5. validates IDs, required fields, references, enums, and traceability edges;
-6. hashes canonical UTF-8 TSV bytes;
-7. rewrites only changed table files; and
-8. updates `manifest.json` with UTC sync time, row counts, hashes, and changed tables.
+6. only if validation passes: commits stale-file removal (for tables no longer declared in
+   config), changed table rewrites, and the `manifest.json` update (UTC sync time, row counts,
+   hashes, changed tables, removed files) as one unit — every file touched is backed up first,
+   and if any step fails, everything touched in that attempt is restored to its prior content
+   (or removed, if it did not exist before), so a failed sync never leaves a mix of new and old
+   snapshot state.
 
-A data validation failure writes the fetched snapshot for diagnosis and returns exit code 1. A
-remote schema mismatch does not update the snapshot and returns exit code 2.
+A data validation failure does not touch `.project-hub/snapshot/` at all: the previously published,
+already-validated snapshot is left exactly as it was, sync reports the issues, and it returns exit
+code 1. This keeps an invalid remote edit from silently clobbering the last-known-good local
+snapshot; fix the source data and rerun `sync` to publish. A remote schema mismatch does not update
+the snapshot and returns exit code 2.
+
+Some issue codes are warnings rather than errors. Currently the only one is
+`malformed_reference`: a relation cell that holds free text instead of IDs (for example
+`Nhiều requirement về editing, export`). Warnings print as `WARNING ...`, do not block
+publication, and do not change the exit code. The cell is written to the snapshot verbatim. Its
+contents are not checked as IDs, so the cell contributes no traceability edges.
 
 `validate` never calls Google. It validates local TSV headers, row widths, stable IDs, required
 fields, relation target types, broken IDs, canonical multi-value syntax, traceability targets, and
@@ -221,20 +241,28 @@ If Workspace blocks authentication, an administrator must permit the OAuth app o
 
 ## Schema observations from the reference export
 
-These are implementation assumptions inferred from the development-only `.xlsx` fixture:
+These are implementation assumptions inferred from the `.xlsx` reference export (last reconciled
+2026-09-22, schemaVersion 2):
 
-- Logical headers are on row 2; `Home` and hidden `_Config` are not snapshot tables.
+- Logical headers are on row 2; `Home`, `Operating Rules`, and hidden `_Config` are not snapshot
+  tables — they hold narrative text or dropdown-source lists, not row-based entities.
 - IDs are calculated down long template ranges. Row inclusion uses effective values and drops rows
   whose semantic record is blank apart from a generated ID; it does not depend on column A.
-- Stable prefixes are `ACT`, `UC`, `R`, `C`, `BR`, `A`, `D`, `L`, `RK`, `SP`, `W`, `B`, `TR`, `EV`,
-  `DL`, `WL`, and `DOC`, followed by a hyphen and at least three digits.
+- Stable prefixes are `ACT`, `UC`, `R`, `C`, `BR`, `A`, `D`, `L`, `RK`, `SP`, `W`, `B`, and `DOC`,
+  followed by a hyphen and at least three digits. The `Updates` table (`hasId: false`) has no
+  stable ID; rows are the raw activity log and are identified positionally.
 - Spreadsheet multi-reference cells currently use comma-separated IDs. Snapshot TSV uses semicolons
   so values are deterministic and grep-friendly.
-- `_Config` helper formulas and dropdown ranges establish relation targets, but `_Config` values are
-  not exported.
-- `Traceability` is currently a record table (`TR-*`) with requirement/work/test/bug/evidence
-  columns, rather than the generic three-column edge example in the proposal. The configured row
-  rule requires a requirement plus at least one concrete target.
+- `_Config` helper formulas and dropdown ranges establish relation targets and controlled-value
+  domains, but `_Config` values are not exported. Several sheet columns share one `_Config` dropdown
+  range (for example `Scope` on Requirements, Business Rules, and Documents); the configured
+  `allowedValues` follow the dropdown's actual domain, not a narrower value set assumed per field.
+- `Traceability`, `Evidence`, `Daily`, and `Weekly` (present in earlier schema versions) were removed
+  from the live spreadsheet; there is no successor table for `Evidence` or `Weekly`. `Daily` was
+  replaced by the ID-less `Updates` table. Columns that referenced the removed `evidence` table
+  (`Assumptions.Support / Source`, `Learnings.Supporting Artifact`) are now free text, not relation
+  fields. `Decisions.Related IDs`, `Risks.Related IDs`, and `Requirements.Related Tests` were removed
+  outright with no replacement column.
 - Dates are kept as the sheet's formatted effective values. This avoids exposing formulas and
   matches what members see in Google Sheets, but date formatting changes will intentionally change
   hashes.
