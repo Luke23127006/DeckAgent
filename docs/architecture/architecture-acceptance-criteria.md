@@ -1,15 +1,24 @@
 # Architecture Acceptance Criteria (DOC-004)
 
 - Status: Draft
-- Produced by: W-028 · Used by: W-029, W-033, W-034, W-035
+- Produced by: W-028 · Used by: W-029, W-030, W-031, W-033, W-034, W-035
 - V1 boundary: D-024, D-025, D-026, D-027, D-028
 - Criterion set: AC-01 … AC-27 (frozen; IDs are stable and independent of kind)
+- Language: this English file is the canonical source. A Vietnamese reader version exists for
+  human reading; if the two differ, this file wins.
 
-## 1. Purpose
+## 1. What this document is for
 
-This document defines the criteria used to evaluate reference-system findings (W-030, W-031),
-candidate mechanisms (W-033), and candidate architectures (W-034, W-035) against the DeckAgent
-V1 boundary.
+DeckAgent has no architecture yet. Sprint 2 produces one: reference systems are researched,
+candidate mechanisms and candidate architectures are built, and one candidate is chosen as the
+architecture baseline (W-035). This document fixes, before any of that, what every acceptable
+architecture must achieve and how candidates are compared. Criteria come first so that the
+requirements are not bent to justify a solution already in mind (D-011).
+
+It defines the criteria that W-033 … W-035 use to evaluate reference-system findings, candidate
+mechanisms, and candidate architectures against the DeckAgent V1 boundary. Reference-system
+researchers (W-030, W-031) link their findings to AC IDs to show relevance; they do not evaluate
+anything against the criteria.
 
 Criteria state required outcomes and comparison dimensions. They do not choose mechanisms: no
 criterion requires or forbids an intermediate/canonical representation, normalization approach,
@@ -19,13 +28,72 @@ mechanism (D-011). Each criterion therefore carries a **Does not require** line.
 There is no existing DeckAgent architecture or product code to preserve (A-004 is Retired).
 Criteria evaluate candidates on their own terms, not as changes to a current design.
 
-## 2. Criterion kinds and how to apply them
+## 2. Where it fits in the Architecture workflow
+
+| Step | Work | Document | Role of DOC-004 |
+|---|---|---|---|
+| V1 boundary | W-026 | D-024 … D-028 | Sets the scope the criteria are written against |
+| Criteria | W-028 | DOC-004 | This document |
+| Research contract | W-029 | DOC-005 | Turns the criteria into research questions RQ-01 … RQ-17, each mapped to AC IDs |
+| Reference research | W-030, W-031 | DOC-006, DOC-007 | Researchers link findings to AC IDs to show relevance. No outcomes, no verdicts |
+| Mechanisms | W-033 | DOC-009 | Findings are evaluated against the criteria; candidate mechanisms are organized by the problems the criteria describe |
+| Candidates | W-034 | DOC-009 | Criteria keep 2–3 candidate architectures tied to DeckAgent's problem |
+| Trade-off and baseline | W-035 | DOC-009 | Candidates are assessed (§5) and compared; the baseline is chosen |
+
+Testing (W-032, DOC-008) runs alongside. W-032 decides which checks and thresholds exist; this
+document only states where validation must be possible (AC-10) and what must be observable
+(AC-14 … AC-20).
+
+## 3. How to use it
+
+### 3.1 By role
+
+- **Reference-system researcher (W-030, W-031).** Read §1 … §6, then look up a criterion entry
+  when a finding touches it. In each finding, cite the AC IDs it is relevant to and say why. An
+  entry's **Evidence to look for** line can hint at what to inspect in the reference system. Do not
+  assign `Meets`, `Does not meet`, or `Not yet assessable` to a reference system, and do not
+  score or rank it (DOC-005 §2).
+- **Mechanism synthesis (W-033).** Evaluate findings against the criteria. For each candidate
+  mechanism, state which AC IDs it addresses and which evidence is still missing.
+- **Candidate architectures (W-034).** Use the criteria to keep each candidate tied to DeckAgent's
+  problem. Gates and Observability needs describe what every candidate must satisfy.
+- **Trade-off and baseline (W-035).** Assess each candidate against every Gate and Observability
+  need (§5), and compare candidates on every Trade-off dimension in writing, with evidence.
+
+### 3.2 How to read a criterion entry
+
+| Field | What it tells you |
+|---|---|
+| Criterion | The outcome or property required, or the dimension compared |
+| Trace | Where the criterion comes from: Requirements, Constraints, Decisions, DOC-002 sections |
+| Why architecture-level | Why it must be settled by the architecture rather than added later as a feature |
+| Evidence to look for | What to inspect in a candidate to decide the outcome (Gates, Observability needs) |
+| Questions to compare | What to compare across candidates (Trade-off dimensions only) |
+| Does not require | Mechanisms or details the criterion deliberately leaves open (D-011) |
+
+## 4. The three criterion kinds
 
 | Kind | Applied as | Outcomes |
 |---|---|---|
 | Gate | Screening: a candidate that does not meet a Gate is excluded or must be revised | `Meets` · `Does not meet` · `Not yet assessable` |
 | Observability need | Screening: the candidate must make the property observable; how is not prescribed | Same as Gate |
 | Trade-off dimension | Comparison only, in written trade-off analysis (W-035); never pass/fail and no numeric score | Narrative comparison with evidence |
+
+- **Gates (AC-01 … AC-13)** are invariants every candidate must hold.
+- **Observability needs (AC-14 … AC-20)** make P1, P2, P3 and P5 verifiable (D-028). They require
+  that a property can be observed, not that it already holds.
+- **Trade-off dimensions (AC-21 … AC-27)** are costs and option values on which candidates are
+  compared; no candidate is disqualified on them.
+
+## 5. How assessment works
+
+Outcomes are assigned to DeckAgent candidates, never to reference systems.
+
+| Outcome | Meaning |
+|---|---|
+| `Meets` | Cited evidence shows the candidate satisfies the criterion |
+| `Does not meet` | Cited evidence shows it does not; the candidate is excluded or must be revised |
+| `Not yet assessable` | The evidence needed to decide is missing |
 
 `Not yet assessable` means the evidence needed to decide is missing. Record which evidence
 (research finding, spike, or prototype) would decide it. It is an evidence gap, not a pass. It
@@ -36,39 +104,49 @@ criterion.
 Every assessment cites evidence: a DOC-006/DOC-007 finding, a candidate description in DOC-009,
 spike or prototype results, or explicit reasoning labelled as such.
 
-## 3. Criterion index
+Criteria constrain outcomes, never mechanisms. For example, AC-05 requires preview, PPTX, and PDF
+to derive from the same accepted state, but its **Does not require** line leaves open whether
+that state is one storage location, one representation, or several components. A candidate may
+meet AC-05 with any of these.
 
-| ID | Kind | Short name |
-|---|---|---|
-| AC-01 | Gate | V1 Core Flow completeness |
-| AC-02 | Gate | Source content handled as data |
-| AC-03 | Gate | Source-derived vs other content kept distinct |
-| AC-04 | Gate | Active constraints remain available |
-| AC-05 | Gate | Preview and exports derive from the same accepted state |
-| AC-06 | Gate | Unvalidated changes do not replace the accepted state |
-| AC-07 | Gate | One-step reject of the latest refinement |
-| AC-08 | Gate | Operation failures end in a determinate state |
-| AC-09 | Gate | Export failures leave the accepted state unchanged |
-| AC-10 | Gate | Validation is possible at acceptance and delivery points |
-| AC-11 | Gate | User content exposure is bounded |
-| AC-12 | Gate | No professional-editor dependency in the Core Flow |
-| AC-13 | Gate | No extension-to-role lock-in |
-| AC-14 | Observability need | Geometry and text metrics per output |
-| AC-15 | Observability need | Slide order and text readable from every output |
-| AC-16 | Observability need | Content origin observable |
-| AC-17 | Observability need | Before/after last refinement observable |
-| AC-18 | Observability need | Whole deck viewable as rendered |
-| AC-19 | Observability need | Output degradation discoverable from real artifacts |
-| AC-20 | Observability need | Operation status and failure cause reportable |
-| AC-21 | Trade-off dimension | Team feasibility and learning curve |
-| AC-22 | Trade-off dimension | External dependency cost |
-| AC-23 | Trade-off dimension | Blast radius |
-| AC-24 | Trade-off dimension | Rollback and redesign cost |
-| AC-25 | Trade-off dimension | Testability cost |
-| AC-26 | Trade-off dimension | Output-target extensibility |
-| AC-27 | Trade-off dimension | Translation readiness |
+## 6. Quick criterion map
 
-## 4. Gates
+**Researched through** lists the DOC-005 research questions mapped to each criterion.
+
+| ID | Kind | Short name | Researched through |
+|---|---|---|---|
+| AC-01 | Gate | V1 Core Flow completeness | RQ-04, RQ-08 |
+| AC-02 | Gate | Source content handled as data | RQ-01 |
+| AC-03 | Gate | Source-derived vs other content kept distinct | RQ-05 |
+| AC-04 | Gate | Active constraints remain available | RQ-03, RQ-08 |
+| AC-05 | Gate | Preview and exports derive from the same accepted state | RQ-06, RQ-11 |
+| AC-06 | Gate | Unvalidated changes do not replace the accepted state | RQ-07, RQ-09 |
+| AC-07 | Gate | One-step reject of the latest refinement | RQ-07 |
+| AC-08 | Gate | Operation failures end in a determinate state | RQ-14 |
+| AC-09 | Gate | Export failures leave the accepted state unchanged | RQ-11, RQ-14 |
+| AC-10 | Gate | Validation is possible at acceptance and delivery points | RQ-09 |
+| AC-11 | Gate | User content exposure is bounded | RQ-01 |
+| AC-12 | Gate | No professional-editor dependency in the Core Flow | RQ-15 |
+| AC-13 | Gate | No extension-to-role lock-in | RQ-02 |
+| AC-14 | Observability need | Geometry and text metrics per output | RQ-10 |
+| AC-15 | Observability need | Slide order and text readable from every output | RQ-06, RQ-11 |
+| AC-16 | Observability need | Content origin observable | RQ-05 |
+| AC-17 | Observability need | Before/after last refinement observable | RQ-07 |
+| AC-18 | Observability need | Whole deck viewable as rendered | RQ-10 |
+| AC-19 | Observability need | Output degradation discoverable from real artifacts | RQ-13 |
+| AC-20 | Observability need | Operation status and failure cause reportable | RQ-14 |
+| AC-21 | Trade-off dimension | Team feasibility and learning curve | RQ-16 |
+| AC-22 | Trade-off dimension | External dependency cost | RQ-16 |
+| AC-23 | Trade-off dimension | Blast radius | RQ-04, RQ-17 |
+| AC-24 | Trade-off dimension | Rollback and redesign cost | RQ-17 |
+| AC-25 | Trade-off dimension | Testability cost | RQ-10 |
+| AC-26 | Trade-off dimension | Output-target extensibility | RQ-12 |
+| AC-27 | Trade-off dimension | Translation readiness | RQ-08 |
+
+## 7. Gates
+
+Gates are invariants every candidate must satisfy. A candidate that does not meet a Gate is
+excluded or must be revised (§5).
 
 ### AC-01 — V1 Core Flow completeness
 
@@ -194,7 +272,7 @@ spike or prototype results, or explicit reasoning labelled as such.
   where a result can be inspected before it becomes accepted or is delivered, and what
   information is available there (see also AC-14, AC-15).
 - **Does not require:** Specific checks, thresholds, a rubric, LLM-judge use, or a validation
-  component. See §8 for the open uncertainty on where rendered-output checks can run.
+  component. See §11 for the open uncertainty on where rendered-output checks can run.
 
 ### AC-11 — User content exposure is bounded
 
@@ -235,7 +313,7 @@ spike or prototype results, or explicit reasoning labelled as such.
 - **Does not require:** A runtime role abstraction, role selection UI, or dynamic role
   inference in first V1.
 
-## 5. Observability needs
+## 8. Observability needs
 
 Observability needs exist so that W-032 and later testing can verify P1, P2, P3 and P5 (D-028).
 They state what must be observable, not how it is exposed.
@@ -315,7 +393,7 @@ They state what must be observable, not how it is exposed.
   an operation is reported to the user or to tests.
 - **Does not require:** A progress UI design, error taxonomy, or logging framework.
 
-## 6. Trade-off dimensions
+## 9. Trade-off dimensions
 
 Trade-off dimensions are compared in writing across candidates in W-035, with evidence. They do
 not produce a pass/fail result or a numeric score.
@@ -397,9 +475,9 @@ not produce a pass/fail result or a numeric score.
   with active constraints (AC-04)?
 - **Does not require:** Translation support, font strategy, or localization design in first V1.
 
-## 7. Traceability coverage
+## 10. Traceability
 
-### 7.1 DOC-002 §18 Architecture Handoff questions
+### 10.1 DOC-002 §18 Architecture Handoff questions
 
 | §18 question | Criteria |
 |---|---|
@@ -412,9 +490,9 @@ not produce a pass/fail result or a numeric score.
 | Q7 Failure recoverable/predictable | AC-06 … AC-09, AC-20 |
 | Q8 No dependence on full web editor | AC-12 |
 | Q9 Fits project resources | AC-21, AC-22 |
-| Q10 Option value for existing-deck editing | Not a criterion; see §9 |
+| Q10 Option value for existing-deck editing | Not a criterion; see §12 |
 
-### 7.2 W-028 criteria areas
+### 10.2 W-028 criteria areas
 
 | Area in W-028 | Criteria |
 |---|---|
@@ -431,7 +509,7 @@ not produce a pass/fail result or a numeric score.
 | Blast radius | AC-23 |
 | Rollback | AC-24 |
 
-### 7.3 D-028 observability needs
+### 10.3 D-028 observability needs
 
 | D-028 need | Criterion |
 |---|---|
@@ -441,7 +519,7 @@ not produce a pass/fail result or a numeric score.
 | 4. State before/after the last refinement | AC-17 |
 | 5. Whole deck viewable as rendered | AC-18 |
 
-### 7.4 Requirements and constraints
+### 10.4 Requirements and constraints
 
 - W-028 primary requirements: R-001 (AC-04), R-003 (via D-024, AC-01), R-004 (AC-02, AC-13),
   R-006 (AC-01), R-007 (AC-03, AC-16), R-011 (AC-01), R-019 (AC-01), R-020 (AC-01, AC-05, AC-09),
@@ -455,7 +533,7 @@ not produce a pass/fail result or a numeric score.
 - Decisions: D-007 (AC-13), D-011 (mechanism boundary; AC-10, AC-24), D-024 … D-028 (V1
   boundary).
 
-## 8. Open uncertainty carried into W-033 / W-034
+## 11. Open uncertainties carried into W-033 / W-034
 
 **Where rendered-output checks can run (AC-10).** Some P3 hard-minimum checks, such as clipped or
 unreadable text, may only be detectable on rendered output. If so, validation would need to
@@ -467,7 +545,7 @@ Deliberately not treated as W-028 uncertainties, because they are learnable late
 concrete candidate forces the issue: constraint lifetime semantics (A-013, DOC-002 OQ-04) and
 cross-application PPTX compatibility (D-026).
 
-## 9. Excluded from the criterion set
+## 12. Exclusions and watch triggers
 
 - **Existing-deck editing (DOC-002 §18 Q10; D-013).** No V1-specific lock-in risk was shown
   beyond what AC-05 and AC-13 already protect. The remaining costs (import fidelity, element
