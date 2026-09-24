@@ -157,8 +157,8 @@ Decision.
 - `Open point` — The specific source types supported in V1 remain unresolved (`UC-002`, `R-003`).
 - `Open point` — The deck-level refinement types sufficient for V1 remain unresolved (`UC-004`,
   `A-021`, `D-014`).
-- `Open point` — The rendered V1 export target remains unresolved; PPTX is the editable baseline
-  (`UC-008`, `A-023`, `D-016`).
+- `Resolved` — The V1 output baseline is PPTX (editable) and PDF (rendered/static); broader
+  output formats remain a later direction (`UC-008`, `A-023`, `D-026`, superseding `D-016`).
 - `Open point` — The validation mechanism and the concrete minimum-quality rubric are intentionally
   unspecified here (`R-021`, `R-033`, `D-011`).
 
