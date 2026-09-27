@@ -1,12 +1,14 @@
-# DeckAgent exploratory V0 — Phase 2 review
+# DeckAgent exploratory V0 — Phase 4 handoff
 
-**Đã mở rộng core journey với các tình huống Phase 2. W-027 chưa Done:** Later storyboards của Phase 3 vẫn còn lại. Các tình huống dưới đây là mô phỏng để quan sát behavior và thảo luận UX; chưa chứng minh AI, validation hoặc output quality thật.
+**Bắt đầu review tại [REVIEW.html](REVIEW.html).** Đã có representation cho cả tám Use Cases: interactive mock cho V1 Core/structure UC-006 và storyboard cho Later/assets deferred. [HANDOFF.md](HANDOFF.md) có checklist đối chiếu AC, cách nhận ZIP và nội dung bàn giao; [FEEDBACK.md](FEEDBACK.md) là mẫu ghi nhận buổi review. Không tự cập nhật W-027 thành Done. Các tình huống giúp quan sát behavior và thảo luận UX, chưa chứng minh AI, validation hoặc output quality thật.
 
 Prototype độc lập, dùng HTML/CSS/JavaScript thuần. Không có backend, AI, parser, persistence hay export engine thật. Layout và state simulation có thể thay đổi sau review; không phải Architecture Decision.
 
 ## Mở prototype
 
 Mở trực tiếp [index.html](index.html) bằng Edge/Chrome/Firefox hiện đại. Không cần npm install, build hoặc account. Các script dùng đường dẫn tương đối và chạy qua `file://`.
+
+Mở **Later storyboards · Phase 3** ở đầu prototype, hoặc mở trực tiếp [storyboards.html](storyboards.html). Link từ V1 mở tab riêng để giữ working/accepted state đang demo. Quay lại tab V1 cũ để tiếp tục phiên đó; **Mở phiên V1 mới** trên trang storyboard sẽ tạo một phiên khác, không khôi phục phiên cũ.
 
 Nếu muốn dùng local URL, chạy từ repository root:
 
@@ -15,6 +17,8 @@ python -B -m http.server 8027 --bind 127.0.0.1 --directory prototypes/w-027
 ```
 
 Mở <http://127.0.0.1:8027>. Dừng server bằng Ctrl+C. Đây chỉ là static server phục vụ file prototype. Có thể chia sẻ cả thư mục này dưới dạng ZIP hoặc repository artifact; giữ nguyên các file cạnh nhau.
+
+Gói đã chuẩn bị: `artifacts/deckagent-w027-v0-review.zip`. Giải nén toàn bộ và mở `deckagent-w027-v0/REVIEW.html`; không cần repository để demo. Sau giải nén, có thể chạy server ngay trong thư mục chứa REVIEW.html với `python -B -m http.server 8027 --bind 127.0.0.1` (bỏ `--directory prototypes/w-027`). Đóng gói lại bằng `python -B prototypes/w-027/package_review.py` từ repository root; manifest trong ZIP và file `.zip.sha256` cạnh ZIP dùng để đối chiếu bản bàn giao.
 
 ## Những gì chạy thật và những gì giả lập
 
@@ -29,6 +33,7 @@ Mở <http://127.0.0.1:8027>. Dừng server bằng Ctrl+C. Đây chỉ là stati
 | PPTX/PDF export | Success, timeout, invalid output, degradation disclosure và retry mô phỏng từ accepted deck; không tạo PPTX/PDF thật |
 | Download | Biên nhận `.json` ghi format được chọn, accepted version và nội dung minh họa; ghi rõ không phải PPTX/PDF |
 | Persistence | Trong memory của tab; reload/reset mất state theo giả định demo, không phải quyết định chi tiết về session lifecycle của product |
+| Later storyboards | Trang HTML/CSS tĩnh, điều hướng bằng anchor; các control trong wireframe chỉ là hình minh họa. Không import, direct edit, xử lý reference hoặc asset thật; không chia sẻ state với V1 |
 
 Tất cả số liệu là giả lập: 40 người tham gia, 120 lượt mượn, 90 đúng hạn, 30 trễ; 4 tuần. Không có dữ liệu chi phí hoặc hài lòng. Không gửi dữ liệu ra network. Không sử dụng external fonts, scripts hoặc images.
 
@@ -107,20 +112,35 @@ Các nghĩa vụ giữ state, constraints, nguồn và output theo UC/REQ/D là 
 
 **Ranh giới recovery:** lỗi kỹ thuật giữ working trước thao tác và accepted độc lập, kể cả khi working chưa Accept. User Reject là lựa chọn khác: quay về accepted hoặc fallback trước lần Accept đầu theo A1. Không tự đồng nhất failure với Reject.
 
-## Use Case Coverage Matrix tại checkpoint Phase 2
+## Phase 3 — Later storyboard guide
+
+Actor chung: **ACT-001**. UC-003/005/007 là **Draft**, requirements về capability tương ứng vẫn Proposed/Later. UC-006 là Draft/V1 Partial: structure qua AI đã có trong V1, assets vẫn deferred. Tất cả lựa chọn bố cục, lời nhắc mẫu, đối chiếu trước/sau và fallback chưa được đặc tả đều gắn nhãn **Đề xuất minh họa V0** hoặc **Chưa chốt** trong artifact.
+
+| Scenario / artifact thật | Walkthrough và trạng thái quan sát | Alternative/failure và giới hạn | Trace |
+| --- | --- | --- | --- |
+| [S1 — UC-003](storyboards.html#uc-003) | Existing presentation + intent → importing/preservation review → imported working artifact → refinement/editing → preview/export. Bốn khung minh họa input, đối chiếu, workspace và kết quả | Import/preservation không đủ phải báo giới hạn. Đề xuất dừng/đổi input/quay lại công cụ gốc; chưa chốt có được tiếp tục với degraded result không. PPTX-as-source không phải import working artifact | UC-003; R-005/R-012/R-019/R-022/R-023/R-024/R-031/R-034; D-013; A-011/A-012 |
+| [S2 — UC-005](storyboards.html#uc-005) | Có editor/canvas supported → select content/object → direct modification → preview state mới. Ví dụ sửa tiêu đề chỉ là đề xuất, không chốt operation set | Unsupported → AI nếu capability cho phép hoặc external tool. Technical failure/commit/Undo còn thiếu semantics; không giả lập full history hay tự auto-accept manual edit | UC-005; R-014/R-015/R-016/R-019/R-029/R-031; D-015; A-010 |
+| [S3 — assets UC-006](storyboards.html#uc-006-assets) | Có deck → yêu cầu reuse/generate visual → unsupported/deferred notice → đề xuất tiếp tục structure/content hoặc review/Accept/PPTX handoff. Các điểm nghiên cứu cho future asset flow được để dưới dạng placeholder | Không extract/reuse embedded image, không tạo ảnh hay quản lý asset trong V1. Chưa chốt supported types/role/recovery cho Later. R-018 có wording optional/V1 quality nhưng không supersede boundary hiện hành | UC-006; R-014/R-017/R-018/R-019/R-034; D-015/D-024/D-025; L-001/L-002 |
+| [S4 — UC-007](storyboards.html#uc-007) | Artifact reference → role unclear/resolved → dùng cho generation/refinement → preview. Ví dụ tham khảo structure, không sao chép facts; role rõ có thể bỏ qua clarification | Role không rõ phải hỏi, không suy ra từ extension. Processing failure và constraint conflict chưa có policy; đưa câu hỏi và phương án thảo luận, không chọn solution | UC-007; R-003/R-004/R-010/R-017/R-024; D-007; A-014 |
+
+**Cách demo:** đi S1 → S2 → S3 → S4 bằng các liên kết trên trang. Mỗi storyboard có actor/precondition, flow chính bằng khung đánh số, nhánh thay thế/failure và câu hỏi review. Các liên kết S1→S2→S3→S4 chỉ giúp đọc tài liệu, không biến bốn capability thành chuỗi bắt buộc của product.
+
+**Shared experience:** preview, refinement và review/export có thể dùng chung ý tưởng trình bày. S1 có thể dẫn S2 khi direct editing được support; S4 có thể tham gia generation hoặc refinement. Những kết nối này không mở imported editing/reference trong UC-004 V1 và không chọn module/contract của hệ thống.
+
+## Use Case Coverage Matrix — bản bàn giao V0
 
 | UC | Scope | Đã có | Còn lại / giới hạn |
 | --- | --- | --- | --- |
 | UC-001 | V1 Core | C1/C2 + F4/F5: prompt, clarification, generation, preview, failure/validation/retry | Các kết quả đều fixture; không chứng minh generation quality |
 | UC-002 | V1 Core | C2 + F1–F3/F5: source, gaps, source/instruction distinction, processing failure, scan boundary/replacement | Không parse hoặc kiểm tra file thật; chỉ một source/deck |
-| UC-003 | Later | Chỉ ghi nhận trong matrix này | Storyboard import → working artifact → refine → export, preservation limitation |
+| UC-003 | Later | [S1](storyboards.html#uc-003): import → working artifact → refinement → preview/export; preservation limitation | Static storyboard; formats/preservation và recovery policy chưa baseline |
 | UC-004 | V1 Core | C3/C5 + F6–F8: repeated refinement, constraints, clarification/conflict/cancellation, Accept/Reject, failures, best effort | Acceptance/constraint lifetime assumptions cần team review; chưa có AI tự do |
-| UC-005 | Later | Chỉ ghi nhận trong matrix này | Storyboard select → direct edit → preview, unsupported fallback |
-| UC-006 | V1 Partial | C3 + F6/F7: thêm/bớt/reorder qua AI giả lập, failures/recovery và length conflict dùng chung flow | Assets deferred representation ở Phase 3 |
-| UC-007 | Later/Exploratory | Chỉ ghi nhận trong matrix này | Storyboard reference role → generation/refinement → preview |
+| UC-005 | Later | [S2](storyboards.html#uc-005): select → direct edit → preview; unsupported → AI/external tool | Static storyboard; operation types, commit và Undo chưa baseline |
+| UC-006 | V1 Partial | C3 + F6/F7: structure qua AI, failures/recovery, length conflict; [S3](storyboards.html#uc-006-assets): assets deferred notice/fallback và research placeholders | Không triển khai assets; các operation future vẫn chưa được quyết định |
+| UC-007 | Later/Exploratory | [S4](storyboards.html#uc-007): nhận reference → clarification role → generation/refinement → preview; failure/conflict questions | Static storyboard; reference fidelity và recovery chưa baseline |
 | UC-008 | V1 Core | C1/C4 + F9/F10: accepted-state PPTX/PDF, failure/invalid output, degradation disclosure, retry và JSON receipt | Không có export engine/file PPTX/PDF thật; không chứng minh output fidelity |
 
-Không đánh dấu W-027 Done: UC Later và assets deferred chưa có storyboard. Phase 3 chưa được triển khai trong lần mở rộng Phase 2 này.
+Đã có artifact cho tất cả UC; representation không đồng nghĩa implementation capability. Handoff tổng thể cần team review và Artifact / Link trong W-027 trỏ đúng bản prototype được bàn giao trước khi Done. Lần này không sửa Project Hub hoặc tự đổi task status; không chọn Architecture.
 
 ## Prototype assumptions và câu hỏi mở
 
@@ -140,7 +160,24 @@ Không đánh dấu W-027 Done: UC Later và assets deferred chưa có storyboar
 
 Feedback chưa có từ team. Ghi sau walkthrough theo mẫu: **Scenario — observation — UC/R/D — idea — Open / thử phương án / team đã quyết định**. Chấp nhận prototype không tự phê duyệt các giả định thành product rules.
 
+### Câu hỏi bổ sung từ Phase 3
+
+Các ID `P3-Qxx` dưới đây chỉ là ID local của prototype. Không phải Requirement/Decision mới. Tất cả đều **Open**; có thể khám phá khi review storyboard, cần làm rõ trước implementation capability Later tương ứng.
+
+| ID / scenario | Câu hỏi | Vì sao cần biết / phương án để thảo luận | Evidence |
+| --- | --- | --- | --- |
+| P3-Q01 / S1 | Supported import formats/properties và preservation fidelity tới đâu? | Quyết định user có thể tin vào working artifact nào; chưa chọn format hay ngưỡng | R-005/R-023; D-013 |
+| P3-Q02 / S1 | Fidelity không đủ thì chặn hay cho review bản suy giảm? Phục hồi về đâu? | Ảnh hưởng bước đầu journey và nguy cơ mất artifact. Không tự mặc định import thành công | UC-003; R-031; A-011/A-012 |
+| P3-Q03 / S2 | Correction, object types và operation set tối thiểu? | Tránh biến lightweight edit thành full editor; có thể so với PPTX handoff | R-014/R-015; D-015; A-010 |
+| P3-Q04 / S2 | Khi nào commit manual edit? Hủy/Accept/recovery ra sao? | Cần phân biệt draft đang sửa với kết quả user chấp nhận; không tự áp dụng semantics AI Reject | R-016/R-019/R-031 |
+| P3-Q05 / S3 | User cần reuse image, embedded image hay generated visual trước? | Evidence sau demo quyết định ưu tiên, không promote tất cả vào V1 | R-017/R-018; L-001/L-002 |
+| P3-Q06 / S3 | Role, types, scope, attribution và asset failure behavior? | Cần trước khi vẽ asset flow chi tiết; hiện chỉ placeholder cho các điểm chưa có quyết định | UC-006; R-017/R-034; D-024 |
+| P3-Q07 / S4 | Reference types/roles và mức fidelity nào cần support? | Phân biệt tham khảo với copy-exactly, factual source và working artifact | R-004/R-010; D-007 |
+| P3-Q08 / S4 | Reference conflict hoặc processing failure xử lý thế nào? | Có thể hỏi lại, bỏ phần không support hoặc dừng; chưa chọn policy | UC-007; R-024; A-014 |
+
 ## Kiểm tra
+
+Kết quả kiểm tra bản bàn giao và giới hạn: [review/verification.md](review/verification.md). Trong ZIP đã giải nén, bỏ tiền tố `prototypes/w-027/` trong các lệnh dưới; ví dụ `node tests/state.test.cjs`.
 
 Không cần dependency cho prototype hoặc state tests:
 
@@ -164,11 +201,16 @@ Walkthrough Phase 2: `python -B prototypes/w-027/tests/phase2_smoke.py`. Kiểm 
 
 Ảnh Phase 2: [Generation failure](review/06-generation-failure.png) · [Source gap](review/07-source-gap.png) · [Validation failure](review/08-validation-failure.png) · [Mobile failure](review/09-mobile-failure.png) · [Export failure](review/10-export-failure.png).
 
+Phase 3 đã kiểm tra trên Chromium desktop 1440px và mobile 390px: liên kết S1–S4 hoạt động, các khung là static, không tràn ngang ở các viewport đã kiểm tra. Mở storyboard ở tab riêng rồi quay lại vẫn giữ working/accepted state và có thể export bản accepted trong phiên V1 cũ. Không ghi nhận JavaScript error. Kiểm tra này xác nhận artifact/điều hướng, không xác nhận capability Later hoạt động.
+
+Ảnh Phase 3: [Tổng quan](review/11-storyboards-overview.png) · [S1 Import](review/12-uc-003.png) · [S2 Direct edit](review/13-uc-005.png) · [S3 Assets](review/14-uc-006-assets.png) · [S4 Reference](review/15-uc-007.png) · [Mobile](review/16-storyboard-mobile.png).
+
 ## Context và inspiration
 
-- [Project context](../../project_context.md), [AGENTS.md](../../AGENTS.md).
+- Tài liệu trong repository, không đóng kèm ZIP: `project_context.md`, `AGENTS.md`.
 - Snapshot dùng: `2026-09-27T06:17:21.304770Z`; D-024–D-028, UC-001–UC-008; snapshot không bị sửa.
-- [DOC-004](../../docs/architecture/architecture-acceptance-criteria.md), AC-04–AC-10: state/constraints/recovery/validation. Đây là criteria, không phải Architecture Decision.
+- Phase 3 đối chiếu lại tại branch `W-027`, commit đầu turn `3a457f3161dafd049a5b150951247179919c8592`. Project Hub báo snapshot fresh, structural validation pass; không sync hoặc ghi lại snapshot. UC/REQ/D/L liên quan vẫn giữ boundary nêu trên.
+- DOC-004 trong repository: `docs/architecture/architecture-acceptance-criteria.md`, AC-04–AC-10: state/constraints/recovery/validation. Đây là criteria, không phải Architecture Decision.
 - [Gamma Create with Agent](https://help.gamma.app/en/articles/15002203-how-do-i-create-with-agent-in-gamma): prompt, contextual clarification, conversational refinement.
 - [Beautiful.ai creation](https://support.beautiful.ai/hc/en-us/articles/12885226948109-Creating-a-presentation-with-AI): preview structure và chỉnh nội dung bằng AI. Outline-first chưa được đưa thành required step của DeckAgent.
 

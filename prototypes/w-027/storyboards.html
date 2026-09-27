@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DeckAgent · Later storyboards · W-027</title>
+  <link rel="stylesheet" href="storyboards.css">
+</head>
+<body>
+  <a class="skip" href="#stories">Đến các storyboard</a>
+  <header id="top">
+    <a class="brand" href="#top">DeckAgent <span>V0 / PHASE 3</span></a>
+    <nav aria-label="Tài liệu review"><a href="README.md">Scenario guide</a><a href="index.html" target="_blank" rel="noopener">Mở phiên V1 mới ↗</a></nav>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="eyebrow">W-027 · STORYBOARD ĐỂ THẢO LUẬN</p>
+      <h1>Các journey sau V1.<br><span>Phác thảo trước khi quyết định.</span></h1>
+      <p class="lead">Bốn storyboard bổ sung cho luồng V1 đang chạy: import working artifact, direct editing, assets và reference. Đọc theo các khung đánh số, rồi xem nhánh thay thế và câu hỏi review.</p>
+      <div class="boundary"><strong>Later / Deferred · Không phải chức năng đang hoạt động</strong><p>Trang này chỉ có điều hướng giữa các storyboard. Các khung giao diện là hình minh họa bằng HTML/CSS; không upload, import, edit, xử lý reference hay tạo asset. Không có state chung với prototype V1. Để tiếp tục phiên đang xem, quay lại tab V1 cũ.</p></div>
+      <div class="legend" aria-label="Cách đọc nhãn"><span class="tag recorded">Theo tài liệu Draft/Later</span><span class="tag proposed">Đề xuất minh họa V0</span><span class="tag open">Chưa chốt</span></div>
+    </section>
+
+    <nav class="story-nav" aria-label="Chọn storyboard">
+      <a href="#uc-003"><span>S1 · UC-003</span><strong>Tiếp tục deck có sẵn</strong><small>Working artifact</small></a>
+      <a href="#uc-005"><span>S2 · UC-005</span><strong>Sửa trực tiếp đơn giản</strong><small>Manual modification</small></a>
+      <a href="#uc-006-assets"><span>S3 · UC-006</span><strong>Khi user cần asset</strong><small>V1 boundary → Later questions</small></a>
+      <a href="#uc-007"><span>S4 · UC-007</span><strong>Dùng một reference</strong><small>Role → apply → preview</small></a>
+    </nav>
+
+    <section class="role-map" aria-labelledby="roles-title">
+      <h2 id="roles-title">Cùng một file, mục đích khác nhau</h2>
+      <div class="roles">
+        <div><span class="tag core">V1 · UC-002</span><h3>Content source</h3><p>Lấy thông tin để tạo deck mới. PPTX-as-source không có nghĩa tiếp tục chỉnh deck gốc.</p></div>
+        <div><span class="tag recorded">Later · UC-003</span><h3>Working artifact</h3><p>Tiếp tục làm việc trên presentation có sẵn; cần boundary preservation/import riêng.</p></div>
+        <div><span class="tag recorded">Later · UC-007</span><h3>Reference</h3><p>Tham khảo content, structure hoặc visual theo intent. Không tự coi là nguồn factual hay deck đang chỉnh.</p></div>
+        <div><span class="tag recorded">Deferred · UC-006</span><h3>Asset</h3><p>Visual dự định dùng trong presentation. Image handling và embedded-image reuse chưa mở trong first V1.</p></div>
+      </div>
+      <p class="trace">D-007/D-024 · R-004/R-005/R-010/R-017. Đây là bản đồ giải thích cho buổi review, không đề xuất một role picker bắt buộc trong V1.</p>
+    </section>
+
+    <div id="stories">
+      <section id="uc-003" class="story" aria-labelledby="s1-title">
+        <div class="story-heading"><div><p class="eyebrow">S1 · UC-003 · DRAFT / LATER</p><h2 id="s1-title">Tiếp tục một presentation có sẵn</h2></div><span class="tag recorded">D-013 · Ngoài V1 Core</span></div>
+        <p><b>Actor:</b> ACT-001. <b>Mục tiêu:</b> dùng existing presentation làm working artifact. <b>Precondition:</b> format được support và có khả năng đọc/preserve; danh sách format và mức fidelity chưa được chốt.</p>
+        <p class="trace">Flow theo UC-003; R-005/R-012/R-019/R-022/R-023/R-024/R-031/R-034. Các khung dưới là đề xuất bố cục, không phải import/editor đã được triển khai.</p>
+        <ol class="frames four">
+          <li class="frame"><div class="frame-title"><b>01</b><h3>Đưa existing deck vào</h3></div>
+            <div class="wire"><div class="wire-top">EXISTING PRESENTATION · VÍ DỤ</div><div class="file-card"><span class="file-icon">▤</span><div><strong>Deck báo cáo của tôi</strong><small>Format supported: cần xác định</small></div></div><div class="bubble">“Tôi muốn tiếp tục chỉnh deck này.”</div><div class="ghost-button">Nhập làm working artifact · minh họa</div></div>
+            <p><b>Input:</b> existing artifact + intent chỉnh sửa. <b>State:</b> chờ import → importing.</p>
+            <span class="tag proposed">Ví dụ file/intent và vị trí thao tác</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>02</b><h3>Đọc và kiểm tra preservation</h3></div>
+            <div class="wire"><div class="wire-top">IMPORTING → REVIEW</div><div class="compare"><div class="mini-slide"><i></i><i></i><i></i><small>Artifact gốc</small></div><span>→</span><div class="mini-slide"><i></i><i></i><i></i><small>Bản đã đọc</small></div></div><div class="wire-note">Có giới hạn thì phải báo rõ; chưa cam kết pixel identity hoặc giữ mọi object.</div></div>
+            <p><b>State:</b> đọc được → working artifact, hoặc gặp giới hạn preservation. Hình đối chiếu là ý tưởng giúp review R-023.</p>
+            <span class="tag open">Supported formats / preservation boundary</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>03</b><h3>Preview và yêu cầu sửa</h3></div>
+            <div class="wire"><div class="wire-top">WORKING ARTIFACT · LATER</div><div class="workspace-mini"><div class="rail-mini"><i>01</i><i>02</i><i>03</i></div><div class="paper-mini"><strong>Báo cáo câu lạc bộ</strong><span class="text-line"></span><span class="text-line short"></span></div></div><div class="bubble">“Làm rõ phần kết luận, giữ dữ liệu.”</div></div>
+            <p><b>Interaction:</b> review → refinement/editing trong scope được support → preview mới. Không mặc định UC-004 V1 đã áp dụng được cho imported decks.</p>
+            <span class="tag proposed">Tái dùng bố cục preview/refinement</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>04</b><h3>Review thay đổi và export</h3></div>
+            <div class="wire"><div class="wire-top">MODIFIED → REVIEW → EXPORT</div><div class="paper-mini"><strong>Phần kết luận được sửa</strong><span class="text-line accent"></span><span class="text-line"></span><small>Phần ngoài scope: đối chiếu theo capability</small></div><div class="ghost-button">Review / chấp nhận / export · minh họa</div></div>
+            <p><b>Output:</b> working artifact có thể tiếp tục chỉnh và export. Review/export có thể tái dùng ý tưởng UC-008; policy Accept/Reject cho import còn cần xác định.</p>
+            <span class="tag open">Preservation và acceptance khi import</span>
+          </li>
+        </ol>
+        <div class="branches">
+          <div class="branch"><h3>Nhánh đã ghi: import/preservation không đủ</h3><p>Hiển thị giới hạn thay vì coi import là thành công hoàn toàn. Ví dụ giả định: một phần bố cục không được giữ như artifact gốc; mức nào là failure chưa chốt.</p><p><span class="tag proposed">Recovery để thảo luận</span> Dừng để đổi input hoặc quay lại công cụ gốc. Không mặc định được tiếp tục với bản mất fidelity và không tự chuyển file sang content source.</p></div>
+          <div class="questions"><h3>Câu hỏi review</h3><ul><li><b>P3-Q01:</b> Format, properties và mức preservation nào được công bố hỗ trợ?</li><li><b>P3-Q02:</b> Khi fidelity không đủ, chặn import hay cho review bản suy giảm? Khôi phục về đâu nếu chưa có working state?</li></ul><p>R-005/R-022/R-023/R-031; A-011/A-012. Cần chốt trước implementation capability thật; không chặn storyboard.</p></div>
+        </div>
+        <a class="next-story" href="#uc-005">Nếu user cần sửa trực tiếp → S2</a>
+      </section>
+
+      <section id="uc-005" class="story" aria-labelledby="s2-title">
+        <div class="story-heading"><div><p class="eyebrow">S2 · UC-005 · DRAFT / LATER</p><h2 id="s2-title">Một correction nhỏ bằng thao tác trực tiếp</h2></div><span class="tag recorded">D-015 · Không xây editor V1</span></div>
+        <p><b>Actor:</b> ACT-001. <b>Mục tiêu:</b> sửa trực tiếp một số nội dung/thuộc tính. <b>Precondition:</b> có working presentation và editor/canvas hỗ trợ operation đó. Hiện prototype V1 không có editor này.</p>
+        <p class="trace">UC-005: select → direct edit → preview. R-014/R-015/R-016/R-019/R-029/R-031. Ví dụ sửa tiêu đề dưới đây chỉ là đề xuất để hình dung; không chốt object types hoặc toolset.</p>
+        <ol class="frames three">
+          <li class="frame"><div class="frame-title"><b>01</b><h3>Chọn content/object</h3></div>
+            <div class="wire"><div class="wire-top">WORKING → SELECTED</div><div class="paper-mini"><div class="selection">Báo cáo CLB<span class="handle h1"></span><span class="handle h2"></span><span class="handle h3"></span><span class="handle h4"></span></div><span class="text-line"></span><span class="text-line short"></span></div><small class="wire-caption">Khung chọn chỉ là hình, không kéo/sửa được.</small></div>
+            <p>User xác định phần muốn sửa. Scope selection cần phân biệt với deck-level AI refinement.</p><span class="tag proposed">Ví dụ chọn text title</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>02</b><h3>Sửa trực tiếp</h3></div>
+            <div class="wire"><div class="wire-top">SELECTED → MANUAL MODIFICATION</div><div class="paper-mini"><div class="selection revised">Báo cáo câu lạc bộ<span class="caret" aria-hidden="true"></span></div><span class="text-line"></span><span class="text-line short"></span></div><div class="wire-note">Không gửi prompt AI cho correction minh họa này.</div></div>
+            <p>Thay nội dung theo operation được công bố hỗ trợ. Không tự bổ sung toolbar, resize, drag/drop hoặc formatting như requirements đã duyệt.</p><span class="tag open">Tập operation và cách commit edit</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>03</b><h3>Xem lại state mới</h3></div>
+            <div class="wire"><div class="wire-top">MODIFIED → PREVIEW</div><div class="paper-mini"><strong>Báo cáo câu lạc bộ</strong><span class="text-line"></span><span class="text-line short"></span></div><div class="ghost-button">Tiếp tục review trong preview chung</div></div>
+            <p><b>Output:</b> presentation phản ánh manual modification. Có thể tiếp tục review/export theo UC-008; chưa quy định auto-accept manual edits.</p><span class="tag proposed">Dùng chung vùng preview</span>
+          </li>
+        </ol>
+        <div class="branches">
+          <div class="branch"><h3>Nhánh đã ghi: operation không được hỗ trợ</h3><div class="wire-note">“Thao tác này nằm ngoài tập direct editing được hỗ trợ.”</div><p>Chuyển sang AI nếu yêu cầu nằm trong capability, hoặc external tool. Với V1, PPTX editable là hướng handoff để chỉnh sâu bên ngoài (D-015). Không khẳng định AI V1 hỗ trợ sửa imported artifact.</p><p><span class="tag open">Technical failure</span> R-031 yêu cầu bảo vệ usable state; chi tiết revert/commit/Undo cho manual edit chưa được mô tả. Không vẽ full history như capability đã chốt.</p></div>
+          <div class="questions"><h3>Câu hỏi review</h3><ul><li><b>P3-Q03:</b> Những correction nào đáng có trong lightweight editor? Object types và operation tối thiểu?</li><li><b>P3-Q04:</b> Edit được áp dụng khi nào? Có cần Accept riêng, cách hủy và trạng thái phục hồi nào?</li></ul><p>R-015/R-016/R-031; A-010. Cần baseline khi mở capability; hiện chỉ ghi nhận ý kiến qua storyboard.</p></div>
+        </div>
+        <a class="next-story" href="#uc-006-assets">Nếu correction liên quan asset → S3</a>
+      </section>
+
+      <section id="uc-006-assets" class="story" aria-labelledby="s3-title">
+        <div class="story-heading"><div><p class="eyebrow">S3 · UC-006 · V1 PARTIAL / ASSETS DEFERRED</p><h2 id="s3-title">Khi yêu cầu vượt sang image và asset</h2></div><span class="tag recorded">D-024 · L-001/L-002</span></div>
+        <p><b>Actor:</b> ACT-001 / AI trong operation. <b>Precondition:</b> có presentation state và operation nằm trong capability supported. Thêm/bớt/reorder slide qua AI đã có ở C3/F6/F7; storyboard này chỉ bổ sung phần assets.</p>
+        <p class="trace">UC-006; R-014/R-017/R-018/R-019/R-034. Image understanding, assets, embedded-image reuse và AI-generated visuals chưa mở trong first V1. Không promote requirements Proposed/Product thành V1 chỉ vì được link ở UC-006.</p>
+        <ol class="frames three">
+          <li class="frame"><div class="frame-title"><b>01</b><h3>User nêu nhu cầu visual</h3></div>
+            <div class="wire"><div class="wire-top">WORKING DECK · VÍ DỤ YÊU CẦU</div><div class="paper-mini"><strong>Thư viện sẻ chia</strong><div class="asset-slot">Vị trí ảnh minh họa<br><small>Placeholder, không có image thật</small></div></div><div class="bubble">“Dùng ảnh trong tài liệu cho slide này.”</div></div>
+            <p>Ví dụ thứ hai: “Tạo một visual mới.” Hai nhu cầu gắn với R-017/R-018 nhưng không tự tạo obligation V1.</p><span class="tag proposed">Yêu cầu và vị trí ảnh minh họa</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>02</b><h3>Nói rõ boundary hiện tại</h3></div>
+            <div class="wire"><div class="wire-top">REQUEST → DEFERRED / UNSUPPORTED</div><div class="notice-icon" aria-hidden="true">!</div><strong>Chưa hỗ trợ asset trong V1</strong><p class="wire-note">Không extract/reuse embedded images, không giả vờ đã tạo hoặc đặt ảnh vào slide.</p></div>
+            <p>UC-006 yêu cầu behavior rõ khi operation ngoài boundary. Cách diễn đạt thông báo này là đề xuất prototype.</p><span class="tag core">Boundary hiện hành</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>03</b><h3>Tiếp tục với khả năng hiện có</h3></div>
+            <div class="wire"><div class="wire-top">DECK HIỆN CÓ → LỰA CHỌN TIẾP</div><div class="route">A · Tiếp tục chỉnh nội dung/cấu trúc qua AI</div><div class="route">B · Review/Accept → PPTX → chỉnh bên ngoài</div><small class="wire-caption">Không biến asset request thành một operation đã thành công.</small></div>
+            <p>Đề xuất giữ deck đang dùng và cho user chọn bước tiếp theo, dựa trên recoverability và D-015. Không tự Accept hoặc export khi user yêu cầu ảnh.</p><span class="tag proposed">Fallback UX để review</span>
+          </li>
+        </ol>
+        <div class="branches">
+          <div class="branch"><h3>Nếu assets được mở sau này — luồng còn để trống</h3><div class="future-flow"><span>Hiểu role / nhu cầu</span><b>→</b><span>Asset supported?<br><small>chưa baseline</small></span><b>→</b><span>Reuse/acquire/generate?<br><small>chưa chọn giải pháp</small></span><b>→</b><span>Preview / review</span></div><p>Đây là các điểm cần học của L-001/L-002, không phải flow đã được phê duyệt. Khi asset không xử lý được: cần xác định feedback, thay input và recovery; chưa mô phỏng thành công giả cho capability deferred.</p></div>
+          <div class="questions"><h3>Câu hỏi review</h3><ul><li><b>P3-Q05:</b> Nhu cầu nào xuất hiện thực tế: reuse ảnh của user, embedded image, hay tạo visual mới?</li><li><b>P3-Q06:</b> Role, type, scope, attribution và behavior khi asset fail sẽ được định nghĩa ra sao?</li></ul><p>R-017/R-018; L-001/L-002. R-018 còn wording “supporting/optional cho V1 quality”, trong khi UC-006 và learning records giữ deferred. Không dùng wording đó để tự mở scope.</p></div>
+        </div>
+        <a class="next-story" href="#uc-007">Nếu artifact dùng để tham khảo → S4</a>
+      </section>
+
+      <section id="uc-007" class="story" aria-labelledby="s4-title">
+        <div class="story-heading"><div><p class="eyebrow">S4 · UC-007 · DRAFT / LATER / EXPLORATORY</p><h2 id="s4-title">Tham khảo một deck, slide hoặc template</h2></div><span class="tag recorded">D-007 · Role theo intent</span></div>
+        <p><b>Actor:</b> ACT-001. <b>Mục tiêu:</b> tham khảo content, structure hoặc visual. <b>Precondition:</b> reference type supported và intended role được hiểu đúng. Không suy ra role chỉ từ extension.</p>
+        <p class="trace">UC-007; R-003/R-004/R-010/R-017/R-024. Reference khác factual source và working artifact; chưa có library, style picker, template engine hoặc copy-exactly guarantee.</p>
+        <ol class="frames four">
+          <li class="frame"><div class="frame-title"><b>01</b><h3>Nhận artifact và ý định</h3></div>
+            <div class="wire"><div class="wire-top">REFERENCE RECEIVED</div><div class="mini-deck"><div class="mini-slide"><i></i><i></i><i></i></div><span>Deck / slide / template mẫu</span></div><div class="bubble">“Tôi muốn tham khảo tài liệu này.”</div></div>
+            <p>Chưa đủ để biết muốn lấy facts, tiếp tục chỉnh artifact hay chỉ tham khảo một khía cạnh.</p><span class="tag proposed">Artifact và lời yêu cầu mẫu</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>02</b><h3>Làm rõ role nếu cần</h3></div>
+            <div class="wire"><div class="wire-top">ROLE UNCLEAR → CLARIFIED</div><strong>Muốn tham khảo điều gì?</strong><div class="role-options"><span>Nội dung</span><span class="chosen">Cấu trúc · ví dụ</span><span>Cách trình bày</span></div><div class="bubble">“Tham khảo cách sắp xếp, không sao chép số liệu.”</div></div>
+            <p>Role rõ thì không cần hỏi lại. Các nhãn lựa chọn là đề xuất, không hard-code file type hoặc bắt user chọn theo checklist.</p><span class="tag proposed">Một cách hỏi clarification</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>03</b><h3>Dùng trong operation</h3></div>
+            <div class="wire"><div class="wire-top">APPLYING REFERENCE · LATER</div><div class="route">Reference: cấu trúc</div><div class="route">Intent + active constraints</div><div class="route">Generation hoặc refinement</div><small class="wire-caption">Reference không tự thay facts/constraints của user.</small></div>
+            <p>Ví dụ tham khảo thứ tự phần, không coi reference là source factual. Cách giải quyết conflict giữa reference và constraints cần làm rõ.</p><span class="tag open">Supported fidelity / conflict policy</span>
+          </li>
+          <li class="frame"><div class="frame-title"><b>04</b><h3>Preview mức đã áp dụng</h3></div>
+            <div class="wire"><div class="wire-top">RESULT → REVIEW</div><div class="compare"><div class="mini-slide"><i></i><i></i><i></i><small>Reference</small></div><span>↔</span><div class="mini-slide result"><i></i><i></i><i></i><small>Result</small></div></div><div class="wire-note">Đề xuất ghi rõ phần đã tham khảo và phần không thể đáp ứng.</div></div>
+            <p><b>Output:</b> presentation phản ánh reference trong capability supported. So sánh song song chỉ là ý tưởng review, không guarantee sao chép layout/style.</p><span class="tag proposed">Tái dùng preview + disclosure</span>
+          </li>
+        </ol>
+        <div class="branches">
+          <div class="branch"><h3>Nhánh thay thế và khoảng trống</h3><p><b>Theo UC:</b> role chưa rõ → clarification; role rõ → dùng trong generation/refinement. Nếu intent thực tế là factual source hoặc working artifact, cần phân biệt với UC-002/003; không âm thầm đổi vai trò.</p><p><span class="tag proposed">Processing failure</span> Minh họa thông báo “Chưa thể áp dụng reference”; quay lại làm rõ intent hoặc chọn reference phù hợp. Requirement chưa mô tả recovery chi tiết, không khẳng định đã có retry/preservation policy cho reference.</p></div>
+          <div class="questions"><h3>Câu hỏi review</h3><ul><li><b>P3-Q07:</b> Những reference types/roles nào cần support? “Phản ánh reference” đạt tới mức nào?</li><li><b>P3-Q08:</b> Reference trái active constraints hoặc không xử lý được thì hỏi, bỏ phần nào hay dừng operation?</li></ul><p>R-010/R-024; D-007; A-014. Câu hỏi reopen V1 trong UC-007 chưa thay scope Later hiện tại.</p></div>
+        </div>
+        <a class="next-story" href="#review">Tổng hợp câu hỏi cho team →</a>
+      </section>
+    </div>
+
+    <section id="review" class="review-summary" aria-labelledby="review-title">
+      <p class="eyebrow">REVIEW CÙNG TEAM</p><h2 id="review-title">Tám Use Cases đã có representation</h2>
+      <p>UC-001/002/004/008 và structure UC-006 dùng interactive mock V1. UC-003/005/007 và assets UC-006 dùng storyboard ở đây. S1–S4 có thể chia sẻ preview/refinement/review về mặt ý tưởng, nhưng không tự mở capability imported editing, reference hay assets trong V1.</p>
+      <ol class="review-prompts"><li>Đi qua S1–S4: input đang là source, working artifact, reference hay asset?</li><li>Ở mỗi nhánh hạn chế, team mong user làm gì tiếp? Đánh dấu phần tài liệu chưa quy định.</li><li>Ghi feedback theo <b>Scenario — observation — UC/R/D — đề xuất — trạng thái câu hỏi</b>. Chưa có quyết định sản phẩm mới chỉ vì storyboard được duyệt.</li></ol>
+      <p>Trang này không lưu feedback. Scenario guide, Coverage Matrix và ambiguity register nằm trong <a href="README.md">README</a>. Artifact này là supporting input cho Architecture research; không chọn Architecture hoặc production framework.</p>
+      <a class="next-story" href="#top">↑ Về danh sách storyboard</a>
+    </section>
+  </main>
+  <footer>DeckAgent · W-027 exploratory V0 · Tất cả khung minh họa là static storyboard. Snapshot đối chiếu: 2026-09-27T06:17:21.304770Z.</footer>
+</body>
+</html>
