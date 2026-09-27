@@ -9,12 +9,14 @@
     let previous = null;
     return {
       view: () => copy({ working, candidate, accepted }),
-      propose(deck) { previous = copy(working); candidate = copy(deck); },
+      propose(deck) { candidate = copy(deck); },
       validate() {
         if (!candidate) throw new Error('No candidate to validate');
+        previous = copy(working);
         working = candidate;
         candidate = null;
       },
+      fail() { candidate = null; },
       accept() {
         if (!working || candidate) throw new Error('No validated working state');
         accepted = copy(working);

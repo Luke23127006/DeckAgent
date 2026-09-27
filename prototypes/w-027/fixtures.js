@@ -19,12 +19,18 @@
     { key: 'add', label: 'Thêm nội dung', prompt: 'Thêm một slide khuyến nghị: hỏi người tham gia về lý do trả trễ. Cho phép tăng thêm một slide.', aliases: ['them', 'khuyen nghi'], summary: 'Thêm khuyến nghị do user cung cấp; đánh dấu nội dung bổ sung, không coi là kết luận từ nguồn.' },
     { key: 'regenerate', label: 'Phương án khác', prompt: 'Tạo lại toàn deck với một phương án trình bày khác.', aliases: ['tao lai', 'phuong an', 'regenerate'], summary: 'Đổi phương án trình bày toàn deck; giữ số liệu, audience, ngôn ngữ và độ dài hiện tại.' }
   ];
+  const alternatives = [
+    { key: 'vague', label: 'Yêu cầu mơ hồ', prompt: 'Rút gọn presentation giúp tôi.' },
+    { key: 'conflict', label: 'Constraint xung đột', prompt: 'Thêm một slide khuyến nghị, nhưng giữ nguyên số slide.' },
+    { key: 'release', label: 'Hủy giới hạn độ dài', prompt: 'Hủy giới hạn số slide, giữ các yêu cầu còn lại.', summary: 'Đã hủy constraint độ dài theo yêu cầu. Nội dung chưa đổi; các yêu cầu khác vẫn giữ.' },
+    { key: 'targeted', label: 'Nhắm slide kết quả', prompt: 'Làm rõ slide kết quả, giữ nguyên số liệu.', summary: 'Best effort: sửa tiêu đề slide kết quả và câu hỏi ở slide thảo luận. Không giới hạn thay đổi vào một slide; số liệu và các active constraints còn giữ.' }
+  ];
   const clone = value => JSON.parse(JSON.stringify(value));
   const fold = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
   function findAction(text) {
     const normalized = fold(text.trim());
     // Intentionally narrow: matching a demo example is not natural-language understanding.
-    return actions.find(a => fold(a.prompt) === normalized) || null;
+    return [...actions, ...alternatives].find(a => fold(a.prompt) === normalized) || null;
   }
   function createDeck(id, brief, constraints, sourceLabel) {
     return { id, title: 'Thư viện sẻ chia', brief, constraints: { ...constraints, language: 'Tiếng Việt', length: '6 slide', tone: 'Gần gũi' }, sourceLabel, theme: 'blue', slides: clone(slides), change: 'Bản nháp đầu tiên · 6 slide minh họa' };
@@ -65,7 +71,14 @@
       next.constraints.length = `${next.slides.length} slide`;
     }
     if (action.key === 'regenerate') next.theme = next.theme === 'blue' ? 'sage' : 'blue';
+    if (action.key === 'release') delete next.constraints.length;
+    if (action.key === 'targeted') {
+      next.slides.find(s => s.key === 'results').title = '90 đúng hạn.\n30 lượt trả trễ.';
+      const close = next.slides.find(s => s.key === 'close');
+      close.title = 'Cùng tìm hiểu\nlý do trả trễ.';
+      // Keep gap disclosures, facts and constraints from the current working deck.
+    }
     return next;
   }
-  window.DeckFixtures = { prompt, source, actions, findAction, createDeck, refine };
+  window.DeckFixtures = { prompt, source, actions, alternatives, findAction, createDeck, refine };
 })();

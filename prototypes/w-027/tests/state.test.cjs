@@ -42,3 +42,21 @@ test('reviewing and rejecting a refinement preserves the accepted export and its
   exported.deck.slides[0].title = 'modified outside session';
   assert.equal(session.exportAccepted('PDF').deck.slides[0].title, '120 lượt mượn');
 });
+
+test('failed candidate preserves working, accepted, constraints and the previous reject destination', () => {
+  const session = createSession();
+  session.propose({ id: 'v1', constraints: { length: '6 slide' } }); session.validate();
+  session.propose({ id: 'v2', constraints: { length: '4 slide' } }); session.validate();
+  session.propose({ id: 'v3', constraints: { length: '99 slide' } });
+  assert.throws(() => session.accept(), /validated/i);
+  session.fail();
+  assert.equal(session.view().candidate, null);
+  assert.equal(session.view().working.id, 'v2');
+  assert.equal(session.view().working.constraints.length, '4 slide');
+  assert.equal(session.view().accepted, null);
+  session.reject();
+  assert.equal(session.view().working.id, 'v1');
+  session.accept();
+  session.propose({ id: 'v4', constraints: { length: '99 slide' } }); session.fail();
+  assert.equal(session.exportAccepted('PDF').deck.id, 'v1');
+});

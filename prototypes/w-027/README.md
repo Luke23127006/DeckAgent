@@ -1,6 +1,6 @@
-# DeckAgent exploratory V0 — core journey review
+# DeckAgent exploratory V0 — Phase 2 review
 
-**Checkpoint Phase 1, chưa hoàn thành toàn bộ W-027.** Theo yêu cầu task owner, dừng để review core interaction trước khi triển khai đầy đủ failure scenarios và Later storyboards.
+**Đã mở rộng core journey với các tình huống Phase 2. W-027 chưa Done:** Later storyboards của Phase 3 vẫn còn lại. Các tình huống dưới đây là mô phỏng để quan sát behavior và thảo luận UX; chưa chứng minh AI, validation hoặc output quality thật.
 
 Prototype độc lập, dùng HTML/CSS/JavaScript thuần. Không có backend, AI, parser, persistence hay export engine thật. Layout và state simulation có thể thay đổi sau review; không phải Architecture Decision.
 
@@ -21,12 +21,12 @@ Mở <http://127.0.0.1:8027>. Dừng server bằng Ctrl+C. Đây chỉ là stati
 | Phần | Hiện trạng |
 | --- | --- |
 | Form, navigation, preview, slide overview, Accept/Reject | Interactive trong browser |
-| AI generation/refinement | Deck dựng sẵn và bảy biến thể; chỉ nhận nguyên câu refinement mẫu |
+| AI generation/refinement | Deck dựng sẵn; bảy refinement cơ bản và bốn câu mẫu clarification/constraint/best effort; chỉ nhận nguyên câu mẫu |
 | Brief | Được lưu trong phiên để thử thao tác; deck luôn về Thư viện sẻ chia; không sinh nội dung theo topic tùy ý |
 | Constraints | Audience được lấy bằng heuristic hoặc clarification; language/tone/length khởi đầu cố định theo fixture, hiển thị trong workspace |
 | Source | Optional pasted text hoặc một file. File chỉ lấy tên/extension, không đọc bytes; pasted source không được phân tích. Nguồn mẫu khớp dữ liệu deck; source tùy ý có disclosure rõ |
-| Validation | Một bước chờ rồi pass giả lập; chưa có detector hoặc quality rubric tự động |
-| PPTX/PDF export | Success UI mô phỏng từ accepted deck; không tạo PPTX/PDF giả có extension sai |
+| Validation | Pass hoặc chặn candidate sai số liệu, mất constraint, slide rỗng theo bộ chọn demo; chưa có detector hoặc quality rubric tự động |
+| PPTX/PDF export | Success, timeout, invalid output, degradation disclosure và retry mô phỏng từ accepted deck; không tạo PPTX/PDF thật |
 | Download | Biên nhận `.json` ghi format được chọn, accepted version và nội dung minh họa; ghi rõ không phải PPTX/PDF |
 | Persistence | Trong memory của tab; reload/reset mất state theo giả định demo, không phải quyết định chi tiết về session lifecycle của product |
 
@@ -53,7 +53,7 @@ Evidence: UC-001/008; R-006/R-019/R-020/R-033; D-026.
 4. Kiểm tra audience trong **Yêu cầu đang áp dụng** và attribution dưới preview.
 5. Có thể thử chọn một file `.txt/.md/.pdf/.docx/.pptx`. V0 chỉ biểu diễn việc chọn source, không ingest file đó.
 
-Evidence: UC-001/002; R-001/R-002/R-003/R-004; D-024. Source gaps và processing failures chuyên biệt chưa được mô phỏng ở checkpoint này.
+Evidence: UC-001/002; R-001/R-002/R-003/R-004; D-024. Source gaps và processing failures được mở bằng các scenario F1–F3 bên dưới.
 
 ### C3 — Nhiều lượt refinement và Reject
 
@@ -83,20 +83,44 @@ Evidence invariant: R-020/R-025/R-028. Interaction cho phép export bản accept
 
 Tình huống này chưa có semantics thống nhất giữa D-025/R-031 và derived diagrams. Không coi behavior V0 là product decision.
 
-## Use Case Coverage Matrix tại checkpoint Phase 1
+## Phase 2 — Scenario guide
 
-| UC | Scope | Đã có | Còn lại sau core review |
+Mở **Tình huống demo · Phase 2** ngay dưới header. Bộ chọn chỉ điều khiển kết quả giả lập của lần thao tác tiếp theo; mỗi lựa chọn lỗi tự về **Thông thường/Thành công** sau khi được dùng. Muốn lặp lại lỗi, chọn lại. Retry thành công ở lần kế tiếp là kịch bản dựng sẵn, không phải cam kết retry policy của product. Nút **Bắt đầu lại** cũng reset các bộ chọn.
+
+Các nghĩa vụ giữ state, constraints, nguồn và output theo UC/REQ/D là đã xác nhận. Dialog, bộ chọn, vị trí thông báo, nút retry/continue và các fixture cụ thể là **đề xuất prototype**.
+
+| Scenario | Cách chạy | Kết quả và recovery cần quan sát | Evidence |
 | --- | --- | --- | --- |
-| UC-001 | V1 Core | C1/C2: prompt, clarification, generation, preview | Generation failure, validation failure |
-| UC-002 | V1 Core | C2: optional source selection, disclosure mock processing, source fixture | Source gap, trust-boundary scenario, unprocessable source |
-| UC-003 | Later | Chỉ ghi nhận trong matrix này | Storyboard import → working artifact → refine → export, preservation limitation |
-| UC-004 | V1 Core | C3/C5: bảy refinement examples, multiple rounds, constraints, Accept/Reject | Refinement/validation failure, slide-targeted best-effort scenario |
-| UC-005 | Later | Chỉ ghi nhận trong matrix này | Storyboard select → direct edit → preview, unsupported fallback |
-| UC-006 | V1 Partial | C3: thêm/bớt/reorder qua AI giả lập | Assets deferred representation; failures theo UC-004 |
-| UC-007 | Later/Exploratory | Chỉ ghi nhận trong matrix này | Storyboard reference role → generation/refinement → preview |
-| UC-008 | V1 Core | C1/C4: accepted-state PPTX/PDF simulation, JSON receipt | Export failure/invalid output, degradation, retry |
+| F1 — Source gap | Brief mẫu → Dán văn bản → nguồn mẫu. Chọn Source **Thiếu dữ liệu chi phí**, rồi tạo draft | Tình huống mẫu cần đánh giá chi phí nhưng nguồn không có. Quay lại sửa nguồn/yêu cầu, hoặc tiếp tục với phần thiếu được ghi rõ trong note và slide Giới hạn. Không thêm con số hoặc kết luận chi phí | UC-002; R-007/R-008; D-024 |
+| F2a — Source processing bị gián đoạn | Chọn nguồn mẫu và Source **Xử lý nguồn bị gián đoạn** → tạo draft | Chưa generate, giữ input; sửa nguồn hoặc retry cùng source. Retry thành công giả lập. Không âm thầm bỏ source | UC-002; R-030–R-032 |
+| F2b — Source ngoài boundary | Có một source, chọn **PDF scan ngoài boundary** → tạo draft | Không cung cấp nút retry thành công với scan. Quay lại thay nguồn duy nhất bằng text/source phù hợp; có thể chuyển Dán văn bản và dùng nguồn mẫu. Không mô phỏng OCR | UC-002; D-024 |
+| F3 — Instruction trong source | Có nguồn mẫu, chọn **Có instruction trong source mẫu** → tạo draft → tiếp tục | Dialog cho xem câu nguồn giả lập yêu cầu đổi 120 thành 999. Deck vẫn dùng 120; note phân biệt source với instruction. Đây là minh họa expected boundary, không phải security test của một AI/parser thật | UC-002; R-004/R-007/R-043; BR-008 |
+| F4 — Generation fail | Generation **Lỗi xử lý / timeout** → tạo draft | Operation dừng, không candidate/working/accepted; brief/source còn giữ. Quay lại sửa yêu cầu hoặc thử lại → valid working, export vẫn chờ Accept | UC-001; R-030–R-033 |
+| F5 — Generation validation fail | Generation **Validation: sai số liệu** (dùng nguồn mẫu), hoặc **Validation: slide rỗng** | Hiển thị candidate bị chặn và lý do: 90 bị đổi thành 900, hoặc slide 2 rỗng. Candidate không trở thành working; chưa có gì để Accept/export. Sửa input hoặc retry | UC-001/002; R-007/R-021/R-033; D-028 |
+| F6 — Refinement fail/validation fail | Tạo và Accept v1; rút gọn thành v2 nhưng chưa Accept. Chọn Refinement **timeout**, **mất constraint** hoặc **slide rỗng**; gửi câu mẫu Trang trọng hơn | Working v2, accepted v1 và constraints trước operation giữ nguyên. Timeout không có candidate; validation chặn candidate mới. Giữ yêu cầu trong ô nhập để sửa hoặc retry. Retry sinh working mới, vẫn cần Accept; Reject phục hồi theo A1/A2 | UC-004/006; R-024/R-030–R-033; D-025 |
+| F7 — Clarification, conflict, constraint lifetime | Trong panel refinement mở **Thử clarification & constraint**. Thử lần lượt Yêu cầu mơ hồ, Constraint xung đột, Hủy giới hạn độ dài; gửi từng câu mẫu | Clarify mức rút gọn; yêu cầu thêm slide nhưng giữ số slide phải được user làm rõ trước. Hủy length chỉ bỏ constraint đó. Các lượt khác giữ audience/language/tone; nội dung cũ không đổi khi chỉ hủy constraint. Có thể Cancel/Reject theo assumption | UC-004/006; R-002/R-024; D-025 |
+| F8 — Slide-targeted best effort | Chọn **Nhắm slide kết quả**, gửi yêu cầu; đọc disclosure rồi tiếp tục | Không guarantee locality. Fixture sửa tiêu đề kết quả và slide thảo luận; xem lại toàn deck rồi Accept/Reject. Không mở direct editing | UC-004; R-011/R-013; D-014/D-025 |
+| F9 — Export failure và retry | Có accepted và có thể có pending working. Mở export; chọn timeout hoặc invalid output rồi PPTX/PDF | Không có download/biên nhận thành công khi fail. Retry giữ đúng format và accepted version của lần xuất bị lỗi; không regenerate. Có thể chọn format khác. JSON receipt thành công phải khớp accepted, không lấy pending result | UC-008; R-020/R-025/R-027/R-028/R-031/R-032; D-026; DOC-004 AC-09 |
+| F10 — Format limitation/degradation | Export → **Khác biệt định dạng được thông báo** → PPTX hoặc PDF | PPTX: ví dụ giả định font thay thế có thể đổi xuống dòng; không cho phép severe clipping. PDF: static capability, không chỉnh như slide objects. User chọn tiếp tục hoặc format khác. Receipt ghi disclosure đã xác nhận; chưa có compatibility check thật | UC-008; R-026/R-027; D-009/D-026/D-028 |
 
-Không đánh dấu W-027 Done: các UC Later chưa có storyboard và Phase 2 còn thiếu. Checkpoint này cố ý dành cho review core journey trước khi mở rộng, theo chỉ dẫn của task owner.
+**Đọc state:** progress dialog và bộ chọn demo hiển thị `candidate / working / accepted`. Khi lỗi, dialog giữ cause và state sau operation. Candidate thất bại bị loại; không có đường Accept candidate lỗi. IDs có thể nhảy số do các lần thử thất bại; đây là nhãn quan sát prototype, không phải version-history feature.
+
+**Ranh giới recovery:** lỗi kỹ thuật giữ working trước thao tác và accepted độc lập, kể cả khi working chưa Accept. User Reject là lựa chọn khác: quay về accepted hoặc fallback trước lần Accept đầu theo A1. Không tự đồng nhất failure với Reject.
+
+## Use Case Coverage Matrix tại checkpoint Phase 2
+
+| UC | Scope | Đã có | Còn lại / giới hạn |
+| --- | --- | --- | --- |
+| UC-001 | V1 Core | C1/C2 + F4/F5: prompt, clarification, generation, preview, failure/validation/retry | Các kết quả đều fixture; không chứng minh generation quality |
+| UC-002 | V1 Core | C2 + F1–F3/F5: source, gaps, source/instruction distinction, processing failure, scan boundary/replacement | Không parse hoặc kiểm tra file thật; chỉ một source/deck |
+| UC-003 | Later | Chỉ ghi nhận trong matrix này | Storyboard import → working artifact → refine → export, preservation limitation |
+| UC-004 | V1 Core | C3/C5 + F6–F8: repeated refinement, constraints, clarification/conflict/cancellation, Accept/Reject, failures, best effort | Acceptance/constraint lifetime assumptions cần team review; chưa có AI tự do |
+| UC-005 | Later | Chỉ ghi nhận trong matrix này | Storyboard select → direct edit → preview, unsupported fallback |
+| UC-006 | V1 Partial | C3 + F6/F7: thêm/bớt/reorder qua AI giả lập, failures/recovery và length conflict dùng chung flow | Assets deferred representation ở Phase 3 |
+| UC-007 | Later/Exploratory | Chỉ ghi nhận trong matrix này | Storyboard reference role → generation/refinement → preview |
+| UC-008 | V1 Core | C1/C4 + F9/F10: accepted-state PPTX/PDF, failure/invalid output, degradation disclosure, retry và JSON receipt | Không có export engine/file PPTX/PDF thật; không chứng minh output fidelity |
+
+Không đánh dấu W-027 Done: UC Later và assets deferred chưa có storyboard. Phase 3 chưa được triển khai trong lần mở rộng Phase 2 này.
 
 ## Prototype assumptions và câu hỏi mở
 
@@ -108,6 +132,11 @@ Không đánh dấu W-027 Done: các UC Later chưa có storyboard và Phase 2 c
 | A4 | Audience thiếu thì clarification theo heuristic từ khóa; các trường khác theo fixture | Khi nào cần hỏi, khi nào nên tạo draft trước? |
 | A5 | Preview + refinement cùng workspace; thumbnails chỉ navigation | Panel cố định hay chỉ mở khi refine? |
 | A6 | Một mock deck duy nhất; matching nguyên câu mẫu | Scenario nào nên bổ sung sau khi team hiểu core flow? |
+| A7 | Failed candidate bị loại; technical failure giữ prior working và accepted riêng biệt | Cần hiển thị candidate bị chặn chi tiết đến đâu? Những lỗi nào cho phép sửa yêu cầu, retry hoặc phải đổi input? F4–F6 |
+| A8 | Source gap có hai lựa chọn sửa input hoặc tiếp tục có disclosure; nguồn scan phải thay | Cách trình bày attribution/gaps có đủ rõ? Có cần thêm luồng user bổ sung bằng chứng không? F1–F3; R-008 |
+| A9 | Bộ chọn chỉ gây lỗi một lần; retry kế tiếp thành công | Đây chỉ là cơ chế demo. Timeout, retry policy và automatic repair chưa quyết định; không được suy ra từ V0. F4–F6/F9 |
+| A10 | Conflict được hỏi bằng lựa chọn rõ; cancel constraint là câu mẫu; targeted request có confirm trước chạy | Team muốn clarification ở bước nào, disclosure thế nào, và có cần confirm mọi targeted request không? F7/F8 |
+| A11 | Degradation có disclosure và nút tiếp tục; severe clipping vẫn bị coi là failure | Loại degradation nào cần chặn hoặc chỉ thông báo? Cần evidence từ artifact thật, chưa baseline app compatibility. F10 |
 
 Feedback chưa có từ team. Ghi sau walkthrough theo mẫu: **Scenario — observation — UC/R/D — idea — Open / thử phương án / team đã quyết định**. Chấp nhận prototype không tự phê duyệt các giả định thành product rules.
 
@@ -123,11 +152,17 @@ node --check prototypes/w-027/fixtures.js
 
 State tests bảo vệ validation/acceptance, accepted export, reject và isolation của exported receipt. Chạy test bằng lệnh trực tiếp để không cần test-runner child process.
 
+State regression của Phase 2 kiểm tra failed candidate không làm mất prior working, constraints, accepted hoặc đích Reject trước lần Accept đầu.
+
 Đã chạy walkthrough tự động trên Chromium: preview/navigation, bảy refinement mẫu, nhiều lượt chỉnh, Accept/Reject, export PPTX/PDF từ accepted state khi có pending result, đọc biên nhận JSON, source/clarification và viewport mobile 390px. Không ghi nhận JavaScript error hoặc horizontal overflow toàn trang ở viewport mobile đã kiểm tra. Đây là kiểm tra prototype, không chứng minh quality của generation, validation hoặc export thật.
 
 Nếu máy có Python Playwright và Chromium, có thể chạy lại bằng `python -B prototypes/w-027/tests/browser_smoke.py`. Tool này chỉ phục vụ kiểm tra, không cần để mở prototype; sẽ ghi lại ảnh trong `review/`.
 
+Walkthrough Phase 2: `python -B prototypes/w-027/tests/phase2_smoke.py`. Kiểm tra F1–F10, failure state trước/sau Accept, request retention, retry export từ đúng accepted version khi có pending result, clarification/constraint cancellation và best-effort disclosure. Đây không phải bộ test production.
+
 Ảnh review: [Màn bắt đầu](review/01-start.png) · [Workspace](review/02-workspace.png) · [Export](review/03-export.png) · [Mobile](review/04-mobile-workspace.png).
+
+Ảnh Phase 2: [Generation failure](review/06-generation-failure.png) · [Source gap](review/07-source-gap.png) · [Validation failure](review/08-validation-failure.png) · [Mobile failure](review/09-mobile-failure.png) · [Export failure](review/10-export-failure.png).
 
 ## Context và inspiration
 
