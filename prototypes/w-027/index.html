@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DeckAgent · Exploratory V0</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="state.js" defer></script>
+  <script src="fixtures.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="demo-strip"><span class="status-dot"></span> W-027 · EXPLORATORY V0 <span class="strip-divider">/</span> AI, xử lý source và export được mô phỏng.</div>
+  <header class="app-header">
+    <a class="brand" href="#" id="brand" aria-label="DeckAgent — bắt đầu"><span class="brand-mark" aria-hidden="true">d<span>↗</span></span>DeckAgent<span class="version">V0</span></a>
+    <nav aria-label="Điều hướng prototype"><button class="quiet" id="guide-open">Hướng dẫn demo <span aria-hidden="true">↗</span></button><button class="quiet" id="reset">Bắt đầu lại</button></nav>
+  </header>
+
+  <main>
+    <section id="create-view" class="create-view">
+      <div class="intro">
+        <div class="eyebrow"><span class="small-star">✳</span> TỪ Ý TƯỞNG ĐẾN PRESENTATION</div>
+        <h1>Bạn có câu chuyện.<br><span>Cùng đưa lên slide.</span></h1>
+        <p>Mô tả điều bạn muốn truyền đạt. Xem bản nháp,<br class="desktop-break"> chỉnh cùng AI, rồi chọn kết quả phù hợp.</p>
+        <div class="journey"><span><b>01</b> Nêu yêu cầu</span><i>→</i><span><b>02</b> Xem & chỉnh</span><i>→</i><span><b>03</b> Xuất bản đã chọn</span></div>
+      </div>
+      <div class="creation-grid">
+        <form id="create-form" class="brief-card">
+          <div class="card-heading"><h2>Bạn muốn trình bày điều gì?</h2><span class="pill">Bản thử tương tác</span></div>
+          <label class="sr-only" for="brief">Yêu cầu presentation</label>
+          <textarea id="brief" rows="5" placeholder="Ví dụ: Báo cáo thử nghiệm Thư viện sẻ chia cho ban chủ nhiệm câu lạc bộ…" required maxlength="2000"></textarea>
+          <button type="button" id="sample-brief" class="sample-link">↗ Điền brief mẫu để bắt đầu</button>
+          <div class="source-section">
+            <div class="source-heading"><label for="source-mode">Nguồn nội dung <span>· tùy chọn</span></label><select id="source-mode"><option value="none">Không dùng nguồn</option><option value="paste">Dán văn bản</option><option value="file">Chọn một file</option></select></div>
+            <div id="paste-source" hidden><label class="sr-only" for="source-text">Nội dung nguồn</label><textarea id="source-text" rows="4" maxlength="6000" placeholder="Dán nguồn của bạn hoặc dùng dữ liệu mẫu để xem luồng."></textarea><button type="button" id="sample-source" class="sample-link">Dùng báo cáo nguồn mẫu</button></div>
+            <div id="file-source" class="file-source" hidden><label for="source-file">Chọn source cho luồng demo</label><input id="source-file" type="file" accept=".txt,.md,.markdown,.pdf,.docx,.pptx"><p>TXT/Markdown · PDF có text layer · DOCX · PPTX-as-source. Một file; nội dung và embedded images không được đọc trong V0.</p></div>
+          </div>
+          <div class="demo-note"><span aria-hidden="true">◈</span><p>V0 luôn dùng deck mẫu <strong>Thư viện sẻ chia</strong>. Brief/source của bạn chỉ dùng để thử thao tác; chưa được AI phân tích hay chuyển thành slide.</p></div>
+          <div id="create-feedback" class="feedback" role="status" hidden></div>
+          <button class="primary wide" id="generate" type="submit">Tạo bản nháp <span aria-hidden="true">↗</span></button>
+          <p class="session-note">Chạy trong phiên này · không gửi dữ liệu ra ngoài</p>
+        </form>
+        <aside class="preview-teaser" aria-label="Ví dụ deck trong prototype">
+          <div class="teaser-label"><span>ĐIỂM BẮT ĐẦU CHO BUỔI DEMO</span><span>06 SLIDES</span></div>
+          <div class="teaser-slide"><div class="slide-tag">THƯ VIỆN SẺ CHIA</div><h2>Một cuốn sách.<br>Nhiều kết nối.</h2><p>Nhìn lại thử nghiệm.<br>Mở ra cuộc thảo luận.</p><div class="book-art" aria-hidden="true"><span></span><span></span><span></span></div><span class="teaser-foot">BÁO CÁO THỬ NGHIỆM <b>01 / 06</b></span></div>
+          <div class="teaser-bottom"><div class="mini-metric"><strong>40</strong><span>người tham gia</span></div><div class="mini-metric"><strong>120</strong><span>lượt mượn sách</span></div><div class="mini-metric coral"><strong>4</strong><span>tuần thử nghiệm</span></div></div>
+          <p class="teaser-caption">Một bộ dữ liệu giả lập xuyên suốt để dễ so sánh trước và sau mỗi lần chỉnh.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="workspace" hidden aria-label="Không gian presentation">
+      <div class="workspace-heading"><div><div class="eyebrow">PRESENTATION CỦA BẠN</div><h1>Thư viện sẻ chia <span id="version-tag" class="pill"></span></h1></div><div class="heading-actions"><span id="accepted-label" class="muted"></span><button id="export-open" class="primary" disabled>Xuất presentation ↗</button></div></div>
+      <div class="workspace-grid">
+        <aside class="slide-rail"><div class="rail-heading">CẤU TRÚC DECK <span id="slide-count"></span></div><div id="thumbnails" class="thumbnails"></div><p class="rail-note">Thay đổi cấu trúc bằng yêu cầu AI trong khung bên phải.</p></aside>
+        <section class="preview-workspace" aria-label="Preview">
+          <div class="preview-toolbar"><span id="preview-status" class="state-label"></span><div class="segmented"><button id="single-view" class="active" aria-pressed="true">Từng slide</button><button id="grid-view" aria-pressed="false">Toàn deck</button></div></div>
+          <div id="slide-stage"></div>
+          <div id="slide-navigation" class="slide-navigation"><button id="previous-slide" class="icon-button" aria-label="Slide trước">←</button><span id="position"></span><button id="next-slide" class="icon-button" aria-label="Slide tiếp theo">→</button></div>
+          <div class="review-card"><div><div class="eyebrow" id="review-heading">BẢN NHÁP SẴN SÀNG</div><p id="change-summary"></p></div><div class="review-actions"><button class="secondary" id="reject" hidden>Bỏ lần sửa này</button><button class="primary" id="accept">Chấp nhận bản này ✓</button></div></div>
+          <p class="provenance" id="provenance"></p>
+          <div id="workspace-feedback" class="feedback" role="status" hidden></div>
+        </section>
+        <aside class="refine-panel">
+          <div class="assistant-title"><span class="assistant-icon">✳</span><div><h2>Cùng chỉnh cho đúng ý</h2><p>Refinement ở phạm vi toàn deck</p></div></div>
+          <details class="constraints" open><summary>Yêu cầu đang áp dụng</summary><dl id="constraint-list"></dl></details>
+          <div class="conversation" id="conversation" aria-live="polite"></div>
+          <form id="refine-form"><label for="refine-request">Bạn muốn thay đổi điều gì?</label><textarea id="refine-request" rows="3" maxlength="1000" placeholder="Chọn một gợi ý bên dưới để thử…"></textarea><div id="refinement-examples" class="suggestions"></div><p class="mock-hint">V0 chỉ chạy các câu mẫu. Bấm gợi ý để điền yêu cầu; chưa có AI hiểu prompt tự do.</p><button class="primary wide" id="refine-submit" type="submit">Tạo phương án mới <span>↗</span></button></form>
+          <div class="assumption-note"><b>Giả định đang thử</b><p>Reject về bản đã chấp nhận. Nếu chưa Accept lần nào, về draft hợp lệ ngay trước đó. Nội dung và constraints cùng quay về bản đó.</p><button id="assumptions-open" class="sample-link">Xem các điểm cần team review</button></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="clarify-dialog" aria-labelledby="clarify-title"><form id="clarify-form" class="dialog-body"><div class="dialog-top"><span class="eyebrow">LÀM RÕ YÊU CẦU</span><button type="button" class="icon-button" data-close="clarify-dialog" aria-label="Đóng">×</button></div><span class="large-spark">✳</span><h2 id="clarify-title">Ai sẽ xem presentation này?</h2><p>Audience giúp chọn cách diễn đạt. V0 sẽ ghi nhận câu trả lời để bạn theo dõi qua các lượt chỉnh.</p><label for="audience">Audience</label><input id="audience" placeholder="Ví dụ: Ban chủ nhiệm câu lạc bộ" maxlength="120" required><div class="choice-row"><button type="button" class="secondary" data-audience="Ban chủ nhiệm câu lạc bộ">Ban chủ nhiệm</button><button type="button" class="secondary" data-audience="Người mới tham gia câu lạc bộ">Người mới tham gia</button></div><p class="mock-hint">Trigger demo: brief chưa nêu “audience”, “cho…” hoặc “dành cho…”. Đây là heuristic minh họa.</p><button class="primary wide" type="submit">Tiếp tục tạo draft ↗</button></form></dialog>
+
+  <dialog id="progress-dialog" aria-labelledby="progress-title"><div class="dialog-body progress-body"><div class="orbit" aria-hidden="true">✳</div><div class="eyebrow">ĐANG MÔ PHỎNG</div><h2 id="progress-title">Đang tạo bản nháp</h2><p id="progress-detail" role="status" aria-live="polite"></p><div class="progress-track"><span></span></div><p class="mock-hint">Thời gian hiển thị chỉ phục vụ demo.</p></div></dialog>
+
+  <dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-body"><div class="dialog-top"><span class="eyebrow">MANG CÂU CHUYỆN ĐI XA HƠN</span><button class="icon-button" data-close="export-dialog" aria-label="Đóng">×</button></div><h2 id="export-title">Xuất bản bạn đã chọn.</h2><div id="export-state" class="export-state"></div><p class="mock-hint">Đang mô phỏng export. V0 không tạo file PPTX/PDF thật.</p><div class="format-grid"><button class="format-card" data-export="PPTX"><span class="file-symbol ppt">P</span><strong>PowerPoint</strong><span>PPTX · Editable target</span><small>Tiếp tục chỉnh trong công cụ trình chiếu</small></button><button class="format-card" data-export="PDF"><span class="file-symbol pdf">↧</span><strong>PDF</strong><span>Rendered / static target</span><small>Chia sẻ bản trình bày tĩnh</small></button></div><div id="export-result" class="export-result" role="status" aria-live="polite" hidden></div><button id="download-receipt" class="secondary wide" hidden>Tải biên nhận demo (.json)</button><p class="assumption-inline">Giả định V0: có thể xuất bản accepted ngay cả khi đang xem bản mới chưa Accept. Panel luôn ghi rõ bản được xuất.</p></div></dialog>
+
+  <dialog id="guide-dialog" class="guide-dialog" aria-labelledby="guide-title"><div class="dialog-body"><div class="dialog-top"><span class="eyebrow">DÀNH CHO BUỔI REVIEW</span><button class="icon-button" data-close="guide-dialog" aria-label="Đóng">×</button></div><h2 id="guide-title">Một journey để cùng thử.</h2><p>Checkpoint Phase 1 · review core flow trước khi bổ sung đầy đủ failure scenarios và Later storyboards.</p><ol class="walkthrough"><li>Điền brief mẫu. Có thể thêm nguồn mẫu hoặc thử một brief chưa có audience.</li><li>Tạo draft, xem từng slide và toàn deck. Chấp nhận bản đầu.</li><li>Chọn “Trang trọng hơn”, gửi yêu cầu rồi Accept. Thử “Đổi mạch kể” và Reject.</li><li>Thử “Rút gọn” hoặc “Thêm nội dung” để thay đổi cấu trúc bằng AI giả lập.</li><li>Xuất PPTX/PDF. Kiểm tra phiên bản accepted ghi trong panel; có thể tải biên nhận JSON để đối chiếu.</li></ol><h3>Giả định và câu hỏi mở</h3><ul class="notes-list"><li>Trước lần Accept đầu tiên, Reject về draft hợp lệ trước đó — assumption của prototype.</li><li>Reject phục hồi cả nội dung và constraints của bản được khôi phục — cần team review.</li><li>Khi có bản mới chưa Accept, export vẫn dùng bản accepted, được chỉ rõ trước thao tác.</li><li>Chỉ nguồn mẫu được phản ánh trong nội dung demo. File tùy ý được giữ metadata trong phiên, không đọc/parse.</li><li>Outline review trước generation và layout thay thế còn để khảo sát.</li></ul><h3>Coverage tại checkpoint này</h3><p>UC-001/002/004/008 và phần structure UC-006 có core interaction. UC-003/005/007, assets deferred và đầy đủ failure/recovery variants sẽ mở rộng sau review này; W-027 chưa Done.</p><details><summary>Quan sát state mô phỏng</summary><pre id="state-inspector"></pre></details><p><a href="README.md" target="_blank" rel="noopener">Mở scenario guide & coverage matrix ↗</a></p></div></dialog>
+  <dialog id="reset-dialog" aria-labelledby="reset-title"><div class="dialog-body"><h2 id="reset-title">Bắt đầu lại buổi demo?</h2><p>Presentation và yêu cầu trong phiên này sẽ được xóa. V0 chưa có lưu hoặc mở lại project.</p><div class="review-actions"><button class="secondary" data-close="reset-dialog">Tiếp tục xem</button><button class="primary" id="confirm-reset">Bắt đầu lại</button></div></div></dialog>
+</body>
+</html>
