@@ -105,7 +105,7 @@ the URL but still requires opening it on the same machine; deprecated copy/paste
 ## Repository configuration
 
 The committed configuration at `tools/project_hub/config/project-hub.json` points to DeckAgent's
-private Project Hub Spreadsheet ID, `13CmZuYEccwQ3zOHTjPiFdSjV-ypW7hmMnWBZQyGejcM`. The ID is a
+private Project Hub Spreadsheet ID, `15enYv73wnTaKxX5MmL5lguE0JcxrOQ-ZxBtwxtIMUTE`. The ID is a
 resource identifier, not an authorization secret; Google still enforces the private spreadsheet
 ACL for each authenticated member.
 
@@ -242,7 +242,7 @@ If Workspace blocks authentication, an administrator must permit the OAuth app o
 ## Schema observations from the reference export
 
 These are implementation assumptions inferred from the `.xlsx` reference export (last reconciled
-2026-09-22, schemaVersion 2):
+2026-09-28, schemaVersion 3):
 
 - Logical headers are on row 2; `Home`, `Operating Rules`, and hidden `_Config` are not snapshot
   tables — they hold narrative text or dropdown-source lists, not row-based entities.
@@ -261,8 +261,25 @@ These are implementation assumptions inferred from the `.xlsx` reference export 
   from the live spreadsheet; there is no successor table for `Evidence` or `Weekly`. `Daily` was
   replaced by the ID-less `Updates` table. Columns that referenced the removed `evidence` table
   (`Assumptions.Support / Source`, `Learnings.Supporting Artifact`) are now free text, not relation
-  fields. `Decisions.Related IDs`, `Risks.Related IDs`, and `Requirements.Related Tests` were removed
-  outright with no replacement column.
+  fields. `Decisions.Related IDs` and `Risks.Related IDs` were removed outright with no replacement
+  column.
+- schemaVersion 3 (2026-09-28) followed a Sheet rewrite with Vietnamese headers. Physical renames
+  kept their canonical names: `Notes` → `Ghi chú` (`notes`, 12 tables); `Source` → `Căn cứ`
+  (`source`, Requirements/Constraints/Business Rules); `Support / Source` → `Căn cứ`
+  (`Assumptions.support_source`); `Requirement` → `Yêu cầu` (`requirement`); Requirements
+  `Impacts` → `Area` (`impacts`). New canonical fields: `use_cases.release_scope`, `scenario`,
+  `use_case_relations`, `source`, `product_reference`; `requirements.short_name`,
+  `context_rationale`, `related_tests`; `business_rules.short_name`.
+- Use Case, Requirement, and Business Rule `Status` share `_Config!SpecStatus`
+  (Draft / Proposed / Active / Deprecated). Requirement, Business Rule, and Use Case release scope
+  is `V1` / `Later`; Documents keep their own five-value `Scope`.
+- `Căn cứ` mixes IDs with source codes such as `DOC-001 FR01`, so it is provenance text, not a
+  relation field. `Use Cases.Quan hệ UC` is a labelled list (`Include: UC-…`, `Tách từ: UC-…`),
+  exported verbatim as text; its labels carry meaning the `references` grammar cannot express.
+- Requirements `Area` (canonical `impacts`) is intentionally unvalidated: cells hold several
+  comma-separated areas and `allowedValues` compares the whole cell. Member-name dropdowns
+  (`_Config!Members`) are also not mirrored as `allowedValues`, so roster changes need no config
+  change.
 - Dates are kept as the sheet's formatted effective values. This avoids exposing formulas and
   matches what members see in Google Sheets, but date formatting changes will intentionally change
   hashes.
