@@ -1,4 +1,4 @@
-"""Behavioral tests for the committed Project Hub schema (schemaVersion 3).
+"""Behavioral tests for the committed Project Hub schema (schemaVersion 4).
 
 Every fixture here is synthetic: sheet values are generated from the committed config so the
 tests exercise real header mappings, controlled values, and references without copying any
@@ -212,7 +212,7 @@ def test_new_use_case_fields_are_exported(config) -> None:
     assert record["scenario"] == "I have X, I want Y, so that Z"
     assert record["source"] == "D-001, DOC-001 FR01"
     assert record["product_reference"] == "1. Product: feature"
-    assert record["use_case_relations"] == "1. Include: UC-002 2. Extend bởi: UC-003"
+    assert record["use_case_relations"] == "1. Include: UC-002\n2. Extend bởi: UC-003"
 
 
 def test_labelled_use_case_relations_stay_text_without_relation_findings(config) -> None:

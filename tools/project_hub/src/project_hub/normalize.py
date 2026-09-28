@@ -9,6 +9,9 @@ from project_hub.config import TableSpec
 from project_hub.errors import SchemaError
 
 WHITESPACE_RE = re.compile(r"\s+")
+LINE_BREAK_RE = re.compile(r"\r\n|\r|\n")
+# Any whitespace except the logical newline: spaces, tabs, NBSP, other Unicode spaces.
+INLINE_WHITESPACE_RE = re.compile(r"[^\S\n]+")
 REFERENCE_ID_RE = re.compile(r"[A-Z][A-Z0-9]*-\d{3,}")
 REFERENCE_SPLIT_RE = re.compile(r"\s*[,;]\s*")
 
@@ -25,8 +28,18 @@ def normalize_cell(value: Any) -> str:
         return ""
     if isinstance(value, bool):
         return "TRUE" if value else "FALSE"
-    text = str(value).replace("\ufeff", "")
-    return WHITESPACE_RE.sub(" ", text).strip()
+    text = LINE_BREAK_RE.sub("\n", str(value).replace("\ufeff", ""))
+    # Line boundaries are data: keep them, collapse whitespace within each line, and drop
+    # leading/trailing blank lines. The result is idempotent under normalize_cell.
+    lines = (INLINE_WHITESPACE_RE.sub(" ", line).strip() for line in text.split("\n"))
+    return "\n".join(lines).strip("\n")
+
+
+def _normalize_header(value: Any) -> str:
+    """Header labels match config on one line, so every whitespace run collapses."""
+    if value is None:
+        return ""
+    return WHITESPACE_RE.sub(" ", str(value).replace("\ufeff", "")).strip()
 
 
 def parse_reference_tokens(value: str) -> tuple[list[str], str | None]:
@@ -67,7 +80,7 @@ def _locate_header_row(values: Sequence[Sequence[Any]], spec: TableSpec) -> int:
 
     candidates: list[tuple[int, list[str]]] = []
     for index, row in enumerate(values[:25]):
-        normalized = [normalize_cell(value) for value in row]
+        normalized = [_normalize_header(value) for value in row]
         if spec.id_column.source in normalized:
             candidates.append((index, normalized))
     if not candidates:
@@ -81,7 +94,7 @@ def _locate_header_row(values: Sequence[Sequence[Any]], spec: TableSpec) -> int:
 
 def normalize_table(spec: TableSpec, values: Sequence[Sequence[Any]]) -> NormalizedTable:
     header_index = _locate_header_row(values, spec)
-    source_header = [normalize_cell(value) for value in values[header_index]]
+    source_header = [_normalize_header(value) for value in values[header_index]]
     while source_header and not source_header[-1]:
         source_header.pop()
 

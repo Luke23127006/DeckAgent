@@ -37,7 +37,7 @@ def test_header_mapping_supports_reordered_columns_and_blank_rows() -> None:
 
     assert table.headers == ("id", "title", "requirement_ids")
     assert table.rows == (
-        {"id": "W-001", "title": "Build thing now", "requirement_ids": "R-001;R-002"},
+        {"id": "W-001", "title": "Build thing\nnow", "requirement_ids": "R-001;R-002"},
     )
 
 
@@ -155,7 +155,7 @@ def test_table_without_stable_id_requires_explicit_header_row() -> None:
         normalize_table(spec, [["Date"], ["2026-09-22"]])
 
 
-def test_tsv_normalizes_tabs_and_newlines_to_one_physical_line() -> None:
+def test_tsv_keeps_one_physical_line_per_record_with_escaped_tabs_and_newlines() -> None:
     table = NormalizedTable(
         key="work",
         headers=("id", "title"),
@@ -166,4 +166,74 @@ def test_tsv_normalizes_tabs_and_newlines_to_one_physical_line() -> None:
 
     assert content.count("\n") == 2
     assert content.splitlines()[1].count("\t") == 1
-    assert normalize_cell(" a\r\n b\t c ") == "a b c"
+    assert content.splitlines()[1] == 'W-001\t"a b\\nc ""quoted"""'
+
+
+@pytest.mark.parametrize("raw", ["A\nB", "A\r\nB", "A\rB", " A \n\tB\t"])
+def test_every_line_break_style_becomes_one_logical_newline(raw: str) -> None:
+    assert normalize_cell(raw) == "A\nB"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (" a\r\n b\t c ", "a\nb c"),  # whitespace inside a line still collapses
+        ("a   b", "a b"),  # NBSP is ordinary inline whitespace
+        ("\n\n  first  \n\n\n second \n \n", "first\n\n\nsecond"),  # only outer blanks drop
+        ("﻿  x  ", "x"),
+    ],
+)
+def test_normalize_cell_collapses_inline_whitespace_but_keeps_line_boundaries(
+    raw: str, expected: str
+) -> None:
+    assert normalize_cell(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "1. Foo\r\n2. Bar",
+        "5. Hoàn tất Sprint 1.\n6. Bắt đầu Sprint 2.",
+        "Use \\n literally\nC:\\path\\to",
+        " a\t\tb \r\n\r\n c ",
+        "Quy tắc: không được bỏ dấu tiếng Việt – “ngoặc kép”",
+    ],
+)
+def test_normalize_cell_is_idempotent(raw: str) -> None:
+    once = normalize_cell(raw)
+    assert normalize_cell(once) == once
+
+
+def test_vietnamese_text_survives_exactly() -> None:
+    text = "Người dùng chọn mẫu slide\nHệ thống hiển thị bản xem trước"
+    assert normalize_cell(text) == text
+
+
+def test_multiline_header_labels_still_match_config_on_one_line() -> None:
+    spec = TableSpec(
+        key="work",
+        sheet="Work",
+        filename="work.tsv",
+        id_pattern=r"^W-\d{3,}$",
+        columns=(ColumnSpec("ID", "id"), ColumnSpec("Bối cảnh / Lý do", "context")),
+    )
+    values = [["ID\r\n", "Bối cảnh /\nLý do"], ["W-001", "Line 1\nLine 2"]]
+
+    assert normalize_table(spec, values).rows == ({"id": "W-001", "context": "Line 1\nLine 2"},)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    ["R-002, R-001, R-001", " R-002;\nR-001 ", "R-001 ,\r\n R-002;R-002"],
+)
+def test_reference_lists_still_canonicalize_across_line_breaks(raw: str) -> None:
+    values = [["ID", "Title", "Requirements"], ["W-001", "Build", raw]]
+
+    assert normalize_table(_spec(), values).rows[0]["requirement_ids"] == "R-001;R-002"
+
+
+def test_plain_text_with_ids_is_not_treated_as_a_reference_list() -> None:
+    title = "Depends on R-002, R-001\nsee W-003"
+    values = [["ID", "Title", "Requirements"], ["W-001", title, ""]]
+
+    assert normalize_table(_spec(), values).rows[0]["title"] == title
