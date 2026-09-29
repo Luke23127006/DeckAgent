@@ -2,9 +2,14 @@
 
 - Status: Draft
 - Produced by: W-029 · Used by: W-030 (PPTAgent → DOC-006), W-031 (OpenDesign → DOC-007)
-- Input: [DOC-004 Architecture Acceptance Criteria](../architecture/architecture-acceptance-criteria.md), criteria AC-01 … AC-27
+- Input: [DOC-004 Architecture Acceptance Criteria](../architecture/architecture-acceptance-criteria.md), criteria AC-01 … AC-30
+- Updated: 2026-09-28, to follow DOC-004 after W-037 (version lifecycle, stopping an AI
+  operation, session-only work). RQ-06, RQ-07, RQ-09, RQ-11 and RQ-14 were widened; AC-28 … AC-30
+  are mapped through RQ-06, RQ-07, RQ-11 and RQ-14. No RQ was added, renumbered, or given a new
+  meaning. Findings written against the earlier wording stay valid; a widened RQ needs only the
+  added coverage.
 - Language: this English file is the canonical source. A Vietnamese reader version exists for
-  human reading; if the two differ, this file wins.
+  human reading; it predates the 2026-09-28 update. If the two differ, this file wins.
 
 This contract gives PPTAgent and OpenDesign research one shared frame, so that both research
 documents can feed Architecture synthesis (W-033) directly and be compared side by side.
@@ -83,7 +88,7 @@ it, and what that could mean for DeckAgent.
 Research does **not**:
 
 - propose a DeckAgent architecture or treat a reference system as a candidate architecture;
-- use a reference system as a source of DeckAgent scope — the V1 boundary is D-024 … D-028;
+- use a reference system as a source of DeckAgent scope — the V1 boundary is D-024 … D-029;
 - score, rank, or pass/fail a reference system against DOC-004. Findings are *linked* to AC IDs
   to show relevance; comparative judgment happens in W-033 … W-035.
 
@@ -99,6 +104,13 @@ system-specific evidence (§8.3) and flag it.
 
 DOC-004's outcomes (`Meets`, `Does not meet`, `Not yet assessable`) apply to DeckAgent candidates
 in later Work. Never assign them to a reference system.
+
+DOC-004 §3.3 names DeckAgent's version terms: accepted, pending, previewed, and exported version.
+A reference system need not have any of them. Describe its states and transitions in its own
+terms, and say in **DeckAgent implication / relevance** which DeckAgent notion a state resembles,
+if any. Where DOC-004 §11 leaves a DeckAgent behavior to Product (for example, what counts as
+"delivered" or "undownloaded"), record how the system handles the nearest equivalent; do not
+propose DeckAgent's answer.
 
 ## 4. Research questions
 
@@ -120,15 +132,15 @@ How to use the questions: §1.4.
 | RQ-03 | Intent | Core | AC-04 |
 | RQ-04 | Generation & provenance | Core | AC-01, AC-23 |
 | RQ-05 | Generation & provenance | Core | AC-03, AC-16 |
-| RQ-06 | State & ownership | Core | AC-05, AC-15 |
-| RQ-07 | State & ownership | Core | AC-06, AC-07, AC-17 |
+| RQ-06 | State & ownership | Core | AC-05, AC-15, AC-30 |
+| RQ-07 | State & ownership | Core | AC-06, AC-07, AC-17, AC-29 |
 | RQ-08 | Refinement | Core | AC-01, AC-04, AC-27 |
 | RQ-09 | Validation & quality | Core | AC-10, AC-06 |
 | RQ-10 | Validation & quality | Core | AC-14, AC-18, AC-25 |
-| RQ-11 | Rendering & export | Core | AC-05, AC-09, AC-15 |
+| RQ-11 | Rendering & export | Core | AC-01, AC-05, AC-09, AC-15, AC-29, AC-30 |
 | RQ-12 | Rendering & export | Extended | AC-26 |
 | RQ-13 | Rendering & export | Core | AC-19 |
-| RQ-14 | Failure & recovery | Core | AC-08, AC-09, AC-20 |
+| RQ-14 | Failure & recovery | Core | AC-08, AC-09, AC-20, AC-28 |
 | RQ-15 | Editor dependency | Extended | AC-12 |
 | RQ-16 | Dependencies & cost | Core | AC-21, AC-22 |
 | RQ-17 | Evolution | Extended | AC-23, AC-24 |
@@ -176,18 +188,24 @@ How to use the questions: §1.4.
 
 #### State & ownership
 
-**RQ-06** · Core · AC-05, AC-15
-- Question: What is the working presentation state, who creates and changes it, and how do
-  preview and export obtain it?
-- Why DeckAgent cares: preview, PPTX and PDF must derive from the same accepted state (AC-05), and
-  slide order and text must be readable from it (AC-15).
+**RQ-06** · Core · AC-05, AC-15, AC-30
+- Question: What presentation states exist — for example a working copy, an authoritative or
+  saved version, a candidate awaiting review — where does each live, and who creates and changes
+  it? Which of them does preview show, and which does export read? How long does each last, and
+  what happens to it when the user starts a new project, reloads, or closes the application?
+- Why DeckAgent cares: preview, PPTX and PDF must derive from the version being previewed
+  (AC-05), and slide order and text must be readable from each version (AC-15). DeckAgent's deck
+  lives only for the session, so the state needed to evaluate its session-loss rule must be
+  available where a session-ending action is handled (AC-30).
 
-**RQ-07** · Core · AC-06, AC-07, AC-17
-- Question: Can a change be rejected or an earlier state restored? What survives when a new
-  result is produced?
-- Why DeckAgent cares: unvalidated AI changes must not irreversibly replace the last accepted
-  state (AC-06), the user can reject the latest refinement in one step (AC-07), and tests need
-  the states before and after it (AC-17).
+**RQ-07** · Core · AC-06, AC-07, AC-17, AC-29
+- Question: Is a new result held as a candidate before it becomes authoritative, or does it
+  replace the working state directly? What makes it authoritative, and which component does that?
+  Can a result be rejected or an earlier state restored, and what survives before and after each
+  transition?
+- Why DeckAgent cares: an unvalidated AI result must not become the pending or accepted version
+  (AC-06); the user can reject the pending version in one step (AC-07); versions change only at
+  defined events (AC-29); and tests need to see the states before and after (AC-17).
 
 #### Refinement
 
@@ -201,11 +219,12 @@ How to use the questions: §1.4.
 #### Validation & quality
 
 **RQ-09** · Core · AC-10, AC-06
-- Question: Where are generated or edited results checked before being accepted or delivered?
-  What is checked, and what happens when a check fails?
-- Why DeckAgent cares: validation must be possible before content becomes accepted and before any
-  output is delivered (AC-10), so that unvalidated changes do not replace the accepted state
-  (AC-06).
+- Question: Where are generated or edited results checked — before they are shown or become
+  authoritative, and before an output file is delivered? What is checked, is the outcome of each
+  check recorded or otherwise observable, and what happens when a check fails?
+- Why DeckAgent cares: validation must be possible, and its outcome observable, wherever a result
+  can become displayed, pending, or accepted and before any output is delivered (AC-10), so that
+  an unvalidated result does not become a version (AC-06).
 
 **RQ-10** · Core · AC-14, AC-18, AC-25
 - Question: How does the system (or its paper) detect or measure layout, readability, and content
@@ -216,12 +235,17 @@ How to use the questions: §1.4.
 
 #### Rendering & export
 
-**RQ-11** · Core · AC-05, AC-09, AC-15
-- Question: How are preview and each output format produced? Do they derive from the same state,
-  and is anything regenerated at export?
-- Why DeckAgent cares: exports must not silently regenerate or diverge from the accepted state
-  (AC-05), export failures must leave it unchanged (AC-09), and slide order and text must be
-  readable from every output (AC-15).
+**RQ-11** · Core · AC-01, AC-05, AC-09, AC-15, AC-29, AC-30
+- Question: How are preview and each output format produced? Do they read the same state or
+  version, and is anything regenerated at export? Can an export — started, failed, or
+  successful — change the working or authoritative state? Is a produced file recorded, and can it
+  be traced to the state or version and format it came from?
+- Why DeckAgent cares: the V1 Core Flow ends in PPTX and PDF (AC-01); exports must not regenerate
+  content or diverge from the previewed version (AC-05); a cancelled or failed export changes no
+  version (AC-09), while export is one path that may promote a pending version once the delivery
+  condition Product defines is met (AC-29); slide order and text must be readable from every
+  output (AC-15); and successful exports, by version and format, are part of the state needed to
+  apply DeckAgent's session-loss rule (AC-30).
 
 **RQ-12** · Extended · AC-26
 - Question: Which output formats are supported, and what does adding one touch?
@@ -236,11 +260,15 @@ How to use the questions: §1.4.
 
 #### Failure & recovery
 
-**RQ-14** · Core · AC-08, AC-09, AC-20
-- Question: What happens when a model call, tool, or export fails or times out? Is state
-  preserved, and what is reported?
-- Why DeckAgent cares: failures must end in a determinate state that keeps the last usable state
-  (AC-08, AC-09), and their cause must be reportable (AC-20).
+**RQ-14** · Core · AC-08, AC-09, AC-20, AC-28
+- Question: What happens when a model call, tool, or export fails or times out? Can the user stop
+  a running generation or refinement, and if so, what happens to the working state? Can outstanding
+  external work still finish afterwards, and can its late result change state? If a stop and a
+  completion arrive together, which one wins? Can two operations run at once? Is state preserved,
+  and what status, stop, or failure information is reported?
+- Why DeckAgent cares: failures must end in a determinate state that keeps the last usable
+  version (AC-08, AC-09); a stopped operation must create no version, even from a result that
+  arrives later (AC-28); and status, terminal state, and failure cause must be reportable (AC-20).
 
 #### Editor dependency
 
@@ -349,7 +377,7 @@ withdrawn, keep its heading and mark it withdrawn with the reason.
 - DeckAgent implication / relevance: AC-.. — <what this could mean for DeckAgent, and why it is
   relevant to those criteria>
 - Mismatch / caution: <differences in goal, scope, runtime, inputs, outputs, or V1 boundary
-  (D-024 … D-027) that limit transfer to DeckAgent>
+  (D-024 … D-029) that limit transfer to DeckAgent>
 - Confidence: Explicit | Strong inference | Weak inference
 ```
 
@@ -383,11 +411,13 @@ OpenDesign.
 - Trade-off: Gains repeatable exports and export retry without regeneration. Costs: anything the
   description cannot express cannot appear in any export, so the description format limits new
   output formats (inferred from the single writer interface).
-- DeckAgent implication / relevance: AC-05, AC-09 — shows one way to keep an export from diverging
-  from an accepted state and to retry export without regenerating content. AC-26 — relevant
-  because adding an output target may depend on extending the description format.
-- Mismatch / caution: System X exports one format and has no refinement loop. DeckAgent needs
-  PPTX and PDF (D-026) and repeated deck-level refinement (D-025), which System X never exercises.
+- DeckAgent implication / relevance: AC-05, AC-09 — shows one way to build an export from exactly
+  the stored result the user reviewed, and to retry export without regenerating content. AC-26 —
+  relevant because adding an output target may depend on extending the description format.
+- Mismatch / caution: System X exports one format, keeps a single stored description, and has no
+  refinement loop. DeckAgent needs PPTX and PDF (D-026), repeated deck-level refinement (D-025),
+  and export of a refined result the user has not yet kept (BR-006, BR-010), none of which
+  System X exercises.
 - Confidence: Strong inference — the export behaviour is observed directly in code; the docs
   statement alone would not show that no model is called.
 ```

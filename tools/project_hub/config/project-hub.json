@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "spreadsheetId": "13CmZuYEccwQ3zOHTjPiFdSjV-ypW7hmMnWBZQyGejcM",
+  "schemaVersion": 4,
+  "spreadsheetId": "15enYv73wnTaKxX5MmL5lguE0JcxrOQ-ZxBtwxtIMUTE",
   "snapshotDir": "../../.project-hub/snapshot",
   "schemaDefaults": {
     "headerRow": 2,
@@ -24,7 +24,7 @@
         {"source": "Permissions / Capabilities", "name": "permissions_capabilities"},
         {"source": "Constraints", "name": "constraints"},
         {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "use_cases": {
@@ -34,7 +34,9 @@
       "columns": [
         {"source": "ID", "name": "id", "required": true},
         {"source": "Use Case", "name": "use_case", "required": true},
-        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Active", "Changed", "Deprecated"]},
+        {"source": "Release Scope", "name": "release_scope", "required": true, "allowedValues": ["V1", "Later"]},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Proposed", "Active", "Deprecated"]},
+        {"source": "Tình huống", "name": "scenario"},
         {"source": "Primary Actor", "name": "primary_actor_id", "required": true, "references": ["actors"]},
         {"source": "Goal / Outcome", "name": "goal_outcome"},
         {"source": "Trigger", "name": "trigger"},
@@ -46,8 +48,11 @@
         {"source": "Related Business Rules", "name": "related_business_rule_ids", "references": ["business_rules"]},
         {"source": "Related Constraints", "name": "related_constraint_ids", "references": ["constraints"]},
         {"source": "Related Work", "name": "related_work_ids", "references": ["work"]},
+        {"source": "Quan hệ UC", "name": "use_case_relations"},
         {"source": "Open Questions", "name": "open_questions"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Căn cứ", "name": "source"},
+        {"source": "Product Reference", "name": "product_reference"},
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "requirements": {
@@ -56,16 +61,19 @@
       "idPattern": "^R-\\d{3,}$",
       "columns": [
         {"source": "ID", "name": "id", "required": true},
-        {"source": "Requirement", "name": "requirement", "required": true},
+        {"source": "Tên ngắn", "name": "short_name", "required": true},
+        {"source": "Yêu cầu", "name": "requirement", "required": true},
+        {"source": "Bối cảnh / Lý do", "name": "context_rationale"},
         {"source": "Type", "name": "type", "required": true, "allowedValues": ["Functional", "Quality", "Constraint", "Interface", "Data"]},
-        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Deprecated"]},
-        {"source": "Scope", "name": "scope", "required": true, "allowedValues": ["Product", "V1", "Later", "Project", "Milestone"]},
-        {"source": "Source", "name": "source"},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Proposed", "Active", "Deprecated"]},
+        {"source": "Scope", "name": "scope", "required": true, "allowedValues": ["V1", "Later"]},
+        {"source": "Căn cứ", "name": "source"},
         {"source": "Acceptance Note", "name": "acceptance_note"},
         {"source": "Depends On (IDs)", "name": "depends_on_ids", "references": ["requirements"], "noSelfReference": true},
-        {"source": "Impacts", "name": "impacts"},
+        {"source": "Area", "name": "impacts"},
         {"source": "Related Work (IDs)", "name": "related_work_ids", "references": ["work"]},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Related Tests", "name": "related_tests"},
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "constraints": {
@@ -77,13 +85,13 @@
         {"source": "Constraint", "name": "constraint", "required": true},
         {"source": "Type", "name": "type", "required": true, "allowedValues": ["Technical", "Product", "Time", "Resource", "Platform", "Academic", "External"]},
         {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Retired"]},
-        {"source": "Source", "name": "source"},
+        {"source": "Căn cứ", "name": "source"},
         {"source": "Reason / Context", "name": "reason_context"},
         {"source": "Impacts", "name": "impacts"},
         {"source": "Related Requirements", "name": "related_requirement_ids", "references": ["requirements"]},
         {"source": "Related Decisions", "name": "related_decision_ids", "references": ["decisions"]},
         {"source": "Review Trigger", "name": "review_trigger"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "business_rules": {
@@ -92,15 +100,16 @@
       "idPattern": "^BR-\\d{3,}$",
       "columns": [
         {"source": "ID", "name": "id", "required": true},
+        {"source": "Tên ngắn", "name": "short_name", "required": true},
         {"source": "Rule", "name": "rule", "required": true},
-        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Proposed", "Active", "Changed", "Deprecated"]},
-        {"source": "Scope", "name": "scope", "allowedValues": ["Product", "V1", "Later", "Project", "Milestone"]},
-        {"source": "Source", "name": "source"},
+        {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Proposed", "Active", "Deprecated"]},
+        {"source": "Scope", "name": "scope", "allowedValues": ["V1", "Later"]},
+        {"source": "Căn cứ", "name": "source"},
         {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]},
         {"source": "Related Requirements", "name": "related_requirement_ids", "references": ["requirements"]},
         {"source": "Related Decisions", "name": "related_decision_ids", "references": ["decisions"]},
         {"source": "Exceptions", "name": "exceptions"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "assumptions": {
@@ -111,12 +120,12 @@
         {"source": "ID", "name": "id", "required": true},
         {"source": "Assumption", "name": "assumption", "required": true},
         {"source": "Status", "name": "status", "required": true, "allowedValues": ["Open", "Supported", "Invalidated", "Retired"]},
-        {"source": "Support / Source", "name": "support_source"},
+        {"source": "Căn cứ", "name": "support_source"},
         {"source": "Used By (IDs)", "name": "used_by_ids", "references": ["requirements", "decisions"]},
         {"source": "Review Trigger", "name": "review_trigger"},
         {"source": "Impacts", "name": "impacts"},
         {"source": "Related Work (IDs)", "name": "related_work_ids", "references": ["work"]},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "decisions": {
@@ -157,7 +166,7 @@
         {"source": "Implication", "name": "implication"},
         {"source": "Decision / Follow-up", "name": "decision_ids", "references": ["decisions"]},
         {"source": "Date", "name": "date"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "risks": {
@@ -177,7 +186,7 @@
         {"source": "Fallback / Recovery", "name": "fallback_recovery"},
         {"source": "Owner", "name": "owner"},
         {"source": "Last Reviewed", "name": "last_reviewed"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "sprints": {
@@ -196,7 +205,7 @@
         {"source": "Definition of Done", "name": "definition_of_done"},
         {"source": "Owner", "name": "owner"},
         {"source": "Sprint Outcome", "name": "sprint_outcome"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "work": {
@@ -248,7 +257,7 @@
         {"source": "Assignee", "name": "assignee"},
         {"source": "PR", "name": "pull_request"},
         {"source": "Regression Test", "name": "regression_test"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "updates": {
@@ -262,7 +271,7 @@
         {"source": "Update", "name": "update"},
         {"source": "Blocker / Need Support", "name": "blocker_need_support"},
         {"source": "Link", "name": "link"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     },
     "documents": {
@@ -283,7 +292,7 @@
         {"source": "Used By", "name": "used_by_ids", "references": ["work", "decisions"]},
         {"source": "Link", "name": "link"},
         {"source": "Last Updated", "name": "last_updated"},
-        {"source": "Notes", "name": "notes"}
+        {"source": "Ghi chú", "name": "notes"}
       ]
     }
   }

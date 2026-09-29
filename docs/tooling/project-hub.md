@@ -105,7 +105,7 @@ the URL but still requires opening it on the same machine; deprecated copy/paste
 ## Repository configuration
 
 The committed configuration at `tools/project_hub/config/project-hub.json` points to DeckAgent's
-private Project Hub Spreadsheet ID, `13CmZuYEccwQ3zOHTjPiFdSjV-ypW7hmMnWBZQyGejcM`. The ID is a
+private Project Hub Spreadsheet ID, `15enYv73wnTaKxX5MmL5lguE0JcxrOQ-ZxBtwxtIMUTE`. The ID is a
 resource identifier, not an authorization secret; Google still enforces the private spreadsheet
 ACL for each authenticated member.
 
@@ -149,6 +149,10 @@ The maintenance contract is:
   declare `references`, `allowedValues`, `headerRequired`, or supported `rowRules` as needed. Add the
   real Sheet tab, bump `schemaVersion` because the snapshot contract changed, and add a sanitized
   fixture. No parser module is needed for a standard entity table.
+- **Change the snapshot contract itself:** bump `schemaVersion` whenever the same Sheet content
+  would produce different TSV bytes: adding, removing, or renaming a canonical field, or changing
+  cell normalization or [cell encoding](#snapshot-cell-encoding). A `source`-only rename does not
+  need a bump.
 - **Change a stable-ID prefix/format:** deliberately update `idPattern`, affected relationship
   targets, fixtures, and existing data together. Prefix changes within the standard
   `ABC-001`-style grammar require config only; a different token grammar requires a small parser
@@ -188,7 +192,8 @@ effective/calculated values in the spreadsheet locale, not as formula text. It t
 
 1. finds and maps semantic headers;
 2. drops wholly empty and generated-ID-only template rows;
-3. normalizes tabs/newlines/whitespace inside cells;
+3. normalizes whitespace inside cells while keeping line breaks (see
+   [Snapshot cell encoding](#snapshot-cell-encoding));
 4. converts valid multi-ID fields to sorted, deduplicated semicolon lists;
 5. validates IDs, required fields, references, enums, and traceability edges;
 6. only if validation passes: commits stale-file removal (for tables no longer declared in
@@ -197,6 +202,39 @@ effective/calculated values in the spreadsheet locale, not as formula text. It t
    and if any step fails, everything touched in that attempt is restored to its prior content
    (or removed, if it did not exist before), so a failed sync never leaves a mix of new and old
    snapshot state.
+
+### Snapshot cell encoding
+
+Line breaks inside a cell are data (numbered lists, one link per line, paragraphs), so the
+snapshot keeps them. Each TSV row is still exactly one physical line, and each cell is decoded in
+two separate layers:
+
+1. **Value normalization** (`normalize_cell`, before validation). `\r\n` and `\r` become `\n`.
+   Within each line, every run of other whitespace (spaces, tabs, NBSP) becomes one space and the
+   line is trimmed. Blank lines at the start and end of the cell are dropped; blank lines between
+   content lines are kept. A BOM is removed. Applying it twice changes nothing. Header labels are
+   still matched on a single line: every whitespace run in a header cell, including a line break,
+   collapses to one space.
+2. **TSV escaping** (`serialize_tsv`, only when writing a file). A backslash starts a two-character
+   escape:
+
+   | Normalized value contains | Written to the TSV as |
+   |---|---|
+   | `\` (literal backslash) | `\\` |
+   | line break | `\n` |
+   | tab | `\t` |
+   | carriage return | `\r` |
+
+   Normalization never leaves a tab or carriage return in a value, so in practice only `\\` and
+   `\n` appear. Because every literal backslash is doubled, a real line break (`\n`) and the literal
+   text `\n` (`\\n`) never collide. To decode, read the cell left to right and replace each escape
+   pair; `read_snapshot` does this and rejects any other `\` sequence as a snapshot encoding error.
+   Standard TSV quoting still applies to cells containing `"`.
+
+Escaping happens only at the file boundary: in-memory values, validation, and relationship parsing
+always work on decoded text, so a value is never escaped twice. Relationship canonicalization is
+unchanged: a line break next to a `,` or `;` separator is ordinary separator whitespace, so
+`R-002,` followed by a line break and `R-001` still becomes `R-001;R-002`.
 
 A data validation failure does not touch `.project-hub/snapshot/` at all: the previously published,
 already-validated snapshot is left exactly as it was, sync reports the issues, and it returns exit
@@ -242,7 +280,7 @@ If Workspace blocks authentication, an administrator must permit the OAuth app o
 ## Schema observations from the reference export
 
 These are implementation assumptions inferred from the `.xlsx` reference export (last reconciled
-2026-09-22, schemaVersion 2):
+2026-09-28, schemaVersion 3; schemaVersion 4 changed only the cell encoding):
 
 - Logical headers are on row 2; `Home`, `Operating Rules`, and hidden `_Config` are not snapshot
   tables — they hold narrative text or dropdown-source lists, not row-based entities.
@@ -261,8 +299,29 @@ These are implementation assumptions inferred from the `.xlsx` reference export 
   from the live spreadsheet; there is no successor table for `Evidence` or `Weekly`. `Daily` was
   replaced by the ID-less `Updates` table. Columns that referenced the removed `evidence` table
   (`Assumptions.Support / Source`, `Learnings.Supporting Artifact`) are now free text, not relation
-  fields. `Decisions.Related IDs`, `Risks.Related IDs`, and `Requirements.Related Tests` were removed
-  outright with no replacement column.
+  fields. `Decisions.Related IDs` and `Risks.Related IDs` were removed outright with no replacement
+  column.
+- schemaVersion 3 (2026-09-28) followed a Sheet rewrite with Vietnamese headers. Physical renames
+  kept their canonical names: `Notes` → `Ghi chú` (`notes`, 12 tables); `Source` → `Căn cứ`
+  (`source`, Requirements/Constraints/Business Rules); `Support / Source` → `Căn cứ`
+  (`Assumptions.support_source`); `Requirement` → `Yêu cầu` (`requirement`); Requirements
+  `Impacts` → `Area` (`impacts`). New canonical fields: `use_cases.release_scope`, `scenario`,
+  `use_case_relations`, `source`, `product_reference`; `requirements.short_name`,
+  `context_rationale`, `related_tests`; `business_rules.short_name`.
+- schemaVersion 4 (2026-09-28) changed no headers or fields. In-cell line breaks used to collapse to
+  a space; they are now kept and written as `\n` (see
+  [Snapshot cell encoding](#snapshot-cell-encoding)), so the same Sheet cell can produce different
+  TSV bytes and hashes than under version 3.
+- Use Case, Requirement, and Business Rule `Status` share `_Config!SpecStatus`
+  (Draft / Proposed / Active / Deprecated). Requirement, Business Rule, and Use Case release scope
+  is `V1` / `Later`; Documents keep their own five-value `Scope`.
+- `Căn cứ` mixes IDs with source codes such as `DOC-001 FR01`, so it is provenance text, not a
+  relation field. `Use Cases.Quan hệ UC` is a labelled list (`Include: UC-…`, `Tách từ: UC-…`),
+  exported verbatim as text; its labels carry meaning the `references` grammar cannot express.
+- Requirements `Area` (canonical `impacts`) is intentionally unvalidated: cells hold several
+  comma-separated areas and `allowedValues` compares the whole cell. Member-name dropdowns
+  (`_Config!Members`) are also not mirrored as `allowedValues`, so roster changes need no config
+  change.
 - Dates are kept as the sheet's formatted effective values. This avoids exposing formulas and
   matches what members see in Google Sheets, but date formatting changes will intentionally change
   hashes.
