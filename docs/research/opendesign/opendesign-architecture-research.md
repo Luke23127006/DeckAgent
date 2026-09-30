@@ -8,401 +8,667 @@
 ## 1. Header
 
 - System: OpenDesign
-- Researcher: OpenAI Codex
-- Research dates: 2026-09-25
+- Researcher: DeckAgent architecture workstream (W-031)
+- Research dates: 2026-09-25; architecture-focused revision 2026-09-30
 - Official repository confirmation: The official `nexu-io` organization links to `https://github.com/nexu-io/open-design`, and the installation instructions use this repository. Research started only after `git ls-remote` confirmed the release tag and commit.
 
 Versions used (DOC-005 §5.2):
 
 - Repository: `https://github.com/nexu-io/open-design` @ tag `open-design-v0.24.0`, commit `0d3a14c1df6dc5017f3cc3ef05b24558250c220b` (commit date 2026-09-21).
-- Version caveat: The pinned tag is `open-design-v0.24.0`, but the root and daemon `package.json` files at that commit report version `0.23.1`. Therefore, the findings refer to both the tag **and the commit**, not only the package metadata.
-- Docs: repository `README.md`, `docs/architecture.md`, and linked code-backed documentation at the pinned commit; GitHub pages accessed 2026-09-25.
+- Version caveat: The pinned tag is `open-design-v0.24.0`, but the root and daemon `package.json` files at that commit report version `0.23.1`. The findings therefore name both the tag and the commit.
+- Docs: repository `README.md`, `docs/architecture.md`, `docs/agent-adapters.md`, `docs/prompt-composition.md`, `docs/modes.md`, and `docs/adr/0001-centralize-daemon-startup.md` at the pinned commit; GitHub pages accessed 2026-09-25.
 - Release material: official GitHub release/tag `open-design-v0.24.0`, accessed 2026-09-25.
 - Paper or other official material: No OpenDesign research paper was found in the official repository, README, architecture documentation, or release material.
-- Historical version used, and why: None. Historical changelog entries are cited only as evidence of change for RQ-17. They are not the implementation baseline.
+- Historical version used, and why: None. Historical notes and changelog entries are used only to explain replaced design choices for RQ-17.
 
 Sources consulted, in priority order (DOC-005 §5.1):
 
-1. Pinned official source tree, especially `apps/daemon`, `apps/web`, `apps/desktop`, `packages/contracts`, and deck/export code.
-2. Pinned official architecture and product documentation: `docs/architecture.md`, `README.md`, and `CHANGELOG.md`.
-3. Pinned official skills/templates where they define deck-generation or fidelity mechanisms, especially `skills/pptx-html-fidelity-audit/` and `design-templates/html-ppt-*/`.
+1. Pinned official architecture and decision records: `docs/architecture.md`, `docs/agent-adapters.md`, `docs/prompt-composition.md`, `docs/modes.md`, and `docs/adr/0001-centralize-daemon-startup.md`.
+2. Pinned official source tree, mainly `apps/daemon`, `apps/web`, `apps/desktop`, `packages/contracts`, and deck/export modules.
+3. Official `README.md`, `CHANGELOG.md`, and focused strategy material where it supplies evidence for a specific finding.
 4. No secondary sources were used.
 
-### 1.1 Terminology — what “OD Next” means
+### 1.1 Scope and method
 
-**OD Next is a built-in OpenDesign strategy for running design tasks. It is not a separate product or release.** At the pinned commit, its manifest calls it `OD Next Strategy V2` (`od-next-strategy`, prompt recipe `od-next-plan-build-v2`). It has its own core prompt, orchestration rules, task profiles, and `discovery → plan → generate` flow — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:plugins/_official/scenarios/od-next-strategy/open-design.json#L4-L18`, `#L27-L46`, `#L104-L120`.
+This research studies the architecture used by the deck workflow. OpenDesign also supports prototypes, media, plugins, automations, and other artifact types. Those parts are included only when they explain a shared boundary used by decks.
 
-For supported agents, this strategy is the default path for prototypes, slide decks (`ppt`/`deck`), marketing images, and Hyperframes video. The manifest explicitly connects OD Next to these task profiles — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:plugins/_official/scenarios/od-next-strategy/open-design.json#L46-L85`. The official v0.22.1 changelog describes the default rollout and the Design Harness setting that disables it — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/CHANGELOG/v0.22.1/en.md#L3-L11`.
+Strategy-specific rollout mechanics are outside the main scope because they are less stable than the host, state, runtime, and rendering boundaries. They are cited only when they provide the clearest available evidence for an RQ; a strategy-specific observation is not generalized to every run path.
 
-OD Next has a prompt and execution path separate from the legacy stack. It uses named task stages (`request`, `clarification`, `contract_repair`, `production`), chooses `direct_edit` or `full_plan`, and returns a small set of runtime outcomes — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/plugins/strategy-v2.ts#L25-L55`. OD Next runs use their own prompt-composition path — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/prompts/system.ts#L943-L954`. A finding about OD Next therefore applies only to this strategy, not automatically to legacy runs, every agent adapter, or UI markers named `<od-next>`.
+The design-rationale review distinguishes four evidence levels: a formal ADR; an explicit argument in a design document; a historical explanation tied to a change; and rationale inferred from code structure. Only `docs/adr/0001-centralize-daemon-startup.md` is a formal ADR at the pinned commit. The remaining decisions are assessed from architecture documents, implementation history, and code, with the evidential limit stated where the original source does not record alternatives or consequences.
 
-## 2. Findings
+## 2. Architecture overview
 
-### 2.1 Input & source
+### 2.1 System shape
 
-Research questions: RQ-01, RQ-02
+OpenDesign is an orchestration system around existing coding agents. The web app and CLI are clients. The daemon is the product authority. It builds the run context, selects a strategy and runtime, manages state, and exposes one HTTP/SSE API. The chosen agent performs the model and tool loop. The shared result is a project workspace containing real files, usually HTML/CSS/assets for a deck. Preview and export read those files.
 
-### F-OD-01 — OD Next presents attachments as task data, but the model can still access them
+```mermaid
+flowchart LR
+    U["User"] --> C["Web app or od CLI"]
+
+    subgraph Host["OpenDesign host"]
+        D["Daemon API and run coordinator"] --> P["Prompt and strategy composition"]
+        P --> R["Runtime registry and shared engine"]
+        D -.-> M["SQLite metadata"]
+        D -.-> W["Project workspace files"]
+        W --> V["Validation and version history"]
+        W --> PV["Sandboxed HTML preview"]
+        W --> EX["Export coordinator"]
+    end
+
+    subgraph Context["Run context"]
+        S["Skill or template"]
+        DS["Design system and craft rules"]
+        A["Attachments and project instructions"]
+    end
+
+    C --> D
+    S -.-> P
+    DS -.-> P
+    A -.-> P
+    P --> R
+    R --> AG["External code-agent CLI or BYOK runtime"]
+    AG --> W
+    AG -.-> D
+    EX --> E["Electron and Chromium renderer"]
+    E --> O["HTML, PDF, PPTX, ZIP, or Markdown"]
+    V -.-> M
+
+    classDef client fill:#DBEAFE,stroke:#2563EB,color:#0F172A,stroke-width:1.5px
+    classDef control fill:#EDE9FE,stroke:#7C3AED,color:#0F172A,stroke-width:1.5px
+    classDef prompt fill:#FEF3C7,stroke:#D97706,color:#0F172A,stroke-width:1.5px
+    classDef runtime fill:#CCFBF1,stroke:#0F766E,color:#0F172A,stroke-width:1.5px
+    classDef state fill:#DCFCE7,stroke:#16A34A,color:#0F172A,stroke-width:1.5px
+    classDef output fill:#FFE4E6,stroke:#E11D48,color:#0F172A,stroke-width:1.5px
+    classDef external fill:#E5E7EB,stroke:#4B5563,color:#0F172A,stroke-width:1.5px
+
+    class U,C client
+    class D,V control
+    class P,S,DS,A prompt
+    class R runtime
+    class M,W state
+    class PV,EX,E,O output
+    class AG external
+    linkStyle default stroke:#64748B,stroke-width:1.4px
+```
+
+The main boundaries are:
+
+| Boundary | Owns | Does not own |
+|---|---|---|
+| Web app / `od` CLI | User interaction, request input, event display, preview controls | Business rules, durable project state, agent loop |
+| Daemon | HTTP API, prompt assembly, run lifecycle, runtime selection, metadata, files, versions, validation, export coordination | Provider-specific reasoning and tool loop |
+| Prompt and strategy layer | Instructions, skills, design rules, task stages, host artifact contracts | Durable state or file rendering |
+| Runtime registry and shared engine | Detection, launch, normalized events, cancellation, runtime capabilities | Deck content model or export format |
+| External agent runtime | Model calls, tool use, context handling, and file edits | OpenDesign project authority |
+| Project workspace | Current artifact bytes: HTML, CSS, assets, and exports | Conversation and run metadata |
+| SQLite | Projects, conversations, messages, runs, sessions, and related metadata | Canonical artifact bytes |
+| Preview and export | Render or package a selected file/version | Content generation or user intent |
+
+Source: OpenDesign states these component responsibilities and data flows in `docs/architecture.md` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L55-L110`, `#L148-L173`, `#L175-L199`.
+
+### 2.2 How one prompt moves through the system
+
+1. The web app or CLI sends the user's brief, selected project, attachments, runtime/model choice, and workflow options to the daemon.
+2. The daemon resolves the project context. It loads the active skill or template, design system, craft rules, project instructions, conversation context, and attachment references.
+3. The daemon selects the applicable strategy and prompt-composition path for that run.
+4. The prompt layer builds the system and task instructions. It also adds host contracts that generated decks must follow, such as the deck protocol used by preview and export.
+5. The runtime registry selects a `RuntimeAgentDef`. The shared engine starts the external CLI or a BYOK/API runtime and sends the composed prompt using that runtime's supported transport.
+6. A filesystem-capable agent edits the project workspace directly. A text-only runtime returns one complete artifact, and the host writes it into the same workspace.
+7. The daemon streams normalized events to the client, tracks changed files, validates the deliverable, and records HTML history after a successful run.
+8. The preview reads the selected working file. Export reads the working file or an explicit HTML version and sends it to the renderer. Export does not ask the model to recreate the deck.
+
+This is more than a frontend-to-backend call. The daemon is a coordinator between prompt policy, runtime variation, workspace state, validation, preview, and export.
+
+### 2.3 Main architectural choices and their rationale
+
+| Choice | Why OpenDesign chose it | Alternative or pressure recorded by the source | Main cost |
+|---|---|---|---|
+| Delegate the full agent loop to existing coding agents | Reuse mature model, tool, permission, context, resume, and cancel behavior | Building another agent loop was rejected in `agent-adapters.md` | Runtime behavior and safety differ by external agent |
+| Use declarative runtime definitions plus one shared engine | Add agents without copying the run lifecycle | Per-agent classes and per-agent `run()` implementations are explicitly avoided | A new wire format can still require engine work |
+| Put product authority in the daemon | Give web, desktop, packaged, and CLI clients one business path | Earlier browser-only and split-process ideas were replaced | The daemon becomes a large and important boundary |
+| Keep artifact bytes in workspace files and metadata in SQLite | Let agents work on normal code files while keeping searchable run/project state | Earlier in-memory state and `history.jsonl` were replaced | File changes are not one atomic database transaction |
+| Keep prompt strategy separate from host artifact contracts | Strategies may change, but preview/export contracts must stay stable | A deck-protocol change first reached only one prompt path; a later change moved the contract to one shared source | Some prompt composition paths are still duplicated |
+| Render HTML for preview and export | Reuse browser layout and keep the working artifact as real HTML/CSS | Earlier agent-driven PPTX creation was replaced by capture/assembly for the default screenshot path | Screenshot PPTX favors visual match over editable slide objects |
+| Centralize daemon startup | Keep CLI daemon mode and sidecars on the same start/stop path | The formal ADR rejects a narrow CLI-only lazy import and continued split startup | The low-level server builder still remains a separate seam |
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/agent-adapters.md#L5-L27`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L5-L16`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/prompt-composition.md#L82-L123`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/adr/0001-centralize-daemon-startup.md#L7-L31`.
+
+### 2.4 Full implementation architecture
+
+The overview in §2.1 shows the stable system boundaries. The diagram below is the detailed implementation view at the pinned commit. It names the main modules that take part in a deck run, but it does not list every route, helper, runtime adapter, or export format.
+
+```mermaid
+flowchart TB
+    subgraph Entry["1. Clients"]
+        direction LR
+        USER["User"]
+        WEB["Web app"]
+        CLI["od CLI"]
+        USER --> WEB
+        USER --> CLI
+    end
+
+    subgraph Api["2. Daemon API"]
+        direction LR
+        HTTP["Express API"]
+        RUNROUTES["Run routes"]
+        WEB --> HTTP
+        CLI --> HTTP
+        HTTP --> RUNROUTES
+    end
+
+    subgraph Orchestration["3. Run orchestration"]
+        direction LR
+        RUNSTATE["Run manager"]
+        CONTEXT["Context resolver"]
+        STRATEGY["Strategy and prompt-path resolver"]
+        DB["SQLite metadata"]
+        INPUTS["Attachment snapshots"]
+        RUNROUTES --> RUNSTATE
+        RUNSTATE --> CONTEXT
+        CONTEXT --> STRATEGY
+        RUNSTATE -.-> DB
+        CONTEXT -.-> DB
+        CONTEXT -.-> INPUTS
+    end
+
+    subgraph Prompt["4. Prompt composition"]
+        direction LR
+        CONTENT["Skills, templates, design systems and craft"]
+        PROMPTPATH["Selected prompt composer"]
+        SHARED["Shared contracts"]
+        DECK["Deck framework contract"]
+        FINALPROMPT["Final prompt"]
+        CONTENT -.-> PROMPTPATH
+        STRATEGY --> PROMPTPATH
+        SHARED -.-> PROMPTPATH
+        SHARED --> DECK
+        PROMPTPATH --> FINALPROMPT
+        DECK --> FINALPROMPT
+        INPUTS -.-> FINALPROMPT
+    end
+
+    subgraph Execution["5. Runtime execution"]
+        direction LR
+        REGISTRY["RuntimeAgentDef registry"]
+        DETECT["Detection and probes"]
+        ENGINE["Shared invocation engine"]
+        AGENT["Code-agent CLI"]
+        BYOK["BYOK runtime"]
+        TOOLS["Models, MCP and tools"]
+        PARSER["Event parsers"]
+        PROFILE["Execution profile"]
+        SSE["Normalized SSE events to client"]
+        REGISTRY --> DETECT
+        REGISTRY --> PROFILE
+        DETECT --> ENGINE
+        FINALPROMPT --> ENGINE
+        ENGINE --> AGENT
+        ENGINE --> BYOK
+        AGENT --> TOOLS
+        BYOK --> TOOLS
+        AGENT --> PARSER
+        BYOK --> PARSER
+        PARSER --> SSE
+    end
+
+    subgraph Artifact["6. Artifact state"]
+        direction LR
+        MATERIALIZE["Text-artifact materializer"]
+        WORKSPACE["Project workspace"]
+        DIFF["File-change fingerprints"]
+        VALIDATE["Deliverable validator"]
+        HISTORY["HTML version history"]
+        PROJECTROUTES["Project and version routes"]
+        AGENT --> WORKSPACE
+        PROFILE --> MATERIALIZE
+        MATERIALIZE --> WORKSPACE
+        WORKSPACE --> DIFF
+        DIFF --> VALIDATE
+        VALIDATE --> HISTORY
+        WORKSPACE -.-> HISTORY
+        PROJECTROUTES <--> WORKSPACE
+        PROJECTROUTES <--> HISTORY
+    end
+
+    subgraph Delivery["7. Preview and export"]
+        direction LR
+        SELECT["Select working file or version"]
+        IFRAME["Sandboxed preview"]
+        BRIDGE["Deck protocol and telemetry"]
+        EXPORTROUTES["Export routes"]
+        ELECTRON["Electron and Chromium"]
+        ASSEMBLY["Capture, print and assembly"]
+        PACKAGE["Direct packaging"]
+        RENDERED["PDF, PPTX or image"]
+        DIRECT["HTML, ZIP or Markdown"]
+        WORKSPACE --> SELECT
+        HISTORY --> SELECT
+        SELECT --> IFRAME
+        BRIDGE <--> IFRAME
+        EXPORTROUTES --> SELECT
+        SELECT --> ELECTRON
+        SELECT --> PACKAGE
+        ELECTRON --> ASSEMBLY
+        ASSEMBLY --> RENDERED
+        PACKAGE --> DIRECT
+    end
+
+    classDef client fill:#DBEAFE,stroke:#2563EB,color:#0F172A,stroke-width:1.5px
+    classDef control fill:#EDE9FE,stroke:#7C3AED,color:#0F172A,stroke-width:1.5px
+    classDef prompt fill:#FEF3C7,stroke:#D97706,color:#0F172A,stroke-width:1.5px
+    classDef runtime fill:#CCFBF1,stroke:#0F766E,color:#0F172A,stroke-width:1.5px
+    classDef external fill:#E5E7EB,stroke:#4B5563,color:#0F172A,stroke-width:1.5px
+    classDef state fill:#DCFCE7,stroke:#16A34A,color:#0F172A,stroke-width:1.5px
+    classDef output fill:#FFE4E6,stroke:#E11D48,color:#0F172A,stroke-width:1.5px
+
+    class USER,WEB,CLI client
+    class HTTP,RUNROUTES,RUNSTATE,CONTEXT,STRATEGY control
+    class CONTENT,PROMPTPATH,SHARED,DECK,FINALPROMPT prompt
+    class REGISTRY,DETECT,ENGINE,PARSER,PROFILE,SSE runtime
+    class AGENT,BYOK,TOOLS external
+    class DB,INPUTS,MATERIALIZE,WORKSPACE,DIFF,VALIDATE,HISTORY,PROJECTROUTES state
+    class SELECT,IFRAME,BRIDGE,EXPORTROUTES,ELECTRON,ASSEMBLY,PACKAGE,RENDERED,DIRECT output
+    linkStyle default stroke:#64748B,stroke-width:1.4px
+```
+
+Color and line guide:
+
+| Visual | Meaning |
+|---|---|
+| Blue | User-facing client layer |
+| Purple | Daemon control and orchestration |
+| Amber | Prompt rules and host contracts |
+| Teal | Runtime adapter and execution machinery |
+| Gray | External agents and services |
+| Green | Stored state, files, validation, and history |
+| Rose | Preview, rendering, and export delivery |
+| Solid arrow | Main control or artifact flow |
+| Dashed arrow | Context, metadata, or feedback flow |
+| Two-way arrow | Read and write relationship |
+
+How to read this implementation view:
+
+- The main generation path is `run routes → context → strategy → prompt → runtime engine → external agent → workspace`.
+- `RuntimeAgentDef` changes how an agent is detected and called. It does not replace the shared run lifecycle.
+- Filesystem-capable agents write the workspace directly. Text-only runtimes pass through the artifact materializer before reaching the same workspace.
+- Runtime events return through parsers and SSE. Artifact bytes do not travel through SSE as the canonical state.
+- Completion validation reads run state and workspace changes. A successful result can create HTML history, but live workspace changes may already be visible in preview.
+- Preview and export select stored HTML. Preview uses a sandboxed iframe. Export sends the selected source to Electron/Chromium and then to format-specific assembly.
+- SQLite and the workspace have different ownership: SQLite holds control metadata; the workspace holds current artifact bytes.
+- Project/version routes and export routes are placed beside the state they operate on to keep connectors short. Both are still part of the daemon HTTP API.
+
+Primary implementation sources for this view:
+
+| Area | Main implementation source |
+|---|---|
+| Web client and preview | `apps/web/src/` |
+| Daemon composition | `apps/daemon/src/server.ts` |
+| Run API and task lifecycle | `apps/daemon/src/routes/runs.ts` |
+| Prompt composition | `apps/daemon/src/prompts/`, `packages/contracts/src/prompts/`, and strategy packages |
+| Runtime definitions and engine | `apps/daemon/src/runtimes/` |
+| Shared API and runtime contracts | `packages/contracts/src/` |
+| Project files and versions | `apps/daemon/src/routes/project/`, `project-file-versions.ts`, `run-html-version-snapshots.ts` |
+| Validation and file-change tracking | `run-deliverable-validation.ts`, `run-artifact-fs.ts` |
+| Export and binary assembly | `import-export-routes.ts`, `deck-export.ts`, `apps/desktop/` |
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L79-L199`, `#L263-L274`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/agent-adapters.md#L15-L27`, `#L552-L590`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/prompt-composition.md#L5-L82`, `#L82-L123`.
+
+## 3. Findings
+
+### 3.1 Input & source
+
+### F-OD-01 — The daemon separates attachment transport from prompt instructions
 
 - Research questions: RQ-01
-- Problem addressed: Supplying user files to different agent runtimes while telling the model not to treat file content as host instructions.
-- Responsibility / boundary: The daemon and shared prompt contracts control attachment transport and prompt composition. The selected agent and model receive the prompt and attachment references. The project workspace stores uploaded or materialized files.
-- Decision / mechanism: OD Next stores attachment bytes outside the prompt. The prompt contains stable identity metadata instead of file bodies or absolute paths. It also tells the model to treat attachments, existing artifacts, retrieved pages, plugin content, and tool output as task data, not as rules that replace the system boundary. This is a prompt rule, not a technical guarantee that a model will always follow it.
-- Source says: The request-input contract uses `OD_TASK_INPUT_DIR` to transport files outside the prompt. It records each file's kind, reference, media type, size, and digest, but its serializer leaves out file bodies and absolute paths — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-task-inputs.ts#L36-L65`, `#L93-L108`. The daemon copies attachment bytes into read-only snapshot files, verifies their digests, and makes their managed references available through `OD_TASK_INPUT_DIR` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/strategies/od-next/task-input-snapshot.ts#L610-L707`, `#L709-L724`. SQLite stores message content and run context — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/db.ts#L237-L260`. The OD Next prompt identifies attachments and retrieved material as task data — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-strategy.ts#L440-L446`.
-- User-instruction trace — Source says: `POST /api/runs` receives the request body. It uses `currentPrompt` when available; otherwise, it uses the flattened `message`. It then inserts or updates that text as the SQLite user-message row — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/runs.ts#L939-L946`, `#L2588-L2643`. Next, `startChatRun` reads `message`, `currentPrompt`, transcript/context, and the selected model/runtime — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L10860-L10885`. It resolves the current request, combines it with system, tool, and context blocks, and adds it to the final payload — `#L12019-L12045`, `#L12236-L12276`. Saved user and project instructions enter the stable system-prompt inputs through a separate path — `#L10551-L10617`. Finally, the complete prompt reaches the runtime through adapter arguments, a prompt file, stdin, or an RPC/session payload — `#L13469-L13476`, `#L13624-L13652`, `#L14394-L14409`, `#L15569-L15622`, `#L17174-L17195`.
-- Exposure search result — Source says:
-  - **Logs and telemetry:** A search of daemon `console.*` and logger calls, runtime launch code, and telemetry code found no normal daemon log that intentionally prints the raw user prompt. However, this is not a guarantee for every path. An Antigravity run writes an agent-owned log in the OS temp directory, reads the end of that log to classify failures, and makes a best-effort attempt to delete it when the run closes — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L13462-L13473`, `#L16327-L16355`, `#L17146-L17158`. Also, when telemetry metrics and content consent are both enabled, OpenDesign may send a limited or redacted prompt, prompt-stack content, outputs, and tool inputs/outputs to a configured OpenDesign relay or Langfuse sink — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/langfuse-trace.ts#L458-L482`, `#L1890-L1929`, `#L1997-L2001`, `#L2356-L2357`.
-  - **Temporary files:** File-prompt adapters write the complete prompt to `prompt.md` in a new OS temp directory with mode `0600`. Cleanup recursively removes the directory, but several caller paths only make a best-effort attempt — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/runtimes/prompt-file.ts#L11-L28`, `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L13469-L13476`, `#L17146-L17158`. Managed attachment snapshots create another on-disk copy, separate from the temporary prompt files.
-  - **Caches:** The inspected daemon and runtime paths had no separate local cache for the raw instructions from each user turn. OD Next puts the reusable system/skill prefix first and `userFirstPrompt` last, outside the stable cache prefix. This layout explicitly targets an upstream provider's prompt cache — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-prompt-bundle-v2.ts#L15-L28`, `#L48-L84`. This repository does not establish how the provider retains or evicts that cache.
-  - **Tools:** The daemon gives each run a scoped token for limited internal tool endpoints. It can also add user-configured external MCP servers and OAuth data so the model can call them — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L11204-L11237`, `#L13131-L13174`. Tool arguments may therefore include user content and may leave the process through an external MCP server or tool selected for the run. The inspected launch and configuration paths had no repository-wide allowlist controlling content sent to arbitrary external tools or MCP servers configured per CLI.
-  - **Runtime/model provider:** OpenDesign intentionally sends the complete instruction payload to the selected runtime. The runtime may stay local or send the payload to its configured upstream or BYOK provider. OpenDesign's provider-proxy routes also forward system prompts and messages to the selected provider endpoint — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/chat.ts#L986-L1032`, `#L1032-L1085`, `#L1348-L1431`.
-- Inference: OD Next separates file bytes from prompt metadata and tells the model how to treat those files. It does not keep all content local. User instructions pass through the API, SQLite state, prompt composition, runtime transport, and the selected model or provider. Depending on the run, user content may also appear in project files, managed snapshots, temporary prompt or log files, consented telemetry, and tool or MCP calls. The inspected code has protections for individual paths, but it does not establish one end-to-end guarantee for every runtime, provider, legacy path, and user-configured MCP server.
-- Rationale: Keeping file bytes outside the prompt reduces prompt size and avoids putting absolute paths in the serialized input. This rationale is inferred from the data shape.
-- Trade-off: The design provides attachment identity that works across runtimes, flexible runtime and tool integration, and a clear trust rule. However, content exposure and retention still vary by adapter, telemetry consent, external tool, and upstream provider.
-- Related AC: AC-02, because source material is explicitly labelled task data; AC-11, because the trace shows where content is stored or sent through runtimes, providers, temporary storage, telemetry, and tools.
-- DeckAgent implication: W-033 can use this as evidence that input identity metadata can be separated from file-content transport. Temporary copies, telemetry consent, data sent through tools, provider retention, and consistency across legacy paths remain separate open questions for DeckAgent.
-- Mismatch / caution: OpenDesign supports many CLIs, remote providers, plugins, linked directories, and durable projects. DeckAgent V1 is local and session-only under D-027; these wider flows are not a scope precedent.
-- Confidence: Strong inference — the transport and storage paths are visible in code, but the end-to-end security limit is an inference bounded to the inspected paths.
+- Problem addressed: Give the agent source material without placing all file bytes inside the prompt.
+- Responsibility / boundary: The daemon owns attachment intake and snapshot references. The prompt layer labels the material as task data. The selected agent can still read it.
+- Decision / mechanism: Attachment metadata is added to the run contract, while managed snapshot files hold the bytes. User and project instructions enter through separate prompt fields.
+- Source says: In the inspected strategy path, attachment facts are serialized without file bodies or absolute paths, while the daemon creates checked snapshot files for the run — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-task-inputs.ts#L36-L65`, `#L93-L108`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/strategies/od-next/task-input-snapshot.ts#L610-L724`.
+- Inference: Transport is separated, but there is no hard security boundary between source content and the agent that reads it. External models and enabled tools may receive user content.
+- Rationale: Keeping bytes outside the prompt reduces prompt size and gives the host a controlled file boundary. This rationale is inferred from the contract.
+- Trade-off: The prompt stays smaller, but safe treatment of untrusted source text still depends on prompt rules, agent behavior, and tool policy.
+- DeckAgent implication / relevance: AC-02, AC-11 — useful evidence for separating file transport from instructions and for making every external content path explicit.
+- Mismatch / caution: This transport contract was inspected in one strategy path, not established as a universal attachment contract. OpenDesign also allows broad agent and MCP tool access; DeckAgent may need a narrower exposure boundary.
+- Confidence: Strong inference.
 
-### F-OD-02 — The attachment contract separates media type from task role
+### F-OD-02 — Input role is modeled separately from file media type
 
 - Research questions: RQ-02
-- Problem addressed: Accepting different file types without treating a file extension as the complete meaning of an input.
-- Responsibility / boundary: Shared contracts describe attachment transport metadata. Project metadata and plugin or template selection determine the task and output mode. The agent decides how to use each attachment.
-- Decision / mechanism: An attachment has a broad `kind` (`file` or `image`) and a media type. A separate configuration stores the task type, route, mode, and output constraints. The inspected request contract has no semantic role—such as `content`, `reference`, `template`, or `asset`—for each attachment.
-- Source says: Attachment facts and task configuration are separate objects — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-task-inputs.ts#L16-L65`. Functional skills, renderable templates, design systems, plugins, and craft are distinct registries — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L126-L146`.
-- Inference: A file's extension or media type does not determine its task role. For an ordinary attachment, the role comes from the request text and the agent's interpretation, not from saved role metadata. Adding machine-readable roles would at least require a contract change and might also require UI and prompt changes.
-- Rationale: This separation keeps the request model small and lets the same media type serve different workflows. This rationale is inferred.
-- Trade-off: The mechanism is flexible, but downstream code cannot reliably query whether a PDF was content, style reference, or template.
-- Related AC: AC-13, because media classification is not identical to task configuration and the evidence shows the likely cost of explicit roles.
-- DeckAgent implication: W-033 can distinguish OpenDesign's prompt-based interpretation from a machine-readable role mechanism without choosing either one.
-- Mismatch / caution: DeckAgent first V1 needs only content-source role under D-024; OpenDesign's broader catalogs exceed that boundary.
-- Confidence: Strong inference — the current contract is explicit; the likely change impact is inferred.
+- Problem addressed: Let the same file type serve different workflows.
+- Responsibility / boundary: Attachment metadata describes the file; skill, template, design-system, and plugin registries describe its workflow role.
+- Decision / mechanism: Media facts and task configuration are separate contracts.
+- Source says: In the inspected task-input contract, attachment facts are separate from task configuration; independently, the architecture defines skills, templates, design systems, and plugins as different registries — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/od-next-task-inputs.ts#L16-L65`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L126-L146`.
+- Inference: A PDF, image, or HTML file is not forced into one role by its extension alone.
+- Rationale: The separation lets workflow policy change without changing basic file metadata. This is inferred.
+- Trade-off: The model is flexible, but the daemon must resolve and validate role configuration.
+- DeckAgent implication / relevance: AC-13 — shows an input boundary where role and file type can evolve independently.
+- Mismatch / caution: OpenDesign supports more roles than DeckAgent V1 needs.
+- Confidence: Strong inference.
 
-### 2.2 Intent
+### 3.2 Intent
 
-Research questions: RQ-03
-
-### F-OD-03 — Coarse intent is retained explicitly; detailed constraints remain distributed
+### F-OD-03 — Intent is assembled from several context sources
 
 - Research questions: RQ-03
-- Problem addressed: Preserving user intent across multiple creation and refinement turns, agents, and resumable sessions.
-- Responsibility / boundary: SQLite stores conversations, messages, session identity, and a small set of conversation-level intent signals. Prompt composition combines those signals with project and user instructions, the transcript, design system, skill or template, memory, and current metadata.
-- Decision / mechanism: OpenDesign latches coarse signals for deck, media, platform, and device platform so they remain active for the conversation even when visible transcript context is trimmed. More detailed constraints, such as audience, deck length, and language, remain in the transcript or other prompt inputs rather than one dedicated constraint record. Agent sessions record the stable prompt and runtime identity.
-- Source says: The conversation record has `intent_signals_json` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/db.ts#L194-L203`. The stored signals are deck, media, platform, and device platform; latching keeps detected values active at conversation scope — `#L2501-L2517`, `#L2530-L2599`. Initial prompt composition feeds these signals into the prompt bundle — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/strategies/od-next/initial-prompt-bundle-service.ts#L306-L347`. `composeSystemPrompt` also accepts skill, design system, craft, memory, metadata, user instructions, and project instructions — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/prompts/system.ts#L285-L350`.
-- Inference: Coarse task intent can survive transcript trimming and agent changes within a conversation. Detailed deck constraints can still reach follow-up requests through the transcript and stable project context, but their lifetime depends on which transcript, session, project instructions, or memory is included later.
-- Rationale: Latching prevents a known task category or platform choice from disappearing when context is shortened. Distributed prompt context supports constraints that do not fit the small signal schema.
-- Trade-off: Important coarse intent is durable and easy to inspect. Detailed constraints remain flexible, but their lifetime and conflict resolution are harder to inspect and test.
-- Related AC: AC-04, because it concerns where active goals remain available to later refinements.
-- DeckAgent implication: W-033 can use this evidence about how hard transcript-carried constraints are to inspect, without choosing a storage mechanism.
-- Mismatch / caution: OpenDesign persists across sessions and can use memory; DeckAgent V1's session-only boundary (D-027) differs.
-- Confidence: Strong inference — the coarse signal lifecycle is explicit; the limit for detailed constraints is bounded to the inspected schema and prompt inputs.
+- Problem addressed: Carry user goals and design rules into generation and later edits.
+- Responsibility / boundary: The daemon composes conversation intent, current instructions, project instructions, skill/template rules, design system, and craft guidance.
+- Decision / mechanism: A run receives a composed context instead of reading intent from the current deck alone.
+- Source says: The daemon owns prompt composition from active design system, skill/template, craft, project metadata, and per-turn additions — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L96-L110`.
+- Inference: High-level intent can survive because it is stored outside the artifact, but detailed constraints remain spread across messages and prompt inputs rather than one typed constraint model.
+- Rationale: OpenDesign must combine reusable design policy with conversation-specific requests. This is inferred from the composition boundary.
+- Trade-off: The system can reuse many context sources, but it is harder to inspect one complete, durable set of active constraints.
+- DeckAgent implication / relevance: AC-04 — shows why intent state should be visible outside the generated deck.
+- Mismatch / caution: OpenDesign's context includes many product surfaces that DeckAgent may not need.
+- Confidence: Strong inference.
 
-### 2.3 Generation & provenance
+### 3.3 Generation & provenance
 
-Research questions: RQ-04, RQ-05
-
-### F-OD-04 — The daemon coordinates generation, and both runtime profiles end in project files
+### F-OD-04 — Generation is a host-orchestrated pipeline around an external agent
 
 - Research questions: RQ-04
-- Problem addressed: Running interchangeable coding-agent runtimes while keeping one project, preview, and export surface.
-- Responsibility / boundary: The web app owns interaction and preview presentation. The daemon owns persistence, prompts, runtime selection, runs, files, and exports. Adapters handle runtime-specific launching and normalize events. Project files hold the deliverable.
-- Decision / mechanism: For each request, OpenDesign resolves the project, design system, main skill or template, turn-specific skills, runtime, and execution metadata. Filesystem runtimes write the main project files directly. Plain and BYOK runtimes return one complete artifact, which the host writes into the same workspace.
-- Source says: Component responsibilities and runtime registry are documented at `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L79-L124`; both execution profiles are specified at `#L175-L199`. Web and CLI use the same daemon APIs rather than duplicate business logic — `#L55-L77`.
-- Inference: The common boundary is a project-file deliverable plus normalized events, not a presentation-specific intermediate model. Runtime definitions localize many runtime differences, but provider capabilities can still affect orchestration. A change to the shared HTML or deck conventions could affect prompts, templates, preview, validation, or export; the exact impact would depend on the change.
-- Rationale: Central daemon authority enables multiple interfaces and agents.
-- Trade-off: The design supports multiple runtimes and works naturally with real files. However, agents can directly change those files, and HTML conventions become contracts shared by several components.
-- Related AC: AC-01, because this is an end-to-end first-deck path; AC-23, because the seams show where failures spread.
-- DeckAgent implication: W-033 can use this evidence for blast-radius analysis of runtime adapters versus artifact contracts. It is not a DeckAgent proposal.
-- Mismatch / caution: Plugins, memory, collaboration, and multi-artifact support are outside D-024–D-027.
-- Confidence: Strong inference — component ownership and execution profiles are explicit, while the change-impact statements are inferred.
+- Problem addressed: Support several agents and execution modes without copying the product flow.
+- Responsibility / boundary: The daemon resolves context and runs; the prompt layer gives task policy; the external agent performs model/tool work; the workspace receives the artifact.
+- Decision / mechanism: Both filesystem and text-artifact execution profiles end in the same project-file boundary.
+- Source says: The two generation profiles and their common workspace handoff are documented in `docs/architecture.md` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L175-L199`.
+- Inference: The stable architectural path is `request → context/prompt → runtime → workspace → validation → preview/export`, even when the selected agent transport changes.
+- Rationale: OpenDesign wants to integrate existing agents instead of owning another agent loop. This is stated in `docs/agent-adapters.md#L5-L10`.
+- Trade-off: The host stays agent-neutral, but exact tool, permission, and recovery behavior varies by runtime.
+- DeckAgent implication / relevance: AC-01, AC-23 — provides a clear stage map and shows where runtime changes can be isolated.
+- Mismatch / caution: OpenDesign is a multi-artifact platform; DeckAgent can use a narrower pipeline.
+- Confidence: Explicit.
 
-### F-OD-05 — Provenance is tracked by file version, not by content fragment
+### F-OD-05 — Provenance is recorded at file/version level, not inside deck content
 
 - Research questions: RQ-05
-- Problem addressed: Linking generated HTML to its prompt and surrounding conversation or run context while preserving manual-edit and restore history.
-- Responsibility / boundary: The HTML version store keeps saved snapshots and basic metadata about their source. When a run finishes successfully, finalization detects changed paths and creates AI versions.
-- Decision / mechanism: Each HTML version records its `source` (`ai`, `manual`, or `restore`), prompt or source text, digest, parent or restore history, and optional external-plugin origin. Successful-run finalization also makes a best-effort attempt to backfill the created HTML version IDs into the assistant message's artifact references. A `runId` appears directly in the version only through optional origin metadata. No field records whether an individual claim or text span came from an uploaded source, the user, or AI.
-- Source says: The version schema includes source, prompt, parent history, digest, and origin — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/project-file-versions.ts#L15-L59`. Version creation saves a new content file, attaches or inherits origin metadata, and advances the current ID — `#L491-L560`. Successful runs snapshot touched HTML with the latest prompt — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-html-version-snapshots.ts#L82-L132` — and backfill version IDs into assistant-message artifact references — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L11726-L11739`. The optional external-plugin origin can carry a direct `runId` — `#L11740-L11758`.
-- Inference: OpenDesign can identify the saved version, usually retain its prompt, and normally connect it to an assistant message through the best-effort backfill. Some external-plugin versions also have a direct run link. This is useful artifact-level provenance, but it does not record which source supplied each sentence or claim. `source: ai` describes the kind of file change, not the semantic origin of the content.
-- Rationale: File history fits a workspace built around code files. It also supports restore and pinned exports with little metadata. This rationale is inferred.
-- Trade-off: It gains useful file, prompt, and conversation lineage but cannot directly test fact-level source attribution.
-- Related AC: AC-03 and AC-16, because distinguishing the source of meaning needs finer-grained records that tests can inspect.
-- DeckAgent implication: W-033 can treat file-version history and sentence-level source tracking as separate mechanisms.
-- Mismatch / caution: Optional `ArtifactOrigin` is tied to an external MCP/plugin workflow and does not cover every local run; DeckAgent P1 concerns the source of the content itself.
-- Confidence: Strong inference — version metadata is explicit, and the limit on sentence-level provenance follows from the inspected schema.
+- Problem addressed: Link an artifact version to the run and prompt that created it.
+- Responsibility / boundary: Version history records file-level origin. It does not label each sentence or object as source-derived, user-provided, or generated.
+- Decision / mechanism: Successful runs can snapshot changed HTML and attach prompt/origin metadata to the file version.
+- Source says: The version model stores source, prompt, parent history, digest, and origin, and successful runs create HTML snapshots for touched files — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/project-file-versions.ts#L15-L59`, `#L491-L560`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-html-version-snapshots.ts#L82-L132`.
+- Inference: OpenDesign can answer which run produced a file version, but not which claims in that version came from the source.
+- Rationale: File-level history fits the code-file workspace. This is inferred.
+- Trade-off: History stays simple, but detailed content provenance cannot be checked after edits.
+- DeckAgent implication / relevance: AC-03, AC-16 — shows that run/file provenance and content-level provenance solve different problems.
+- Mismatch / caution: DeckAgent's source-grounding need is stricter than OpenDesign's general artifact history.
+- Confidence: Strong inference.
 
-### 2.4 State & ownership
+### 3.4 State & ownership
 
-Research questions: RQ-06, RQ-07
-
-### F-OD-06 — Project files hold the working deliverable; SQLite holds the related metadata
+### F-OD-06 — Workspace files are the working artifact; SQLite is supporting state
 
 - Research questions: RQ-06
-- Problem addressed: Giving chat, preview, versioning, and export access to one mutable artifact without making browser state the source of truth.
-- Responsibility / boundary: The project directory stores artifact bytes. SQLite stores projects, conversations, messages, tabs, and run metadata. The daemon controls file access. The web app stores only UI state and preferences.
-- Decision / mechanism: Filesystem agents mutate files in the project workspace. Preview renders a selected project file in a sandboxed iframe. Export reads either the current file or an explicitly requested HTML version.
-- Source says: The database module calls the project folder the single owner of actual user files and SQLite the metadata store — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/db.ts#L1-L5`. Web has no alternate browser project database, while daemon owns file preview/version/import/export — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L81-L110`. Export resolves `fileName` plus optional `versionId` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L951-L989`.
-- Inference: When a deck is one HTML file, preview and export can read the same source bytes. The working state is not one all-or-nothing deck object. It is a set of editable files plus metadata, so consistency across several files depends on how those files are updated.
-- Rationale: Real files make agent tooling, handoff, and direct code reuse natural; the README says agents write canonical files that OpenDesign previews — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L324-L330`.
-- Trade-off: The system is transparent and works with normal file tools, but the inspected flow does not update several files as one all-or-nothing deck change. It also does not show a separate slide-and-text model for this HTML deck path.
-- Related AC: AC-05, because preview/export source identity matters; AC-15, because slide order/text must be extracted from HTML and outputs.
-- DeckAgent implication: W-033 can distinguish “same source file” from “one accepted, all-or-nothing deck state.”
-- Mismatch / caution: OpenDesign uses durable files/imported folders. DeckAgent is session-only (D-027) and requires editable PPTX plus PDF (D-026).
-- Confidence: Strong inference — file ownership and export inputs are explicit; the consistency limit is inferred from the file-based model.
+- Problem addressed: Give agents normal files while keeping durable project and run metadata.
+- Responsibility / boundary: The project workspace owns current artifact bytes. SQLite owns projects, conversations, messages, runs, and related metadata. Preview and export read files or an explicit HTML version.
+- Decision / mechanism: OpenDesign splits content state from control metadata instead of storing the full deck only in the database.
+- Source says: The architecture assigns persistence and project-file authority to the daemon and describes the workspace/SQLite split — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L96-L110`, `#L148-L162`.
+- Inference: Managed projects survive reload and application restart until removed. This is not a session-only model. The file selected by preview and export is observable, but a live file can change unless export is pinned to a version.
+- Rationale: Normal files work well with coding agents; SQLite supports queryable control state. This is inferred.
+- Trade-off: Each store has a clear role, but consistency across file changes and metadata updates needs coordination.
+- DeckAgent implication / relevance: AC-05, AC-15, AC-30 — useful for locating version bytes, preview selection, export selection, and lifecycle state.
+- Mismatch / caution: DeckAgent V1 is session-only, while OpenDesign is a durable project system.
+- Confidence: Strong inference.
 
-### F-OD-07 — HTML versions support restore, but rollback applies to one file after it has changed
+### F-OD-07 — Version history supports restore, but there is no pending-version gate
 
 - Research questions: RQ-07
-- Problem addressed: Recovering from unwanted HTML edits.
-- Responsibility / boundary: The daemon's per-file version store keeps saved HTML history. File routes let callers list, read, and restore versions. A restore overwrites the working file and adds a new restore version.
-- Decision / mechanism: Near the end of a successful run, OpenDesign creates versions of the HTML files changed by AI. Restoring a version copies its bytes into the live file and records the source version in `restoreFromVersionId`.
-- Source says: Version history is restricted to HTML — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/project/index.ts#L7236-L7264`. Restore reads the chosen version, overwrites the working file, and records a new restore version — `#L7407-L7472`. AI snapshots are created from touched HTML after the run changed the filesystem — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-html-version-snapshots.ts#L82-L132`.
-- Inference: If a suitable HTML version exists, a single-file deck can be restored. In the inspected flow, there is no one-step run-level restore for both HTML and its assets. The live file changes before the successful-run snapshot is created, and the flow does not show a separate candidate state waiting for user acceptance.
-- Rationale: Append-only per-file restore preserves history while fitting filesystem ownership; inferred.
-- Trade-off: This provides practical recovery for HTML. The inspected restore path does not reverse a multi-file refinement in one step or isolate changes before acceptance.
-- Related AC: AC-06, because candidate/accepted separation is absent; AC-07, because restore approximates rejection only for a selected file/version; AC-17, because before/after HTML versions are observable when captured.
-- DeckAgent implication: W-033 can distinguish history/restore from pre-acceptance isolation and run-level rollback.
-- Mismatch / caution: DeckAgent requires only latest-refinement rejection (D-025), not general version management; OpenDesign's wider history is not scope.
-- Confidence: Strong inference — restore behavior is explicit; the absence claim is limited to the inspected version and run-finalization paths.
+- Problem addressed: Recover an earlier HTML artifact after edits.
+- Responsibility / boundary: The workspace is changed directly during a run. HTML history can later restore one file. No separate component accepts or rejects a whole-deck candidate before it becomes the working state.
+- Decision / mechanism: Restore copies a historical HTML version back into the working file and records the restore as another version.
+- Source says: Version history is limited to HTML, and restore overwrites the working file from a selected version — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/project/index.ts#L7236-L7264`, `#L7407-L7472`.
+- Inference: OpenDesign provides history after mutation, not an accepted/pending transaction around the whole deck.
+- Rationale: Direct file edits match the coding-agent workflow. The source does not state why a candidate gate is absent.
+- Trade-off: Live iteration is simple, but rejection is a later restore and may not cover all files changed by one run.
+- DeckAgent implication / relevance: AC-06, AC-07, AC-17, AC-29 — provides a useful contrast between history and an explicit version lifecycle.
+- Mismatch / caution: OpenDesign's restore model must not be treated as DeckAgent's accepted/pending model.
+- Confidence: Strong inference.
 
-### 2.5 Refinement
+### 3.5 Refinement
 
-Research questions: RQ-08
-
-### F-OD-08 — Refinement routes bounded edits through Direct Edit and broader changes through Full Plan
+### F-OD-08 — Refinement chooses bounded direct edit or full planning
 
 - Research questions: RQ-08
-- Problem addressed: Refining an existing deck while keeping the conversation, files, and preview together.
-- Responsibility / boundary: OD Next orchestration classifies the requested change and locks either Direct Edit or Full Plan. The agent performs the authorized file changes. Filesystem comparison records changed paths, and preview follows the updated files.
-- Decision / mechanism: Direct Edit is allowed only when an editable baseline exists, the request is explicit and local, the deliverable remains stable, and affected dependencies can be bounded. It records a versioned minimal-change contract, including protected content, then instructs the agent to modify only the authorized scope. If that scope expands after Build starts, the agent must stop rather than widen the edit. Broader or uncertain changes use Full Plan. Both routes still produce file edits, and the filesystem diff records paths rather than slide-level semantic changes.
-- Source says: The orchestration rules define Direct Edit eligibility, its minimal-change contract, protected content, and the stop-on-scope-escape rule — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:plugins/_official/scenarios/od-next-strategy/assets/general-orchestration.md#L132-L202`. The resolver sends a request to Direct Edit only when its baseline, scope, deliverable, and dependency checks pass; otherwise it returns Full Plan — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/strategies/od-next/resolver.ts#L201-L256`. Run tracking snapshots before and after the run and reports changed paths — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-artifact-fs.ts#L1-L14`, `#L382-L459`.
-- Inference: OpenDesign deliberately steers clear, local refinements toward targeted edits. This explains why ordinary use often changes only what the user requested. The remaining limit is verification: the inspected diff proves which files changed, not that every non-target slide or element stayed semantically identical. The inspected sources also do not define a separate whole-deck translation pipeline.
-- Rationale: Direct Edit avoids full replanning for bounded changes while Full Plan handles changes whose scope or dependencies cannot be safely limited. This rationale is stated in the orchestration rules.
-- Trade-off: The two routes support both fast local changes and broader redesigns. Exact element preservation still relies on the change contract, agent behavior, and artifact structure because the host does not validate a slide-level semantic patch after writing.
-- Related AC: AC-01, because repeated refinement uses the common run path; AC-04, because prompt context and the minimal-change contract carry constraints; AC-27, because no separate translation pipeline was found and the same refinement routes are relevant.
-- DeckAgent implication: W-033 can assess route-level scope control separately from post-edit semantic verification. It is evidence that targeted refinement can be encouraged without requiring a slide-object editor.
-- Mismatch / caution: The README's partially shipped “comment-mode surgical edits” concerns a more specific UI path and does not mean ordinary chat-based Direct Edit is absent — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L596-L612`. DeckAgent D-025 does not require object-editing ambitions.
-- Confidence: Strong inference — route eligibility and scope rules are explicit; the verification limit follows from the path-level diff, while translation behavior remains less certain.
+- Problem addressed: Avoid full regeneration for a clear local change while keeping broader changes planned.
+- Responsibility / boundary: The strategy resolver classifies scope. The agent still performs the edit in the workspace.
+- Decision / mechanism: Eligible, well-bounded requests use Direct Edit. Wider or uncertain requests use Full Plan.
+- Source says: A bundled strategy defines Direct Edit eligibility, protected content, and fallback to Full Plan — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:plugins/_official/scenarios/od-next-strategy/assets/general-orchestration.md#L132-L202`.
+- Inference: Refinement scope is a planning choice, not a separate slide patch representation. Existing files and context are the baseline.
+- Rationale: The source states that direct edit is for minimal, known changes and full planning is for broader work.
+- Trade-off: Small edits can be faster, but correctness still depends on the agent respecting scope and on later validation.
+- DeckAgent implication / relevance: AC-01, AC-04, AC-27 — shows one routing point for local versus whole-deck refinement.
+- Mismatch / caution: The documented Direct Edit policy belongs to one strategy and must not be assumed for every OpenDesign run. DeckAgent V1 requires deck-level refinement, while OpenDesign's object and local-edit features are wider in scope.
+- Confidence: Explicit.
 
-### 2.6 Validation & quality
+### 3.6 Validation & quality
 
-Research questions: RQ-09, RQ-10
-
-### F-OD-09 — Completion validation verifies deliverable integrity, not deck correctness
+### F-OD-09 — Run completion validation checks artifact integrity, not presentation quality
 
 - Research questions: RQ-09
-- Problem addressed: Preventing a run from reporting success when its artifact is missing, unreadable, the wrong type, or unchanged.
-- Responsibility / boundary: Daemon finalization validates run status, filesystem diff, project kind, entry selection, and readability. HTML lint supplies separate heuristic quality findings.
-- Decision / mechanism: Run validation requires a successful status, at least one artifact, a main entry file, a compatible project type, evidence that the run changed the entry or a linked page, and a readable file. It does not check factual accuracy, slide completeness, geometry, or export output before the live file becomes current.
-- Source says: The validator distinguishes “did this run produce it?” from “does the project have it?” — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-deliverable-validation.ts#L163-L230`. It checks status/count, entry, touched path, kind, and file readability — `#L233-L346`. The HTML linter is a cheap grep mechanism whose P0 findings are surfaced for correction — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/lint-artifact.ts#L1-L15`.
-- Inference: OpenDesign has a clear deliverable-completion gate, and P0 lint findings can be returned to the agent for correction on a later turn. These checks improve delivery integrity and iterative quality, but they do not approve or reject a separate candidate deck: the inspected flow runs against files that are already the working state.
-- Rationale: Runtime-neutral checks cheaply prevent stale-file success claims; supported by validator comments.
-- Trade-off: The gate detects missing, stale, or unreadable output, and lint provides actionable feedback. Neither mechanism by itself keeps an earlier working artifact unchanged when a later result is low quality or inaccurate.
-- Related AC: AC-10, because this identifies a validation point and available information; AC-06, because it lacks candidate/accepted separation.
-- DeckAgent implication: W-033 can separate deliverable-integrity validation from content/layout acceptance validation.
-- Mismatch / caution: OpenDesign is a continuously editable workspace; DeckAgent has explicit accepted-state/output-delivery concerns.
-- Confidence: Strong inference — the validator's checks are explicit; the candidate-state limit is bounded to the inspected completion flow.
+- Problem addressed: Distinguish a completed run with a usable deliverable from a run that only emitted events or partial files.
+- Responsibility / boundary: The daemon validates run status, expected entry file, changed paths, artifact kind, and readability after the run. Preview can show workspace file changes while the run is still active. It does not decide whether the deck's meaning and layout are good.
+- Decision / mechanism: Validation sits after runtime execution and before the run is treated as having produced its deliverable.
+- Source says: The validator separates “this run produced it” from “the project has it” and checks status, entry, touched path, kind, and readability — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-deliverable-validation.ts#L163-L230`, `#L233-L346`. The documented generation flow says file events can update the workspace and preview during execution — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L177-L189`.
+- Inference: The architecture has a visible completion gate, but live preview is not behind that gate. The gate also does not prove semantic correctness or full rendered quality. Export has its own request, render, and format checks rather than one shared acceptance gate.
+- Rationale: A run must not be marked successful only because a file already existed. This is directly reflected in the validator split.
+- Trade-off: The check is cheap and clear, but deeper quality needs other stages.
+- DeckAgent implication / relevance: AC-06, AC-10 — shows why integrity and quality validation should be separate and observable.
+- Mismatch / caution: OpenDesign does not have DeckAgent's pending-version promotion point.
+- Confidence: Strong inference.
 
-### F-OD-10 — Quality checks combine source linting, render telemetry, capture, and optional audits
+### F-OD-10 — Quality evidence is spread across source, preview, render, and optional audit stages
 
 - Research questions: RQ-10
-- Problem addressed: Detecting design regressions and render failures across HTML decks and exports.
-- Responsibility / boundary: Source linting inspects HTML text. Iframe reporting provides runtime errors, render failures, and deck geometry. Electron renders slides. An optional skill compares PPTX with HTML.
-- Decision / mechanism: The system uses heuristic source checks, preview events for white screens or unscaled stages, off-screen capture of the whole deck, and an optional audit. The audit extracts PPTX shapes, text, geometry, and boundary information.
-- Source says: Lint checks deck anchors, theme classes, and rhythm — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/lint-artifact.ts#L448-L509`. Preview reports runtime/resource errors, white screen, unscaled deck stage, viewport/canvas sizes, and stage geometry — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/runtime/preview-observability.ts#L86-L127`. The audit extracts PPTX shape text/position/size/typography and verifies bounds — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L57-L103`, `#L178-L209`.
-- Inference: OpenDesign can render the whole deck and report some geometry and render-health data. The normal completion path does not show one automatic layout-and-readability audit that covers preview, PPTX, and PDF. The inspected fidelity workflow is a separate skill.
-- Rationale: Fast checks cover common failures during iteration, while more expensive artifact inspection remains optional. This rationale is inferred from how the checks are connected.
-- Trade-off: The normal path stays responsive, but quality evidence is spread across several mechanisms, and exports are not verified in a consistent way.
-- Related AC: AC-14, because geometry/text metrics exist in some paths; AC-18, because desktop capture renders the whole deck; AC-25, because separate mechanisms raise integration cost.
-- DeckAgent implication: W-033 can treat source lint, render-health telemetry, and artifact comparison as distinct checks with different costs.
-- Mismatch / caution: The audit targets HTML-to-`python-pptx`; v0.24.0 defaults to screenshot PPTX and optionally `dom-to-pptx`, so coverage cannot be assumed.
-- Confidence: Strong inference — the individual checks are explicit; the absence claim is limited to the inspected completion, export, and audit paths.
+- Problem addressed: Detect different classes of presentation failure without one very expensive check on every edit.
+- Responsibility / boundary: Source lint checks HTML patterns; preview reports runtime and geometry signals; Chromium gives rendered output; an optional audit inspects PPTX fidelity.
+- Decision / mechanism: Quality checks are layered by cost and by the artifact form they can observe.
+- Source says: Preview exposes render-health and geometry data, while the optional audit reads PPTX text, position, size, typography, and bounds — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/runtime/preview-observability.ts#L86-L127`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L57-L103`, `#L178-L209`.
+- Inference: No single stage owns complete content and visual quality. Render-based evidence is needed for failures that source checks cannot see.
+- Rationale: Fast checks support iteration, while artifact inspection is more costly. This is inferred.
+- Trade-off: Layering limits routine cost, but evidence is fragmented and optional checks may not run.
+- DeckAgent implication / relevance: AC-14, AC-18, AC-25 — supports separating cheap structural checks from rendered whole-deck checks.
+- Mismatch / caution: OpenDesign's checks cover many artifact types, not only decks.
+- Confidence: Strong inference.
 
-### 2.7 Rendering & export
+### 3.7 Rendering & export
 
-Research questions: RQ-11, RQ-12, RQ-13
-
-### F-OD-11 — Export reads saved HTML instead of generating the content again
+### F-OD-11 — Preview and export render stored HTML instead of regenerating content
 
 - Research questions: RQ-11
-- Problem addressed: Exporting PPTX or PDF without generating the content again, while allowing repeatable exports from historical versions.
-- Responsibility / boundary: Preview renders project HTML in a sandboxed iframe. Export reads either the current file or a requested `versionId`, and the desktop app renders it. Binary assembly does not call a model.
-- Decision / mechanism: Screenshot PPTX and raster PDF share Electron Chromium slide rendering; daemon assembles images. Browser-print PDF receives the same selected HTML. Editable PPTX starts from the requested HTML but uses DOM conversion.
-- Source says: Preview uses sandboxed file-workspace iframes and URL/srcDoc modes — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L164-L173`. Export reads `fileName`/optional `versionId` and invokes desktop rendering — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L951-L989`, `#L1103-L1126`. Screenshot routes replaced agent-prompt export with deterministic rendering — `#L1463-L1485`.
-- Inference: The inspected export paths do not regenerate deck content with a model. A `versionId` identifies the exact HTML snapshot used for export. However, the sources inspected here do not show that preview itself is pinned to that same version. If the user reviews a live file and exports without a `versionId`, the file may change between review and export.
-- Rationale: Browser rendering aims at fidelity and avoids model variability; route comments explicitly call it deterministic.
-- Trade-off: A selected snapshot makes exports repeatable. However, the process depends on Electron and does not prove that preview, editable PPTX, and PDF preserve the same meaning.
-- Related AC: AC-05, because source identity matters; AC-09, because export reads/renders rather than mutating source; AC-15, because raster outputs lose directly readable text even though slide order follows images.
-- DeckAgent implication: W-033 can use this as evidence for export from stored source and for binding review/export to a state identity.
-- Mismatch / caution: DeckAgent requires editable PPTX and PDF. OpenDesign's default screenshot PPTX is non-editable and raster PDF text is not selectable.
-- Confidence: Strong inference — export inputs and the absence of a model call are visible in the route; preview-to-version binding is not established.
+- Problem addressed: Keep rendering separate from model generation and allow export retry without another model call.
+- Responsibility / boundary: Preview renders a selected project file. Export resolves a working file or explicit HTML version, then asks the desktop renderer to capture or print it.
+- Decision / mechanism: HTML is the shared source for preview and the main deck export paths.
+- Source says: Preview uses sandboxed file-workspace iframes, and the export route reads `fileName` plus optional `versionId` before desktop rendering — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L164-L173`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L951-L989`, `#L1103-L1126`.
+- Inference: A version-pinned export is tied to stored bytes. An unpinned export reads the current file, so exact preview/export identity depends on file stability between those actions. Export does not change the source version. The inspected route streams the produced file and deletes scratch render files; it does not create a durable export record linked to the version and format.
+- Rationale: Browser rendering reuses the authored HTML and avoids asking an agent to rebuild content during export. The replacement of agent-driven export is recorded in the export route comments.
+- Trade-off: Export is repeatable from stored HTML, but it depends on Chromium and on HTML behaving the same in capture/print modes.
+- DeckAgent implication / relevance: AC-01, AC-05, AC-09, AC-15, AC-29, AC-30 — shows both the value of version-pinned export and the risk of exporting mutable working state.
+- Mismatch / caution: OpenDesign does not use DeckAgent's accepted/pending promotion rules.
+- Confidence: Strong inference.
 
-### F-OD-12 — Output formats share HTML rendering but still need format-specific paths
+### F-OD-12 — Output formats share an HTML source but not one universal exporter
 
 - Research questions: RQ-12
-- Problem addressed: Delivering a code-first deck in portable formats.
-- Responsibility / boundary: The daemon handles APIs and assembly. Electron handles rendering. Format libraries build the output containers. Separate paths package HTML, ZIP, Markdown, or images.
-- Decision / mechanism: Deck workflows support HTML, PDF, PPTX, ZIP, Markdown, and image output. Screenshot PPTX/raster PDF share capture; vector PDF uses browser print; editable PPTX uses DOM conversion.
-- Source says: README lists HTML, PDF, PPTX, ZIP, and Markdown — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L198-L213`. Shared screenshot flow and branches are visible at `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L936-L940`, `#L1074-L1102`, `#L1134-L1177`, `#L1228-L1267`.
-- Inference: Bitmap-based formats can reuse much of the same capture flow, although each output container still needs its own assembly code. Editable or structure-preserving formats also need format-specific conversion and fidelity checks.
-- Rationale: Shared capture improves visual consistency. Separate paths provide features that images cannot support. This rationale is inferred.
-- Trade-off: Pixel-based outputs can reuse capture, but each container still needs assembly code. Editable structure, selectable text, notes, and animations need work specific to each target format.
-- Related AC: AC-26, because the paths show reuse and format-specific impact.
-- DeckAgent implication: W-033 can compare output extension cost for image-container versus structure-preserving formats.
-- Mismatch / caution: DeckAgent first V1 has only PPTX/PDF (D-026); extra OpenDesign formats do not expand scope.
-- Confidence: Strong inference — current branches show shared capture and separate assembly; future extension cost remains an inference.
+- Problem addressed: Offer several output formats while reusing the same authored artifact.
+- Responsibility / boundary: The export coordinator selects the format. Browser/Electron rendering supports PDF and screenshot capture; format-specific modules package PPTX, ZIP, Markdown, or editable output.
+- Decision / mechanism: Formats share upstream HTML and some rendering steps, then branch where the format needs different behavior.
+- Source says: OpenDesign lists HTML, PDF, PPTX, ZIP, and Markdown outputs, and the export routes contain shared capture plus format branches — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L198-L213`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L1074-L1177`, `#L1228-L1267`.
+- Inference: Adding a format usually reuses artifact selection but may need a new renderer or packager.
+- Rationale: Shared rendering improves visual consistency; separate branches preserve format-specific features. This is inferred.
+- Trade-off: Shared stages reduce duplication, but the shared renderer is also a common failure point.
+- DeckAgent implication / relevance: AC-26 — helps identify which export seams can be stable while formats grow.
+- Mismatch / caution: DeckAgent V1 only requires PPTX and PDF.
+- Confidence: Strong inference.
 
-### F-OD-13 — The inspected export flow does not automatically record quality loss
+### F-OD-13 — Normal export does not create a durable fidelity report
 
 - Research questions: RQ-13
-- Problem addressed: Finding differences between PPTX or PDF output and the intended HTML.
-- Responsibility / boundary: Normal export reports whether rendering and assembly succeeded. A separate, optional fidelity skill compares HTML and PPTX, but it is not part of the normal export-completion path.
-- Decision / mechanism: Standard screenshot export validates the renderer response and keeps paths within the allowed location. It does not compare the output with the source or record quality loss for each slide. The separate audit requires both artifacts, reads the internal PPTX structure, and reports or fixes differences.
-- Source says: Screenshot PPTX embeds one full-bleed image per slide and raster PDF one image per page — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/deck-export.ts#L146-L218`. The audit requires HTML plus PPTX and builds/verifies an issue table — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L17-L40`, `#L57-L103`, `#L178-L209`.
-- Inference: The separate audit can find some HTML-to-PPTX differences. In the inspected export, assembly, preview-telemetry, and audit paths, no step automatically saves a quality-loss record for every normal PPTX or PDF export.
-- Rationale: Screenshot embedding reduces layout drift pressure; the source does not state this as the omission rationale.
-- Trade-off: Export remains simple, but checking editable exports, fonts, and application-specific behavior needs a separate audit. If the results must be available later, another step must store them.
-- Related AC: AC-19, because it concerns detection and recording from real artifacts.
-- DeckAgent implication: W-033 can distinguish reducing differences by design from measuring and recording differences after export.
-- Mismatch / caution: Screenshot PPTX avoids converting content into native slide shapes, but it sacrifices editability. DeckAgent cannot assume this trade-off under D-026.
-- Confidence: Strong inference — the absence claim is bounded to the inspected export, renderer, telemetry, and audit paths.
+- Problem addressed: Detect where a produced file differs from the intended deck.
+- Responsibility / boundary: Screenshot export reduces layout conversion, while a separate optional audit can compare HTML and PPTX. The normal export path does not own a stored per-slide degradation report.
+- Decision / mechanism: The default screenshot PPTX embeds one slide image per page; fidelity analysis is a separate workflow.
+- Source says: Screenshot PPTX and raster PDF package captured slide images, while the audit separately extracts and compares PPTX properties — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/deck-export.ts#L146-L218`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L17-L40`, `#L57-L103`.
+- Inference: OpenDesign mainly reduces visual drift for the screenshot path instead of measuring and storing drift for every export.
+- Rationale: Image-backed slides preserve browser appearance. The source does not state why normal export omits a fidelity record.
+- Trade-off: Visual output is stable, but PPTX editability and later compatibility analysis are weaker.
+- DeckAgent implication / relevance: AC-19 — separates prevention of differences from detection and recording of differences.
+- Mismatch / caution: DeckAgent cannot assume that image-only PPTX is acceptable.
+- Confidence: Strong inference.
 
-### 2.8 Failure & recovery
+### 3.8 Failure & recovery
 
-Research questions: RQ-14
-
-### F-OD-14 — Failures are classified and retries are limited, but the baseline cannot roll files back
+### F-OD-14 — Run recovery protects the operation more than the workspace
 
 - Research questions: RQ-14
-- Problem addressed: Ending long agent operations predictably and avoiding unsafe retries after a run has caused side effects.
-- Responsibility / boundary: The run manager controls status, cancellation, process termination, final SSE events, and retries. Adapters provide failure signals. The project filesystem remains the target of changes.
-- Decision / mechanism: By default, selected temporary failures allow at most one safe retry. Ordinary same-run retry is suppressed after cancellation, user-visible output, tool calls, artifact writes, or live artifacts. For supported native sessions, a separate continuation path can resume some eligible post-tool failures without repeating completed tool calls. File baselines are fingerprints used to detect changes; they do not contain bytes for rollback.
-- Source says: Default retry cap and backoff are defined at `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-retry-policy.ts#L10-L57`; native-session post-tool continuation at `#L120-L162`; transient classification at `#L176-L223`; side-effect suppression at `#L226-L279`. Baselines store size/mtime/hash and compute changed paths — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-artifact-fs.ts#L105-L124`, `#L382-L459`.
-- Inference: The system can report a failure status, avoid unsafe replay, and sometimes continue from an existing native session after a tool call. If an agent writes part of a deck before failure or cancellation, those changes may remain. The filesystem baseline cannot restore the old bytes because it stores only metadata and hashes. HTML history may allow a later manual restore when a suitable version exists.
-- Rationale: After a run has acted, the policy prioritizes avoiding duplicate side effects. The gates and comments state this directly.
-- Trade-off: The policy reduces repeated actions and can preserve progress through native-session continuation. It does not keep the working files unchanged when a run fails midway.
-- Related AC: AC-08, because operations end with determinate status/retry decisions; AC-09, because export errors do not mutate source; AC-20, because failure category/detail/stage/retryability are reportable.
-- DeckAgent implication: W-033 can separate operation recovery from artifact rollback and side-effect-aware retry from accepted-state preservation.
-- Mismatch / caution: OpenDesign permits arbitrary agent workspace side effects; DeckAgent may use a narrower boundary.
-- Confidence: Strong inference — retry gates and baseline contents are explicit; the effect on files follows from the lack of stored rollback bytes.
+- Problem addressed: End failed or cancelled external-agent runs clearly and avoid repeating side effects.
+- Responsibility / boundary: The run manager owns status, cancellation, process termination, events, and retry policy. The workspace remains the mutation target.
+- Decision / mechanism: Retry is limited after visible output, tool calls, cancellation, or file writes. A filesystem baseline detects changed paths but does not store old bytes for rollback. The task-oriented run route uses a revision check when cancellation and completion compete. Ordinary chat can briefly overlap when a new “send now” request is cancelling the earlier run.
+- Source says: Retry is suppressed after side effects, while the baseline stores fingerprints and changed paths rather than a byte copy — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-retry-policy.ts#L226-L279`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-artifact-fs.ts#L105-L124`, `#L382-L459`. The run route documents allowed cancel overlap and applies revision-checked task cancellation before physical process finish — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/runs.ts#L395-L405`, `#L3612-L3648`.
+- Inference: Task status has a clear winner when cancel and completion race, but partial or late file writes can still remain because task-state control is not a workspace transaction. Avoiding a duplicate external action takes priority over automatic workspace rollback.
+- Rationale: The retry policy directly states that replay after side effects is unsafe.
+- Trade-off: The system lowers duplicate-action risk, but failure or stop does not guarantee unchanged artifact files.
+- DeckAgent implication / relevance: AC-08, AC-09, AC-20, AC-28 — shows the difference between stopping an operation, rejecting late work, and restoring artifact state.
+- Mismatch / caution: OpenDesign allows direct file mutation during a run; DeckAgent may require isolated candidate state.
+- Confidence: Strong inference.
 
-### 2.9 Editor dependency
+### 3.9 Editor dependency
 
-Research questions: RQ-15
-
-### F-OD-15 — Agents and code drive the main workflow; object editing is optional and incomplete
+### F-OD-15 — Code and agent conversation are the main editing surface
 
 - Research questions: RQ-15
-- Problem addressed: Producing/refining decks without requiring a professional slide editor.
-- Responsibility / boundary: Users provide a brief or chat instructions and may add comments or tweaks. Agents write HTML and CSS. OpenDesign handles preview and export. External tools receive code or files.
-- Decision / mechanism: Real code is the main editable medium. Creation and refinement happen through agent conversations and workspace changes. Object-level features are additional tools, and reliable targeted editing from comments is still incomplete.
-- Source says: README describes agent-native, code-first artifacts — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L34-L38`. It describes Studio deck flow and HTML/CSS or PPTX/PDF handoff — `#L73-L83`, `#L367-L375`. Surgical edits are partial and AI tweaks unimplemented — `#L596-L612`.
-- Inference: The main deck workflow does not require direct editing of slide objects. More detailed editing moves to code tools or an exported PPTX. The default screenshot PPTX contains a slide-sized image rather than editable slide objects.
-- Rationale: The product explicitly treats coding agents as the design engine and real files as the working medium.
-- Trade-off: This avoids building a full slide editor, but nontechnical users must rely on language-based iteration. The screenshot export also trades editability for visual fidelity.
-- Related AC: AC-12, because professional-editor interaction is not required.
-- DeckAgent implication: W-033 can use agent-led refinement plus external handoff as interaction evidence while separately assessing editability.
-- Mismatch / caution: OpenDesign's wider “Figma alternative” ambitions and inspect/tweak surfaces are outside DeckAgent V1.
-- Confidence: Strong inference — the code-first workflow is explicit, while the user-impact statement is inferred.
+- Problem addressed: Create and refine artifacts without building a full professional slide editor.
+- Responsibility / boundary: Agents edit HTML/CSS; OpenDesign provides chat, preview, comments, and some focused edit tools; external tools can receive the exported result.
+- Decision / mechanism: Real code files are the editable medium, not a native slide-object canvas.
+- Source says: The product describes itself as code-first and hands off real HTML/CSS or exported files — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L34-L38`, `#L367-L375`.
+- Inference: The main deck flow does not require object editing in PowerPoint, but detailed changes rely on agent instructions or code editing.
+- Rationale: OpenDesign treats coding agents as the design engine. This is stated in its product and adapter documents.
+- Trade-off: The product avoids a large editor surface, but nontechnical users depend on language-based iteration and runtime quality.
+- DeckAgent implication / relevance: AC-12 — supports an agent-led core flow with later external-editor handoff.
+- Mismatch / caution: Screenshot-backed PPTX is less editable than a native-object deck.
+- Confidence: Explicit.
 
-### 2.10 Dependencies & cost
+### 3.10 Dependencies & cost
 
-Research questions: RQ-16
-
-### F-OD-16 — Runtime adapters localize model differences; screenshot exports depend on desktop Chromium
+### F-OD-16 — Runtime and rendering variation are isolated at different seams
 
 - Research questions: RQ-16
-- Problem addressed: Supporting many AI engines and formats without duplicating the product flow.
-- Responsibility / boundary: Runtime definitions isolate differences in launch, prompts, models, authentication, streams, and probes. The daemon centralizes APIs and SQLite. Electron renders content, and format libraries assemble the output.
-- Decision / mechanism: `RuntimeAgentDef` and normalized events give agents a common lifecycle interface. Screenshot PPTX and PDF require desktop rendering; the daemon alone returns HTTP 501. `pptxgenjs` and `pdf-lib` assemble images, while editable PPTX also requires DOM conversion.
-- Source says: Runtime definitions and shared lifecycle are documented at `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L112-L124`. Desktop-only screenshot export is explicit at `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L936-L940`, `#L1036-L1041`. The daemon pins `better-sqlite3`, Express, `pdf-lib`, and `pptxgenjs`; desktop pins Electron — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/package.json#L52-L65`, `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/desktop/package.json#L34-L34`.
-- Inference: Runtime definitions keep many provider-specific details in one place, although provider capabilities still affect orchestration. The desktop renderer is a shared dependency for screenshot PPTX and raster PDF, so a renderer failure can affect both paths.
-- Rationale: The registry avoids a separate product flow for each agent. Chromium reuses the rendering behavior of the authored HTML.
-- Trade-off: The system supports many providers and reuses browser rendering, but it depends on Node/Electron, native SQLite, OS packaging, and a renderer shared by several export formats.
-- Related AC: AC-21, because subsystem variety shapes learning/maintenance; AC-22, because agents, Electron, and libraries have different isolation.
-- DeckAgent implication: W-033 can compare AI and rendering dependency isolation separately.
-- Mismatch / caution: Team feasibility belongs to W-035. OpenDesign's many-runtime platform is not a DeckAgent baseline.
-- Confidence: Strong inference — the dependency paths are explicit; maintainability and failure-spread effects are inferred.
+- Problem addressed: Support many agents and several export formats without mixing every dependency into one module.
+- Responsibility / boundary: `RuntimeAgentDef` isolates agent launch and stream differences. Electron/Chromium isolates visual rendering. Format libraries isolate binary packaging.
+- Decision / mechanism: Agent adapters are declarative data read by a shared engine; screenshot export uses a desktop rendering sidecar.
+- Source says: OpenDesign calls the adapter layer its main design decision and states that a shared engine consumes plain runtime definitions — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/agent-adapters.md#L5-L27`. Desktop-only screenshot export is explicit in the daemon routes — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L936-L940`, `#L1036-L1041`.
+- Inference: Provider change and renderer change have different impact areas. However, many export paths share Chromium, so renderer failure can affect several formats.
+- Rationale: The source states that OpenDesign prefers integration with mature agents over a new agent loop.
+- Trade-off: The seams allow extension, but the system depends on external CLIs, Node/Electron, native SQLite, and renderer packaging.
+- DeckAgent implication / relevance: AC-21, AC-22 — useful for comparing AI dependency isolation separately from rendering dependency isolation.
+- Mismatch / caution: OpenDesign supports far more agents and artifact types than DeckAgent V1.
+- Confidence: Explicit for the adapter choice; strong inference for failure spread.
 
-### 2.11 Evolution
+### 3.11 Evolution
 
-Research questions: RQ-17
-
-### F-OD-17 — OpenDesign has changed its system structure and export mechanisms over time
+### F-OD-17 — OpenDesign replaced several early boundaries as the product grew
 
 - Research questions: RQ-17
-- Problem addressed: Evolving quickly without treating early deployment and generation assumptions as permanent contracts.
-- Responsibility / boundary: Architecture docs describe the current system structure. Plugin/runtime interfaces and repeatable export routes mark places where implementations can be replaced.
-- Decision / mechanism: The current architecture differs from earlier browser-only, in-memory designs that used WebSockets and history files. Current documentation describes HTTP/SSE, a SQLite-backed daemon, request-time registries, sidecars, and a BYOK proxy. The changelog also records a plugin-core rebuild and a later change from agent-driven PPTX export to capture and assembly.
-- Source says: Early tunnel/browser-only/WebSocket/in-memory/`history.jsonl` designs are labelled overtaken — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L5-L16`. The 0.8.0 changelog describes a rebuilt plugin core and thin desktop wrapper — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:CHANGELOG.md#L137-L159`. Current export replaced the agent/`python-pptx` path — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L1463-L1465`.
-- Inference: OpenDesign has replaced several important architectural choices over time. The sources show which areas changed, but they do not prove that one specific coupling caused the redesign. They also do not provide effort data or a complete compatibility history.
-- Rationale: Official sources connect the changes to headless reuse, plugins, durable state, and repeatable export. No effort figures are given.
-- Trade-off: The newer design adds reuse, persistent state, and repeatable export paths. The historical sources indicate broad changes across product layers, but they do not quantify the migration cost.
-- Related AC: AC-23, because the history shows how many areas changed; AC-24, because it shows that major choices were reversed but gives no numeric cost.
-- DeckAgent implication: W-033 can use the history to consider transport, persistence, runtime, and artifact choices separately.
-- Mismatch / caution: Pressures came from a public multi-runtime, multi-artifact platform and establish no DeckAgent architecture decision.
-- Confidence: Strong inference — the replacements are documented; their causes, cost, and compatibility impact are not fully established.
+- Problem addressed: Move from an early browser-focused design to desktop, headless, multi-runtime, and durable project use.
+- Responsibility / boundary: The current daemon, contracts, sidecars, runtime definitions, and file workspace replaced several earlier assumptions.
+- Decision / mechanism: Current architecture uses HTTP/SSE, SQLite, request-time registries, packaged sidecars, and a BYOK proxy. It also moved the deck host contract to shared prompt code and replaced the old default agent-driven PPTX route with repeatable rendering/capture.
+- Source says: `docs/architecture.md` names the earlier WebSocket, in-memory, `history.jsonl`, and browser-only ideas as overtaken — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L5-L16`. `docs/prompt-composition.md` records why the deck protocol moved to one shared contract — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/prompt-composition.md#L82-L123`.
+- Inference: Transport, persistence, runtime integration, prompt policy, and export were changeable seams, but some changes crossed many product layers.
+- Rationale: Sources connect these changes to durable state, shared host contracts, headless reuse, and consistent agent support. They do not provide complete migration-cost data.
+- Trade-off: The newer architecture supports more run shapes and reuse, but it is larger and has more coordination points.
+- DeckAgent implication / relevance: AC-23, AC-24 — shows where early choices can spread and where a stable shared contract can limit later change.
+- Mismatch / caution: These changes came from OpenDesign's broad platform goals and do not define DeckAgent's architecture.
+- Confidence: Strong inference.
 
-## 3. System-specific evidence
+## 4. ADR and design-rationale review
 
-### 3.1 Responsibility and ownership map
+### 4.1 How rationale is recorded
 
-This table summarizes the inspected architecture and code paths. Entries in “Does not own” are boundaries observed in those paths, not claims about every feature in the repository.
+OpenDesign does not maintain a comprehensive ADR series. At the pinned commit, the rationale corpus is distributed across four forms:
 
-| Area | Owning component | Owned state / contract | Does not own |
-|---|---|---|---|
-| Product interaction | `apps/web` | Chat/project/file UI, preview mode, streamed-event rendering, export bridge | Durable project database or canonical bytes |
-| Product authority | `apps/daemon` | `/api/*`, persistence, run lifecycle, prompt composition, files, versions, import/export, security | Agent-specific internals or browser presentation state |
-| Runtime variation | `apps/daemon/src/runtimes` and agent protocols | Detection, launch, probes, normalized events, cancellation | Canonical deliverable format |
-| Shared boundary | `packages/contracts` | HTTP/SSE DTOs, prompt, runtime, deck, and preview protocols | Durable data or process lifecycle |
-| Deliverable state | Project workspace | Current HTML/CSS/assets and output files | Conversation/run metadata |
-| Durable metadata | SQLite | Projects, conversations, messages, sessions, tabs, run/plugin/collaboration metadata | Actual project bytes |
-| Preview | Web sandboxed iframe | Rendered HTML, host bridges, render-health observations | Project files or accepted-state authority |
-| Export render | Electron desktop sidecar | Chromium load/capture/print and editable DOM conversion | Source-of-truth content |
-| Binary assembly | Daemon export modules | Image-backed PPTX/PDF packaging and errors | Model generation or source mutation |
-
-Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L55-L110`, `#L148-L173`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/db.ts#L1-L5`.
-
-### 3.2 Main execution and mutation flow
-
-1. The user creates or selects a project. Through the web app or `od` CLI, the user provides a brief, attachments, plugin/template/design-system choices, and a runtime/model choice.
-2. The daemon saves message and run metadata, resolves the context and runtime, and builds the system and task prompts.
-3. Before execution, the daemon fingerprints the artifact tree so it can later identify changed files. This is an observation record, not a byte snapshot that can restore files.
-4. A filesystem agent uses the project workspace as its `cwd` and writes or edits the canonical files. A text-artifact runtime instead returns one complete artifact, which the host writes into the workspace.
-5. File changes can update the live preview while the run is active. When the run ends, the daemon compares the file tree with its baseline, links changed outputs to the run, validates the deliverable, and creates HTML versions after success.
-6. Preview loads the currently selected file. Export separately reads either the current file or a specified version, sends the HTML to Electron, and assembles and returns the output.
-7. A restore is another change. It copies bytes from a selected HTML version into the working file and adds a new restore version to history.
-
-The traced flow separates:
-
-- **Working state:** mutable project files.
-- **Historical evidence:** per-file HTML versions and message/run artifact snapshots.
-- **Conversation/orchestration state:** SQLite messages, status/events, sessions, and prompt context.
-
-The inspected flow does not show a separate model for a “candidate deck awaiting acceptance.”
-
-Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L175-L199`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/server.ts#L11486-L11505`, `#L11535-L11585`, `#L11702-L11760`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/project/index.ts#L7407-L7472`.
-
-### 3.3 Architectural mechanisms and contracts
-
-| Mechanism | Contract / seam | Architectural consequence |
+| Evidence form | What it can establish | Limitation |
 |---|---|---|
-| Runtime registry | `RuntimeAgentDef` + normalized events | Keeps many provider and CLI lifecycle differences local, although capabilities still affect orchestration. |
-| Execution profile | Filesystem output vs complete text artifact | Different runtimes all produce files in the project workspace. |
-| Project-file authority | Daemon-bounded workspace paths | Agent tools, preview, and export share files. The inspected flow does not provide an automatic all-or-nothing update across multiple files. |
-| HTML version store | Per-file content + digest + history | Supports HTML restore and pinned exports. Version IDs can be linked to assistant-message artifacts; direct run linkage is optional, and sentence-level source tracking is not recorded. |
-| Run filesystem diff | Before/after fingerprints | Identifies changes and supports retry decisions across runtimes, but cannot roll files back. |
-| Refinement routing | Direct Edit eligibility + minimal-change contract; otherwise Full Plan | Keeps clear local edits bounded while routing broader or uncertain changes through planning. Post-edit verification remains file/path based. |
-| Preview protocol | Sandboxed iframe + bounded `postMessage` | Limits what rendered HTML can do and reports some render failures. |
-| Export selection | `fileName` + optional `versionId` | Avoids regeneration and can pin a version. If `versionId` is omitted, the live file can change between review and export. |
-| Shared slide capture | Electron → per-slide images | Gives screenshot PPTX and raster PDF one visual path and one shared renderer failure point. |
-| Deliverable validator | Status + diff + entry + kind + readability | Rejects some stale, missing, or unreadable results, but does not validate meaning or layout. |
-| Optional fidelity skill | HTML/PPTX extraction + verification | Can find some quality loss on demand. The inspected export path does not automatically save this result for every export. |
+| Accepted ADR | Context, decision, considered alternatives, and consequences | Only one architectural decision is recorded this way |
+| Design document | An explicit thesis, ownership rule, or implementation constraint | Often describes the chosen design without a full alternatives analysis |
+| Change history and retrospective note | The pressure that caused a boundary to change and the scale of the corrective work | Commit size is not a reliable measure of engineering cost |
+| Code-backed inference | The responsibility split that exists in the implementation | It cannot establish the authors' intent unless another source says why |
 
-No additional system-specific evidence outside RQ-01–RQ-17 was found that maps to no AC ID.
+This distinction matters because an implemented boundary is not automatically a documented rationale. The analysis below labels a decision “explicit” only when the source states the problem or reason; otherwise it records the rationale as partial or inferred.
 
-## 4. Coverage table
+### 4.2 Formal ADR: centralize daemon startup
+
+`ADR-0001: Centralize daemon startup` is accepted. It responds to startup code leaking into client-only CLI commands and to duplicated startup behavior between CLI and sidecar paths. It is the strongest rationale record in the repository because it connects a concrete failure mechanism to ownership, alternatives, and consequences.
+
+- Chosen design: one startup orchestrator owns CLI parsing, server startup, shutdown, optional browser opening, and signal handling.
+- Rejected narrow option: lazy import only in the CLI would fix the immediate failure but keep startup duplicated.
+- Rejected status quo: direct sidecar startup would keep ownership split.
+- Deferred stronger option: fully extracting runtime context from `server.ts` was considered larger than the current need.
+- Consequence: client-only commands no longer evaluate daemon startup checks; the CLI and sidecar share start/stop mechanics; route tests retain the lower-level server constructor.
+- Architectural interpretation: the boundary is deepened around product lifecycle ownership without hiding the lower-level construction seam needed by tests.
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/adr/0001-centralize-daemon-startup.md#L7-L31`.
+
+### 4.3 Rationale for the agent boundary
+
+The adapter document calls delegation of the full agent loop OpenDesign's “most load-bearing design decision.” The problem is duplication: model calls, tools, permissions, context management, resume, and cancellation already exist in mature coding-agent CLIs. OpenDesign therefore owns detection, prompt and working-directory handoff, normalized streaming, and product state, while the selected runtime owns the agent loop.
+
+The adjacent adapter decision follows from that boundary. A runtime integration is a `RuntimeAgentDef` data object consumed by one engine, not a subclass with its own `run()` and `cancel()` implementation. The rejected shape is explicit: per-agent lifecycle implementations. The gain is a small extension surface for existing transports; the cost is that genuinely new wire formats still require engine and parser work, and runtime permission or recovery semantics are not uniform.
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/agent-adapters.md#L5-L27`, `#L69-L100`. Rationale strength: **explicit**.
+
+### 4.4 Rationale for daemon authority and split persistence
+
+The architecture document assigns product authority to the daemon and states that the web app and CLI call the same HTTP API rather than implementing business behavior twice. It also records that the implemented HTTP/SSE, SQLite-backed daemon, request-time registries, packaged sidecars, and BYOK proxy replaced earlier browser-only, WebSocket, in-memory, and `history.jsonl` sketches.
+
+The resulting persistence split is coherent with the agent boundary: ordinary project files are the medium that coding agents can inspect and edit, while SQLite holds queryable projects, conversations, messages, runs, and related control state. The benefit is compatibility with file-oriented tools plus durable product metadata. The cost is cross-store coordination: a filesystem mutation and a metadata transition are not one atomic transaction, which is visible in recovery and versioning behavior.
+
+The sources establish the current ownership and the abandoned earlier shapes, but they do not contain a decision record comparing transaction models or explaining why SSE was preferred to the earlier WebSocket design. That part of the rationale remains **strong inference**, not an explicit architectural argument.
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L11-L16`, `#L55-L77`, `#L96-L110`, `#L148-L162`, `#L201-L225`.
+
+### 4.5 Rationale for centralizing host contracts
+
+The most informative non-ADR case is the deck protocol. A first change introduced a versioned navigation protocol into the daemon and contract prompt copies but missed another live prompt-composition path. Tests remained green because their inputs never reached that path. A corrective change then moved the deck scaffold into `packages/contracts` so every composer consumed the same host-owned contract.
+
+This history explains the seam more clearly than a static component diagram. Navigation markup, ready events, slide-state messages, and print behavior are not stylistic prompt guidance; product code consumes them. They therefore belong to the host contract and must outlive any individual prompting strategy. The alternative—copying the contract into each prompt path—had already produced behavioral drift. The documented corrective work touched more files than the original change, but the repository does not provide effort data, so file counts are evidence of change spread rather than a precise cost measure.
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/prompt-composition.md#L82-L121`, `#L123-L175`. Rationale strength: **explicit**, with migration cost only partially observable.
+
+### 4.6 Rationale for HTML-first rendering and export
+
+Preview and the principal deck export paths consume stored HTML. Browser rendering is therefore downstream of generation: export can be retried without asking a model to recreate the deck, and screenshot-backed PPTX can preserve the browser's visual result. Format-specific code still branches after rendering because PDF printing, image capture, PPTX assembly, and editable conversion have different contracts.
+
+The implementation and release history show that deterministic capture replaced the earlier default agent-driven PPTX route. They do not provide an ADR with considered alternatives. The likely rationale—repeatability and lower visual drift—is strongly supported by the data flow and export implementation, but remains partly inferred. Its principal cost is also architectural: screenshot PPTX preserves appearance by giving up native slide-object editability, while all browser-backed formats share Chromium as a failure and packaging dependency.
+
+Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L951-L989`, `#L1074-L1177`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/deck-export.ts#L146-L218`; commit `9534b87e7` (`feat(export): programmatic screenshot-based PPTX/PDF export`). Rationale strength: **strong inference**.
+
+### 4.7 Rationale gaps
+
+The repository records enough rationale to explain its two deepest seams—the external agent boundary and centralized host contracts—but not enough to reconstruct every major choice. In particular, no formal alternatives analysis was found for the file/SQLite split, HTTP/SSE, live workspace mutation, per-file HTML versioning, or the absence of an export provenance record. These should be treated as observed design properties, not as proven recommendations.
+
+The documentation pattern also affects maintainability. A future reader must combine an ADR, architecture notes, prompt-maintenance guidance, implementation comments, and history to recover the reasoning behind the current system. The material is useful, but its distribution weakens traceability between a decision, the code that enforces it, and the tests that protect it.
+
+## 5. System-specific evidence
+
+### 5.1 State model in one view
+
+| State | Location | Changed by | Read by | Important limit |
+|---|---|---|---|---|
+| User and project intent | SQLite messages/project metadata plus prompt inputs | UI, CLI, daemon | Prompt composition | No single typed record contains every active constraint |
+| Current artifact | Project workspace | Agent runtime or host materialization | Preview, export, later runs | May change during a run |
+| HTML history | Version store | Daemon after runs, edits, or restore | Restore and version-pinned export | Per-file HTML history, not whole-project transaction |
+| Run state | SQLite and in-memory process control | Run manager | UI/CLI through HTTP/SSE | Determinate run status does not mean files were rolled back |
+| Rendered output | Export destination | Export coordinator and renderer | User/external application | Normal export does not store a full fidelity report |
+
+### 5.2 Architecture limits that matter for comparison
+
+- OpenDesign has no distinct accepted and pending deck states.
+- It has durable projects, not a session-only deck lifecycle.
+- Its canonical editable form is code in project files, not a native presentation object model.
+- It delegates the agent loop, so capability and safety vary by selected runtime.
+- Prompt composition has more than one implementation path. Host contracts are centralized where identified, but other prompt content is still duplicated.
+- Screenshot PPTX is designed for visual similarity, not for native object editability.
+
+These are observations about OpenDesign. They are not proposals or verdicts for DeckAgent.
+
+## 6. Coverage table
 
 | RQ | Priority | Status | Findings | Where looked (required unless Answered) |
 |---|---|---|---|---|
@@ -423,13 +689,3 @@ No additional system-specific evidence outside RQ-01–RQ-17 was found that maps
 | RQ-15 | Extended | Answered | F-OD-15 | |
 | RQ-16 | Core | Answered | F-OD-16 | |
 | RQ-17 | Extended | Answered | F-OD-17 | |
-
-## 5. Self-review against DOC-005 §9.1
-
-- The header records the official repository, exact tag and commit, access date, sources, and the tag/package-version caveat.
-- All 14 Core RQs and all 3 Extended RQs are `Answered`; none is deferred or `Not found after search`.
-- Every finding separates source evidence, inference, a contract-defined confidence level, AC relevance, DeckAgent implication, and mismatch/caution.
-- AC IDs are used only for relevance; OpenDesign receives no `Meets`, `Does not meet`, or `Not yet assessable` outcome.
-- There is no score, ranking, pass/fail, DeckAgent architecture proposal, or architecture decision.
-- The analysis goes beyond folder names. It covers responsibilities, ownership, mutation and recovery flow, execution profiles, dependencies, contracts, validation, and export mechanisms.
-- Project Hub review limitation: `./scripts/project-hub status` reported that the snapshot was missing. `sync` could not authenticate because no Project Hub user token is installed. Therefore, D-023–D-028 could not be checked again against the Google Sheets source of truth. The checked-in references to D-024–D-028 in DOC-004 and DOC-005 were used only to explain relevance and scope cautions. This limits the review evidence, but it does not block the OpenDesign research.
