@@ -66,19 +66,16 @@ and C is a documented alternative. The reopen conditions and the validation debt
 - The files in this folder record the reasoning and the decision path. They do not replace the
   sources above.
 - `10-baseline-selection.md` is the current W-035 decision artifact.
+- The hash prefixes in `08-evidence-resolution.md` §2 and `10-baseline-selection.md` §1 are a
+  historical record of the synthesis-time freeze check. Git history is the integrity record for
+  the finalized artifacts.
 
-**Relocation note.** These files were written under `trash/architecture-synthesis/` and moved here
-unchanged. Their canonical location is now `docs/architecture/synthesis/`. Files 01–09 are kept
-byte-identical, because `08-evidence-resolution.md` §2 and `10-baseline-selection.md` §1 record
-their sha256 prefixes as a freeze check. Those prefixes were taken over the original working-tree
-bytes, which mixed LF and CRLF line endings; Git normalizes line endings, so a fresh checkout may
-not reproduce them. From this commit on, Git history is the integrity record. So:
+## Evidence
 
-- files 01–07 still describe themselves as scratch files under `trash/`. Read that as history;
-- relative `evidence/…` paths in 08 point to `trash/architecture-synthesis/evidence/` (08 §1).
-
-The spike evidence and a working copy of DOC-004 remain in `trash/architecture-synthesis/`. That
-folder is gitignored, so the evidence is local-only.
+Raw spike artifacts used during synthesis are intentionally not committed. The synthesis documents
+preserve the evidence summaries, interpretations, limitations, validation debt and reopen
+conditions needed to understand the architecture decision: S1 / S1b in `08-evidence-resolution.md`
+§7, S2 in §8, and S3 / S3b in `10-baseline-selection.md` §8.3.
 
 ## Next Step
 

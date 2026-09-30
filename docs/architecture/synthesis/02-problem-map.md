@@ -1,6 +1,6 @@
 # Phase 1 — Architecture Problem Map
 
-- Input: `01-context.md` (Phase 0, frozen). Scratch file under `trash/` (gitignored).
+- Input: `01-context.md` (Phase 0, frozen).
 - Built: 2026-09-30. AP IDs are fixed from this phase on; never renumber.
 
 ## 1. Method and scope

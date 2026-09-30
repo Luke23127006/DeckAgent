@@ -2,7 +2,7 @@
 
 - Inputs: `01-context.md`, `02-problem-map.md`, `03-decision-bank.md` (all frozen). DOC-004 and
   DOC-008 were consulted only to confirm rules already cited in Phases 0–2.
-- Built: 2026-09-30. This is a scratch file under `trash/` (gitignored). The Phase-3 IDs
+- Built: 2026-09-30. The Phase-3 IDs
   (`AP-P3-*`, `SA-P3-*`, `C-*`, `E-*`, `MB-*`, `X-*`) exist only in this artifact.
 
 ## 1. Phase boundary and method

@@ -6,7 +6,7 @@
   `docs/architecture/architecture-acceptance-criteria.md` (AC wording and kinds).
 - Supporting source: DOC-008 `docs/testing/testing-approach.md` (§5.3 and the F-items only).
   Reference research was not needed: no outcome below rests on a reference-system claim.
-- Built: 2026-09-30. This is a scratch file under `trash/` (gitignored). No source or frozen artifact
+- Built: 2026-09-30. No source or frozen artifact
   was modified, and Project Hub was not updated.
 
 ## 1. Phase boundary and assessment rules

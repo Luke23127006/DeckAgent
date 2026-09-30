@@ -40,7 +40,9 @@ Trade-offs are compared in writing only (DOC-004 §4, §9): no scores, weights o
 **Phase 7 has begun.** It was entered under the 08 §22 contract, as satisfied in 09 §13–§15.
 
 **Frozen inputs.** Hash prefixes are sha256, first 16 hex. They were taken at the start of Phase 7
-and re-checked at its end (§17).
+and re-checked at its end (§17). They are a historical record of the synthesis-time freeze check,
+not a current integrity assertion: after canonicalization, Git history is the integrity record
+for the finalized artifacts.
 
 | File | Hash prefix | Matches the prior record |
 |---|---|---|
@@ -712,7 +714,7 @@ verification contract, and no baseline selected.
 
 ### 8.3 AG-P4-01 — executed (S3, S3b); **not resolved**
 
-Evidence folder: `trash/architecture-synthesis/evidence/s3-ag-p4-01/`. It holds the predeclared `PROTOCOL.md` with the S3b
+S3's raw evidence folder is local-only and not committed (08 §1). It holds the predeclared `PROTOCOL.md` with the S3b
 addendum, `run_s3.py`, `evaluate_s3b.py`, `results.json`, `results-s3b.json`, `run.log` and
 `runs/*`.
 
@@ -831,9 +833,8 @@ Consequences:
 - **P7-TENSION-01 is closed.** B satisfies DOC-004 §5 as written: every Gate and Observability
   outcome is `Meets` (§10.4). W-035's selection of B is also a DOC-004 §5 recommendation. The
   "selection but not recommendation" distinction is withdrawn.
-- **No DOC-004 change is required.** The file is not edited. The copy in
-  `trash/architecture-synthesis/` is byte-identical to the committed DOC-004 in HEAD. The working
-  tree currently shows the `docs/architecture/` copy as deleted; this pass did not do that.
+- **No DOC-004 change is required.** The file
+  (`docs/architecture/architecture-acceptance-criteria.md`) is not edited.
 - **P7-PROCESS-CORRECTION-01** stays on record as the owner's selection philosophy. It is **no
   longer load-bearing** for the selection. It is consistent with the canonical contract, because
   deferred validation debt does not have to disappear before a recommendation (08 §22).
@@ -1326,7 +1327,8 @@ started in this task. §12 lists what is left to it.
   - **C** is a documented alternative; AC-02 and AC-11 are open on AG-P4-01.
 - **Validation debt and reopen conditions** are explicit (§14, §15).
 - **Detailed Design may begin.** It has not been started here.
-- **Frozen files 01–09 remain unchanged.** Hashes were re-checked and match §1. DOC-004, DOC-008
+- **Frozen files 01–09 were not changed by Phase 7.** Their hashes were re-checked then and
+  matched §1 (a historical check; see §1). DOC-004, DOC-008
   and Project Hub were not edited.
 
 ---
@@ -1534,5 +1536,5 @@ X-6 (input classes) would then be re-run.
   - C is provisionally not preferred on current evidence.
   - No provisional preference between A-r1 and B.
   - Separating evidence and the owner's weighting are identified.
-- **Frozen files 01–09:** unchanged. The hashes were re-checked at the end of Phase 7 and match §1.
+- **Frozen files 01–09:** unchanged at Revision 0. The hashes were re-checked then and matched §1.
 - **Nothing** was selected, recommended, ranked or scored. Project Hub was not updated.

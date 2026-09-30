@@ -69,8 +69,11 @@ The absence of an implementation is never, by itself, a reason to exclude a cand
 - DOC-005 contains no rule on evidence maturity; it only places comparative judgment in
   W-033 … W-035.
 
-**Evidence location:** `trash/architecture-synthesis/evidence/`. Each spike folder holds its
-predeclared `PROTOCOL*.md`, its scripts, the inputs, raw outputs and `results*.json`.
+**Evidence record:** raw spike artifacts (each spike's predeclared `PROTOCOL*.md`, its scripts,
+the inputs, raw outputs and `results*.json`) were produced during architecture synthesis and
+remain local-only; they are not part of the committed repository. This file preserves each
+spike's protocol, observed result, interpretation, limitations and architecture disposition.
+Artifact names cited below refer to that local record.
 
 **Environment of executed spikes:** Windows 11 (10.0.26300); Python 3.13.13; Node 22.19.0;
 LibreOffice 26.2.5.2; Google Chrome 154.0.8037.59; python-pptx 1.0.2; PyMuPDF 1.27.2.3. PowerPoint
@@ -192,7 +195,9 @@ Purpose:
   | 06 | `cb77696f3e53833a` |
   | 07 | `773a397796444aee` |
 
-  `trash/` is gitignored, so the hashes are the check.
+  These prefixes are a historical record of the synthesis-time freeze check, not a current
+  integrity assertion. The files were later normalized for repository location; Git history is
+  the integrity record for the finalized artifacts.
 - **The Phase 6 state matches 07 §19 and 06 §13.** Specifically:
   - no Gate is `Does not meet`;
   - SA-P4-01 is closed;
@@ -434,7 +439,7 @@ It does **not** block W-035 globally.
 
 - **Question** (06 §4 AC-01): can a local headless render of a produced PPTX supply preview
   images, a whole-deck rendered view, preview geometry and the PDF?
-- **Predeclared contract:** `evidence/s1-ag01b-b/PROTOCOL.md` (P1–P6).
+- **Predeclared contract:** the S1 `PROTOCOL.md` (P1–P6; local-only, §1).
 - **Instrument:** LibreOffice 26.2.5.2 headless as the experimental local renderer (not a
   selection); python-pptx as a stand-in producer of native PPTX objects (not B's serializer); and
   PyMuPDF.
@@ -551,7 +556,7 @@ condition not triggered).
 - **New deck:** an in-app action. The page can ask the authority before showing its own
   confirmation, so the state is available (structural).
 - **Reload, navigation, close:** S2, run under a predeclared contract
-  (`evidence/s2-ag09-platform/PROTOCOL.md`).
+  (the S2 `PROTOCOL.md`; local-only, §1).
 
 | Scenario | Reload | Navigate | Close | Host received |
 |---|---|---|---|---|

@@ -2,7 +2,7 @@
 
 - Inputs: `01-context.md`, `02-problem-map.md`, `03-decision-bank.md`, `04-decision-graph.md` (all
   frozen). DOC-004 was consulted only to confirm AC names and kinds.
-- Built: 2026-09-30. This is a scratch file under `trash/` (gitignored). No Project Hub change.
+- Built: 2026-09-30. No Project Hub change.
 
 ## 1. Phase boundary and synthesis method
 

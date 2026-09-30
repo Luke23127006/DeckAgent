@@ -5,7 +5,7 @@
   - DOC-004 §9, for the AC-21 … AC-27 questions;
   - the Project Hub snapshot, for C-002, C-003 and C-004 only.
 - Supporting: DOC-008, only where `06-evaluation.md` already relies on it.
-- Built: 2026-09-30. This is a scratch file under `trash/` (gitignored). No frozen artifact and no
+- Built: 2026-09-30. No frozen artifact and no
   Project Hub record was modified.
 
 ## 1. Phase boundary

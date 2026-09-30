@@ -2,7 +2,7 @@
 
 - Inputs: `01-context.md` (frozen), `02-problem-map.md` (frozen, 16 APs), Project Hub snapshot,
   DOC-004, DOC-008 (selected sections), DOC-005, DOC-006, DOC-007.
-- Built: 2026-09-30. Scratch file under `trash/` (gitignored). ADB IDs are fixed; do not renumber.
+- Built: 2026-09-30. ADB IDs are fixed; do not renumber.
 - This bank lists **options**. It selects nothing and assembles no candidate architecture.
 
 ## 1. Phase 2 prerequisite check

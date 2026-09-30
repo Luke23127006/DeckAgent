@@ -4,7 +4,7 @@
   no candidates, no recommendations.
 - Built: 2026-09-30 from the Project Hub snapshot synced 2026-09-30T03:31:28Z (schema 4,
   `project-hub status` = fresh, `validate` = no structural issues).
-- Scratch file under `trash/` (gitignored). Not an authoritative document.
+- Part of the DeckAgent architecture synthesis. Not an authoritative document.
 
 **Evidence-class tags used below**
 
