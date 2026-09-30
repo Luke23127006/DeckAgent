@@ -3,15 +3,17 @@
 - Status: Draft
 - Produced by: W-028; updated by W-037 · Used by: W-029, W-030, W-031, W-033, W-034, W-035 ·
   Referenced by DOC-008 (W-032, W-036)
-- V1 boundary: D-024 … D-028 (W-026) and D-029; V1 Business Rules BR-001 … BR-003,
+- V1 boundary: D-024 … D-028 (W-026), D-029 and D-030; V1 Business Rules BR-001 … BR-003,
   BR-005 … BR-014; V1 Use Cases UC-001, UC-002, UC-004, UC-008, UC-011, UC-013, UC-014, UC-015
 - Criterion set: AC-01 … AC-30. IDs are stable and independent of kind. AC-28 … AC-30 were
   appended by W-037; no earlier ID was renumbered or reused.
-- Project Hub baseline: local snapshot synced 2026-09-28 04:24 UTC (schema 4). Every ID cited here
+- Project Hub baseline: local snapshot synced 2026-09-30 03:05 UTC (schema 4). Every ID cited here
   was checked against it; Project Hub remains the source of truth.
 - Updated: 2026-09-28 (W-037: accepted/pending version lifecycle, stopping an AI operation,
   session-only work, alignment with DOC-008). Refined the same day so that AC-01, AC-17, AC-29
-  and AC-30 leave "delivered" and "undownloaded" to Product.
+  and AC-30 leave "delivered" and "undownloaded" to Product. Updated 2026-09-30 (W-037, D-030):
+  promotion at a refinement's commit boundary, rollback to the version accepted there, and
+  BR-010 rule numbers aligned with Project Hub.
 - Language: this English file is the canonical source. A Vietnamese reader version exists for
   human reading; it predates the W-037 update. If the two differ, this file wins.
 
@@ -102,16 +104,19 @@ Which checks the product itself runs at the validation points of AC-10 is a Prod
 
 ### 3.3 Version lifecycle terms
 
-The criteria use Project Hub's version lifecycle (BR-010). The terms below restate it; they add
-no semantics.
+The criteria use Project Hub's version lifecycle (BR-010, D-030). The terms below restate it; they
+add no semantics. "Commit boundary" is Project Hub's term; "recovery baseline" is DOC-004
+shorthand for the deck and constraint state that Project Hub requires to be restored.
 
 | Term | Meaning | Source |
 |---|---|---|
-| Accepted version | The version the deck returns to on reject or failure. A successful first generation becomes the accepted version directly | BR-010 rules 1, 3; R-031 |
-| Pending version | The validated result of a refinement, awaiting the user's decision. A further refinement request promotes an existing pending version, so at most one exists | BR-010 rules 2, 3; R-011 AC2 |
+| Accepted version | The version the deck returns to on reject or failure. A successful first generation becomes the accepted version directly | BR-010 rules 1, 3, 5, 7, 8; R-031 |
+| Pending version | The validated result of a refinement, awaiting the user's decision. A further refinement that reaches its commit boundary first promotes an existing pending version, so at most one exists | BR-010 rules 2, 3b; R-011 AC2 |
 | Previewed version | The version the user is currently viewing: the accepted version, or the pending version if one exists and is shown | R-019; UC-015 |
 | Exported version | The version an export is built from: the previewed version at the time of export | R-020 AC1; BR-006; UC-008 step 4 |
-| Promotion | A pending version becoming the accepted version: when the user keeps it, sends a further refinement request, or when a file exported from it "is produced and delivered" | BR-010 rule 3; UC-008 step 7 |
+| Promotion | A pending version becoming the accepted version: when the user keeps it, when a further refinement request reaches its commit boundary, or when a file exported from it "is produced and delivered" | BR-010 rules 3–5; D-030; UC-008 step 7 |
+| Commit boundary | The point immediately before a further refinement's AI operation begins. It is reached once the request has not been refused and no clarification, warning, or confirmation remains; if none is needed, it is reached directly, with no added confirmation. Before it, the pending version stays pending and the request's constraints are not applied. At it, the pending version (if any) is promoted, its constraints become the accepted constraint set, and then the request's constraints are applied | BR-010 rules 3b, 4, 5; D-030; UC-004 step 2′; R-024 AC2–3 |
+| Recovery baseline (DOC-004 shorthand) | The accepted version and its constraint set that a pending version or a running refinement returns to on reject, stop, failure, or failed validation. For a refinement it is the accepted version at that refinement's commit boundary, which may be a pending version promoted there, never an older one. Only this one baseline must be kept | BR-010 rules 5, 7, 8; R-024 AC4; R-031 AC2; R-046 AC2 |
 
 Project Hub does **not** define, and this document does not assume:
 
@@ -119,7 +124,6 @@ Project Hub does **not** define, and this document does not assume:
 - whether R-025 and R-028 (worded for the accepted version) also apply to a file exported from a
   pending version;
 - what "undownloaded" means for R-045 and BR-012;
-- what happens to constraints introduced by a refinement that is stopped or fails;
 - whether an export can be stopped.
 
 See §11 for how each criterion stays neutral on these.
@@ -262,11 +266,13 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
   independently of the deck content, rather than being re-inferred from the deck each time.
 - **Evidence to look for:** Where constraints stated by the user are available when a later
   refinement runs, and what happens to them when a refinement changes the deck. Cancellation of a
-  rejected request's constraints is assessed under AC-07. Whether verification can read the
-  constraint set in effect is compared under AC-25 (DOC-008 TN-1), not required here.
+  rejected request's constraints is assessed under AC-07; restoring the recovery baseline's
+  constraints (§3.3) after a stopped, failed, or invalid refinement under AC-06, AC-08 and AC-28;
+  and when a request's constraints first take effect (its commit boundary) under AC-29. Whether
+  verification can read the constraint set in effect is compared under AC-25 (DOC-008 TN-1), not
+  required here.
 - **Does not require:** Any decision about which constraints last for the whole session, when a
-  constraint expires, how single-refinement constraints are told apart (BR-003 exception), what
-  happens to constraints introduced by a refinement that is stopped or fails (§11), or how
+  constraint expires, how single-refinement constraints are told apart (BR-003 exception), or how
   constraints are represented.
 
 ### AC-05 — Preview and exports derive from the same version
@@ -291,8 +297,10 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
 
 - **Criterion:** An AI-generated result is not displayed, does not become a pending version, and
   does not become or replace the accepted version until it has been validated (R-033). An invalid
-  result leaves the accepted version unchanged.
-- **Trace:** R-033, R-031; BR-010 rules 1–2; UC-001 5A, UC-002 6A, UC-004 4A
+  result creates no version; after an invalid refinement result, the deck and constraint set are
+  those of the recovery baseline (§3.3).
+- **Trace:** R-033, R-031 AC2, R-024 AC4; BR-010 rules 1–2, 5; D-030; UC-001 5A, UC-002 6A,
+  UC-004 4A
 - **Why architecture-level:** It constrains when a result can become visible or authoritative
   relative to validation, across generation and refinement.
 - **Evidence to look for:** For refinement, what happens between an AI result being produced and
@@ -306,7 +314,7 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
 - **Criterion:** While a pending version exists, the user can reject it and return to the
   accepted version it was produced from, with the constraints introduced by the request that
   produced it cancelled (one step, not history).
-- **Trace:** D-025; R-031, R-024 AC2; BR-010 rules 2, 5, 6; UC-013
+- **Trace:** D-025; R-031; BR-010 rules 2, 7, 8; UC-013 postcondition 2
 - **Why architecture-level:** The accepted version and the constraints in effect before the
   request must still exist alongside the pending version, and constraints must be attributable to
   the request that introduced them. This affects how long states are retained and how constraints
@@ -315,21 +323,24 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
   still available while the user reviews the pending version, and what rejecting restores (deck
   content and constraints).
 - **Does not require:** Undo, multi-step history, or version management (D-025); keeping the
-  replaced accepted version after a pending version has been promoted (UC-013 1A); a particular
-  constraint representation.
+  replaced accepted version after a pending version has been promoted (BR-010 rule 8; UC-013 1A);
+  a particular constraint representation.
 
 ### AC-08 — Operation failures end in a determinate state
 
 - **Criterion:** A failed generation or refinement — including an external model/tool failure or
   timeout — ends in a determinate state with no hang and no half-applied change: it creates no
-  version, the accepted version is unchanged, and a failed first generation leaves no deck.
-- **Trace:** R-031, R-032; BR-005, BR-014 rule 2; UC-001 4B, UC-002 5C, UC-004 3B, UC-014 2B;
-  DOC-002 §11, §16
+  version; a failed refinement leaves the deck and constraint set at its recovery baseline (§3.3),
+  the accepted version at its commit boundary rather than an older one; and a failed first
+  generation leaves no deck.
+- **Trace:** R-031, R-032, R-024 AC4; D-030; BR-005, BR-010 rule 5, BR-014 rule 2; UC-001 4B,
+  UC-002 5C, UC-004 3B, UC-014 2B; DOC-002 §11, §16
 - **Why architecture-level:** It decides where operation boundaries sit and how external calls
   are isolated from the working state.
 - **Evidence to look for:** For each external call in generation and refinement: where it crosses
   the system boundary, what bounds it, and what state results when it fails or times out partway
-  through. A user-initiated stop is assessed under AC-28.
+  through, including which accepted version and constraint set are in effect afterwards. A
+  user-initiated stop is assessed under AC-28.
 - **Does not require:** Specific retry counts, timeout values (C-007 retired; D-011), or a
   transaction mechanism.
 
@@ -338,7 +349,7 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
 - **Criterion:** An export that is cancelled, fails, or produces an invalid file delivers no
   invalid file and leaves both the accepted and the pending version unchanged. Export can be
   retried without regenerating content.
-- **Trace:** R-020 AC3, R-027, R-031; BR-005, BR-010 rule 4; UC-008 3A, 4A
+- **Trace:** R-020 AC3, R-027, R-031; BR-005, BR-010 rule 6; UC-008 3A, 4A
 - **Why architecture-level:** Export is a separate artifact-producing path. Apart from promotion
   after a successful export (AC-29), its outcomes must not flow back into the versions.
 - **Evidence to look for:** Whether any export step writes to the accepted or pending version
@@ -413,11 +424,13 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
 
 - **Criterion:** The user can stop a running generation or refinement at any time before it
   finishes. A stopped operation ends in a determinate state and creates no version, accepted or
-  pending, including from a result that arrives after the stop. The accepted version is
-  unchanged, and a stopped first generation leaves no deck. At most one generation or refinement
-  runs at a time. If a stop and a completion coincide, exactly one of them takes effect.
-- **Trace:** R-046, R-030, R-031; D-029; BR-005, BR-014; RK-007; UC-001 4A, UC-002 5B, UC-004 3A,
-  UC-014 2A, 2C
+  pending, including from a result that arrives after the stop. A stopped refinement leaves the
+  deck and constraint set at its recovery baseline (§3.3); a promotion made at its commit
+  boundary, before the operation began, stands and is not a version created by the operation. A
+  stopped first generation leaves no deck. At most one generation or refinement runs at a time.
+  If a stop and a completion coincide, exactly one of them takes effect.
+- **Trace:** R-046 AC2–3, R-030, R-031 AC2, R-024 AC4; D-029, D-030; BR-005, BR-010 rule 5,
+  BR-014; RK-007; UC-001 4A, UC-002 5B, UC-004 3A, UC-014 2A, 2C
 - **Why architecture-level:** A stop can arrive while an external call is still outstanding, and
   that call's result can arrive later (RK-007). Whether the late result can still change a
   version depends on where operation results are committed and what owns the versions. That
@@ -430,33 +443,48 @@ excluded or must be revised (§5). AC-28 … AC-30 appear at the end of this sec
   one is running.
 - **Does not require:** Cancelling the external call itself or bounding its cost (R-036 is
   Later); stopping an export (R-046 note 2; UC-014 OQ-1); a particular concurrency or cancellation
-  mechanism; any decision on what happens to constraints introduced by a stopped refinement (§11).
+  mechanism.
 
 ### AC-29 — Version transitions occur only at defined events
 
 - **Criterion:** Once a deck exists there is exactly one accepted version and at most one pending
   version. A version becomes accepted only through the events BR-010 defines: a successful first
-  generation, or promotion of the pending version when the user keeps it, sends a further
-  refinement request, or when a file exported from it has been produced and delivered. Promotion
-  on export happens only after the file has been produced and has passed output validation
-  (AC-10), never at export start, on cancel, or on failure. Each transition takes effect
-  completely or not at all, and the point at which promotion on export is committed is
-  identifiable.
-- **Trace:** BR-010 rules 1–4, 6; R-011 AC2, R-020, R-031; D-025; UC-001 postcondition 1,
-  UC-004 postcondition 1, UC-008 step 7 and postcondition 2, UC-013 1A
+  generation, or promotion of the pending version when the user keeps it, when a further
+  refinement request reaches its commit boundary (§3.3), or when a file exported from it has been
+  produced and delivered. For a further refinement, promotion happens at the D-030 commit
+  boundary, immediately before its AI operation begins; before that boundary no version changes
+  and the request's constraints do not become part of the accepted state. Promotion on export
+  happens only after the file has been produced and has passed output validation (AC-10), never
+  at export start, on cancel, or on failure. Each transition takes effect completely or not at
+  all, and the points at which promotion at a commit boundary and promotion on export are
+  committed are identifiable.
+- **Trace:** BR-010 rules 1–6, 8; R-011 AC2, R-020, R-024 AC2–3, R-031; D-025, D-030;
+  UC-001 postcondition 1, UC-004 step 2′, 1A, 2A–2C and postconditions 1–2, UC-008 step 7 and
+  postcondition 2, UC-013 1A
 - **Why architecture-level:** It decides what owns the versions and which paths may change them.
   Promotion after a successful export turns the export path, which AC-09 otherwise keeps from
   writing to versions, into a trigger for a version change. A candidate must place that trigger
-  where the file is known to be good, not wherever it is convenient.
+  where the file is known to be good, not wherever it is convenient. Promotion at a refinement's
+  commit boundary likewise ties a version change to the start of an AI operation, so pre-flight
+  steps must not change versions or constraints, and the commit must sit where the operation
+  actually begins.
 - **Evidence to look for:** For each BR-010 transition, which part causes it and when. For
-  promotion on export: the possible commit points after successful file production (for example
-  after output validation, or when the file is handed to the user), which of them the candidate
-  can observe and commit at, and what would change if Product's definition of "delivered" moved
-  the commit from one to another. Also, what state is visible if a transition is interrupted.
-- **Does not require:** A state machine, version store, or number of copies. It does not ask a
-  candidate to define "delivered": Product defines which event counts as delivery (§11). The
-  candidate must be able to commit promotion at the event Product chooses and expose where that
-  commit happens.
+  promotion at a refinement's commit boundary: where pre-flight (clarification, warning,
+  confirmation) ends and the AI operation begins; that a request cancelled or refused before
+  that point leaves the pending version and the constraint set unchanged; that the boundary is
+  reached directly, with no added confirmation, when no pre-flight step is needed; that the
+  promoted version's constraints become the accepted set before the new request's constraints
+  are applied; and what a stop or failure immediately after the boundary restores (AC-08,
+  AC-28). For promotion on export: the possible commit points after successful file production
+  (for example after output validation, or when the file is handed to the user), which of them
+  the candidate can observe and commit at, and what would change if Product's definition of
+  "delivered" moved the commit from one to another. Also, what state is visible if a transition
+  is interrupted.
+- **Does not require:** A state machine, version store, or number of copies; a particular
+  structure for pre-flight steps or for holding an uncommitted request's constraints. It does not
+  ask a candidate to define "delivered": Product defines which event counts as delivery (§11).
+  The candidate must be able to commit promotion at the event Product chooses and expose where
+  that commit happens.
 
 ### AC-30 — Session-loss state is available
 
@@ -531,14 +559,17 @@ They state what must be observable, not how it is exposed.
   the successful export outcomes of each, each traceable to the version and format that produced
   it. It can also observe the states before and after the last refinement, including after a
   reject, a stop, or a failure.
-- **Trace:** D-028 (4); R-020, R-024, R-031, R-045, R-046; BR-010, BR-014; D-025; DOC-008 TN-6
+- **Trace:** D-028 (4); R-020, R-024, R-031, R-045, R-046; BR-010, BR-014; D-025, D-030;
+  DOC-008 TN-6
 - **Why architecture-level:** Testing P2, reject, promotion, and stop needs to compare states and
   to tell "pending version discarded" from "never created". This aligns with AC-07, AC-28, AC-29,
   and AC-30 but is a distinct need: those require the behavior, and this requires that
   verification can see it.
 - **Evidence to look for:** Whether tests can inspect which versions exist, their content, and
   the successful exports made from each (version and format) after a refinement, a keep, a
-  reject, a stop, a failure, and an export.
+  reject, a request cancelled before its commit boundary, a stop, a failure, and an export,
+  including which version is accepted after a stop or failure that followed a promotion at the
+  commit boundary.
 - **Does not require:** Diffing, history beyond one step, persistence beyond the session, a
   particular record of exports or a single "exported" flag per version, or a definition of
   "delivered" or "undownloaded" (§11).
@@ -717,8 +748,9 @@ not produce a pass/fail result or a numeric score.
 - W-028 primary requirements: R-001 (AC-04), R-003 (via D-024, AC-01), R-004 (AC-02, AC-13),
   R-006 (AC-01), R-007 (AC-03, AC-16), R-011 (AC-01, AC-29), R-019 (AC-01),
   R-020 (AC-01, AC-05, AC-09, AC-15, AC-29, AC-30), R-021 (AC-10, AC-14, AC-18),
-  R-024 (AC-04, AC-07, AC-17), R-025 (AC-05, AC-15), R-026 (AC-19), R-027 (AC-09, AC-10, AC-19),
-  R-028 (AC-05, AC-14), R-030 (AC-20, AC-28), R-031 (AC-06 … AC-09, AC-17, AC-29),
+  R-024 (AC-04, AC-06, AC-08, AC-17, AC-28, AC-29), R-025 (AC-05, AC-15), R-026 (AC-19),
+  R-027 (AC-09, AC-10, AC-19), R-028 (AC-05, AC-14), R-030 (AC-20, AC-28),
+  R-031 (AC-06 … AC-09, AC-17, AC-28, AC-29),
   R-032 (AC-08, AC-20, AC-22), R-033 (AC-06, AC-10), R-041 (AC-12), R-042 (AC-11),
   R-043 (AC-02).
 - W-037 primary requirements: R-045 (AC-17, AC-30), R-046 (AC-17, AC-20, AC-28).
@@ -727,7 +759,8 @@ not produce a pass/fail result or a numeric score.
 - Constraints: C-002 (AC-21, AC-22), C-003 (AC-26). C-004 informs AC-26's comparison questions.
   C-001 is Retired; AC-12 now traces D-006 and D-015.
 - Decisions: D-006 and D-015 (AC-12), D-007 (AC-13), D-011 (mechanism boundary; AC-10, AC-24),
-  D-024 … D-028 (V1 boundary), D-012 (AC-01), D-027 (AC-01, AC-11, AC-30), D-029 (AC-28).
+  D-024 … D-028 (V1 boundary), D-012 (AC-01), D-027 (AC-01, AC-11, AC-30), D-029 (AC-28),
+  D-030 (AC-06, AC-08, AC-17, AC-28, AC-29).
 - Risks and assumptions: RK-006 (AC-19), RK-007 (AC-28), A-013 (AC-04), A-029 (AC-30).
 
 ### 10.5 V1 Use Cases
@@ -739,7 +772,7 @@ not produce a pass/fail result or a numeric score.
 | UC-004 Deck-level refinement | AC-01, AC-04, AC-06, AC-07, AC-08, AC-10, AC-28, AC-29 |
 | UC-008 Export PPTX or PDF | AC-05, AC-09, AC-10, AC-12, AC-19, AC-29, AC-30 |
 | UC-011 Start a new deck | AC-11 (UC-011 OQ-1 is not gated), AC-30 |
-| UC-013 Reject the pending version | AC-07, AC-17 |
+| UC-013 Reject the pending version | AC-07, AC-17, AC-29 |
 | UC-014 Progress and stop | AC-08, AC-20, AC-28 |
 | UC-015 Preview | AC-05, AC-14, AC-15, AC-18 |
 
@@ -755,7 +788,7 @@ not produce a pass/fail result or a numeric score.
 | BR-007 Cross-format meaning | AC-05, AC-15, AC-19 |
 | BR-008 Source content is data | AC-02 |
 | BR-009 One source per deck | No dependent architecture choice beyond AC-01 and AC-13; verified by tests (DOC-008 §4.7) |
-| BR-010 Accepted/pending lifecycle | AC-06, AC-07, AC-09, AC-17, AC-29 |
+| BR-010 Accepted/pending lifecycle | AC-06, AC-07, AC-08, AC-09, AC-17, AC-28, AC-29 |
 | BR-011 Slide-targeted disclosure | Product behavior with no dependent architecture choice (§12) |
 | BR-012 Session-only deck | AC-01, AC-30 |
 | BR-013 Disclose limits | AC-19 for format losses (R-026); otherwise product behavior (§12) |
@@ -767,7 +800,7 @@ BR-004 and BR-015 … BR-018 are not V1-active.
 
 | TN | Classification | Where it lands | Reasoning |
 |---|---|---|---|
-| TN-1 Active constraint set readable | Trade-off only | AC-25; pointer in AC-04 | The behavior that needs it (reject cancels constraints, BR-010 rule 5) is gated in AC-07. Reading the set is a verification convenience that D-028 does not list; R-024 stays verifiable through deck content |
+| TN-1 Active constraint set readable | Trade-off only | AC-25; pointer in AC-04 | The behaviors that need it (reject cancels constraints, BR-010 rule 7; a stopped, failed, or invalid refinement restores the recovery baseline's constraints, BR-010 rule 5, R-024 AC4) are gated in AC-07, AC-06, AC-08 and AC-28. Reading the set is a verification convenience that D-028 does not list; R-024 stays verifiable through deck content |
 | TN-2 Validation outcome readable | Strengthens a Gate | AC-10 | R-033's note requires the architecture to make the check verifiable. An outcome not planned with its validation point is costly to recover |
 | TN-3 External calls controllable in tests | Split | Already covered: identifiable external-call boundaries (AC-08, AC-11, AC-22). New: stop and completion resolve to one outcome (AC-28). Trade-off: replay, fault injection, hold-and-release (AC-25). Detailed Design: substitution technique | The architecture fixes where calls cross the boundary and where results commit. Controlling calls in tests is a cost, not an invariant |
 | TN-4 User-content egress observable | Already covered | AC-11 (evidence strengthened) | AC-11 already requires identifiable flows; only observability to verification is added |
@@ -790,13 +823,11 @@ adds behavior.
 
 | Open point | Source | How the criteria stay neutral |
 |---|---|---|
-| Which event counts as "delivered" for promotion on export | BR-010 rule 3; UC-008 step 7; DOC-008 F12 | Product defines delivery. AC-29 requires promotion only after the file is produced and validated, and an identifiable commit point. Each candidate states which delivery points it can observe and commit at, and what moving between them would change. If Product chooses an event no candidate can observe, the question returns to Product |
+| Which event counts as "delivered" for promotion on export | BR-010 rule 3c; UC-008 step 7; DOC-008 F12 | Product defines delivery. AC-29 requires promotion only after the file is produced and validated, and an identifiable commit point. Each candidate states which delivery points it can observe and commit at, and what moving between them would change. If Product chooses an event no candidate can observe, the question returns to Product |
 | Whether R-025 and R-028 apply to a file exported from a pending version | R-025 AC1, R-028 AC1 vs R-020 AC1, BR-006; DOC-008 F12 | AC-05 requires derivation from the previewed version either way |
 | What "undownloaded" means: one format or both; the accepted version, the pending version, or the latest; browser close vs local process termination | R-045; BR-012 rule 2; UC-011 step 2; DOC-008 F14 | AC-30 and AC-17 require successful export outcomes traceable to version and format, available where session-ending actions are intercepted. They define neither "undownloaded" nor when work counts as at risk |
-| Constraints introduced by a refinement that is stopped or fails | UC-004 3A, 3B, 4A; DOC-008 F13 | AC-04 and AC-28 take no position |
 | Whether the product itself must check source numbers (runtime validation vs test oracle) | UC-002 step 6; R-033; DOC-008 F15 | AC-10 requires validation to be possible and verifiable. If Product requires the check, AC-10's evidence must show the source and content origin (AC-16) available at the validation point |
 | Whether an export can be stopped | UC-014 OQ-1; R-046 note 2; D-029 reopen condition | Not required (AC-09, AC-28); see §12 |
-| Whether BR-010 rule 6 ("one previous accepted version") requires keeping the replaced accepted version after promotion | BR-010 rule 6 vs UC-013 1A | AC-07 requires retention only while a pending version exists |
 
 Deliberately not treated as uncertainties here, because they are learnable later unless a
 concrete candidate forces the issue: constraint lifetime semantics (A-013, DOC-002 OQ-04) and

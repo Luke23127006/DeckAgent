@@ -440,6 +440,81 @@ Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architectur
 - Confidence: Explicit.
 
 ### 3.6 Validation & quality
+### F-OD-04 — Generation is a host-orchestrated pipeline around an external agent
+
+- Research questions: RQ-04
+- Problem addressed: Support several agents and execution modes without copying the product flow.
+- Responsibility / boundary: The daemon resolves context and runs; the prompt layer gives task policy; the external agent performs model/tool work; the workspace receives the artifact.
+- Decision / mechanism: Both filesystem and text-artifact execution profiles end in the same project-file boundary.
+- Source says: The two generation profiles and their common workspace handoff are documented in `docs/architecture.md` — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L175-L199`.
+- Inference: The stable architectural path is `request → context/prompt → runtime → workspace → validation → preview/export`, even when the selected agent transport changes.
+- Rationale: OpenDesign wants to integrate existing agents instead of owning another agent loop. This is stated in `docs/agent-adapters.md#L5-L10`.
+- Trade-off: The host stays agent-neutral, but exact tool, permission, and recovery behavior varies by runtime.
+- DeckAgent implication / relevance: AC-01, AC-23 — provides a clear stage map and shows where runtime changes can be isolated.
+- Mismatch / caution: OpenDesign is a multi-artifact platform; DeckAgent can use a narrower pipeline.
+- Confidence: Explicit.
+
+### F-OD-05 — Provenance is recorded at file/version level, not inside deck content
+
+- Research questions: RQ-05
+- Problem addressed: Link an artifact version to the run and prompt that created it.
+- Responsibility / boundary: Version history records file-level origin. It does not label each sentence or object as source-derived, user-provided, or generated.
+- Decision / mechanism: Successful runs can snapshot changed HTML and attach prompt/origin metadata to the file version.
+- Source says: The version model stores source, prompt, parent history, digest, and origin, and successful runs create HTML snapshots for touched files — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/project-file-versions.ts#L15-L59`, `#L491-L560`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-html-version-snapshots.ts#L82-L132`.
+- Inference: OpenDesign can answer which run produced a file version, but not which claims in that version came from the source.
+- Rationale: File-level history fits the code-file workspace. This is inferred.
+- Trade-off: History stays simple, but detailed content provenance cannot be checked after edits.
+- DeckAgent implication / relevance: AC-03, AC-16 — shows that run/file provenance and content-level provenance solve different problems.
+- Mismatch / caution: DeckAgent's source-grounding need is stricter than OpenDesign's general artifact history.
+- Confidence: Strong inference.
+
+### 3.4 State & ownership
+
+### F-OD-06 — Workspace files are the working artifact; SQLite is supporting state
+
+- Research questions: RQ-06
+- Problem addressed: Give agents normal files while keeping durable project and run metadata.
+- Responsibility / boundary: The project workspace owns current artifact bytes. SQLite owns projects, conversations, messages, runs, and related metadata. Preview and export read files or an explicit HTML version.
+- Decision / mechanism: OpenDesign splits content state from control metadata instead of storing the full deck only in the database.
+- Source says: The architecture assigns persistence and project-file authority to the daemon and describes the workspace/SQLite split — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L96-L110`, `#L148-L162`.
+- Inference: Managed projects survive reload and application restart until removed. This is not a session-only model. The file selected by preview and export is observable, but a live file can change unless export is pinned to a version.
+- Rationale: Normal files work well with coding agents; SQLite supports queryable control state. This is inferred.
+- Trade-off: Each store has a clear role, but consistency across file changes and metadata updates needs coordination.
+- DeckAgent implication / relevance: AC-05, AC-15, AC-30 — useful for locating version bytes, preview selection, export selection, and lifecycle state.
+- Mismatch / caution: DeckAgent V1 is session-only, while OpenDesign is a durable project system.
+- Confidence: Strong inference.
+
+### F-OD-07 — Version history supports restore, but there is no pending-version gate
+
+- Research questions: RQ-07
+- Problem addressed: Recover an earlier HTML artifact after edits.
+- Responsibility / boundary: The workspace is changed directly during a run. HTML history can later restore one file. No separate component accepts or rejects a whole-deck candidate before it becomes the working state.
+- Decision / mechanism: Restore copies a historical HTML version back into the working file and records the restore as another version.
+- Source says: Version history is limited to HTML, and restore overwrites the working file from a selected version — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/routes/project/index.ts#L7236-L7264`, `#L7407-L7472`.
+- Inference: OpenDesign provides history after mutation, not an accepted/pending transaction around the whole deck.
+- Rationale: Direct file edits match the coding-agent workflow. The source does not state why a candidate gate is absent.
+- Trade-off: Live iteration is simple, but rejection is a later restore and may not cover all files changed by one run.
+- DeckAgent implication / relevance: AC-06, AC-07, AC-17, AC-29 — provides a useful contrast between history and an explicit version lifecycle.
+- Mismatch / caution: OpenDesign's restore model must not be treated as DeckAgent's accepted/pending model.
+- Confidence: Strong inference.
+
+### 3.5 Refinement
+
+### F-OD-08 — Refinement chooses bounded direct edit or full planning
+
+- Research questions: RQ-08
+- Problem addressed: Avoid full regeneration for a clear local change while keeping broader changes planned.
+- Responsibility / boundary: The strategy resolver classifies scope. The agent still performs the edit in the workspace.
+- Decision / mechanism: Eligible, well-bounded requests use Direct Edit. Wider or uncertain requests use Full Plan.
+- Source says: A bundled strategy defines Direct Edit eligibility, protected content, and fallback to Full Plan — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:plugins/_official/scenarios/od-next-strategy/assets/general-orchestration.md#L132-L202`.
+- Inference: Refinement scope is a planning choice, not a separate slide patch representation. Existing files and context are the baseline.
+- Rationale: The source states that direct edit is for minimal, known changes and full planning is for broader work.
+- Trade-off: Small edits can be faster, but correctness still depends on the agent respecting scope and on later validation.
+- DeckAgent implication / relevance: AC-01, AC-04, AC-27 — shows one routing point for local versus whole-deck refinement.
+- Mismatch / caution: The documented Direct Edit policy belongs to one strategy and must not be assumed for every OpenDesign run. DeckAgent V1 requires deck-level refinement, while OpenDesign's object and local-edit features are wider in scope.
+- Confidence: Explicit.
+
+### 3.6 Validation & quality
 
 ### F-OD-09 — Run completion validation checks artifact integrity, not presentation quality
 
@@ -470,7 +545,79 @@ Evidence: `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architectur
 - Confidence: Strong inference.
 
 ### 3.7 Rendering & export
+### F-OD-09 — Run completion validation checks artifact integrity, not presentation quality
 
+- Research questions: RQ-09
+- Problem addressed: Distinguish a completed run with a usable deliverable from a run that only emitted events or partial files.
+- Responsibility / boundary: The daemon validates run status, expected entry file, changed paths, artifact kind, and readability after the run. Preview can show workspace file changes while the run is still active. It does not decide whether the deck's meaning and layout are good.
+- Decision / mechanism: Validation sits after runtime execution and before the run is treated as having produced its deliverable.
+- Source says: The validator separates “this run produced it” from “the project has it” and checks status, entry, touched path, kind, and readability — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/run-deliverable-validation.ts#L163-L230`, `#L233-L346`. The documented generation flow says file events can update the workspace and preview during execution — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L177-L189`.
+- Inference: The architecture has a visible completion gate, but live preview is not behind that gate. The gate also does not prove semantic correctness or full rendered quality. Export has its own request, render, and format checks rather than one shared acceptance gate.
+- Rationale: A run must not be marked successful only because a file already existed. This is directly reflected in the validator split.
+- Trade-off: The check is cheap and clear, but deeper quality needs other stages.
+- DeckAgent implication / relevance: AC-06, AC-10 — shows why integrity and quality validation should be separate and observable.
+- Mismatch / caution: OpenDesign does not have DeckAgent's pending-version promotion point.
+- Confidence: Strong inference.
+
+### F-OD-10 — Quality evidence is spread across source, preview, render, and optional audit stages
+
+- Research questions: RQ-10
+- Problem addressed: Detect different classes of presentation failure without one very expensive check on every edit.
+- Responsibility / boundary: Source lint checks HTML patterns; preview reports runtime and geometry signals; Chromium gives rendered output; an optional audit inspects PPTX fidelity.
+- Decision / mechanism: Quality checks are layered by cost and by the artifact form they can observe.
+- Source says: Preview exposes render-health and geometry data, while the optional audit reads PPTX text, position, size, typography, and bounds — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:packages/contracts/src/runtime/preview-observability.ts#L86-L127`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L57-L103`, `#L178-L209`.
+- Inference: No single stage owns complete content and visual quality. Render-based evidence is needed for failures that source checks cannot see.
+- Rationale: Fast checks support iteration, while artifact inspection is more costly. This is inferred.
+- Trade-off: Layering limits routine cost, but evidence is fragmented and optional checks may not run.
+- DeckAgent implication / relevance: AC-14, AC-18, AC-25 — supports separating cheap structural checks from rendered whole-deck checks.
+- Mismatch / caution: OpenDesign's checks cover many artifact types, not only decks.
+- Confidence: Strong inference.
+
+### 3.7 Rendering & export
+
+### F-OD-11 — Preview and export render stored HTML instead of regenerating content
+
+- Research questions: RQ-11
+- Problem addressed: Keep rendering separate from model generation and allow export retry without another model call.
+- Responsibility / boundary: Preview renders a selected project file. Export resolves a working file or explicit HTML version, then asks the desktop renderer to capture or print it.
+- Decision / mechanism: HTML is the shared source for preview and the main deck export paths.
+- Source says: Preview uses sandboxed file-workspace iframes, and the export route reads `fileName` plus optional `versionId` before desktop rendering — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:docs/architecture.md#L164-L173`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L951-L989`, `#L1103-L1126`.
+- Inference: A version-pinned export is tied to stored bytes. An unpinned export reads the current file, so exact preview/export identity depends on file stability between those actions. Export does not change the source version. The inspected route streams the produced file and deletes scratch render files; it does not create a durable export record linked to the version and format.
+- Rationale: Browser rendering reuses the authored HTML and avoids asking an agent to rebuild content during export. The replacement of agent-driven export is recorded in the export route comments.
+- Trade-off: Export is repeatable from stored HTML, but it depends on Chromium and on HTML behaving the same in capture/print modes.
+- DeckAgent implication / relevance: AC-01, AC-05, AC-09, AC-15, AC-29, AC-30 — shows both the value of version-pinned export and the risk of exporting mutable working state.
+- Mismatch / caution: OpenDesign does not use DeckAgent's accepted/pending promotion rules.
+- Confidence: Strong inference.
+
+### F-OD-12 — Output formats share an HTML source but not one universal exporter
+
+- Research questions: RQ-12
+- Problem addressed: Offer several output formats while reusing the same authored artifact.
+- Responsibility / boundary: The export coordinator selects the format. Browser/Electron rendering supports PDF and screenshot capture; format-specific modules package PPTX, ZIP, Markdown, or editable output.
+- Decision / mechanism: Formats share upstream HTML and some rendering steps, then branch where the format needs different behavior.
+- Source says: OpenDesign lists HTML, PDF, PPTX, ZIP, and Markdown outputs, and the export routes contain shared capture plus format branches — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:README.md#L198-L213`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/import-export-routes.ts#L1074-L1177`, `#L1228-L1267`.
+- Inference: Adding a format usually reuses artifact selection but may need a new renderer or packager.
+- Rationale: Shared rendering improves visual consistency; separate branches preserve format-specific features. This is inferred.
+- Trade-off: Shared stages reduce duplication, but the shared renderer is also a common failure point.
+- DeckAgent implication / relevance: AC-26 — helps identify which export seams can be stable while formats grow.
+- Mismatch / caution: DeckAgent V1 only requires PPTX and PDF.
+- Confidence: Strong inference.
+
+### F-OD-13 — Normal export does not create a durable fidelity report
+
+- Research questions: RQ-13
+- Problem addressed: Detect where a produced file differs from the intended deck.
+- Responsibility / boundary: Screenshot export reduces layout conversion, while a separate optional audit can compare HTML and PPTX. The normal export path does not own a stored per-slide degradation report.
+- Decision / mechanism: The default screenshot PPTX embeds one slide image per page; fidelity analysis is a separate workflow.
+- Source says: Screenshot PPTX and raster PDF package captured slide images, while the audit separately extracts and compares PPTX properties — `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:apps/daemon/src/deck-export.ts#L146-L218`; `open-design@0d3a14c1df6dc5017f3cc3ef05b24558250c220b:skills/pptx-html-fidelity-audit/SKILL.md#L17-L40`, `#L57-L103`.
+- Inference: OpenDesign mainly reduces visual drift for the screenshot path instead of measuring and storing drift for every export.
+- Rationale: Image-backed slides preserve browser appearance. The source does not state why normal export omits a fidelity record.
+- Trade-off: Visual output is stable, but PPTX editability and later compatibility analysis are weaker.
+- DeckAgent implication / relevance: AC-19 — separates prevention of differences from detection and recording of differences.
+- Mismatch / caution: DeckAgent cannot assume that image-only PPTX is acceptable.
+- Confidence: Strong inference.
+
+### 3.8 Failure & recovery
 ### F-OD-11 — Preview and export render stored HTML instead of regenerating content
 
 - Research questions: RQ-11
