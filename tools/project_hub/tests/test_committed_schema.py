@@ -96,14 +96,16 @@ def test_ghi_chu_maps_to_canonical_notes_in_every_table_with_notes(config) -> No
     assert len(tables_with_notes) == 12
     for table in tables_with_notes:
         notes = next(column for column in table.columns if column.name == "notes")
-        assert notes.source == "Ghi chú", table.key
+        # Actors is the only sheet whose notes column is headed "Notes".
+        expected = "Notes" if table.key == "actors" else "Ghi chú"
+        assert notes.source == expected, table.key
 
 
-def test_legacy_notes_header_is_now_a_clear_schema_error(config) -> None:
+def test_actors_legacy_ghi_chu_header_is_now_a_clear_schema_error(config) -> None:
     spec = config.table_map["actors"]
-    headers = ["Notes" if header == "Ghi chú" else header for header in spec.source_headers]
+    headers = ["Ghi chú" if header == "Notes" else header for header in spec.source_headers]
 
-    with pytest.raises(SchemaError, match="missing: Ghi chú"):
+    with pytest.raises(SchemaError, match="missing: Notes"):
         normalize_table(spec, _sheet(headers, []))
 
 
@@ -251,6 +253,13 @@ def test_release_scope_domain(config, table_key: str, header: str, field: str) -
 
 def test_documents_keep_their_own_scope_domain(config) -> None:
     assert _codes(config, _hub(config, {"documents": {"Scope": "Milestone"}})) == []
+
+
+def test_documents_type_domain_includes_prototype(config) -> None:
+    assert _codes(config, _hub(config, {"documents": {"Type": "Prototype"}})) == []
+
+    codes = _codes(config, _hub(config, {"documents": {"Type": "Mockup"}}))
+    assert codes == [("invalid_value", "type")]
 
 
 def test_multi_value_requirement_area_is_intentionally_unvalidated(config) -> None:

@@ -23,8 +23,8 @@
         {"source": "Knowledge / Context", "name": "knowledge_context"},
         {"source": "Permissions / Capabilities", "name": "permissions_capabilities"},
         {"source": "Constraints", "name": "constraints"},
-        {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]},
-        {"source": "Ghi chú", "name": "notes"}
+        {"source": "Notes", "name": "notes"},
+        {"source": "Related Use Cases", "name": "related_use_case_ids", "references": ["use_cases"]}
       ]
     },
     "use_cases": {
@@ -281,7 +281,7 @@
       "columns": [
         {"source": "ID", "name": "id", "required": true},
         {"source": "Document", "name": "document", "required": true},
-        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Proposal", "Test Strategy", "Test Plan", "Test Summary", "Architecture", "Research", "Technical Note", "Report Material", "Product Scope"]},
+        {"source": "Type", "name": "type", "required": true, "allowedValues": ["Proposal", "Test Strategy", "Test Plan", "Test Summary", "Architecture", "Research", "Technical Note", "Report Material", "Product Scope", "Prototype"]},
         {"source": "Status", "name": "status", "required": true, "allowedValues": ["Draft", "Active", "Archived"]},
         {"source": "Scope", "name": "scope", "allowedValues": ["Product", "V1", "Later", "Project", "Milestone"]},
         {"source": "Requirement", "name": "requirement_ids", "references": ["requirements"]},
