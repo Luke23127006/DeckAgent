@@ -7,14 +7,16 @@
 - Used by: W-033 (Required Input: verification/testability needs), W-034, W-035 (via AC-25),
   W-036
 - Basis: W-032 primary Requirements (§3.1); V1-active Business Rules BR-002, BR-003,
-  BR-005 … BR-014; D-017, D-023 … D-029; A-005; L-001, L-002; RK-006, RK-007; V1 Use Cases
+  BR-005 … BR-014; D-017, D-023 … D-030; A-005; L-001, L-002; RK-006, RK-007; V1 Use Cases
   UC-001, UC-002, UC-004, UC-008, UC-011, UC-013, UC-014, UC-015;
   [DOC-004 Architecture Acceptance Criteria](../architecture/architecture-acceptance-criteria.md)
-  (AC-01 … AC-27); DOC-002
-- Project Hub baseline: local snapshot synced 2026-09-28 02:33 UTC (schema 4). Every ID in this
+  (AC-01 … AC-30); DOC-002
+- Project Hub baseline: local snapshot synced 2026-09-30 03:05 UTC (schema 4). Every ID in this
   document was checked against it. Project Hub remains the source of truth; disagreements found
   while writing this document are listed in §10.
-- Updated: 2026-09-28.
+- Updated: 2026-09-28. Updated 2026-09-30 for D-030 (promotion at a refinement's commit boundary;
+  rollback of deck and constraints to the version accepted there), the renumbered BR-010 rules,
+  and the DOC-004 criteria added by W-037 (AC-28 … AC-30). F13 is closed (§10.2).
 - Language: this English file is the canonical source.
 - `§n` refers to a section of this document unless prefixed with `DOC-002` or `DOC-004`. `AC-nn`
   points to DOC-004.
@@ -69,14 +71,14 @@ open findings in §10.
   bounded data exposure and injection resistance (R-042, R-043). See §4.
 - **Must be observable:** DOC-004 AC-14 … AC-20 (§6.1), plus the proposed needs TN-1, TN-2, TN-4,
   TN-6 (§6.2): the active constraint set, validation outcomes, user-content egress paths, and
-  version status. These are proposals, not Gates.
+  version status. DOC-008 proposes them; DOC-004 §10.7 records where each landed (TN-6 is now part
+  of AC-17, AC-29 and AC-30).
 - **Must be controllable:** responses of external models and tools (replay, failure, and timing)
   (TN-3). Exercising the Core Flow without the interactive UI (TN-5) is a testability cost factor
   for AC-25, not a requirement.
 - **Must not be assumed resolved:** what counts as "important" content (F2); constraint lifetime
-  and conflicts (F9), and constraints from a stopped or failed refinement (F13); the
-  accepted / pending / previewed / exported / delivered semantics (F12); what "undownloaded" means
-  (F14); whether the product itself must check source numbers (F15); which application counts as
+  and conflicts (F9); the accepted / pending / previewed / exported / delivered semantics (F12);
+  what "undownloaded" means (F14); whether the product itself must check source numbers (F15); which application counts as
   evidence that PPTX is usable (F8).
 
 ## 2. Shared concepts
@@ -138,20 +140,20 @@ the Requirement (DOC-004 §10.4).
 |---|---|---|---|
 | R-007 | P1 | Main claim of P1 | AC-03, AC-16 |
 | R-001 | P2 | Constraints must be captured before they can be kept | AC-04 |
-| R-024 | P2 | Main claim of P2 | AC-04, AC-17 |
+| R-024 | P2 | Main claim of P2 | AC-04, AC-06, AC-08, AC-17, AC-28, AC-29 |
 | R-009 | P2 | Purpose/audience/context is part of P2; critical, not architecture-relevant | — |
 | R-021 | P3 | Main claim of P3; D-028 ladder | AC-10, AC-14, AC-18 |
 | R-029 | P3 / V1 boundary | Usable without design skills; only verifiable with people | — |
 | R-033 | Validation boundary | A result is checked before it becomes pending or accepted | AC-06, AC-10 |
-| R-020 | P5 / lifecycle | Export from the previewed version; a pending version becomes accepted only when its file is produced and delivered (BR-010 rule 3; "delivered" undefined — F12) | AC-01, AC-05, AC-09 (worded for the accepted state — F12) |
+| R-020 | P5 / lifecycle | Export from the previewed version; a pending version becomes accepted only when its file is produced and delivered (BR-010 rule 3c; "delivered" undefined — F12) | AC-01, AC-05, AC-09, AC-15, AC-29, AC-30 |
 | R-025 | P5 | Main claim of P5 | AC-05, AC-15 |
 | R-028 | P5 | Preview matches the exported file | AC-05, AC-14 |
 | R-026 | P5 supporting | Predictable, disclosed degradation; no silent corruption | AC-19 |
 | R-027 | P5 | Valid and usable files | AC-09, AC-10, AC-19 |
-| R-031 | Reliability | Reject or failure returns to the last accepted version | AC-06 … AC-09, AC-17 |
+| R-031 | Reliability | Reject or failure returns to the last accepted version; after a promotion at a refinement's commit boundary, that is the version promoted there (R-031 AC2) | AC-06 … AC-09, AC-17, AC-28, AC-29 |
 | R-032 | Reliability | External failure ends determinately | AC-08, AC-20, AC-22 |
-| R-046 | Lifecycle | Stop leaves no partial version and does not change the accepted one (D-029, BR-014, RK-007) | None yet — W-037 |
-| R-045 | Session | Session-only V1 (D-027, BR-012): losing an undownloaded deck is the main data-loss path | None yet — W-037 |
+| R-046 | Lifecycle | Stop leaves no partial version and returns to the operation's accepted baseline (D-029, D-030, BR-014, RK-007) | AC-17, AC-20, AC-28 |
+| R-045 | Session | Session-only V1 (D-027, BR-012): losing an undownloaded deck is the main data-loss path | AC-17, AC-30 |
 | R-042 | Security | User data exposure | AC-11 |
 | R-043 | Security | Source content is untrusted data | AC-02 |
 
@@ -165,7 +167,7 @@ the Requirement (DOC-004 §10.4).
 | BR-006, BR-007 | P5 suites (R-020, R-025, R-028) |
 | BR-008 | R-043 suite |
 | BR-009 | Intake checks, §4.7 |
-| BR-010 | Version lifecycle in R-020, R-031, R-024 |
+| BR-010 | Version lifecycle in R-020, R-031, R-024, R-046; commit boundary (D-030), §4.6 |
 | BR-011 | Disclosure checks, §4.7 |
 | BR-012 | R-045 |
 | BR-013 | Disclosure checks, §4.7; R-026 |
@@ -222,7 +224,7 @@ not a gate until it is resolved. The earliest meaningful point for each suite is
 | REQ | What must hold | Oracle / evaluation basis | Mode | Observe | Level |
 |---|---|---|---|---|---|
 | R-001 | Stated intent and constraints are captured and available to later steps, without forcing the user to declare everything up front. *Failure:* a stated constraint never influences the deck, or is gone before the next refinement | Each constraint in a script is present in the active constraint set. Without TN-1 this is testable only indirectly through R-024 (F5) | Obj | Active constraint set (TN-1) | Hard |
-| R-024 | Constraints in effect keep applying across refinements until the user changes or cancels them, or rejects the version whose request introduced them (BR-010 rule 5). *Failure:* a measurable constraint is violated after some turn; a rejected request's constraint still applies | Measurable constraints (e.g. slide count, language, required sections) hold after every refinement turn; after a reject, the constraint set equals the set before that refinement (UC-013 postcondition 2) | Obj; soft constraints (tone, audience fit): Rubric | Deck per turn; before/after (AC-17); constraint set (TN-1) | Hard for unambiguous cases; Expl. for lifetime and conflict cases (F9); Provisional for stopped/failed refinements (F13) |
+| R-024 | Constraints in effect keep applying across refinements until the user changes or cancels them, or rejects the version whose request introduced them (BR-010 rule 7). A request's new constraints take effect only at its commit boundary, after the promoted version's constraints become the accepted set (R-024 AC2–3, BR-010 rule 5); they are discarded if the request is cancelled or refused before that boundary, or if the refinement is then stopped, fails, or fails validation (R-024 AC4). *Failure:* a measurable constraint is violated after some turn; a constraint from a rejected, cancelled, refused, stopped, failed, or invalid request still applies; after such a rollback the constraint set is not the one accepted at the commit boundary | Measurable constraints (e.g. slide count, language, required sections) hold after every refinement turn; after a reject, the constraint set equals that of the accepted version the rejected result was produced from (UC-013 postcondition 2); after a request cancelled or refused before its commit boundary, the set is unchanged; after a stopped, failed, or invalid refinement, it equals the set at that refinement's commit boundary — the promoted version's constraints, without the new request's (UC-004 3A, 3B, 4A) | Obj; soft constraints (tone, audience fit): Rubric | Deck per turn; before/after (AC-17); constraint set (TN-1); fault injection and held responses (TN-3) | Hard for unambiguous cases; Expl. for lifetime and conflict cases (F9) |
 | R-009 | Purpose, audience, and context visibly shape content and structure. *Failure:* decks for different audiences are indistinguishable | Paired comparison: same request, different audience/purpose; raters tell which deck is for whom | Rubric; Human in exploratory sessions | Rendered deck (AC-18) | Hard via an approved rubric; pass criterion **[D]** |
 
 ### 4.3 P3 — Presentation quality, and validation
@@ -239,7 +241,7 @@ not a gate until it is resolved. The earliest meaningful point for each suite is
 
 | REQ | What must hold | Oracle / evaluation basis | Mode | Observe | Level |
 |---|---|---|---|---|---|
-| R-020 | The file is built from exactly the version being previewed, with no AI regeneration (R-020 AC1–2). A cancelled or failed export changes neither the accepted nor the pending version (R-020 AC3, BR-010 rule 4). A pending version becomes accepted when its file is produced and delivered (BR-010 rule 3). *Failure:* file content differs from the previewed version; a model is called during export; a cancelled or failed export changes a version | File slide text and order equal the version previewed at export time (AC-15); no model call on the export path (TN-3); version status unchanged after cancel or failure | Obj | Order and text (AC-15); version status (TN-6); external calls (TN-3) | Hard; promotion on delivery Provisional (F12) |
+| R-020 | The file is built from exactly the version being previewed, with no AI regeneration (R-020 AC1–2). A cancelled or failed export changes neither the accepted nor the pending version (R-020 AC3, BR-010 rule 6). A pending version becomes accepted when its file is produced and delivered (BR-010 rule 3c). *Failure:* file content differs from the previewed version; a model is called during export; a cancelled or failed export changes a version | File slide text and order equal the version previewed at export time (AC-15); no model call on the export path (TN-3); version status unchanged after cancel or failure | Obj | Order and text (AC-15); version status (TN-6); external calls (TN-3) | Hard; promotion on delivery Provisional (F12) |
 | R-025 | PPTX and PDF keep the same facts, numbers, order, and meaning. R-025 states this for "the same accepted version"; whether it also covers an export from a pending version is open (F12). *Failure:* an item differs between formats; slide or section order differs (R-025 AC2) | Every KCI item present and equal in both; order equal; meaning where the formats lay content out differently judged by rubric | Obj + Rubric | Order and text of both files (AC-15) | Hard for the accepted version; Provisional otherwise (F12) |
 | R-028 | Preview and file do not differ in content, slide order, or layout within the verified format scope. R-028 states this for "the accepted preview" (F12). *Failure:* a text or order mismatch, or a visible layout difference that would change the user's decision | Text, slide count, and order equal; geometry compared where available; visual differences judged on renders | Obj + Rubric | Geometry (AC-14); order and text (AC-15); renders (AC-18) | Hard within verified format scope, for the accepted version; Provisional otherwise (F12) |
 | R-026 | Each known loss or change has a determinate handling and is disclosed before export (UC-008 3A) or recorded. *Failure:* silent loss; the same case handled differently | Each degradation **already recorded** from real artifacts (AC-19) reproduces with its declared handling and notice; spot checks for silent corruption | Obj + Human | Degradation record (AC-19) | Hard for known degradations; the catalogue itself is **[D]** |
@@ -249,15 +251,16 @@ not a gate until it is resolved. The earliest meaningful point for each suite is
 
 | REQ | What must hold | Oracle / evaluation basis | Mode | Observe | Level |
 |---|---|---|---|---|---|
-| R-031 | Rejecting the pending version returns to the previous accepted version, one step (D-025, BR-010 rule 5). *Failure:* any difference from the pre-refinement version; constraints from the rejected request remain | State after reject equals state before the refinement; constraint set equals the pre-refinement set | Obj | Before/after (AC-17); constraint set (TN-1) | Hard |
-| R-031 | A failed generation, refinement, or export keeps the last accepted version; a failed first generation leaves no deck (UC-001 4B, 5A). *Failure:* a half-applied change, or the accepted version is lost or altered | Fault injection at each failure point: accepted version intact, no pending version created | Obj | Version status (TN-6); fault injection (TN-3); failure points **[A]** | Hard |
+| R-031 | Rejecting the pending version returns to the accepted version it was produced from, one step (D-025, BR-010 rule 7). If that refinement began by promoting an earlier pending version at its commit boundary, the promoted version is the one returned to; no older version needs to be kept (BR-010 rule 8). *Failure:* any difference from the accepted version the rejected result was produced from; constraints from the rejected request remain | Deck after reject equals the accepted version the rejected result was produced from, with no pending version; constraint set equals that version's set | Obj | Before/after (AC-17); version status (TN-6); constraint set (TN-1) | Hard |
+| R-031 | A failed generation, refinement, or export keeps the last accepted version; a failed first generation leaves no deck (UC-001 4B, 5A). A refinement that fails or times out (UC-004 3B), or whose result fails validation (UC-004 4A), returns deck and constraints to the accepted version at its commit boundary, not to an older one — including when that version was a pending version promoted there (R-031 AC2, BR-010 rule 5). A failed export leaves both versions as they were (BR-010 rule 6). *Failure:* a half-applied change; the accepted version is lost or altered; rollback reaches an older accepted version; the failed request's constraints remain | Fault injection at each failure point, including right after a promotion at the commit boundary: accepted version and constraint set equal those at the boundary, no pending version created | Obj | Version status (TN-6); constraint set (TN-1); fault injection (TN-3); failure points **[A]** | Hard |
 | R-032 | An external failure or timeout ends the operation in a determinate terminal state (done, stopped, or error — UC-014 postcondition 1), with no hang; the deck state is known and the cause reportable. *Failure:* the operation hangs, or ends with an unknown deck state | Simulated timeouts, errors, and malformed responses: the operation reaches the error state within a bound, deck state known, cause reported (AC-20). The bound's value is **[D]** (D-011) | Obj | Terminal state and cause (AC-20); fault injection (TN-3) | Hard |
 
 ### 4.6 Operation and session lifecycle
 
 | REQ / BR | What must hold | Oracle / evaluation basis | Mode | Observe | Level |
 |---|---|---|---|---|---|
-| R-046 | The user can stop a running generation or refinement at any time before it finishes. After a stop, the accepted version is unchanged and no partial or pending version remains (R-046 AC2–3); a stopped operation creates no new version, including from a result that arrives after the stop (BR-014 rule 2, RK-007). *Failure:* the accepted version changes; a partial or pending version appears; a late result later appears | Stops that arrive at different phases of an operation, including while an external response is still outstanding, all end with the accepted version unchanged and no version created by the stopped operation; a stopped first generation leaves no deck (UC-001 4A, UC-002 5B) | Obj | Timing control (TN-3); version status (TN-6); terminal state (AC-20) | Hard. Which phases exist, and whether stop or completion wins when they coincide, depend on the commit point **[A]** |
+| R-046 | The user can stop a running generation or refinement at any time before it finishes. After a stop, the deck returns to the accepted version that was the operation's baseline and no partial or pending version remains (R-046 AC2–3); for a refinement that began by promoting a pending version at its commit boundary, that promoted version is the baseline, and the stopped request's constraints are discarded (UC-004 3A, R-024 AC4). A stopped operation creates no new version, including from a result that arrives after the stop (BR-014 rule 2, RK-007). *Failure:* the accepted version changes; rollback reaches an older accepted version; a partial or pending version appears; a late result later appears; the stopped request's constraints remain | Stops that arrive at different phases of an operation, including while an external response is still outstanding, all end at the operation's baseline — accepted version and constraint set as at its commit boundary — with no version created by the stopped operation; a stopped first generation leaves no deck (UC-001 4A, UC-002 5B) | Obj | Timing control (TN-3); version status (TN-6); constraint set (TN-1); terminal state (AC-20) | Hard. Which phases exist, and whether stop or completion wins when they coincide, depend on the commit point **[A]** |
+| BR-010 rules 3b, 4, 5 (D-030) | A further refinement request sent while a pending version exists promotes it only at the request's commit boundary, immediately before AI processing begins. While clarification, warning, or confirmation is in progress, and if the request is cancelled or refused before the boundary, the pending version stays pending and the constraint set is unchanged (UC-004 1A, 2A, 2B, 2C). If no such step is needed, the boundary is reached directly, with no added confirmation. At the boundary the pending version becomes accepted and its constraints become the accepted set; then the new request's constraints apply (UC-004 step 2′). *Failure:* promotion on submit or during pre-flight; a cancelled or refused request changes the pending version or keeps its constraints; a confirmation step appears when none is needed; the new request's constraints are part of the baseline a later rollback restores | Scripts from a pending version: a request needing clarification, a slide-targeted request (warning), and an unsupported request (refusal), each cancelled or refused — version status and constraint set unchanged; the same requests carried through, and a request needing no pre-flight — no added confirmation, and while the held response is outstanding, the former pending version is accepted with its constraints as the accepted set. Constraint order at the boundary is also checked through the rollback cases in §4.5 and R-046 | Obj | Version status (TN-6); constraint set (TN-1); held responses (TN-3) | Hard. Constraint parts testable only through deck content without TN-1 (F5). Where the boundary sits between pre-flight and operation start is **[A]** |
 | BR-014 | Only one AI operation runs at a time; a new request during a running operation is refused, with the choice to wait or stop (UC-014 2C). *Failure:* two operations run, or the second result overwrites the first | A request made while an operation runs is refused; at most one result is produced | Obj | Timing control (TN-3); version status (TN-6) | Hard |
 | R-045 | Starting a new deck, reloading, or closing while an undownloaded deck exists shows a warning that can be cancelled; no warning appears when nothing is undownloaded (BR-012). *Failure:* a deck is lost without warning; a spurious warning; cancel does not keep the session | Warning shown or not, per trigger, in the states whose status does not depend on F14 (no deck; a deck never exported); cancel keeps the session; confirm clears deck, source, and constraints (UC-011 postcondition 1) | Obj (reload/close only through the browser) | Whether the deck counts as undownloaded (TN-6); session content | Hard for no-deck and never-exported states; Provisional for all other states (F14) |
 
@@ -357,11 +360,15 @@ evidence for AC-10 and AC-25, not a new Gate.
 | P3 rubric, R-028 visual, LLM judge | AC-18 |
 | R-026, R-027 degradation | AC-19 |
 | R-032, R-046 terminal state and cause | AC-20 |
-| R-045, R-046, BR-010, BR-014 | **No criterion yet.** W-037 adds criteria for R-045, R-046, D-029, and BR-010; until then TN-3 and TN-6 carry the testing need |
+| R-046, BR-014 stop and concurrency; R-024, R-031 rollback after stop | AC-28 |
+| BR-010 transitions, including the D-030 commit boundary | AC-29 |
+| R-024, R-031 rollback after failure or failed validation | AC-06, AC-08 |
+| R-045 session-loss state | AC-30 |
+| Version status for R-020, R-031, R-045, R-046, BR-010, BR-014 | AC-17 (TN-6, per DOC-004 §10.7) |
 
-AC-05 and AC-09 are worded around "the accepted state", while R-020 and BR-010 (changed
-27/09/2026) export from the previewed version, which may be pending. Until Product resolves F12 and
-W-037 updates DOC-004, DOC-008 makes no assumption about which wording governs.
+AC-05 and AC-09 now cover export from the previewed version, accepted or pending, matching R-020
+and BR-006. What remains open is Product's part of F12: whether R-025 and R-028 apply to a pending
+version, and what counts as "delivered".
 
 If a candidate `Does not meet` AC-14, AC-15, AC-16, or AC-17, then P3, P5, P1, or P2 respectively
 cannot be verified. Per DOC-002 §20, this must be raised as a scope reopen, not patched over by
@@ -375,12 +382,12 @@ AC-25.
 
 | # | Capability | Needed by | Without it | Why architecture-level |
 |---|---|---|---|---|
-| TN-1 | The active constraint set can be read after each turn, including after a reject | R-001; R-024; constraint cancellation on reject (BR-010 rule 5) | R-001 is testable only through deck content; a capture failure and an application failure look the same; cancellation on reject is invisible until a later deck happens to show it (F5) | AC-04 decides whether constraints exist as state separate from the deck; if they do, reading them costs little; representation is not required |
+| TN-1 | The active constraint set can be read after each turn, including after a reject, a stop, a failure, and a request cancelled before its commit boundary | R-001; R-024; constraint cancellation on reject (BR-010 rule 7); constraints not applied before the commit boundary and discarded on rollback after it (BR-010 rules 4–5, R-024 AC2–4) | R-001 is testable only through deck content; a capture failure and an application failure look the same; cancellation on reject and on rollback is invisible until a later deck happens to show it (F5) | AC-04 decides whether constraints exist as state separate from the deck; if they do, reading them costs little; representation is not required |
 | TN-2 | The outcome of validation can be read: which checks ran on which result, and the verdict | R-033; runtime checks in §5.3 | A test cannot tell "validated and passed" from "not validated"; injection tests see only the end state (F6) | AC-10 places validation points; exposing their outcome is cheap only if planned with them. No logging format is implied |
 | TN-3 | Calls to external models and tools can be substituted in tests: recorded responses replayed, failures injected, and responses held and released on demand | R-031, R-032, R-046, BR-014, RK-007; deterministic tests of non-AI logic (§2.5); no model call during export (R-020); outbound payloads (R-042) | Fault injection, stop races, and late-result cases become non-deterministic or impossible; every gate run depends on a live provider | Where external calls cross the system boundary is fixed by the architecture (AC-08, AC-22); the substitution technique is Detailed Design |
 | TN-4 | User-content egress and sink paths — every place user content is persisted or sent — are identifiable and observable to verification | R-042 marker checks | Absence of exposure can only be argued from design review, not shown | AC-11 already requires these flows to be explicit and identifiable; TN-4 adds only that verification can observe them. No logging, temporary-file, or interception mechanism is implied |
 | TN-5 | Core Flow behavior can be exercised and observed without going through the interactive UI | All suites; repeated gate runs (§2.5) | Gate runs need UI automation: slower and less repeatable, so costlier — not impossible | **Cost factor, not a Gate:** no DOC-004 AC or Decision requires it (AC-18 covers rendering only). Compared under AC-25. No API, CLI, or headless interface is implied. Browser-only by nature: R-045 reload/close warning, R-029 sessions, preview display |
-| TN-6 | Version status can be read: the current accepted version, the pending version if any, and whether the latest version has been exported | R-020 promotion, R-031, R-046, BR-014, R-045 | Lifecycle is inferred only from the UI; "pending discarded" and "never created" cannot be told apart | State ownership (DOC-004 §10.2). If W-037 makes this observable through the BR-010 criteria, TN-6 folds into DOC-004 |
+| TN-6 | Version status can be read: the current accepted version, the pending version if any, and whether the latest version has been exported | R-020 promotion, promotion at the commit boundary (D-030), R-031, R-046, BR-014, R-045 | Lifecycle is inferred only from the UI; "pending discarded" and "never created" cannot be told apart, nor "promoted at the commit boundary, then rolled back to it" from "still pending" | State ownership (DOC-004 §10.2). Folded into DOC-004: AC-17 (observability), AC-29 and AC-30 (runtime behavior); see DOC-004 §10.7 |
 
 ### 6.3 AC-25 comparison questions for W-035
 
@@ -388,7 +395,9 @@ AC-25.
   rendering)?
 - Which checks in §5.3 can run as runtime validation **before** a result is displayed?
 - Can stop, late-result, and concurrent-request cases run deterministically (TN-3)? Where is the
-  commit point that decides whether a stop or a completion wins?
+  commit point that decides whether a stop or a completion wins? Where does a refinement's commit
+  boundary sit between pre-flight and operation start, and can a test hold the operation right
+  after it?
 - How long from a real PPTX/PDF existing to a new degradation being recorded (AC-19)?
 - How many checks move from rubric to objective thanks to data the candidate exposes?
 
@@ -430,12 +439,12 @@ content is not specified here; building them is Final Testing Plan work.
 
 | Artifact | Used for | Status | Dependency |
 |---|---|---|---|
-| Requirements, Business Rules, Decisions D-017, D-023 … D-029, A-005 | Test basis | In Project Hub | — |
-| DOC-004 | Check → AC mapping; observability | Draft; R-045, R-046, D-029, BR-010 pending W-037 | — |
+| Requirements, Business Rules, Decisions D-017, D-023 … D-030, A-005 | Test basis | In Project Hub | — |
+| DOC-004 | Check → AC mapping; observability | Draft; covers R-045, R-046, D-029, D-030 and BR-010 (AC-28 … AC-30) | — |
 | DOC-002 | Scope, §16 acceptance, §17 testing handoff | Available (PDF, outside the repo) | — |
 | Source corpus covering the 5 D-024 source types, including source-gap cases and a source with embedded images | P1, P5, R-043, §4.7 | To build | **[D]** |
 | KCI for each corpus case | R-007, R-025, R-028, RG-5 | To build; definition awaiting Duy (F2) | **[D]** |
-| Scenario sets for the §4.2 and §4.4–§4.7 behaviors (multi-turn constraints, refinement types, export lifecycle, stop and concurrency, session loss) | R-001, R-024, R-020, R-031, R-045, R-046, BR-011, BR-013, BR-014 | To build. Cases that depend on F9, F12, F13, or F14 are exploratory until those are resolved | **[D]**; the phases at which a stop can arrive are **[A]** |
+| Scenario sets for the §4.2 and §4.4–§4.7 behaviors (multi-turn constraints, refinement types, commit boundary and pre-flight, export lifecycle, stop and concurrency, session loss) | R-001, R-024, R-020, R-031, R-045, R-046, BR-010, BR-011, BR-013, BR-014 | To build. Cases that depend on F9, F12, or F14 are exploratory until those are resolved | **[D]**; the phases at which a stop can arrive are **[A]** |
 | Rubric instrument and calibration set | R-021, R-009, R-025, R-028 | To build — owned by Testing | **[D]** |
 | Injection and marker (canary) inputs | R-042, R-043 | To build | **[D]** |
 | Fault sets: external failure types; failure points inside the system | R-031, R-032 | External types: **[D]**. Internal failure points: awaiting the Architecture | **[A]** |
@@ -478,8 +487,9 @@ open finding states what Testing does until it is resolved.
   OQ-2 asks W-032 for the P1 measure. The KCI (§2.4) is the proposed answer. *Needs:* Duy's
   agreement before the KCI is used as a gate.
 - **F5** — The active constraint set is not among the D-028 or DOC-004 observability needs. R-001
-  is then testable only indirectly via R-024, and constraint cancellation on reject (BR-010 rule 5)
-  cannot be observed directly. Raised as TN-1.
+  is then testable only indirectly via R-024, and constraint cancellation on reject (BR-010 rule 7)
+  and on rollback after a stopped or failed refinement (BR-010 rule 5) cannot be observed
+  directly. Raised as TN-1.
 - **F6** — AC-10 requires validation to be possible, not its outcome to be observable. Testing
   R-033 needs to know that validation ran and what it concluded. Raised as TN-2.
 - **F8** — R-027 says "usable in the workflow V1 verifies", but the evidence application has not
@@ -487,11 +497,13 @@ open finding states what Testing does until it is resolved.
   blocking for the Architecture; must be settled before V1 acceptance. Until then, per-application
   compatibility is a candidate criterion.
 - **F9** — Constraint lifetime and conflicts are still open (A-013, DOC-002 OQ-04, UC-004 OQ-1).
-  R-024 AC2 and BR-010 rule 5 now settle one case: rejecting a version cancels the constraints its
-  request introduced. Still open: how single-refinement constraints are told apart from lasting ones
-  (BR-003 exception: "defined later"), and conflicts. P2 gates use only unambiguous cases: an
-  unchanged constraint persists; a changed constraint takes its new value; a rejected request's
-  constraint is gone. Other cases are exploratory and feed OQ-04.
+  BR-010 rules 4, 5 and 7, R-024 AC2–4, and D-030 now settle when a request's constraints take
+  effect (at its commit boundary) and when they are discarded (reject; cancel or refusal before the
+  boundary; stop, failure, or failed validation after it). Still open: how single-refinement
+  constraints are told apart from lasting ones (BR-003 exception: "defined later"), and conflicts.
+  P2 gates use only unambiguous cases: an unchanged constraint persists; a changed constraint takes
+  its new value; a constraint from a rejected, cancelled, refused, stopped, failed, or invalid
+  request is gone. Other cases are exploratory and feed OQ-04.
 - **F10** — R-021 AC2 assigns threshold research to W-032, while D-028 reopens "when W-032 has
   evidence". That evidence exists only once real artifacts exist (§5.2), so P3 thresholds will not
   be available within SP-002. This follows correctly from D-028; W-032 should not be judged not Done
@@ -502,19 +514,13 @@ open finding states what Testing does until it is resolved.
 - **F12** — The version lifecycle uses five distinct notions: the **accepted** version, the
   **pending** version, the version **being previewed**, the version **being exported**, and the
   point at which an export counts as **delivered**. Project Hub relates them inconsistently:
-  R-020 AC1 and BR-006 export the version being previewed, which may be pending. BR-010 rule 3
+  R-020 AC1 and BR-006 export the version being previewed, which may be pending. BR-010 rule 3c
   promotes a pending version when its file "is produced and delivered to the user". R-025 AC1
-  ("the same accepted version"), R-028 AC1 ("the accepted preview"), and DOC-004 AC-05/AC-09
-  ("accepted state") speak only of the accepted version. Open: (a) whether R-025 and R-028 apply
-  to an export made from a pending version; (b) what event counts as "delivered". DOC-008 does not
-  define either. Until resolved, the affected checks in §4.4 are Provisional. *Needs:* Product/BA
-  to settle (a) and (b); W-037 to align DOC-004. Once "delivered" is defined, how it is observed is
-  **[A]**.
-- **F13** — The state of constraints **introduced by a refinement request** is undefined when that
-  refinement **stops** (R-046) or **fails** (R-031, R-032): are they kept, dropped, or
-  something else? UC-004 3A, 3B, and 4A do not say. (Reject is already defined by BR-010 rule 5
-  and R-024 AC2, and is not part of this finding.) DOC-008 treats these cases as Provisional.
-  *Needs:* Product/BA rule.
+  ("the same accepted version") and R-028 AC1 ("the accepted preview") speak only of the accepted
+  version; DOC-004 AC-05 and AC-09 now cover both. Open: (a) whether R-025 and R-028 apply to an
+  export made from a pending version; (b) what event counts as "delivered". DOC-008 does not define
+  either. Until resolved, the affected checks in §4.4 are Provisional. *Needs:* Product/BA to settle
+  (a) and (b). Once "delivered" is defined, how it is observed is **[A]**.
 - **F14** — "Undownloaded deck" (R-045, BR-012 rule 2, UC-011 step 2 "the latest version") is not
   defined. DOC-008 does not assume that exporting one of the two formats makes a deck downloaded;
   that a single rule covers the accepted and the pending version; or that closing the browser and
@@ -536,6 +542,10 @@ open finding states what Testing does until it is resolved.
 - **F4** — closed: BR-006 is `Active` (changed 27/09/2026), consistent with R-020.
 - **F7** — closed: the 27/09/2026 Use Case review links R-024, R-031, R-032, R-033 to UC-004 and
   R-032, R-033 to UC-001/UC-002; UC-008 no longer links R-039; UC-006 no longer exists.
+- **F13** — closed (30/09/2026): constraints introduced by a refinement request that is stopped,
+  fails, or fails validation are discarded at rollback, and the constraint set returns to that of
+  the accepted version at the refinement's commit boundary (BR-010 rule 5, R-024 AC4, UC-004 3A,
+  3B, 4A, D-030). Now verified as Hard in §4.2 (R-024), §4.5 (R-031), and §4.6 (R-046).
 
 ## 11. Research questions from deferred uncertainty
 
@@ -545,7 +555,7 @@ None of the questions below is a V1 gate. Testing collects evidence for later te
 |---|---|---|---|
 | L-001 | Which source capability should open next? | In exploratory and usability sessions: record each time a user wants a source outside D-024 (scans, spreadsheets, images, URLs, multiple sources) and each time a deck is worse for lack of images | V1 demo, V1 acceptance |
 | L-002 | Is whole-deck restyling (including theme choice), AI visuals, or stronger slide-targeted refinement needed? | Count restyle, theme, visual, and slide-targeted requests; record cases where best-effort refinement was insufficient and the extra work it caused | V1 demo, usability sessions |
-| A-013 / OQ-04 | Which constraints last how long, and how are conflicts resolved? | Results of the F9 and F13 exploratory cases | Core-flow slice |
+| A-013 / OQ-04 | Which constraints last how long, and how are conflicts resolved? | Results of the F9 exploratory cases | Core-flow slice |
 | D-026, RK-006 | How compatible is the PPTX across applications? | Degradation log per opening application (AC-19) | Once real artifacts exist |
 | A-029 | Do users accept that a deck lives only in the current session? | In sessions: unintended deck losses, and how often the R-045 warning is dismissed versus acted on | Usability sessions |
 | D-029, RK-007 | Does stopping leave indeterminate state, or does a stopped call keep costing? | Any stop case that fails §4.6; provider usage after a stop, where visible (R-036 is Later, so this is observation only) | Core-flow slice |
@@ -562,8 +572,9 @@ suites, A-005's Review Trigger fires and the approach must broaden coverage.
 - placement within the chosen Architecture of the §5.3 checks (which checks the product must run
   stays a Product question: R-033, F15);
 - concrete failure points (R-031);
-- commit points, including the one that decides stop vs completion, and the phases at which a stop
-  can arrive (R-046);
+- commit points, including the one that decides stop vs completion, the phases at which a stop
+  can arrive (R-046), and where a refinement's commit boundary sits between pre-flight and
+  operation start (D-030);
 - how the delivery point is observed, once Product defines it (F12);
 - flows allowed to carry user content outward (R-042);
 - how observable state is exposed: content origin, constraint set, validation outcomes, version
@@ -584,7 +595,7 @@ suites, A-005's Review Trigger fires and the approach must broaden coverage.
   rubric instrument themselves;
 - schedule and concrete assignments.
 
-**Awaiting Product decisions (not Testing's to settle):** F1, F2, F8, F9, F11 … F15.
+**Awaiting Product decisions (not Testing's to settle):** F1, F2, F8, F9, F11, F12, F14, F15.
 
 ## 13. Mapping to W-032 Done When
 
@@ -598,5 +609,6 @@ suites, A-005's Review Trigger fires and the approach must broaden coverage.
 | Critical / architecture-relevant REQs prioritized | §3.1 |
 | Architecture-dependent parts clearly marked | §1.2, **[A]**/**[D]** labels, §12 |
 | Update of 27/09/2026: R-045, R-046, BR-009 … BR-014 | §3.1, §3.2, §4.6, §4.7 |
+| Update of 30/09/2026: D-030 commit boundary and rollback baseline | §4.2, §4.5, §4.6, §6.2, §10.2 (F13) |
 | D-028 threshold/severity gaps (Supporting Input) | §5.2 |
 | L-001, L-002 turned into research/test questions (Supporting Input) | §11 |
