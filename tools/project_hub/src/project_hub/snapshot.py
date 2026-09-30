@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import tempfile
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -17,13 +18,37 @@ from project_hub.normalize import NormalizedTable, normalize_cell
 
 MANIFEST_FILENAME = "manifest.json"
 
+# TSV cell grammar: a backslash starts a two-character escape, so an escaped value never holds
+# a physical tab or line break, and a literal backslash can never be mistaken for an escape.
+_ESCAPES = {"\\": "\\\\", "\n": "\\n", "\t": "\\t", "\r": "\\r"}
+_UNESCAPES = {escaped[1]: raw for raw, escaped in _ESCAPES.items()}
+_ESCAPE_RE = re.compile(r"[\\\n\t\r]")
+_ESCAPE_SEQUENCE_RE = re.compile(r"\\(.?)", re.DOTALL)
+
+
+def escape_tsv_value(value: str) -> str:
+    return _ESCAPE_RE.sub(lambda match: _ESCAPES[match.group()], value)
+
+
+def unescape_tsv_value(value: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        try:
+            return _UNESCAPES[match.group(1)]
+        except KeyError:
+            raise ValueError(f"invalid escape sequence {match.group()!r}") from None
+
+    return _ESCAPE_SEQUENCE_RE.sub(replace, value)
+
 
 def serialize_tsv(table: NormalizedTable) -> bytes:
+    """Write semantic values as TSV; escaping happens here and nowhere else."""
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
     writer.writerow(table.headers)
     for row in table.rows:
-        writer.writerow([normalize_cell(row.get(header, "")) for header in table.headers])
+        writer.writerow(
+            [escape_tsv_value(normalize_cell(row.get(header, ""))) for header in table.headers]
+        )
     return stream.getvalue().encode("utf-8")
 
 
@@ -207,7 +232,14 @@ def read_snapshot(config: ProjectConfig) -> tuple[dict[str, NormalizedTable], li
                     f"expected {len(headers)}, found {len(values)}"
                 )
                 continue
-            mapped_rows.append(dict(zip(headers, values, strict=True)))
+            try:
+                unescaped = [unescape_tsv_value(value) for value in values]
+            except ValueError as exc:
+                errors.append(
+                    f"Snapshot cell encoding error for {spec.key} line {row_number}: {exc}"
+                )
+                continue
+            mapped_rows.append(dict(zip(headers, unescaped, strict=True)))
         tables[spec.key] = NormalizedTable(spec.key, headers, tuple(mapped_rows))
     return tables, errors
 
