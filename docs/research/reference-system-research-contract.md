@@ -7,7 +7,9 @@
   operation, session-only work). RQ-06, RQ-07, RQ-09, RQ-11 and RQ-14 were widened; AC-28 … AC-30
   are mapped through RQ-06, RQ-07, RQ-11 and RQ-14. No RQ was added, renumbered, or given a new
   meaning. Findings written against the earlier wording stay valid; a widened RQ needs only the
-  added coverage.
+  added coverage. Updated 2026-09-30, to follow DOC-004 after D-030 (promotion at a refinement's
+  commit boundary; rollback of deck and constraints to the version accepted there). RQ-07, RQ-09
+  and RQ-14 were widened; no RQ or AC mapping was added or removed.
 - Language: this English file is the canonical source. A Vietnamese reader version exists for
   human reading; it predates the 2026-09-28 update. If the two differ, this file wins.
 
@@ -88,7 +90,7 @@ it, and what that could mean for DeckAgent.
 Research does **not**:
 
 - propose a DeckAgent architecture or treat a reference system as a candidate architecture;
-- use a reference system as a source of DeckAgent scope — the V1 boundary is D-024 … D-029;
+- use a reference system as a source of DeckAgent scope — the V1 boundary is D-024 … D-030;
 - score, rank, or pass/fail a reference system against DOC-004. Findings are *linked* to AC IDs
   to show relevance; comparative judgment happens in W-033 … W-035.
 
@@ -105,10 +107,10 @@ system-specific evidence (§8.3) and flag it.
 DOC-004's outcomes (`Meets`, `Does not meet`, `Not yet assessable`) apply to DeckAgent candidates
 in later Work. Never assign them to a reference system.
 
-DOC-004 §3.3 names DeckAgent's version terms: accepted, pending, previewed, and exported version.
-A reference system need not have any of them. Describe its states and transitions in its own
-terms, and say in **DeckAgent implication / relevance** which DeckAgent notion a state resembles,
-if any. Where DOC-004 §11 leaves a DeckAgent behavior to Product (for example, what counts as
+DOC-004 §3.3 names DeckAgent's version terms: accepted, pending, previewed, and exported version,
+promotion, commit boundary, and recovery baseline. A reference system need not have any of them.
+Describe its states and transitions in its own terms, and say in **DeckAgent implication /
+relevance** which DeckAgent notion a state resembles, if any. Where DOC-004 §11 leaves a DeckAgent behavior to Product (for example, what counts as
 "delivered" or "undownloaded"), record how the system handles the nearest equivalent; do not
 propose DeckAgent's answer.
 
@@ -201,11 +203,15 @@ How to use the questions: §1.4.
 **RQ-07** · Core · AC-06, AC-07, AC-17, AC-29
 - Question: Is a new result held as a candidate before it becomes authoritative, or does it
   replace the working state directly? What makes it authoritative, and which component does that?
-  Can a result be rejected or an earlier state restored, and what survives before and after each
-  transition?
+  If a new change request arrives while a candidate is still under review, at what point — if
+  any — does that candidate become authoritative: when the request arrives, after any
+  clarification or confirmation, or when processing actually starts? Can a result be rejected or
+  an earlier state restored, and what survives before and after each transition, including goals
+  or constraints stated with the request? How many earlier states are retained?
 - Why DeckAgent cares: an unvalidated AI result must not become the pending or accepted version
   (AC-06); the user can reject the pending version in one step (AC-07); versions change only at
-  defined events (AC-29); and tests need to see the states before and after (AC-17).
+  defined events, including a commit boundary immediately before a further refinement begins
+  (AC-29); and tests need to see the states before and after (AC-17).
 
 #### Refinement
 
@@ -221,10 +227,12 @@ How to use the questions: §1.4.
 **RQ-09** · Core · AC-10, AC-06
 - Question: Where are generated or edited results checked — before they are shown or become
   authoritative, and before an output file is delivered? What is checked, is the outcome of each
-  check recorded or otherwise observable, and what happens when a check fails?
+  check recorded or otherwise observable, and what happens when a check fails — which state does
+  the system return to?
 - Why DeckAgent cares: validation must be possible, and its outcome observable, wherever a result
   can become displayed, pending, or accepted and before any output is delivered (AC-10), so that
-  an unvalidated result does not become a version (AC-06).
+  an unvalidated result does not become a version and the state in effect before it is restored
+  (AC-06).
 
 **RQ-10** · Core · AC-14, AC-18, AC-25
 - Question: How does the system (or its paper) detect or measure layout, readability, and content
@@ -264,11 +272,14 @@ How to use the questions: §1.4.
 - Question: What happens when a model call, tool, or export fails or times out? Can the user stop
   a running generation or refinement, and if so, what happens to the working state? Can outstanding
   external work still finish afterwards, and can its late result change state? If a stop and a
-  completion arrive together, which one wins? Can two operations run at once? Is state preserved,
-  and what status, stop, or failure information is reported?
+  completion arrive together, which one wins? Can two operations run at once? Is state preserved
+  or restored — to which point, and including goals or constraints the failed or stopped request
+  introduced — and what status, stop, or failure information is reported?
 - Why DeckAgent cares: failures must end in a determinate state that keeps the last usable
   version (AC-08, AC-09); a stopped operation must create no version, even from a result that
-  arrives later (AC-28); and status, terminal state, and failure cause must be reportable (AC-20).
+  arrives later (AC-28); after a stopped or failed refinement, deck and constraints return to the
+  state in effect when that refinement began (AC-08, AC-28); and status, terminal state, and
+  failure cause must be reportable (AC-20).
 
 #### Editor dependency
 
@@ -377,7 +388,7 @@ withdrawn, keep its heading and mark it withdrawn with the reason.
 - DeckAgent implication / relevance: AC-.. — <what this could mean for DeckAgent, and why it is
   relevant to those criteria>
 - Mismatch / caution: <differences in goal, scope, runtime, inputs, outputs, or V1 boundary
-  (D-024 … D-029) that limit transfer to DeckAgent>
+  (D-024 … D-030) that limit transfer to DeckAgent>
 - Confidence: Explicit | Strong inference | Weak inference
 ```
 
