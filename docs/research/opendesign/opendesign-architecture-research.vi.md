@@ -329,9 +329,9 @@ Mỗi finding dưới đây giữ cùng nội dung kết luận với finding t�
 ### F-OD-07 — Version history hỗ trợ restore nhưng không có pending-version gate
 
 - **RQ/AC:** RQ-07 · AC-06, AC-07, AC-17, AC-29 · **Confidence:** Strong inference.
-- **Kiến trúc:** Agent thay working file trực tiếp; HTML history cho phép restore từng file sau đó.
-- **Cơ chế/kết luận:** Restore copy bytes từ version cũ vào live file và tạo thêm restore version. Không có whole-deck candidate riêng để accept/reject trước khi trở thành working state.
-- **Lý do/trade-off:** Direct file edit đơn giản cho agent workflow; đổi lại reject là restore sau mutation và có thể không bao phủ mọi file của một run.
+- **Kiến trúc:** Agent thay working file trực tiếp; successful physical run có thể snapshot HTML đã chạm; history cho phép restore từng file sau đó.
+- **Cơ chế/kết luận:** OpenDesign không có transition tương đương commit boundary của DeckAgent vì không có pending/accepted lifecycle. Nếu request N+1 đến khi kết quả N đang được review, N không được promote tại lúc request đến, lúc confirm hay lúc processing bắt đầu: live workspace đã là working authority, và N+1 đọc các bytes đang tồn tại khi runtime truy cập project. HTML snapshot là history, không phải promotion. Restore ghi version cũ trở lại live file và tạo một restore version mới. Version store trả mọi manifest entry và không thấy fixed retention count trong source đã kiểm tra. Restore artifact không restore request intent; xem F-OD-14.
+- **Lý do/trade-off:** Direct file edit đơn giản cho agent workflow; đổi lại không có review isolation hoặc commit event, còn reject chỉ là per-file restore sau mutation và không bao phủ conversation intent.
 - **Caution cho DeckAgent:** Không được xem history/restore này như accepted/pending lifecycle.
 
 ### F-OD-08 — Refinement chọn Direct Edit hoặc Full Plan
@@ -346,8 +346,8 @@ Mỗi finding dưới đây giữ cùng nội dung kết luận với finding t�
 
 - **RQ/AC:** RQ-09 · AC-06, AC-10 · **Confidence:** Strong inference.
 - **Kiến trúc:** Daemon kiểm tra run status, expected entry, changed path, artifact kind và readability sau run. Preview có thể thấy file thay đổi khi run còn chạy.
-- **Cơ chế/kết luận:** Có completion gate observable, nhưng live preview không nằm sau gate đó. Gate không chứng minh meaning/layout quality; export có request/render/format checks riêng.
-- **Lý do/trade-off:** Tránh coi file cũ là output mới bằng một check rẻ và rõ; quality sâu hơn cần stage khác.
+- **Cơ chế/kết luận:** Validation phân loại completion evidence nhưng không sở hữu transaction hoặc rollback. Nếu deliverable validation trả invalid, workspace changes vẫn được giữ. Trên physically successful run, HTML đã chạm vẫn có thể được snapshot vào history vì snapshot call không phụ thuộc `deliverable.valid`; strategy-level completion tương ứng bị reject là invalid. Với model/tool failure hoặc cancellation trước success finalization, success snapshot không được tạo nhưng partial file writes vẫn có thể còn lại; xem F-OD-14.
+- **Lý do/trade-off:** Check rẻ và observable, nhưng completion classification tách khỏi recovery: invalid output có thể vẫn live và đi vào history; quality sâu hơn cần stage khác.
 - **Caution cho DeckAgent:** OpenDesign không có pending-version promotion point.
 
 ### F-OD-10 — Quality evidence nằm ở nhiều stage
@@ -385,10 +385,10 @@ Mỗi finding dưới đây giữ cùng nội dung kết luận với finding t�
 ### F-OD-14 — Recovery bảo vệ operation nhiều hơn workspace
 
 - **RQ/AC:** RQ-14 · AC-08, AC-09, AC-20, AC-28 · **Confidence:** Strong inference.
-- **Kiến trúc:** Run manager sở hữu status, cancel, process termination, events và retry policy; workspace vẫn là mutation target.
-- **Cơ chế/kết luận:** Retry bị chặn sau side effect. Filesystem baseline chỉ lưu fingerprint, không lưu bytes để rollback. Task-oriented run route dùng revision check khi cancel và completion race; ordinary chat có thể overlap ngắn khi “send now” đang cancel run cũ. Task status có winner rõ, nhưng partial/late file writes vẫn có thể còn lại.
-- **Lý do/trade-off:** Ưu tiên tránh duplicate side effect; đổi lại stop/failure không bảo đảm artifact files không đổi.
-- **Caution cho DeckAgent:** Direct workspace mutation có thể cần thay bằng isolated candidate state.
+- **Kiến trúc:** Run manager sở hữu status, cancel, process termination, events và retry policy; workspace vẫn là mutation target. Conversation messages và conversation-level intent signals là durable state riêng.
+- **Cơ chế/kết luận:** Retry bị chặn sau side effect. Filesystem baseline chỉ lưu fingerprint, không lưu bytes để rollback. Task-oriented run route dùng revision check khi cancel và completion race; ordinary chat có thể overlap ngắn khi “send now” đang cancel run cũ. Request được persist thành user message trước execution; các deck/media/platform intent signal được latch đơn điệu khi build prompt. Vì vậy failed/stopped request không rollback cùng artifact: user message vẫn nằm trong conversation và các coarse intent signal đã phát hiện vẫn ảnh hưởng các run sau. Project instructions là state riêng và không bị run path thay đổi. Source không cho phép xác định một rule chung rằng mọi arbitrary goal/constraint của failed/stopped request còn active hay inactive ở run kế tiếp; ảnh hưởng của chúng phụ thuộc conversation/session prompt composition. Đây là evidence gap, không phải suy luận rằng mọi constraint đều tồn tại.
+- **Lý do/trade-off:** Hệ thống giảm duplicate side effect và giữ conversational traceability; đổi lại failure/stop không đưa artifact bytes và toàn bộ intent-related state về cùng một pre-run boundary.
+- **Giới hạn khi đối chiếu:** OpenDesign cho phép direct file mutation và giữ conversation state qua terminal outcomes; DeckAgent có thể cần một rollback boundary rõ cho cả candidate artifact và request-specific constraints.
 
 ### F-OD-15 — Code và agent conversation là editing surface chính
 
