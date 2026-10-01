@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate B — Kiến trúc mọc dần</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#141a22; --line:#2a3340; --ink:#e6edf3;
+    --dim:#9aa7b4; --faint:#69757f;
+    --view:#8b98a5; --auth:#2dd4bf; --state:#3fb950; --cand:#a371f7;
+    --valid:#d29922; --work:#58a6ff; --out:#56b6c2; --risk:#f85149; --alt:#7d8590;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif}
+  #app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+  /* ---------- header: compact, text is secondary ---------- */
+  header{flex:0 0 auto;padding:12px 26px 8px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .hrow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .sn{font-size:11px;letter-spacing:.16em;color:var(--faint);font-variant-numeric:tabular-nums}
+  h1{font-size:20px;margin:0;font-weight:620;letter-spacing:-.01em}
+  #deltas{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .chip{font-size:11px;padding:2.5px 9px;border-radius:20px;border:1px solid var(--line);
+    color:var(--dim);white-space:nowrap;display:inline-flex;gap:5px;align-items:center}
+  .chip i{font-style:normal;font-weight:700}
+  .chip.add{border-color:#1e5c2e;background:#0f2416;color:#5fd47a}
+  .chip.del{border-color:#5c2321;background:#241110;color:#ff8c84}
+  .chip.mov{border-color:#17564f;background:#0b2422;color:#4fe0ce}
+  .chip.spl{border-color:#452a6b;background:#1b1230;color:#bd92ff}
+  .chip.chg{border-color:#5c4612;background:#241d0a;color:#e8bb49}
+  .chip.pick{border-color:#17564f;background:#0d2e2a;color:#5df0dd;font-weight:600}
+  .chip.brn{border-color:#3b434d;background:#1a1f26;color:#b3bdc7}
+  .chip.rsk{border-color:#5c2321;background:#2a1210;color:#ff9a93}
+  .chip.foc{border-color:#1d4a74;background:#0e2033;color:#79c0ff}
+
+  .vtk{display:flex;gap:10px;margin-top:9px}
+  .vtk div{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--ink);
+    border-left:2px solid var(--line);padding:0 0 0 9px}
+  .vtk b{display:block;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--faint);font-weight:600;margin-bottom:2px}
+  .vtk div:nth-child(1){border-color:#8a3b36}
+  .vtk div:nth-child(2){border-color:var(--auth)}
+  .vtk div:nth-child(3){border-color:#2f7d41}
+
+  /* ---------- canvas: the main content ---------- */
+  #canvas{flex:1 1 auto;min-height:0;position:relative;padding:4px 14px 0}
+  svg#g{width:100%;height:100%;display:block}
+
+  svg text{font-family:"Segoe UI",system-ui,Arial,sans-serif;fill:var(--ink);pointer-events:none}
+  .nl{font-size:12.5px;font-weight:600}
+  .ns{font-size:10.5px;fill:var(--dim);font-weight:400}
+  .cl{font-size:11.5px;font-weight:600;letter-spacing:.04em}
+  .el{font-size:10px;fill:var(--dim)}
+
+  /* node groups: everything is always in the DOM; scenes toggle classes */
+  g.nd,g.ct,g.ed{transition:opacity .34s ease, transform .5s cubic-bezier(.4,.1,.2,1)}
+  g.nd.off,g.ct.off,g.ed.off{opacity:0;pointer-events:none}
+  g.nd.on,g.ct.on,g.ed.on{opacity:1}
+  g.nd.dimmed,g.ed.dimmed,g.ct.dimmed{opacity:.17}
+
+  g.nd rect.bd{stroke-width:1.6;transition:stroke .3s,fill .3s}
+  .k-view rect.bd{fill:#1a2027;stroke:var(--view)}
+  .k-auth rect.bd{fill:#0c2523;stroke:var(--auth)}
+  .k-state rect.bd{fill:#0f2416;stroke:var(--state)}
+  .k-cand rect.bd{fill:#1b1230;stroke:var(--cand)}
+  .k-valid rect.bd{fill:#241d0a;stroke:var(--valid)}
+  .k-work rect.bd{fill:#101f33;stroke:var(--work)}
+  .k-out rect.bd{fill:#10262a;stroke:var(--out)}
+  .k-risk rect.bd{fill:#241110;stroke:var(--risk);stroke-dasharray:6 4}
+  .k-alt rect.bd{fill:#191e24;stroke:var(--alt);stroke-dasharray:6 4}
+  .k-pick rect.bd{fill:#0d2e2a;stroke:var(--auth);stroke-dasharray:6 4;stroke-width:2.2}
+  .k-chip rect.bd{fill:#243a1c;stroke:#5fd47a;stroke-width:1.3}
+  .k-chip .nl{font-size:10.5px}
+
+  /* new / removed emphasis — no transform here, so it never fights the move transition */
+  g.nd.isnew rect.bd{stroke-width:3.4;animation:glow .7s ease}
+  @keyframes glow{0%{stroke-width:5;stroke-opacity:.35}45%{stroke-width:3.4;stroke-opacity:1}100%{stroke-width:3.4}}
+  g.nd.isgone rect.bd{stroke:var(--risk)!important;stroke-width:2.4}
+  g.nd.ischg rect.bd{stroke-width:3.4;animation:flash .75s ease}
+  @keyframes flash{0%,100%{stroke-opacity:1}35%{stroke-opacity:.3}70%{stroke-opacity:1}}
+  g.nd.focused rect.bd{stroke-width:3.4}
+  @media (prefers-reduced-motion:reduce){
+    g.nd,g.ct,g.ed{transition:opacity .12s linear}
+    g.nd.isnew rect.bd,g.nd.ischg rect.bd,g.ed.isnew path.ln{animation:none}
+  }
+
+  g.ed path.ln{fill:none;stroke:var(--faint);stroke-width:1.7;transition:stroke .3s,stroke-width .3s}
+  g.ed.e-auth path.ln{stroke:var(--auth)}
+  g.ed.e-work path.ln{stroke:var(--work)}
+  g.ed.e-out path.ln{stroke:var(--out)}
+  g.ed.e-state path.ln{stroke:var(--state)}
+  g.ed.e-risk path.ln{stroke:var(--risk)}
+  g.ed.e-soft path.ln{stroke:#4b5661;stroke-dasharray:5 4}
+  g.ed.e-no path.ln{stroke:var(--risk);stroke-dasharray:4 5;stroke-width:1.6}
+  g.ed.isnew path.ln{stroke-width:3;animation:draw .75s ease}
+  @keyframes draw{from{stroke-dasharray:6 1000;stroke-dashoffset:1000}
+                  to{stroke-dasharray:6 1000;stroke-dashoffset:0}}
+  g.ed rect.eb{fill:#0d1117;stroke:none}
+  g.ed.isgone path.ln{stroke:var(--risk)!important}
+
+  g.ct rect.cb{fill:none;stroke-width:1.5;stroke-dasharray:9 6}
+  .c-app rect.cb{stroke:var(--auth);fill:#0b1a1d;fill-opacity:.5}
+  .c-work rect.cb{stroke:var(--work);fill:#0c1624;fill-opacity:.5}
+  .c-view rect.cb{stroke:var(--view);fill:#161b21;fill-opacity:.5}
+  .c-app .cl{fill:var(--auth)} .c-work .cl{fill:var(--work)} .c-view .cl{fill:var(--view)}
+  g.ct.isnew rect.cb{stroke-width:3}
+
+  .nox{stroke:var(--risk);stroke-width:2.4}
+
+  /* ---------- footer ---------- */
+  footer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bg2)}
+  #prog{height:3px;background:#1c242e}
+  #pf{height:100%;width:0;background:linear-gradient(90deg,var(--work),var(--auth));transition:width .3s}
+  .fr{display:flex;align-items:center;gap:12px;padding:9px 26px 11px}
+  button{background:#1b222c;color:var(--ink);border:1px solid var(--line);border-radius:7px;
+    padding:7px 15px;font-size:13px;font-family:inherit;font-weight:550;cursor:pointer}
+  button:hover:not(:disabled){border-color:var(--auth);color:var(--auth)}
+  button:disabled{opacity:.3;cursor:default}
+  #cnt{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums;min-width:52px}
+  #dots{display:flex;gap:4px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#2a3340;border:0;padding:0;cursor:pointer}
+  .dot.on{background:var(--auth)}
+  #lg{margin-left:auto;display:flex;gap:11px;flex-wrap:wrap;font-size:10.5px;color:var(--faint)}
+  #lg span{display:inline-flex;align-items:center;gap:4px}
+  #lg i{width:9px;height:9px;border-radius:2px;display:inline-block;border:1px solid}
+  .hint{font-size:10.5px;color:var(--faint)}
+
+  #note{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;max-width:620px;
+    background:#241d0a;border:1px solid #5c4612;border-radius:9px;padding:10px 14px;
+    font-size:12px;line-height:1.5;color:#e8d9a8;z-index:5}
+  #note b{color:#e8bb49}
+  #note button{margin-left:10px;padding:3px 10px;font-size:11px}
+
+  @media (max-width:980px){
+    header{padding:10px 14px 7px} h1{font-size:16px}
+    .vtk{flex-direction:column;gap:6px} .fr{padding:8px 14px 10px;gap:8px}
+    #lg{display:none} #canvas{padding:2px 6px 0}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hrow">
+      <span class="sn" id="sn">01</span>
+      <h1 id="ttl"></h1>
+      <div id="deltas"></div>
+    </div>
+    <div class="vtk">
+      <div><b>Vấn đề</b><span id="vp"></span></div>
+      <div><b>Thay đổi</b><span id="vt"></span></div>
+      <div><b>Kết quả</b><span id="vk"></span></div>
+    </div>
+  </header>
+
+  <div id="canvas">
+    <svg id="g" viewBox="0 0 1240 720" preserveAspectRatio="xMidYMid meet" role="img"
+         aria-label="Sơ đồ kiến trúc biến đổi dần thành Candidate B">
+      <defs>
+        <marker id="mk" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#69757f"/></marker>
+        <marker id="mk-auth" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#2dd4bf"/></marker>
+        <marker id="mk-work" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#58a6ff"/></marker>
+        <marker id="mk-out" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#56b6c2"/></marker>
+        <marker id="mk-state" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#3fb950"/></marker>
+        <marker id="mk-risk" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#f85149"/></marker>
+        <marker id="mk-soft" markerWidth="8" markerHeight="8" refX="6.4" refY="4" orient="auto">
+          <path d="M0 0.6 L8 4 L0 7.4 z" fill="#4b5661"/></marker>
+      </defs>
+      <g id="lyC"></g><g id="lyE"></g><g id="lyN"></g>
+    </svg>
+    <div id="note">
+      <b>Đây là thứ tự giảng để dễ hiểu</b>, không phải timeline từng cuộc họp hay từng quyết định.
+      Hai nhánh — vòng đời và dạng nội dung — thực tế lớn lên khá độc lập rồi mới gặp nhau.
+      <button type="button" id="noteX">Đã hiểu</button>
+    </div>
+  </div>
+
+  <footer>
+    <div id="prog"><div id="pf"></div></div>
+    <div class="fr">
+      <button id="bp" type="button">← Trước</button>
+      <button id="bn" type="button">Tiếp →</button>
+      <span id="cnt"></span>
+      <div id="dots"></div>
+      <span class="hint">← → · Space</span>
+      <div id="lg">
+        <span><i style="border-color:#3fb950;background:#0f2416"></i>state chính thức</span>
+        <span><i style="border-color:#2dd4bf;background:#0c2523"></i>thẩm quyền ứng dụng</span>
+        <span><i style="border-color:#a371f7;background:#1b1230"></i>candidate</span>
+        <span><i style="border-color:#d29922;background:#241d0a"></i>validation</span>
+        <span><i style="border-color:#58a6ff;background:#101f33"></i>việc thực thi</span>
+        <span><i style="border-color:#56b6c2;background:#10262a"></i>sản phẩm ra</span>
+        <span><i style="border-color:#f85149;background:#241110"></i>rủi ro / chưa quyết</span>
+        <span><i style="border-color:#7d8590;background:#191e24"></i>phương án khác</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   1. NODES — stable coordinates. A node never changes identity
+      and only moves when a scene explicitly says so.
+   ============================================================ */
+var N = {
+  /* ---- left: the view ---- */
+  ui:       {x:18,  y:90,  w:162, h:70,  k:'view',  l:'UI',               s:['gửi lệnh · xem kết quả']},
+  uiPrev:   {x:18,  y:336, w:162, h:58,  k:'out',   l:'xem preview',      s:['ảnh của file thật']},
+  uiProv:   {x:18,  y:410, w:162, h:64,  k:'cand',  l:'xem nguồn gốc',    s:['lớp UI riêng,','không in vào slide']},
+  uiMirror: {x:18,  y:490, w:162, h:58,  k:'auth',  l:'cảnh báo đóng tab',s:['nếu còn việc chưa tải']},
+
+  /* ---- middle: application authority. x=280..632, bus gutter at x=240 ---- */
+  channel:  {x:280, y:90,  w:352, h:46,  k:'auth',  l:'command channel',  s:['mọi lệnh & sự kiện, xử lý theo một thứ tự']},
+  candarea: {x:280, y:152, w:352, h:48,  k:'cand',  l:'candidate',        s:['kết quả AI — chưa có thẩm quyền']},
+  valid:    {x:280, y:214, w:352, h:56,  k:'valid', l:'Validation',       s:['cấu trúc · constraint · nguồn gốc','mọi con số lấy từ nguồn']},
+  admit:    {x:280, y:284, w:352, h:42,  k:'auth',  l:'Admission',        s:['cửa duy nhất được ghi state']},
+  deck:     {x:330, y:340, w:250, h:70,  k:'state', l:'Deck hiện tại',    s:['một chỗ duy nhất']},
+  accepted: {x:280, y:340, w:166, h:70,  k:'state', l:'accepted',         s:['bản chính thức','+ constraint']},
+  pending:  {x:466, y:340, w:166, h:70,  k:'state', l:'pending',          s:['bản chờ quyết định','+ constraint']},
+  consChip: {x:476, y:384, w:146, h:20,  k:'chip',  l:'bộ constraint',    s:[]},
+  commitb:  {x:280, y:462, w:166, h:50,  k:'auth',  l:'commit boundary',  s:['một bước nguyên tử']},
+  coord:    {x:466, y:462, w:166, h:50,  k:'auth',  l:'coordinator',      s:['của operation đang chạy']},
+  prov:     {x:280, y:526, w:166, h:50,  k:'cand',  l:'nhãn nguồn gốc',   s:['trên từng element']},
+  exprec:   {x:466, y:526, w:166, h:50,  k:'auth',  l:'bản ghi export',   s:['theo (version, định dạng)']},
+
+  /* alternatives for coordination — placed exactly in the reserved channel slot */
+  altGuard: {x:280, y:86,  w:170, h:62,  k:'alt',   l:'guarded',          s:['mỗi hành động tự kiểm','identity trước khi ghi']},
+  altSerial:{x:462, y:86,  w:170, h:62,  k:'pick',  l:'serialized',       s:['một kênh lệnh có thứ tự','← Candidate B chọn']},
+
+  /* ---- right: work + delivery ---- */
+  gen:      {x:668, y:90,  w:250, h:70,  k:'work',  l:'AI generation',    s:['sinh & tinh chỉnh toàn deck']},
+  port:     {x:668, y:172, w:250, h:44,  k:'work',  l:'port → AI provider',s:['nguồn vào là dữ liệu có nhãn']},
+  ser:      {x:668, y:232, w:250, h:44,  k:'work',  l:'serializer',       s:[]},
+  pptx:     {x:668, y:292, w:250, h:58,  k:'out',   l:'file PPTX',        s:['sản phẩm người dùng mang đi']},
+  conv:     {x:668, y:366, w:250, h:58,  k:'work',  l:'converter',        s:['một phụ thuộc, ba vai']},
+  quar:     {x:668, y:440, w:250, h:50,  k:'valid', l:'quarantine + kiểm',s:['chưa ai nhận được file']},
+  release:  {x:668, y:506, w:250, h:50,  k:'out',   l:'thả file ra',      s:['chỉ sau khi kiểm xong']},
+  preview:  {x:934, y:366, w:290, h:44,  k:'out',   l:'ảnh preview',      s:[]},
+  pdf:      {x:934, y:426, w:290, h:44,  k:'out',   l:'PDF',              s:[]},
+  geom:     {x:934, y:486, w:290, h:50,  k:'out',   l:'số đo geometry',   s:['đọc lại từ file đã sinh']},
+
+  /* alternatives for representation — placed in the slot the delivery chain will occupy */
+  altNeutral:{x:668,y:230, w:250, h:62,  k:'alt',   l:'model trung lập định dạng',s:['tự định nghĩa ngữ nghĩa slide','ít phụ thuộc runtime hơn']},
+  altPptx:  {x:668, y:302, w:250, h:62,  k:'pick',  l:'model hình dạng PPTX',s:['dạng nội bộ = dạng sản phẩm','← Candidate B chọn']},
+
+  /* ---- annotation slot (top-right); only one of these is ever visible ---- */
+  rQual:    {x:934, y:90, w:290, h:100, k:'risk', l:'Rủi ro',  s:['tràn chữ · bố cục vỡ · slide trắng','số liệu lệch so với tài liệu nguồn','không có chỗ nào để chặn']},
+  rLate:    {x:934, y:90, w:290, h:100, k:'risk', l:'Rủi ro',  s:['đã bấm stop, AI vẫn đang trả lời','kết quả về muộn có thể ghi state','→ nút dừng trở thành giả']},
+  iBranch:  {x:934, y:90, w:290, h:100, k:'alt',  l:'Hai cách đều hợp lệ', s:['Tài liệu nói rõ: một đường lệnh','có thứ tự là KHÔNG bắt buộc.','Kiểm identity cho cùng bảo đảm.','→ đây là lựa chọn, kèm giá phải trả.']},
+  iDeliv:   {x:934, y:90, w:290, h:100, k:'out',  l:'Sự thật về sản phẩm', s:['thứ mang đi là PPTX chỉnh sửa được','preview phải khớp file đó','sửa sâu diễn ra trong PowerPoint']},
+  rFit:     {x:934, y:90, w:290, h:100, k:'risk', l:'Hệ quả phải nói thẳng', s:['validation ở đây KHÔNG đảm bảo','deck trông đẹp. Bản tràn chữ vẫn','được hiển thị, được giữ, và chỉ','lộ ra ở bước export.']},
+  iWorker:  {x:934, y:90, w:290, h:100, k:'work', l:'Không phải vì đúng đắn', s:['kết quả về muộn đã bị loại ở cửa.','worker chỉ thêm: cô lập crash,','chặn đường ghi state vòng sau,','và kill việc cục bộ khi stop.']},
+
+  /* ---- final two scenes ---- */
+  genQ:     {x:934, y:90, w:290, h:246, k:'risk', l:'Bên trong việc sinh deck',
+             s:['? ? ?','','chưa có cơ chế nào được chọn:','• sinh một lần hay chia chặng','• lập kế hoạch cho cả deck','• mạch kể (narrative)','• lập kế hoạch từng slide','• phân bổ nội dung','• sinh layout','• vòng critique / repair','• chiến lược model bên trong']},
+  engine:   {x:668, y:172, w:556, h:160, k:'risk', l:'Deck Generation Engine',
+             s:['KHÔNG GIAN THIẾT KẾ MỞ — chưa chọn gì ở đây','','Planning?   ·   Narrative?   ·   Slide planning?','Layout?   ·   Critique?   ·   Repair?','','Đường biên quanh hộp này đã rõ. Bên trong thì chưa.']},
+  pyNote:   {x:668, y:352, w:556, h:100, k:'alt', l:'Ngôn ngữ & framework: chưa chọn',
+             s:['Nếu sau này có một engine sinh deck viết bằng Python,','đó là một implementation option đang được cân nhắc','— không phải thành phần của baseline đã chọn.','Những công cụ dùng trong thực nghiệm chỉ là dụng cụ đo.']}
+};
+
+/* ============================================================
+   2. CONTAINERS — emerge progressively, labels sit above the box
+   ============================================================ */
+var C = {
+  cView:   {x:8,   y:74, w:182, h:610, k:'view', l:'Trình duyệt'},
+  cApp:    {x:194, y:74, w:452, h:610, k:'app',  l:'Application process — nơi duy nhất có thẩm quyền'},
+  cWorker: {x:656, y:74, w:578, h:610, k:'work', l:'Worker process — không giữ state nào'}
+};
+
+/* ============================================================
+   3. EDGES — `p` = explicit polyline, otherwise auto-anchored
+   ============================================================ */
+var E = {
+  ui_gen:     {a:'ui', b:'gen', l:'yêu cầu', k:'work', p:[[99,90],[99,40],[793,40],[793,90]]},
+  gen_deck:   {a:'gen', b:'deck', l:'kết quả', k:'work'},
+  deck_ui:    {a:'deck', b:'ui', l:'hiển thị', k:'state', p:[[330,375],[240,375],[240,196],[99,196],[99,160]]},
+  acc_ui:     {a:'accepted', b:'ui', l:'hiển thị', k:'state', p:[[280,375],[240,375],[240,196],[99,196],[99,160]]},
+
+  gen_cand:   {a:'gen', b:'candarea', l:'kết quả = chỉ dữ liệu', k:'work'},
+  cand_valid: {a:'candarea', b:'valid', k:'soft'},
+  valid_deck: {a:'valid', b:'deck', l:'pass', k:'state'},
+  valid_admit:{a:'valid', b:'admit', l:'pass', k:'auth'},
+  admit_deck: {a:'admit', b:'deck', k:'state'},
+  admit_acc:  {a:'admit', b:'accepted', l:'deck đầu tiên', k:'state'},
+  admit_pend: {a:'admit', b:'pending', l:'mỗi lần refine', k:'state'},
+  keep:       {a:'pending', b:'accepted', l:'keep', k:'state', p:[[510,410],[510,424],[330,424],[330,410]]},
+  reject:     {a:'pending', b:'accepted', l:'reject · trả cả constraint', k:'risk', p:[[570,410],[570,442],[396,442],[396,410]]},
+
+  noWriteDeck:{a:'gen', b:'deck', k:'no', x:1, p:[[668,125],[651,125],[651,375],[580,375]]},
+  noWrite:    {a:'gen', b:'pending', l:'không có đường ghi state nào khác', k:'no', x:1, p:[[668,125],[651,125],[651,375],[632,375]]},
+
+  ui_commit:  {a:'ui', b:'commitb', l:'yêu cầu refinement mới', k:'auth', p:[[99,160],[99,487],[280,487]]},
+  commit_acc: {a:'commitb', b:'accepted', l:'promote pending', k:'soft'},
+  commit_coord:{a:'commitb', b:'coord', l:'giữ slot operation', k:'auth'},
+  commit_gen: {a:'commitb', b:'gen', l:'rồi mới bắt đầu AI', k:'work', p:[[446,487],[520,487],[520,450],[700,450],[700,160]]},
+  ui_stop:    {a:'ui', b:'coord', l:'stop', k:'risk', p:[[99,160],[99,620],[549,620],[549,512]]},
+  coord_admit:{a:'coord', b:'admit', l:'còn gắn coordinator?', k:'soft', p:[[632,487],[644,487],[644,305],[632,305]]},
+
+  ui_channel: {a:'ui', b:'channel', l:'lệnh', k:'auth'},
+  ch_gen:     {a:'channel', b:'gen', l:'dispatch', k:'work'},
+  ch_commit:  {a:'channel', b:'commitb', l:'theo một thứ tự', k:'auth', p:[[280,113],[240,113],[240,487],[280,487]]},
+
+  pend_ser:   {a:'pending', b:'ser', l:'bản đang preview', k:'out', m:'h'},
+  ser_pptx:   {a:'ser', b:'pptx', k:'out'},
+  pptx_conv:  {a:'pptx', b:'conv', k:'out'},
+  conv_prev:  {a:'conv', b:'preview', k:'out'},
+  conv_pdf:   {a:'conv', b:'pdf', k:'out'},
+  conv_geom:  {a:'conv', b:'geom', k:'out', m:'h'},
+  prev_ui:    {a:'preview', b:'uiPrev', l:'preview = ảnh của đúng file tải về', k:'out',
+               p:[[1079,410],[1079,700],[99,700],[99,394]]},
+  pptx_quar:  {a:'pptx', b:'quar', k:'valid'},
+  quar_rel:   {a:'quar', b:'release', l:'pass', k:'out'},
+  geom_quar:  {a:'geom', b:'quar', l:'số đo cho kiểm tra lúc giao hàng', k:'soft', m:'h'},
+  rel_exprec: {a:'release', b:'exprec', l:'ghi lại', k:'auth'},
+  prov_ui:    {a:'prov', b:'uiProv', k:'soft'},
+  exprec_ui:  {a:'exprec', b:'uiMirror', k:'soft', p:[[466,551],[456,551],[456,604],[99,604],[99,548]]},
+  gen_port:   {a:'gen', b:'port', k:'work'},
+
+  gen_q:      {a:'gen', b:'genQ', k:'risk'},
+  gen_engine: {a:'gen', b:'engine', k:'work'},
+  engine_cand:{a:'engine', b:'candarea', l:'CandidateDeck', k:'cand'}
+};
+</script>
+<script>
+/* ============================================================
+   4. SCENES — each one is a graph state, not a slide
+   ============================================================ */
+var S = [
+{ t:'Bộ sinh deck tối giản',
+  n:['ui','gen','deck'], e:['ui_gen','gen_deck','deck_ui'], c:[],
+  d:[],
+  vp:'Chưa có chỗ nào để sai, để dừng, hay để từ chối.',
+  vt:'Đây là điểm xuất phát để kể chuyện — không phải điều tài liệu kiến trúc nói.',
+  vk:'Khung V1 đã cố định sẵn: chạy cục bộ, chỉ sống trong session, prompt + tối đa 1 nguồn, xuất PPTX + PDF, chỉ tinh chỉnh toàn deck, không có editor trong app.' },
+
+{ t:'Kết quả AI chỉ là candidate',
+  n:['ui','gen','deck','candarea','valid','rQual'],
+  e:['ui_gen','gen_cand','cand_valid','valid_deck','deck_ui'], c:[],
+  d:[['add','candidate'],['add','validation'],['del','đường Model → Deck bị cắt'],['rsk','kết quả có thể không dùng được']],
+  vp:'Deck sinh ra có thể tràn chữ, vỡ bố cục, hoặc lệch số so với tài liệu nguồn.',
+  vt:'Chèn một chặng vào giữa: kết quả AI đi vào vùng candidate rồi bị kiểm, chứ không vào thẳng deck.',
+  vk:'Kết quả AI mất quyền tự trở thành state. Đây là nền chung của mọi phương án, chưa phải nét riêng của B.' },
+
+{ t:'Một cửa duy nhất được ghi state',
+  n:['ui','gen','deck','candarea','valid','admit'],
+  e:['ui_gen','gen_cand','cand_valid','valid_admit','admit_deck','deck_ui','noWriteDeck'],
+  c:['cApp'],
+  d:[['add','admission'],['add','Application process'],['mov','quyền ghi state: từ phía model → về phía ứng dụng']],
+  vp:'Nếu phía AI còn một đường ghi state nào khác, mọi quy tắc phía sau đều có thể bị đi vòng.',
+  vt:'Gom quyền ghi state vào một cửa duy nhất, nằm trong ứng dụng. AI chỉ trả về dữ liệu.',
+  vk:'Thẩm quyền phải ở một chỗ và không được là phía AI. Việc nó nằm trong tiến trình ứng dụng là lựa chọn của B — một phương án khác đặt nó ngay trong trang web.' },
+
+{ t:'Tách thành accepted và pending',
+  n:['ui','gen','candarea','valid','admit','accepted','pending','consChip'],
+  e:['ui_gen','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite'],
+  c:['cApp'],
+  d:[['spl','Deck → accepted + pending'],['add','reject một bước'],['add','constraint đi cùng version']],
+  vp:'Bản tinh chỉnh có hay hơn bản cũ hay không thì chỉ người dùng biết — máy không kiểm được.',
+  vt:'Một chỗ chứa tách thành hai: bản chính thức và bản chờ. Mỗi bản mang bộ constraint của riêng nó.',
+  vk:'Quy tắc này là của Product, không phải phát minh của kiến trúc. Kiến trúc chỉ phải chứng minh nó giữ được: reject hoàn tác cả deck lẫn constraint, trọn vẹn hoặc không.' },
+
+{ t:'Commit boundary — một bước nguyên tử',
+  n:['ui','gen','candarea','valid','admit','accepted','pending','consChip','commitb'],
+  e:['ui_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite','commit_acc','commit_gen','ui_gen'],
+  c:['cApp'],
+  mv:{consChip:{x:290,y:384}},
+  d:[['add','commit boundary'],['mov','constraint của pending → thành bộ chính thức']],
+  vp:'Yêu cầu tinh chỉnh mới đến khi vẫn còn một bản pending. Hỏi lại, cảnh báo hay từ chối đều không được để lại dấu vết.',
+  vt:'Dồn bốn việc vào một bước không tách rời: promote pending → lấy constraint của nó làm bộ chính thức → áp constraint mới → giữ slot rồi mới chạy AI.',
+  vk:'Có một mốc an toàn xác định để quay về khi stop hay failure — và chỉ một mốc duy nhất.' },
+
+{ t:'Stop, failure, và kết quả về muộn',
+  n:['ui','gen','candarea','valid','admit','accepted','pending','consChip','commitb','coord','rLate'],
+  e:['ui_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite','commit_acc','commit_gen','commit_coord','ui_stop','coord_admit','ui_gen'],
+  c:['cApp'],
+  d:[['add','coordinator'],['add','ba trạng thái kết thúc: done / stopped / error'],['rsk','kết quả về muộn sau khi đã stop']],
+  vp:'Người dùng được dừng bất cứ lúc nào. Lời gọi ra ngoài có thể fail hay timeout. Kết quả có thể về sau khi đã dừng.',
+  vt:'Mỗi operation được gắn một coordinator. Stop tháo nó ra; kết quả về muộn không tìm thấy coordinator nào nên bị bỏ ở cửa.',
+  vk:'Hệ thống KHÔNG cần huỷ được lời gọi bên ngoài. Tính đúng đắn chỉ cần kết quả bị từ chối ở cửa admission.' },
+
+{ t:'Nhánh: dẹp race condition bằng cách nào',
+  n:['ui','gen','candarea','valid','admit','accepted','pending','consChip','commitb','coord','altGuard','altSerial','iBranch'],
+  e:['ui_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite','commit_acc','commit_gen','commit_coord','ui_stop','coord_admit','ui_gen'],
+  c:['cApp'],
+  d:[['brn','guarded — kiểm identity'],['brn','serialized — kênh lệnh có thứ tự'],['pick','B chọn: serialized']],
+  vp:'Nhiều đường cùng muốn đổi state: stop đối đầu completion, hai tab cùng gửi lệnh, export chạy lúc người dùng bấm reject.',
+  vt:'Hai nhánh cùng hợp lệ xuất hiện ở đúng chỗ còn trống phía trên. Chúng không cộng dồn — phải chọn một.',
+  vk:'Serialized KHÔNG bị bài toán ép ra. Đổi lấy: không phải suy luận về race, nhưng cả session có một điểm tắc chung, và đây là cam kết khó đảo ngược.' },
+
+{ t:'Hội tụ: một kênh lệnh có thứ tự',
+  n:['ui','gen','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord'],
+  e:['ui_channel','ch_gen','ch_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite','commit_acc','commit_coord','coord_admit'],
+  c:['cApp'],
+  d:[['pick','serialized được chọn'],['add','command channel chiếm đúng chỗ của nhánh thắng'],['del','các đường lệnh rời rạc gộp lại'],['del','phương án guarded']],
+  vp:'Nhánh phải quay về một kiến trúc duy nhất, không để lơ lửng hai lựa chọn.',
+  vt:'Phương án được chọn thay chỗ cho cả hai hộp nhánh. Mọi lệnh của người dùng và mọi sự kiện của operation giờ đi qua một kênh.',
+  vk:'Mọi race biến thành câu hỏi "cái nào đến lượt trước". Kênh này cũng chính là chỗ duy nhất được ghi state.' },
+
+{ t:'Nhánh độc lập: deck được giữ dưới dạng gì',
+  n:['ui','gen','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','altNeutral','altPptx','iDeliv'],
+  e:['ui_channel','ch_gen','ch_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','acc_ui','noWrite','commit_acc','commit_coord','coord_admit'],
+  c:['cApp'],
+  d:[['brn','model trung lập định dạng'],['brn','model hình dạng PPTX'],['pick','B chọn: hình dạng PPTX']],
+  vp:'Nhánh này KHÔNG sinh ra từ nhánh vòng đời. Nó đến từ một sự thật khác: thứ người dùng mang đi là file PPTX, và preview phải khớp đúng file đó.',
+  vt:'Hai nhánh mới xuất hiện ở chỗ đường giao hàng sắp mọc lên. Lấy hình dạng PPTX làm dạng nội bộ nghĩa là dạng nội bộ = dạng sản phẩm.',
+  vk:'Chọn như vậy bỏ được nhiều câu hỏi thiết kế phải trả lời trước khi viết code — nhưng khoá chặt vào PPTX và khó đảo ngược.' },
+
+{ t:'Đường giao hàng: PPTX → converter → preview & PDF',
+  n:['ui','uiPrev','gen','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','ser','pptx','conv','preview','pdf'],
+  e:['ui_channel','ch_gen','ch_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','noWrite','commit_acc','commit_coord','coord_admit','pend_ser','ser_pptx','pptx_conv','conv_prev','conv_pdf','prev_ui'],
+  c:['cApp','cView'],
+  lb:{candarea:{l:'candidate hình dạng PPTX', s:['slide · shape · vị trí · text run']}},
+  ch:['candarea'],
+  d:[['pick','hình dạng PPTX'],['add','serializer · PPTX · converter · preview · PDF'],['chg','candidate giờ đã mang hình dạng PPTX'],['del','đường "hiển thị" trực tiếp từ accepted']],
+  vp:'Preview phải khớp với file tải về, nhưng một biểu diễn thứ hai thì luôn có nguy cơ lệch.',
+  vt:'Không dựng biểu diễn thứ hai: sinh file PPTX thật, rồi converter biến chính file đó thành ảnh preview và PDF.',
+  vk:'Đổi lấy: converter phải có trên mọi máy người dùng, và nó gánh ba vai cùng lúc. Thực nghiệm cục bộ đo được khoảng 1,9–5,5 giây mỗi lần chuyển, 15,4 giây lần khởi động nguội.' },
+
+{ t:'Hình học chỉ biết sau khi giao hàng',
+  n:['ui','uiPrev','gen','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','ser','pptx','conv','preview','pdf','geom','quar','release','rFit'],
+  e:['ui_channel','ch_gen','ch_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','noWrite','commit_acc','commit_coord','coord_admit','pend_ser','ser_pptx','pptx_conv','conv_prev','conv_pdf','conv_geom','prev_ui','pptx_quar','quar_rel','geom_quar'],
+  c:['cApp','cView'],
+  ch:['valid'],
+  lb:{valid:{l:'Validation — chỉ nội dung', s:['cấu trúc · constraint · nguồn gốc','mọi con số lấy từ nguồn','KHÔNG xét bố cục, không xét tràn chữ']}},
+  d:[['add','quarantine: kiểm xong mới thả file'],['add','số đo geometry đọc từ file thật'],['chg','cổng trước hiển thị chỉ còn xét nội dung'],['rsk','tràn chữ chỉ lộ ra ở bước export']],
+  vp:'Kiểm bố cục trước khi hiển thị thì phải render ngay trong operation — thêm phụ thuộc, thêm độ trễ, chậm phản hồi stop.',
+  vt:'Product đã chốt: V1 không bắt buộc kiểm từng kết quả bằng geometry trước khi hiển thị, nhưng mọi con số lấy từ nguồn thì phải kiểm ngay. Hình học chuyển sang lúc giao hàng.',
+  vk:'Validation ở đây KHÔNG đảm bảo deck trông đẹp. Niềm tin vào chất lượng hình ảnh đến từ Testing — và điều kiện mở lại quyết định này đã được ghi sẵn từ đầu.' },
+
+{ t:'Nguồn gốc, bản ghi export, cảnh báo đóng tab',
+  n:['ui','uiPrev','uiProv','uiMirror','gen','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','prov','exprec','ser','pptx','conv','preview','pdf','geom','quar','release'],
+  e:['ui_channel','ch_gen','ch_commit','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','noWrite','commit_acc','commit_coord','coord_admit','pend_ser','ser_pptx','pptx_conv','conv_prev','conv_pdf','conv_geom','prev_ui','pptx_quar','quar_rel','geom_quar','rel_exprec','prov_ui','exprec_ui'],
+  c:['cApp','cView'],
+  d:[['add','nhãn nguồn gốc trên từng element'],['add','bản ghi export theo (version, định dạng)'],['add','cảnh báo khi đóng tab']],
+  vp:'Dữ kiện trong nguồn phải được giữ đúng, nội dung do AI thêm không được trình bày như lấy từ nguồn — mà nguồn gốc thì không thể suy ra về sau. Và đóng tab là mất deck.',
+  vt:'Nhãn nguồn gốc nằm trên từng element của model: model tự khai và trích dẫn, hệ thống đối chiếu rồi hạ cấp nếu không chứng minh được. Mỗi lần xuất thành công được ghi lại.',
+  vk:'Diễn đạt lại trung thực vẫn tính là lấy từ nguồn; một element có thể mang cả hai nguồn. Nhãn không bao giờ in vào slide và không đi vào file xuất ra. Bản ghi export chính là dữ liệu để biết có việc chưa tải về.' },
+
+{ t:'Worker — ranh giới process, và Candidate B đã đủ',
+  n:['ui','uiPrev','uiProv','uiMirror','gen','port','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','prov','exprec','ser','pptx','conv','preview','pdf','geom','quar','release','iWorker'],
+  e:['ui_channel','ch_gen','ch_commit','gen_port','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','noWrite','commit_acc','commit_coord','coord_admit','pend_ser','ser_pptx','pptx_conv','conv_prev','conv_pdf','conv_geom','prev_ui','pptx_quar','quar_rel','geom_quar','rel_exprec','prov_ui','exprec_ui'],
+  c:['cApp','cView','cWorker'],
+  d:[['add','Worker process'],['mov','AI + render chuyển vào một process riêng, không giữ state'],['add','kill được việc cục bộ khi stop']],
+  vp:'AI và render là phần dễ crash nhất, lại là phần duy nhất không được phép chạm vào state.',
+  vt:'Một ranh giới process bọc quanh phần việc nặng. Worker nói chuyện bằng message và không giữ state nào.',
+  vk:'Worker KHÔNG cần cho tính đúng đắn của stop — kết quả về muộn đã bị loại ở cửa từ trước. Đây cũng là cam kết dễ đảo ngược hơn những cam kết khác: có thể gộp lại vào cùng một process. Đến đây Candidate B đã đủ hình.' },
+
+{ t:'Khoảng trống: bên trong việc sinh deck',
+  n:['ui','uiPrev','uiProv','uiMirror','gen','port','channel','candarea','valid','admit','accepted','pending','consChip','commitb','coord','prov','exprec','ser','pptx','conv','preview','pdf','geom','quar','release','genQ'],
+  e:['ui_channel','ch_gen','ch_commit','gen_port','gen_cand','cand_valid','valid_admit','admit_acc','admit_pend','keep','reject','noWrite','commit_acc','commit_coord','coord_admit','pend_ser','ser_pptx','pptx_conv','conv_prev','conv_pdf','conv_geom','prev_ui','pptx_quar','quar_rel','geom_quar','rel_exprec','prov_ui','exprec_ui','gen_q'],
+  c:['cApp','cView','cWorker'],
+  f:['gen','genQ','candarea','gen_q','gen_cand'],
+  d:[['foc','thu hẹp vào hộp sinh deck'],['rsk','chưa quyết: cơ chế bên trong']],
+  vp:'Đây là chỗ dễ hiểu sai nhất về Candidate B.',
+  vt:'Mọi thứ khác mờ đi. Chỉ còn hộp sinh deck sáng lên — và nó rỗng.',
+  vk:'Candidate B định nghĩa ĐƯỜNG BIÊN quanh việc sinh deck: chạy ở đâu, qua ranh giới nào, cho ra loại candidate gì, sau đó vòng đời xử lý thế nào. Nhưng nó KHÔNG định nghĩa cơ chế bên trong để làm ra một deck chất lượng cao.' },
+
+{ t:'Bài toán thiết kế kế tiếp',
+  n:['ui','channel','candarea','valid','admit','accepted','pending','gen','engine','pyNote'],
+  e:['ui_channel','ch_gen','gen_engine','engine_cand','cand_valid','valid_admit','admit_acc','admit_pend'],
+  c:['cApp','cWorker'],
+  d:[['foc','giữ lại đúng trục sinh deck'],['add','Deck Generation Engine — không gian thiết kế mở'],['del','chi tiết giao hàng tạm bỏ khỏi khung hình']],
+  vp:'Đường biên đã rõ. Phần bên trong vẫn là một bài toán chưa mở.',
+  vt:'Thu khung hình về đúng trục sinh deck, và đặt tên cho chỗ trống thay vì lấp nó bằng phỏng đoán.',
+  vk:'Chọn được baseline nghĩa là Detailed Design có thể bắt đầu — nó chưa bắt đầu. Và B chưa được kiểm chứng đầy đủ: độ chính xác bộ xác minh nguồn gốc, độ đầy đủ của kiểm tra số liệu, và sự sẵn có của converter trên máy người dùng vẫn là nợ.' }
+];
+</script>
+<script>
+/* ============================================================
+   5. RENDERER — one persistent canvas, scenes mutate it
+   ============================================================ */
+(function(){
+  var lyC = document.getElementById('lyC'),
+      lyE = document.getElementById('lyE'),
+      lyN = document.getElementById('lyN'),
+      SVG = 'http://www.w3.org/2000/svg';
+
+  function el(t, attrs){
+    var n = document.createElementNS(SVG, t);
+    for(var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+
+  /* ---- build containers ---- */
+  var ctEl = {};
+  Object.keys(C).forEach(function(id){
+    var c = C[id];
+    var g = el('g', {'class':'ct c-'+c.k+' off'});
+    g.appendChild(el('rect', {'class':'cb', x:c.x, y:c.y, width:c.w, height:c.h, rx:14}));
+    var t = el('text', {'class':'cl', x:c.x+4, y:c.y-9});
+    t.textContent = c.l;
+    g.appendChild(t);
+    lyC.appendChild(g);
+    ctEl[id] = g;
+  });
+
+  /* ---- build nodes ---- */
+  var ndEl = {}, ndTx = {};
+  Object.keys(N).forEach(function(id){
+    var n = N[id];
+    var g = el('g', {'class':'nd k-'+n.k+' off'});
+    g.appendChild(el('rect', {'class':'bd', x:0, y:0, width:n.w, height:n.h, rx:9}));
+    var lines = [], nSub = n.s.length;
+    var top = nSub ? 0 : 0;
+    var lh = 14, lblY;
+    if(nSub > 4){ lblY = 19; } else { lblY = n.h/2 - (nSub*lh)/2 + 4; }
+    var tl = el('text', {'class':'nl', x:n.w/2, y:lblY, 'text-anchor':'middle'});
+    tl.textContent = n.l;
+    g.appendChild(tl);
+    var subs = [];
+    for(var i=0;i<nSub;i++){
+      var ts = el('text', {'class':'ns', x:n.w/2, y:lblY + 15 + i*lh, 'text-anchor':'middle'});
+      ts.textContent = n.s[i];
+      g.appendChild(ts);
+      subs.push(ts);
+    }
+    g.style.transform = 'translate('+n.x+'px,'+n.y+'px)';
+    lyN.appendChild(g);
+    ndEl[id] = g;
+    ndTx[id] = {l:tl, s:subs};
+  });
+
+  /* ---- geometry helpers ---- */
+  function box(id, pos){
+    var n = N[id], p = pos[id] || n;
+    return {x:p.x, y:p.y, w:n.w, h:n.h, cx:p.x+n.w/2, cy:p.y+n.h/2};
+  }
+  function poly(pts){
+    var r = 11, d = 'M'+pts[0][0]+' '+pts[0][1];
+    for(var i=1;i<pts.length-1;i++){
+      var p = pts[i], a = pts[i-1], b = pts[i+1];
+      var d1 = Math.hypot(a[0]-p[0], a[1]-p[1]) || 1,
+          d2 = Math.hypot(b[0]-p[0], b[1]-p[1]) || 1;
+      var rr = Math.min(r, d1/2, d2/2);
+      d += ' L'+(p[0]+(a[0]-p[0])/d1*rr)+' '+(p[1]+(a[1]-p[1])/d1*rr);
+      d += ' Q'+p[0]+' '+p[1]+' '+(p[0]+(b[0]-p[0])/d2*rr)+' '+(p[1]+(b[1]-p[1])/d2*rr);
+    }
+    var e = pts[pts.length-1];
+    return d + ' L'+e[0]+' '+e[1];
+  }
+  function autoPath(e, pos){
+    var a = box(e.a, pos), b = box(e.b, pos);
+    var gx = (b.x > a.x+a.w) ? b.x-(a.x+a.w) : (a.x > b.x+b.w ? a.x-(b.x+b.w) : -1);
+    var gy = (b.y > a.y+a.h) ? b.y-(a.y+a.h) : (a.y > b.y+b.h ? a.y-(b.y+b.h) : -1);
+    var h = e.m === 'h' || (e.m !== 'v' && gx >= 0 && (gy < 0 || gx >= gy));
+    if(h){
+      var right = b.cx > a.cx;
+      var x1 = right ? a.x+a.w : a.x, x2 = right ? b.x : b.x+b.w;
+      var m = (x1+x2)/2;
+      return 'M'+x1+' '+a.cy+' C'+m+' '+a.cy+' '+m+' '+b.cy+' '+x2+' '+b.cy;
+    }
+    var down = b.cy > a.cy;
+    var y1 = down ? a.y+a.h : a.y, y2 = down ? b.y : b.y+b.h;
+    var my = (y1+y2)/2;
+    return 'M'+a.cx+' '+y1+' C'+a.cx+' '+my+' '+b.cx+' '+my+' '+b.cx+' '+y2;
+  }
+
+  /* ---- build edges ---- */
+  var edEl = {}, edPath = {}, edLbl = {};
+  Object.keys(E).forEach(function(id){
+    var e = E[id];
+    var g = el('g', {'class':'ed e-'+(e.k||'soft')+' off'});
+    var mk = 'mk';
+    if(['auth','work','out','state','risk','soft'].indexOf(e.k) >= 0) mk = 'mk-'+e.k;
+    if(e.k === 'no') mk = 'mk-risk';
+    var p = el('path', {'class':'ln', d:'M0 0', 'marker-end':'url(#'+mk+')'});
+    g.appendChild(p);
+    var lg = null;
+    if(e.l){
+      lg = el('g', {});
+      var bg = el('rect', {'class':'eb', x:0, y:0, width:0, height:13, rx:3});
+      var tx = el('text', {'class':'el', x:0, y:0, 'text-anchor':'middle'});
+      tx.textContent = e.l;
+      lg.appendChild(bg); lg.appendChild(tx);
+      g.appendChild(lg);
+      edLbl[id] = {g:lg, bg:bg, tx:tx};
+    }
+    if(e.x){
+      var x1 = el('line', {'class':'nox', x1:0, y1:0, x2:0, y2:0});
+      var x2 = el('line', {'class':'nox', x1:0, y1:0, x2:0, y2:0});
+      g.appendChild(x1); g.appendChild(x2);
+      edLbl[id] = edLbl[id] || {};
+      edLbl[id].x1 = x1; edLbl[id].x2 = x2;
+    }
+    lyE.appendChild(g);
+    edEl[id] = g; edPath[id] = p;
+  });
+
+  /* ---- cumulative state helpers ---- */
+  function posAt(i){
+    var p = {};
+    for(var j=0;j<=i;j++) if(S[j].mv) for(var k in S[j].mv) p[k] = S[j].mv[k];
+    return p;
+  }
+  function lblAt(i){
+    var p = {};
+    for(var j=0;j<=i;j++) if(S[j].lb) for(var k in S[j].lb) p[k] = S[j].lb[k];
+    return p;
+  }
+
+  /* ---- UI refs ---- */
+  var snEl = document.getElementById('sn'), ttl = document.getElementById('ttl'),
+      dEl = document.getElementById('deltas'), vp = document.getElementById('vp'),
+      vt = document.getElementById('vt'), vk = document.getElementById('vk'),
+      bp = document.getElementById('bp'), bn = document.getElementById('bn'),
+      cnt = document.getElementById('cnt'), pf = document.getElementById('pf'),
+      dotsEl = document.getElementById('dots'), note = document.getElementById('note');
+
+  var CH = {add:['add','+'], del:['del','−'], mov:['mov','⇄'], spl:['spl','⇆'],
+            chg:['chg','~'], pick:['pick','✓'], brn:['brn','⌥'], rsk:['rsk','!'],
+            foc:['foc','◎']};
+
+  var dots = S.map(function(s, k){
+    var b = document.createElement('button');
+    b.className = 'dot'; b.type = 'button';
+    b.setAttribute('aria-label', 'Trạng thái ' + (k+1) + ': ' + s.t);
+    b.addEventListener('click', function(){ go(k); });
+    dotsEl.appendChild(b);
+    return b;
+  });
+
+  var cur = -1, shown = {n:[], e:[], c:[]}, tok = 0;
+
+  function go(k){
+    k = Math.max(0, Math.min(S.length-1, k));
+    if(k === cur) return;
+    var s = S[k], pos = posAt(k), lbs = lblAt(k);
+    var prev = shown;
+    var nSet = s.n, eSet = s.e, cSet = s.c || [];
+
+    /* --- apply labels (cumulative) --- */
+    Object.keys(N).forEach(function(id){
+      var o = lbs[id];
+      var base = N[id];
+      var want = o ? o.l : base.l;
+      var wantS = o ? o.s : base.s;
+      if(ndTx[id].l.textContent !== want) ndTx[id].l.textContent = want;
+      ndTx[id].s.forEach(function(t, i){
+        var v = wantS[i] === undefined ? '' : wantS[i];
+        if(t.textContent !== v) t.textContent = v;
+      });
+    });
+
+    /* --- nodes --- */
+    var myTok = ++tok;
+    Object.keys(ndEl).forEach(function(id){
+      var g = ndEl[id], on = nSet.indexOf(id) >= 0, was = prev.n.indexOf(id) >= 0;
+      var p = pos[id] || N[id];
+      g.style.transform = 'translate('+p.x+'px,'+p.y+'px)';
+      g.classList.remove('isnew','isgone','ischg','focused','dimmed');
+      g.classList.toggle('on', on);
+      g.classList.toggle('off', !on);
+      if(on && !was) g.classList.add('isnew');
+      if(!on && was) g.classList.add('isgone');
+      if(on && s.ch && s.ch.indexOf(id) >= 0) g.classList.add('ischg');
+      if(on && s.mv && s.mv[id]) g.classList.add('ischg');
+      if(on && s.f){
+        if(s.f.indexOf(id) >= 0) g.classList.add('focused'); else g.classList.add('dimmed');
+      }
+    });
+
+    /* --- containers --- */
+    Object.keys(ctEl).forEach(function(id){
+      var g = ctEl[id], on = cSet.indexOf(id) >= 0, was = prev.c.indexOf(id) >= 0;
+      g.classList.remove('isnew','dimmed');
+      g.classList.toggle('on', on);
+      g.classList.toggle('off', !on);
+      if(on && !was) g.classList.add('isnew');
+      if(on && s.f) g.classList.add('dimmed');
+    });
+
+    /* --- edges (paths recomputed from current positions) --- */
+    Object.keys(edEl).forEach(function(id){
+      var e = E[id], g = edEl[id];
+      var on = eSet.indexOf(id) >= 0, was = prev.e.indexOf(id) >= 0;
+      var d = e.p ? poly(e.p) : autoPath(e, pos);
+      edPath[id].setAttribute('d', d);
+      var L = edLbl[id];
+      if(L && (L.tx || L.x1)){
+        var pathNode = edPath[id], len = 0, mid = null;
+        try { len = pathNode.getTotalLength(); mid = pathNode.getPointAtLength(len*0.5); } catch(err){}
+        if(mid){
+          if(L.tx){
+            L.tx.setAttribute('x', mid.x); L.tx.setAttribute('y', mid.y+3.5);
+            var wdt = Math.max(16, e.l.length*5.3);
+            L.bg.setAttribute('x', mid.x - wdt/2); L.bg.setAttribute('y', mid.y-7);
+            L.bg.setAttribute('width', wdt);
+          }
+          if(L.x1){
+            var r = 7;
+            L.x1.setAttribute('x1', mid.x-r); L.x1.setAttribute('y1', mid.y-r);
+            L.x1.setAttribute('x2', mid.x+r); L.x1.setAttribute('y2', mid.y+r);
+            L.x2.setAttribute('x1', mid.x+r); L.x2.setAttribute('y1', mid.y-r);
+            L.x2.setAttribute('x2', mid.x-r); L.x2.setAttribute('y2', mid.y+r);
+          }
+        }
+      }
+      g.classList.remove('isnew','isgone','dimmed');
+      g.classList.toggle('on', on);
+      g.classList.toggle('off', !on);
+      if(on && !was) g.classList.add('isnew');
+      if(!on && was) g.classList.add('isgone');
+      if(on && s.f && s.f.indexOf(id) < 0) g.classList.add('dimmed');
+    });
+
+    /* clear the one-shot emphasis classes once the transition has played */
+    setTimeout(function(){
+      if(myTok !== tok) return;
+      Object.keys(ndEl).forEach(function(id){ ndEl[id].classList.remove('isnew','isgone','ischg'); });
+      Object.keys(ctEl).forEach(function(id){ ctEl[id].classList.remove('isnew'); });
+      Object.keys(edEl).forEach(function(id){ edEl[id].classList.remove('isnew','isgone'); });
+    }, 820);
+
+    /* --- header --- */
+    snEl.textContent = (k+1 < 10 ? '0' : '') + (k+1);
+    ttl.textContent = s.t;
+    vp.textContent = s.vp; vt.textContent = s.vt; vk.textContent = s.vk;
+    dEl.innerHTML = '';
+    (s.d || []).forEach(function(d){
+      var c = CH[d[0]] || ['brn','·'];
+      var sp = document.createElement('span');
+      sp.className = 'chip ' + c[0];
+      sp.innerHTML = '<i></i>';
+      sp.firstChild.textContent = c[1];
+      sp.appendChild(document.createTextNode(d[1]));
+      dEl.appendChild(sp);
+    });
+
+    cnt.textContent = (k+1) + ' / ' + S.length;
+    pf.style.width = (k/(S.length-1))*100 + '%';
+    dots.forEach(function(dt, j){ dt.classList.toggle('on', j === k); });
+    bp.disabled = (k === 0); bn.disabled = (k === S.length-1);
+    if(k !== 0) note.style.display = 'none';
+
+    cur = k;
+    shown = {n:nSet.slice(), e:eSet.slice(), c:cSet.slice()};
+  }
+
+  bp.addEventListener('click', function(){ go(cur-1); });
+  bn.addEventListener('click', function(){ go(cur+1); });
+  document.getElementById('noteX').addEventListener('click', function(){ note.style.display='none'; });
+  document.addEventListener('keydown', function(ev){
+    var k = ev.key;
+    if(k === 'ArrowRight' || k === ' ' || k === 'Spacebar' || k === 'PageDown'){ go(cur+1); ev.preventDefault(); }
+    else if(k === 'ArrowLeft' || k === 'PageUp'){ go(cur-1); ev.preventDefault(); }
+    else if(k === 'Home'){ go(0); ev.preventDefault(); }
+    else if(k === 'End'){ go(S.length-1); ev.preventDefault(); }
+  });
+
+  go(0);
+})();
+</script>
+</body>
+</html>
