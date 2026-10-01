@@ -727,13 +727,14 @@ var S = [
     snEl.textContent = (k+1 < 10 ? '0' : '') + (k+1);
     ttl.textContent = s.t;
     vp.textContent = s.vp; vt.textContent = s.vt; vk.textContent = s.vk;
-    dEl.innerHTML = '';
+    while(dEl.firstChild) dEl.removeChild(dEl.firstChild);
     (s.d || []).forEach(function(d){
       var c = CH[d[0]] || ['brn','·'];
       var sp = document.createElement('span');
-      sp.className = 'chip ' + c[0];
-      sp.innerHTML = '<i></i>';
-      sp.firstChild.textContent = c[1];
+      sp.setAttribute('class', 'chip ' + c[0]);
+      var ic = document.createElement('i');
+      ic.textContent = c[1];
+      sp.appendChild(ic);
       sp.appendChild(document.createTextNode(d[1]));
       dEl.appendChild(sp);
     });
