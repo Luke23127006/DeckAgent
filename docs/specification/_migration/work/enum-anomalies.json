@@ -1,0 +1,65 @@
+[
+  {
+    "type": "requirements",
+    "id": "R-041",
+    "column": "Type",
+    "value": "Constraint",
+    "note": "type không có trong schema → blocker DOI_LOAI"
+  },
+  {
+    "type": "requirements",
+    "id": "R-027",
+    "column": "Area",
+    "value": "CI",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-032",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-035",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-037",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-041",
+    "column": "Area",
+    "value": "Schedule",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-042",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-051",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  },
+  {
+    "type": "requirements",
+    "id": "R-053",
+    "column": "Area",
+    "value": "Infra",
+    "note": "area không có trong schema"
+  }
+]

@@ -1,0 +1,6344 @@
+[
+  {
+    "source": "C-001",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ; Constraints.Căn cứ; Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-002",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-003",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ; Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-004",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-005",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ; Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-006",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "C-007",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Constraints.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-001",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-005",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-005",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-007",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-007",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-008",
+    "field": "source",
+    "target": "D-006",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-008",
+    "field": "source",
+    "target": "D-012",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-010",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-010",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-011",
+    "field": "source",
+    "target": "D-013",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-012",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-013",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-014",
+    "field": "source",
+    "target": "D-007",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-014",
+    "field": "source",
+    "target": "D-024",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-015",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-016",
+    "field": "source",
+    "target": "D-009",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-017",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-018",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-019",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-020",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-020",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-021",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-021",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-022",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-022",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-023",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "A-029",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Assumptions.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "source",
+    "target": "D-012",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "source",
+    "target": "D-024",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "source",
+    "target": "D-013",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "source",
+    "target": "D-030",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-005",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-005",
+    "field": "source",
+    "target": "A-010",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-005",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "source",
+    "target": "R-010",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ; Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-009",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-009",
+    "field": "source",
+    "target": "R-051",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-010",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-010",
+    "field": "source",
+    "target": "R-051",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-011",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-011",
+    "field": "source",
+    "target": "R-045",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-012",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-012",
+    "field": "source",
+    "target": "R-049",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "source",
+    "target": "D-030",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "source",
+    "target": "R-031",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "source",
+    "target": "BR-010",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "source",
+    "target": "D-029",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "source",
+    "target": "R-030",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "source",
+    "target": "R-032",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "source",
+    "target": "R-046",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "source",
+    "target": "R-019",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "source",
+    "target": "R-028",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "source",
+    "target": "A-017",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-016",
+    "field": "source",
+    "target": "R-050",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "source",
+    "target": "L-002",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "source",
+    "target": "R-047",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-018",
+    "field": "source",
+    "target": "R-042",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-018",
+    "field": "source",
+    "target": "R-052",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-019",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-019",
+    "field": "source",
+    "target": "R-053",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-020",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-020",
+    "field": "source",
+    "target": "R-054",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-021",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-021",
+    "field": "source",
+    "target": "R-048",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-022",
+    "field": "source",
+    "target": "R-016",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "source",
+    "target": "R-012",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "source",
+    "target": "R-022",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "source",
+    "target": "R-034",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "source",
+    "target": "L-001",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "source",
+    "target": "R-014",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "source",
+    "target": "R-017",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "source",
+    "target": "R-018",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-025",
+    "field": "source",
+    "target": "R-044",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-025",
+    "field": "source",
+    "target": "W-026",
+    "kind": "reference",
+    "column": "Use Cases.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-001",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-001",
+    "field": "source",
+    "target": "D-007",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-002",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-003",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-004",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ; Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-006",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ; Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-007",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-008",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-009",
+    "field": "source",
+    "target": "D-024",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "source",
+    "target": "R-020",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "source",
+    "target": "R-031",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "source",
+    "target": "D-030",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-011",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-011",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-012",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "source",
+    "target": "R-026",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-014",
+    "field": "source",
+    "target": "D-029",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-015",
+    "field": "source",
+    "target": "R-049",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-016",
+    "field": "source",
+    "target": "R-016",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-017",
+    "field": "source",
+    "target": "R-047",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-017",
+    "field": "source",
+    "target": "L-002",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "BR-018",
+    "field": "source",
+    "target": "R-051",
+    "kind": "reference",
+    "column": "Business Rules.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-001",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-001",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-002",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-002",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-003",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-003",
+    "field": "source",
+    "target": "D-024",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-004",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-004",
+    "field": "source",
+    "target": "D-007",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-004",
+    "field": "source",
+    "target": "D-024",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-005",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-005",
+    "field": "source",
+    "target": "D-013",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-006",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-006",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-007",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-007",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-007",
+    "field": "source",
+    "target": "D-028",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-008",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-008",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-009",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-009",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-010",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-011",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-011",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-013",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-013",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-014",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-014",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-015",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-015",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-016",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-017",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-017",
+    "field": "source",
+    "target": "L-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-018",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-018",
+    "field": "source",
+    "target": "L-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-019",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-019",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-020",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-020",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-021",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-021",
+    "field": "source",
+    "target": "D-028",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-022",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-022",
+    "field": "source",
+    "target": "D-017",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-023",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-023",
+    "field": "source",
+    "target": "D-013",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "source",
+    "target": "D-030",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-025",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-025",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-025",
+    "field": "source",
+    "target": "D-028",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-026",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-026",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-027",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-027",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-028",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-028",
+    "field": "source",
+    "target": "D-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-028",
+    "field": "source",
+    "target": "D-028",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-029",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-029",
+    "field": "source",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-030",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "source",
+    "target": "D-030",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-032",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-033",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-034",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-034",
+    "field": "source",
+    "target": "D-014",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-035",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-036",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-037",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-037",
+    "field": "source",
+    "target": "D-011",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-038",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-039",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-039",
+    "field": "source",
+    "target": "C-003",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-040",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-041",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-041",
+    "field": "source",
+    "target": "D-015",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-041",
+    "field": "source",
+    "target": "C-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-042",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-042",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-043",
+    "field": "source",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-044",
+    "field": "source",
+    "target": "W-026",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-044",
+    "field": "source",
+    "target": "D-025",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-045",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-046",
+    "field": "source",
+    "target": "D-029",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-047",
+    "field": "source",
+    "target": "L-002",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-048",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "R-051",
+    "field": "source",
+    "target": "D-027",
+    "kind": "reference",
+    "column": "Requirements.Căn cứ",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-001",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-002",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-006",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-009",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-024",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-030",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-033",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-046",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-001",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "follows",
+    "target": "UC-011",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-001",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-002",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-003",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-006",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-007",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-008",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-009",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-030",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-033",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-042",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-043",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-046",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-002",
+    "field": "extend",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct",
+    "note": "UC-001 (khi người dùng đính kèm tài liệu)"
+  },
+  {
+    "source": "UC-002",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-002",
+    "field": "follows",
+    "target": "UC-011",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-003",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-005",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-023",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-003",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "follows",
+    "target": "UC-011",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-003",
+    "field": "related",
+    "target": "UC-002",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Phân biệt với)",
+    "via": "direct",
+    "note": "UC-002 (PPTX chỉ lấy nội dung)"
+  },
+  {
+    "source": "UC-004",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-011",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-013",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-024",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-030",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-031",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-033",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-046",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-004",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "follows",
+    "target": "UC-001",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "follows",
+    "target": "UC-002",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "follows",
+    "target": "UC-003",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "follows",
+    "target": "UC-012",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-004",
+    "field": "follows",
+    "target": "UC-021",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-005",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-005",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-015",
+    "field": "use_cases",
+    "target": "UC-005",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "use_cases",
+    "target": "UC-005",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-005",
+    "field": "related",
+    "target": "UC-008",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct",
+    "note": "UC-008 (sửa chuyên sâu làm trong PowerPoint sau khi tải về PPTX, R-041)"
+  },
+  {
+    "source": "UC-007",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-004",
+    "field": "use_cases",
+    "target": "UC-007",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-010",
+    "field": "use_cases",
+    "target": "UC-007",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-007",
+    "field": "extend",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "extend",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "extend",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-007",
+    "field": "related",
+    "target": "UC-017",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-008",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-001",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-002",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-003",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-004",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-012",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "follows",
+    "target": "UC-021",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-008",
+    "field": "related",
+    "target": "UC-005",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct",
+    "note": "UC-005 (sửa chuyên sâu làm trong PowerPoint sau khi tải về PPTX, R-041)"
+  },
+  {
+    "source": "UC-009",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-051",
+    "field": "use_cases",
+    "target": "UC-009",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-009",
+    "field": "related",
+    "target": "UC-020",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-010",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-051",
+    "field": "use_cases",
+    "target": "UC-010",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-010",
+    "field": "follows",
+    "target": "UC-009",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-010",
+    "field": "related",
+    "target": "UC-014",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-011",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-042",
+    "field": "use_cases",
+    "target": "UC-011",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-045",
+    "field": "use_cases",
+    "target": "UC-011",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-011",
+    "field": "follows",
+    "target": "UC-008",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct",
+    "note": "UC-008 (tải về trước khi bắt đầu deck mới)"
+  },
+  {
+    "source": "UC-011",
+    "field": "related",
+    "target": "UC-014",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct",
+    "note": "UC-014 (dừng lượt xử lý AI đang chạy)"
+  },
+  {
+    "source": "UC-012",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-048",
+    "field": "use_cases",
+    "target": "UC-012",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-049",
+    "field": "use_cases",
+    "target": "UC-012",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-012",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-012",
+    "field": "follows",
+    "target": "UC-021",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "use_cases",
+    "target": "UC-013",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-013",
+    "field": "extend",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "extend",
+    "target": "UC-023",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "extend",
+    "target": "UC-025",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-013",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-030",
+    "field": "use_cases",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "use_cases",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-046",
+    "field": "use_cases",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-014",
+    "field": "related",
+    "target": "UC-010",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-014",
+    "field": "related",
+    "target": "UC-011",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "UC-015",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Use Cases.Related Constraints",
+    "via": "direct"
+  },
+  {
+    "source": "R-019",
+    "field": "use_cases",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "use_cases",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-015",
+    "field": "related",
+    "target": "UC-004",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Dẫn tới)",
+    "via": "direct",
+    "note": "UC-004, UC-008, UC-013, UC-019"
+  },
+  {
+    "source": "UC-015",
+    "field": "related",
+    "target": "UC-008",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Dẫn tới)",
+    "via": "direct",
+    "note": "UC-004, UC-008, UC-013, UC-019"
+  },
+  {
+    "source": "UC-015",
+    "field": "related",
+    "target": "UC-013",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Dẫn tới)",
+    "via": "direct",
+    "note": "UC-004, UC-008, UC-013, UC-019"
+  },
+  {
+    "source": "UC-015",
+    "field": "related",
+    "target": "UC-019",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Dẫn tới)",
+    "via": "direct",
+    "note": "UC-004, UC-008, UC-013, UC-019"
+  },
+  {
+    "source": "UC-016",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-050",
+    "field": "use_cases",
+    "target": "UC-016",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-016",
+    "field": "extend",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-016",
+    "field": "extend",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-047",
+    "field": "use_cases",
+    "target": "UC-017",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-017",
+    "field": "extend",
+    "target": "UC-001",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "extend",
+    "target": "UC-002",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "extend",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-017",
+    "field": "related",
+    "target": "UC-007",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-018",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-042",
+    "field": "use_cases",
+    "target": "UC-018",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-048",
+    "field": "use_cases",
+    "target": "UC-018",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-052",
+    "field": "use_cases",
+    "target": "UC-018",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-018",
+    "field": "related",
+    "target": "UC-002",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-018",
+    "field": "related",
+    "target": "UC-021",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-019",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-053",
+    "field": "use_cases",
+    "target": "UC-019",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-019",
+    "field": "related",
+    "target": "UC-008",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-019",
+    "field": "related",
+    "target": "UC-015",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-020",
+    "field": "primary_actor",
+    "target": "ACT-003",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-054",
+    "field": "use_cases",
+    "target": "UC-020",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-020",
+    "field": "related",
+    "target": "UC-009",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Liên quan)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-021",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-048",
+    "field": "use_cases",
+    "target": "UC-021",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-021",
+    "field": "split_from",
+    "target": "UC-011",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Tách từ)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-021",
+    "field": "follows",
+    "target": "UC-009",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Trước đó)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-022",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-016",
+    "field": "use_cases",
+    "target": "UC-022",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-022",
+    "field": "split_from",
+    "target": "UC-013",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Tách từ)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-022",
+    "field": "extend",
+    "target": "UC-004",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Extend)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-022",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "use_cases",
+    "target": "UC-023",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-022",
+    "field": "use_cases",
+    "target": "UC-023",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-034",
+    "field": "use_cases",
+    "target": "UC-023",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-023",
+    "field": "split_from",
+    "target": "UC-004",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Tách từ)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-023",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-014",
+    "field": "use_cases",
+    "target": "UC-024",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-017",
+    "field": "use_cases",
+    "target": "UC-024",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-018",
+    "field": "use_cases",
+    "target": "UC-024",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-024",
+    "field": "split_from",
+    "target": "UC-004",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Tách từ)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-024",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-025",
+    "field": "primary_actor",
+    "target": "ACT-001",
+    "kind": "depends",
+    "column": "Use Cases.Primary Actor",
+    "via": "direct"
+  },
+  {
+    "source": "R-044",
+    "field": "use_cases",
+    "target": "UC-025",
+    "kind": "depends",
+    "column": "Use Cases.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "UC-025",
+    "field": "split_from",
+    "target": "UC-004",
+    "kind": "reference",
+    "column": "Use Cases.Quan hệ UC (Tách từ)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-025",
+    "field": "include",
+    "target": "UC-014",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-025",
+    "field": "include",
+    "target": "UC-015",
+    "kind": "depends",
+    "column": "Use Cases.Quan hệ UC (Include)",
+    "via": "direct"
+  },
+  {
+    "source": "UC-001",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-002",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-003",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-004",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-014",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-016",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-017",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-023",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-024",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "UC-025",
+    "field": "supporting_actors",
+    "target": "ACT-002",
+    "kind": "depends",
+    "column": "Actors.Related Use Cases",
+    "via": "derived"
+  },
+  {
+    "source": "BR-001",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-001",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-001",
+    "field": "use_cases",
+    "target": "UC-007",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-003",
+    "field": "business_rules",
+    "target": "BR-001",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "business_rules",
+    "target": "BR-001",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-005",
+    "field": "business_rules",
+    "target": "BR-001",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-010",
+    "field": "business_rules",
+    "target": "BR-001",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-017",
+    "field": "business_rules",
+    "target": "BR-001",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-007",
+    "field": "shapes",
+    "target": "BR-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-002",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-007",
+    "field": "business_rules",
+    "target": "BR-002",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-008",
+    "field": "business_rules",
+    "target": "BR-002",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-017",
+    "field": "shapes",
+    "target": "BR-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-003",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-003",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-003",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "business_rules",
+    "target": "BR-003",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-025",
+    "field": "shapes",
+    "target": "BR-003",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-004",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-004",
+    "field": "use_cases",
+    "target": "UC-023",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "business_rules",
+    "target": "BR-004",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-022",
+    "field": "business_rules",
+    "target": "BR-004",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-023",
+    "field": "business_rules",
+    "target": "BR-004",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-034",
+    "field": "business_rules",
+    "target": "BR-004",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-014",
+    "field": "shapes",
+    "target": "BR-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-013",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-005",
+    "field": "use_cases",
+    "target": "UC-014",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "business_rules",
+    "target": "BR-005",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "business_rules",
+    "target": "BR-005",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-025",
+    "field": "shapes",
+    "target": "BR-005",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "D-030",
+    "field": "shapes",
+    "target": "BR-005",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-006",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-020",
+    "field": "business_rules",
+    "target": "BR-006",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "business_rules",
+    "target": "BR-006",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "business_rules",
+    "target": "BR-006",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-026",
+    "field": "shapes",
+    "target": "BR-006",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-007",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-025",
+    "field": "business_rules",
+    "target": "BR-007",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "business_rules",
+    "target": "BR-007",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "business_rules",
+    "target": "BR-007",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "business_rules",
+    "target": "BR-007",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-009",
+    "field": "shapes",
+    "target": "BR-007",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-008",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-008",
+    "field": "use_cases",
+    "target": "UC-007",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-043",
+    "field": "business_rules",
+    "target": "BR-008",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-009",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-009",
+    "field": "use_cases",
+    "target": "UC-003",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-003",
+    "field": "business_rules",
+    "target": "BR-009",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "business_rules",
+    "target": "BR-009",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-024",
+    "field": "shapes",
+    "target": "BR-009",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-013",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-010",
+    "field": "use_cases",
+    "target": "UC-022",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-020",
+    "field": "business_rules",
+    "target": "BR-010",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-031",
+    "field": "business_rules",
+    "target": "BR-010",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-025",
+    "field": "shapes",
+    "target": "BR-010",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "D-030",
+    "field": "shapes",
+    "target": "BR-010",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-011",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-011",
+    "field": "use_cases",
+    "target": "UC-023",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-011",
+    "field": "business_rules",
+    "target": "BR-011",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-014",
+    "field": "shapes",
+    "target": "BR-011",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "D-025",
+    "field": "shapes",
+    "target": "BR-011",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-012",
+    "field": "use_cases",
+    "target": "UC-011",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-045",
+    "field": "business_rules",
+    "target": "BR-012",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-048",
+    "field": "business_rules",
+    "target": "BR-012",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-027",
+    "field": "shapes",
+    "target": "BR-012",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-013",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-013",
+    "field": "use_cases",
+    "target": "UC-008",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-026",
+    "field": "business_rules",
+    "target": "BR-013",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-030",
+    "field": "business_rules",
+    "target": "BR-013",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-025",
+    "field": "shapes",
+    "target": "BR-013",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "D-026",
+    "field": "shapes",
+    "target": "BR-013",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-014",
+    "field": "use_cases",
+    "target": "UC-001",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-014",
+    "field": "use_cases",
+    "target": "UC-002",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-014",
+    "field": "use_cases",
+    "target": "UC-004",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-014",
+    "field": "use_cases",
+    "target": "UC-010",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-014",
+    "field": "use_cases",
+    "target": "UC-014",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-046",
+    "field": "business_rules",
+    "target": "BR-014",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-029",
+    "field": "shapes",
+    "target": "BR-014",
+    "kind": "applies",
+    "column": "Business Rules.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-015",
+    "field": "use_cases",
+    "target": "UC-012",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-049",
+    "field": "business_rules",
+    "target": "BR-015",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-016",
+    "field": "use_cases",
+    "target": "UC-022",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-016",
+    "field": "business_rules",
+    "target": "BR-016",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-017",
+    "field": "use_cases",
+    "target": "UC-017",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-047",
+    "field": "business_rules",
+    "target": "BR-017",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "BR-018",
+    "field": "use_cases",
+    "target": "UC-009",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "BR-018",
+    "field": "use_cases",
+    "target": "UC-018",
+    "kind": "applies",
+    "column": "Business Rules.Related Use Cases",
+    "via": "direct"
+  },
+  {
+    "source": "R-051",
+    "field": "business_rules",
+    "target": "BR-018",
+    "kind": "depends",
+    "column": "Business Rules.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-014",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-015",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-006",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "D-015",
+    "field": "constraints",
+    "target": "C-001",
+    "kind": "depends",
+    "column": "Constraints.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "constraints",
+    "target": "C-002",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-039",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-026",
+    "field": "constraints",
+    "target": "C-003",
+    "kind": "depends",
+    "column": "Constraints.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "constraints",
+    "target": "C-004",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-003",
+    "field": "constraints",
+    "target": "C-005",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "constraints",
+    "target": "C-005",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-005",
+    "field": "constraints",
+    "target": "C-005",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-010",
+    "field": "constraints",
+    "target": "C-005",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-017",
+    "field": "constraints",
+    "target": "C-005",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "D-011",
+    "field": "constraints",
+    "target": "C-006",
+    "kind": "depends",
+    "column": "Constraints.Related Decisions",
+    "via": "flipped"
+  },
+  {
+    "source": "R-030",
+    "field": "constraints",
+    "target": "C-007",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "constraints",
+    "target": "C-007",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-035",
+    "field": "constraints",
+    "target": "C-007",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-036",
+    "field": "constraints",
+    "target": "C-007",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-037",
+    "field": "constraints",
+    "target": "C-007",
+    "kind": "depends",
+    "column": "Constraints.Related Requirements",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "assumptions",
+    "target": "A-004",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-007",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-024",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-031",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-032",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-033",
+    "field": "assumptions",
+    "target": "A-005",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-001",
+    "field": "assumptions",
+    "target": "A-007",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-006",
+    "field": "assumptions",
+    "target": "A-007",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-011",
+    "field": "assumptions",
+    "target": "A-007",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "assumptions",
+    "target": "A-007",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-007",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-006",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-011",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-013",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-001",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-002",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-011",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-013",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-024",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-015",
+    "field": "assumptions",
+    "target": "A-010",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-010",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-005",
+    "field": "assumptions",
+    "target": "A-011",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-012",
+    "field": "assumptions",
+    "target": "A-011",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-023",
+    "field": "assumptions",
+    "target": "A-011",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-022",
+    "field": "assumptions",
+    "target": "A-012",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-023",
+    "field": "assumptions",
+    "target": "A-012",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-034",
+    "field": "assumptions",
+    "target": "A-012",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-001",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-009",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-024",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-003",
+    "field": "assumptions",
+    "target": "A-014",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-004",
+    "field": "assumptions",
+    "target": "A-014",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-038",
+    "field": "assumptions",
+    "target": "A-014",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-007",
+    "field": "assumptions",
+    "target": "A-015",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-008",
+    "field": "assumptions",
+    "target": "A-015",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-033",
+    "field": "assumptions",
+    "target": "A-015",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-019",
+    "field": "assumptions",
+    "target": "A-017",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "assumptions",
+    "target": "A-017",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "assumptions",
+    "target": "A-017",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-035",
+    "field": "assumptions",
+    "target": "A-018",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-036",
+    "field": "assumptions",
+    "target": "A-018",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-037",
+    "field": "assumptions",
+    "target": "A-018",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-013",
+    "field": "assumptions",
+    "target": "A-019",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-035",
+    "field": "assumptions",
+    "target": "A-019",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-015",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-011",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-013",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-021",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-029",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-041",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-020",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-025",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-026",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-027",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-028",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-045",
+    "field": "assumptions",
+    "target": "A-029",
+    "kind": "depends",
+    "column": "Assumptions.Used By (IDs)",
+    "via": "flipped"
+  },
+  {
+    "source": "R-002",
+    "field": "depends_on",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-004",
+    "field": "depends_on",
+    "target": "R-003",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-005",
+    "field": "depends_on",
+    "target": "R-003",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-006",
+    "field": "depends_on",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-007",
+    "field": "depends_on",
+    "target": "R-003",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-008",
+    "field": "depends_on",
+    "target": "R-007",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-009",
+    "field": "depends_on",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-010",
+    "field": "depends_on",
+    "target": "R-004",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-011",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-012",
+    "field": "depends_on",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-013",
+    "field": "depends_on",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-014",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-015",
+    "field": "depends_on",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-016",
+    "field": "depends_on",
+    "target": "R-031",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-017",
+    "field": "depends_on",
+    "target": "R-004",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-018",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-019",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-020",
+    "field": "depends_on",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-021",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-022",
+    "field": "depends_on",
+    "target": "R-012",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-023",
+    "field": "depends_on",
+    "target": "R-005",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-023",
+    "field": "depends_on",
+    "target": "R-012",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "depends_on",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-024",
+    "field": "depends_on",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-025",
+    "field": "depends_on",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-026",
+    "field": "depends_on",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-027",
+    "field": "depends_on",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-028",
+    "field": "depends_on",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-028",
+    "field": "depends_on",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-031",
+    "field": "depends_on",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-033",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-034",
+    "field": "depends_on",
+    "target": "R-012",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-044",
+    "field": "depends_on",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-045",
+    "field": "depends_on",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-046",
+    "field": "depends_on",
+    "target": "R-030",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-047",
+    "field": "depends_on",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-049",
+    "field": "depends_on",
+    "target": "R-048",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-050",
+    "field": "depends_on",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-052",
+    "field": "depends_on",
+    "target": "R-048",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-053",
+    "field": "depends_on",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "R-054",
+    "field": "depends_on",
+    "target": "R-051",
+    "kind": "depends",
+    "column": "Requirements.Depends On (IDs)",
+    "via": "direct"
+  },
+  {
+    "source": "D-005",
+    "field": "addresses",
+    "target": "R-041",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-006",
+    "field": "addresses",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-006",
+    "field": "addresses",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-006",
+    "field": "addresses",
+    "target": "R-029",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-006",
+    "field": "addresses",
+    "target": "R-041",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-006",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-006",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-006",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-006",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-007",
+    "field": "addresses",
+    "target": "R-003",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-007",
+    "field": "addresses",
+    "target": "R-004",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-007",
+    "field": "assumptions",
+    "target": "A-014",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-007",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-008",
+    "field": "addresses",
+    "target": "R-005",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-008",
+    "field": "addresses",
+    "target": "R-012",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-008",
+    "field": "addresses",
+    "target": "R-023",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-008",
+    "field": "assumptions",
+    "target": "A-011",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-008",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-008",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-009",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-009",
+    "field": "addresses",
+    "target": "R-026",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-009",
+    "field": "addresses",
+    "target": "R-028",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-009",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-009",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-009",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-010",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-010",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-010",
+    "field": "addresses",
+    "target": "R-026",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-010",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-011",
+    "field": "addresses",
+    "target": "R-041",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-011",
+    "field": "documents",
+    "target": "DOC-001",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-011",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-001",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-009",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-021",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "addresses",
+    "target": "R-029",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-012",
+    "field": "assumptions",
+    "target": "A-008",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-012",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-013",
+    "field": "addresses",
+    "target": "R-005",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-013",
+    "field": "addresses",
+    "target": "R-012",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-013",
+    "field": "addresses",
+    "target": "R-023",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-013",
+    "field": "assumptions",
+    "target": "A-011",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-013",
+    "field": "assumptions",
+    "target": "A-012",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-013",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-014",
+    "field": "addresses",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-014",
+    "field": "addresses",
+    "target": "R-013",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-014",
+    "field": "assumptions",
+    "target": "A-009",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-014",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-014",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-015",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-015",
+    "field": "addresses",
+    "target": "R-027",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-015",
+    "field": "addresses",
+    "target": "R-029",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-015",
+    "field": "addresses",
+    "target": "R-041",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-015",
+    "field": "assumptions",
+    "target": "A-020",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-015",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-015",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-016",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-016",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-016",
+    "field": "addresses",
+    "target": "R-026",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-016",
+    "field": "addresses",
+    "target": "R-027",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-016",
+    "field": "addresses",
+    "target": "R-028",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-016",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-016",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-016",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-007",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-021",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-024",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-027",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "addresses",
+    "target": "R-028",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-017",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-017",
+    "field": "assumptions",
+    "target": "A-015",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-017",
+    "field": "assumptions",
+    "target": "A-016",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-017",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-018",
+    "field": "addresses",
+    "target": "R-006",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-018",
+    "field": "addresses",
+    "target": "R-019",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-018",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-018",
+    "field": "addresses",
+    "target": "R-031",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-018",
+    "field": "addresses",
+    "target": "R-032",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-018",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-003",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-004",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-007",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-008",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-017",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-042",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "addresses",
+    "target": "R-043",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-024",
+    "field": "assumptions",
+    "target": "A-014",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-024",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-025",
+    "field": "addresses",
+    "target": "R-011",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-025",
+    "field": "addresses",
+    "target": "R-013",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-025",
+    "field": "addresses",
+    "target": "R-024",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-025",
+    "field": "addresses",
+    "target": "R-031",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-025",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-025",
+    "field": "assumptions",
+    "target": "A-021",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-025",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-026",
+    "field": "addresses",
+    "target": "R-020",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-026",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-026",
+    "field": "addresses",
+    "target": "R-026",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-026",
+    "field": "addresses",
+    "target": "R-027",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-026",
+    "field": "addresses",
+    "target": "R-028",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-026",
+    "field": "assumptions",
+    "target": "A-022",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-026",
+    "field": "assumptions",
+    "target": "A-023",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-026",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-027",
+    "field": "addresses",
+    "target": "R-031",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-027",
+    "field": "addresses",
+    "target": "R-042",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-027",
+    "field": "addresses",
+    "target": "R-045",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-027",
+    "field": "assumptions",
+    "target": "A-029",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-027",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-028",
+    "field": "addresses",
+    "target": "R-007",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-028",
+    "field": "addresses",
+    "target": "R-021",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-028",
+    "field": "addresses",
+    "target": "R-025",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-028",
+    "field": "addresses",
+    "target": "R-027",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-028",
+    "field": "addresses",
+    "target": "R-028",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-028",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-029",
+    "field": "addresses",
+    "target": "R-046",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-029",
+    "field": "documents",
+    "target": "DOC-004",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  },
+  {
+    "source": "D-030",
+    "field": "addresses",
+    "target": "R-024",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-030",
+    "field": "addresses",
+    "target": "R-031",
+    "kind": "depends",
+    "column": "Decisions.Requirement chính",
+    "via": "direct",
+    "note": "cần duyệt: addresses hay shapes"
+  },
+  {
+    "source": "D-030",
+    "field": "assumptions",
+    "target": "A-013",
+    "kind": "depends",
+    "column": "Decisions.Assumption chính",
+    "via": "direct"
+  },
+  {
+    "source": "D-030",
+    "field": "documents",
+    "target": "DOC-002",
+    "kind": "reference",
+    "column": "Decisions.Detailed Doc",
+    "via": "direct"
+  }
+]

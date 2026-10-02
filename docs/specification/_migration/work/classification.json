@@ -1,0 +1,994 @@
+{
+  "items": {
+    "ACT-001": {
+      "type": "actors",
+      "class": "product",
+      "reason": "Vai trò tương tác với DeckAgent"
+    },
+    "ACT-002": {
+      "type": "actors",
+      "class": "product",
+      "reason": "Vai trò tương tác với DeckAgent"
+    },
+    "ACT-003": {
+      "type": "actors",
+      "class": "product",
+      "reason": "Vai trò tương tác với DeckAgent"
+    },
+    "C-001": {
+      "type": "constraints",
+      "class": "product",
+      "reason": "Giới hạn lên sản phẩm DeckAgent"
+    },
+    "C-002": {
+      "type": "constraints",
+      "class": "product",
+      "reason": "Giới hạn nguồn lực (type Resource, nhóm dự án) nhưng giới hạn phạm vi Architecture của sản phẩm; giữ theo GC-07 nếu có R/D trỏ tới"
+    },
+    "C-003": {
+      "type": "constraints",
+      "class": "product",
+      "reason": "Giới hạn từ đồ án (type Academic, nhóm dự án) áp lên số định dạng tải về của sản phẩm; giữ theo GC-07 nếu có R/D trỏ tới"
+    },
+    "C-004": {
+      "type": "constraints",
+      "class": "product",
+      "reason": "Giới hạn lên sản phẩm DeckAgent"
+    },
+    "C-005": {
+      "type": "constraints",
+      "class": "product",
+      "reason": "Giới hạn lên sản phẩm DeckAgent"
+    },
+    "C-006": {
+      "type": "constraints",
+      "class": "unclear",
+      "reason": "Quy tắc về thời điểm team được chốt lựa chọn implementation (quy trình), nhưng ghi dưới dạng giới hạn lên thiết kế sản phẩm; đã Retired"
+    },
+    "C-007": {
+      "type": "constraints",
+      "class": "unclear",
+      "reason": "Quy tắc về thời điểm team được đặt ngưỡng định lượng (quy trình), nhưng R-030, R-032 đang trỏ tới; đã Retired"
+    },
+    "A-001": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về việc làm rõ phạm vi trong Sprint 1 để lập kế hoạch: nói về cách team làm việc"
+    },
+    "A-002": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về development flow chung giữa các Agent/công cụ của team"
+    },
+    "A-003": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về khả năng của GitHub cho branch, PR, CI của team"
+    },
+    "A-004": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về việc chuẩn hóa Architecture hiện tại thành baseline: kế hoạch kỹ thuật của team, không nói DeckAgent làm gì"
+    },
+    "A-005": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về chiến lược Testing của team"
+    },
+    "A-006": {
+      "type": "assumptions",
+      "class": "project",
+      "reason": "Giả định về việc chọn lọc Skill bên ngoài cho Agent của team"
+    },
+    "A-007": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-008": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-009": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-010": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-011": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-012": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-013": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-014": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-015": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-016": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-017": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-018": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-019": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-020": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-021": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-022": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-023": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "A-029": {
+      "type": "assumptions",
+      "class": "product",
+      "reason": "Giả định về người dùng hoặc giá trị sản phẩm"
+    },
+    "UC-001": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-002": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-003": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-004": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-005": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-007": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-008": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-009": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-010": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-011": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-012": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-013": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-014": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-015": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-016": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-017": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-018": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-019": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-020": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-021": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-022": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-023": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-024": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "UC-025": {
+      "type": "use-cases",
+      "class": "product",
+      "reason": "Cách người dùng dùng DeckAgent"
+    },
+    "BR-001": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-002": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-003": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-004": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-005": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-006": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-007": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-008": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-009": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-010": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-011": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-012": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-013": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-014": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-015": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-016": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-017": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "BR-018": {
+      "type": "business-rules",
+      "class": "product",
+      "reason": "Quy tắc hành vi của DeckAgent"
+    },
+    "R-001": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-002": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-003": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-004": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-005": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-006": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-007": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-008": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-009": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-010": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-011": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-012": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-013": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-014": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-015": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-016": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-017": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-018": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-019": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-020": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-021": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-022": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-023": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-024": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-025": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-026": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-027": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-028": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-029": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-030": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-031": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-032": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-033": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-034": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-035": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-036": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-037": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-038": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-039": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-040": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-041": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Giới hạn phạm vi sản phẩm (không xây editor chuyên nghiệp); type Constraint phải đổi (DOI_LOAI)"
+    },
+    "R-042": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-043": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-044": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-045": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-046": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-047": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-048": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-049": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-050": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-051": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-052": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-053": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "R-054": {
+      "type": "requirements",
+      "class": "product",
+      "reason": "Hành vi hoặc chất lượng của DeckAgent"
+    },
+    "D-001": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Phạm vi Sprint 1"
+    },
+    "D-002": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Chọn GitHub làm nơi lưu code, PR, CI"
+    },
+    "D-003": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Quy trình PR vào main"
+    },
+    "D-004": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Cách ràng buộc Agent khi phát triển"
+    },
+    "D-005": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Yêu cầu với tài liệu Architecture của team"
+    },
+    "D-006": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-007": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-008": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-009": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-010": {
+      "type": "decisions",
+      "class": "unclear",
+      "reason": "Quyết định cách phân loại item trong spec (nhiều định dạng là constraint, nhất quán là quality): meta về spec, nhưng nội dung đã nằm ở C-003, R-025"
+    },
+    "D-011": {
+      "type": "decisions",
+      "class": "unclear",
+      "reason": "Quyết định không chốt cơ chế Architecture/ngưỡng trước khi có evidence: quy trình ra quyết định, nhưng nhiều item sản phẩm có thể dựa vào"
+    },
+    "D-012": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-013": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-014": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-015": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-016": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-017": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Chọn các hành vi quan trọng (P1–P5) làm acceptance của V1"
+    },
+    "D-018": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Cách tổ chức delivery (Hybrid mode, Spike)"
+    },
+    "D-023": {
+      "type": "decisions",
+      "class": "project",
+      "reason": "Điểm dừng của Sprint 2"
+    },
+    "D-024": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-025": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-026": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-027": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-028": {
+      "type": "decisions",
+      "class": "unclear",
+      "reason": "Quy tắc khi nào tiêu chí chất lượng thành Hard Gate, gắn với W-026/W-032: lẫn giữa acceptance của sản phẩm và quy trình research"
+    },
+    "D-029": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    },
+    "D-030": {
+      "type": "decisions",
+      "class": "product",
+      "reason": "Lựa chọn về phạm vi hoặc hành vi của DeckAgent"
+    }
+  },
+  "product_depends_on_nonproduct": [
+    {
+      "product": "R-007",
+      "field": "source",
+      "kind": "reference",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Requirements.Căn cứ"
+    },
+    {
+      "product": "R-021",
+      "field": "source",
+      "kind": "reference",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Requirements.Căn cứ"
+    },
+    {
+      "product": "R-025",
+      "field": "source",
+      "kind": "reference",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Requirements.Căn cứ"
+    },
+    {
+      "product": "R-028",
+      "field": "source",
+      "kind": "reference",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Requirements.Căn cứ"
+    },
+    {
+      "product": "R-037",
+      "field": "source",
+      "kind": "reference",
+      "target": "D-011",
+      "target_class": "unclear",
+      "column": "Requirements.Căn cứ"
+    },
+    {
+      "product": "R-030",
+      "field": "constraints",
+      "kind": "depends",
+      "target": "C-007",
+      "target_class": "unclear",
+      "column": "Constraints.Related Requirements"
+    },
+    {
+      "product": "R-032",
+      "field": "constraints",
+      "kind": "depends",
+      "target": "C-007",
+      "target_class": "unclear",
+      "column": "Constraints.Related Requirements"
+    },
+    {
+      "product": "R-035",
+      "field": "constraints",
+      "kind": "depends",
+      "target": "C-007",
+      "target_class": "unclear",
+      "column": "Constraints.Related Requirements"
+    },
+    {
+      "product": "R-036",
+      "field": "constraints",
+      "kind": "depends",
+      "target": "C-007",
+      "target_class": "unclear",
+      "column": "Constraints.Related Requirements"
+    },
+    {
+      "product": "R-037",
+      "field": "constraints",
+      "kind": "depends",
+      "target": "C-007",
+      "target_class": "unclear",
+      "column": "Constraints.Related Requirements"
+    },
+    {
+      "product": "R-041",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-004",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-007",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-021",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-024",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-025",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-027",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-028",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-031",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-032",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "R-033",
+      "field": "assumptions",
+      "kind": "depends",
+      "target": "A-005",
+      "target_class": "project",
+      "column": "Assumptions.Used By (IDs)"
+    },
+    {
+      "product": "ACT-002",
+      "field": "text:Constraints",
+      "kind": "text",
+      "target": "D-011",
+      "target_class": "unclear",
+      "column": "Constraints"
+    },
+    {
+      "product": "UC-014",
+      "field": "text:Open Questions",
+      "kind": "text",
+      "target": "D-011",
+      "target_class": "unclear",
+      "column": "Open Questions"
+    },
+    {
+      "product": "R-021",
+      "field": "text:Acceptance Note",
+      "kind": "text",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Acceptance Note"
+    },
+    {
+      "product": "R-028",
+      "field": "text:Ghi chú",
+      "kind": "text",
+      "target": "D-028",
+      "target_class": "unclear",
+      "column": "Ghi chú"
+    },
+    {
+      "product": "R-032",
+      "field": "text:Ghi chú",
+      "kind": "text",
+      "target": "D-011",
+      "target_class": "unclear",
+      "column": "Ghi chú"
+    },
+    {
+      "product": "R-037",
+      "field": "text:Ghi chú",
+      "kind": "text",
+      "target": "D-011",
+      "target_class": "unclear",
+      "column": "Ghi chú"
+    }
+  ]
+}
