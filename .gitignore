@@ -1,8 +1,5 @@
-# Project Hub private/generated state
-/.project-hub/
 **/.env
 **/.env.*
-/Project Hub - DeckAgent.xlsx
 
 # Google OAuth credentials must never be committed
 client_secret*.json

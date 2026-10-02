@@ -164,42 +164,6 @@
       "status": "installed"
     },
     {
-      "name": "project-hub-audit",
-      "source_repository": "repository-local",
-      "source_path": ".claude/skills/project-hub-audit",
-      "installed_path": ".agents/skills/project-hub-audit",
-      "decision": "Promote and adjust",
-      "reason": "Expose the existing broad Project Hub audit workflow to all agents.",
-      "compatibility": "Replaced the Claude-specific subagent preference with capability- and authorization-aware delegation wording.",
-      "dependencies": [
-        "docs/agents/workflows/project-hub-audit.md",
-        "Project Hub local snapshot and CLI"
-      ],
-      "reviewed_resources": [
-        "SKILL.md",
-        "docs/agents/workflows/project-hub-audit.md"
-      ],
-      "status": "installed"
-    },
-    {
-      "name": "project-hub-review",
-      "source_repository": "repository-local",
-      "source_path": ".claude/skills/project-hub-review",
-      "installed_path": ".agents/skills/project-hub-review",
-      "decision": "Promote",
-      "reason": "Expose the existing targeted Project Hub review workflow to all agents.",
-      "compatibility": "Tool-neutral as written; AGENTS.md remains authoritative.",
-      "dependencies": [
-        "docs/agents/workflows/project-hub-review.md",
-        "Project Hub local snapshot and CLI"
-      ],
-      "reviewed_resources": [
-        "SKILL.md",
-        "docs/agents/workflows/project-hub-review.md"
-      ],
-      "status": "installed"
-    },
-    {
       "name": "open-code-review-delegate",
       "source_repository": "https://github.com/alibaba/open-code-review",
       "source_path": "skills/open-code-review-delegate",
