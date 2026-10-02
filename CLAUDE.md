@@ -6,3 +6,5 @@ workflows here.
 
 Claude discovers the committed `.claude/skills/` mirror. Its canonical content lives in
 `.agents/skills/`; edit the canonical copy and run `python .agents/scripts/sync_skill_mirrors.py`.
+
+The specification lives in `docs/specification/`; see the Specification section of `AGENTS.md`.

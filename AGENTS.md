@@ -36,6 +36,14 @@ Preserve existing repository instructions unless the requested change explicitly
 - When an interface or boundary has not been agreed, use a small, explicit seam when possible and record the design assumption. Escalate choices affecting multiple components or that would be costly to reverse.
 - Before establishing or changing a system-wide boundary, module responsibility, data owner, dependency direction, or deployment approach, describe options, affected components, and trade-offs to the task owner. Pause only the work that depends on that decision.
 
+## Specification
+
+- The specification lives in `docs/specification/`; start from `docs/specification/README.md`.
+- When coding a feature, read the related Requirements (`06-requirements/`) and Use Cases (`04-use-cases/`) first.
+- When editing the specification, follow `docs/specification/_COMMON_CRITERIA.md` and the `_CRITERIA.md` in the item type's folder.
+- Create items from the folder's `_TEMPLATE.md`; take enum values from `docs/specification/schema.json`.
+- Record relations on the source side only; never add reverse-direction fields.
+
 ## Verification and handoff
 
 - Run checks relevant to the change using commands that exist in the repository: focused tests and applicable type, lint, build, contract, or integration checks. If no suitable automated check exists, describe the manual verification and its limits.
