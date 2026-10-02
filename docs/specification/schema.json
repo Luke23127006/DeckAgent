@@ -1,0 +1,317 @@
+{
+  "$comment": [
+    "Cấu hình riêng của DeckAgent mà bộ tiêu chí tham chiếu tới (_COMMON_CRITERIA.md mục 1 và 2).",
+    "readiness_order: draft < proposed < active < closed.",
+    "Quy ước `required`: true = bắt buộc ở mọi mức sẵn sàng; required_from = bắt buộc từ mức đó trở lên; required_when = bắt buộc khi điều kiện đúng. Bắt buộc nghĩa là có key và không rỗng (chuỗi khác rỗng, danh sách ≥1 phần tử); riêng boolean thì chỉ cần có key.",
+    "Quy ước `from` của required_sections: section bắt buộc từ mức đó trở lên, và chỉ tính tới mức active. Item ở mức closed chỉ chịu field bắt buộc `required: true` và các mục khai báo cho closed (_COMMON_CRITERIA.md mục 1: Closed chỉ cấu trúc).",
+    "Điều kiện `when` / `required_when`: {field, in: [giá trị]} | {field, group: nhóm của enum} | {all: [điều kiện]}.",
+    "Quan hệ: cardinality mặc định là many. Chỉ ghi ở phía nguồn theo _COMMON_CRITERIA.md mục 2 (GX-05).",
+    "section_order là toàn bộ heading của _TEMPLATE.md theo thứ tự (GX-06); required_sections lấy từ các tiêu chí tầng CI của _CRITERIA.md."
+  ],
+  "system_name": "DeckAgent",
+  "readiness_order": ["draft", "proposed", "active", "closed"],
+  "scope": ["V1", "Later"],
+  "area": [
+    "Core", "Input", "Planning", "Editing", "Export", "Web", "Testing", "CI/Infra", "Data", "AI",
+    "Content", "Design", "UX", "Security", "Reliability", "Architecture", "Assets", "Localization", "Import"
+  ],
+  "non_item_targets": {
+    "any": "ID của bất kỳ loại item nào, hoặc mã nguồn (tài liệu, mục, buổi phỏng vấn có ngày) khi allow_codes là true (GX-11)",
+    "document": "Tài liệu ngoài spec (phân tích, evidence, benchmark). Bộ tiêu chí không quy định mẫu ID, nên chưa kiểm tồn tại"
+  },
+  "item_types": {
+    "actor": {
+      "dir": "01-actors",
+      "id_pattern": "^ACT-\\d{3,}$",
+      "statuses": [
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Deprecated", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "name": { "type": "string", "required": true },
+        "kind": {
+          "type": "enum",
+          "required": true,
+          "values": {
+            "human": { "group": "con người" },
+            "external-system": { "group": "hệ thống bên ngoài" }
+          }
+        },
+        "status": { "type": "status", "required": true }
+      },
+      "relations": {
+        "source": { "targets": ["any"], "kind": "reference", "allow_codes": true }
+      },
+      "required_sections": [
+        {
+          "heading": "Hành vi lỗi",
+          "from": "active",
+          "when": { "field": "kind", "group": "hệ thống bên ngoài" }
+        }
+      ],
+      "section_order": [
+        "Goal", "Needs / Pain Points", "Knowledge / Context", "Permissions / Capabilities",
+        "Constraints", "Hành vi lỗi", "Ghi chú"
+      ]
+    },
+
+    "constraint": {
+      "dir": "02-constraints",
+      "id_pattern": "^C-\\d{3,}$",
+      "statuses": [
+        { "name": "Proposed", "readiness": "proposed", "effective": true },
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Changed", "readiness": "active", "effective": true },
+        { "name": "Retired", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "short_name": { "type": "string", "required": true },
+        "type": {
+          "type": "enum",
+          "required": true,
+          "values": {
+            "Technical": { "group": "product" },
+            "Product": { "group": "product" },
+            "Platform": { "group": "product" },
+            "External": { "group": "product" },
+            "Time": { "group": "project" },
+            "Resource": { "group": "project" },
+            "Academic": { "group": "project" }
+          }
+        },
+        "status": { "type": "status", "required": true },
+        "imposed_by": { "type": "string", "required_from": "proposed" }
+      },
+      "relations": {
+        "source": { "targets": ["any"], "kind": "reference", "allow_codes": true }
+      },
+      "required_sections": [
+        { "heading": "Lý do không đổi được", "from": "proposed" },
+        { "heading": "Cách kiểm tuân thủ", "from": "active" }
+      ],
+      "section_order": [
+        "Constraint", "Lý do không đổi được", "Cách kiểm tuân thủ", "Review Trigger", "Ghi chú"
+      ]
+    },
+
+    "assumption": {
+      "dir": "03-assumptions",
+      "id_pattern": "^A-\\d{3,}$",
+      "statuses": [
+        { "name": "Open", "readiness": "active", "effective": true },
+        { "name": "Supported", "readiness": "active", "effective": true },
+        { "name": "Invalidated", "readiness": "active", "effective": false },
+        { "name": "Retired", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "short_name": { "type": "string", "required": true },
+        "status": { "type": "status", "required": true }
+      },
+      "relations": {
+        "source": {
+          "targets": ["any"],
+          "kind": "reference",
+          "allow_codes": true,
+          "required_when": { "field": "status", "in": ["Supported", "Invalidated"] }
+        }
+      },
+      "required_sections": [
+        { "heading": "Cách kiểm chứng", "from": "active" }
+      ],
+      "section_order": [
+        "Assumption", "Signpost", "Cách kiểm chứng", "Nếu sai", "Ghi chú"
+      ]
+    },
+
+    "use_case": {
+      "dir": "04-use-cases",
+      "id_pattern": "^UC-\\d{3,}$",
+      "statuses": [
+        { "name": "Draft", "readiness": "draft", "effective": false },
+        { "name": "Proposed", "readiness": "proposed", "effective": true },
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Deprecated", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "title": { "type": "string", "required": true },
+        "status": { "type": "status", "required": true },
+        "scope": { "type": "enum", "values_from": "scope", "required": true },
+        "level": {
+          "type": "enum",
+          "required": true,
+          "values": {
+            "user-goal": {},
+            "subfunction": {}
+          }
+        }
+      },
+      "relations": {
+        "source": { "targets": ["any"], "kind": "reference", "allow_codes": true },
+        "primary_actor": { "targets": ["actor"], "kind": "depends", "cardinality": "one", "required": true },
+        "supporting_actors": { "targets": ["actor"], "kind": "depends" },
+        "constraints": { "targets": ["constraint"], "kind": "depends" },
+        "include": { "targets": ["use_case"], "kind": "depends" },
+        "extend": { "targets": ["use_case"], "kind": "depends" },
+        "follows": { "targets": ["use_case"], "kind": "reference" },
+        "split_from": { "targets": ["use_case"], "kind": "reference" },
+        "related": { "targets": ["use_case"], "kind": "reference" },
+        "superseded_by": { "targets": ["use_case"], "kind": "reference" }
+      },
+      "required_sections": [
+        { "heading": "Main Flow", "from": "active" },
+        { "heading": "Alternative / Failure Flows", "from": "active" },
+        { "heading": "Bảo đảm tối thiểu", "from": "active" }
+      ],
+      "section_order": [
+        "Tình huống", "Mục tiêu", "Trigger", "Preconditions", "Main Flow",
+        "Alternative / Failure Flows", "Postconditions", "Bảo đảm tối thiểu",
+        "Câu hỏi mở", "Sản phẩm tham khảo", "Ghi chú"
+      ]
+    },
+
+    "business_rule": {
+      "dir": "05-business-rules",
+      "id_pattern": "^BR-\\d{3,}$",
+      "statuses": [
+        { "name": "Draft", "readiness": "draft", "effective": false },
+        { "name": "Proposed", "readiness": "proposed", "effective": true },
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Deprecated", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "short_name": { "type": "string", "required": true },
+        "status": { "type": "status", "required": true },
+        "scope": { "type": "enum", "values_from": "scope", "required": true }
+      },
+      "relations": {
+        "source": {
+          "targets": ["any"],
+          "kind": "reference",
+          "allow_codes": true,
+          "required_from": "active"
+        },
+        "use_cases": { "targets": ["use_case"], "kind": "applies" }
+      },
+      "required_sections": [],
+      "section_order": [
+        "Rule", "Bảng quyết định", "Bảng chuyển trạng thái", "Exceptions", "Câu hỏi mở", "Ghi chú"
+      ]
+    },
+
+    "requirement": {
+      "dir": "06-requirements",
+      "id_pattern": "^R-\\d{3,}$",
+      "statuses": [
+        { "name": "Draft", "readiness": "draft", "effective": false },
+        { "name": "Proposed", "readiness": "proposed", "effective": true },
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Deprecated", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "short_name": { "type": "string", "required": true },
+        "type": {
+          "type": "enum",
+          "required": true,
+          "values": {
+            "Functional": { "group": "hành vi" },
+            "Quality": { "group": "chất lượng" },
+            "Interface": { "group": "giao diện" },
+            "Data": { "group": "dữ liệu" }
+          }
+        },
+        "status": { "type": "status", "required": true },
+        "scope": { "type": "enum", "values_from": "scope", "required": true },
+        "verification": {
+          "type": "enum",
+          "required": true,
+          "values": {
+            "test": {},
+            "demonstration": {},
+            "inspection": {},
+            "analysis": {}
+          }
+        },
+        "inputs": { "type": "boolean", "required": true },
+        "area": { "type": "enum_list", "values_from": "area" }
+      },
+      "relations": {
+        "source": {
+          "targets": ["any"],
+          "kind": "reference",
+          "allow_codes": true,
+          "required_from": "proposed"
+        },
+        "use_cases": { "targets": ["use_case"], "kind": "depends" },
+        "business_rules": { "targets": ["business_rule"], "kind": "depends" },
+        "constraints": { "targets": ["constraint"], "kind": "depends" },
+        "assumptions": { "targets": ["assumption"], "kind": "depends" },
+        "depends_on": { "targets": ["requirement"], "kind": "depends" }
+      },
+      "required_sections": [
+        { "heading": "Bối cảnh / Lý do", "from": "proposed" },
+        {
+          "heading": "Miền đầu vào",
+          "from": "proposed",
+          "when": {
+            "all": [
+              { "field": "verification", "in": ["test"] },
+              { "field": "inputs", "in": [true] }
+            ]
+          }
+        },
+        { "heading": "Acceptance", "from": "active" }
+      ],
+      "section_order": [
+        "Yêu cầu", "Bối cảnh / Lý do", "Miền đầu vào", "Đo lường", "Acceptance",
+        "Câu hỏi mở", "Ghi chú"
+      ]
+    },
+
+    "decision": {
+      "dir": "07-decisions",
+      "id_pattern": "^D-\\d{3,}$",
+      "statuses": [
+        { "name": "Proposed", "readiness": "proposed", "effective": true },
+        { "name": "Active", "readiness": "active", "effective": true },
+        { "name": "Reopened", "readiness": "active", "effective": true, "warn_dependents": true },
+        { "name": "Superseded", "readiness": "closed", "effective": false }
+      ],
+      "fields": {
+        "id": { "type": "id", "required": true },
+        "short_name": { "type": "string", "required": true },
+        "status": { "type": "status", "required": true },
+        "date": { "type": "date", "format": "YYYY-MM-DD", "required_from": "active" },
+        "decided_by": { "type": "string", "required_from": "active" }
+      },
+      "relations": {
+        "source": { "targets": ["any"], "kind": "reference", "allow_codes": true },
+        "addresses": { "targets": ["requirement"], "kind": "depends" },
+        "assumptions": { "targets": ["assumption"], "kind": "depends" },
+        "constraints": { "targets": ["constraint"], "kind": "depends" },
+        "shapes": { "targets": ["requirement", "business_rule"], "kind": "applies" },
+        "documents": { "targets": ["document"], "kind": "reference" },
+        "superseded_by": {
+          "targets": ["decision"],
+          "kind": "reference",
+          "required_when": { "field": "status", "in": ["Superseded"] }
+        }
+      },
+      "required_sections": [
+        { "heading": "Context", "from": "proposed" },
+        { "heading": "Phương án đã xét", "from": "proposed" },
+        { "heading": "Hệ quả", "from": "active" },
+        { "heading": "Xác nhận tuân thủ", "from": "active" }
+      ],
+      "section_order": [
+        "Decision", "Context", "Phương án đã xét", "Rationale / Evidence", "Hệ quả",
+        "Xác nhận tuân thủ", "Reopen When", "Ghi chú"
+      ]
+    }
+  }
+}
