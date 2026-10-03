@@ -1,6 +1,6 @@
 # Blocker của Pha A
 
-Điền ô **Quyết định** của từng blocker. Pha B chỉ bắt đầu khi mọi ô đã có quyết định.
+Ô **Quyết định** của từng blocker đã điền ở Pha B (bước B2) từ `DECISIONS.md`. Chỗ ghi `CẦN XEM` chờ người dùng trả lời (`trash/phase-b-can-xem.md`).
 Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòng Item. Dòng "ID tạm" cho biết blocker đến từ đâu (`G-` liên loại từ A1–A3, `M-` gộp từ nhiều loại, `<loại>-L` từ `work/assess-<loại>.md`).
 
 ## Tóm tắt: 69 blocker
@@ -112,7 +112,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - C. Như A, nhưng tách "chậm" (ngưỡng cảnh báo) và "quá thời gian" (ngưỡng dừng) thành hai cách hỏng, cả hai ngưỡng do R-032 sở hữu.
   - D. Hạ cả UC-014 và các Use Case gọi nó xuống Proposed tới khi có benchmark.
 - Đề xuất: A, vì sheet ghi rõ ngưỡng chỉ đặt sau benchmark, GR-09 không cho đặt số khi chưa có dữ liệu, và một ngưỡng dùng chung cho 4 Use Case cần một nơi sở hữu (GX-10). Nơi xử lý của "Chưa chốt" phụ thuộc BLK-030 (D-011). Nếu chọn A thì R-046 (Active) dựa vào R-030 (Proposed): không vi phạm GX-04 vì Proposed còn hiệu lực.
-- Quyết định:
+- Quyết định: R-032 sở hữu mọi con số của lượt xử lý AI; "chậm" gộp vào "quá thời gian". Ngưỡng quá thời gian, đã tính thời gian thử lại: lượt tạo deck 180 giây [tạm 2026-10-03 · xem lại: theo CX-2], lượt sửa deck 120 giây [tạm 2026-10-03 · xem lại: theo CX-2]. Thử lại tự động tối đa 1 lần, chỉ khi nhà cung cấp AI trả lỗi tạm thời (hết thời gian kết nối, lỗi máy chủ, vượt giới hạn tần suất); không thử lại khi kết quả không qua R-033. Trạng thái kết thúc: Hoàn tất, Đã dừng, Lỗi (đã có ở UC-014). R-030 hiển thị tên bước đang chạy khi lượt chạy quá 2 giây [tạm 2026-10-03 · xem lại: theo CX-2]. "Lỗi thường gặp" (thuộc R-057 sau khi tách theo BLK-019), mỗi lỗi có thông báo kèm bước làm tiếp theo: quá thời gian; không kết nối được nhà cung cấp AI; kết quả không qua kiểm tra; không đọc được tài liệu. R-030, R-032 giữ Active. UC-001, UC-002, UC-004, UC-014 và ACT-002 chỉ tham chiếu R-032; Câu hỏi mở 2 của UC-014 bỏ vì đã có ngưỡng. R-037 giữ "Chưa chốt" ở Proposed theo P2. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1a của DECISIONS.md)
 
 ### BLK-002 · SO_LIEU · "Giới hạn của định dạng" khi tải về chưa được định nghĩa
 - ID tạm: M-06
@@ -130,7 +130,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Người dùng cung cấp ngay danh sách giới hạn và mất hoặc đổi theo từng định dạng; giữ cả bốn item ở Active.
   - C. Hạ cả bốn item xuống Proposed.
 - Đề xuất: A, vì BR-007 đã định nghĩa phần không bắt buộc giống nhau, cách đọc "đã báo" phán được đạt hay không mà không cần danh sách đóng, và D-026 đã chọn học danh sách từ implementation. Cần người dùng xác nhận cách đọc "(BR-013)" ở BR-006.
-- Quyết định:
+- Quyết định: BR-006 Exceptions: khi định dạng đích không thể hiện được một phần deck, file tải về được thiếu phần đó nếu hệ thống đã báo phần đó cho người dùng theo BR-013. R-025 thay "trong giới hạn của từng định dạng" bằng tham chiếu BR-007 và giữ Active. R-026 và R-028 ghi danh sách phần bị mất hoặc đổi là "Chưa chốt (nơi xử lý: kết quả test file tải về khi implementation)" và hạ xuống Proposed. Theo Q1, các danh sách này tính cho cả 4 định dạng V1: PPTX, PDF, PNG, SVG. (theo P2 của DECISIONS.md)
 
 ### BLK-003 · SO_LIEU · Ranh giới "hệ thống con quá lớn" của C-002
 - ID tạm: C-L01 (`work/assess-constraints.md`)
@@ -144,7 +144,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - C. Chỉ giữ phần nguồn lực đo được (như B) trong C-002; phần "không tự xây hệ thống con lớn" là đánh giá của team, chuyển sang Decision (GC-01). Phương án này tạo hoặc đổi ID.
   - D. Hạ C-002 về Proposed tới khi có ranh giới (TRANG_THAI). Lưu ý GC-02 (bounded) vẫn áp từ Proposed.
 - Đề xuất: A, vì dùng thông tin đã có trong sheet và chỉ cần người dùng xác nhận danh sách; khớp với cách D-006, D-015, R-041 đã loại editor chuyên nghiệp. Nên quyết cùng BLK-020 (mục 6).
-- Quyết định:
+- Quyết định: Lý do 2 của C-002 thành danh sách đóng các hệ thống con mà Architecture không được đòi team tự xây: editor hoàn chỉnh, bản sao PowerPoint, cộng tác thời gian thực, hạ tầng SaaS phân tán, design system lớn. Người dùng đã xác nhận danh sách đủ. C-002 giữ Active. (theo P2 của DECISIONS.md)
 
 ### BLK-004 · SO_LIEU · Đồ án bắt buộc bao nhiêu định dạng tải về (C-003)
 - ID tạm: C-L02 (`work/assess-constraints.md`)
@@ -158,7 +158,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - C. Chưa xác nhận được với môn học hoặc advisor: hạ C-003 về Proposed (TRANG_THAI). Review Trigger hiện tại đã chờ đúng sự kiện này.
   - D. Đồ án chỉ khuyến khích: không còn là giới hạn áp từ bên ngoài (GC-01). Retire C-003; ý "nhiều định dạng" do D-026 và R-039 sở hữu. Kéo theo quan hệ của R-020, R-025–R-028, R-039, D-026 tới C-003.
 - Đề xuất: A nếu người dùng xác nhận đồ án bắt buộc, vì D-026 đã cam kết 2 định dạng nên ranh giới "ít nhất 2" kiểm tuân thủ được ngay; nếu chưa xác nhận được thì C. Sau khi chốt, R-039.Bối cảnh cần sửa theo cho khớp.
-- Quyết định:
+- Quyết định: Không chọn A, C hay D. Danh sách định dạng tải về là lựa chọn của team, lấy theo benchmark Napkin AI, không phải yêu cầu áp từ môn học hay advisor. V1 tải về 4 định dạng: PPTX (sửa được trong Microsoft PowerPoint); PDF (in, lưu trữ, chia sẻ); PNG (mỗi slide một ảnh, đóng gói thành file .zip); SVG (mỗi slide một ảnh vector, đóng gói thành file .zip). Release Later: đẩy deck vào Google Drive của người dùng dưới dạng file Google Slides; người dùng đăng nhập Google để cấp quyền. Tạo D-031 sở hữu danh sách này; D-026 chuyển Superseded, `superseded_by: [D-031]`. C-003 chuyển Retired; ý "advisor khuyến khích nhiều định dạng" ghi vào Context của D-031. Tạo R-058 (Later, Proposed) cho việc đẩy lên Google Drive; Câu hỏi mở của R-058: khi đưa vào release phải mở lại D-027 và thêm luồng Google vào R-042. Bảng áp theo từng item ở `APPLY.md` mục 2. (theo Q1 của DECISIONS.md)
 
 ### BLK-005 · SO_LIEU · Đại lượng và ngưỡng cho assumption về nhóm người dùng và cách tương tác chính
 - ID tạm: A-L05 (`work/assess-assumptions.md`)
@@ -170,7 +170,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp đại lượng và ngưỡng cho từng item ngay.
   - B. Chưa có số: giữ chữ gốc kèm `<!-- BLOCKER BLK-005 -->`, xử lý status theo BLK-046, bổ sung khi lập kế hoạch nghiên cứu người dùng.
 - Đề xuất: B nếu BLK-046 chọn B; A nếu BLK-046 chọn A.
-- Quyết định:
+- Quyết định: A-007, A-008, A-009 dùng quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. Câu Assumption, Signpost và Cách kiểm chứng viết cụ thể cho từng item theo quy trình này. Ba item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-006 · SO_LIEU · Ranh giới chỉnh sửa trong và ngoài DeckAgent
 - ID tạm: A-L06 (`work/assess-assumptions.md`)
@@ -186,7 +186,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp danh sách và ngưỡng ngay.
   - B. Chưa có số: giữ chữ gốc kèm marker, xử lý status theo BLK-046. Tiêu chí "deck dùng được" lấy theo blocker cùng câu hỏi ở requirements hoặc decisions nếu có.
 - Đề xuất: B, và gộp ý 3 với blocker "deck dùng được" của loại khác (mục 6).
-- Quyết định:
+- Quyết định: A-010, A-020, A-021 dùng quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. Định nghĩa thêm: "lỗi nhỏ" ở A-010 là sai chính tả, sai một con số, thay một từ hoặc một câu; "chỉnh tay chuyên sâu" ở A-020 là đổi bố cục, hình khối, animation hoặc định dạng của từng thành phần. A-021 dùng thuật ngữ "deck dùng được" của glossary: deck đạt R-021, và đạt thêm R-007 khi được tạo từ tài liệu có sẵn. Ba item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d và P1c của DECISIONS.md)
 
 ### BLK-007 · SO_LIEU · Đại lượng cho assumption về độ trung thực đầu ra và xem trước
 - ID tạm: A-L08 (`work/assess-assumptions.md`)
@@ -198,7 +198,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp ngay.
   - B. Chưa có số: giữ chữ gốc kèm marker, xử lý status theo BLK-046.
 - Đề xuất: B nếu BLK-046 chọn B; A nếu BLK-046 chọn A.
-- Quyết định:
+- Quyết định: A-015, A-016, A-017 dùng quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. Câu Assumption, Signpost và Cách kiểm chứng viết cụ thể cho từng item. Ba item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-008 · SO_LIEU · Đại lượng cho assumption về nhu cầu đầu vào
 - ID tạm: A-L09 (`work/assess-assumptions.md`)
@@ -210,7 +210,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp ngay.
   - B. Chưa có số: giữ chữ gốc kèm marker, xử lý status theo BLK-046. Cả hai item đang "để sau" ở V1.
 - Đề xuất: B, vì cả hai item có mức ảnh hưởng V1 là "để sau".
-- Quyết định:
+- Quyết định: A-011, A-014 dùng quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. Câu Assumption, Signpost và Cách kiểm chứng viết cụ thể cho từng item. Hai item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-009 · SO_LIEU · Đại lượng cho assumption về giữ nguyên và giữ trạng thái
 - ID tạm: A-L10 (`work/assess-assumptions.md`)
@@ -222,7 +222,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp ngay.
   - B. Chưa có số: giữ chữ gốc kèm marker, xử lý status theo BLK-046.
 - Đề xuất: B nếu BLK-046 chọn B; A nếu BLK-046 chọn A.
-- Quyết định:
+- Quyết định: A-012, A-013, A-029 dùng quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. Câu Assumption, Signpost và Cách kiểm chứng viết cụ thể cho từng item. Ba item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-010 · SO_LIEU · Tiêu chí benchmark cho phân loại lượt xử lý AI
 - ID tạm: A-L11 (`work/assess-assumptions.md`)
@@ -234,7 +234,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Người dùng cung cấp ngay.
   - B. Chờ benchmark: giữ chữ gốc kèm marker, xử lý status theo BLK-046.
 - Đề xuất: B, vì chính sheet ghi assumption được kết luận "sau benchmark", và cả hai item có mức ảnh hưởng V1 là "để sau".
-- Quyết định:
+- Quyết định: A-018: Supported nếu thời gian hoặc chi phí trung bình của nhóm lượt xử lý khó gấp ≥ 2 lần nhóm dễ [tạm 2026-10-03 · xem lại: theo CX-2], đồng thời nhóm dễ vẫn đạt R-021; đo trên bộ đánh giá chung của P1c. A-019: 2 người gán nhãn độc lập cho 30 yêu cầu sửa [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu mức đồng thuận ≥ 80% [tạm 2026-10-03 · xem lại: theo CX-2]. Với cả hai item, đủ mẫu mà không đạt ngưỡng Supported thì Invalidated. Hai item giữ Open. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-011 · SO_LIEU · Giới hạn kích thước và số trang của file tải lên
 - ID tạm: UC-L04 (`work/assess-use-cases.md`)
@@ -247,7 +247,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Chưa có con số: giữ câu hỏi với nơi xử lý là R-003, hạ UC-002 xuống Proposed.
   - C. Bỏ nhánh 2B (không giới hạn kích thước ở V1): đổi hành vi, cần người dùng xác nhận.
 - Đề xuất: A, vì nhánh 2B không tạo lại được trong test khi chưa có con số (GUC-11). Gộp với blocker cùng chủ đề bên requirements nếu có.
-- Quyết định:
+- Quyết định: R-003 sở hữu giới hạn đầu vào trong section `Miền đầu vào`: file tải lên ≤ 20 MB; DOCX và PDF ≤ 50 trang; PPTX ≤ 50 slide; text dán vào, TXT, Markdown ≤ 100.000 ký tự. Cả bốn con số là ngưỡng tạm, nhãn `[tạm 2026-10-03 · xem lại: lần benchmark đầu tiên với tài liệu thật]`. Nhánh 2B của UC-002 ghi "File vượt giới hạn của R-003"; Câu hỏi mở 1 của UC-002 bỏ; UC-002 giữ Active. UC-003 nhánh 1A dùng cùng giới hạn khi quay lại phạm vi. (theo P1b của DECISIONS.md)
 
 ### BLK-012 · SO_LIEU · Câu thoát "trừ khi việc đó cần thiết" ở BR-004
 - ID tạm: BR-L09 (`work/assess-business-rules.md`)
@@ -260,7 +260,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ "cần thiết", chỉ giữ điều kiện "đã được người dùng xác nhận" (nới rộng ngoại lệ, đổi nghĩa)
   - C. Giữ Proposed; câu "trừ khi …" giữ nguyên kèm câu hỏi trong `Câu hỏi mở`: "Những trường hợp nào thay đổi ngoài phạm vi sửa được coi là cần thiết?", nơi xử lý UC-023
 - Đề xuất: C, vì BR-004 là Later, đang Proposed và gắn UC-023 chưa làm; mức Proposed cho phép điều chưa chốt kèm nơi xử lý. Khi đưa UC-023 vào làm thì phải trả lời trước khi lên Active
-- Quyết định:
+- Quyết định: BR-004 giữ Proposed. Câu "trừ khi việc đó cần thiết và đã được người dùng xác nhận" giữ nguyên, kèm câu hỏi trong `Câu hỏi mở`: "Những trường hợp nào thay đổi ngoài phạm vi sửa được coi là cần thiết?", nơi xử lý UC-023. (theo P2 của DECISIONS.md)
 
 ### BLK-013 · SO_LIEU · Câu thoát "trong giới hạn lưu trữ" ở BR-016
 - ID tạm: BR-L10 (`work/assess-business-rules.md`)
@@ -273,7 +273,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ "trong giới hạn lưu trữ" (đổi nghĩa thành giữ vô hạn)
   - C. Giữ Proposed; vế "trong giới hạn lưu trữ" giữ kèm câu hỏi trong `Câu hỏi mở`, nơi xử lý UC-022
 - Đề xuất: C, vì BR-016 là Later, Proposed, gắn UC-022 chưa làm
-- Quyết định:
+- Quyết định: BR-016 giữ Proposed. Vế "trong giới hạn lưu trữ" giữ nguyên, kèm câu hỏi trong `Câu hỏi mở`: "Giới hạn lưu trữ lịch sử là bao nhiêu, và bản nào bị loại khi vượt giới hạn?", nơi xử lý UC-022. (theo P2 của DECISIONS.md)
 
 ### BLK-014 · SO_LIEU · Câu thoát "đã công bố / hệ thống hỗ trợ" ở các requirement Later
 - ID tạm: R-L10 (`work/assess-requirements.md`)
@@ -297,7 +297,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Người dùng định nghĩa ngay từng danh sách và giới hạn.
   - C. Hạ các item này xuống Draft (Draft chỉ chịu gate cấu trúc).
 - Đề xuất: A, vì mức Proposed cho phép "Chưa chốt" kèm nơi xử lý, và các item này chưa thuộc V1. Với R-038, R-039, R-040 (khả năng mở rộng, gợi ý `verification: analysis`) có thể chọn C, vì Ghi chú ghi "không phải acceptance của V1".
-- Quyết định:
+- Quyết định: Ở R-012, R-015, R-016, R-018, R-022, R-023, R-034, R-035, R-038, R-039, R-040 và R-056 (tách từ R-018), câu thoát được thay bằng "Chưa chốt"; câu hỏi tương ứng đưa vào `Câu hỏi mở`, nơi xử lý: khi năng lực đó quay lại phạm vi release (ghi vào `_FILL_LATER.md`). Các item giữ Proposed, scope Later. (theo P2 của DECISIONS.md)
 
 ### BLK-015 · SO_LIEU · Thông tin nào thiếu thì DeckAgent phải hỏi lại
 - ID tạm: R-L11 (`work/assess-requirements.md`)
@@ -309,7 +309,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Điều kiện hỏi lại = thiếu chủ đề hoặc thiếu mục đích (đúng như Acceptance 1, khớp R-006 Acceptance 1).
   - B. Người dùng bổ sung thêm thông tin vào danh sách (ví dụ: audience, ngôn ngữ).
 - Đề xuất: A, vì đây là điều duy nhất sheet đã nêu cụ thể và R-006 dùng cùng điều kiện. Vẫn cần người dùng xác nhận là không có thêm trường hợp nào.
-- Quyết định:
+- Quyết định: R-002 hỏi lại khi yêu cầu thiếu chủ đề hoặc thiếu mục đích của deck. Người dùng xác nhận không có trường hợp nào khác. (theo P2 của DECISIONS.md)
 
 ### BLK-016 · SO_LIEU · Số slide tối thiểu của một deck hoàn chỉnh
 - ID tạm: R-L12 (`work/assess-requirements.md`)
@@ -322,7 +322,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ điều kiện số slide, chỉ giữ "xem trước được, sửa và tải về được" (đúng Ghi chú định nghĩa "hoàn chỉnh").
   - C. Người dùng đặt một số tối thiểu khác.
 - Đề xuất: B, vì Ghi chú của chính R-006 định nghĩa "hoàn chỉnh" bằng xem trước, sửa và tải về, không bằng số slide.
-- Quyết định:
+- Quyết định: R-006 bỏ điều kiện "nhiều slide". Acceptance chỉ giữ: deck xem trước được, sửa được và tải về được, đúng định nghĩa "hoàn chỉnh" trong Ghi chú của R-006. (theo P1e của DECISIONS.md)
 
 ### BLK-017 · SO_LIEU · Reopen When dùng điều kiện không quan sát được
 - ID tạm: D-L02 (`work/assess-decisions.md`)
@@ -341,7 +341,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Người dùng bổ sung mốc cho từng item (chỉ số, nguồn quan sát, ngưỡng).
   - C. Riêng D-009: thay "yêu cầu đồ án thay đổi" bằng "C-003 thay đổi" (C-003 là giới hạn từ đồ án lên số định dạng tải về), kết hợp với A hoặc B cho các item còn lại.
 - Đề xuất: A cho D-006, D-014, D-017, D-025, D-030, cộng C cho D-009, vì các ngưỡng phụ thuộc user test chưa thực hiện, còn D-009 có sẵn một Constraint khớp nghĩa nên chỉ cần người dùng xác nhận cách hiểu.
-- Quyết định:
+- Quyết định: Reopen When của D-006, D-014, D-017, D-025, D-030 viết theo quy trình kiểm chứng chung: mở lại khi ≥ 2/5 người [tạm 2026-10-03 · xem lại: theo CX-2] trong buổi thử với ≥ 5 người thuộc ACT-001 cho thấy điều kiện mở lại của từng Decision. D-009: đổi "yêu cầu đồ án thay đổi" thành "C-003 thay đổi". CẦN XEM CX-3: Q1 chuyển C-003 sang Retired, nên điều kiện "C-003 thay đổi" không còn xảy ra được. Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-018 · TACH_ITEM · A-007 gộp mô tả nhóm người dùng với lựa chọn phân khúc
 - ID tạm: A-L02 (`work/assess-assumptions.md`)
@@ -360,7 +360,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Tách: A-007 giữ vế 2, item mới cho vế 3; vế 1 gộp vào A-008; vế 4 bỏ. Tạo một ID mới và phải chia lại 5 Requirement đang dựa vào A-007.
   - C. Giữ nguyên câu (vi phạm GA-01, GA-02).
 - Đề xuất: A, vì không tạo ID, bỏ trùng với A-008 và ACT-001 (GX-10), và để lại một khẳng định kiểm được bằng cùng loại quan sát mà Signpost hiện có đã nêu ("Phỏng vấn người dùng, usability test hoặc feedback cho thấy nhu cầu thực tế khác…").
-- Quyết định:
+- Quyết định: A-007 chỉ giữ một khẳng định: nhóm người dùng mà ACT-001 mô tả có nhu cầu tạo và sửa deck chủ yếu bằng AI. Đặc điểm của nhóm do ACT-001 sở hữu; vế "AI làm phần lớn việc" do A-008 sở hữu; vế "là nhóm DeckAgent nên phục vụ" bỏ vì là lựa chọn. Ngưỡng theo P1d. Không tạo ID mới. (theo P5 của DECISIONS.md)
 
 ### BLK-019 · TACH_ITEM · Requirement gộp nhiều hành vi
 - ID tạm: R-L13 (`work/assess-requirements.md`)
@@ -382,7 +382,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Không tách item nào, chấp nhận Lint GR-04 cảnh báo, ghi lý do trong Ghi chú.
   - C. Tách tất cả 5 item.
 - Đề xuất: A. Hai vế của R-030 có điều kiện khác nhau và đạt hoặc trượt độc lập, đúng ví dụ GR-04 trong `_CRITERIA.md`. R-020 vế 2 đã có chủ sở hữu ở BR-010.
-- Quyết định:
+- Quyết định: Tách 3 item, mỗi phần tách ra nhận ID mới: R-014 giữ thao tác trên slide (thêm, xóa, nhân bản, sắp xếp), R-055 nhận thay hình ảnh; R-018 giữ tạo hình mới, R-056 nhận tìm hình có sẵn; R-030 giữ hiển thị tiến độ, R-057 nhận thông báo lỗi kèm bước làm tiếp theo. R-020 bỏ vế 2 và Acceptance 3 vì BR-010 sở hữu. R-026 bỏ vế "xử lý theo cách dự đoán được", giữ "báo người dùng". Status, scope và quan hệ của ID mới ở `APPLY.md` mục 4. (theo P5 của DECISIONS.md)
 
 ### BLK-020 · DOI_LOAI · R-041 có type Constraint
 - ID tạm: G-01
@@ -395,7 +395,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ R-041 là Requirement, đổi `type: Quality`, `verification: inspection` (kiểm phạm vi V1 không có editor chỉnh slide).
   - C. Chuyển thành Constraint mới (ID C-008) với `imposed_by` là nguồn lực đồ án.
 - Đề xuất: A, vì cùng nội dung đã bị Retired khỏi Constraint với lý do là lựa chọn của team, và D-015 đang sở hữu lựa chọn đó (GX-10). Nếu chọn A thì BLK-027 tự hết, `addresses: [R-041]` của D-006, D-011, D-015 bị bỏ, và C-002 chỉ còn Use Case trỏ tới: C-002 (type Resource, nhóm dự án) khi đó trượt GC-07 (Lint) nếu không có Requirement hoặc Decision nào khác trỏ tới. Nếu chọn C thì `addresses` của 3 Decision trỏ sai loại và phải đổi sang `constraints`.
-- Quyết định:
+- Quyết định: Xóa R-041 và đưa vào danh sách ID đã nghỉ; nội dung thuộc D-015. Hệ quả: BLK-027 tự đóng; bỏ `addresses: [R-041]` ở D-006 và D-015 (D-011 bị xóa theo BLK-030). Thêm `constraints: [C-002]` vào D-015, để C-002 vẫn đạt GC-07. (theo P5 của DECISIONS.md)
 
 ### BLK-021 · MAU_THUAN_QH · Permissions lệch với bước Use Case
 - ID tạm: ACT-L01 (`work/assess-actors.md`)
@@ -416,7 +416,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Chỉ đồng bộ với Use Case Active (V1). Việc của Use Case Proposed hoặc Draft được thêm vào actor khi Use Case đó lên Active. ACT-003 giữ nguyên vì UC-020 là Draft. ACT-001 Permissions 4 xử lý như A.
   - C. Như A hoặc B, nhưng sửa Use Case thay vì actor ở chỗ chủ ngữ có thể sai: UC-002 5A đổi "AI hỏi người dùng" thành "Hệ thống hỏi người dùng", để ACT-002 vẫn "chỉ trả kết quả".
 - Đề xuất: A, vì GACT-08 ghi "không Use Case nào cho actor làm việc ngoài danh sách", không giới hạn theo status; actor không có field `scope` nên ghi ID Use Case là cách duy nhất để thấy phạm vi. Riêng UC-002 5A nên hỏi thêm người viết Use Case xem chủ ngữ "AI" có chủ ý không (phương án C).
-- Quyết định:
+- Quyết định: Permissions của ACT-001, ACT-002, ACT-003 đồng bộ với mọi Use Case chưa Deprecated, mỗi việc ghi kèm ID Use Case. ACT-001 thêm: dừng lượt xử lý AI, bắt đầu deck mới, chọn tiếp tục hoặc hủy khi có cảnh báo, và các việc của Use Case Later (UC-003, UC-007, UC-009, UC-010, UC-012, UC-016, UC-017, UC-018, UC-019, UC-021, UC-022, UC-023, UC-024, UC-025); bỏ Permissions 4 "Quyết định khi nào deck dùng được". ACT-002 thêm "Hỏi lại người dùng khi tài liệu có sẵn thiếu thông tin cho nội dung được yêu cầu (UC-002)". ACT-003 thêm "Xem danh sách tài khoản (UC-020)". (theo P6 của DECISIONS.md)
 
 ### BLK-022 · MAU_THUAN_QH · UC-007 có bước AI nhưng không có ACT-002
 - ID tạm: UC-L14 (`work/assess-use-cases.md`)
@@ -428,7 +428,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Thêm ACT-002 vào `supporting_actors` của UC-007.
   - B. Giữ trống; ghi lý do trong Ghi chú.
 - Đề xuất: A, vì bước 3 gọi AI giống UC-001, UC-002, UC-004, đều có ACT-002.
-- Quyết định:
+- Quyết định: Thêm ACT-002 vào `supporting_actors` của UC-007. (theo P6 của DECISIONS.md)
 
 ### BLK-023 · MAU_THUAN_QH · R-025, R-028 vẫn nói "bản đã chấp nhận" sau khi R-020 đổi sang tải về từ bản đang xem trước
 - ID tạm: R-L14 (`work/assess-requirements.md`)
@@ -443,7 +443,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Đổi "bản đã chấp nhận" ở R-025, R-028 thành "bản người dùng đang xem trước" để khớp R-020 và BR-006.
   - B. Giữ nguyên: hai requirement chỉ áp cho bản đã chấp nhận. File tải về từ bản chờ duyệt không có cam kết nhất quán.
 - Đề xuất: A. Ghi chú của R-020 cho thấy R-020 đổi sau, còn R-025, R-028 có vẻ chưa cập nhật theo. Phương án B để lại một luồng tải về không có cam kết P5.
-- Quyết định:
+- Quyết định: R-025 và R-028 đổi "bản đã chấp nhận" thành "bản người dùng đang xem trước", khớp R-020 và BR-006. (theo P6 của DECISIONS.md)
 
 ### BLK-024 · MAU_THUAN_QH · R-026 Acceptance 2 yếu hơn Yêu cầu và BR-013
 - ID tạm: R-L15 (`work/assess-requirements.md`)
@@ -455,7 +455,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Bỏ "hoặc hệ thống ghi lại": bắt buộc báo người dùng, khớp Yêu cầu và BR-013.
   - B. Giữ "hoặc ghi lại", đồng thời sửa Yêu cầu và xem lại BR-013.
 - Đề xuất: A, vì Yêu cầu, Bối cảnh ("người dùng cần biết phần nào đã đổi") và BR-013 đều đòi báo người dùng.
-- Quyết định:
+- Quyết định: R-026 Acceptance 2 bỏ "hoặc hệ thống ghi lại": hệ thống bắt buộc báo người dùng phần bị mất hoặc đổi, không chỉ ghi log. (theo P6 của DECISIONS.md)
 
 ### BLK-025 · PHU_THUOC_DONG · Item Active dựa vào C-001 đã Retired
 - ID tạm: G-02
@@ -468,7 +468,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Kích hoạt lại C-001 (Active) và giữ quan hệ.
   - C. Hạ R-029, R-041, D-006, D-015 về Proposed.
 - Đề xuất: A, vì C-001 bị Retired có chủ đích và nội dung đã chuyển sang D-006, D-015.
-- Quyết định:
+- Quyết định: Bỏ `constraints: [C-001]` ở R-014, R-015, R-029, D-006, D-015 (R-041 bị xóa theo BLK-020). C-001 giữ Retired để truy vết; nội dung đã nằm ở D-006 và D-015. (theo P4 của DECISIONS.md)
 
 ### BLK-026 · PHU_THUOC_DONG · Item Active dựa vào C-005 đã Retired
 - ID tạm: G-03
@@ -480,7 +480,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Bỏ quan hệ `constraints: [C-005]` ở 5 Requirement; quy tắc do BR-001 sở hữu (R đã có thể trỏ BR-001 qua `business_rules`).
   - B. Kích hoạt lại C-005 và giữ quan hệ.
 - Đề xuất: A, vì D-007 và BR-001 đang sở hữu nội dung này, và một lựa chọn của team không phải Constraint (GC-01).
-- Quyết định:
+- Quyết định: Bỏ `constraints: [C-005]` ở R-003, R-004, R-005, R-010, R-017. C-005 giữ Retired; nội dung do D-007 và BR-001 sở hữu. (theo P4 của DECISIONS.md)
 
 ### BLK-027 · PHU_THUOC_DONG · R-041 dựa vào A-004 (Retired, project) và UC-005 (Deprecated)
 - ID tạm: G-08
@@ -492,7 +492,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Bỏ quan hệ `R-041.assumptions → A-004` và `R-041.use_cases → UC-005`.
   - B. Hạ R-041 về Proposed và giữ quan hệ.
 - Đề xuất: A, vì A-004 bị xóa (project) và UC-005 đã ngừng.
-- Quyết định:
+- Quyết định: Bỏ `R-041.assumptions → A-004` và `R-041.use_cases → UC-005`. Blocker tự đóng vì R-041 bị xóa theo BLK-020. (theo P4 và P5 của DECISIONS.md)
 
 ### BLK-028 · PHU_THUOC_DONG · R-042 dựa vào UC-018 đang Draft
 - ID tạm: G-10
@@ -504,7 +504,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Không ghi `R-042.use_cases → UC-018`. Ghi chú của UC-018 giữ câu tham chiếu R-042.
   - B. Ghi quan hệ và hạ R-042 về Proposed.
 - Đề xuất: A.
-- Quyết định:
+- Quyết định: Không ghi `R-042.use_cases → UC-018`. Ghi chú của UC-018 giữ câu tham chiếu R-042. R-042 giữ Active. (theo P4 của DECISIONS.md)
 
 ### BLK-029 · PHU_THUOC_XOA · 9 Requirement dựa vào A-005 (giả định về chiến lược Testing)
 - ID tạm: G-07
@@ -516,7 +516,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Xóa A-005 và bỏ 9 quan hệ.
   - B. Giữ A-005 trong spec như assumption sản phẩm và giữ 9 quan hệ.
 - Đề xuất: A, vì không Requirement nào trong 9 mất lý do tồn tại khi A-005 sai.
-- Quyết định:
+- Quyết định: Xóa A-005 (giả định về cách team test) và đưa vào danh sách ID đã nghỉ. Bỏ quan hệ `assumptions → A-005` ở R-007, R-021, R-024, R-025, R-027, R-028, R-031, R-032, R-033. (theo P4 của DECISIONS.md)
 
 ### BLK-030 · XOA_ITEM · Quy tắc "chưa chốt cơ chế và ngưỡng khi chưa có evidence" (C-006, C-007, D-011)
 - ID tạm: G-04
@@ -530,7 +530,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - C. Giữ D-011 là Decision sản phẩm (Active), giữ C-006, C-007 Retired, bỏ quan hệ R → C-007.
 - Hệ quả phụ: A-018 chỉ được R-035, R-036, R-037 dựa vào. Nếu bỏ quan hệ của nhóm này thì A-018 vẫn còn (quan hệ `assumptions` không đổi), nhưng nếu các R đó bị hạ hay bỏ thì A-018 có thể không còn ai trỏ tới (GA-03). Nếu giữ D-011 hoặc D-028 (BLK-032) ở Active thì chúng chứa "chưa chốt", sẽ cần thêm blocker TRANG_THAI ở Pha B.
 - Đề xuất: A, vì nội dung là quy trình của team và đã được GR-09 của bộ tiêu chí thay thế.
-- Quyết định:
+- Quyết định: Xóa C-006, C-007, D-011 và đưa vào danh sách ID đã nghỉ; P0 (ngưỡng tạm) thay cho quy tắc của ba item này. Bỏ quan hệ tới C-006, C-007 (từ D-011, R-030, R-032, R-035, R-036, R-037). Chỗ trích D-011 ở ACT-002, UC-014, R-032, R-037 và `source` của R-037: bỏ phần trích, hoặc thay bằng ID item đang sở hữu nội dung (R-032 cho ngưỡng của lượt xử lý AI). (theo P0 và P4 của DECISIONS.md)
 
 ### BLK-031 · XOA_ITEM · D-010 phân loại khái niệm trong spec
 - ID tạm: G-05
@@ -542,7 +542,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Xóa D-010 (ID đã nghỉ).
   - B. Giữ D-010, viết lại thành Decision về phạm vi: "V1 không coi nhiều định dạng tải về là giá trị của sản phẩm", với `shapes: [R-025]`.
 - Đề xuất: A, vì nội dung đã nằm trong cách phân loại C-003 và R-025.
-- Quyết định:
+- Quyết định: Xóa D-010 (cách phân loại "nhiều định dạng" trong spec) và đưa vào danh sách ID đã nghỉ. (theo P4 của DECISIONS.md)
 
 ### BLK-032 · XOA_ITEM · D-028 khi nào tiêu chí chất lượng thành Hard Gate
 - ID tạm: G-06
@@ -555,7 +555,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ D-028 chỉ với vế 2 (sản phẩm), bỏ vế 1 và 3. Bỏ vế là đổi nghĩa, nên cần người dùng duyệt.
   - C. Giữ D-028 nguyên ba vế; W-026, W-032 viết lại thành text.
 - Đề xuất: A, vì phần sản phẩm đã nằm ở R-021 và phần còn lại là quy trình research.
-- Quyết định:
+- Quyết định: Xóa D-028 và đưa vào danh sách ID đã nghỉ. Danh sách 4 lỗi tối thiểu chuyển hẳn sang R-021; câu "D-028 đã chốt" trong R-021 viết lại không có ID; bỏ D-028 khỏi `source` của R-007, R-021, R-025, R-028. (theo P4 của DECISIONS.md)
 
 ### BLK-033 · TRUNG_SO_HUU · Business Rule và Requirement phát biểu cùng một quy định
 - ID tạm: M-02
@@ -594,7 +594,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. R sở hữu. BR bỏ phần trùng, chỉ giữ Exceptions và chi tiết R không có. BR không còn gì thì xóa (đổi ID, ảnh hưởng `use_cases` và `shapes` của Decision).
   - C. Quyết định riêng từng dòng.
 - Đề xuất: A, vì bộ tiêu chí cho phép BR chi tiết hơn R (GR-15), BR được nhiều UC và R cùng trỏ tới, và quan hệ `R.business_rules → BR` đã có nên không mất truy vết. R vẫn có Acceptance riêng nên vẫn kiểm chứng được. Không tính R-051 Acc 2 ↔ BR-018 vì R-051 là Draft (GX-10 áp từ Proposed).
-- Quyết định:
+- Quyết định: Business Rule sở hữu quy tắc. Requirement giữ câu Yêu cầu nêu hành vi quan sát được và Acceptance để kiểm chứng, trỏ Business Rule qua `business_rules`. R-020 vế 2, R-024 Acceptance 2–4, R-031 Acceptance 2, R-046 Acceptance 2–3 rút về tóm tắt kèm ID Business Rule. Thêm quan hệ R-011, R-024, R-046 → BR-010. Mức cam kết của R-022 lấy theo BR-004 ("không được"). Không xóa ID nào trong nhóm này. (theo P3 của DECISIONS.md)
 
 ### BLK-034 · TRUNG_SO_HUU · Business Rule lặp lại câu Decision (gồm D-030 ↔ BR-010)
 - ID tạm: M-03
@@ -608,7 +608,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Decision giữ nguyên câu; BR viết lại thành tóm tắt kèm ID D. D-030 vẫn quá 3 vế.
   - C. Tách D-030 thành nhiều Decision (ID mới); BR-010 vẫn trùng.
 - Đề xuất: A, vì GBR-08 ghi rõ "Decision giữ lựa chọn và lý do; rule giữ điều phải đúng", và BR-010 đã chứa đủ 7 ý của D-030 nên rút gọn D-030 không mất thông tin.
-- Quyết định:
+- Quyết định: Business Rule giữ phát biểu điều phải đúng; quan hệ `D.shapes → BR` đã có. Câu Decision của D-007, D-009, D-024, D-025, D-027, D-029 giữ nguyên chữ, thêm ID Business Rule trong ngoặc (khớp cả BLK-041: không viết lại Decision). D-030 rút về tối đa 3 vế: (1) bản chờ duyệt được chấp nhận tại ranh giới commit, ngay trước khi lượt xử lý AI mới bắt đầu; (2) ranh giới commit chỉ đạt sau khi các bước hỏi lại, cảnh báo hoặc xác nhận hoàn tất; chi tiết ghi "theo BR-010". (theo P3 của DECISIONS.md)
 
 ### BLK-035 · TRUNG_SO_HUU · Item sở hữu vòng đời bản deck (ranh giới commit, khôi phục, dừng, lỗi)
 - ID tạm: M-04
@@ -629,7 +629,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. BR-010 chỉ sở hữu "khi nào một bản thành bản đã chấp nhận"; BR-005 sở hữu khôi phục khi thất bại hoặc bỏ, có bảng chuyển trạng thái riêng; UC-004 tham chiếu cả hai.
   - C. Giữ chồng lấn, thêm câu dẫn chiếu qua lại (vi phạm GX-10).
 - Đề xuất: A, vì test theo state transition (GBR-05) cần một bảng duy nhất xét đủ cặp trạng thái × sự kiện, và BR-010 đã áp lên 6 Use Case (GUC-15). Với A, BR-005 gần như chỉ còn tóm tắt; xóa BR-005 là XOA_ITEM riêng, không tự làm.
-- Quyết định:
+- Quyết định: BR-010 sở hữu toàn bộ vòng đời bản deck (commit, khôi phục, dừng, lỗi) trong một `Bảng chuyển trạng thái`. BR-014 mục 2 rút về tóm tắt kèm ID BR-010; khi tải về thất bại áp BR-010 mục 6. UC-004: bước mới "Hệ thống đạt ranh giới commit và áp dụng ràng buộc của yêu cầu mới (BR-010)"; bỏ nhánh 1A; các nhánh 3A, 3B, 4A và Postconditions 1–2 tham chiếu BR-010. BR-005 rút về tóm tắt kèm ID BR-010 thì không còn nội dung riêng: CẦN XEM CX-1 (giữ, xóa hay giữ dạng khác). (theo P3 của DECISIONS.md)
 
 ### BLK-036 · TRUNG_SO_HUU · Constraints của ACT-001 phát biểu lại phạm vi sản phẩm
 - ID tạm: ACT-L02 (`work/assess-actors.md`)
@@ -646,7 +646,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Như A, nhưng ý 3 giữ không giới hạn V1. Khi đó nội dung "không bao giờ có cộng tác" không có item sở hữu, phải tạo Decision hoặc Constraint mới (ID mới).
   - C. Bỏ ý 1–3 khỏi actor; chỉ giữ ý 4.
 - Đề xuất: A, vì giữ được ngữ cảnh cho người đọc actor mà không tạo bản quy định thứ hai. Ý 3 thu hẹp về V1 là đổi nghĩa, nên cần người dùng xác nhận. Lưu ý R-029, D-006, D-015 đang dính BLK-025 (dựa vào C-001 Retired).
-- Quyết định:
+- Quyết định: ACT-001 Constraints chỉ giữ 4 dòng tóm tắt kèm ID: 1. Không cần kỹ năng thiết kế (R-029). 2. Chỉnh tay chuyên sâu làm bằng PowerPoint hoặc công cụ chuyên dụng sau khi tải về (D-006, D-015). 3. V1 không có cộng tác hay nhiều người cùng sửa một deck (D-027). 4. V1 không có tài khoản (D-027). Ý "không cộng tác" chỉ áp cho V1. (theo P3 và Q3 của DECISIONS.md)
 
 ### BLK-037 · TRUNG_SO_HUU · "Kết quả của AI không tự động thành bản đã chấp nhận" mâu thuẫn BR-010
 - ID tạm: ACT-L03 (`work/assess-actors.md`)
@@ -659,7 +659,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Hiểu theo nghĩa người dùng phải giữ. Giữ Needs 2, và BR-010 Rule 1 phải sửa (thuộc loại business-rules).
   - C. Bỏ Needs 2 vì Permissions 1 đã nói ý không trực tiếp thay đổi bản đã chấp nhận.
 - Đề xuất: A, vì BR-010 Active đã quy định rõ lần tạo đầu, và R-033 là nơi sở hữu bước kiểm tra. Nếu chọn A hoặc C thì section `Needs / Pain Points` của ACT-002 trống (Needs 1 đã chuyển sang `Hành vi lỗi`); xem mục 6.
-- Quyết định:
+- Quyết định: Hiểu theo R-033. Câu "kết quả AI không tự thành bản đã chấp nhận" ghi vào Permissions của ACT-002: "Không trực tiếp thay đổi bản đã chấp nhận; kết quả chỉ thành bản chờ duyệt hoặc bản đã chấp nhận sau kiểm tra kết quả (R-033), theo BR-010." Needs 2 của ACT-002 bỏ. (theo P3 của DECISIONS.md)
 
 ### BLK-038 · TRUNG_SO_HUU · Constraint chép lại nội dung quy định của D-026 và R-025
 - ID tạm: C-L03 (`work/assess-constraints.md`)
@@ -674,7 +674,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ hẳn hai câu khỏi C-003, C-004; liên kết đã có qua `R-025.constraints`, `D-026.constraints`.
   - C. Constraint sở hữu; D-026, R-025 tóm tắt lại. Không hợp lý vì D-026 là lựa chọn của team và R-025 là hành vi nghiệm thu được.
 - Đề xuất: A, vì giữ được ngữ cảnh khi đọc riêng Constraint mà không phát biểu lại quy định (GX-10).
-- Quyết định:
+- Quyết định: D-026 sở hữu danh sách định dạng (nay chuyển sang D-031 theo Q1), R-025 sở hữu phạm vi nhất quán. C-003 và C-004 chuyển câu trùng sang `Ghi chú` dạng tóm tắt kèm ID: C-003 "V1 tải về PPTX và PDF (D-026)." (C-003 đồng thời chuyển Retired theo Q1); C-004 "Phạm vi nhất quán giữa các định dạng tải về do R-025 quy định." (theo P3 của DECISIONS.md)
 
 ### BLK-039 · TRUNG_SO_HUU · Mệnh đề quy định nằm trong Assumption
 - ID tạm: A-L03 (`work/assess-assumptions.md`)
@@ -698,7 +698,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ nguyên trong Ghi chú nhưng thêm ID sở hữu; chỉ bỏ khỏi section `Assumption`.
   - C. Giữ nguyên (vi phạm GX-10).
 - Đề xuất: A, vì phần khẳng định còn lại của từng item vẫn đủ nghĩa và bác bỏ được, còn mệnh đề quy định đã có chủ ở bảng trên. Với A-022, nếu BLK-020 giữ R-041 thì người dùng chọn D-015 hay R-041 làm item sở hữu.
-- Quyết định:
+- Quyết định: Bỏ mệnh đề quy định khỏi section `Assumption` và `Ghi chú` của A-010, A-012, A-013, A-015, A-016, A-022. Item sở hữu: D-015 (A-010, A-022), R-022 (A-012), BR-003 (A-013), R-008 (A-015), D-009 (A-016). Ghi chú chỉ giữ một câu tóm tắt kèm ID item sở hữu khi câu đó giúp đọc. (theo P3 của DECISIONS.md)
 
 ### BLK-040 · TRUNG_SO_HUU · Requirement trùng requirement khác
 - ID tạm: R-L17 (`work/assess-requirements.md`)
@@ -720,7 +720,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Gộp item (ví dụ gộp R-013 vào R-011, R-023 vào R-022). Cách này xóa ID, nên cần thêm quyết định XOA_ITEM.
   - C. Giữ cả hai, chấp nhận trùng.
 - Đề xuất: A, vì không xóa ID nào, và mỗi item vẫn còn một năng lực riêng.
-- Quyết định:
+- Quyết định: Bỏ phần trùng ở một bên, thay bằng ID: R-007 bỏ Acceptance 3, Ghi chú trỏ R-008; R-011 Acceptance 1 ghi "trau chuốt (R-013)"; R-013 bỏ Acceptance 2 (R-031 sở hữu); R-023 chỉ giữ phần thuộc tính của deck có sẵn (R-022 sở hữu nguyên tắc); R-046 Acceptance 2 tóm tắt kèm ID R-031. Không xóa ID nào. (theo P3 của DECISIONS.md)
 
 ### BLK-041 · TRUNG_SO_HUU · Requirement trùng Decision
 - ID tạm: R-L18 (`work/assess-requirements.md`)
@@ -744,7 +744,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. D sở hữu. R chỉ tóm tắt kèm ID D. Cách này làm R mất Acceptance tự đứng, trái GR-07.
   - C. Viết lại phần phát biểu hành vi trong D thành tóm tắt kèm ID R.
 - Đề xuất: A. Decision ghi vì sao chọn, Requirement ghi hệ thống phải làm gì. Các cặp trên đều đã có D trong `source` của R hoặc R trong "Requirement chính" của D. Nên gộp với blocker tương ứng của decisions. R-041 phụ thuộc BLK-020; R-021 phụ thuộc BLK-032.
-- Quyết định:
+- Quyết định: Requirement sở hữu quy định; Decision giữ nguyên làm bản ghi lựa chọn và lý do. Requirement ghi Decision trong `source`; Decision trỏ Requirement qua `addresses` hoặc `shapes`. Không viết lại câu Decision vì lý do trùng với Requirement. Hai cặp đã có quyết định khác: R-041 ↔ D-006, D-015 (R-041 bị xóa theo BLK-020); R-021 ↔ D-028 (D-028 bị xóa theo BLK-032). (theo P3 của DECISIONS.md)
 
 ### BLK-042 · TRUNG_SO_HUU · Từ cấm "session" thuộc hai thuật ngữ
 - ID tạm: GL-L01 (`work/assess-glossary.md`)
@@ -757,7 +757,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Chỉ GL-012 giữ "session"; GL-013 Không dùng thành `—`. Mất thông tin "session" về đăng nhập phải gọi là "phiên đăng nhập".
   - C. Chỉ GL-013 giữ "session"; GL-012 bỏ "session". Mất thông tin "session" theo nghĩa lần làm việc bị cấm.
 - Đề xuất: A, vì không mất thông tin của dòng nào và không cần Lint hiểu ngữ cảnh. Phụ thuộc BLK-066: nếu BLK-066 chọn B (bỏ từ có điều kiện) thì GL-013 tự mất "session" và blocker này đóng theo.
-- Quyết định:
+- Quyết định: Giữ "session" ở cột Không dùng của cả "lần làm việc" và "phiên đăng nhập". Quy ước đọc bảng của `glossary.md` thêm: một từ có thể bị cấm ở nhiều dòng; Lint gợi ý mọi thuật ngữ tương ứng. Đã làm ở B1. (theo P9 của DECISIONS.md)
 
 ### BLK-043 · TRANG_THAI · Loại, thời hạn và xung đột của ràng buộc của người dùng
 - ID tạm: M-05
@@ -775,7 +775,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ tất cả ở Active, người dùng chốt ngay (1), (2), (3).
   - C. Giữ Active, thu hẹp: ràng buộc còn hiệu lực tới khi người dùng đổi hoặc hủy, bỏ ngoại lệ ràng buộc một lần, xung đột để ngoài phạm vi. Đây là đổi nghĩa.
 - Đề xuất: A, vì sheet ghi rõ câu hỏi "cố ý để mở" (A-013), và đây là thông tin ảnh hưởng hành vi bắt buộc nên không được ở Active (GX-09). Proposed còn hiệu lực nên UC-004 dựa vào BR-003 không vi phạm GX-04.
-- Quyết định:
+- Quyết định: BR-003, R-001, R-024 giữ Active, với hành vi mới: loại ràng buộc của người dùng gồm ngôn ngữ, độ dài (số slide), audience, mục đích, giọng văn, yêu cầu riêng. Ràng buộc chỉ áp cho một lần sửa khi yêu cầu có cụm "chỉ lần này", "lần này thôi" hoặc tương đương; ràng buộc đó hết hiệu lực khi lượt sửa kết thúc. Hai ràng buộc cùng loại xung đột thì ràng buộc mới thay ràng buộc cũ; ràng buộc khác loại không thay nhau. Câu hỏi mở về ràng buộc ở UC-004 bỏ. (theo P2 của DECISIONS.md)
 
 ### BLK-044 · TRANG_THAI · Ứng dụng đích dùng để kiểm chứng file PPTX
 - ID tạm: M-07
@@ -793,7 +793,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ chưa chốt theo D-026: R-027 hạ Proposed, câu hỏi mở về danh sách ứng dụng đích (nơi xử lý D-026); UC-008 bỏ chữ "PowerPoint" khỏi Postconditions 4 (đổi nghĩa) và hạ Proposed; A-022 xử lý status theo blocker status của Assumption.
   - C. Chốt một ứng dụng khác hoặc nhiều ứng dụng.
 - Đề xuất: Cần người dùng chọn giữa A và B. Subagent use-cases đề xuất A (Tình huống và Ghi chú của UC-008 đều nhắm PowerPoint); subagent requirements và assumptions đề xuất B (giữ đúng D-026). Agent chính nghiêng về A nếu D-026 mục 3 chỉ nói về mức tương thích chi tiết, không nói về ứng dụng đích; ngược lại là B.
-- Quyết định:
+- Quyết định: Ứng dụng kiểm chứng PPTX của V1 là Microsoft PowerPoint. R-027 có Acceptance riêng cho từng định dạng (Q1): PPTX mở và sửa được trong Microsoft PowerPoint; PDF mở được bằng trình xem PDF; PNG và SVG mở được bằng trình duyệt. UC-008 bỏ Câu hỏi mở 1; A-022 ghi theo. Google Slides và LibreOffice nằm ngoài cam kết V1. (theo Q2 của DECISIONS.md)
 
 ### BLK-045 · TRANG_THAI · Hỏi lại hay đánh dấu nội dung do AI bổ sung
 - ID tạm: M-09
@@ -807,7 +807,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Chốt một hành vi mặc định (ví dụ luôn đánh dấu), hành vi kia thành nhánh có điều kiện do người dùng nêu.
   - C. Hạ R-008 xuống Proposed, đưa câu hỏi vào `Câu hỏi mở`.
 - Đề xuất: A, vì Acceptance 2 đã phán được đúng sai mà không cần biết cách hiển thị, và R-008, BR-002 đều cho phép cả hai hành vi.
-- Quyết định:
+- Quyết định: R-008 giữ Active và chấp nhận cả hai hành vi: hỏi lại người dùng, hoặc đánh dấu nội dung do AI bổ sung. Cách hiển thị là quyết định thiết kế; Ghi chú của R-008 đổi thành "Cách hiển thị là quyết định thiết kế, không thuộc requirement này". UC-002 nhánh 5A tham chiếu R-008. (theo P2 của DECISIONS.md)
 
 ### BLK-046 · TRANG_THAI · Assumption Open chưa có ngưỡng nhưng không có status mức thấp hơn
 - ID tạm: A-L01 (`work/assess-assumptions.md`)
@@ -820,7 +820,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Thêm vào `schema.json` một status mức `proposed`, `effective: true` (ví dụ `Proposed`), và sửa bảng vòng đời ở `03-assumptions/_CRITERIA.md` mục 3. Migrate 17 item ở status đó; chuyển lên Open khi có ngưỡng và `Cách kiểm chứng`. GX-04 của các Requirement và Decision Active vẫn đạt vì status mới còn hiệu lực.
   - C. Giữ Open và ghi ngoại lệ tạm cho PR migrate: 17 item trượt GA-01, GA-04, GA-05 tới khi bổ sung.
 - Đề xuất: B, vì ngưỡng của các item này phụ thuộc vào nghiên cứu người dùng hoặc benchmark chưa thiết kế (D-026 còn cố ý để mức tương thích PPTX tới sau implementation). A buộc phải điền khoảng 17 bộ con số ngay; C làm mức `active` mất nghĩa. B cũng xử lý được việc section `Cách kiểm chứng` (bắt buộc từ `active`, tầng CI) sẽ để trống ở mọi item theo quyết định 3. Thay đổi này đụng `schema.json` và `_CRITERIA.md`, nên cần người dùng duyệt.
-- Quyết định:
+- Quyết định: 17 Assumption giữ status Open, không thêm status mới vào `schema.json` (bác đề xuất thêm status mức Proposed cho Assumption). Mỗi item có Assumption, Signpost và Cách kiểm chứng cụ thể theo quy trình kiểm chứng chung: buổi thử với ≥ 5 người thuộc nhóm ACT-001 [tạm 2026-10-03 · xem lại: theo CX-2]; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại [tạm 2026-10-03 · xem lại: theo CX-2]; Supported nếu ≤ 1/5 [tạm 2026-10-03 · xem lại: theo CX-2]; chưa đủ 5 người thì giữ Open. A-018 và A-019 dùng ngưỡng benchmark riêng (BLK-010). Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1d của DECISIONS.md)
 
 ### BLK-047 · TRANG_THAI · Nhánh cho Hành vi lỗi của ACT-002
 - ID tạm: UC-L01 (`work/assess-use-cases.md`)
@@ -833,7 +833,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Mỗi mục trong `Hành vi lỗi` có một nhánh riêng ở từng Use Case, kể cả mục 4 (cần nêu hệ thống phát hiện mục 4 bằng cách nào).
   - C. Hạ 4 Use Case xuống Proposed tới khi chốt.
 - Đề xuất: A, vì mục 3 đã bị chặn đúng tại bước kiểm tra kết quả hiện có, và mục 4 không phải điều kiện hệ thống phát hiện được trong một lượt (GUC-11). Nên chốt cùng blocker về `Hành vi lỗi` của ACT-002 bên actors.
-- Quyết định:
+- Quyết định: Ở UC-001, UC-002, UC-004, UC-014: quá thời gian và lỗi kết nối với nhà cung cấp AI thành hai nhánh riêng. "Trả kết quả sai định dạng" thuộc nhánh kết quả không qua kiểm tra (R-033). "Thay đổi hành vi giữa các phiên bản model" không có nhánh; Ghi chú của từng Use Case ghi lý do: không phát hiện được trong một lượt xử lý, kết quả sai vẫn bị chặn ở bước kiểm tra kết quả. (theo P6 của DECISIONS.md)
 
 ### BLK-048 · TRANG_THAI · Lượt tạo file tải về có dừng được không
 - ID tạm: UC-L03 (`work/assess-use-cases.md`)
@@ -846,7 +846,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Cho dừng: thêm nhánh ở UC-008 (sau bước 4) và UC-014, kèm Requirement mới hoặc mở rộng R-046.
   - C. Giữ câu hỏi, hạ UC-014 xuống Proposed.
 - Đề xuất: A, vì D-029 đã giới hạn rõ phạm vi dừng ở lượt xử lý AI và ghi sẵn điều kiện mở lại cho lượt tải về.
-- Quyết định:
+- Quyết định: V1 không cho dừng lượt tạo file tải về, theo phạm vi của D-029. Câu hỏi mở 1 của UC-014 bỏ; Ghi chú của UC-014 và UC-008 ghi "V1 không dừng được lượt tạo file tải về (D-029)". (theo P6 của DECISIONS.md)
 
 ### BLK-049 · TRANG_THAI · PDF không có text layer rơi vào nhánh nào
 - ID tạm: UC-L05 (`work/assess-use-cases.md`)
@@ -859,7 +859,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ "PDF không có text layer" khỏi 3A. 2A giữ "PDF scan", dù bước 2 chỉ kiểm loại file nên không phát hiện được PDF scan ở đó.
   - C. Tách nhánh mới tại bước 3: "3B. File PDF không có text layer: Hệ thống báo chưa nhận PDF không có text layer và liệt kê 5 loại tài liệu đang nhận (R-003), quay lại bước 1." Bỏ "PDF scan" khỏi 2A và bỏ "PDF không có text layer" khỏi 3A.
 - Đề xuất: C, vì hệ thống chỉ phát hiện được PDF không có text layer khi đọc file (bước 3), còn thông báo theo R-003 là liệt kê 5 loại đang nhận.
-- Quyết định:
+- Quyết định: UC-002 thêm nhánh "3B. File PDF không có text layer: Hệ thống báo chưa nhận PDF không có text layer và liệt kê 5 loại tài liệu đang nhận (R-003), quay lại bước 1." Bỏ "PDF scan" khỏi nhánh 2A và bỏ "PDF không có text layer" khỏi nhánh 3A. (theo P6 của DECISIONS.md)
 
 ### BLK-050 · TRANG_THAI · UC-004 kết thúc thành công ở đâu
 - ID tạm: UC-L08 (`work/assess-use-cases.md`)
@@ -871,7 +871,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Kết thúc khi người dùng xem trước bản chờ duyệt: bước cuối "Người dùng xem trước bản chờ duyệt (UC-015)." Giữ và bỏ là hành động sau (bỏ: UC-013 `extend`; giữ: BR-010 điều 3a). Postconditions: bản chờ duyệt được hiển thị; bản đã chấp nhận làm cơ sở vẫn quay lại được (giữ Postconditions 3). Postconditions 1 chuyển thành tham chiếu BR-010.
   - B. Kết thúc khi người dùng giữ: bước cuối "Người dùng xem trước bản chờ duyệt (UC-015) và giữ bản đó." Postconditions 1: "Bản chờ duyệt người dùng giữ trở thành bản đã chấp nhận mới (BR-010 điều 3a)." Bỏ Postconditions 3.
 - Đề xuất: A, vì khớp Mục tiêu ("vẫn quay lại được bản trước") và cách UC-013 `extend` UC-004 tại điểm bỏ bản chờ duyệt.
-- Quyết định:
+- Quyết định: UC-004 kết thúc thành công khi người dùng xem trước bản chờ duyệt (UC-015). Giữ và bỏ là hành động sau: bỏ thuộc UC-013 (`extend`), giữ theo BR-010. Postconditions: bản chờ duyệt được hiển thị; bản đã chấp nhận làm cơ sở vẫn quay lại được. Postconditions 1 chuyển thành tham chiếu BR-010. (theo P6 của DECISIONS.md)
 
 ### BLK-051 · TRANG_THAI · Trigger của UC-008 đứng sau bước 1
 - ID tạm: UC-L11 (`work/assess-use-cases.md`)
@@ -884,7 +884,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ bước 1 và `include: UC-015`; đổi Trigger thành sự kiện của bước 1 (người dùng cần chọn câu chữ); 1A đổi điều kiện thành "Người dùng gửi yêu cầu sửa thay vì chọn tải về: Hệ thống chuyển sang UC-004."
   - C. Giữ nguyên, chấp nhận lệch GUC-06.
 - Đề xuất: B, vì không đổi quan hệ và không bỏ nhánh; chỉ cần người dùng duyệt câu Trigger mới. Dịch thử ở mục 4 giữ nguyên Trigger và đánh dấu blocker.
-- Quyết định:
+- Quyết định: UC-008 giữ bước 1 "Người dùng xem trước deck (UC-015)" và `include: [UC-015]`. Trigger viết lại thành sự kiện của bước 1: "Người dùng mở xem trước deck hiện tại (UC-015)." Nhánh 1A đổi thành "1A. Người dùng gửi yêu cầu sửa thay vì chọn tải về: Hệ thống chuyển sang UC-004." Người dùng duyệt câu Trigger trong diff. (theo P6 của DECISIONS.md)
 
 ### BLK-052 · TRANG_THAI · Nhánh 1B của UC-011 không có điểm kết thúc
 - ID tạm: UC-L12 (`work/assess-use-cases.md`)
@@ -897,7 +897,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ "tải lại trang hoặc đóng ứng dụng" khỏi Trigger và nhánh 1B; Ghi chú ghi cảnh báo rời trang thuộc R-045.
   - C. Tách luồng tải lại hoặc đóng ra Use Case riêng (tạo ID mới).
 - Đề xuất: A, vì chỉ dùng hành vi R-045 đã chốt, không thêm thông tin.
-- Quyết định:
+- Quyết định: UC-011 tách nhánh 1B theo R-045: "1B. Người dùng tải lại trang hoặc đóng ứng dụng khi deck chưa tải về bản mới nhất: Trình duyệt hiển thị cảnh báo rời trang (R-045); người dùng xác nhận, lần làm việc kết thúc, kết thúc Use Case." và "1C. Người dùng hủy ở cảnh báo rời trang: Lần làm việc hiện tại giữ nguyên, kết thúc Use Case." (theo P6 của DECISIONS.md)
 
 ### BLK-053 · TRANG_THAI · Người dùng hủy khi hệ thống hỏi lại
 - ID tạm: UC-L13 (`work/assess-use-cases.md`)
@@ -910,7 +910,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Không có thao tác hủy: Ghi chú ghi lý do bỏ qua (ví dụ người dùng gửi yêu cầu khác thay cho câu trả lời).
   - C. Hạ UC-001, UC-002 xuống Proposed.
 - Đề xuất: A, vì UC-004 đã có cách xử lý tương ứng, và GUC-12 yêu cầu có nhánh.
-- Quyết định:
+- Quyết định: UC-001 (sau nhánh 3A) và UC-002 (sau nhánh 4A, 5A) thêm nhánh hủy: "Người dùng hủy khi được hỏi lại: Hệ thống không tạo deck, lần làm việc vẫn chưa có deck, kết thúc Use Case." Đây là hành vi mới, người dùng đã xác nhận. (theo P6 của DECISIONS.md)
 
 ### BLK-054 · TRANG_THAI · Bảng chuyển trạng thái của BR-010 còn ô không suy ra được
 - ID tạm: BR-L04 (`work/assess-business-rules.md`)
@@ -927,7 +927,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Hạ BR-010 xuống Proposed; bảng chỉ gồm các dòng suy ra được; 4 cặp ghi vào `Câu hỏi mở`, nơi xử lý UC-004 và UC-008
   - C. Giữ Active, bảng chỉ gồm các dòng suy ra được, bỏ qua 4 cặp (vi phạm GX-09 vì câu hỏi ảnh hưởng hành vi)
 - Đề xuất: A, vì BR-010 là rule lõi của V1 (6 UC, R-020, R-031 dựa vào) và 4 câu hỏi đều là quyết định giao diện nhỏ, trả lời được ngay. Gợi ý (chưa có trong sheet, cần người dùng xác nhận): không cho giữ, bỏ hoặc tải về trong lúc chờ hoàn tất yêu cầu sửa mới hoặc khi lượt xử lý đang chạy
-- Quyết định:
+- Quyết định: BR-010 giữ Active, bảng chuyển trạng thái điền 4 ô: trong lúc chờ hoàn tất yêu cầu sửa mới (còn hỏi lại, cảnh báo hoặc xác nhận), và khi lượt xử lý AI đang chạy, hệ thống không cho giữ, bỏ hay tải về. Nếu người dùng thử, hệ thống báo "Đang xử lý yêu cầu, hãy chờ hoặc dừng lượt hiện tại" và trạng thái không đổi. (theo P2 và P6 của DECISIONS.md)
 
 ### BLK-055 · TRANG_THAI · Exceptions của BR-001 có hai cách hiểu
 - ID tạm: BR-L06 (`work/assess-business-rules.md`)
@@ -940,7 +940,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Chuyển thành mệnh đề Rule: "Hệ thống phải hiển thị giới hạn 'V1 chỉ nhận tài liệu có sẵn' tại nơi người dùng đưa file vào." Hệ thống được dùng file làm tài liệu có sẵn sau khi đã hiển thị giới hạn
   - C. Giữ nguyên câu trong Exceptions (trượt GBR-06)
 - Đề xuất: A, vì khớp với BR-013 (báo giới hạn thay vì xử lý âm thầm) và mẫu UC-004 2C (yêu cầu V1 chưa làm được thì báo giới hạn, không xử lý)
-- Quyết định:
+- Quyết định: BR-001 chuyển Exceptions thành mệnh đề Rule: "Khi người dùng đưa file với mục đích khác tài liệu có sẵn, hệ thống phải báo rằng V1 chỉ nhận vai trò tài liệu có sẵn (BR-013) và không được tự coi file đó là tài liệu có sẵn." Xóa section Exceptions. (theo P2 của DECISIONS.md)
 
 ### BLK-056 · TRANG_THAI · Mức cam kết của BR-012 mục 1
 - ID tạm: BR-L08 (`work/assess-business-rules.md`)
@@ -953,7 +953,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Lệnh cấm: "Hệ thống không được giữ deck, tài liệu có sẵn và ràng buộc của người dùng sau khi lần làm việc kết thúc." Test: mở lại ứng dụng không còn dữ liệu cũ
   - C. Giữ câu mô tả, chấp nhận cảnh báo Lint của GBR-02
 - Đề xuất: A, vì D-027 mục 2 ghi "chưa mở lại được deck qua nhiều lần làm việc" (giới hạn tạm thời), và Exceptions của BR-012 nói rule hết hiệu lực khi có R-048. Nghĩa B có căn cứ yếu hơn ở UC-008 Postconditions 5 ("File tải về là cách duy nhất giữ deck sau khi lần làm việc kết thúc")
-- Quyết định:
+- Quyết định: BR-012 mục 1 viết thành "Hệ thống không bắt buộc giữ deck, tài liệu có sẵn và ràng buộc của người dùng sau khi lần làm việc kết thúc." Đây là giới hạn phạm vi, không phải lệnh cấm lưu. (theo P2 của DECISIONS.md)
 
 ### BLK-057 · TRANG_THAI · Requirement Active dùng "nên" hoặc "có thể"
 - ID tạm: R-L01 (`work/assess-requirements.md`)
@@ -966,7 +966,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ "nên" và hạ cả hai xuống Proposed.
   - C. Quyết định riêng từng item.
 - Đề xuất: A, vì cả hai đều có Acceptance dạng bắt buộc, thuộc V1, và R-046 (Active) đang `depends_on` R-030. Hạ R-030 xuống Proposed sẽ làm một item Active dựa vào item chưa sẵn sàng nghiệm thu.
-- Quyết định:
+- Quyết định: R-002 và R-030 đổi "nên" thành "phải" và giữ Active. R-057 (tách từ R-030) cũng dùng "phải". (theo P7 của DECISIONS.md)
 
 ### BLK-058 · TRANG_THAI · Tiêu chí chất lượng của deck và của kết quả AI đang chờ nghiên cứu (W-032)
 - ID tạm: R-L02 (`work/assess-requirements.md`)
@@ -983,7 +983,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Hạ cả bốn xuống Proposed, giữ scope V1. `Đo lường` ghi "Ngưỡng đạt: Chưa chốt (nơi xử lý: xem BLK-063)".
   - C. Giữ Active cho phần đã chốt (R-007: số liệu khớp tuyệt đối; R-021: 4 lỗi của D-028), tách phần ngưỡng chưa chốt thành requirement Proposed mới (tạo ID mới).
 - Đề xuất: B. Đây là đúng tình huống mà `_COMMON_CRITERIA.md` mục 1 mô tả: item thuộc release hiện tại nhưng ở Proposed vì ngưỡng nghiệm thu chưa chốt. Không chọn C, vì ngay 4 lỗi của D-028 cũng còn "nghiêm trọng" chưa có ngưỡng. Kết quả còn phụ thuộc BLK-032 (D-028) và BLK-029 (A-005).
-- Quyết định:
+- Quyết định: R-007, R-009, R-021, R-029 giữ Active, có section `Đo lường` đầy đủ. Bộ đánh giá chung [tạm 2026-10-03 · xem lại: theo CX-2]: 10 tài liệu mẫu (báo cáo có số liệu, bài giảng, đề xuất dự án; dài 3–20 trang; ≥ 3 tài liệu có bảng số liệu), 10 yêu cầu không kèm tài liệu, mỗi đầu vào chạy 3 lần (60 lượt); lưu trong repo, vị trí đề xuất ở B5. R-007: Scale = số con số và trích dẫn trên slide khác tài liệu, mỗi lượt; Meter = script trích số đối chiếu tài liệu, người chấm xác nhận chỗ không khớp; Ngưỡng = 0 sai lệch ở ≥ 90% lượt có tài liệu và tổng tỷ lệ số liệu sai ≤ 1%. R-021: Scale = số slide mắc ít nhất một trong 4 lỗi tối thiểu (chữ không đọc được hoặc bị cắt, mạch trình bày gãy, slide hỏng hoặc trống ngoài ý muốn, bố cục vỡ); Meter = validator tự động kiểm chữ tràn hoặc bị cắt khỏi khung, cỡ chữ nội dung < 12 pt, slide trống ngoài ý muốn, người chấm kiểm mạch trình bày gãy; Ngưỡng = 0 slide lỗi ở ≥ 90% lượt. R-009: Scale = điểm rubric 1–3 về mức deck phản ánh audience và mục đích; Meter = 2 người chấm độc lập, lấy điểm thấp hơn; Ngưỡng = ≥ 80% lượt đạt ≥ 2 điểm. R-029: `verification: demonstration`; đo số người hoàn thành luồng tạo → xem trước → sửa 1 lần → tải về không cần trợ giúp, trong buổi thử với 5 người không chuyên thiết kế; Ngưỡng = ≥ 4/5 người hoàn thành trong ≤ 15 phút. Mọi ngưỡng trên là ngưỡng tạm. Glossary thêm "deck dùng được" (đã làm ở B1). Sự kiện xem lại của các ngưỡng tạm: CẦN XEM CX-2 (`trash/phase-b-can-xem.md`). (theo P1c của DECISIONS.md)
 
 ### BLK-059 · TRANG_THAI · Kiểm tra kết quả AI chưa định nghĩa
 - ID tạm: R-L06 (`work/assess-requirements.md`)
@@ -995,7 +995,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Giữ Active. Acceptance viết lại dạng "Khi kết quả AI không qua kiểm tra kết quả, kết quả đó không trở thành bản chờ duyệt hay bản đã chấp nhận". Danh sách điều kiện kiểm để Decision hoặc thiết kế quyết định. Ghi chú giữ vế "cách kiểm tra là quyết định thiết kế".
   - B. Hạ xuống Proposed tới khi có danh sách điều kiện kiểm cho từng loại lượt xử lý.
 - Đề xuất: A, vì Acceptance phán được bằng cách tiêm kết quả hỏng, không cần biết cơ chế (GR-05). Phương án A chỉ viết lại, không thêm thông tin.
-- Quyết định:
+- Quyết định: R-033 giữ Active. Acceptance chỉ đòi: kết quả AI không qua kiểm tra kết quả thì không trở thành bản chờ duyệt hay bản đã chấp nhận; test bằng cách đưa vào một kết quả hỏng. Nội dung bước kiểm tra là quyết định thiết kế (giữ trong Ghi chú). (theo P2 của DECISIONS.md)
 
 ### BLK-060 · TRANG_THAI · Luồng nào được phép đưa nội dung người dùng ra ngoài
 - ID tạm: R-L07 (`work/assess-requirements.md`)
@@ -1007,7 +1007,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Hạ xuống Proposed. Câu hỏi mở về danh sách luồng được phép (nơi xử lý: xem BLK-063).
   - B. Giữ Active, người dùng liệt kê ngay các luồng được phép, thay cho cụm "ngoài những gì thiết kế cho phép".
 - Đề xuất: B nếu người dùng trả lời được ngay. Ứng dụng V1 chạy trên máy người dùng (D-027), nên danh sách có thể chỉ gồm luồng gửi tới nhà cung cấp AI. Nếu không trả lời được thì chọn A. Kết quả còn phụ thuộc BLK-028.
-- Quyết định:
+- Quyết định: R-042 giữ Active. Thay cụm "ngoài những gì thiết kế cho phép" bằng danh sách đóng: chỉ một luồng được đưa nội dung người dùng ra ngoài, là gửi tới nhà cung cấp AI qua ACT-002 để tạo và sửa deck. Log không chứa nội dung tài liệu hay nội dung deck. File tạm bị xóa khi lần làm việc kết thúc. (theo P2 của DECISIONS.md)
 
 ### BLK-061 · TRANG_THAI · R-010 ở Proposed nhưng ghi "còn ở mức thăm dò"
 - ID tạm: R-L20 (`work/assess-requirements.md`)
@@ -1019,7 +1019,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. Hạ xuống Draft, bỏ Ghi chú vì status đã thể hiện ý này.
   - B. Giữ Proposed, bỏ Ghi chú "còn ở mức thăm dò".
 - Đề xuất: A, vì Ghi chú nói đúng nghĩa của Draft. Khác với R-021, nơi chỉ một khía cạnh (thẩm mỹ) còn thăm dò.
-- Quyết định:
+- Quyết định: R-010 hạ xuống Draft; bỏ Ghi chú "còn ở mức thăm dò" vì status đã thể hiện ý này. (theo P2 của DECISIONS.md)
 
 ### BLK-062 · THAM_CHIEU_LOAI_CU · Mã L-xxx, W-xxx trong `source`
 - ID tạm: M-08
@@ -1033,7 +1033,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Giữ mã dạng text như mã nguồn (`allow_codes`). Validator phải chấp nhận mã không trỏ tới item.
   - C. Thay toàn bộ bằng Decision tương ứng (D-024, D-025).
 - Đề xuất: A, vì phần lớn item đã có ID khác trong `source` giữ chuỗi truy vết, và D-024, D-025 đã ghi kết luận của L-001, L-002, W-026.
-- Quyết định:
+- Quyết định: Bỏ mã L-001, L-002, W-026 khỏi `source` của BR-017, UC-017, UC-024, UC-025, R-017, R-018, R-044, R-047. Item nào sau khi bỏ mà `source` rỗng thì thay bằng Decision có kết luận tương ứng: D-024 (thay L-001), D-025 (thay L-002, W-026). (theo P8 của DECISIONS.md)
 
 ### BLK-063 · THAM_CHIEU_LOAI_CU · Mã task W-xxx đang làm nơi xử lý cho điều chưa chốt
 - ID tạm: R-L19 (`work/assess-requirements.md`)
@@ -1046,7 +1046,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Thay bằng issue GitHub tương ứng (cần người dùng cho số issue).
   - C. Bỏ mã, chỉ ghi "chờ nghiên cứu tiêu chí chất lượng". Cách này không đạt GX-09, vì thiếu nơi xử lý.
 - Đề xuất: A. `_CRITERIA.md` GR-09 dùng chính dạng "Chưa chốt (benchmark ở task #142)". W-xxx là task của project, không phải item spec. Nên gộp với các loại khác cũng dùng W-xxx làm nơi xử lý (ví dụ UC-002 Open Questions W-032).
-- Quyết định:
+- Quyết định: Giữ mã W-xxx dạng text làm nơi xử lý, ví dụ "(nơi xử lý: W-032)", cho tới khi Work chuyển thành GitHub Issue. Validator coi W-xxx là mã ngoài spec, không kiểm tồn tại. Với ngưỡng tạm của P1, R-007 và R-021 không còn cần nơi xử lý W-032; R-042 giữ "W-028" trong Ghi chú. (theo P8 của DECISIONS.md)
 
 ### BLK-064 · SCHEMA · Area ngoài enum
 - ID tạm: G-11
@@ -1058,7 +1058,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - A. `CI` và `Infra` → `CI/Infra`; bỏ `Schedule` (lịch trình là việc của dự án).
   - B. Thêm `CI`, `Infra`, `Schedule` vào `schema.json`.
 - Đề xuất: A, vì `CI/Infra` đã gộp hai giá trị, và lịch trình không phải area của sản phẩm.
-- Quyết định:
+- Quyết định: `CI` và `Infra` ánh xạ sang `CI/Infra` (R-027, R-032, R-035, R-037, R-042, R-051, R-053); bỏ `Schedule` (chỉ có ở R-041, bị xóa). `schema.json` đã có `CI/Infra`, không cần sửa. (theo P9 của DECISIONS.md)
 
 ### BLK-065 · SCHEMA · Review Trigger chứa tín hiệu không cho thấy assumption sai
 - ID tạm: A-L04 (`work/assess-assumptions.md`)
@@ -1083,7 +1083,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ khỏi Assumption; vế đã có trong Reopen When của Decision dựa vào thì giữ ở Decision, vế chưa có thì bổ sung vào Reopen When của Decision tương ứng (đụng file decisions).
   - C. Giữ nguyên trong `Signpost` (vi phạm nghĩa của GA-04).
 - Đề xuất: A, vì không mất thông tin và không đụng loại item khác. Có thể làm B sau khi decisions đã migrate.
-- Quyết định:
+- Quyết định: Vế của Review Trigger không cho thấy assumption sai chuyển sang `Ghi chú` dạng "Xem lại phạm vi khi …" ở A-007, A-008, A-010, A-011, A-012, A-014, A-015, A-016. `Signpost` chỉ giữ vế cho thấy assumption sai. (theo P9 của DECISIONS.md)
 
 ### BLK-066 · SCHEMA · Từ cấm có điều kiện trong ngoặc ở cột Không dùng
 - ID tạm: GL-L02 (`work/assess-glossary.md`)
@@ -1096,7 +1096,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Bỏ các từ có điều kiện khỏi cột Không dùng, chuyển điều kiện vào Định nghĩa dạng "Từ “preview” không dùng trong câu văn". Lint không bắt được các từ này nữa.
   - C. Bỏ điều kiện, cấm tuyệt đối. Đổi nghĩa; kéo theo viết lại UC-017 (template PPTX), UC-001, UC-004 (tên sản phẩm có "Agent").
 - Đề xuất: A, vì giữ nguyên nghĩa, Lint vẫn bắt được từ, và chỉ phải sửa một dòng quy ước trong chính `glossary.md`.
-- Quyết định:
+- Quyết định: Giữ điều kiện trong ngoặc ngay sau từ cấm. Quy ước đọc bảng của `glossary.md` thêm: Lint so phần trước ngoặc và hiện điều kiện trong cảnh báo để người review quyết định. Đã làm ở B1. (theo P9 của DECISIONS.md)
 
 ### BLK-067 · SCHEMA · Điều kiện ở cuối danh sách áp cho từ nào
 - ID tạm: GL-L03 (`work/assess-glossary.md`)
@@ -1109,7 +1109,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Điều kiện chỉ áp cho từ cuối; từ trước bị cấm tuyệt đối. Giữ nguyên chữ.
   - C. Chọn riêng từng dòng (ví dụ "LLM" và "validate" cấm tuyệt đối vì không có nghĩa khác trong sản phẩm; "style" theo điều kiện).
 - Đề xuất: C, theo gợi ý: `style` có điều kiện (cùng nhóm nghĩa với template), `validate` có điều kiện (cùng gốc với validation), `LLM` cấm tuyệt đối (trong DeckAgent luôn chỉ phần AI). Đây là chọn cách hiểu nên cần người dùng duyệt. Chỉ cần quyết khi BLK-066 chọn A.
-- Quyết định:
+- Quyết định: Chọn riêng từng dòng: `style` có điều kiện "(khi nói về giao diện)" như `template`; `validate` có điều kiện "(trong câu văn)" như `validation`; `LLM` cấm tuyệt đối. Ghi điều kiện ngay sau từng từ khi viết `glossary.md` ở B5. (theo P9 của DECISIONS.md)
 
 ### BLK-068 · SCHEMA · "Hệ thống" và "DeckAgent" là hai tên của một khái niệm
 - ID tạm: GL-L04 (`work/assess-glossary.md`)
@@ -1122,7 +1122,7 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Đổi `system_name` thành "Hệ thống" để mọi nơi dùng một tên. Câu Yêu cầu thành "Hệ thống phải …"; kéo theo sửa `schema.json`.
   - C. Đổi thuật ngữ GL-023 thành "DeckAgent", đưa "Hệ thống" vào Không dùng. Kéo theo viết lại 56 item.
 - Đề xuất: A, vì không phải sửa item hay schema; tên riêng của sản phẩm khác bản chất với từ đồng nghĩa trong cột Không dùng.
-- Quyết định:
+- Quyết định: Giữ thuật ngữ "Hệ thống". "DeckAgent" là tên riêng, dùng trong câu Yêu cầu của Requirement theo `system_name` của `schema.json`; các section khác dùng "Hệ thống". (theo P9 của DECISIONS.md)
 
 ### BLK-069 · SCHEMA · Từ cấm nằm trong tên riêng hoặc tên tính năng của sản phẩm khác
 - ID tạm: GL-L05 (`work/assess-glossary.md`)
@@ -1135,4 +1135,4 @@ Mỗi blocker là một câu hỏi; item bị ảnh hưởng liệt kê ở dòn
   - B. Việt hóa tên nguyên tắc (ví dụ "P1 Trung thực với tài liệu có sẵn") và mô tả tính năng đối thủ bằng thuật ngữ glossary. Cần người dùng đặt tên mới.
   - C. Giữ nguyên chữ, không miễn; người review bỏ qua cảnh báo từng lần với lý do.
 - Đề xuất: A, vì giữ tên gốc để tra cứu được, không cần đặt tên mới. "template PPTX" ở UC-017 Open Questions là file mẫu PPTX, không phải giao diện; chỉ cần quyết theo BLK-066/BLK-067.
-- Quyết định:
+- Quyết định: Tên riêng (P1–P5, tên sản phẩm và tính năng của bên khác) viết trong backtick hoặc ngoặc kép, được miễn GX-07. Không đổi tên P1–P5. Quy ước đọc bảng của `glossary.md` đã thêm ở B1. (theo P9 của DECISIONS.md)
