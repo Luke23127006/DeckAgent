@@ -16,7 +16,8 @@ source: []                # bắt buộc khi Supported/Invalidated: evidence (GA
 ## Cách kiểm chứng
 
 <!-- Đối tượng quan sát và mẫu số; cỡ mẫu tối thiểu; ngưỡng → Supported, ngưỡng → Invalidated (cùng đại lượng với câu Assumption);
-     xử lý khi chưa đủ evidence (GA-05). -->
+     xử lý khi chưa đủ evidence (GA-05).
+     Cỡ mẫu hoặc ngưỡng chưa có evidence ghi dạng ngưỡng tạm: <giá trị> [tạm YYYY-MM-DD · xem lại: <sự kiện quan sát được>] (_COMMON_CRITERIA.md mục 7). -->
 
 1.
 

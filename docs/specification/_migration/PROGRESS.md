@@ -32,7 +32,7 @@ Nguồn quyết định duy nhất: `DECISIONS.md` (P0–P9, Q1–Q3). Báo cáo
 | Bước | Nội dung | Trạng thái | File đầu ra |
 |---|---|---|---|
 | B0 | Đọc `DECISIONS.md`, `BLOCKERS.md`, `PLAN.md`, `FILL_LATER.md`, `_COMMON_CRITERIA.md`, `schema.json`, `_CRITERIA.md` + `_TEMPLATE.md` của 7 loại | Xong | `PROGRESS.md` |
-| B1 | Sửa bộ quy định theo P0, P1c, P9 | Chưa | `_COMMON_CRITERIA.md`, `06-requirements/_CRITERIA.md`, `03-assumptions/_CRITERIA.md`, 2 template, `glossary.md` |
+| B1 | Sửa bộ quy định theo P0, P1c, P9 | Xong | `_COMMON_CRITERIA.md`, `06-requirements/_CRITERIA.md`, `03-assumptions/_CRITERIA.md`, 2 template, `glossary.md` |
 | B2 | Áp quyết định xuống 69 blocker, Q1, kiểm mâu thuẫn, ID mới, danh sách xóa | Chưa | `BLOCKERS.md`, `APPLY.md`, `trash/phase-b-can-xem.md` |
 | B3 | Sinh khung file | Chưa | `docs/specification/0X-*/` |
 | B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | Chưa | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |

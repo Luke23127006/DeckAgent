@@ -4,10 +4,10 @@ File này ghi mỗi khái niệm của DeckAgent bằng một tên duy nhất, �
 
 Quy ước đọc bảng:
 - Mỗi dòng là một khái niệm. Cột `Không dùng` liệt kê các từ đồng nghĩa bị loại, cách nhau bằng dấu phẩy; để `—` nếu không có.
-- Dòng có `Thuật ngữ` bắt đầu bằng `[VÍ DỤ]` chỉ để minh họa định dạng. Lint bỏ qua dòng này; xóa dòng khi thêm thuật ngữ thật đầu tiên.
-
-Chưa có thuật ngữ thật. Thuật ngữ sẽ được đưa vào khi migrate nội dung từ Google Sheet.
+- Một từ có thể nằm ở cột `Không dùng` của nhiều dòng. Khi gặp từ đó, Lint gợi ý mọi thuật ngữ tương ứng; người review chọn theo ngữ cảnh.
+- Một từ ở cột `Không dùng` có thể kèm điều kiện trong ngoặc ngay sau nó, ví dụ `preview (trong câu văn)`. Điều kiện chỉ áp cho từ đứng ngay trước ngoặc; từ không kèm điều kiện bị cấm ở mọi ngữ cảnh. Lint so phần trước ngoặc và hiện điều kiện trong cảnh báo để người review quyết định.
+- Tên riêng viết trong backtick hoặc ngoặc kép được miễn GX-07: tên nguyên tắc chất lượng (P1–P5), tên sản phẩm và tên tính năng của bên khác. Lint bỏ qua chữ nằm trong backtick hoặc ngoặc kép; người review xác nhận đó là tên riêng.
 
 | Thuật ngữ | Định nghĩa | Không dùng |
 |---|---|---|
-| [VÍ DỤ] Đơn đặt vé | Yêu cầu mua một hoặc nhiều vé của một sự kiện, do một người mua tạo (ví dụ minh họa, không thuộc DeckAgent) | đơn hàng, order, booking |
+| deck dùng được | Deck đạt R-021 (chất lượng deck tối thiểu); khi deck được tạo từ tài liệu có sẵn, deck đạt thêm R-007 (giữ đúng số liệu từ tài liệu) | — |

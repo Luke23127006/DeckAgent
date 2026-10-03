@@ -122,7 +122,7 @@ Tầng CI chỉ dùng cho điều kiểm được bằng cấu trúc: có sectio
 | GX-06 | Đủ các section bắt buộc của loại item, đúng tên heading, đúng thứ tự | Người, agent và công cụ không tìm thấy nội dung | CI | Theo loại | INCOSE R42 |
 | GX-07 | Thuật ngữ đúng `glossary.md`. Không dùng từ mà glossary ghi là "Không dùng" | Một khái niệm có nhiều tên | Lint | Draft | INCOSE R4, R36 |
 | GX-08 | Không dùng từ mơ hồ, câu thoát, cụm mở hoặc so sánh không có mốc, **trừ khi** ngay trong câu có danh sách cụ thể hoặc ID định nghĩa nó. Danh sách từ ở mục 6 | Mỗi người hiểu một kiểu; không test được | Lint | Proposed | ISO 29148 §5.2.7, INCOSE R7, R8, R9 |
-| GX-09 | Item Active không còn thông tin chưa chốt ảnh hưởng tới hành vi bắt buộc, miền đầu vào hoặc tiêu chí đạt / không đạt. Các section quy định (Yêu cầu, Miền đầu vào, Đo lường, Acceptance, Rule, các bảng, các luồng, Postconditions) không chứa "Chưa chốt", "TBD" hay "định nghĩa sau". `Câu hỏi mở` chỉ còn câu hỏi không ảnh hưởng các phần đó, và mỗi câu có nơi xử lý. Chưa chốt được thì item ở lại Proposed | Item được đánh dấu sẵn sàng nghiệm thu nhưng không phán được đạt hay không | CI (chuỗi cấm trong section quy định; câu hỏi có nơi xử lý) + Review (câu hỏi còn lại có thật sự không ảnh hưởng) | Active | ISO 29148 §5.2.6 (set không có TBD) |
+| GX-09 | Item Active không còn thông tin chưa chốt ảnh hưởng tới hành vi bắt buộc, miền đầu vào hoặc tiêu chí đạt / không đạt. Các section quy định (Yêu cầu, Miền đầu vào, Đo lường, Acceptance, Rule, các bảng, các luồng, Postconditions) không chứa "Chưa chốt", "TBD" hay "định nghĩa sau". `Câu hỏi mở` chỉ còn câu hỏi không ảnh hưởng các phần đó, và mỗi câu có nơi xử lý. Ngưỡng tạm có nhãn đúng định dạng (mục 7) được tính là đã chốt. Chưa chốt được thì item ở lại Proposed | Item được đánh dấu sẵn sàng nghiệm thu nhưng không phán được đạt hay không | CI (chuỗi cấm trong section quy định; câu hỏi có nơi xử lý) + Review (câu hỏi còn lại có thật sự không ảnh hưởng) | Active | ISO 29148 §5.2.6 (set không có TBD) |
 | GX-10 | Mỗi nội dung quy định có **một item sở hữu**. Item khác được tóm tắt lại kèm ID của item sở hữu, nhưng không phát biểu lại như một quy định độc lập | Sửa nơi sở hữu, quên bản chép ở nơi khác | Review | Proposed | INCOSE R30 |
 | GX-11 | Field `source` chỉ chứa ID hoặc mã nguồn (tài liệu, mục, buổi phỏng vấn có ngày), không viết câu | Không lọc và truy vết được nguồn | Lint | Draft | ISO 29148 (source) |
 | GX-12 | `Ghi chú` chỉ ghi giới hạn phạm vi, lưu ý khi đọc, việc để sau. Không ghi nguồn, không tóm tắt lại các section khác | Ghi chú thành bãi chứa | Review | Proposed | Quy ước |
@@ -155,3 +155,21 @@ Lint đối chiếu bằng chữ thường. Nếu ngay sau từ có danh sách c
 > Đạt: "Khi cổng thanh toán trả kết quả thất bại, hệ thống phải hiển thị mã lỗi và nút Thử lại trong vòng 2 giây."
 >
 > Câu chưa đạt có hai từ mơ hồ ("nhanh", "phù hợp") và gộp hai yêu cầu làm một.
+
+## 7. Ngưỡng tạm
+
+**Ngưỡng tạm** là con số team đặt khi chưa có evidence, để item vẫn phán được đạt hay không đạt. Mỗi ngưỡng tạm mang nhãn theo định dạng:
+
+`<giá trị> [tạm YYYY-MM-DD · xem lại: <sự kiện quan sát được>]`
+
+1. Ngưỡng tạm được tính là **đã chốt**. Item Active được dùng ngưỡng tạm ở mọi section quy định (GX-09), trong `Đo lường` của Requirement (GR-09) và trong `Cách kiểm chứng` của Assumption (GA-05).
+2. Nhãn phải có ngày đặt ngưỡng và một sự kiện xem lại quan sát được. Thiếu một trong hai thì con số không phải ngưỡng tạm và bị coi là chưa chốt.
+3. Ngưỡng tạm vẫn phân biệt được với con số có evidence: validator tìm mọi ngưỡng tạm qua chuỗi `[tạm`.
+4. Khi sự kiện xem lại xảy ra, thay ngưỡng tạm bằng con số có evidence (bỏ nhãn), hoặc đặt lại ngưỡng tạm với ngày và sự kiện xem lại mới.
+5. Không dùng ngưỡng tạm cho thông tin do bên ngoài áp đặt (môn học, khách hàng, đối tác, quy định pháp lý). Thông tin đó chưa biết thì item ở lại Proposed.
+
+> **Ví dụ**
+>
+> Đạt: "- Ngưỡng đạt: ≤ 2 giây ở phân vị 95 [tạm 2026-03-01 · xem lại: benchmark tìm kiếm ở task #142 có kết quả]."
+>
+> Chưa đạt: "- Ngưỡng đạt: ≤ 2 giây [tạm]." Nhãn thiếu ngày và sự kiện xem lại, nên con số này bị coi là chưa chốt.

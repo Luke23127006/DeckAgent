@@ -34,7 +34,7 @@
 | **Miền đầu vào có biên** (phục vụ equivalence partitioning, boundary value analysis) | GR-08 | `verification: test` và `inputs: true` |
 | **Cách đo và ngưỡng** | GR-09; GR-10 nếu do AI sinh | Requirement mô tả một mức độ, với mọi phương pháp kiểm chứng trừ `inspection` |
 
-Ở mức Proposed, biên và ngưỡng được phép ghi "Chưa chốt" kèm nơi xử lý. Lên Active thì phải chốt (GX-09). Một requirement có kế hoạch đo nhưng chưa có ngưỡng là **đủ để lên kế hoạch, chưa đủ để nghiệm thu**.
+Ở mức Proposed, biên và ngưỡng được phép ghi "Chưa chốt" kèm nơi xử lý. Lên Active thì phải chốt (GX-09); ngưỡng tạm có nhãn đúng định dạng (`_COMMON_CRITERIA.md` mục 7) được tính là đã chốt. Một requirement có kế hoạch đo nhưng chưa có ngưỡng là **đủ để lên kế hoạch, chưa đủ để nghiệm thu**.
 
 ## 3. Tiêu chí
 
@@ -48,7 +48,7 @@
 | GR-06 | Có section `Bối cảnh / Lý do`: vì sao requirement tồn tại, giải vấn đề gì của người dùng. Không lặp câu Yêu cầu | Không biết khi nào được bỏ hoặc đổi requirement | CI (section) + Review | Proposed | ISO 29148 (rationale), Volere |
 | GR-07 | Có section `Acceptance`, đánh số. Mỗi điều nêu **điều quan sát được và kết quả mong đợi phán được đúng sai** mà không cần ý kiến chủ quan. Dùng dạng rule (danh sách hoặc bảng vào → ra) hoặc dạng kịch bản (Cho / Khi / Thì) | Tester phải đoán thế nào là đạt | CI (có section, ≥1 điều) + Review | Active | Volere (fit criterion), ISTQB CTFL 4.0 §4.5 |
 | GR-08 | Requirement có `verification: test` và nhận đầu vào (`inputs: true`) phải có section `Miền đầu vào`. Mỗi đầu vào nêu phân vùng hợp lệ, phân vùng không hợp lệ và giá trị biên. Ở Proposed, biên chưa biết được ghi "Chưa chốt" kèm câu hỏi trong `Câu hỏi mở`; ở Active, mọi biên phải đã chốt (GX-09) | Không thiết kế được equivalence partitioning và boundary test; hệ thống không có giới hạn | CI (có section khi `inputs: true`) + Review | Proposed | INCOSE R33, ISTQB (EP, BVA), NASA SWE-050 |
-| GR-09 | Requirement mô tả một **mức độ** (thời gian, tỷ lệ, độ chính xác, độ giống…) có section `Đo lường` gồm: **Scale** (đại lượng và đơn vị), **Meter** (đo thế nào, trên dữ liệu nào), **Ngưỡng đạt**. Ở Proposed, ngưỡng được ghi "Chưa chốt" kèm nơi đang đo, và không đặt số khi chưa có dữ liệu. Ở Active, ngưỡng phải là con số (GX-09). Requirement có kết quả nhị phân không cần section này, vì Acceptance đã phán được đúng sai | "Chất lượng tốt" không test được; con số đặt bừa; hoặc nghiệm thu khi chưa có ngưỡng | CI (có section thì phải đủ 3 dòng; Active thì không có "Chưa chốt") + Lint (loại chất lượng mà không có section) + Review | Proposed | Planguage (Gilb), INCOSE R34 |
+| GR-09 | Requirement mô tả một **mức độ** (thời gian, tỷ lệ, độ chính xác, độ giống…) có section `Đo lường` gồm: **Scale** (đại lượng và đơn vị), **Meter** (đo thế nào, trên dữ liệu nào), **Ngưỡng đạt**. Ở Proposed, ngưỡng được ghi "Chưa chốt" kèm nơi đang đo. Không đặt số khi chưa có dữ liệu, trừ khi số đó là ngưỡng tạm có nhãn (`_COMMON_CRITERIA.md` mục 7). Ở Active, ngưỡng phải là con số: có evidence, hoặc là ngưỡng tạm (GX-09). Requirement có kết quả nhị phân không cần section này, vì Acceptance đã phán được đúng sai | "Chất lượng tốt" không test được; con số đặt bừa; hoặc nghiệm thu khi chưa có ngưỡng | CI (có section thì phải đủ 3 dòng; Active thì không có "Chưa chốt"; số có nhãn `[tạm` phải đủ ngày và sự kiện xem lại) + Lint (loại chất lượng mà không có section) + Review | Proposed | Planguage (Gilb), INCOSE R34 |
 | GR-10 | Requirement về **kết quả do AI sinh** (không tất định) nêu trong `Đo lường`: tập đánh giá, cách chấm (validator tất định, rubric hoặc người chấm), số lần chạy, và tỷ lệ đạt yêu cầu. Ở Active, tỷ lệ đạt phải là con số (GX-09) | Một lần chạy pass không chứng minh gì; test chập chờn (flaky) | Review | Proposed | ATDD cho hệ thống LLM (arXiv 2606.02755) |
 | GR-11 | `Yêu cầu` và `Acceptance` không có câu thoát hay giới hạn mơ hồ ("trong giới hạn hệ thống hỗ trợ", "trong phạm vi đã kiểm chứng"), trừ khi giới hạn được định nghĩa bằng ID ngay trong câu | Requirement không bao giờ fail, vì giới hạn tự co lại theo kết quả | Lint (phát hiện cụm câu thoát) + Review (quyết định giới hạn đã được định nghĩa hay chưa) | Proposed | ISO 29148 §5.2.7 (loopholes), INCOSE R8 |
 | GR-12 | Tránh phủ định làm hành vi chính ("không được…"). Được phép với yêu cầu an toàn hoặc bảo mật, khi Acceptance nêu cách quan sát vi phạm | Không test được việc "không xảy ra" | Lint | Proposed | ISO 29148 (negative statements), INCOSE R16 |
@@ -105,7 +105,7 @@ Bản đạt cho tester ngay sáu phân vùng và bốn giá trị biên của e
 > - Ngưỡng đạt: ≤ 1,5 giây ở phân vị 95.
 > ```
 
-Meter định nghĩa mốc bắt đầu và mốc kết thúc của phép đo, nên hai người đo sẽ ra cùng một con số. Khi chưa có ngưỡng, requirement chưa nghiệm thu được, nên phải ở lại Proposed. Đây là tín hiệu cần chạy benchmark trước khi code tính năng đó.
+Meter định nghĩa mốc bắt đầu và mốc kết thúc của phép đo, nên hai người đo sẽ ra cùng một con số. Khi chưa có ngưỡng, requirement chưa nghiệm thu được, nên phải ở lại Proposed. Đây là tín hiệu cần chạy benchmark trước khi code tính năng đó. Nếu team cần nghiệm thu trước khi có benchmark, team đặt ngưỡng tạm, ví dụ `- Ngưỡng đạt: ≤ 2 giây ở phân vị 95 [tạm 2026-03-01 · xem lại: benchmark ở task #142 có kết quả]`, và requirement được lên Active.
 
 **GR-10: kết quả do AI sinh.**
 

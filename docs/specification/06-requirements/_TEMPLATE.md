@@ -37,6 +37,7 @@ depends_on: []            # Dựa vào: requirement khác cần có trước
 - Scale: <đại lượng + đơn vị>
 - Meter: <đo thế nào, trên dữ liệu nào, mấy lần chạy, ai hoặc cái gì chấm>
 - Ngưỡng đạt: <con số>   (ở Proposed được ghi: Chưa chốt (<nơi đang đo>); ở Active bắt buộc là con số — GX-09)
+  Con số chưa có evidence ghi dạng ngưỡng tạm: <giá trị> [tạm YYYY-MM-DD · xem lại: <sự kiện quan sát được>] (_COMMON_CRITERIA.md mục 7)
 -->
 
 ## Acceptance
