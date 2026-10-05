@@ -37,7 +37,7 @@ Nguồn quyết định duy nhất: `DECISIONS.md` (P0–P9, Q1–Q3). Báo cáo
 | B3 | Sinh khung file | Xong: 141 file (156 item sheet − 20 xóa + 5 ID mới); kiểm GX-03, GX-04 trên khung: 0 lỗi | `docs/specification/0X-*/`, `tools/spec/scaffold_spec.py`, `work/scaffold-relation-log.md` |
 | B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | Xong: 7 loại; 5 điểm cần xem CX-4…CX-8 đã được người dùng trả lời và đã áp (`APPLY.md` mục 8) | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |
 | B5 | File phụ | Xong: glossary 25 thuật ngữ; `_RETIRED_IDS.md` 20 ID; `_PROVISIONAL.md` 85 ngưỡng tạm (sinh bằng `tools/spec/spec_backlog.py`); `_FILL_LATER.md`; `tests/eval/README.md` | `glossary.md`, `_RETIRED_IDS.md`, `_PROVISIONAL.md`, `_FILL_LATER.md`, `tests/eval/README.md` |
-| B6 | Kiểm chứng | Chưa | script kiểm tạm, báo cáo đổi nghĩa |
+| B6 | Kiểm chứng | Xong: đủ 156 ID sheet + 5 ID mới; 121 chênh lệch quan hệ đều có căn cứ; kiểm tạm tầng CI 0 lỗi, 107 chỗ điền sau; 7 subagent kiểm không đổi nghĩa đánh dấu 60 chỗ (5 mức cao), mọi chỗ đã sửa hoặc giải thích | `tools/spec/check_spec.py`, `work/b6-relations.md`, `work/check-report.md`, `work/meaning-check-<loại>.md`, `work/meaning-fixes.md` |
 | B7 | Xóa `_migration/`, báo cáo cuối | Chưa | `trash/phase-b-report.md` |
 
 ## Ghi chú vận hành Pha B

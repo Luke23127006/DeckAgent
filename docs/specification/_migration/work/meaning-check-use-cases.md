@@ -1,0 +1,65 @@
+# Kiểm không đổi nghĩa: use-cases
+
+- Item đã kiểm: 24 (UC-001, UC-002, UC-003, UC-004, UC-005, UC-007, UC-008, UC-009, UC-010, UC-011, UC-012, UC-013, UC-014, UC-015, UC-016, UC-017, UC-018, UC-019, UC-020, UC-021, UC-022, UC-023, UC-024, UC-025)
+- Chỗ bị đánh dấu: 9 (cao: 0, thấp: 9)
+
+| # | ID | Section | Ô sheet (trích) | Câu mới (trích) | Vấn đề | Mức | Đề xuất sửa |
+|---|---|---|---|---|---|---|---|
+| 1 | UC-001 | Tình huống | "Tôi muốn gõ vài câu mô tả và nhận **ngay** một deck để sửa tiếp." | "tôi muốn gõ vài câu mô tả và nhận một deck, để sửa tiếp." | thiếu ý: bỏ "ngay" (kỳ vọng về thời gian). Log chỉ dựa vào GX-08, là tiêu chí chứ không phải quyết định ở nguồn được phép. Tình huống không phải hành vi hay tiêu chí đạt | thấp | Giữ, vì kỳ vọng thời gian của lượt tạo đã có ngưỡng ở R-032 (P1a). Nếu muốn giữ ý của sheet: "…nhận một deck trong buổi chiều, để sửa tiếp." |
+| 2 | UC-002 | Câu hỏi mở 1 | "Tiêu chí đo “thông tin quan trọng” của P1 là gì? (W-032)" | "Tiêu chí đo “thông tin quan trọng” của `P1` là gì? (nơi xử lý: R-007)" | thông tin không truy được: nơi xử lý đổi từ W-032 sang R-007. Quyết định BLK-063 nói giữ mã W-xxx dạng text làm nơi xử lý. Câu "R-007 và R-021 không còn cần nơi xử lý W-032" của BLK-063 nói về hai requirement đó, không nói câu hỏi của UC-002 chuyển sang R-007. Log dựa vào PLAN.md mục 4, không thuộc nguồn được phép. Thêm nữa, Meter của R-007 theo P1c chỉ đo "con số và trích dẫn", hẹp hơn "thông tin quan trọng" | thấp | Theo BLK-063: "Tiêu chí đo “thông tin quan trọng” của `P1` là gì? (nơi xử lý: W-032)". Nếu người dùng coi `Đo lường` của R-007 (P1c) đã trả lời câu hỏi, thì bỏ câu hỏi và ghi lý do vào log |
+| 3 | UC-008 | Mục tiêu | "…đúng với deck đã xem trước, **dùng được** ngoài DeckAgent." | "…đúng với deck đã xem trước, **để dùng** ngoài Hệ thống." | đổi nghĩa (yếu hơn): từ khẳng định file dùng được ngoài ứng dụng thành mục đích dùng. Log dựa vào GX-08, là tiêu chí, không phải quyết định | thấp | Giữ, vì việc file mở và sửa được đã là điều kiện kiểm chứng ở bước 5 (R-027) và Postconditions 4. Nếu muốn sát sheet: "…đúng với deck đã xem trước và mở được ngoài Hệ thống (R-027)." |
+| 4 | UC-013 | Postconditions | "3. Người dùng gửi được yêu cầu sửa khác." | — (bỏ) | thiếu ý: một Postcondition của item Active bị bỏ. Log chỉ dựa vào GUC-13 ("không ghi 'có thể làm gì tiếp'") và PLAN.md mục 4, không có quyết định ở nguồn được phép. Tiêu chí đạt thực tế không đổi: sau UC-013 trạng thái là "chỉ có bản đã chấp nhận" (BR-010, dòng "Người dùng bỏ bản chờ duyệt"), và trạng thái này đã thỏa Preconditions của UC-004 | thấp | Giữ việc bỏ, vì GUC-13 và trạng thái đã khẳng định ở Postconditions 1–2. Cần người dùng xác nhận vì căn cứ chỉ là tiêu chí. Nếu muốn giữ assertion có thể kiểm chứng: "3. Lần làm việc không còn bản chờ duyệt và không có lượt xử lý AI đang chạy (BR-010)." |
+| 5 | UC-014 | Tình huống | "Tôi muốn biết nó đang làm gì và dừng **ngay** để gõ lại." | "tôi muốn biết AI đang làm gì và dừng lượt xử lý đó, để gõ lại yêu cầu." | thiếu ý: bỏ "ngay" (kỳ vọng dừng tức thì). Log dựa vào GX-08, là tiêu chí. Không requirement nào đặt ngưỡng thời gian cho việc dừng (R-046 chỉ yêu cầu "cho người dùng dừng") | thấp | Giữ, vì Tình huống không phải tiêu chí đạt. Nếu muốn giữ ý thời gian thì cần một ngưỡng tạm cho thời gian dừng ở R-046 (theo P0), không viết vào Tình huống |
+| 6 | UC-017 | Mục tiêu | "Mọi slide trong deck dùng thống nhất một theme hoặc bộ nhận diện người dùng chọn." | "Người dùng chỉ chọn theme hoặc bộ nhận diện một lần cho cả deck." | đổi nghĩa: mục tiêu chuyển từ kết quả (mọi slide thống nhất) sang công sức của người dùng (chọn một lần). Ý "một lần" lấy từ Tình huống. Log dựa vào GUC-05 và PLAN.md mục 4, không có quyết định. Ý gốc còn ở Postconditions 1 | thấp | "Người dùng có deck mà mọi slide theo theme hoặc bộ nhận diện mình đã chọn, không phải chỉnh từng slide." (giữ kết quả của sheet, vẫn khác Postconditions 1 ở chỗ nói giá trị với người dùng) |
+| 7 | UC-017 | Câu hỏi mở 2 | "Có nhận **template PPTX** làm bộ nhận diện không?" | "Có nhận **file PPTX của tổ chức** làm bộ nhận diện không? (nơi xử lý: R-047)" | đổi nghĩa (mở rộng): "template PPTX" là file mẫu giao diện; "file PPTX của tổ chức" là bất kỳ file PPTX nào của tổ chức. Log dựa vào GX-07 vì "template" là từ cấm khi nói về giao diện; glossary dùng "theme" cho nghĩa này. Nơi xử lý R-047 truy được (cột Căn cứ) | thấp | "Có nhận file PPTX chứa theme của tổ chức làm bộ nhận diện không? (nơi xử lý: R-047)" |
+| 8 | UC-022 | title, Mục tiêu | Tên: "…khôi phục một bản **bất kỳ**"; Mục tiêu: "quay về **bất kỳ** bản đã chấp nhận nào trước đây, không chỉ bản **ngay** trước." | Tên: "…khôi phục một bản"; Mục tiêu: "quay về **một** bản đã chấp nhận **trong lịch sử**, không chỉ bản trước lần sửa gần nhất." | đổi nghĩa (thu hẹp): từ "bất kỳ bản nào trước đây" thành "một bản trong lịch sử". Log chỉ dựa vào GX-08 | thấp | Giữ, vì BLK-013 đã giới hạn lịch sử bằng "trong giới hạn lưu trữ" của BR-016, với nơi xử lý là UC-022. "Bất kỳ" của sheet vốn đã không đúng khi lịch sử bị giới hạn. Nên ghi BLK-013 vào cột căn cứ của log |
+| 9 | UC-023 | Ghi chú 2 | "Mở lại nếu nhiều người dùng cần sửa đúng một slide (L-002)." | "Mở lại **Use Case này** nếu nhiều người dùng cần sửa đúng một slide." | đổi nghĩa: thêm chủ ngữ "Use Case này", trong khi UC-023 đang Proposed, không bị đóng. Thứ cần mở lại theo Ghi chú 1 là phạm vi V1 (UC-023 nằm trong Căn cứ D-014 "V1 chỉ sửa cả deck"). Log dựa vào GX-16 và PLAN.md. Bỏ "(L-002)" thì hợp lệ theo P8 | thấp | "Xem lại việc đưa sửa cục bộ vào V1 (D-014) nếu nhiều người dùng cần sửa đúng một slide." Nếu không muốn suy ra D-014, giữ câu không chủ ngữ của sheet: "Mở lại phạm vi nếu nhiều người dùng cần sửa đúng một slide." |
+
+## Nhánh mới và căn cứ
+
+| Use Case | Nhánh mới hoặc tách | Căn cứ | Kết luận |
+|---|---|---|---|
+| UC-001 | 3B (hủy khi được hỏi lại) | BLK-053 (P6), người dùng đã xác nhận | Đúng chữ ô Quyết định |
+| UC-001 | 4B (quá thời gian) / 4C (trả lỗi hoặc không kết nối được), tách từ 4B gốc | BLK-047, P1a | Đúng; 4C khớp `Hành vi lỗi` 2 của ACT-002 |
+| UC-002 | 3B (PDF không có text layer) | BLK-049 (phương án C) | Đúng chữ ô Quyết định |
+| UC-002 | 4B, 5E (hủy khi được hỏi lại ở 4A, 5A) | BLK-053 ("sau nhánh 4A, 5A") | Đúng |
+| UC-002 | 5C / 5D, tách từ 5C gốc | BLK-047, P1a | Đúng |
+| UC-004 | 2D, 2E (vế hủy tách khỏi 2A, 2B gốc) | Vế hủy có sẵn trong 2A, 2B của sheet; BLK-035 cho tham chiếu BR-010 | Giữ nghĩa, khớp BR-010 Rule 8, 9 |
+| UC-004 | 4B / 4C, tách từ 3B gốc | BLK-047 | Đúng |
+| UC-004 | Bỏ 1A | BLK-035 | Đúng |
+| UC-008 | 3B (vế hủy tách khỏi 3A gốc); 5A (tách khỏi 4A gốc); 6A (từ bước 7 gốc) | Có sẵn trong ô sheet; BLK-051 cho 1A | Giữ nghĩa |
+| UC-011 | 1B viết lại, 1C mới | BLK-052 (P6) | Đúng chữ ô Quyết định |
+| UC-014 | 2D, tách từ 2B gốc | BLK-047 | Đúng |
+
+Không thấy nhánh mới nào không có căn cứ.
+
+## Đã kiểm, không đánh dấu
+
+- UC-001: nhánh 3B đúng chữ BLK-053; 4B/4C tách theo BLK-047, câu 4C khớp `Hành vi lỗi` 2 của ACT-002 và nằm trong "AI lỗi" của sheet; 5A thêm "gồm kết quả sai định dạng" theo BLK-047; Ghi chú 3 theo BLK-047. Postconditions 3 giữ "nhiều slide" như sheet (log Không áp rõ 9): không đổi nghĩa, nhưng lệch P1e/R-006; người dùng cần quyết riêng. Tiêu đề "không có file" → "không kèm tài liệu có sẵn": ở V1 file chỉ có vai trò tài liệu có sẵn (BR-001), Trigger vẫn giữ "không tải lên file nào".
+- UC-002: 2A, 3A, 3B đúng chữ BLK-049; 2B và bước 2 theo BLK-011/P1b; 4A theo CX-5; 4B, 5E đúng BLK-053 ("sau nhánh 4A, 5A"); 5A thêm R-008 theo BLK-045; 5C/5D theo BLK-047; Câu hỏi mở gốc 1 bỏ theo BLK-011; Ghi chú 3 bỏ L-001 theo P8. Các ID thêm (BR-002, BR-008, BR-009) đều là tóm tắt kèm ID, nội dung khớp Rule của từng BR (GX-10). "(P1)" ở Postconditions 2 thay bằng BR-002, có `source` DOC-001 P1. Tiêu đề bỏ danh sách 5 loại: glossary "tài liệu có sẵn" đã liệt kê đủ.
+- UC-003: 1A theo P1b/BLK-011. Nơi xử lý R-005 của Câu hỏi mở có trong cột Related Requirements của sheet. Ghi chú 1 thêm BR-009 (Rule 2, Ghi chú 1 của BR-009 khớp).
+- UC-004: bước 3 đúng chữ BLK-035; bỏ 1A theo BLK-035; bước 7, Postconditions 1, 4 theo BLK-050; 4A–5A rút về BR-010 (Rule 13 có "không về bản cũ hơn"); 4B/4C theo BLK-047; Câu hỏi mở bỏ theo BLK-043. Postconditions 2 lấy ý từ bước 2' của sheet, khớp BR-010 Rule 4, 11; vế "chỉ … nếu" của Postconditions 2 gốc còn ở các nhánh 4A–5A và BR-010 Rule 13 (log Không áp rõ 10 đã nêu để người dùng duyệt).
+- UC-005 (Deprecated): chữ giữ nguyên. Bỏ lời giải thích "(…, R-041)" của quan hệ với UC-008 vì R-041 bị xóa (BLK-020); ý còn ở Ghi chú 1.
+- UC-007: 2B thêm BR-013 (không giả vờ làm được); nơi xử lý R-010 có trong cột Căn cứ của sheet; `supporting_actors: [ACT-002]` theo BLK-022.
+- UC-008: tiêu đề, Mục tiêu, bước 2, 6, Postconditions 3, Ghi chú 1 theo Q1 (APPLY mục 2); Trigger và 1A đúng chữ BLK-051; bỏ Câu hỏi mở 1 theo Q2/BLK-044; Ghi chú 4 đúng chữ BLK-048. Bước 7 → 6A, 3A tách 3A/3B, 4A tách 4A/5A, Postconditions 2 tách sang Bảo đảm tối thiểu 1, Postconditions 5 → Ghi chú 3: đều giữ nghĩa, khớp BR-010 Rule 5, 15, 16.
+- UC-009, UC-010, UC-016 (Draft): giữ nguyên chữ sheet; chỉ đổi tiêu đề, "DeckAgent" → "Hệ thống" (BLK-068), ngày "27/09/2026" → "2026-09-27", và "(GL-012, GL-013)" → "(glossary.md)" vì glossary không giữ ID thuật ngữ (APPLY mục 5, dòng GL-025).
+- UC-011: 1B, 1C đúng chữ BLK-052. 2A thêm "quay lại bước 5", 3A đổi "Chuyển sang" thành "Hệ thống thực hiện": giữ nghĩa. Các ID thêm (BR-012 ở bước 3 và Postconditions 2, BR-014 ở 1A) khớp Rule 2 của BR-012 và Rule 1 của BR-014.
+- UC-012: bỏ Preconditions 2 "Deck gốc còn tồn tại" vì nhánh 1A đã xét (GUC-07); ý còn ở nhánh 1A. Tiêu đề "deck đã làm trước đó" → "deck đã lưu" khớp Trigger và Preconditions 1 của sheet. Nơi xử lý R-049 có trong cột Căn cứ và Related Requirements.
+- UC-013: bỏ Preconditions 1 "Có bản chờ duyệt" vì nhánh 1A đã xét; ý còn ở 1A. Xem dòng 4 về Postconditions 3.
+- UC-014: 2A thêm trạng thái "Đã dừng", 2B/2D "Lỗi", Postconditions 1 "Hoàn tất" theo P1a/BLK-001. 2B/2D tách theo BLK-047. Hai Câu hỏi mở bỏ theo BLK-048 và BLK-001. Ghi chú 1 đúng chữ BLK-048; Ghi chú 3, 4 theo BLK-047. Ghi chú 2 (2B, 2D không áp cho lượt tạo file tải về) truy được: nhánh gốc có chủ ngữ "AI", và lượt tạo file không gọi AI (UC-008 bước 4); P1a chỉ đặt ngưỡng cho lượt tạo và lượt sửa. Mục tiêu "dừng được khi cần" → "dừng được lượt xử lý AI trước khi lượt đó xong": thu hẹp về lượt xử lý AI, khớp BLK-048. `level: subfunction` vì sheet ghi 7 Use Case include UC-014.
+- UC-015: bỏ Ghi chú 1 vì Mục tiêu đã nói (GX-12). 1A "không hiển thị được deck" → "không dựng được bản xem trước của deck": cùng điều kiện. `related` bỏ UC-004, UC-008, UC-013 vì ba item này đã `include` UC-015. Tiêu đề dùng "DeckAgent" ngoài câu Yêu cầu (BLK-068 chỉ cho ở câu Yêu cầu); đây là lỗi hình thức, không đổi nghĩa.
+- UC-017: Ghi chú 1 "đang được theo dõi ở L-002" → "Kết luận … nằm ở D-025": theo P8 (kết luận của L-002 nằm ở D-025). Bỏ L-002 khỏi `source` theo BLK-062; `source` còn R-047 nên không cần thay bằng D-025. BR-017 thêm ở Postconditions 1 khớp Rule 1 của BR-017.
+- UC-018, UC-019, UC-020 (Draft): giữ nguyên chữ sheet, chỉ đổi "DeckAgent" → "Hệ thống" và ngày. Nhánh thiếu điểm kết thúc giữ như sheet (Quy ước áp chung 2 của log).
+- UC-021: thay "sau đó quay lại" và thêm chủ ngữ ở 3A, giữ nghĩa. Nơi xử lý R-048 có trong cột Căn cứ.
+- UC-022: 4A không còn "(BR-010)" theo CX-8 (dòng log 205 còn ghi BR-010; mục CX của log đã ghi việc bỏ). Nơi xử lý R-016 có trong cột Căn cứ.
+- UC-023: 3A và Postconditions thêm BR-004, 3B thêm BR-010 (Rule 15 "lượt sửa thất bại thì giữ bản đã chấp nhận gần nhất"). CX-8 không nhắc UC-023, và BR-010 có UC-023 trong `use_cases`.
+- UC-024: 2A không còn "(BR-010)" theo CX-8 (dòng log 219 đã cũ, mục CX đã ghi). Bỏ L-001 ở `source` theo BLK-062. Nơi xử lý của Câu hỏi mở đổi từ "(L-001)" sang R-017: R-017 có trong cột Căn cứ của sheet, và Ghi chú của R-017 cũng trỏ câu hỏi này tới D-024. Chấp nhận được, nhưng log chỉ dựa vào PLAN.md.
+- UC-025: bỏ W-026 ở `source` theo BLK-062. Nơi xử lý R-044 có trong cột Căn cứ.
+
+## Ngoài phạm vi kiểm nghĩa (hình thức, để agent chính xử lý)
+
+1. UC-002 `Ghi chú` có hai dòng cùng số "3." (dòng thêm theo CX-5 và dòng ảnh nhúng); cần đánh số lại 3, 4, 5.
+2. UC-005 không có section `Bảo đảm tối thiểu`, trong khi Quy ước áp chung 3 của log ghi "giữ heading `Bảo đảm tối thiểu` trống". File và log lệch nhau; GUC-14 là tầng CI.
+3. Dòng log của UC-022 nhánh 4A và UC-024 nhánh 2A vẫn ghi câu mới có "(BR-010)". File đã bỏ theo CX-8, và mục CX của log đã ghi việc này. Nên sửa hai dòng bảng cho khớp file.
+4. UC-001 Postconditions 3 vẫn giữ "Deck có nhiều slide" như sheet (log Không áp rõ 9). Câu này không đổi nghĩa, nhưng lệch với P1e (R-006 bỏ điều kiện "nhiều slide"). Người dùng cần quyết riêng.
+5. Nhiều chỗ chỉ có căn cứ ở PLAN.md mục 4 hoặc 5, ví dụ nơi xử lý của Câu hỏi mở, ID Business Rule thêm theo GUC-15, hay bỏ Preconditions theo GUC-07. PLAN.md không thuộc nguồn được phép. Các chỗ đó không bị đánh dấu khi ID truy được về cột Căn cứ, cột Related Requirements của sheet, hoặc Rule của item được trỏ tới (GX-10).
