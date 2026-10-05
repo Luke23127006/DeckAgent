@@ -20,6 +20,9 @@ Ngoài các folder trên:
 | `_SOURCES.md` | Nguồn của từng tiêu chí |
 | `schema.json` | Cấu hình riêng của DeckAgent: status, enum, mẫu ID, field bắt buộc, quan hệ |
 | `glossary.md` | Thuật ngữ và các từ không dùng |
+| `_RETIRED_IDS.md` | ID đã nghỉ, không được dùng lại (GX-01) |
+| `_PROVISIONAL.md` | Mọi ngưỡng tạm (`_COMMON_CRITERIA.md` mục 7); sinh bằng `python tools/spec/spec_backlog.py` |
+| `_FILL_LATER.md` | Field và section còn để trống sau khi migrate từ Google Sheet |
 
 ## Thứ tự đọc
 
@@ -44,6 +47,6 @@ Quan hệ giữa các item chỉ ghi ở **phía nguồn** theo bảng "Hợp đ
 
 ## Việc chưa có
 
-- Validator kiểm tiêu chí tầng CI và Lint.
-- CI chạy validator trên PR.
-- Nội dung spec: các item còn trên Google Sheet và chưa được migrate. Hiện chưa có item thật nào trong các folder.
+- Validator kiểm tiêu chí tầng CI và Lint. Hiện có script kiểm tạm `tools/spec/check_spec.py` cho một phần tiêu chí tầng CI.
+- CI chạy validator trên PR, gồm Lint từ vựng (GX-07) mỗi khi PR sửa `docs/specification/**`.
+- Nội dung còn để trống sau khi migrate từ Google Sheet: xem `_FILL_LATER.md`.

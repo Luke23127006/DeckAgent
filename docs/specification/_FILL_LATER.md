@@ -2,7 +2,7 @@
 
 Backlog các field và section còn để trống sau khi migrate spec từ Google Sheet (2026-10-05). Mỗi dòng là một chỗ trong file item đang có `<!-- điền sau: FILL_LATER -->` hoặc một field bắt buộc còn rỗng. Khi điền xong, xóa marker trong file item và xóa dòng ở đây.
 
-Cột Gợi ý lấy từ đánh giá lúc migrate, chưa phải nội dung spec; gợi ý có nhắc `BLK-xxx` trỏ tới quyết định migrate, lưu trong lịch sử git ở `docs/specification/_migration/BLOCKERS.md` (commit trước khi thư mục này bị xóa).
+Cột Gợi ý lấy từ đánh giá lúc migrate, chưa phải nội dung spec; gợi ý có nhắc `BLK-xxx` trỏ tới quyết định migrate, lưu trong lịch sử git ở `docs/specification/_migration/BLOCKERS.md`, commit `187c7b4`.
 
 Item Active còn chỗ điền sau sẽ trượt tiêu chí tầng CI tương ứng (section bắt buộc trống, field bắt buộc rỗng) cho tới khi điền xong.
 
