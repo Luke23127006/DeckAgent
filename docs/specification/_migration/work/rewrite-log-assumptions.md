@@ -205,3 +205,7 @@ Không có. Assumption chỉ có field `source`; khung B3 đã đúng.
 | ID | Section | Câu của subagent | Câu sau khi sửa | Lý do |
 |---|---|---|---|---|
 | A-022 | Signpost | 1. File PPTX tải về không mở được trong `Microsoft PowerPoint`. | 1. File PPTX tải về không mở ổn định trong `Microsoft PowerPoint`. | Giữ nghĩa "không mở ổn định" của sheet; "không mở được" thu hẹp nghĩa |
+
+## Áp trả lời CX-4…CX-8 của người dùng (agent chính, 2026-10-05)
+
+Xem `APPLY.md` mục 8. File sửa: 15 Assumption về người dùng: "≤ 1/5" → "≤ 20%", "≥ 2/5" → "≥ 40%", tách dòng 6 thành dòng 6, 7 (thử thêm người ở vùng giữa; CX-6). A-018: thêm "Tiêu chí chia nhóm: điền sau" (CX-7).

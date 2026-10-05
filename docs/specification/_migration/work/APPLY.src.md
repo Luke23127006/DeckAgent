@@ -155,3 +155,12 @@ Theo trả lời {CX-1}: quan hệ trỏ tới {BR-005} chuyển sang {BR-010}: 
 | Benchmark độ khó | {A-018} | ≥ 2 lần | lần chạy đầu tiên của bộ đánh giá chung (60 lượt) |
 | Gán nhãn loại yêu cầu sửa | {A-019} | 30 yêu cầu; ≥ 80% | lần gán nhãn đầu tiên cho 30 yêu cầu sửa |
 | Kích thước ảnh PNG | {R-027} | 1920×1080 px | buổi thử người dùng đầu tiên có người mở file PNG tải về |
+
+## 8. Trả lời của người dùng cho 5 điểm cần xem sau B4 (2026-10-05)
+
+1. {CX-4}: ràng buộc một lần chỉ áp cho lượt đó, không bao giờ thay ràng buộc thường trực. Đã áp: {BR-003} mệnh đề 5 chỉ áp cho ràng buộc thường trực, thêm mệnh đề 7, 8 và `Bảng quyết định`; {R-024} Acceptance 3 sửa, thêm Acceptance 6.
+2. {CX-5}: nhánh 4A của {UC-002} hỏi lại chỉ khi thiếu chủ đề hoặc mục đích, theo {R-002}; thiếu audience không phải nhánh hỏi lại. Đã áp ở nhánh 4A và Ghi chú 3 của {UC-002}.
+3. {CX-6}: ngưỡng đọc theo tỷ lệ: Invalidated khi ≥ 40%, Supported khi ≤ 20%, ở giữa thì giữ Open; kết quả ở vùng giữa thì được thử thêm người. Đã áp ở `Cách kiểm chứng` của 15 Assumption về người dùng.
+4. {CX-7}: tiêu chí chia nhóm khó và nhóm dễ của {A-018} để điền sau. `_FILL_LATER.md` ghi kèm thời điểm phải điền: trước khi bất kỳ requirement Later nào dựa vào {A-018} lên Active.
+5. {CX-8}: bỏ tham chiếu {BR-010} ở nhánh 4A của {UC-022} và nhánh 2A của {UC-024}; bỏ dòng {UC-024} khỏi bảng chuyển trạng thái của {BR-010} và bỏ {UC-024} khỏi `use_cases` của {BR-010} (chỉ được thêm vì tham chiếu đó). Hai nhánh lỗi đưa vào `_FILL_LATER.md`.
+6. B6 giữ bước kiểm "không đổi nghĩa" độc lập cho cả 7 loại.

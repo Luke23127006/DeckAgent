@@ -163,3 +163,7 @@ Tìm "BR-010" trong `04-use-cases/`. Mỗi nhánh dưới đây có dòng trong 
 | ID | Chỗ sửa | Thay đổi | Lý do |
 |---|---|---|---|
 | BR-010 | `source` | thêm "DOC-001 NFR-R01", "DOC-001 NFR-R04" | CX-1: chuyển mọi quan hệ trỏ tới BR-005 sang BR-010; `source` của BR-005 là quan hệ tham chiếu |
+
+## Áp trả lời CX-4…CX-8 của người dùng (agent chính, 2026-10-05)
+
+Xem `APPLY.md` mục 8. File sửa: BR-003 (mệnh đề 5, thêm mệnh đề 7, 8, `Bảng quyết định`; CX-4); BR-010 (bỏ dòng UC-024 2A khỏi bảng, bỏ UC-024 khỏi `use_cases`; CX-8).

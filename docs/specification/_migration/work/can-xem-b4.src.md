@@ -1,4 +1,4 @@
-# Pha B dừng sau bước B4: 5 điểm cần bạn quyết định
+# Pha B, sau bước B4: 5 điểm cần quyết định (đã trả lời ngày 2026-10-05)
 
 ## Bối cảnh
 
@@ -12,6 +12,8 @@ Khi dịch, 5 chỗ không áp rõ được từ `DECISIONS.md` và các câu tr
 **Cách trả lời:** mỗi điểm một dòng, ví dụ "{CX-4}: ràng buộc cũ áp dụng lại". Nếu bạn sửa nội dung, ghi nội dung mới.
 
 ## {CX-4}
+
+**Đã trả lời:** ràng buộc một lần chỉ áp cho lượt đó, không bao giờ thay ràng buộc thường trực.
 
 **Vấn đề.** {BLK-043} đặt hai quy tắc mới cho ràng buộc của người dùng, nay nằm ở {BR-003}:
 1. Ràng buộc kèm cụm "chỉ lần này" chỉ áp cho một lần sửa, rồi hết hiệu lực.
@@ -31,6 +33,8 @@ Hai quy tắc cho kết quả khác nhau khi gặp nhau. Ví dụ: ràng buộc 
 
 ## {CX-5}
 
+**Đã trả lời:** sửa nhánh 4A của {UC-002} theo {R-002}: chỉ hỏi khi thiếu chủ đề hoặc mục đích; thiếu audience không phải nhánh hỏi lại.
+
 **Vấn đề.** Theo {BLK-015}, {R-002} hỏi lại khi yêu cầu thiếu chủ đề hoặc thiếu mục đích của deck, và bạn đã xác nhận không có trường hợp nào khác. Nhưng nhánh 4A của {UC-002} trên sheet hỏi lại khi "Yêu cầu không nêu mục đích hoặc audience và tài liệu cũng không cho biết". Use Case hỏi về audience, Requirement không hỏi. Cả hai đều Active.
 
 **Phương án**
@@ -41,6 +45,8 @@ Hai quy tắc cho kết quả khác nhau khi gặp nhau. Ví dụ: ràng buộc 
 **Đề xuất:** Use Case khớp Requirement. Quyết định của {BLK-015} mới hơn sheet và đã nói rõ không có trường hợp khác.
 
 ## {CX-6}
+
+**Đã trả lời:** ngưỡng đọc theo tỷ lệ (≥ 40% thì Invalidated, ≤ 20% thì Supported, ở giữa thì giữ Open); kết quả ở vùng giữa thì được thử thêm người.
 
 **Vấn đề.** {P1d} đặt quy trình kiểm chứng chung cho 15 Assumption về người dùng: buổi thử với ≥ 5 người; Invalidated nếu ≥ 2/5 người cho thấy điều ngược lại; Supported nếu ≤ 1/5. Với đúng 5 người, hai ngưỡng phủ mọi kết quả. Với hơn 5 người thì có kết quả nằm giữa. Ví dụ, 2 trong 7 người là khoảng 29%: không ≥ 40%, cũng không ≤ 20%. `Cách kiểm chứng` phải nói cách xử lý kết quả nằm giữa ({GA-05}). Subagent hiện ghi "giữ Open", nhưng {P1d} không nói điều này.
 
@@ -53,6 +59,8 @@ Hai quy tắc cho kết quả khác nhau khi gặp nhau. Ví dụ: ràng buộc 
 
 ## {CX-7}
 
+**Đã trả lời:** để điền sau; `_FILL_LATER.md` ghi thời điểm phải điền: trước khi bất kỳ requirement Later nào dựa vào {A-018} lên Active.
+
 **Vấn đề.** {BLK-010} đặt ngưỡng cho {A-018}: Supported nếu thời gian hoặc chi phí trung bình của "nhóm lượt xử lý khó" gấp ≥ 2 lần "nhóm dễ". Không quyết định nào nói lượt xử lý nào thuộc nhóm khó, lượt nào thuộc nhóm dễ. Thiếu điều này thì không chia được bộ đánh giá chung thành hai nhóm, và không chạy được phép kiểm chứng. {A-018} đang Open, mức sẵn sàng tương đương Active.
 
 **Phương án**
@@ -62,6 +70,8 @@ Hai quy tắc cho kết quả khác nhau khi gặp nhau. Ví dụ: ràng buộc 
 **Đề xuất:** để điền sau. {A-018} chỉ có {R-035}, {R-036}, {R-037} dựa vào, đều ở release Later, nên V1 chưa cần kết luận {A-018}.
 
 ## {CX-8}
+
+**Đã trả lời:** bỏ tham chiếu {BR-010} ở {UC-022} và {UC-024}, bỏ dòng subagent thêm vào bảng chuyển trạng thái của {BR-010}; đưa hai nhánh lỗi vào `_FILL_LATER.md`.
 
 **Vấn đề.** Theo {CX-1}, mọi chỗ trỏ tới {BR-005} chuyển sang {BR-010}. Hai Use Case release Later trỏ {BR-005} cho trường hợp mà {BR-005} cũ không nói tới:
 1. {UC-022} nhánh 4A: "Khôi phục thất bại: Hệ thống báo lỗi, bản đã chấp nhận hiện tại giữ nguyên". {BR-005} cũ chỉ nói lượt tạo, sửa hoặc tải về thất bại. `Ghi chú` của {BR-010} còn ghi việc khôi phục nhiều bản cũ thuộc {UC-022}, ngoài {BR-010}.

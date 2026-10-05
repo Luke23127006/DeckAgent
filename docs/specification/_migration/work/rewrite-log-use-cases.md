@@ -304,3 +304,7 @@ Không có. Frontmatter giữ đúng quan hệ khung B3 đã ghi; `title` viết
 | UC-014 | `related` | [UC-010, UC-011] | [] | GX-05: giữ ở UC-010, UC-011 |
 | UC-019 | `related` | [UC-008, UC-015] | [UC-008] | GX-05: cặp UC-015 ↔ UC-019 giữ ở UC-015 |
 | UC-015 | `related` | [UC-004, UC-008, UC-013, UC-019] | [UC-019] | GX-05: UC-004, UC-008, UC-013 đã `include` UC-015; `related` ở UC-015 là chiều ngược của cùng quan hệ |
+
+## Áp trả lời CX-4…CX-8 của người dùng (agent chính, 2026-10-05)
+
+Xem `APPLY.md` mục 8. File sửa: UC-002 (nhánh 4A "mục đích hoặc audience" → "chủ đề hoặc mục đích" (R-002); thêm Ghi chú 3; CX-5); UC-022 nhánh 4A, UC-024 nhánh 2A (bỏ "(BR-010)"; CX-8).

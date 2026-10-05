@@ -314,3 +314,7 @@ Không có. Frontmatter giữ đúng `id`, `status` và quan hệ khung B3 đã 
     - Đề xuất: (a).
 12. **R-021 câu Yêu cầu.** Sheet nêu bốn khía cạnh "nội dung, khả năng đọc, mạch trình bày và hình thức"; câu mới giữ bốn khía cạnh và định nghĩa mức đạt bằng 4 lỗi tối thiểu (BLK-032). Đúng số liệu thuộc R-007. Đề xuất giữ.
 13. **R-031 Bối cảnh "deck đang dùng được"** giữ chữ sheet, nhưng nay trùng thuật ngữ "deck dùng được" (deck đạt R-021). Phương án: (a) giữ; (b) đổi thành "deck người dùng đang có". Đề xuất (b), cần người dùng xác nhận vì đổi chữ.
+
+## Áp trả lời CX-4…CX-8 của người dùng (agent chính, 2026-10-05)
+
+Xem `APPLY.md` mục 8. File sửa: R-024 (Acceptance 3 thêm điều kiện "không kèm cụm chỉ lần này"; thêm Acceptance 6; CX-4).
