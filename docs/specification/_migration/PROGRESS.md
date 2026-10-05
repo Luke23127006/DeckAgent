@@ -33,7 +33,7 @@ Nguồn quyết định duy nhất: `DECISIONS.md` (P0–P9, Q1–Q3). Báo cáo
 |---|---|---|---|
 | B0 | Đọc `DECISIONS.md`, `BLOCKERS.md`, `PLAN.md`, `FILL_LATER.md`, `_COMMON_CRITERIA.md`, `schema.json`, `_CRITERIA.md` + `_TEMPLATE.md` của 7 loại | Xong | `PROGRESS.md` |
 | B1 | Sửa bộ quy định theo P0, P1c, P9 | Xong | `_COMMON_CRITERIA.md`, `06-requirements/_CRITERIA.md`, `03-assumptions/_CRITERIA.md`, 2 template, `glossary.md` |
-| B2 | Áp quyết định xuống 69 blocker, Q1, kiểm mâu thuẫn, ID mới, danh sách xóa | **Dừng chờ người dùng**: 69 ô Quyết định đã điền; 3 điểm CẦN XEM (CX-1 BR-005, CX-2 sự kiện xem lại của ngưỡng tạm, CX-3 Reopen When của D-009). Khi có trả lời: điền CX vào `BLOCKERS.md` (BLK-035, BLK-017 và các blocker ngưỡng tạm), sửa `APPLY.md`, commit, rồi làm B3 | `BLOCKERS.md`, `APPLY.md` (nguồn: `work/APPLY.src.md`), `trash/phase-b-can-xem.md` (nguồn: `work/can-xem.src.md`) |
+| B2 | Áp quyết định xuống 69 blocker, Q1, kiểm mâu thuẫn, ID mới, danh sách xóa | Xong: 69 ô Quyết định; 3 điểm cần xem (CX-1, CX-2, CX-3) đã được người dùng trả lời ngày 2026-10-05 và đã áp (`APPLY.md` mục 7); danh sách xóa 20 ID item + GL-025 | `BLOCKERS.md`, `APPLY.md` (nguồn: `work/APPLY.src.md`), `trash/phase-b-can-xem.md` (nguồn: `work/can-xem.src.md`) |
 | B3 | Sinh khung file | Chưa | `docs/specification/0X-*/` |
 | B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | Chưa | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |
 | B5 | File phụ | Chưa | `glossary.md`, `_RETIRED_IDS.md`, `_PROVISIONAL.md`, `_FILL_LATER.md`, khung bộ đánh giá |

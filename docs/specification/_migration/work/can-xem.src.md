@@ -1,4 +1,4 @@
-# Pha B dừng ở bước B2: 3 điểm cần bạn quyết định
+# Pha B, bước B2: 3 điểm cần quyết định (đã trả lời ngày 2026-10-05)
 
 ## Bối cảnh
 
@@ -9,11 +9,13 @@ Pha B chuyển spec của DeckAgent từ Google Sheet cũ sang file Markdown tro
 2. B1: sửa bộ tiêu chí để chấp nhận ngưỡng tạm ({P0}); thêm thuật ngữ "deck dùng được" vào glossary ({P1c}); sửa quy ước đọc glossary ({P9}).
 3. B2: điền ô Quyết định cho cả 69 blocker; áp {Q1} lên từng item; kiểm mâu thuẫn; lập danh sách ID mới và danh sách xóa.
 
-B2 gặp 3 điểm không áp rõ được từ `DECISIONS.md`. Theo quy trình đã thống nhất, Pha B dừng ở đây. **Chưa có file item nào được sinh ra.**
+B2 gặp 3 điểm không áp rõ được từ `DECISIONS.md`, nên Pha B đã dừng ở đây. **Bạn đã trả lời cả 3 điểm ngày 2026-10-05**; câu trả lời ghi ngay dưới tiêu đề của từng điểm. Pha B tiếp tục từ B3.
 
 **Cách trả lời:** với mỗi điểm, ghi một dòng, ví dụ "{CX-1}: xóa", "{CX-2}: đồng ý bảng đề xuất", "{CX-3}: thay bằng Decision định dạng mới". Nếu bạn sửa nội dung, ghi nội dung mới.
 
 ## {CX-1}
+
+**Đã trả lời:** xóa {BR-005}, đưa vào danh sách ID đã nghỉ; chuyển mọi quan hệ đang trỏ tới {BR-005} sang {BR-010}; thêm {UC-014} vào `use_cases` của {BR-010}; chuyển hai ghi chú của {BR-005} sang `Ghi chú` của {BR-010}.
 
 **Vấn đề.** {P3} giao toàn bộ vòng đời bản deck (khi nào một bản được chấp nhận, khôi phục khi lỗi, dừng, bỏ) cho {BR-010}, dưới dạng một bảng chuyển trạng thái. Theo {BLK-033} và {BLK-035}, {BR-005} phải rút về một câu tóm tắt kèm ID của {BR-010}.
 
@@ -21,7 +23,7 @@ Sau khi rút gọn, {BR-005} không còn quy tắc nào của riêng nó:
 1. Câu Rule hiện tại: "Khi lượt tạo, sửa hoặc tải về thất bại, hoặc người dùng bỏ bản chờ duyệt, hệ thống phải giữ hoặc khôi phục bản đã chấp nhận gần nhất." Mọi trường hợp trong câu này đều là một dòng trong bảng chuyển trạng thái của {BR-010}.
 2. Phần còn lại chỉ là ghi chú: "cách khôi phục có thể khác nhau theo loại lượt xử lý, không bắt buộc snapshot hay diff" và "không yêu cầu Undo nhiều bước".
 
-`DECISIONS.md` ({P3}, mục Ngoại lệ) yêu cầu đánh dấu CẦN XEM trong trường hợp này, không tự xóa.
+`DECISIONS.md` ({P3}, mục Ngoại lệ) yêu cầu dừng lại hỏi bạn trong trường hợp này, không tự xóa.
 
 **Đang có quan hệ trỏ tới {BR-005}:**
 1. Áp lên 6 Use Case: {UC-001}, {UC-002}, {UC-004}, {UC-008}, {UC-013}, {UC-014}.
@@ -35,6 +37,8 @@ Sau khi rút gọn, {BR-005} không còn quy tắc nào của riêng nó:
 **Đề xuất:** xóa {BR-005}. Lý do: {P3} đã chọn {BR-010} làm nơi sở hữu duy nhất của vòng đời bản deck, và `Bảo đảm tối thiểu` của Use Case được phép tham chiếu thẳng {BR-010}.
 
 ## {CX-2}
+
+**Đã trả lời:** dùng bảng sự kiện xem lại đề xuất bên dưới cho từng nhóm ngưỡng tạm; ngày đặt ngưỡng là 2026-10-03.
 
 **Vấn đề.** {P0} quy định mọi ngưỡng tạm phải có nhãn `[tạm <ngày> · xem lại: <sự kiện quan sát được>]`. Thiếu sự kiện xem lại thì con số bị coi là chưa chốt, và item Active chứa con số đó trượt {GX-09}.
 
@@ -62,6 +66,10 @@ Sau khi rút gọn, {BR-005} không còn quy tắc nào của riêng nó:
 
 ## {CX-3}
 
+**Đã trả lời:** Reopen When của {D-009} dùng vế "…, hoặc danh sách định dạng tải về của {D-031} thay đổi."
+
+**Bổ sung cho {D-031}:** `source` ghi mã nguồn `Benchmark Napkin AI 2026-10-03` (hộp thoại Export All Slides của Napkin AI gồm PowerPoint, Google Slides, PDF, PNGs, SVGs); Reopen When là "Buổi thử người dùng đầu tiên với ≥ 5 người thuộc nhóm {ACT-001} cho thấy ≥ 2/5 người cần một định dạng ngoài danh sách, hoặc {R-058} được đưa vào release V1"; `documents` để trống và ghi vào danh sách điền sau.
+
 **Vấn đề.** Hai quyết định cho kết quả trái nhau ở cùng một chỗ:
 1. {P1d} sửa Reopen When của {D-009}: đổi vế "yêu cầu đồ án thay đổi" thành "{C-003} thay đổi".
 2. {Q1} chuyển {C-003} sang Retired, vì danh sách định dạng nay là lựa chọn của team, không còn là giới hạn áp từ bên ngoài.
@@ -79,7 +87,7 @@ Reopen When hiện tại của {D-009}: "Khi một định dạng hoặc use cas
 
 ## Kết quả B2 để bạn duyệt cùng
 
-Phần này không cần trả lời nếu bạn đồng ý. Chi tiết nằm ở `docs/specification/_migration/APPLY.md` và ô Quyết định trong `docs/specification/_migration/BLOCKERS.md`.
+Bạn đã đồng ý mọi mục trong phần này (2026-10-05). Chi tiết nằm ở `docs/specification/_migration/APPLY.md` và ô Quyết định trong `docs/specification/_migration/BLOCKERS.md`.
 
 ### Status thay đổi so với sheet
 
@@ -98,14 +106,14 @@ Phần này không cần trả lời nếu bạn đồng ý. Chi tiết nằm �
 4. {D-031}: Active.
 5. {R-058}: Proposed, release Later.
 
-### Danh sách xóa cuối cùng: 19 ID item và 1 thuật ngữ
+### Danh sách xóa cuối cùng: 20 ID item và 1 thuật ngữ
 
 1. Item vận hành dự án (từ Pha A): {A-001}, {A-002}, {A-003}, {A-004}, {A-005}, {A-006}, {D-001}, {D-002}, {D-003}, {D-004}, {D-005}, {D-018}, {D-023}.
 2. Theo {P4}: {C-006}, {C-007}, {D-011}, {D-010}, {D-028}.
 3. Theo {P5}: {R-041}.
 4. Thuật ngữ: {GL-025}. Glossary không giữ ID thuật ngữ, nên dòng này không vào danh sách ID đã nghỉ.
 
-{BR-005} thành ID thứ 20 nếu {CX-1} chọn xóa.
+Theo trả lời {CX-1}, {BR-005} là ID thứ 20.
 
 ### Thay đổi chính theo {Q1}
 
@@ -134,7 +142,7 @@ Phần này không cần trả lời nếu bạn đồng ý. Chi tiết nằm �
    - status Active, ngày 2026-10-03;
    - `decided_by: Duy`, theo người ghi các Decision khác trong sheet;
    - quan hệ chép từ {D-026} và thêm {R-058};
-   - để trống `documents` và Reopen When, ghi vào danh sách điền sau, vì repo chưa có tài liệu benchmark Napkin AI.
+   - `documents` để trống, ghi vào danh sách điền sau, vì repo chưa có tài liệu benchmark Napkin AI; `source` và Reopen When lấy theo bổ sung của bạn ở {CX-3}.
 2. **{R-058}:** `type: Functional`, trỏ Use Case {UC-008}, `source` là {D-031}.
 3. **Kích thước ảnh PNG** đặt trong {R-027}, vì đây là điều kiện để file PNG hợp lệ.
 4. **{A-018} và {A-019}:** `DECISIONS.md` chỉ cho ngưỡng Supported. Tôi đặt Invalidated là đủ mẫu mà không đạt ngưỡng Supported.
