@@ -34,7 +34,7 @@ Nguồn quyết định duy nhất: `DECISIONS.md` (P0–P9, Q1–Q3). Báo cáo
 | B0 | Đọc `DECISIONS.md`, `BLOCKERS.md`, `PLAN.md`, `FILL_LATER.md`, `_COMMON_CRITERIA.md`, `schema.json`, `_CRITERIA.md` + `_TEMPLATE.md` của 7 loại | Xong | `PROGRESS.md` |
 | B1 | Sửa bộ quy định theo P0, P1c, P9 | Xong | `_COMMON_CRITERIA.md`, `06-requirements/_CRITERIA.md`, `03-assumptions/_CRITERIA.md`, 2 template, `glossary.md` |
 | B2 | Áp quyết định xuống 69 blocker, Q1, kiểm mâu thuẫn, ID mới, danh sách xóa | Xong: 69 ô Quyết định; 3 điểm cần xem (CX-1, CX-2, CX-3) đã được người dùng trả lời ngày 2026-10-05 và đã áp (`APPLY.md` mục 7); danh sách xóa 20 ID item + GL-025 | `BLOCKERS.md`, `APPLY.md` (nguồn: `work/APPLY.src.md`), `trash/phase-b-can-xem.md` (nguồn: `work/can-xem.src.md`) |
-| B3 | Sinh khung file | Chưa | `docs/specification/0X-*/` |
+| B3 | Sinh khung file | Xong: 141 file (156 item sheet − 20 xóa + 5 ID mới); kiểm GX-03, GX-04 trên khung: 0 lỗi | `docs/specification/0X-*/`, `tools/spec/scaffold_spec.py`, `work/scaffold-relation-log.md` |
 | B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | Chưa | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |
 | B5 | File phụ | Chưa | `glossary.md`, `_RETIRED_IDS.md`, `_PROVISIONAL.md`, `_FILL_LATER.md`, khung bộ đánh giá |
 | B6 | Kiểm chứng | Chưa | script kiểm tạm, báo cáo đổi nghĩa |
