@@ -35,7 +35,7 @@ Nguồn quyết định duy nhất: `DECISIONS.md` (P0–P9, Q1–Q3). Báo cáo
 | B1 | Sửa bộ quy định theo P0, P1c, P9 | Xong | `_COMMON_CRITERIA.md`, `06-requirements/_CRITERIA.md`, `03-assumptions/_CRITERIA.md`, 2 template, `glossary.md` |
 | B2 | Áp quyết định xuống 69 blocker, Q1, kiểm mâu thuẫn, ID mới, danh sách xóa | Xong: 69 ô Quyết định; 3 điểm cần xem (CX-1, CX-2, CX-3) đã được người dùng trả lời ngày 2026-10-05 và đã áp (`APPLY.md` mục 7); danh sách xóa 20 ID item + GL-025 | `BLOCKERS.md`, `APPLY.md` (nguồn: `work/APPLY.src.md`), `trash/phase-b-can-xem.md` (nguồn: `work/can-xem.src.md`) |
 | B3 | Sinh khung file | Xong: 141 file (156 item sheet − 20 xóa + 5 ID mới); kiểm GX-03, GX-04 trên khung: 0 lỗi | `docs/specification/0X-*/`, `tools/spec/scaffold_spec.py`, `work/scaffold-relation-log.md` |
-| B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | Chưa | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |
+| B4 | Dịch nội dung (subagent mỗi loại, mỗi loại một commit) | **Dịch xong 7 loại, dừng chờ người dùng**: 5 điểm cần xem CX-4…CX-8 (`trash/phase-b-can-xem-b4.md`, nguồn `work/can-xem-b4.src.md`). Khi có trả lời: sửa BR-003, R-024 (CX-4), UC-002 4A (CX-5), 15 Assumption về người dùng (CX-6), A-018 (CX-7), UC-022, UC-024, BR-010 (CX-8); commit; rồi làm B5 | `docs/specification/0X-*/`, `work/rewrite-log-<loại>.md` |
 | B5 | File phụ | Chưa | `glossary.md`, `_RETIRED_IDS.md`, `_PROVISIONAL.md`, `_FILL_LATER.md`, khung bộ đánh giá |
 | B6 | Kiểm chứng | Chưa | script kiểm tạm, báo cáo đổi nghĩa |
 | B7 | Xóa `_migration/`, báo cáo cuối | Chưa | `trash/phase-b-report.md` |

@@ -289,5 +289,10 @@
  "GL-021": "thuật ngữ \"kiểm tra kết quả\"",
  "GL-022": "thuật ngữ \"cố gắng, không đảm bảo\"",
  "GL-023": "thuật ngữ \"Hệ thống\"",
- "GL-024": "thuật ngữ \"AI\""
+ "GL-024": "thuật ngữ \"AI\"",
+ "CX-4": "ràng buộc \"chỉ lần này\" gặp ràng buộc cùng loại đang có hiệu lực",
+ "CX-5": "Use Case tạo deck từ tài liệu hỏi lại về audience, Requirement hỏi lại thì không",
+ "CX-6": "kết quả nằm giữa hai ngưỡng của buổi thử người dùng",
+ "CX-7": "chưa có cách chia nhóm lượt xử lý khó và dễ",
+ "CX-8": "hai Use Case release Later trỏ rule vòng đời bản deck cho trường hợp rule không có"
 }
