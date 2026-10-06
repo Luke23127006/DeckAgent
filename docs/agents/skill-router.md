@@ -33,8 +33,6 @@ to invent permanent boundaries.
 | Reviewing workspace changes, a commit, or a branch range | Requested review target, task context, relevant contracts and tests | [open-code-review-delegate](../../.agents/skills/open-code-review-delegate/SKILL.md) | Complete file accounting and severity-ranked findings with repository evidence |
 | Mermaid embedded in repository Markdown | Target document, authoritative content, renderer constraints | [mermaid-markdown](../../.agents/skills/mermaid-markdown/SKILL.md) | Portable, semantically accurate Mermaid in the target Markdown file |
 | Standalone Mermaid source or rendered artifact | Authoritative content, requested format and viewing context | [mermaid-diagram](../../.agents/skills/mermaid-diagram/SKILL.md) | Verified Mermaid source and requested rendered outputs |
-| Targeted Project Hub comparison | Current validated snapshot, stable IDs, relevant GitHub artifact | [project-hub-review](../../.agents/skills/project-hub-review/SKILL.md) | Alignment findings with stable IDs and repository evidence |
-| Broad Project Hub consistency audit | Current validated snapshot and audit scope | [project-hub-audit](../../.agents/skills/project-hub-audit/SKILL.md) | Read-only findings for contradictions, relation gaps, and missing evidence |
 
 No specialised workflow is needed for routine edits. Do not load all skills by
 default or invent product concepts, module rules, or architecture during setup.
@@ -64,8 +62,8 @@ agent adapters, or roles, or when it needs a stable repository-level link indepe
 of the generated skill mirrors. In that case, keep `SKILL.md` as the concise
 entrypoint and link it to the shared procedure.
 
-The four initial engineering skills come from `mattpocock/skills`. The four
-repository-local Mermaid and Project Hub skills were promoted from the existing
+The four initial engineering skills come from `mattpocock/skills`. The two
+repository-local Mermaid skills were promoted from the existing
 Claude configuration into the canonical collection. The OpenCodeReview delegation
 skill comes from `alibaba/open-code-review` and is adapted to the repository-local,
 pinned npm tooling. The supplied `ComposioHQ/awesome-claude-skills` catalog was
