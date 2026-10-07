@@ -12,16 +12,21 @@ Template: `_TEMPLATE.md`. Dimension catalog: `dimensions.md` (format in section 
 |---|---|
 | An AI service, export pipeline or any non-human participant | The supporting actors of a use case, or architecture work later. Not here |
 | A product feature or solution ("needs a template gallery") | A requirement. Describe the need behind it here |
-| A role inside one use case (primary actor) | The use case. It points to a segment here; it does not redefine it |
+| A role inside one use case (primary actor) | The use case. This folder lists the use cases that serve each segment; the use case does not name the segment |
 | A rule that applies to two or more segments or use cases | A business rule |
 | Market size, pricing, business priority, release scope | Scope or strategy documents (`00-current-scope/`, `02-use-cases/`), not user description |
 | A named real individual | Nowhere. A segment is a pattern, not a person |
+
+### Linking direction
+
+Links run top-down. The parent file lists its children; a child never names its parent. This folder is the top of the chain (segment, then use case, then requirement or rule). Each segment lists the use cases that serve it, per need and per special-case hypothesis (U-11). A use case holds no field naming a segment. To find the segments of a use case, search this folder.
 
 ## 2. How segments are found
 
 1. Seed with a concrete imagined person (a student defending a thesis, a manager pitching tomorrow). Record this as `seed`.
 2. Generalize the seed into a segment by stating its values on the dimensions in `dimensions.md` that deviate from the baseline. A dimension left unlisted means the segment sits at the baseline for it. Categorical dimensions have no baseline and are always listed.
 3. Run the gap check (U-10): every extreme value in the catalog is either covered by a segment or marked `No segment yet` with a gap note. A gap is a discovery task, not a decision to exclude anyone.
+4. Once use cases exist, list them on the needs and hypotheses they serve (U-11). A need with `none yet` is a discovery task: a use case may be missing, or the need may not be one a use case can serve.
 
 ## 3. Confidence tags and knowledge scale
 
@@ -58,7 +63,7 @@ Knowledge level, rated per kind (domain, presentation craft, AI/tool literacy, l
 | U-08 | Special-case hypotheses are listed: each states a situation and what the product would have to handle. If none are found, say so with the reason | Segments that never influence the spec | Review | Active | Project rule |
 | U-09 | Permanent, temporary and situational limits (for example one hand, bright screen, second language) are considered. "None identified" needs a reason | Quietly excluding users | Review | Active | Microsoft Inclusive Design |
 | U-10 | In `dimensions.md`, every non-baseline extreme value is covered by at least one segment or marked `No segment yet` with a gap note. Baseline values are covered implicitly | Claiming to serve everyone without checking who is missing | Review | Active | Project rule |
-| U-11 | Use cases cite their primary segment. A requirement raised by a special-case hypothesis cites the segment and hypothesis ID | No trace from a requirement back to a person | CI (references resolve) | Active | Project rule |
+| U-11 | Links run top-down. Each need lists the use cases that serve it (`none yet` if none). Each hypothesis says where it is handled (a use case step or branch, `none yet`, or `rejected` with a reason). Every user-goal use case is listed by at least one segment. A use case does not name segments or hypotheses | No trace from a person to the spec; hypotheses that never reach a use case; two-way links that drift | CI (references resolve, no orphan use case) | Active | Project rule |
 | U-12 | An Active segment has no `assumed` claim without an open question that names who will resolve it | Assumptions hidden inside an Active segment | Lint | Active | Project rule |
 
 ## 5. `dimensions.md` format

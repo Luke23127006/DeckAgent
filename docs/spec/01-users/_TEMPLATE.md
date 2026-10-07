@@ -14,11 +14,13 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 
 ## Needs
 
-<!-- One row per need. Goal in the user's words + the situation (when, where, why now). No solutions (U-04). Tag every row (U-06). -->
+<!-- One row per need. Goal in the user's words + the situation (when, where, why now). No solutions (U-04). Tag every row (U-06).
+     "Use cases" lists the UC IDs that serve this need. This file is the parent: use cases do not point back to it (U-11).
+     Write "none yet" while no use case exists. That marks a need still to be served, not a decision. -->
 
-| ID | Goal (user's words) | Situation | Source |
-|---|---|---|---|
-| N-1 | | | [assumed] |
+| ID | Goal (user's words) | Situation | Use cases | Source |
+|---|---|---|---|---|
+| N-1 | | | none yet | [assumed] |
 
 ## Knowledge
 
@@ -55,11 +57,12 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 ## Special-case hypotheses
 
 <!-- Situation -> what the product would have to handle. These seed use case variants and requirements (U-08, U-11).
-     "Affects" names a use case ID once it exists; until then name the area. If none are found, write "None found: <reason>". -->
+     "Affects" names the area of the product. "Handled by" names where a use case handles it, as UC-xxx.S3 or UC-xxx.A2,
+     or "none yet", or "rejected: <reason>" (U-11). If no hypotheses are found, write "None found: <reason>". -->
 
-| ID | Hypothesis | Affects | Source |
-|---|---|---|---|
-| H-1 | | | [assumed] |
+| ID | Hypothesis | Affects | Handled by | Source |
+|---|---|---|---|---|
+| H-1 | | | none yet | [assumed] |
 
 ## Open questions
 
