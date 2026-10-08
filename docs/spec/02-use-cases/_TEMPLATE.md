@@ -12,7 +12,9 @@ next: []              # use cases that normally come after this one
                       # Relations point down or forward only. Never name a segment or a hypothesis here (UCG-01, UCG-07, UCG-10).
 ---
 
-<!-- Write in plain English: docs/spec/_STYLE.md (UCG-11). -->
+<!-- Write in plain English: docs/spec/_STYLE.md (UCG-11).
+     Write intent and response, never interface (UCG-13, _STYLE rule 11). No control, menu, gesture, position, look or label.
+     Name a place only by a zone: request area, conversation, deck canvas. Before you finish, run the interface check in _STYLE.md. -->
 
 ## Flow at a glance
 
@@ -35,7 +37,7 @@ flowchart TD
 
 ## Trigger and preconditions
 
-<!-- Trigger: what starts the case. Preconditions: what is already true. Both observable, no implementation. -->
+<!-- Trigger: what starts the case. Preconditions: what is already true. Both observable. No implementation and no interface. -->
 
 - **Trigger:**
 - **Preconditions:**
@@ -44,7 +46,8 @@ flowchart TD
 
 <!-- 3 to 9 steps, one block per step, in order (UCG-03). IDs are stable: retire, never renumber (UCG-10).
      Heading: "### Sx · Step name". The name is short (5 words or fewer).
-     System: bullets for what the user can observe. No "if", no implementation. A rule or quality target is cited by ID,
+     User: what the user wants to do, as an intent ("Chooses a skill"), not an action on a control.
+     System: bullets for what the user can observe: what the system tells, keeps, changes or builds. No "if", no implementation, no interface. A rule or quality target is cited by ID,
        never written as a value: [BR-xxx], [NFR-xxx]. Unwritten: [BR-?: topic] / [NFR-?: topic] (UCG-06).
      Reqs: FR IDs for this response, or FR-? while unwritten (UCG-06).
      Evidence: tags from _STYLE.md on one line. Remove the field when the step makes no claim about a product (UCG-08).
@@ -73,7 +76,7 @@ flowchart TD
        Goes to UC-xxx   another use case takes over
        Goes to UC-? (topic)   a use case that is not written yet takes over; the topic names it, for example "model setup"
      An action offered after the end (for example "Try again") is written in System, not in End.
-     When: a condition the system can detect (UCG-04). Fixed field names and order: At, End, When, System, Reqs, Evidence. -->
+     When: a condition the system can detect, or an intent of the user (UCG-04). Fixed field names and order: At, End, When, System, Reqs, Evidence. -->
 
 ### A1 · Branch name
 
