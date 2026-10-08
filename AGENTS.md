@@ -21,8 +21,7 @@ Preserve existing repository instructions unless the requested change explicitly
 - `AGENTS.md` is the authoritative location for portable repository invariants shared by coding agents.
 - `CLAUDE.md` is a thin Claude-specific adapter that references this file; do not duplicate portable rules or long workflows there.
 - `.agents/skills/` is the canonical, tool-neutral skill collection. `.claude/skills/` and `.codex/skills/` are generated mirrors; do not edit them directly. After changing canonical skills, run `python .agents/scripts/sync_skill_mirrors.py` and verify with `python .agents/scripts/sync_skill_mirrors.py --check`. After intentionally removing a canonical skill, use `--prune`; use `--force` only to discard inspected mirror changes explicitly.
-- Canonical multi-step procedures shared by skills live in `docs/agents/workflows/` so every agent can reuse them.
-- `.claude/agents/` contains specialised Claude subagent roles; `.claude/rules/` contains conditional, path-scoped reminders.
+- A multi-step procedure shared by several skills goes in `docs/agents/workflows/` (create the folder with the first one) so every agent can reuse it.
 
 ## Working within scope
 
@@ -30,6 +29,10 @@ Preserve existing repository instructions unless the requested change explicitly
 - Inspect the working tree before editing. Preserve other contributors' uncommitted work; do not revert, overwrite, stage, or include changes unrelated to the task.
 - You may choose algorithms, internal structure, naming, and focused tests within the assigned task. Use existing patterns where appropriate, and make directly necessary changes to callers, tests, and documentation.
 - Do not add unrelated features, refactors, broad formatting changes, dependency upgrades, production dependencies, or shared-configuration changes merely for convenience. Keep directly necessary additional changes small and explain their purpose and impact.
+
+## Documentation under `docs/`
+
+Read [`docs/AGENTS.md`](docs/AGENTS.md) before creating or editing any file under `docs/`. It holds the documentation rules.
 
 ## Boundaries and architecture
 

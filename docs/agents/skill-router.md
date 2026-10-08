@@ -33,6 +33,8 @@ to invent permanent boundaries.
 | Reviewing workspace changes, a commit, or a branch range | Requested review target, task context, relevant contracts and tests | [open-code-review-delegate](../../.agents/skills/open-code-review-delegate/SKILL.md) | Complete file accounting and severity-ranked findings with repository evidence |
 | Mermaid embedded in repository Markdown | Target document, authoritative content, renderer constraints | [mermaid-markdown](../../.agents/skills/mermaid-markdown/SKILL.md) | Portable, semantically accurate Mermaid in the target Markdown file |
 | Standalone Mermaid source or rendered artifact | Authoritative content, requested format and viewing context | [mermaid-diagram](../../.agents/skills/mermaid-diagram/SKILL.md) | Verified Mermaid source and requested rendered outputs |
+| Creating or rewriting a use case or user segment file in `docs/spec/` | The target file, its folder's `_TEMPLATE.md` and `_CRITERIA.md`, `docs/spec/_STYLE.md`, research cards | [spec-authoring](../../.agents/skills/spec-authoring/SKILL.md) | A spec file that follows its template, criteria and style, with every changed meaning and every added assumption reported |
+| Steps or alternative flows of a use case changed, or its `Flow at a glance` block is missing or stale | The use case file | [use-case-flowchart](../../.agents/skills/use-case-flowchart/SKILL.md) | The block between the `BEGIN generated` and `END generated` markers rewritten by fixed rules, nothing else changed |
 
 No specialised workflow is needed for routine edits. Do not load all skills by
 default or invent product concepts, module rules, or architecture during setup.
@@ -45,22 +47,8 @@ to canonical skills, record the adaptation in the manifest and review the diff.
 Upstream updates require a fresh source/license/dependency review before changing
 the recorded commit.
 
-Edit only `.agents/skills/`. Then run
-`python .agents/scripts/sync_skill_mirrors.py` to regenerate the committed
-`.claude/skills/` and `.codex/skills/` mirrors. Run the same command with
-`--check` in validation or CI to detect drift. The synchronizer refuses to
-remove a skill that exists only in a mirror; promote that skill into
-`.agents/skills/` first, or use `--prune` after intentionally removing its
-canonical copy. It also refuses to replace or prune a mirror with tracked,
-untracked, or ignored local changes. Restore or promote those changes first;
-use `--force` only to discard them explicitly.
-
-Keep instructions, references, scripts, and assets used by only one skill inside
-that skill's `.agents/skills/<name>/` directory. Put a procedure in
-`docs/agents/workflows/` when it is repository-owned and shared by multiple skills,
-agent adapters, or roles, or when it needs a stable repository-level link independent
-of the generated skill mirrors. In that case, keep `SKILL.md` as the concise
-entrypoint and link it to the shared procedure.
+Edit only `.agents/skills/`. How to add, update, remove and sync skills, and where
+shared procedures live, is in [skill maintenance](skill-maintenance.md).
 
 The four initial engineering skills come from `mattpocock/skills`. The two
 repository-local Mermaid skills were promoted from the existing
