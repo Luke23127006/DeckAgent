@@ -195,6 +195,38 @@
         "Apply DeckAgent-specific review filters and rules from .opencodereview/rule.json."
       ],
       "status": "installed"
+    },
+    {
+      "name": "use-case-flowchart",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/use-case-flowchart",
+      "decision": "Create",
+      "reason": "Keep the Flow at a glance diagram of each use case in step with its step and alternative-flow blocks, by fixed parsing rules instead of free drawing. Authored in this repository because no external skill reads this template.",
+      "compatibility": "Tool-neutral instructions. The Claude Code hook in .claude/settings.json only reminds Claude to run it; other agents follow docs/AGENTS.md.",
+      "dependencies": [
+        "Optional Mermaid CLI (npx) for a syntax check."
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "spec-authoring",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/spec-authoring",
+      "decision": "Create",
+      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill.",
+      "compatibility": "Tool-neutral instructions. Calls use-case-flowchart as its last step for use cases.",
+      "dependencies": [
+        "use-case-flowchart"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
     }
   ],
   "additional_source_review": {
