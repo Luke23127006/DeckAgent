@@ -9,7 +9,7 @@ The rules live in three files. Read them before writing. Do not restate them in 
 
 - `docs/spec/<folder>/_TEMPLATE.md`: the structure and fixed field names.
 - `docs/spec/<folder>/_CRITERIA.md`: the criteria the file must meet.
-- `docs/spec/_STYLE.md`: plain English rules, evidence tags, and the term table.
+- `docs/spec/_STYLE.md`: plain English rules, evidence tags, zones, the term table, and the interface check (rule 11).
 
 ## Content sources
 
@@ -27,6 +27,7 @@ Write only what comes from the user, from the file being rewritten, or from the 
 2. Move the content into the template's blocks and fields.
 3. Apply the style checks below.
 4. Compare before and after: the same IDs, the same citations, the same research links.
+5. A UI phrase can carry a requirement. Translate it, do not just delete it. Ask what stays true if the interface changes: "as an overlay" becomes "the conversation, the request text and the attachments stay as they were". A phrase that is only design (a position, a colour, a label) is removed and listed in the report as a UI decision with no home.
 
 ## Style checks
 
@@ -34,6 +35,7 @@ Write only what comes from the user, from the file being rewritten, or from the 
 - Find sentences over 20 words (citations in `[ ]` do not count) and split them.
 - Check that each term in the text is from the term table, and that no field has more than 7 bullets.
 - Check that evidence tags are on their own `Evidence` line.
+- Use cases only: run the interface check in `_STYLE.md` (rule 11, UCG-13) on the whole file except the frontmatter, the generated block and the `Research card` line. Rewrite each hit as an intent or a response, then apply the swap test to every `User`, `When` and `System` sentence. Evidence text follows the same rule: describe what the product did, not what it looked like or what its control was called. A zone is the only place name allowed.
 
 ## Use cases: finish with the flowchart
 
@@ -45,4 +47,4 @@ Follow `docs/spec/01-users/_TEMPLATE.md`: one block per need and per hypothesis,
 
 ## Report
 
-List: the files changed, the checks run and their results, every place where a style rule changed a meaning, and every `[assumed]` you added.
+List: the files changed, the checks run and their results, every place where a style rule changed a meaning, every UI phrase that carried a requirement and how you wrote it, every UI decision removed with no home, and every `[assumed]` you added.
