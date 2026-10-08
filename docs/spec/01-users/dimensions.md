@@ -10,7 +10,7 @@ How to read the table:
 - **Baseline** is the value the product can assume without special handling. Segments do not list it, and it needs no coverage. It is not always at one end: stakes, time pressure, domain knowledge, craft, AI literacy and budget have a middle baseline between the two extremes. A dash means the dimension is categorical and has no baseline.
 - **Bold** values are the extremes of a spectrum. A *(categorical)* dimension has no spectrum, so every listed value counts as an extreme and none is bold.
 - "What changes" names the kind of use case or requirement the dimension affects. It is a pointer for discovery, not a requirement.
-- "Covered by" is written `value: USR-xxx`, one entry per non-baseline value that a segment claims in its frontmatter (or, for knowledge, in its Knowledge table).
+- "Covered by" is written `value: USR-xxx`, one entry per non-baseline value that a segment claims in its frontmatter (or, for knowledge, in its Knowledge section).
 - "Gap note" lists the non-baseline values no segment claims yet, and what kind of person would hold them. A gap is a discovery task, not a decision to exclude anyone.
 
 | Group | Dimension | Baseline | Values | What changes | Covered by | Gap note |

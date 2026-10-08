@@ -1,6 +1,6 @@
 # Gate: Use Case
 
-Template: `_TEMPLATE.md`. Parent: `../01-users/`. Children: `031-fr/`, `032-nfr/`, `04-business-rules/` (folder names as the project uses them; paths settle when those folders are created).
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Parent: `../01-users/`. Children: `031-fr/`, `032-nfr/`, `04-business-rules/` (folder names as the project uses them; paths settle when those folders are created).
 
 ## 1. What a use case is, and is not
 
@@ -41,7 +41,7 @@ A rule or quality target is defined in exactly one place. A use case never state
 > Not met: "The system rejects files larger than 20 MB."
 > Met: "The system rejects a file that exceeds the size limit [BR-001]."
 
-A use case may cite an ID that does not exist yet. It writes `[BR-?: <topic>]` or `[NFR-?: <topic>]`, naming the topic and nothing else. In the Requirements column, `FR-?` stands for "the requirement for this response, not written yet". Phase II mints the real IDs and replaces the markers. An Active use case has no marker left (UCG-06).
+A use case may cite an ID that does not exist yet. It writes `[BR-?: <topic>]` or `[NFR-?: <topic>]`, naming the topic and nothing else. In the `Reqs` field, `FR-?` stands for "the requirement for this response, not written yet". Phase II mints the real IDs and replaces the markers. An Active use case has no marker left on the main flow or on the flows in `ships_in_mvp`; flows outside `ships_in_mvp` keep their markers until a later version writes their requirements (UCG-06).
 
 ## 2. Evidence tags
 
@@ -55,21 +55,23 @@ Claims about product behavior carry the same tags as `01-users` (`[observed: <so
 |---|---|---|---|---|---|
 | UCG-01 | One user goal, reachable in one sitting, with an observable result of value to the user. The title is the user, a verb, a specific object and what distinguishes it, in the user's words. The use case does not name a segment; a segment in `01-users` lists it (U-11) | Cases too large or small to scope or test; two cases nobody can tell apart; cases nobody needs; links pointing up | Review | Draft | Cockburn (user-goal level) |
 | UCG-02 | Situation and goal describe what the user wants and why now. They contain no feature or solution | Solutions dressed up as goals | Review | Draft | Jobs-to-be-done |
-| UCG-03 | The main flow is a table of steps with stable IDs. Each step has an actor action, a system response the user can observe, and the requirement IDs for that response. 3 to 9 steps, no "if" (branches go to alternative flows). A response describes behavior, not implementation | Responses buried in prose; unclear source for an FR; architecture decided by accident | Lint (table, IDs) + Review | Draft | Cockburn |
-| UCG-04 | Each alternative flow has a branch step, a condition the system can detect, a response, its requirement IDs and an end (return to a step, end the case, or go to another use case). Every step that takes input, can be cancelled, depends on an external service, or can take long has a branch or a stated reason for none | Branches no test can reproduce; success-path-only specs | Lint (fields) + Review (coverage) | Draft | Cockburn |
+| UCG-03 | The main flow is a list of step blocks (`### Sx · Name`) with stable IDs. Each step has the fields `User`, `System` and `Reqs` (and `Evidence` when it makes a product claim). `System` is what the user can observe; `Reqs` holds the requirement IDs for that response. 3 to 9 steps, no "if" (branches go to alternative flows). A response describes behavior, not implementation | Responses buried in prose or packed into table cells; unclear source for an FR; architecture decided by accident | Lint (headings, fields, IDs) + Review | Draft | Cockburn |
+| UCG-04 | Each alternative flow is a block (`### Ax · Name`) with the fields `At` (the step or steps where it starts), `End`, `When` (a condition the system can detect), `System` and `Reqs`. `End` uses one value from the template: returns to a step, continues at a step, stays at the same step, ends the case, or goes to another use case. Every step that takes input, can be cancelled, depends on an external service, or can take long has a branch or a stated reason for none | Branches no test can reproduce; success-path-only specs | Lint (fields) + Review (coverage) | Draft | Cockburn |
 | UCG-05 | Postconditions are verifiable by observing the product. A minimal guarantee names what stays true when any branch fails | No final assertion for tests; data loss on failure | Review | Active | Cockburn |
-| UCG-06 | A use case contains no rule or quality value (SSOT, section 1). It cites by ID every requirement, limit, quota, allowed list, validation, wait or availability a step depends on (`FR-xxx`, `[BR-xxx]`, `[NFR-xxx]`). An Active use case has no `?` marker and every cited ID exists | The same rule written differently in many places; values changed in one file and not the others; requirements with no source step | Lint (numbers and markers) + CI (IDs resolve) | Draft (no values), Active (no markers) | Project rule |
+| UCG-06 | A use case contains no rule or quality value (SSOT, section 1). It cites by ID every requirement, limit, quota, allowed list, validation, wait or availability a step depends on (`FR-xxx`, `[BR-xxx]`, `[NFR-xxx]`). An Active use case has no `?` marker on the main flow and on the flows listed in `ships_in_mvp`, and every ID cited there exists. Flows outside `ships_in_mvp` may keep `?` markers | The same rule written differently in many places; values changed in one file and not the others; requirements with no source step | Lint (numbers and markers) + CI (IDs resolve) | Draft (no values), Active (no markers on shipped flows) | Project rule |
 | UCG-07 | A use case names no segment and no hypothesis. A reference from a segment (`UC-xxx.S3`, `UC-xxx.A2`) points to a step or branch that exists, and a retired ID is reported | Links pointing up; dangling references from segments; hypotheses that never reach a step | CI (references resolve) | Active | Project rule |
 | UCG-08 | Product coverage is stated for each baseline product as `observed`, `not offered` or `unverified`, with a link to the research card. Differences are described in words, without rule values. Unrecorded claims stay `assumed` | Guesses read as facts; scope decided without evidence | Lint (tags) + Review | Draft | Project rule |
 | UCG-09 | `scope` is `mvp`, `later` or `undecided`, with a one-line reason. For `mvp`, `ships_in_mvp` lists the main flow and the alternative flows that ship | Release scope with no basis; a case that ships without its error handling | Review | Active | Project rule |
 | UCG-10 | Step and branch IDs are never renumbered once cited, and removed ones are retired, not reused. Relations are declared on the parent side only (`includes`, `extended_by`, `next`). An Active use case has no open question that changes a flow or result | Segments citing the wrong step; two-way drift; gaps hidden inside active cases | CI (references) + Review | Draft (IDs, relations), Active (questions) | Project rule |
+| UCG-11 | Text follows `docs/spec/_STYLE.md`: terms from its term table, no banned vague verb, no may/might/should/could in `System`, sentences of 20 words or fewer, conditions in `When` and not as "if" in `System`, evidence on its own line | Responses that two readers understand differently; requirements nobody can test; walls of text | Lint (banned words, field names) + Review | Draft | Project rule |
+| UCG-12 | The `Flow at a glance` section holds one Mermaid flowchart between the `BEGIN generated` and `END generated` markers. It shows every step, and every `At`/`End` pair of every alternative flow other than `Same step`, which is listed in a line under the diagram. It is never edited by hand; a change to a step or a flow regenerates it | A diagram that no longer matches the flows; two sources for the same flow | Review (until the skill exists), then CI (diagram matches flows) | Draft | Project rule |
 
 ## 4. Illustrations (hypothetical)
 
 **UCG-06: a response that cites a rule.**
 
 > Not met: "S3: The system rejects a document over 20 MB or in a format other than PDF, DOCX or TXT."
-> Met: "S3: The system accepts the document, or rejects it with the reason when it breaks the upload rules [BR-002]." Requirements column: `FR-004`. The sizes and formats live in `BR-002` only. Changing a size changes one file.
+> Met: "S3: The system accepts the document, or rejects it with the reason when it breaks the upload rules [BR-002]." `Reqs`: `FR-004`. The sizes and formats live in `BR-002` only. Changing a size changes one file.
 
 **UCG-04: a detectable branch.**
 
@@ -80,6 +82,11 @@ Claims about product behavior carry the same tags as `01-users` (`[observed: <so
 
 > Not met: "S5: The model returns slide JSON and the renderer draws it."
 > Met: "S5: The system shows a draft deck the user can scroll through."
+
+**UCG-11: a response with one meaning.**
+
+> Not met: "The system may handle the failure gracefully and a notice is shown."
+> Met: When: "The model call fails." System: "Shows a notice that drafting the outline failed. Keeps the request."
 
 **UCG-07 and U-11: the link is on the segment side.**
 
