@@ -137,6 +137,20 @@ The request goes straight to a first outline of five slides (no question first).
 - **Solid-black picture (recorded to the end).** Seven questions and choices before the layouts. The deck has seven slides about a school orientation, a topic the user typed; it came from the user's answers, not from the picture. The closing message is the one in "Common behaviors".
 - **Chart picture (recorded up to the first slides).** The outline had 13 rows built from the chart's house names, with the sentence "I'll use your uploaded chart image on the cover." The user pressed "Focus more on career" and got a revised 13-row outline with the message "I've expanded the career section to three slides, covering your professional blueprint, ideal paths, and how to handle challenges. Does this revised flow look right?" The deck text is English with the chart's Vietnamese house names in brackets. The recording ends after the fourth slide; the rest of the deck and the closing message were not recorded.
 
+### Follow-up requests after the deck is ready
+
+Two static screenshots, taken on a finished six-slide deck about study habits: [prompt-scoped-change.png](ui/images/prompt-scoped-change.png) and [proposed-approachs-after-prompt-global-follows-up.png](ui/images/proposed-approachs-after-prompt-global-follows-up.png). The run that made the deck was not recorded, and no button in them was shown pressed. What each button does is therefore not known.
+
+- **Change to one named slide.** The editor shows the deck. The chat shows the closing message, label "DECK READY": "Your guide to study skills is ready. How would you like to proceed?" Then the user's request: "Update Slide 3 ("Time Management Strategies") to specifically include the Pomodoro Technique as a practical example. Do not change any other slides."
+  - The reply, label "SLIDE UPDATED": "I've updated the "Time Management Strategies" slide to include the Pomodoro Technique details. What would you like to do next?" with four buttons: "Export the deck", "Edit another slide", "Try a different brand style", "Add more slides". The pointer is on "Edit another slide".
+  - Slide 3 is the selected slide. It shows three cards: "The Pomodoro Technique: Study for 25 minutes, then take a 5-minute break.", "Time Blocking: …" and "Eat the Frog: …".
+  - In the visible chat, no outline message and no question appear between the request and the reply.
+  - The request itself says that no other slide should change. The image has no earlier state, so it does not show whether the other five slides stayed as they were. It does not show whether they would have stayed without that sentence.
+- **Request for a whole-deck change and a new slide.** The user's request: "Make the tone of the entire presentation more playful and energetic, and add one new slide at the very end about "Forming Study Groups"."
+  - The reply, label "TONE UPDATED": "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with three buttons: "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now".
+  - The image shows the chat only. The canvas is not visible, so it is not known whether any slide had changed when the question appeared. The reply starts "I've updated the deck's tone", so what had changed at that point is not known.
+  - Not shown: what each button does, whether the third one still builds the new slide, and whether a whole-deck change with no new slide gets the same question.
+
 ### Other flows not recorded
 
 The recordings do not include, and the product's behavior is therefore unknown for: a vague typed request ("generate deck"), a request in Vietnamese or another script, a very long text, an empty request, a very large file, several files at once, an unsupported file type, a stop (no control exists), a page reload, a lost connection, a second message sent during a run, "Undo", the Agent panel on an existing deck, "Export", "Present", and "Brand Studio".
@@ -157,5 +171,8 @@ A static screenshot ([start.png](ui/images/start.png)) shows the editor with a f
 | Line above layout tiles | "Hover to preview. Click to insert." / "Inserting visual…" / "Visual inserted." / "Auto-generating the best slides for you." |
 | Rating pop-up | "How would you rate Napkin Slides so far?" / "Don't ask me again" |
 | Closing message | "NEXT STEPS" / "How does the report look to you?"; "ORIENTATION DECK READY" / "The orientation deck is ready, including the new slide on school safety. How would you like to proceed?" |
+| Closing message of a deck made earlier | "DECK READY" / "Your guide to study skills is ready. How would you like to proceed?" |
+| Reply after a change to one named slide | "SLIDE UPDATED" / "I've updated the "Time Management Strategies" slide to include the Pomodoro Technique details. What would you like to do next?" with "Export the deck", "Edit another slide", "Try a different brand style", "Add more slides" |
+| Question after a whole-deck change and a new slide | "TONE UPDATED" / "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now" |
 
 No file-size, file-type, request-length, error, warning or offline message appeared in any recording.
