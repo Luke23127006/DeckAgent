@@ -140,7 +140,7 @@ The request goes straight to a first outline of five slides (no question first).
 
 ### Deck file sent with no text
 
-One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), of a new chat. A screen recording of the same test exists. It was not reviewed for this card. Three more tests followed. They are described in the next three sections.
+One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), of a new chat. A screen recording of the same test was made. It is not kept in the repository. Three more tests followed. They are described in the next three sections.
 
 - The user's message is the file alone: "test_deck.pptx". The product accepted it without text.
 - The product treated the file as source material. It did not ask what the file was for. It did not offer to bring the deck in as it was.
