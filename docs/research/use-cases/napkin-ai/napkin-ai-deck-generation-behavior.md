@@ -23,6 +23,7 @@ The product is built around a guided sequence: it proposes an outline and waits 
 | Document | A research-paper PDF attached, plus a request for a 5-slide summary "based strictly on the attached document" | Outline: "Focus more on PPTEVAL" (third of four buttons), then "Looks good, build it". Style: "Slate Brief". Photos: "Use my photos" |
 | Solid-black picture | One `.webp` picture, solid black, no text (the file was named "Solid_black.svg.webp") | Topic typed ("education"); audience "Students or parents"; purpose "School orientation"; length "Short (5–6 slides)"; outline: "Add a slide for school safety", then "Looks good, build it"; style "Pastel Field"; layouts picked by hand for slides 1–6 and "Pick for me" for slide 7 |
 | Chart picture | One `.png` photo of a table-like astrology chart, no text (the person's name is written `[name]` here) | Audience "Personal deep-dive"; length "Detailed (12+ slides)"; outline: "Focus more on career", then "Looks good, build it"; style "Verdant Blend"; layouts "Pick the rest for me" |
+| Deck file | One `.pptx` file of 4 slides, [test_deck.pptx](pptx/test_deck.pptx): text and a picture; a chart; unusual fonts and speaker notes; special characters. The file was sent alone, with no text | Audience: "Internal team review"; length: "4 slides (match source)" |
 
 ## Common behaviors
 
@@ -137,6 +138,23 @@ The request goes straight to a first outline of five slides (no question first).
 - **Solid-black picture (recorded to the end).** Seven questions and choices before the layouts. The deck has seven slides about a school orientation, a topic the user typed; it came from the user's answers, not from the picture. The closing message is the one in "Common behaviors".
 - **Chart picture (recorded up to the first slides).** The outline had 13 rows built from the chart's house names, with the sentence "I'll use your uploaded chart image on the cover." The user pressed "Focus more on career" and got a revised 13-row outline with the message "I've expanded the career section to three slides, covering your professional blueprint, ideal paths, and how to handle challenges. Does this revised flow look right?" The deck text is English with the chart's Vietnamese house names in brackets. The recording ends after the fourth slide; the rest of the deck and the closing message were not recorded.
 
+### Deck file sent with no text
+
+One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), of a new chat. A screen recording of the same test exists. It was not reviewed for this card. A password-protected deck file, [password_protected_test.pptx](pptx/password_protected_test.pptx), was prepared. No result for it is recorded here.
+
+- The user's message is the file alone: "test_deck.pptx". The product accepted it without text.
+- The product treated the file as source material. It did not ask what the file was for. It did not offer to bring the deck in as it was.
+- It asked two questions, one at a time, as it does for a picture sent with no text:
+  - "AUDIENCE": "I've read your test report — who is the audience for this presentation?" The user answered "Internal team review".
+  - "LENGTH": "How many slides should we aim for to cover this system test report?" The user answered "4 slides (match source)".
+  - It asked no "TOPIC" question. The first question already names the file as "your test report".
+- It then showed an outline. The summary sentence reads "A concise system test report for internal team review, following the structure of your original document."
+  - The outline has 4 rows, the same number as the source deck and in the same order.
+  - Row titles are the source titles or close to them. The first and second rows match the source. The third row, "Kiểm tra Font và Ghi chú", is a rewording of the source title "Font lạ và ghi chú". The fourth row differs from the source only in capital letters.
+  - Each row has a one-line subtitle. The subtitles are the product's own wording. None of them is a sentence from the source text, which was checked against the file.
+- The outline question reads: "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" Its buttons are "Looks good, build it", "Add more detail to data slide", "Change the tone to formal" and "Adjust…".
+- Not shown: what happened after the outline was accepted; whether the chart, the picture, the speaker notes, the unusual fonts or the special characters of the source reached the slides; and what the product does with a deck file when the chat already has a deck, when the request has text, or when the file is protected or damaged.
+
 ### Follow-up requests after the deck is ready
 
 Two static screenshots, taken on a finished six-slide deck about study habits: [prompt-scoped-change.png](ui/images/prompt-scoped-change.png) and [proposed-approachs-after-prompt-global-follows-up.png](ui/images/proposed-approachs-after-prompt-global-follows-up.png). The run that made the deck was not recorded, and no button in them was shown pressed. What each button does is therefore not known.
@@ -174,5 +192,7 @@ A static screenshot ([start.png](ui/images/start.png)) shows the editor with a f
 | Closing message of a deck made earlier | "DECK READY" / "Your guide to study skills is ready. How would you like to proceed?" |
 | Reply after a change to one named slide | "SLIDE UPDATED" / "I've updated the "Time Management Strategies" slide to include the Pomodoro Technique details. What would you like to do next?" with "Export the deck", "Edit another slide", "Try a different brand style", "Add more slides" |
 | Question after a whole-deck change and a new slide | "TONE UPDATED" / "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now" |
+| Questions after a deck file sent with no text | "AUDIENCE" / "I've read your test report — who is the audience for this presentation?"; "LENGTH" / "How many slides should we aim for to cover this system test report?" with the answer "4 slides (match source)" |
+| Outline for a deck file | "A concise system test report for internal team review, following the structure of your original document."; "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" with "Looks good, build it", "Add more detail to data slide", "Change the tone to formal", "Adjust…" |
 
 No file-size, file-type, request-length, error, warning or offline message appeared in any recording.
