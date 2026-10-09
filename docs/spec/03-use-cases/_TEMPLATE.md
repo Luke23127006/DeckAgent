@@ -33,7 +33,7 @@ flowchart TD
 
 ## Situation and goal
 
-<!-- Who wants what, and why now, in the user's words. No feature or solution (UCG-01, UCG-02). Do not name a segment: 01-users lists this use case. -->
+<!-- Who wants what, and why now, in the user's words. No feature or solution (UCG-01, UCG-02). Do not name a segment: 02-users lists this use case. -->
 
 ## Trigger and preconditions
 

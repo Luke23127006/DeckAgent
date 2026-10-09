@@ -6,7 +6,7 @@ Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Dimension catalog: `dimensions.
 
 **A user segment is a group of people who share the same values on the dimensions that change what they need, what they know, or how they use DeckAgent.** It exists to expose special use cases and requirements that "the user" in general would hide.
 
-**This folder does not decide scope.** Its only job is to help detect use cases. Which use cases ship first is decided from `02-use-cases/`, so nothing here records an MVP or V1 choice.
+**This folder does not decide scope.** Its only job is to help detect use cases. Which use cases ship first is decided from `03-use-cases/`, so nothing here records an MVP or V1 choice.
 
 | If the content is... | Then it belongs to |
 |---|---|
@@ -14,7 +14,7 @@ Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Dimension catalog: `dimensions.
 | A product feature or solution ("needs a template gallery") | A requirement. Describe the need behind it here |
 | A role inside one use case (primary actor) | The use case. This folder lists the use cases that serve each segment; the use case does not name the segment |
 | A rule that applies to two or more segments or use cases | A business rule |
-| Market size, pricing, business priority, release scope | Scope or strategy documents (`00-current-scope/`, `02-use-cases/`), not user description |
+| Market size, pricing, business priority, release scope | Scope or strategy documents (`00-current-scope/`, `03-use-cases/`), not user description |
 | A named real individual | Nowhere. A segment is a pattern, not a person |
 
 ### Linking direction

@@ -24,7 +24,7 @@ Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. 
 
 ## Evidence tags
 
-Same tags as `01-users` and `02-use-cases` (U-06, UCG-08):
+Same tags as `02-users` and `03-use-cases` (U-06, UCG-08):
 
 - `[observed: <source> (<what it showed>)]` seen in a recording or product
 - `[inferred: <source>]` reasoned from observed facts

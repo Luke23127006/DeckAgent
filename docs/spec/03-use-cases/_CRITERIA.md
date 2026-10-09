@@ -1,35 +1,35 @@
 # Gate: Use Case
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Parent: `../01-users/`. Children: `031-fr/`, `032-nfr/`, `04-business-rules/` (folder names as the project uses them; paths settle when those folders are created).
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Parent: `../02-users/`. Children: `041-fr/`, `042-nfr/`, `05-business-rules/` (folder names as the project uses them; paths settle when those folders are created).
 
 ## 1. What a use case is, and is not
 
 **A use case describes one goal a user reaches in one sitting: what the user does, and how DeckAgent visibly responds.** Each system response is a candidate functional requirement. Each alternative flow is a candidate error or edge requirement. Each rule or quality target a step depends on is cited here and defined elsewhere.
 
-**This folder decides scope.** `01-users/` only helps detect use cases. Which ones ship first is recorded on each use case (`scope`, `ships_in_mvp`).
+**This folder decides scope.** `02-users/` only helps detect use cases. Which ones ship first is recorded on each use case (`scope`, `ships_in_mvp`).
 
 | If the content is... | Then it belongs to |
 |---|---|
-| A limit, threshold, quota, allowed list, retention period or any other value a rule defines | `04-business-rules/`. The use case cites the rule ID |
-| A wait time, size target, availability target or any other quality target | `032-nfr/`. The use case cites the NFR ID |
-| The testable statement of a system response | `031-fr/`. The use case cites the requirement ID |
+| A limit, threshold, quota, allowed list, retention period or any other value a rule defines | `05-business-rules/`. The use case cites the rule ID |
+| A wait time, size target, availability target or any other quality target | `042-nfr/`. The use case cites the NFR ID |
+| The testable statement of a system response | `041-fr/`. The use case cites the requirement ID |
 | A raw observation from a recording (what a product did, which limit it showed) | `docs/research/use-cases/`. The use case links the research card |
 | How the system achieves a response (model, queue, storage, API) | An ADR or architecture work, not here |
 | How the user operates the product or how it looks: a control, menu, gesture, position, label, colour or layout | UI design work (no folder yet). The use case writes the intent and the response only (UCG-13) |
-| A need or situation of a kind of person | `01-users/`. That folder lists this use case; this use case does not name the segment |
+| A need or situation of a kind of person | `02-users/`. That folder lists this use case; this use case does not name the segment |
 
 ### Linking direction: top-down only
 
 The parent file lists its children. A child never names its parent.
 
 ```
-01-users (segment: needs, hypotheses)
-   -> 02-use-cases (steps and branches)
-        -> 031-fr, 032-nfr, 04-business-rules
+02-users (segment: needs, hypotheses)
+   -> 03-use-cases (steps and branches)
+        -> 041-fr, 042-nfr, 05-business-rules
         -> docs/research/use-cases (product evidence)
 ```
 
-- A segment lists the use cases that serve it. A use case has no field naming a segment or a hypothesis (U-11 in `01-users/_CRITERIA.md`).
+- A segment lists the use cases that serve it. A use case has no field naming a segment or a hypothesis (U-11 in `02-users/_CRITERIA.md`).
 - A use case cites requirement, NFR and rule IDs. Requirements, NFRs and rules never cite a use case, a step or a segment.
 - A use case links the research cards that support it. Cards do not name use cases.
 - To find a parent, search the parent folder for the child ID. There is no reverse field to keep in sync.
@@ -46,7 +46,7 @@ A use case may cite an ID that does not exist yet. It writes `[BR-?: <topic>]` o
 
 ## 2. Evidence tags
 
-Claims about product behavior carry the same tags as `01-users` (`[observed: <source>]`, `[inferred: <source>]`, `[assumed]`). For product coverage the source is a research card or recording under `docs/research/use-cases/`. A flow nobody has recorded is `unverified` and its steps stay `[assumed]`.
+Claims about product behavior carry the same tags as `02-users` (`[observed: <source>]`, `[inferred: <source>]`, `[assumed]`). For product coverage the source is a research card or recording under `docs/research/use-cases/`. A flow nobody has recorded is `unverified` and its steps stay `[assumed]`.
 
 ## 3. Criteria
 
@@ -54,7 +54,7 @@ Claims about product behavior carry the same tags as `01-users` (`[observed: <so
 
 | ID | Criterion | Prevents | Check | Applies from | Source |
 |---|---|---|---|---|---|
-| UCG-01 | One user goal, reachable in one sitting, with an observable result of value to the user. The title is the user, a verb, a specific object and what distinguishes it, in the user's words. The use case does not name a segment; a segment in `01-users` lists it (U-11) | Cases too large or small to scope or test; two cases nobody can tell apart; cases nobody needs; links pointing up | Review | Draft | Cockburn (user-goal level) |
+| UCG-01 | One user goal, reachable in one sitting, with an observable result of value to the user. The title is the user, a verb, a specific object and what distinguishes it, in the user's words. The use case does not name a segment; a segment in `02-users` lists it (U-11) | Cases too large or small to scope or test; two cases nobody can tell apart; cases nobody needs; links pointing up | Review | Draft | Cockburn (user-goal level) |
 | UCG-02 | Situation and goal describe what the user wants and why now. They contain no feature or solution | Solutions dressed up as goals | Review | Draft | Jobs-to-be-done |
 | UCG-03 | The main flow is a list of step blocks (`### Sx · Name`) with stable IDs. Each step has the fields `User`, `System` and `Reqs` (and `Evidence` when it makes a product claim). `System` is what the user can observe; `Reqs` holds the requirement IDs for that response. 3 to 9 steps, no "if" (branches go to alternative flows). A response describes behavior, not implementation or interface (UCG-13) | Responses buried in prose or packed into table cells; unclear source for an FR; architecture decided by accident | Lint (headings, fields, IDs) + Review | Draft | Cockburn |
 | UCG-04 | Each alternative flow is a block (`### Ax · Name`) with the fields `At` (the step or steps where it starts), `End`, `When` (a condition the system can detect), `System` and `Reqs`. `End` uses one value from the template: returns to a step, continues at a step, stays at the same step, ends the case, or goes to another use case. Every step that takes input, can be cancelled, depends on an external service, or can take long has a branch or a stated reason for none | Branches no test can reproduce; success-path-only specs | Lint (fields) + Review (coverage) | Draft | Cockburn |

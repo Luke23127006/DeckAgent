@@ -1,6 +1,6 @@
 ---
 name: spec-authoring
-description: Write or rewrite a use case (docs/spec/02-use-cases) or user segment (docs/spec/01-users) file so it follows its folder's template, its criteria and the plain-English style guide. Use when creating a spec file, converting an older one to the current template, or fixing style findings. Not for deciding scope, and not for inventing product behavior.
+description: Write or rewrite a use case (docs/spec/03-use-cases) or user segment (docs/spec/02-users) file so it follows its folder's template, its criteria and the plain-English style guide. Use when creating a spec file, converting an older one to the current template, or fixing style findings. Not for deciding scope, and not for inventing product behavior.
 ---
 
 # Spec authoring
@@ -43,7 +43,7 @@ After the last edit to a use case, run [use-case-flowchart](../use-case-flowchar
 
 ## User segments
 
-Follow `docs/spec/01-users/_TEMPLATE.md`: one block per need and per hypothesis, bullets for knowledge, context, pain points and limits. Keep the frontmatter as it is. Keep every need and hypothesis ID and every "Use cases" and "Handled by" value. Give each block a short name (5 words or fewer) taken from its content. When a closing `Evidence` bullet covers a list, check that no item in it has a different tag.
+Follow `docs/spec/02-users/_TEMPLATE.md`: one block per need and per hypothesis, bullets for knowledge, context, pain points and limits. Keep the frontmatter as it is. Keep every need and hypothesis ID and every "Use cases" and "Handled by" value. Give each block a short name (5 words or fewer) taken from its content. When a closing `Evidence` bullet covers a list, check that no item in it has a different tag.
 
 ## Report
 

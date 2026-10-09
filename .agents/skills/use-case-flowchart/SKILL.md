@@ -1,6 +1,6 @@
 ---
 name: use-case-flowchart
-description: Generate or update the "Flow at a glance" Mermaid flowchart of a use case file in docs/spec/02-use-cases/ from its step and alternative-flow blocks. Use after any change to a use case's steps, alternative flows, or their At or End fields, and when the generated block is missing or stale. Not for other diagrams; use mermaid-markdown for those.
+description: Generate or update the "Flow at a glance" Mermaid flowchart of a use case file in docs/spec/03-use-cases/ from its step and alternative-flow blocks. Use after any change to a use case's steps, alternative flows, or their At or End fields, and when the generated block is missing or stale. Not for other diagrams; use mermaid-markdown for those.
 ---
 
 # Use case flowchart
@@ -9,7 +9,7 @@ The diagram is a view. The step blocks and flow blocks are the source. Never cha
 
 Follow the steps in order and apply the rules literally. The same file must always give the same output. If a case is not covered by a rule, stop and report it; do not choose.
 
-Reference output: the block in `docs/spec/02-use-cases/UC-001.md`. Input and rules here must reproduce it exactly.
+Reference output: the block in `docs/spec/03-use-cases/UC-001.md`. Input and rules here must reproduce it exactly.
 
 ## 1. Parse
 

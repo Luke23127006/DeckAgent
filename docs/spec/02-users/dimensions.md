@@ -1,6 +1,6 @@
 # User dimensions
 
-Catalog of the dimensions that may change how a person uses DeckAgent. Format and rules: `_CRITERIA.md` (U-03, U-10). Purpose: help detect use cases and special requirements. This file does not decide scope; `02-use-cases/` does.
+Catalog of the dimensions that may change how a person uses DeckAgent. Format and rules: `_CRITERIA.md` (U-03, U-10). Purpose: help detect use cases and special requirements. This file does not decide scope; `03-use-cases/` does.
 
 **Status: Draft.** Every "What changes" entry and every baseline is `[assumed]` until a recording or a use case confirms it. Dimensions are added or removed as evidence appears.
 
