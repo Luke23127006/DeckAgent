@@ -140,7 +140,7 @@ The request goes straight to a first outline of five slides (no question first).
 
 ### Deck file sent with no text
 
-One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), of a new chat. A screen recording of the same test exists. It was not reviewed for this card. A password-protected deck file, [password_protected_test.pptx](pptx/password_protected_test.pptx), was prepared. No result for it is recorded here.
+One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), of a new chat. A screen recording of the same test exists. It was not reviewed for this card. Three more tests followed. They are described in the next three sections.
 
 - The user's message is the file alone: "test_deck.pptx". The product accepted it without text.
 - The product treated the file as source material. It did not ask what the file was for. It did not offer to bring the deck in as it was.
@@ -153,7 +153,35 @@ One static screenshot, [upload-test-deck.png](ui/images/upload-test-deck.png), o
   - Row titles are the source titles or close to them. The first and second rows match the source. The third row, "Kiểm tra Font và Ghi chú", is a rewording of the source title "Font lạ và ghi chú". The fourth row differs from the source only in capital letters.
   - Each row has a one-line subtitle. The subtitles are the product's own wording. None of them is a sentence from the source text, which was checked against the file.
 - The outline question reads: "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" Its buttons are "Looks good, build it", "Add more detail to data slide", "Change the tone to formal" and "Adjust…".
-- Not shown: what happened after the outline was accepted; whether the chart, the picture, the speaker notes, the unusual fonts or the special characters of the source reached the slides; and what the product does with a deck file when the chat already has a deck, when the request has text, or when the file is protected or damaged.
+- Not shown: whether the chart, the picture, the speaker notes, the unusual fonts or the special characters of the source reached the slides; and what the product does with a damaged deck file.
+
+### Deck file sent again into a chat that has a deck
+
+Two static screenshots: [before-test-case-2-upload-pptx.png](ui/images/before-test-case-2-upload-pptx.png) and [after-test-case-2-upload-pptx.png](ui/images/after-test-case-2-upload-pptx.png).
+
+- Before: the chat holds the deck built from the previous test. The last step shown is the layout step for slide 4, "4. Ký tự đặc biệt và đối tượng lạ", with the line "Visual inserted." and six layout tiles. Below it the closing message, label "NEXT STEPS": "What would you like to do with your deck?" with five buttons: "Present full screen", "Export to PowerPoint", "Review the slides", "Change the brand style" and "Apply a visual effect".
+- After: the user's message is the same file alone, "test_deck.pptx". The reply, label "REVIEW DECK": "Your 4-slide system test report is ready in Vietnamese. How would you like to proceed?" with five buttons: "Present full screen", "Export to PowerPoint", "Edit slide text", "Change brand style" and "Apply visual effect".
+- No question stands between the message and the reply. The product did not offer to replace the deck or to add slides. It did not ask what the file was for.
+- The reply speaks of the existing 4-slide report. The images show the chat only. They do not show whether the deck canvas changed, or whether slides were added or replaced.
+
+### Deck file with a request for new slides
+
+One static screenshot: [after-test-case-3-upload-pptx.png](ui/images/after-test-case-3-upload-pptx.png). The image does not show whether this is the chat of the previous test.
+
+- The user's message holds the file "test_deck.pptx" and the text "Sử dụng nội dung trong file này làm tài liệu tham khảo để tạo thêm 2 slide mới về chủ đề Kỹ năng mềm". In English: use the content of this file as reference material to create 2 more slides on soft skills.
+- The reply, in Vietnamese: "Dạ, tôi rất sẵn lòng hỗ trợ bạn. Tuy nhiên, hiện tại tôi không thể tạo thêm slide mới vào bản thuyết trình này. Tôi có thể giúp bạn chỉnh sửa nội dung, thay đổi phong cách thương hiệu (brand style) hoặc áp dụng các hiệu ứng hình ảnh cho 4 slide hiện có về báo cáo kiểm thử hệ thống. Bạn có muốn tôi điều chỉnh nội dung nào trên các slide hiện tại không?" In English: happy to help, but it cannot add new slides to this presentation now; it can edit the content, change the brand style or apply visual effects to the 4 existing slides; does the user want any content on the current slides adjusted?
+- The product built no new slide and did not use the file as material for new slides. The reply language follows the request.
+- In the study-habits deck (see the follow-up section below), the same product offered to create a new slide. Why it refused here is not known.
+
+### Protected deck file
+
+One static screenshot: [after-test-case-4-upload-pptx.png](ui/images/after-test-case-4-upload-pptx.png). The test file is [password_protected_test.pptx](pptx/password_protected_test.pptx). Its first bytes are those of a compound file, not of a zip file.
+
+- The file is a pill in the request box with the text "This file could not be uploaded." and a "×". The text and the pill are in an error style. The request box is empty and shows "Send a message…". The `+` button for attaching is still there.
+- The product rejected the file when it was attached, before any send. No crash is visible.
+- The message does not say that the file is protected.
+- The send arrow is grey. The request box is also empty, so the image does not show whether a rejected file blocks sending.
+- Not shown: what happens when the "×" is pressed, and what the product does with a damaged deck file.
 
 ### Follow-up requests after the deck is ready
 
@@ -194,5 +222,8 @@ A static screenshot ([start.png](ui/images/start.png)) shows the editor with a f
 | Question after a whole-deck change and a new slide | "TONE UPDATED" / "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now" |
 | Questions after a deck file sent with no text | "AUDIENCE" / "I've read your test report — who is the audience for this presentation?"; "LENGTH" / "How many slides should we aim for to cover this system test report?" with the answer "4 slides (match source)" |
 | Outline for a deck file | "A concise system test report for internal team review, following the structure of your original document."; "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" with "Looks good, build it", "Add more detail to data slide", "Change the tone to formal", "Adjust…" |
+| Closing message with five next steps | "NEXT STEPS" / "What would you like to do with your deck?" with "Present full screen", "Export to PowerPoint", "Review the slides", "Change the brand style", "Apply a visual effect" |
+| Reply to a deck file sent again | "REVIEW DECK" / "Your 4-slide system test report is ready in Vietnamese. How would you like to proceed?" with "Present full screen", "Export to PowerPoint", "Edit slide text", "Change brand style", "Apply visual effect" |
+| File rejected on attach | "This file could not be uploaded." |
 
 No file-size, file-type, request-length, error, warning or offline message appeared in any recording.
