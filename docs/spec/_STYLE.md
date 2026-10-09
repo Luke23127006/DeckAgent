@@ -63,7 +63,7 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **placeholder** | Text the system wrote because the user gave none |
 | **default design system** | The look the system uses when the user chose none |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
-| **try again** | The user asks the system to repeat the work that stopped: draft the outline again, build the slides again from the confirmed outline, apply the change again, or bring in the deck again |
+| **try again** | The user asks the system to repeat the work that stopped: draft the outline again, build the slides again from the confirmed outline, or apply the change again |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
 | **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
 
