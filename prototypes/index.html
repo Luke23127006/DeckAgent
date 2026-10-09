@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>W-027 | Hai tình huống cần review</title>
+    <style>
+      :root {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Arial,
+          sans-serif;
+        color: #1b3031;
+        background: #f4f6f5;
+        line-height: 1.48;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      header {
+        background: #163f35;
+        color: white;
+        padding: 28px 24px;
+      }
+      header .wrap,
+      main {
+        max-width: 940px;
+        margin: auto;
+      }
+      header h1 {
+        font-size: 1.6rem;
+        margin: 0 0 7px;
+      }
+      header p {
+        margin: 0;
+        color: #d3e7e0;
+      }
+      main {
+        padding: 22px 18px 50px;
+      }
+      .intro {
+        background: #e7f3ec;
+        border: 1px solid #bbd7c7;
+        border-radius: 10px;
+        padding: 16px 22px;
+      }
+      .intro h2 {
+        margin: 0 0 8px;
+      }
+      .pill {
+        display: inline-block;
+        border-radius: 20px;
+        background: #d8ede3;
+        padding: 4px 10px;
+        font-size: 0.84rem;
+        font-weight: 650;
+      }
+      .nav {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      .nav a {
+        background: #195743;
+        color: #fff;
+        padding: 11px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .case {
+        background: #fff;
+        padding: 22px;
+        border: 1px solid #d5e0d9;
+        border-radius: 12px;
+        margin: 24px 0;
+      }
+      .case h2 {
+        margin: 5px 0;
+      }
+      .scenario {
+        padding: 14px 16px;
+        background: #f3f7f4;
+        border-left: 4px solid #477b61;
+      }
+      .frame {
+        margin: 22px 0;
+        border-top: 1px solid #dbe1dc;
+        padding-top: 12px;
+      }
+      .frame h3 {
+        margin: 0 0 5px;
+        font-size: 1.05rem;
+      }
+      .frame p {
+        margin: 0 0 10px;
+      }
+      .frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid #b6c8bd;
+        border-radius: 6px;
+      }
+      .frame a {
+        display: inline-block;
+        font-size: 0.86rem;
+        margin: 7px 0;
+      }
+      .question {
+        background: #fff6df;
+        border-left: 4px solid #b48628;
+        padding: 12px 16px;
+        margin: 15px 0;
+      }
+      details {
+        border: 1px solid #c9d9d1;
+        background: #fafcfb;
+        border-radius: 8px;
+        margin: 15px 0;
+        padding: 12px 15px;
+      }
+      summary {
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .tag {
+        color: #6a4d16;
+        font-weight: 700;
+      }
+      .fine {
+        font-size: 0.88rem;
+        color: #52615d;
+      }
+      .evidence img {
+        width: 100%;
+        max-width: 850px;
+        height: auto;
+      }
+      footer {
+        font-size: 0.85rem;
+        color: #51615a;
+        margin-top: 24px;
+      }
+      code {
+        background: #e9efeb;
+        padding: 2px 4px;
+      }
+      @media (max-width: 560px) {
+        header {
+          padding: 18px 14px;
+        }
+        .case {
+          padding: 14px;
+        }
+        .intro {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <h1>W-027 · Hai tình huống để team xác nhận behavior</h1>
+        <p>
+          Pilot review · 5–7 phút · UI mock tĩnh, không phải sản phẩm đang chạy
+        </p>
+      </div>
+    </header>
+    <main>
+      <div class="intro">
+        <h2>Team cần review điều gì?</h2>
+        <p>
+          <strong>Không đánh giá UI đẹp hay không.</strong> Hãy xem user thao
+          tác gì, hệ thống phản hồi thế nào và các UC có nhất quán không. Chỉ có
+          hai tình huống pilot để xác nhận <em>format review</em> trước khi áp
+          dụng cho đủ 8 UC.
+        </p>
+        <p>
+          <span class="pill">UC-002</span> Source thiếu chi phí → hỏi lại → user
+          bỏ phần chi phí → nhận deck. &nbsp; <span class="pill">UC-004</span> B
+          Pending → hỏi lại → Cancel hoặc Confirm → kết quả khác nhau.
+        </p>
+        <p class="fine">
+          Cả hai dùng chung fixture “Thư viện sẻ chia”. Nội dung và nút trong
+          ảnh đều là <strong>mô phỏng hành vi</strong>. UI clarification là đề
+          xuất, chưa chốt thiết kế.
+        </p>
+      </div>
+      <nav>
+        <a href="#uc002">1. Tình huống UC-002</a
+        ><a href="#uc004">2. Tình huống UC-004</a
+        ><a href="#phu-luc">Evidence & nhánh khác (tùy chọn)</a>
+      </nav>
+      <section class="case" id="uc002">
+        <span class="pill">UC-002 · Tạo từ nguồn</span>
+        <h2>Tình huống 1 — Source thiếu thông tin</h2>
+        <p class="scenario">
+          <strong>Mục tiêu kiểm tra:</strong> Khi user đòi thông tin không có
+          trong tài liệu, DeckAgent xử lý ra sao? Source gap không đồng nghĩa
+          validation failure.
+        </p>
+        <div class="frame">
+          <h3>01 · User gửi yêu cầu</h3>
+          <p>
+            Tài liệu có 4 tuần / 40 người / 120 lượt mượn nhưng không có chi phí
+            triển khai. User vẫn yêu cầu đưa chi phí vào deck.
+          </p>
+          <a href="assets/uc002-01-input.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc002-01-input.png"
+            alt="01 · User gửi yêu cầu"
+          />
+        </div>
+        <div class="frame">
+          <h3>02 · DeckAgent phát hiện gap</h3>
+          <p>
+            Hệ thống nhận ra dữ liệu chi phí không xuất hiện trong nguồn, thay
+            vì tự đưa ra con số.
+          </p>
+          <a href="assets/uc002-02-gap.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc002-02-gap.png"
+            alt="02 · DeckAgent phát hiện gap"
+          />
+        </div>
+        <div class="frame">
+          <h3>03 · DeckAgent hỏi lại</h3>
+          <p>
+            Ba lựa chọn là mock UX: cung cấp thêm, bỏ mục chi phí, hoặc cho phép
+            nội dung AI bổ sung. Chưa coi đây là UI bắt buộc.
+          </p>
+          <a href="assets/uc002-03-choices.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc002-03-choices.png"
+            alt="03 · DeckAgent hỏi lại"
+          />
+        </div>
+        <div class="frame">
+          <h3>04 · User quyết định bỏ chi phí</h3>
+          <p>Yêu cầu được cập nhật trước khi generation.</p>
+          <a href="assets/uc002-04-omit.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc002-04-omit.png"
+            alt="04 · User quyết định bỏ chi phí"
+          />
+        </div>
+        <div class="frame">
+          <h3>05 · Có deck hợp lệ</h3>
+          <p>
+            Sau generation và validation thành công, deck đầu tiên trở thành
+            Accepted; số liệu nguồn được giữ, không có con số chi phí tự tạo.
+          </p>
+          <a href="assets/uc002-06-accepted.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc002-06-accepted.png"
+            alt="05 · Có deck hợp lệ"
+          />
+        </div>
+        <div class="question">
+          <strong>Hỏi team:</strong> Flow hỏi lại và tiếp tục tạo deck này có
+          đúng với cách hiểu UC-002/R-008 không? Khi nào source gap cần
+          clarification, khi nào được cho phép AI bổ sung có nhãn?
+        </div>
+        <details>
+          <summary>Xem thêm: progress mô phỏng</summary>
+          <div class="frame">
+            <h3>Generation sau quyết định</h3>
+            <p>
+              Chỉ mô phỏng trạng thái đang xử lý, không khẳng định pipeline/tiến
+              độ thực tế.
+            </p>
+            <a
+              href="assets/uc002-05-progress.png"
+              target="_blank"
+              rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/uc002-05-progress.png"
+              alt="Generation sau quyết định"
+            />
+          </div>
+        </details>
+      </section>
+      <section class="case" id="uc004">
+        <span class="pill">UC-004 · Refine deck</span>
+        <h2>Tình huống 2 — Hủy hay tiếp tục chỉnh sửa khi B đang Pending?</h2>
+        <p class="scenario">
+          <strong>Mục tiêu kiểm tra:</strong> Phân biệt Cancel của clarification
+          với Discard Pending Revision; xác định đúng thời điểm B trở thành
+          Accepted khi refine tiếp.
+        </p>
+        <div class="frame">
+          <h3>01 · B đang Pending</h3>
+          <p>
+            A là Accepted 6 slide, B là Pending 4 slide. User đang preview B.
+          </p>
+          <a href="assets/uc004-01-pending.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc004-01-pending.png"
+            alt="01 · B đang Pending"
+          />
+        </div>
+        <div class="frame">
+          <h3>02 · Gửi yêu cầu refine mới</h3>
+          <p>User đưa yêu cầu chưa đủ cụ thể khi B vẫn Pending.</p>
+          <a href="assets/uc004-02-request.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc004-02-request.png"
+            alt="02 · Gửi yêu cầu refine mới"
+          />
+        </div>
+        <div class="frame">
+          <h3>03 · Hệ thống hỏi clarification</h3>
+          <p>
+            Ở thời điểm này chưa bắt đầu AI operation mới; A vẫn Accepted và B
+            vẫn Pending.
+          </p>
+          <a href="assets/uc004-03-clarify.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc004-03-clarify.png"
+            alt="03 · Hệ thống hỏi clarification"
+          />
+        </div>
+        <div class="frame">
+          <h3>Nhánh A · User chọn Cancel</h3>
+          <p>
+            Hủy yêu cầu mới không đồng nghĩa Keep B hoặc Discard B. Kết quả: A
+            Accepted + B Pending vẫn giữ nguyên.
+          </p>
+          <a href="assets/uc004-04-cancel.png" target="_blank" rel="noopener"
+            >Mở ảnh đầy đủ ↗</a
+          ><img
+            loading="lazy"
+            src="assets/uc004-04-cancel.png"
+            alt="Nhánh A · User chọn Cancel"
+          />
+        </div>
+        <details>
+          <summary>
+            Nhánh B — Confirm → B Accepted → operation mới thất bại (bấm để xem)
+          </summary>
+          <p>
+            <strong
+              >Đây là nhánh thay thế, không phải các bước nối sau
+              Cancel.</strong
+            >
+          </p>
+          <div class="frame">
+            <h3>B1 · User làm rõ / xác nhận</h3>
+            <p>
+              Cần có ý chí commit sang lượt refinement tiếp theo; B chưa accept
+              chỉ vì nhập câu lệnh mơ hồ.
+            </p>
+            <a href="assets/uc004-05-confirm.png" target="_blank" rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/uc004-05-confirm.png"
+              alt="B1 · User làm rõ / xác nhận"
+            />
+          </div>
+          <div class="frame">
+            <h3>B2 · Operation mới bắt đầu</h3>
+            <p>
+              Tại commit operation: B chuyển thành Accepted baseline và quá
+              trình tạo C bắt đầu.
+            </p>
+            <a href="assets/uc004-06-commit.png" target="_blank" rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/uc004-06-commit.png"
+              alt="B2 · Operation mới bắt đầu"
+            />
+          </div>
+          <div class="frame">
+            <h3>B3 · Lỗi khi tạo C</h3>
+            <p>
+              Operation thất bại; B đã Accepted được giữ lại, không tạo Pending
+              C.
+            </p>
+            <a href="assets/uc004-07-failure.png" target="_blank" rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/uc004-07-failure.png"
+              alt="B3 · Lỗi khi tạo C"
+            />
+          </div>
+        </details>
+        <div class="question">
+          <strong>Hỏi team:</strong> Mốc chuyển B Pending → Accepted có đúng tại
+          thời điểm commit operation mới không? Cách trình bày có phân biệt rõ
+          Cancel clarification với Discard B không?
+        </div>
+      </section>
+      <section id="phu-luc" class="case">
+        <h2>Chỉ mở khi cần: Evidence và nhánh hỗ trợ</h2>
+        <p>
+          Hai sản phẩm bên dưới <strong>không</strong> xác nhận lifecycle của
+          DeckAgent. Chúng chỉ minh họa một pattern khác: cho user xem/chỉnh
+          outline trước generation. Không suy ra DeckAgent bắt buộc có outline
+          approval.
+        </p>
+        <details class="evidence">
+          <summary>Evidence Gamma — outline review (user-captured)</summary>
+          <div class="frame">
+            <h3>Gamma · Review plan</h3>
+            <p>
+              Ảnh user cung cấp; chỉ dùng để đối chiếu bước xác nhận/trao đổi kế
+              hoạch trước khi tạo.
+            </p>
+            <a
+              href="assets/evidence-gamma-outline.png"
+              target="_blank"
+              rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/evidence-gamma-outline.png"
+              alt="Gamma · Review plan"
+            />
+          </div>
+        </details>
+        <details class="evidence">
+          <summary>Evidence Napkin — outline (user-captured)</summary>
+          <div class="frame">
+            <h3>Napkin Slides · Outline</h3>
+            <p>
+              Ảnh user cung cấp; cho thấy tương tác chỉnh outline, không đồng
+              nhất với validation của DeckAgent.
+            </p>
+            <a
+              href="assets/evidence-napkin-outline.png"
+              target="_blank"
+              rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/evidence-napkin-outline.png"
+              alt="Napkin Slides · Outline"
+            />
+          </div>
+        </details>
+        <details>
+          <summary>
+            UC-002 — Error / Retry (tài liệu hỗ trợ, chưa phải demo chính)
+          </summary>
+          <div class="frame">
+            <h3>UC-002 · Các nhánh lỗi</h3>
+            <p>
+              Hình ghép cũ: chưa dùng như walkthrough chính; mở khi cần review
+              acceptance criterion lỗi và recovery.
+            </p>
+            <a
+              href="assets/appendix-uc002-errors.png"
+              target="_blank"
+              rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/appendix-uc002-errors.png"
+              alt="UC-002 · Các nhánh lỗi"
+            />
+          </div>
+        </details>
+        <details>
+          <summary>UC-013 — Discard (minh họa cross-UC)</summary>
+          <div class="frame">
+            <h3>UC-013 · Discard B</h3>
+            <p>
+              Thao tác này khác Cancel request mới: Discard bỏ B Pending và khôi
+              phục A cùng constraints.
+            </p>
+            <a
+              href="assets/appendix-uc013-discard.png"
+              target="_blank"
+              rel="noopener"
+              >Mở ảnh đầy đủ ↗</a
+            ><img
+              loading="lazy"
+              src="assets/appendix-uc013-discard.png"
+              alt="UC-013 · Discard B"
+            />
+          </div>
+        </details>
+      </section>
+      <footer>
+        Pilot curated từ ZIP đã cung cấp. Bản ZIP gốc không bị thay đổi. Không
+        tạo UI mới hoặc nghiên cứu thêm product.
+      </footer>
+    </main>
+  </body>
+</html>
