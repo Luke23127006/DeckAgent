@@ -35,6 +35,7 @@ Write only what comes from the user, from the file being rewritten, or from the 
 - Find sentences over 20 words (citations in `[ ]` do not count) and split them.
 - Check that each term in the text is from the term table, and that no field has more than 7 bullets.
 - Check that evidence tags are on their own `Evidence` line.
+- Check that every `###` block ends with `Updated at`. Set it to today's date (`dd-mm-yyyy`) on each block you wrote or changed. Keep the date of a block you did not change (U-14, UCG-14).
 - Use cases only: run the interface check in `_STYLE.md` (rule 11, UCG-13) on the whole file except the frontmatter, the generated block and the `Research card` line. Rewrite each hit as an intent or a response, then apply the swap test to every `User`, `When` and `System` sentence. Evidence text follows the same rule: describe what the product did, not what it looked like or what its control was called. A zone is the only place name allowed.
 
 ## Use cases: finish with the flowchart

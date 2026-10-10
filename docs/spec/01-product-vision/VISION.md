@@ -1,66 +1,160 @@
 ---
-title: "Product vision: a local-first deck harness with the user's own key"
-status: Accepted
-decided_by: owner
-decided_on: 2026-10-09
-replaces: "The earlier idea of a hosted web app with user accounts, cloud storage and sharing by link."
+id: VIS-001
+title: "An open-source AI agent harness for making presentations"
+status: Draft
 ---
 
-# Product vision
+<!-- Write in plain English: docs/spec/_STYLE.md (VG-12). Gate: _CRITERIA.md. Template: _TEMPLATE.md. -->
 
-This file records what kind of product DeckAgent is. Every other file in `docs/spec/` must stay true to it.
+## What DeckAgent is
 
-It decides no scope. Scope stays on each use case in `../03-use-cases/`.
+### I-1 · A harness for presentations
 
-## The product in one paragraph
+- **Statement:** DeckAgent is an open-source AI agent harness for making presentations. A presentation here is a deck.
+- **Status:** confirmed
+- **Source:** owner
+- **Means for specs:**
+  - Every capability in the specs serves making a deck.
+- **Updated at:** 09-10-2026
 
-DeckAgent is a program that runs on the user's own computer. The user gives it a request and material. It uses a language model to build a deck. The user brings their own key for a model provider (BYOK). The product has no model account of its own. Chats, decks and files stay on the user's computer.
+### I-2 · Agent = model + harness
 
-## Architecture in brief
+- **Statement:**
+  - The **model** is the AI model the user chooses and connects with their own key.
+  - The **harness** is what DeckAgent builds: tools, a place to run them, and the logic that directs the work.
+  - The **agent** is the model working inside the harness.
+  - DeckAgent does not build, train or host a model of its own. Its own work is the harness.
+- **Status:** confirmed
+- **Source:** owner
+- **Means for specs:**
+  - No spec needs DeckAgent to build, train or host a model.
+- **Updated at:** 09-10-2026
 
-| Part | Decision |
-|---|---|
-| Where it runs | On the user's computer. No server run by the product stores user data or does user work. |
-| Model access | The user's own key for a model provider the user chooses. |
-| Where data lives | Chats, decks, attachments and settings are files on the user's computer. |
-| Ways to use it | A terminal and a local web page. Both use one engine, and both open the same chats and decks. |
-| The local web page | The engine serves it to a browser on the same computer. It is not a site for other people. |
-| What leaves the computer | The requests the user sends to the model provider. Third-party sources are an open question below. |
-| What the product gives | Files on the user's computer: an editable deck file and a fixed deck file. |
+## Why DeckAgent exists
 
-## Two ways in, one behavior
+### W-1 · The gap DeckAgent fills
 
-- A use case states intent and response and names no control (style rule 11). So one use case is true in both ways in.
-- A zone is a place where a kind of information lives. It is not an area of the screen.
-- In the local web page, the deck canvas shows the slides.
-- In the terminal, how the deck canvas shows the slides is open (see Open questions).
+- **Statement:**
+  - An AI model can understand a request, write content and decide what to do next.
+  - To make a presentation itself, the model needs tools and a place to run them.
+  - DeckAgent exists to connect the model's reasoning with the work of making a presentation.
+  - It is for a user who wants a presentation made from their request.
+- **Status:** confirmed
+- **Source:** owner
+- **Evidence:** [assumed: no user research yet shows this need or how common it is]
+- **Means for specs:**
+  - No spec states a user pain, such as lost time or weak design, without its own evidence.
+  - No spec claims that DeckAgent does better than another product.
+- **Updated at:** 09-10-2026
 
-## What the product does not have
+### W-2 · The main value
 
-These exclusions are absolute. No use case may describe them, even as an alternative flow.
+- **Statement:**
+  - DeckAgent lets the user turn a request for a presentation into a presentation, with the model they chose.
+  - The value lies in the harness built for presentations (I-2), not in a new model.
+  - P-1 and P-2 guide how DeckAgent gives this value.
+- **Status:** confirmed
+- **Source:** owner
+- **Evidence:** [assumed: no user research yet shows how users value this]
+- **Means for specs:**
+  - No spec promises a benefit the owner has not confirmed, such as saved time, lower cost or better design.
+- **Updated at:** 09-10-2026
 
-1. **Cloud hosting.** No server run by the product stores user data or runs user work.
-2. **User accounts.** There is no sign-up, sign-in, profile or plan. The only account is the user's own account with their model provider.
-3. **Real-time collaboration.** There is no shared editing, no comment and no live change between people.
-4. **Sharing a deck by a link.** There is nothing hosted to link to. The user shares the exported file. The earlier plan for a read-only link is cancelled.
-5. **A way to present.** The user presents from the exported file in their own tools.
-6. **A reader or editor for other people's deck files.** A deck file the user gives is only material or a pattern.
+## Principles
 
-## What the product does have, in the same spirit
+### P-1 · The user chooses the model
 
-- A basic edit of a deck the product made, on the deck canvas of the local web page. It is a candidate use case that is not yet written.
-- Export to an editable file and to a fixed file. The file types are a business rule.
-- Reopening an earlier chat. It reads files on the computer and needs no sign-in.
+- **Statement:** The user chooses the model and brings their own key for that model's provider (BYOK). DeckAgent has no model account of its own.
+- **Status:** confirmed
+- **Source:** owner
+- **Why:** not recorded
+- **Means for specs:**
+  - No spec assumes one model or one provider.
+  - A refused key or a reached usage limit belongs to the user's own provider account.
+- **Updated at:** 09-10-2026
 
-## What follows for the specs
+### P-2 · Open source, run by the user
 
-- Export writes a file on the computer. It needs no network.
-- Failures come from three outside causes. They are the key, the provider's limit and the network.
-- A use case never needs an account or a server run by the product. It never needs a second person.
-- Where the work runs and where state is kept is architecture. It is recorded in `docs/adr/`, not in a use case.
+- **Statement:** DeckAgent is open source. The user gets the source code, builds it and runs it on their own computer. It needs no hosted service run by the DeckAgent team.
+- **Status:** confirmed
+- **Source:** owner
+- **Why:** not recorded
+- **Means for specs:**
+  - No spec needs a service, a web app or a server run by the DeckAgent team.
+- **Updated at:** 09-10-2026
+
+### P-3 · One harness, several ways in
+
+- **Statement:** DeckAgent aims to offer a terminal interface (TUI) and a local web interface. Both use one core harness. They are ways to use DeckAgent, not two products.
+- **Status:** confirmed
+- **Source:** owner
+- **Why:** not recorded
+- **Means for specs:**
+  - This direction fixes neither which interface exists now nor which one is in scope. `00-current-scope/` says that.
+  - A use case states intent and response (`_STYLE.md` rule 11), so it holds for every interface.
+  - No spec describes the two interfaces as separate products.
+- **Updated at:** 09-10-2026
+
+## Boundaries
+
+### B-3 · The user's work stays local
+
+- **Statement:** The user's chats, decks and files stay on the user's computer. Only what the harness sends to the model provider leaves it.
+- **Status:** proposed
+- **Source:** proposed by an agent, inferred from P-1, P-2 and the earlier vision
+- **Why:** not recorded
+- **Updated at:** 09-10-2026
+
+### B-4 · No DeckAgent account
+
+- **Statement:** DeckAgent has no user account of its own. The user signs in to nothing to use it. Their only account is with their model provider.
+- **Status:** proposed
+- **Source:** proposed by an agent, inferred from P-1, P-2 and the earlier vision
+- **Why:** not recorded
+- **Updated at:** 09-10-2026
 
 ## Open questions
 
-1. How does the terminal show the deck canvas? Does it also offer voice input? Resolved by: owner.
-2. Does a request keep running when the user closes the terminal or the local web page? The use cases promise that the user comes back to the same state after leaving or reloading. Resolved by: owner, with an ADR.
-3. Can the user connect third-party sources, such as a cloud drive? A product with no server must run that connection on the computer. Resolved by: owner.
+### Q-7 · One person or several
+
+- **Question:** Is each deck made by one person, by the nature of DeckAgent? Or is that only a limit of the current scope? This covers working together on a deck and sharing it by a link.
+- **Affects:** USR-002 H-3, USR-005 H-4
+- **Resolved by:** owner
+- **Updated at:** 09-10-2026
+
+### Q-8 · What every interface offers
+
+- **Question:** Does every interface let the user reach the same results? Examples are seeing the slides and opening the same chats and decks.
+- **Affects:** UC-001 S5, UC-001 S6, UC-002 S3
+- **Resolved by:** owner
+- **Updated at:** 09-10-2026
+
+### Q-9 · Phones and tablets
+
+- **Question:** Does "runs on the user's computer" leave out a person who has only a phone or a tablet?
+- **Affects:** USR-003 H-2
+- **Resolved by:** owner
+- **Updated at:** 09-10-2026
+
+## Retired
+
+- D-1 (runs on the user's computer): now P-2. Its earlier reason is not carried over. The owner has not restated a reason.
+- D-2 (the user's own model key): now P-1.
+- D-3 (data stays on the computer): now B-3, proposed. That data is kept as files is an ADR matter.
+- D-4 (a terminal and a local web page): now P-3, as a direction. "Both open the same chats and decks" is Q-8.
+- D-5 (export to files): a capability. It stays in UC-005 and is not part of what DeckAgent is.
+- D-6 (a basic edit of a deck, proposed): a capability. It waits for a use case and the owner's decision.
+- M-1 (the product is hosted): covered by P-2.
+- M-2 (the product has user accounts): now B-4, proposed.
+- M-3 (people work on a deck together): now Q-7.
+- M-4 (a deck can be shared by a link): now Q-7.
+- M-5 (the product presents the deck): a capability. It stays in UC-005 notes.
+- M-6 (the product reads or edits other people's decks): a capability. It stays in UC-001 and UC-005.
+- Q-1 (the deck canvas in the terminal): interface design. The part that defines the product is Q-8.
+- Q-2 (work after the user leaves): an architecture question for an ADR. UC-003 notes keep it.
+- Q-3 (third-party sources): a capability. UC-003 A4 keeps it.
+- Q-4 (voice input in the terminal): a capability. UC-003 A2 keeps it.
+- B-1 (independent of reference products): not a boundary. It described research and how choices are made. Its claim about the core engine of DeepSeek Harness was not confirmed. How the agent runtime is built is open.
+- B-2 (no capability by convention): not a boundary. It is a rule for writing specs. VG-14 in `_CRITERIA.md` states it for the vision.
+- Q-5 (the problem DeckAgent solves): answered by the owner in W-1.
+- Q-6 (the main value for the user): answered by the owner in W-2.

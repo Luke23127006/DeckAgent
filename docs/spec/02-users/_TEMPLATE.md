@@ -21,7 +21,8 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 ## Needs
 
 <!-- One block per need. Goal in the user's words + the situation (when, where, why now). No solutions (U-04).
-     Heading: "### N-x · Short name" (5 words or fewer). Fixed fields: Goal, Situation, Use cases, Evidence.
+     Heading: "### N-x · Short name" (5 words or fewer). Fixed fields: Goal, Situation, Use cases, Evidence, Updated at.
+     Updated at: the date of the last change to this block, as dd-mm-yyyy, always the last field (U-14). Set it on every edit to the block.
      "Use cases" lists the UC IDs that serve this need. This file is the parent: use cases do not point back to it (U-11).
      Write "none yet" while no use case exists. That marks a need still to be served, not a decision. -->
 
@@ -31,6 +32,7 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 - **Situation:**
 - **Use cases:** none yet
 - **Evidence:** [assumed]
+- **Updated at:** DD-MM-YYYY
 
 ## Knowledge
 
@@ -60,7 +62,7 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 
 ## Accessibility and situational limits
 
-<!-- Permanent, temporary and situational. One block per limit. Heading: "### Type". Fixed fields: Limit, Effect on use, Evidence.
+<!-- Permanent, temporary and situational. One block per limit. Heading: "### Type". Fixed fields: Limit, Effect on use, Evidence, Updated at.
      Write "None identified: <reason>" in Limit if there is none (U-09). -->
 
 ### Permanent
@@ -68,11 +70,12 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 - **Limit:**
 - **Effect on use:**
 - **Evidence:** [assumed]
+- **Updated at:** DD-MM-YYYY
 
 ## Special-case hypotheses
 
 <!-- Situation -> what the product would have to handle. These seed use case variants and requirements (U-08, U-11).
-     Heading: "### H-x · Short name". Fixed fields: Situation, Product would have to, Affects, Handled by, Evidence.
+     Heading: "### H-x · Short name". Fixed fields: Situation, Product would have to, Affects, Handled by, Evidence, Updated at.
      "Affects" names the area of the product. "Handled by" names where a use case handles it, as UC-xxx.S3 or UC-xxx.A2,
      or "none yet", or "rejected: <reason>" (U-11). If no hypotheses are found, write "None found: <reason>". -->
 
@@ -83,6 +86,7 @@ dimensions:           # key = dimension name from dimensions.md in snake_case; l
 - **Affects:**
 - **Handled by:** none yet
 - **Evidence:** [assumed]
+- **Updated at:** DD-MM-YYYY
 
 ## Open questions
 

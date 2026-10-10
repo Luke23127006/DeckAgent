@@ -51,7 +51,8 @@ flowchart TD
        never written as a value: [BR-xxx], [NFR-xxx]. Unwritten: [BR-?: topic] / [NFR-?: topic] (UCG-06).
      Reqs: FR IDs for this response, or FR-? while unwritten (UCG-06).
      Evidence: tags from _STYLE.md on one line. Remove the field when the step makes no claim about a product (UCG-08).
-     Fixed field names and order: User, System, Reqs, Evidence. Rules for each field: _STYLE.md. -->
+     Fixed field names and order: User, System, Reqs, Evidence, Updated at. Rules for each field: _STYLE.md.
+     Updated at: the date of the last change to this block, as dd-mm-yyyy, always the last field (UCG-14). Set it on every edit to the block. -->
 
 ### S1 · Step name
 
@@ -60,6 +61,7 @@ flowchart TD
   -
 - **Reqs:** FR-?
 - **Evidence:**
+- **Updated at:** DD-MM-YYYY
 
 ## Alternative flows
 
@@ -76,7 +78,7 @@ flowchart TD
        Goes to UC-xxx   another use case takes over
        Goes to UC-? (topic)   a use case that is not written yet takes over; the topic names it, for example "model setup"
      An action offered after the end (for example "Try again") is written in System, not in End.
-     When: a condition the system can detect, or an intent of the user (UCG-04). Fixed field names and order: At, End, When, System, Reqs, Evidence. -->
+     When: a condition the system can detect, or an intent of the user (UCG-04). Fixed field names and order: At, End, When, System, Reqs, Evidence, Updated at (UCG-14). -->
 
 ### A1 · Branch name
 
@@ -87,6 +89,7 @@ flowchart TD
   -
 - **Reqs:** FR-?
 - **Evidence:**
+- **Updated at:** DD-MM-YYYY
 
 ## Postconditions and minimal guarantee
 
@@ -107,12 +110,14 @@ flowchart TD
 - **Coverage:** unverified
 - **Research card:**
 - **Difference:**
+- **Updated at:** DD-MM-YYYY
 
 ### Napkin AI
 
 - **Coverage:** unverified
 - **Research card:**
 - **Difference:**
+- **Updated at:** DD-MM-YYYY
 
 ## Open questions
 
