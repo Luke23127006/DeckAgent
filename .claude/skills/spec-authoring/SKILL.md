@@ -13,11 +13,29 @@ The rules live in three files. Read them before writing. Do not restate them in 
 
 ## Content sources
 
-Write only what comes from the user, from the file being rewritten, or from the research cards in `docs/research/`. If a step needs behavior from none of these, mark it `[assumed]` and say so in the report. Do not invent it. Scope fields (`scope`, `ships_in_mvp`) belong to the owner; copy them, never set them.
+Write only what comes from the user, from the file being rewritten, or from the research cards in `docs/research/`. If a step needs behavior from none of these, mark it `[assumed]` and say so in the report. Do not invent it.
+
+A use case explores behaviors DeckAgent could perform. A flow taken from a research card or a reference product is allowed. Its evidence says where it came from. It is not a commitment to build it.
+
+The `versions` field of a use case belongs to the owner. Copy it exactly. Never add, remove or reorder a version or a flow in it unless the task asks for that change. Never select a flow because a research card shows it.
+
+Do not write functional requirements or replace `FR-?` with a real ID unless the task asks for it. Such a task covers only flows that a version selects. Use cases have no `status` field and hold no implementation progress.
+
+## References between use cases
+
+`_CRITERIA.md` (Related use cases, Requirements traceability) defines the rules. Keep three relations apart:
+
+- **Invocation:** `includes` runs the main flow of the other use case. Each step that runs part of it names that step.
+- **Behavior reference:** "as UC-xxx Sx says" or "as in UC-xxx Ax" reuses wording only. Never read it as a scope dependency, a flow selection or a requirement trace.
+- **Scope dependency:** only `includes`, `extended_by`, an `End` to another use case, or a precondition declares one. Report a dependency you find. Never add a flow to `versions` for it.
+
+Write `Reqs: none` only in a step that runs part of an included use case, when the block `System` names gives the whole response. A behavior reference in any other block keeps `FR-?` or FR IDs. A block that adds its own response traces only its own part. Never write a reference in `Reqs`, and never write a second FR for a response an FR already covers.
+
+When you change the `System` of a block, search `docs/spec/` for references to it (`UC-xxx Sx`, `UC-xxx.Sx`). Change a referring block only when its meaning no longer holds. List every reference you reviewed in the report.
 
 ## New file
 
-1. Copy the folder's `_TEMPLATE.md`. Take the next free ID.
+1. Copy the folder's `_TEMPLATE.md`. Use cases: take the ID after the highest use case ID in `03-use-cases/` and in its retired IDs (`03-use-cases/_CRITERIA.md`, Use case IDs). Never reuse, move or renumber a use case ID; only an owner decision recorded there can renumber. Segments: take the next free ID.
 2. Fill every section. Write unwritten requirements, rules and quality targets as the `?` markers the criteria define. Remove sections the template marks as removable when they are empty.
 3. Apply the style checks below.
 
@@ -48,4 +66,4 @@ Follow `docs/spec/02-users/_TEMPLATE.md`: one block per need and per hypothesis,
 
 ## Report
 
-List: the files changed, the checks run and their results, every place where a style rule changed a meaning, every UI phrase that carried a requirement and how you wrote it, every UI decision removed with no home, and every `[assumed]` you added.
+List: the files changed, the checks run and their results, every place where a style rule changed a meaning, every UI phrase that carried a requirement and how you wrote it, every UI decision removed with no home, every `[assumed]` you added, and every reference you reviewed after a change to `System`.

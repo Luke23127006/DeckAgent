@@ -142,14 +142,14 @@ status: Draft
 - D-2 (the user's own model key): now P-1.
 - D-3 (data stays on the computer): now B-3, proposed. That data is kept as files is an ADR matter.
 - D-4 (a terminal and a local web page): now P-3, as a direction. "Both open the same chats and decks" is Q-8.
-- D-5 (export to files): a capability. It stays in UC-005 and is not part of what DeckAgent is.
+- D-5 (export to files): a capability. It stays in UC-004 and is not part of what DeckAgent is.
 - D-6 (a basic edit of a deck, proposed): a capability. It waits for a use case and the owner's decision.
 - M-1 (the product is hosted): covered by P-2.
 - M-2 (the product has user accounts): now B-4, proposed.
 - M-3 (people work on a deck together): now Q-7.
 - M-4 (a deck can be shared by a link): now Q-7.
-- M-5 (the product presents the deck): a capability. It stays in UC-005 notes.
-- M-6 (the product reads or edits other people's decks): a capability. It stays in UC-001 and UC-005.
+- M-5 (the product presents the deck): a capability. It stays in UC-004 notes.
+- M-6 (the product reads or edits other people's decks): a capability. It stays in UC-001 and UC-004.
 - Q-1 (the deck canvas in the terminal): interface design. The part that defines the product is Q-8.
 - Q-2 (work after the user leaves): an architecture question for an ADR. UC-003 notes keep it.
 - Q-3 (third-party sources): a capability. UC-003 A4 keeps it.

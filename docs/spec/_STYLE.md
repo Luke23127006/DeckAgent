@@ -61,9 +61,14 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **notice** | A short message the system gives about what happened |
 | **status message** | The text in the conversation that says what the system is doing now |
 | **placeholder** | Text the system wrote because the user gave none |
-| **default design system** | The look the system uses when the user chose none |
+| **design system** | A set of design rules the user can choose for different decks, such as colours, fonts and a logo |
+| **default design system** | The design system the system uses when the user chose none |
+| **look** | How one deck is shown: its colours, fonts and arrangement on the slides. A look can use a design system |
+| **deck state** | The content and the look of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`00-current-scope/`) |
+| **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
+| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. How many decks a chat holds is not fixed |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
-| **try again** | The user asks the system to repeat the work that stopped: draft the outline again, build the slides again from the confirmed outline, or apply the change again |
+| **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
 | **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
 

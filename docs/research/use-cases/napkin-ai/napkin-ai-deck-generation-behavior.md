@@ -175,7 +175,7 @@ One static screenshot: [after-test-case-3-upload-pptx.png](ui/images/after-test-
 
 ### Protected deck file
 
-One static screenshot: [after-test-case-4-upload-pptx.png](ui/images/after-test-case-4-upload-pptx.png). The test file is [password_protected_test.pptx](pptx/password_protected_test.pptx). Its first bytes are those of a compound file, not of a zip file.
+One static screenshot: [after-test-case-4-upload-pptx.png](ui/images/after-test-case-4-upload-pptx.png). The test file is `password_protected_test.pptx`, an encrypted test fixture that is not stored in this public repository. Its first bytes are those of a compound file, not of a zip file.
 
 - The file is a pill in the request box with the text "This file could not be uploaded." and a "×". The text and the pill are in an error style. The request box is empty and shows "Send a message…". The `+` button for attaching is still there.
 - The product rejected the file when it was attached, before any send. No crash is visible.
