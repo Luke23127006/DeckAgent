@@ -52,6 +52,7 @@ flowchart TD
      System: bullets for what the user can observe: what the system tells, keeps, changes or builds. No "if", no implementation, no interface. A rule or quality target is cited by ID,
        never written as a value: [BR-xxx], [NFR-xxx]. Unwritten: [BR-?: topic] / [NFR-?: topic] (UCG-06).
      Reqs: FR IDs for this response, or FR-? when no FR exists yet. A flow no version selects can keep FR-? (UCG-06).
+       Mixed: FR IDs then FR-? (FR-001, FR-?) when some FRs exist and at least one is missing. The block is incomplete while FR-? remains.
        none: only in a step that runs part of an included use case, when that use case's block, named in System ("as UC-xxx S1 says"),
        gives the whole response. Its FRs trace there (UCG-03). A behavior reference in any other block keeps FR IDs or FR-?.
        A block that adds its own response lists FR IDs or FR-? for its own part only.
