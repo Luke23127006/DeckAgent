@@ -61,6 +61,19 @@ Versions apply in this order.
 - **Means for specs:** UC-004 stays in the behavioral model as a future candidate. No later version is assigned to it.
 - **Updated at:** 11-10-2026
 
+### Chats and workspace
+
+- **Statement:** In V1 the user can start a new chat for another deck. The user can also see earlier chats and reopen one with its conversation and deck.
+  - Earlier chats and their saved decks stay available after DeckAgent is closed and opened again. Work that was running then is not resumed.
+  - V1 has one default workspace. The user chooses no folder and sets up no workspace before a chat.
+  - The user cannot start a new chat or open an earlier chat while the current request is active. A request that waits for the user's answer is active.
+- **Considered:** one chat only (option A), not selected. Folder-based workspaces (option C), a future candidate with no version assigned (UC-012 Note 2).
+- **Status:** confirmed
+- **Source:** owner
+- **Why:** The user can begin new deck work without choosing a folder or managing workspaces.
+- **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior.
+- **Updated at:** 11-10-2026
+
 ### Validation baseline
 
 The minimal validation set for the V1 goal. It is a short baseline, not a test specification.
