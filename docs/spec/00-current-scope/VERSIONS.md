@@ -90,7 +90,7 @@ The minimal validation set for the V1 goal. It is a short baseline, not a test s
   - Basic clarification is the fallback when DeckAgent has no grounded direction to offer. Design diagnosis is not part of this scenario.
 - **Boundaries:**
   - The set validates the V1 goal and its three success criteria.
-  - It does not replace acceptance tests for model setup, stop, error, undo or file input.
+  - It does not replace acceptance tests for model setup, stop, error or file input.
   - It selects no flow.
 - **Considered, outside the set:** VS-05 (instructions that conflict with each other), VS-06 (a follow-up request that reaches slides it does not name), VS-09 (a model change after a change by hand).
 - **Status:** confirmed
