@@ -68,6 +68,19 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
 | **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. How many decks a chat holds is not fixed |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
+| **provider configuration** | One saved connection to a model service. It is more than a key. It connects to a built-in provider or to a custom model API. It holds a provider ID, a display name and what the provider needs, such as a key. It also holds its added models |
+| **built-in provider** | A model provider that DeckAgent offers by name [BR-005]. DeckAgent knows its provider ID and its default settings |
+| **custom model API** | A model service that the user describes: its provider ID, its base URL and its API protocol. It is not a built-in provider |
+| **provider ID** | The name that identifies the provider of a provider configuration. A built-in provider has its own. The user gives one to a custom model API. It never changes after the provider configuration is saved. It is not the display name |
+| **base URL** | The address to which the system sends the requests of a provider configuration |
+| **API protocol** | The way a model service expects to be asked [BR-005]. Several custom model APIs can use the same API protocol |
+| **display name** | The name the user gives a provider configuration [BR-008]. It never says which provider the configuration connects to |
+| **model catalog** | The list of models that a provider returns when the system asks for it. It is not the list of added models. It does not show which models the user's key can run. Some providers return none |
+| **default models** | The added models that DeckAgent gives for a built-in provider, where it has them [BR-005]. The user can restore them |
+| **model ID** | The name by which a provider identifies one of its models |
+| **added model** | A model ID that the user added to one provider configuration. It comes from the model catalog or is given by hand. It belongs to that provider configuration only. Saving it does not show that the provider runs it |
+| **selectable model** | An added model that the user can choose for a chat [BR-005]. Being selectable does not show that the provider runs it |
+| **selected model** | The added model chosen for one chat. Each chat has its own. It runs a new request only while it is selectable |
 | **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
 | **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |

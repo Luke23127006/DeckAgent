@@ -99,7 +99,9 @@ FRs follow the intent of `_STYLE.md` rule 11. An FR describes behavior the user 
 - Acceptance condition IDs are `AC-1`, `AC-2` within one FR. They are never renumbered to close a gap.
 - There is no FR index. The files of this folder are the list.
 
-Retired FR IDs: none.
+Retired FR IDs:
+
+- FR-060, retired on 12-10-2026. It let the user change the provider of a saved provider configuration. It kept the models added for the earlier provider. The owner decision of 2026-10-12 on provider IDs removed that behavior from the behavioral model: the provider ID never changes. It merged into no FR.
 
 ### Traceability and scope
 

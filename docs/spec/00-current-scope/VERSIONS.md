@@ -84,6 +84,23 @@ Versions apply in this order.
 - **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior.
 - **Updated at:** 11-10-2026
 
+### Models
+
+- **Statement:** In V1 the user sets up models with their own keys or model services (Vision P-1).
+  - The user can save several provider configurations. Each connects to a built-in provider or to a custom model API. Two custom model APIs can use the same API protocol.
+  - No two saved provider configurations have the same provider ID. The provider ID never changes after saving. To use another provider, the user adds a provider configuration.
+  - The user can change the key or other authentication information of a saved provider configuration. The user can also change its base URL and its display name. The display name is not empty and is unique.
+  - The user adds models to each provider configuration, from the model catalog of the provider or by model ID. The user can remove an added model, and restore the default models after confirming.
+  - The user can delete a provider configuration, except while an active request uses it.
+  - Each chat has its own selected model. The user chooses it among the selectable models of every provider configuration.
+  - The user sets up provider configurations and models in the Models part of the settings. It holds built-in providers, custom model APIs, the model catalog and the saved provider configurations.
+- **Considered:** one working model set up with the user's key (owner, 2026-10-11). Also one provider configuration with every model its key can use (owner, 2026-10-12). Also two provider configurations for one provider, and a change of provider (owner, 2026-10-12). Both were replaced the same day. None is kept for V1.
+- **Status:** confirmed
+- **Source:** owner, 2026-10-12
+- **Why:** not recorded
+- **Means for specs:** No total number of provider configurations is set. The organization of the settings is the owner's chosen direction. It is not an interface design, and use cases stay free of interface details. UC-005 and UC-003 describe the behavior. This selects no flow and fixes no storage.
+- **Updated at:** 12-10-2026
+
 ### Validation baseline
 
 The minimal validation set for the V1 goal. It is a short baseline, not a test specification.

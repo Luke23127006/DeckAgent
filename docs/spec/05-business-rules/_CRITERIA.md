@@ -88,7 +88,9 @@ A confirmed rule or value traces to confirmed product behavior or to an explicit
 - Value IDs are `V-1`, `V-2` within one BR. They are never renumbered to close a gap.
 - There is no BR index. The files of this folder are the list.
 
-Retired BR IDs: none.
+Retired BR IDs:
+
+- BR-007, retired on 12-10-2026. It set the number of provider configurations the user can keep saved at one time. The owner decision of 2026-10-12 removed the limit of one and set no other value. The rule has no value to define any more.
 
 ### Traceability and scope
 
