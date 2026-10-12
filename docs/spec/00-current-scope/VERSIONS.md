@@ -51,6 +51,16 @@ Versions apply in this order.
 - **Means for specs:** This sets no agent runtime and no architecture. Use cases stay free of interface details (`../_STYLE.md` rule 11).
 - **Updated at:** 11-10-2026
 
+### Content editing
+
+- **Statement:** In V1 the user changes the content and the structure of a deck through the chat. The system makes each change from the user's instructions. The user reviews the slides in the deck canvas. Direct editing of the outline and of the slides is not selected for V1.
+- **Considered:** editing the outline text directly, and light direct editing of slides, such as bold, italic or a font. Neither is selected for V1. Direct editing of slides stays a future capability.
+- **Status:** confirmed
+- **Source:** owner
+- **Why:** The system revises content from the user's intent. The user does not have to fit related changes together by hand. An instruction gives no permission to change content outside its scope.
+- **Means for specs:** Use cases describe a change of content as a request (UC-001 Note 29, UC-002). A suggested option sends an instruction (UC-003 Note 23). UC-007 stays a future candidate. This selects no flow.
+- **Updated at:** 12-10-2026
+
 ### Export
 
 - **Statement:** V1 has no export. The V1 journey ends when the user reviews the deck in Local Web.
