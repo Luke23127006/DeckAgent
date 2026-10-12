@@ -89,7 +89,7 @@ Versions apply in this order.
 - **Statement:** In V1 the user sets up models with their own keys or model services (Vision P-1).
   - The user can save several provider configurations. Each connects to a built-in provider or to a custom model API. Two custom model APIs can use the same API protocol.
   - No two saved provider configurations have the same provider ID. The provider ID never changes after saving. To use another provider, the user adds a provider configuration.
-  - The user can change the key or other authentication information of a saved provider configuration. The user can also change its base URL and its display name. The display name is not empty and is unique.
+  - The user can change the key or other authentication information of a saved provider configuration. The user can also change its display name, and its base URL where the provider allows it. The display name is not empty and is unique.
   - The user adds models to each provider configuration, from the model catalog of the provider or by model ID. The user can remove an added model, and restore the default models after confirming.
   - The user can delete a provider configuration, except while an active request uses it.
   - Each chat has its own selected model. The user chooses it among the selectable models of every provider configuration.
