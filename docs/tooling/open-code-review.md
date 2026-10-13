@@ -61,7 +61,7 @@ review. They do not call an LLM and do not perform the review themselves.
 Preview current staged, unstaged, and untracked changes:
 
 ```powershell
-npm.cmd run ocr:preview -- --background "Project Hub tooling changes"
+npm.cmd run ocr:preview -- --background "Reason for the change"
 ```
 
 Preview a commit:
@@ -79,7 +79,7 @@ npm.cmd run ocr:preview -- --from main --to <branch> --background "Reason for th
 Inspect the rule applied to files:
 
 ```powershell
-npm.cmd run ocr:rules -- tools/project_hub/src/project_hub/cli.py
+npm.cmd run ocr:rules -- .agents/scripts/sync_skill_mirrors.py
 ```
 
 On macOS or Linux, replace `npm.cmd` with `npm`. Project-specific filters and
