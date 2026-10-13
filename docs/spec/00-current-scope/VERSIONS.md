@@ -79,11 +79,14 @@ Versions apply in this order.
   - While DeckAgent runs, reloading or closing the Local Web interface does not stop the active request.
   - V1 has one default workspace. The user chooses no folder and sets up no workspace before a chat.
   - The user cannot start a new chat or open an earlier chat while the current request is active. A request that waits for the user's answer is active.
-- **Considered:** one chat only (option A), not selected. Folder-based workspaces (option C), a future candidate with no version assigned (UC-012 Note 2).
+  - A chat holds one deck. A new deck starts in a new chat.
+  - Unsent request text stays with its own chat while DeckAgent runs. Unsent attachments are removed when the user changes chats. Nothing unsent is promised after DeckAgent ends.
+  - Chats, their conversations and their decks are kept with no time limit (BR-004).
+- **Considered:** one chat only (option A), not selected. Folder-based workspaces (option C), a future candidate with no version assigned (UC-012 Note 2). A chat with several decks, not selected for V1.
 - **Status:** confirmed
-- **Source:** owner; owner, 2026-10-13 (reloading or closing the interface)
+- **Source:** owner; owner, 2026-10-13 (reloading or closing the interface); owner, 2026-10-13 (one deck per chat, unsent text and attachments, and history kept with no time limit)
 - **Why:** The user can begin new deck work without choosing a folder or managing workspaces.
-- **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior. UC-003 A13 and UC-001 A13 describe a reload.
+- **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior. UC-003 A13 and UC-001 A13 describe a reload. No way to delete a chat or a deck is added. Nothing promises to keep data the user removes on purpose, or that a lost disk takes.
 - **Updated at:** 13-10-2026
 
 ### Models
@@ -96,12 +99,12 @@ Versions apply in this order.
   - The user can delete a provider configuration, except while an active request uses it.
   - Each chat has its own selected model. The user chooses it among the selectable models of every provider configuration.
   - The user sets up provider configurations and models in the Models part of the settings. It holds built-in providers, custom model APIs, the model catalog and the saved provider configurations.
-- **Considered:** one working model set up with the user's key (owner, 2026-10-11). Also one provider configuration with every model its key can use (owner, 2026-10-12). Also two provider configurations for one provider, and a change of provider (owner, 2026-10-12). Both were replaced the same day. None is kept for V1.
+- **Considered:** one working model set up with the user's key (owner, 2026-10-11). Also one provider configuration with every model its key can use (owner, 2026-10-12). Also two provider configurations for one provider, and a change of provider (owner, 2026-10-12). Both were replaced the same day. None is kept for V1. Models that run on the user's computer (owner, 2026-10-13): V1 does not promise, install or test them. A compatible one can work as a custom model API, untested and not promised. It is not a feature of its own.
 - **Status:** confirmed
-- **Source:** owner, 2026-10-12
+- **Source:** owner, 2026-10-12; owner, 2026-10-13 (no promise of models that run on the user's computer)
 - **Why:** not recorded
-- **Means for specs:** No total number of provider configurations is set. The organization of the settings is the owner's chosen direction. It is not an interface design, and use cases stay free of interface details. UC-005 and UC-003 describe the behavior. This selects no flow and fixes no storage.
-- **Updated at:** 12-10-2026
+- **Means for specs:** No total number of provider configurations is set. The organization of the settings is the owner's chosen direction. It is not an interface design, and use cases stay free of interface details. UC-005 and UC-003 describe the behavior. This selects no flow and fixes no storage. V1 puts the four built-in providers first (BR-005). Custom model APIs stay part of V1.
+- **Updated at:** 13-10-2026
 
 ### Images
 
@@ -122,6 +125,8 @@ Versions apply in this order.
 ### Content language
 
 - **Statement:** DeckAgent writes the content of a deck in the language the user asks for. When the language is unclear, the rules for clarification apply.
+  - The request names no language, and the request text clearly uses one: DeckAgent uses that language.
+  - The language of an attachment does not override a clear request.
   - Vietnamese and English are checked first.
   - This is not a list of languages DeckAgent commits to.
 - **Status:** confirmed
