@@ -108,13 +108,15 @@ Versions apply in this order.
 - **Statement:** In V1 the agent can use images from the user's attachments on slides. It can also make new images for slides.
   - How new images are made is not decided. This covers the technology, a separate model or service, the model or provider, and whether every model can make them.
   - DeckAgent adds no image service, no image search and no images from the internet.
-  - It never changes the selected model, and never moves the work to another provider, to make an image. A missing capability follows the rules for work that cannot finish.
+  - It never changes the selected model, and never moves the work to another provider, to make an image.
+  - A clear request for attached or new images is followed. When the request does not say, and the choice changes the result a lot, the system asks.
+  - A new image that the user asked for, or that the result cannot do without, cannot be made: the work cannot finish. A new image the agent chose to add is left out, and the closing message says so.
   - Using images from attachments approves no file type. BR-001 sets the accepted types.
 - **Considered:** the agent finds images on the internet. Not selected. The user edits slides directly, or pastes images for the agent. Future candidates, not selected for V1.
 - **Status:** confirmed
 - **Source:** owner, 2026-10-13
 - **Why:** not recorded
-- **Means for specs:** UC-001 A42 and UC-002 A12 describe the behavior. Content goes to a service other than the provider of the selected model only after an owner approval (NFR-007). How images are made is a matter for architecture research.
+- **Means for specs:** UC-001 A42, UC-002 A12 and FR-066 describe the behavior. UC-001 Note 38 holds the choice of image and the image that cannot be made. Content goes to a service other than the provider of the selected model only after an owner approval (NFR-007). How images are made is a matter for architecture research.
 - **Updated at:** 13-10-2026
 
 ### Content language
