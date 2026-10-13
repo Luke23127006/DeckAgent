@@ -5,6 +5,7 @@ This file defines each version of DeckAgent. It gives the identity, purpose, goa
 - The `versions` field of each use case selects the flows of a version (`../03-use-cases/_CRITERIA.md`, Version scope). Nothing else selects a flow.
 - This file holds no list of selected flows. Such a list would be a second source of scope.
 - The validation baseline of a version selects no flow.
+- A version can list product-wide NFRs that no requirement or flow can cite (`../04-requirements/nfr/_CRITERIA.md`, Traceability and scope). The list selects no flow.
 
 ## Version list
 
@@ -43,13 +44,13 @@ Versions apply in this order.
 
 ### Interface
 
-- **Statement:** Local Web is the interface for creating, previewing and refining decks in V1.
-- **Considered:** the terminal interface (TUI). It stays a direction of the vision (P-3). It is not selected for V1.
+- **Statement:** Local Web is the interface for creating, previewing and refining decks in V1. The user reaches it only from the computer that runs DeckAgent.
+- **Considered:** the terminal interface (TUI). It stays a direction of the vision (P-3). It is not selected for V1. Access from another device on the network. Not selected for V1.
 - **Status:** confirmed
-- **Source:** owner
+- **Source:** owner; owner, 2026-10-13 (access only from the computer that runs DeckAgent)
 - **Why:** not recorded
-- **Means for specs:** This sets no agent runtime and no architecture. Use cases stay free of interface details (`../_STYLE.md` rule 11).
-- **Updated at:** 11-10-2026
+- **Means for specs:** This sets no agent runtime, no server and no architecture. Use cases stay free of interface details (`../_STYLE.md` rule 11). NFR-005 states the quality of this access.
+- **Updated at:** 13-10-2026
 
 ### Content editing
 
@@ -75,14 +76,15 @@ Versions apply in this order.
 
 - **Statement:** In V1 the user can start a new chat for another deck. The user can also see earlier chats and reopen one with its conversation and deck.
   - Earlier chats and their saved decks stay available after DeckAgent is closed and opened again. Work that was running then is not resumed.
+  - While DeckAgent runs, reloading or closing the Local Web interface does not stop the active request.
   - V1 has one default workspace. The user chooses no folder and sets up no workspace before a chat.
   - The user cannot start a new chat or open an earlier chat while the current request is active. A request that waits for the user's answer is active.
 - **Considered:** one chat only (option A), not selected. Folder-based workspaces (option C), a future candidate with no version assigned (UC-012 Note 2).
 - **Status:** confirmed
-- **Source:** owner
+- **Source:** owner; owner, 2026-10-13 (reloading or closing the interface)
 - **Why:** The user can begin new deck work without choosing a folder or managing workspaces.
-- **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior.
-- **Updated at:** 11-10-2026
+- **Means for specs:** This fixes no storage, working folder or runtime. UC-012 and UC-006 describe the behavior. UC-003 A13 and UC-001 A13 describe a reload.
+- **Updated at:** 13-10-2026
 
 ### Models
 
@@ -100,6 +102,54 @@ Versions apply in this order.
 - **Why:** not recorded
 - **Means for specs:** No total number of provider configurations is set. The organization of the settings is the owner's chosen direction. It is not an interface design, and use cases stay free of interface details. UC-005 and UC-003 describe the behavior. This selects no flow and fixes no storage.
 - **Updated at:** 12-10-2026
+
+### Images
+
+- **Statement:** In V1 the agent can use images from the user's attachments on slides. It can also make new images for slides.
+  - How new images are made is not decided. This covers the technology, a separate model or service, the model or provider, and whether every model can make them.
+  - DeckAgent adds no image service, no image search and no images from the internet.
+  - It never changes the selected model, and never moves the work to another provider, to make an image. A missing capability follows the rules for work that cannot finish.
+  - Using images from attachments approves no file type. BR-001 sets the accepted types.
+- **Considered:** the agent finds images on the internet. Not selected. The user edits slides directly, or pastes images for the agent. Future candidates, not selected for V1.
+- **Status:** confirmed
+- **Source:** owner, 2026-10-13
+- **Why:** not recorded
+- **Means for specs:** UC-001 A42 and UC-002 A12 describe the behavior. Content goes to a service other than the provider of the selected model only after an owner approval (NFR-007). How images are made is a matter for architecture research.
+- **Updated at:** 13-10-2026
+
+### Content language
+
+- **Statement:** DeckAgent writes the content of a deck in the language the user asks for. When the language is unclear, the rules for clarification apply.
+  - Vietnamese and English are checked first.
+  - This is not a list of languages DeckAgent commits to.
+- **Status:** confirmed
+- **Source:** owner, 2026-10-13
+- **Why:** not recorded
+- **Means for specs:** FR-008 and FR-022 describe the behavior. NFR-009 checks the characters of Vietnamese and English first.
+- **Updated at:** 13-10-2026
+
+### Platform
+
+- **Statement:** Windows comes first for DeckAgent.
+  - The team develops, runs and checks DeckAgent on Windows first.
+  - Architecture research prefers choices that work well on Windows. It avoids dependencies that make DeckAgent hard to run there.
+  - macOS and Linux are not goals now.
+  - The same direction holds for a later terminal interface.
+- **Status:** confirmed
+- **Source:** owner, 2026-10-13
+- **Why:** not recorded
+- **Means for specs:** This promises nothing for every Windows version, device or hardware. It sets no list of platforms or browsers, and asks for no work across several platforms. NFR-014 states the build and the run on Windows.
+- **Updated at:** 13-10-2026
+
+### Quality requirements for the whole version
+
+- **Statement:** V1 holds these product-wide NFRs. No FR and no selected response of a use case states a behavior that they constrain.
+  - NFR-005
+  - NFR-014
+- **Status:** confirmed
+- **Source:** owner, 2026-10-13: a product-wide NFR that no requirement or flow can cite belongs to V1 through this list
+- **Means for specs:** The list holds IDs only. An NFR that a block or an FR of V1 cites is not listed (`../04-requirements/nfr/_CRITERIA.md`).
+- **Updated at:** 13-10-2026
 
 ### Validation baseline
 

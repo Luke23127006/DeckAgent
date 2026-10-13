@@ -99,11 +99,13 @@ status: Draft
 
 ### B-3 · The user's work stays local
 
-- **Statement:** The user's chats, decks and files stay on the user's computer. Only what the harness sends to the model provider leaves it.
-- **Status:** proposed
-- **Source:** proposed by an agent, inferred from P-1, P-2 and the earlier vision
+- **Statement:** The user's chats, decks and files stay on the user's computer. User content leaves it only in requests to the provider of the selected model, unless the owner approved another service. Other outside connections carry no user content, and each one has a stated scope and purpose.
+- **Status:** confirmed
+- **Source:** owner, 2026-10-13: user content goes to the provider of the selected model; another outside service needs an explicit approval; a connection with no user content has a clear scope and purpose
 - **Why:** not recorded
-- **Updated at:** 09-10-2026
+- **Means for specs:**
+  - NFR-007 states the quality and its checks.
+- **Updated at:** 13-10-2026
 
 ### B-4 · No DeckAgent account
 

@@ -123,12 +123,15 @@ Links go top-down only (`../../03-use-cases/_CRITERIA.md`, section 1).
 
 - A use case block (`System` or `When`), an FR or the vision cites an NFR as `[NFR-xxx]`.
 - An NFR names no use case, step, flow, segment, FR or other NFR. It can cite a BR in `Conditions`. A BR cites nothing, so no cycle arises.
-- An NFR has no version field. `../../00-current-scope/VERSIONS.md` lists no NFR.
-- **Scope.** An NFR belongs to a version when a block in that version's flow set cites it. It also belongs when an FR of that version cites it. A citation in the vision gives no scope. An NFR changes no flow set.
+- An NFR has no version field. `../../00-current-scope/VERSIONS.md` lists an NFR only as a product-wide NFR of a version (below).
+- **Scope.** An NFR belongs to a version when a block in that version's flow set cites it. It also belongs when an FR of that version cites it. It also belongs when that version lists it as a product-wide NFR (below). A citation in the vision gives no scope. An NFR changes no flow set.
 - **Product-wide NFR.** Applying to every part of the product is not the same as belonging to a version. The citation rule above still decides membership.
-  - An NFR that applies product-wide, and that no block or FR of a version cites, has an open scope question for that version. No convention settles it yet.
-  - The question is resolved before the NFR is accepted into the baseline of that version. The review report lists it until then.
-  - The question does not block other BR or NFR work.
+  - A product-wide NFR that no block or FR of a version cites belongs to that version only when the version lists it.
+  - The list is the block "Quality requirements for the whole version" of that version in `../../00-current-scope/VERSIONS.md`. It holds NFR IDs only. It holds no target and no wording of an NFR.
+  - A version lists an NFR only when no FR and no selected `System` response states a behavior that the NFR constrains. A citation added only to give scope is not allowed.
+  - An NFR that a block or an FR of the version cites is not listed. Listing it again would be a second source of scope.
+  - Listing is an owner decision. It confirms no statement and no target.
+  - A product-wide NFR that is neither cited nor listed has an open scope question for that version. The review report lists it until the owner resolves it. The question does not block other BR or NFR work.
 - To find what cites an NFR, search the spec files for its ID. There is no reverse field.
 
 ### Single source of truth
