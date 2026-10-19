@@ -53,13 +53,18 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **request text** | The words of a request, typed, pasted or spoken |
 | **attachment** | One file or photo added to a request, with its name or preview, its type and its state |
 | **conversation** | The zone that holds the messages between the user and the system, in order |
-| **outline** | The list of slide titles and points the system drafts before any slide exists |
+| **outline** | The content plan the system drafts before any slide exists. It plans the slides: each planned slide has its title and the content planned for it |
 | **confirmed outline** | An outline the user has confirmed. It is read-only |
 | **deck** | All slides of the presentation |
 | **slide** | One part of the deck that the audience sees at a time |
+| **planned slide** | One slide the outline plans. It holds a title and the planned content for that slide. It is not a built slide |
 | **deck canvas** | The zone where the system shows the slides |
 | **notice** | A short message the system gives about what happened |
-| **status message** | The text in the conversation that says what the system is doing now |
+| **status message** | The text in the conversation that says what the system is doing now and how the request stands |
+| **activity** | One piece of work the system did or planned during a request. It holds what the system did, its state and the information known about its result |
+| **activity state** | What an activity has reached: planned, running, completed, failed, stopped or interrupted. Planned means the system produced a plan that names the activity; a request with no plan has no planned activity. Interrupted means the work on the activity ended before its result was confirmed, because DeckAgent ended. It is not a stop and not a failure. The interrupted state is a proposed default, not an approved owner decision |
+| **activity timeline** | The activities of one request in the order they happen. An executed activity is work that started. A planned activity is work the system planned but has not started, and it appears only when the system produced a plan. The conversation shows the activities with the status message of the request |
+| **activity detail** | The information the system shows about one activity when the user reads it. It can name an internal step, an argument or a result when that is safe to show |
 | **placeholder** | Text the system wrote because the user gave none |
 | **design system** | A set of design rules the user can choose for different decks, such as colours, fonts and a logo |
 | **default design system** | The design system the system uses when the user chose none |
