@@ -74,9 +74,9 @@
 ### AN-09 — Current outline chờ quyết định
 
 - **Khi:** Proposal đã hoàn tất, chưa có confirmed outline và chưa tạo slide.
-- **Cần thể hiện:** Current outline là proposal mới nhất; proposal trước không bị sửa. Đề xuất confirm/cancel; yêu cầu sửa tạo response proposal mới. Confirm current outline **không rỗng** khởi động request build slide mới. Chờ xác nhận outline khác với AN-07: request draft outline đã kết thúc, nên không có Stop cho request cũ và có thể đổi chat.
-- **Ví dụ nội dung đề xuất:** `Đây là outline đề xuất. Chưa có slide nào được tạo. Bạn muốn xác nhận, yêu cầu sửa hay hủy outline này?`
-- **Nguồn:** UC-001 S3/S4/A22/A23; FR-001, FR-003–FR-005, FR-054. Trạng thái R4, D1.
+- **Cần thể hiện:** Current outline là proposal mới nhất; proposal trước không bị sửa. Outline hiển thị dạng overview: mỗi planned slide có số thứ tự, title và một mô tả ngắn. Mở từng slide hiện nội dung chi tiết (điểm chính, số liệu, placeholder, điểm chưa chốt nếu có). Có `Mở rộng tất cả` (Expand All) và `Thu gọn tất cả` (Collapse All); mở/thu gọn chỉ là thao tác xem: chỉ phần chi tiết đang hiện thay đổi, outline giữ nguyên, không tạo proposal mới, không gửi request và trạng thái chờ confirm không đổi. Đề xuất confirm/cancel; yêu cầu sửa tạo response proposal mới. Confirm current outline **không rỗng** khởi động request build slide mới. Chờ xác nhận outline khác với AN-07: request draft outline đã kết thúc, nên không có Stop cho request cũ và có thể đổi chat.
+- **Ví dụ nội dung đề xuất:** `Đây là outline đề xuất. Chưa có slide nào được tạo. Bạn muốn xác nhận, yêu cầu sửa hay hủy outline này?` Mỗi dòng overview: `{slide_number}. {title} — {mô_tả_ngắn}`; mở rộng hiện các điểm: `{điểm_chính}` / `[Cần bổ sung: {fact_thiếu}]`. Điều khiển xem: `Mở rộng tất cả` / `Thu gọn tất cả`.
+- **Nguồn:** UC-001 S3/S4/A22/A23; FR-001, FR-003–FR-005, FR-008, FR-054, FR-069. Trạng thái R4, D1.
 
 ### AN-09a — Ý định về current outline chưa rõ
 
@@ -95,17 +95,17 @@
 ### AN-11 — Slide hoàn tất một phần khi đang tạo deck
 
 - **Khi:** Confirmed outline đã có; một hoặc nhiều slide hoàn tất, các slide khác đang chờ.
-- **Cần thể hiện:** Deck canvas chỉ hiện slide hoàn tất và phân biệt slide đã xong/chưa xong. Không hiện slide dở như slide hoàn tất. Khi có slide mới xong, không tự đổi slide user đang xem. Chưa gọi deck là hoàn tất và chưa hiện closing message hoàn tất.
+- **Cần thể hiện:** Deck canvas chỉ hiện slide hoàn tất và phân biệt slide đã xong/chưa xong. Không hiện slide dở như slide hoàn tất. Khi có slide mới xong, không tự đổi slide user đang xem. Confirmed outline vẫn trong conversation, read-only, giữ overview và nội dung chi tiết; người dùng vẫn mở/thu gọn chi tiết của nó để đối chiếu. Thao tác đó không đổi outline và không ngắt việc tạo slide. Chưa gọi deck là hoàn tất và chưa hiện closing message hoàn tất.
 - **Ví dụ nội dung đề xuất:** `Đã hoàn tất {completed_count} slide; các slide còn lại đang được tạo.` Dữ liệu này chỉ hiện khi xác định được từ tiến độ thực tế.
-- **Nguồn:** UC-001 S5; FR-023, FR-025; NFR-002/NFR-012 target `not set`. Trạng thái D2/D3, R5.
+- **Nguồn:** UC-001 S4/S5; FR-023, FR-025, FR-069; NFR-002/NFR-012 target `not set`. Trạng thái D2/D3, R5.
 
 ### AN-12 — Hoàn tất deck đầu hoặc follow-up
 
 - **Khi:** Tất cả việc của request đã xong.
-- **Cần thể hiện:** Với deck đầu, closing message nêu từng slide đã làm, giả định, placeholder, nội dung không từ material user và điều chưa kiểm tra. Với follow-up, nêu từng slide đổi/thêm, điều đã đổi và khẳng định slide ngoài phạm vi không đổi. Không tạo outline mới cho follow-up rõ ràng.
+- **Cần thể hiện:** Với deck đầu, closing message nêu từng slide đã làm, giả định, placeholder, nội dung không từ material user và điều chưa kiểm tra. Với follow-up, nêu từng slide đổi/thêm, điều đã đổi và khẳng định slide ngoài phạm vi không đổi. Không tạo outline mới cho follow-up rõ ràng. Confirmed outline vẫn trong conversation, read-only, mở/thu gọn chi tiết được.
 - **Ví dụ nội dung đề xuất:** Deck đầu: `Bản nháp đã sẵn sàng. Slide {n}: {mô_tả}. Giả định: {giả_định}. Placeholder: {phần_cần_bổ_sung}. Nội dung bổ sung ngoài tài liệu của bạn: {nội_dung}. Chưa kiểm tra: {điều_chưa_kiểm_tra}.` Lặp phần mô tả cho từng slide. Follow-up: `Đã đổi slide {danh_sách}: {thay_đổi}. Các slide ngoài phạm vi yêu cầu không đổi.`
 - **Ghi chú:** Quy tắc chi tiết cho disclosure nội dung ngoài material còn `BR-?`; ví dụ không đặt thêm tiêu chuẩn xác minh hoặc nguồn cho từng con số.
-- **Nguồn:** UC-001 S6; UC-002 S4; FR-024, FR-027, FR-029. Trạng thái R6/D4.
+- **Nguồn:** UC-001 S6; UC-002 S4; FR-024, FR-027, FR-029, FR-069. Trạng thái R6/D4.
 
 ### AN-12a — Request kết thúc mà deck không đổi
 

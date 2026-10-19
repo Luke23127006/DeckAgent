@@ -53,10 +53,11 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **request text** | The words of a request, typed, pasted or spoken |
 | **attachment** | One file or photo added to a request, with its name or preview, its type and its state |
 | **conversation** | The zone that holds the messages between the user and the system, in order |
-| **outline** | The list of slide titles and points the system drafts before any slide exists |
+| **outline** | The content plan the system drafts before any slide exists. It plans the slides: each planned slide has its title and the content planned for it |
 | **confirmed outline** | An outline the user has confirmed. It is read-only |
 | **deck** | All slides of the presentation |
 | **slide** | One part of the deck that the audience sees at a time |
+| **planned slide** | One slide the outline plans. It holds a title and the planned content for that slide. It is not a built slide |
 | **deck canvas** | The zone where the system shows the slides |
 | **notice** | A short message the system gives about what happened |
 | **status message** | The text in the conversation that says what the system is doing now |
