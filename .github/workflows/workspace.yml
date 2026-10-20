@@ -53,6 +53,10 @@ jobs:
         id: build
         run: pnpm build
 
+      - name: Lint (Biome)
+        id: lint
+        run: pnpm lint
+
       - name: Cordis smoke tests
         id: smoke
         timeout-minutes: 2
@@ -95,6 +99,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
           SMOKE_RESULT: ${{ steps.smoke.outcome }}
           RUNTIME_RESULT: ${{ steps.runtime.outcome }}
           PROVIDERS_RESULT: ${{ steps.providers.outcome }}
@@ -110,6 +115,7 @@ jobs:
           - Environment: windows-2022, Node 22.19.0; pnpm from package.json
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
+          - Lint (Biome): $env:LINT_RESULT
           - Integration smoke: $env:SMOKE_RESULT
           - DeckAgent runtime (TASK-002-A only): $env:RUNTIME_RESULT
           - Model providers (TASK-002-B, local HTTP only): $env:PROVIDERS_RESULT
