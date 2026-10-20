@@ -36,6 +36,12 @@ Preserve existing repository instructions unless the requested change explicitly
 
 Read [`docs/AGENTS.md`](docs/AGENTS.md) before creating or editing any file under `docs/`. It holds the documentation rules.
 
+## Coding conventions and repository structure
+
+Follow the approved DeckAgent conventions in [`docs/development/coding-conventions.md`](docs/development/coding-conventions.md) and the directory and package rules in [`docs/development/repository-structure.md`](docs/development/repository-structure.md). Examples there illustrate the rules; where the current codebase deviates, the gap is marked as drift and is not to be copied.
+
+When implementing or reviewing code, apply the criteria in [`docs/development/code-review-criteria.md`](docs/development/code-review-criteria.md): its `MUST` / `SHOULD` / `MAY` levels and its review comment severities are the shared standard for judging a change. Do not duplicate those criteria here.
+
 ## Boundaries and architecture
 
 - Respect recorded module responsibilities, data ownership, and dependency directions. Do not bypass a component's public interface by reaching into its private implementation.
