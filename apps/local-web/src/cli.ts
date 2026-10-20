@@ -1,0 +1,130 @@
+import { execFile } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
+import { parseArgs, promisify } from 'node:util'
+import { ModelProviders } from '@deckagent/model-providers'
+import { RuntimeError } from '@deckagent/agent-runtime'
+import type { ModelConnection } from '@deckagent/model-providers'
+import { startLocalWeb } from './index.ts'
+
+function object(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function connection(value: unknown): ModelConnection {
+  if (
+    !object(value) ||
+    typeof value.id !== 'string' ||
+    typeof value.baseUrl !== 'string' ||
+    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'anthropic-messages') ||
+    (value.apiKeyEnv !== undefined && typeof value.apiKeyEnv !== 'string') ||
+    (value.timeoutMs !== undefined && typeof value.timeoutMs !== 'number') ||
+    (value.maxOutputTokens !== undefined && typeof value.maxOutputTokens !== 'number') ||
+    (value.temperature !== undefined && typeof value.temperature !== 'number') ||
+    (value.tokenLimitField !== undefined &&
+      value.tokenLimitField !== 'max_tokens' &&
+      value.tokenLimitField !== 'max_completion_tokens') ||
+    Object.keys(value).some(
+      key =>
+        ![
+          'id',
+          'baseUrl',
+          'protocol',
+          'apiKeyEnv',
+          'timeoutMs',
+          'maxOutputTokens',
+          'temperature',
+          'tokenLimitField',
+        ].includes(key),
+    )
+  )
+    throw new Error('Invalid model config')
+  return {
+    id: value.id,
+    baseUrl: value.baseUrl,
+    protocol: value.protocol,
+    ...(value.apiKeyEnv === undefined ? {} : { apiKeyEnv: value.apiKeyEnv }),
+    ...(value.timeoutMs === undefined ? {} : { timeoutMs: value.timeoutMs }),
+    ...(value.maxOutputTokens === undefined ? {} : { maxOutputTokens: value.maxOutputTokens }),
+    ...(value.temperature === undefined ? {} : { temperature: value.temperature }),
+    ...(value.tokenLimitField === undefined ? {} : { tokenLimitField: value.tokenLimitField }),
+  }
+}
+
+async function main() {
+  const { values } = parseArgs({
+    options: {
+      config: { type: 'string' },
+      provider: { type: 'string' },
+      model: { type: 'string' },
+      workspace: { type: 'string' },
+      'data-dir': { type: 'string' },
+      port: { type: 'string' },
+      help: { type: 'boolean' },
+    },
+  })
+  if (values.help) {
+    console.log(
+      'pnpm start:local-web --provider <connection-id> --model <model-id> [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--port 0]\nKeys come from the configured environment variables. Opens the authenticated local browser; do not share its URL. Ctrl+C shuts down Host and drains active work.',
+    )
+    return
+  }
+  const provider = values.provider ?? process.env.DECKAGENT_PROVIDER
+  const model = values.model ?? process.env.DECKAGENT_MODEL
+  if (!provider?.trim() || !model?.trim()) throw new Error('Provider and model required')
+  const config: unknown = JSON.parse(
+    await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'),
+  )
+  if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections'))
+    throw new Error('Invalid config')
+  const connections = config.connections.map(connection)
+  if (!connections.some(entry => entry.id === provider)) throw new Error('Unknown provider')
+  const port = Number(values.port ?? 0)
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
+  const providers = new ModelProviders(connections)
+  providers.validateSelection({ provider, model })
+  const app = await startLocalWeb({
+    model: providers,
+    selection: { provider, model },
+    workspace: values.workspace ?? '.deckagent/workspace',
+    dataDir: values['data-dir'] ?? '.deckagent',
+    port,
+  })
+  const stop = () => {
+    app.close().then(
+      () => {
+        process.exitCode = 0
+      },
+      () => {
+        console.error('Local Host cleanup failed')
+        process.exitCode = 1
+      },
+    )
+  }
+  process.once('SIGINT', stop)
+  process.once('SIGTERM', stop)
+  try {
+    const url = `${app.origin}/#token=${app.token}`
+    // No shell interpolation and no capability token in stdout/stderr.
+    const command = process.platform === 'win32' ? 'rundll32.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open'
+    const args = process.platform === 'win32' ? ['url.dll,FileProtocolHandler', url] : [url]
+    await promisify(execFile)(command, args)
+    console.log(`DeckAgent Local Host: ${app.origin}. Browser opened. Ctrl+C to stop.`)
+  } catch {
+    await app.close()
+    throw new Error('Cannot open browser')
+  }
+}
+
+main().catch(error => {
+  if (error instanceof RuntimeError && error.code === 'PROVIDER_CREDENTIALS') {
+    console.error(
+      'PROVIDER_CREDENTIALS: Set a valid API key in the root .env or terminal environment, then restart Host. Terminal variables override .env, even when empty; remove an old variable to use .env. Keys must have no whitespace or invisible characters.',
+    )
+    process.exitCode = 1
+    return
+  }
+  console.error(
+    'Local Web failed. Check arguments, model configuration, environment credentials, workspace and permissions.',
+  )
+  process.exitCode = 1
+})

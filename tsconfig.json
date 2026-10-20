@@ -36,6 +36,18 @@
     },
     {
       "path": "packages/session/persistence"
+    },
+    {
+      "path": "packages/tools/filesystem"
+    },
+    {
+      "path": "packages/host/api"
+    },
+    {
+      "path": "packages/client/runtime"
+    },
+    {
+      "path": "apps/local-web"
     }
   ]
 }

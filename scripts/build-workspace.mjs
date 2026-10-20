@@ -35,6 +35,8 @@ const extraEntries = {
   '@deckagent/cordis-fixture': ['lib/types/consumer.js'],
   '@deckagent/cordis-smoke': ['lib/types/cli.js'],
   '@deckagent/agent-runtime-cli': ['lib/types/chat.js'],
+  '@deckagent/browser-runtime': ['lib/types/boot.js'],
+  '@deckagent/local-web': ['lib/types/cli.js'],
 };
 
 const packages = discoverWorkspacePackages()
@@ -52,6 +54,7 @@ for (const pkg of packages) {
     config.format = ['esm', 'cjs'];
     config.outExtensions = ({ format }) => ({ js: format === 'es' ? '.mjs' : '.cjs' });
   }
+  if (pkg.name === '@deckagent/browser-runtime') config.platform = 'browser';
   if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name]);
   await build(config);
 }

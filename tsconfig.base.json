@@ -53,6 +53,15 @@
       ],
       "@deckagent/cordis-fixture": [
         "./packages/testing/cordis-fixture/src/index.ts"
+      ],
+      "@deckagent/file-tools": [
+        "./packages/tools/filesystem/src/index.ts"
+      ],
+      "@deckagent/host-api": [
+        "./packages/host/api/src/index.ts"
+      ],
+      "@deckagent/browser-runtime": [
+        "./packages/client/runtime/src/index.ts"
       ]
     }
   }
