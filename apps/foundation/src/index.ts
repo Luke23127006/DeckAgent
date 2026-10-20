@@ -1,22 +1,23 @@
-import { fileURLToPath } from 'node:url'
-import { boot } from '@deepseek-ai/dsh-app-boot'
+import { Context } from '@deepseek-ai/cordis'
+import * as provider from '@deckagent/foundation-fixture'
+import * as consumer from '@deckagent/foundation-fixture/consumer'
 import type { FoundationProbe } from '@deckagent/foundation-fixture'
 
 export async function startFoundation(
   probe: FoundationProbe,
-  configPath = fileURLToPath(new URL('../cordis.yml', import.meta.url)),
+  options: { withProvider?: boolean } = {},
 ) {
-  const ctx = await boot(
-    'deckagent-foundation',
-    configPath,
-    undefined,
-    (ctx) => { ctx.provide('foundationProbe', probe) },
-  )
-  // Upstream warns for optional entries. This assembly requires both fixture
-  // services, so a pending or failed consumer must fail the foundation smoke.
-  if (!ctx.get('foundationGreeting') || ctx.get('foundationReady') !== true) {
+  const ctx = new Context()
+  try {
+    ctx.provide('foundationProbe', probe)
+    if (options.withProvider !== false) await ctx.plugin(provider)
+    await ctx.plugin(consumer)
+    if (!ctx.get('foundationGreeting') || ctx.get('foundationReady') !== true) {
+      throw new Error('foundation-consumer did not activate: required fixture services are unavailable')
+    }
+    return ctx
+  } catch (error) {
     await ctx.fiber.dispose()
-    throw new Error('foundation-consumer did not activate: required fixture services are unavailable')
+    throw error
   }
-  return ctx
 }

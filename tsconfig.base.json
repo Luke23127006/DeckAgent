@@ -24,6 +24,15 @@
       "node"
     ],
     "paths": {
+      "@deckagent/session-persistence": [
+        "./packages/session/persistence/src/index.ts"
+      ],
+      "@deckagent/model-providers": [
+        "./packages/llm/providers/src/index.ts"
+      ],
+      "@deckagent/agent-runtime": [
+        "./packages/agent/runtime/src/index.ts"
+      ],
       "@deepseek-ai/cosmokit": [
         "./vendor/cosmokit/src/index.ts"
       ],
@@ -41,21 +50,6 @@
       ],
       "@deepseek-ai/cordis-plugin-group": [
         "./vendor/group/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-atomic-write": [
-        "./packages/util/atomic-write/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-package-manifest": [
-        "./packages/util/package-manifest/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-home-paths": [
-        "./packages/util/home-paths/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-launch-environment": [
-        "./packages/util/launch-environment/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-app-boot": [
-        "./packages/boot/app-boot/src/index.ts"
       ],
       "@deckagent/foundation-fixture": [
         "./packages/testing/foundation-fixture/src/index.ts"

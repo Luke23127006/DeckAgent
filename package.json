@@ -11,7 +11,12 @@
     "build": "tsc -b && node scripts/build-foundation.mjs",
     "typecheck": "tsc -b",
     "test:foundation": "node --test tests/foundation.test.mjs",
-    "start:foundation": "node apps/foundation/lib/cli.js"
+    "start:foundation": "node apps/foundation/lib/cli.js",
+    "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
+    "test:model-providers": "node --test tests/model-providers.test.mjs",
+    "test:session-persistence": "node --test tests/session-persistence.test.mjs",
+    "test:chat-setup": "node --test tests/chat-setup.test.mjs",
+    "chat": "node --use-system-ca apps/agent-runtime/lib/chat.js"
   },
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",

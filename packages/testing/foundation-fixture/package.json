@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./lib/index.js",
-    "./consumer": "./lib/consumer.js"
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./consumer": { "types": "./lib/types/consumer.d.ts", "default": "./lib/consumer.js" }
   },
   "dependencies": {
     "@deepseek-ai/cordis": "workspace:~"

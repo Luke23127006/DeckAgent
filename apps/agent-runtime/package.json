@@ -1,0 +1,12 @@
+{
+  "name": "@deckagent/agent-runtime-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deckagent/agent-runtime": "workspace:*",
+    "@deckagent/model-providers": "workspace:*",
+    "@deckagent/session-persistence": "workspace:*"
+  }
+}

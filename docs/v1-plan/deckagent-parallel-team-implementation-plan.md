@@ -1,14 +1,16 @@
 # DeckAgent — Parallel Implementation Plan for a Three-Person Team
 
 **Ngày lập:** 19/10/2026  
-**Phương pháp:** Build New + Selective DeepSeek Source Reuse  
+**Phương pháp:** Tự xây Agent Harness + reuse Cordis\
 **Tổ chức:** 3 thành viên, 7 task groups, 21 implementation tasks  
-**Điểm xuất phát:** Repository DeckAgent hiện chỉ có `docs/`; chưa có application, monorepo, build system hoặc runtime.  
+**Điểm xuất phát khi lập plan 19/10:** Repository chỉ có tài liệu. Hiện trạng implementation xem `PROGRESS.md`.\
 **Mục tiêu gần nhất:** Demo UC-001 — tạo presentation qua hội thoại, xác nhận outline, tạo và hiển thị các slides hoàn thành.
 
 ## 1. Quyết định và cách đọc kế hoạch
 
-DeckAgent là một ứng dụng Local Web sử dụng có chọn lọc các modules từ DeepSeek Harness. Nhóm giữ các cơ chế Agent Runtime, Tools, Session, Model Providers, API và Web UI phù hợp; bổ sung Presentation Domain và thay đổi những hành vi không đáp ứng yêu cầu DeckAgent.
+**Chỉ dẫn chốt 20-10-2026:** Chỉ reuse Cordis và bộ dependencies/plugins vendor hiện có; Agent Harness do DeckAgent tự xây. Logic dùng chung đặt trong `packages/`, application wiring trong `apps/`. TASK-002-A và boot foundation được điều chỉnh theo chỉ dẫn này. Những đoạn còn mô tả reuse Host/API/Web hoặc các subsystems của DeepSeek ở nhóm sau là phương án cũ cần rà soát trước khi triển khai, không phải phê duyệt nhập Harness.
+
+DeckAgent là ứng dụng Local Web có Agent Runtime, Tools, Session và Presentation Domain do dự án sở hữu. [Runtime contracts và handoff TASK-002-A](task-002-a-agent-runtime.md) mô tả interfaces hiện tại để 002-B/C phát triển độc lập.
 
 Kế hoạch ưu tiên **một chuỗi kết quả có thể chạy và kiểm tra**:
 
@@ -69,7 +71,7 @@ Vai trò trên là ownership, không phải ranh giới kiến thức. Mọi th�
 | Issue | Owner | Công việc độc lập và kết quả giao |
 | --- | --- | --- |
 | **TASK-001-A — Establish DeckAgent Workspace** | A | Thiết lập monorepo, package manager, TypeScript/build settings, scripts tối thiểu và nơi đặt application/packages. Giữ nguyên tài liệu trong `docs/`. Bàn giao root build chạy được với một fixture package. |
-| **TASK-001-B — Bring Cordis Boot Dependencies** | B | Xác định và đưa vào Cordis, Loader/Include/Group, `app-boot` và dependency closure cần cho một Cordis application. Giữ package identities và source provenance. Bàn giao một package set có thể được mount bởi application. |
+| **TASK-001-B — Bring Cordis Boot Dependencies** | B | Giữ Cordis và bộ vendor dependencies/plugins đã pin, package identities và source provenance. Application boot do DeckAgent tự viết bằng Cordis; `app-boot` và utilities của Harness đã được loại khỏi hướng triển khai sau chỉ dẫn 20-10. |
 | **TASK-001-C — Create Foundation Smoke Tests** | C | Viết plugin fixture có service registration, dependency injection, lifecycle và cleanup. Tạo smoke test chạy độc lập với app chính, cùng checklist cho Windows và build. |
 
 **Tích hợp:** A liên kết tập packages của B vào workspace và chạy fixture của C. Các task không sửa cùng file root; những yêu cầu thay đổi root config được B/C ghi rõ để A áp dụng.
@@ -86,15 +88,19 @@ Vai trò trên là ownership, không phải ranh giới kiến thức. Mọi th�
 
 | Issue | Owner | Công việc độc lập và kết quả giao |
 | --- | --- | --- |
-| **TASK-002-A — Compose Agent Runtime** | A | Đưa `agent`, `agent-loop`, `llm` abstraction, `system-prompt`, `scope` và **Tool Registry cơ bản** cùng các services cần thiết vào Cordis composition. Dùng fake model và no-op tool để thử loop, chưa cần filesystem. |
-| **TASK-002-B — Enable Model Providers and Credentials** | B | Tích hợp một đường gọi model thật qua provider adapter và credential source có sẵn. Kiểm tra provider/model/config được truyền đúng vào request và lỗi cấu hình được báo rõ. UI model selection để TASK-004. |
-| **TASK-002-C — Enable Session Persistence** | C | Đưa Session Event Log, persistence backend và các thành phần session projection cần thiết vào baseline. Kiểm tra một conversation có thể được lưu, khôi phục và đọc lại sau restart. |
+| **TASK-002-A — Compose Agent Runtime** | A | Tự viết Runtime, model/storage contracts, prompt builder, Memory Session Store, Tool Registry và Cordis plugin trong `packages/agent/runtime`; `apps/agent-runtime` boot. Model fixture và no-op tool chứng minh loop trong tests; fake demo trong app đã bỏ ở 002-C. |
+| **TASK-002-B — Enable Model Providers and Credentials** | B | Viết provider adapter theo `ModelAdapter` của DeckAgent; cấu hình credentials ngoài history/logs. Kiểm tra provider/model/config truyền đúng và lỗi cấu hình rõ. UI model selection để TASK-004. |
+| **TASK-002-C — Enable Session Persistence** | C | Triển khai durable backend theo `SessionStore` của DeckAgent; thống nhất metadata/định dạng lưu với A khi cần mở rộng contract. Kiểm tra conversation được lưu, khôi phục và đọc lại sau restart. |
 
-**Tích hợp:** Các tasks gặp nhau ở Cordis service contracts hiện có. A chịu trách nhiệm ghép composition. B bàn giao model configuration, C bàn giao Session storage configuration; cả hai không chỉnh code trong Agent Loop.
+**Tích hợp:** Các tasks dùng contracts do DeckAgent định nghĩa. A ghép composition; B cung cấp `agentModel`, C cung cấp `agentSessions` thay Memory Store. Không nhập hoặc sửa Agent Loop của DeepSeek. Chi tiết APIs, scope và giới hạn ở [Runtime handoff](task-002-a-agent-runtime.md).
+
+Implementation C dùng [SQLite Session Persistence](task-002-c-session-persistence.md),
+metadata provider/model và CLI mở lại theo ID. Scope một Host local; không coi
+batch transactions là cơ chế recovery hoặc khóa Agent turn giữa nhiều Hosts.
 
 **Gate 002 — PASS khi:** Một request gọi model thật và hoàn tất; Session chứa user/assistant events; restart Host vẫn đọc lại được lịch sử. Không cần Web UI.
 
-**Điểm cần chú ý:** `agent-loop` có peer dependencies liên quan đến Agent, LLM, Session, Session Persistence, Session Projection, Prompt và Tools. Đưa Tool Registry vào nhóm này để loop đủ dependency; File Tools, permissions và sandbox đầy đủ thuộc TASK-003. Không coi việc module build được là bằng chứng runtime thực sự hoạt động.
+**Điểm cần chú ý:** Runtime chỉ phụ thuộc interfaces model/storage và Tool Registry của DeckAgent; Cordis quản lý composition/lifecycle. Memory Store không chứng minh persistence hoặc restart. File Tools, permissions và sandbox đầy đủ thuộc TASK-003. Build thành công không thay cho kiểm thử Runtime và Gate 002.
 
 ## 5. TASK-003 — Tool Execution and Host–Browser Communication
 
