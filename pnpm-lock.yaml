@@ -42,11 +42,11 @@ importers:
         specifier: workspace:~
         version: link:../../vendor/cordis
 
-  apps/foundation:
+  apps/cordis-smoke:
     dependencies:
-      '@deckagent/foundation-fixture':
+      '@deckagent/cordis-fixture':
         specifier: workspace:*
-        version: link:../../packages/testing/foundation-fixture
+        version: link:../../packages/testing/cordis-fixture
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../vendor/cordis
@@ -69,7 +69,7 @@ importers:
         specifier: workspace:*
         version: link:../../agent/runtime
 
-  packages/testing/foundation-fixture:
+  packages/testing/cordis-fixture:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~

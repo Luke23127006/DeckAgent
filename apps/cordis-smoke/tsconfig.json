@@ -4,6 +4,6 @@
   "include": ["src"],
   "references": [
     { "path": "../../vendor/cordis" },
-    { "path": "../../packages/testing/foundation-fixture" }
+    { "path": "../../packages/testing/cordis-fixture" }
   ]
 }

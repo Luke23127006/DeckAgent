@@ -51,8 +51,8 @@
       "@deepseek-ai/cordis-plugin-group": [
         "./vendor/group/src/index.ts"
       ],
-      "@deckagent/foundation-fixture": [
-        "./packages/testing/foundation-fixture/src/index.ts"
+      "@deckagent/cordis-fixture": [
+        "./packages/testing/cordis-fixture/src/index.ts"
       ]
     }
   }

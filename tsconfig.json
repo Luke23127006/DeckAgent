@@ -20,10 +20,10 @@
       "path": "vendor/group"
     },
     {
-      "path": "packages/testing/foundation-fixture"
+      "path": "packages/testing/cordis-fixture"
     },
     {
-      "path": "apps/foundation"
+      "path": "apps/cordis-smoke"
     },
     {
       "path": "packages/agent/runtime"
