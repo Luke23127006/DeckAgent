@@ -52,9 +52,6 @@ change is judged (`MUST` / `SHOULD` / `MAY`) is in
   required to reuse `RuntimeError`.
 - Distinguishing error outcomes and not leaking secrets are judged by CQC-008 and
   CQC-009.
-- **Known drift:** `ToolRegistry.execute()` forwards a non-`RuntimeError`
-  `error.message` into tool results, so a raw message can reach model-visible
-  results; fix it in a separate cleanup task.
 
 ## 5. Async and data-copy idioms
 

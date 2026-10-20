@@ -4,6 +4,21 @@ import type { Message, ToolCall, ToolDefinition, ToolSchema } from './contracts.
 type ToolMessage = Extract<Message, { role: 'tool' }>
 interface Entry { schema: ToolSchema; execute: ToolDefinition['execute'] }
 
+/**
+ * Fixed, registry-authored failure text keyed by a stable code. Tool failure results
+ * never carry raw exception messages or untrusted codes (CQC-009); these strings are
+ * the only text that may be published to the model or session history.
+ */
+const TOOL_FAILURE_TEXT: Readonly<Record<string, string>> = {
+  TOOL_ABORTED: 'Tool was interrupted; its outcome may be unknown',
+  TOOL_NOT_ALLOWED: 'Tool is not allowed for this Agent',
+  TOOL_NOT_FOUND: 'Tool is not registered',
+  INVALID_TOOL_INPUT: 'Tool arguments do not match the schema',
+  INVALID_TOOL_RESULT: 'Tool result must be a string',
+  TOOL_FAILED: 'Tool failed',
+  TOOL_NOT_STARTED: 'Turn was cancelled before this tool started',
+}
+
 /** Real dispatch with explicit Agent allowlists and a small, validated schema subset. */
 export class ToolRegistry {
   private readonly tools = new Map<string, Entry>()
@@ -42,33 +57,39 @@ export class ToolRegistry {
   }
 
   async execute(call: ToolCall, allowed: readonly string[], signal: AbortSignal): Promise<ToolMessage> {
-    try {
-      signal.throwIfAborted()
-      if (!allowed.includes(call.name)) throw new RuntimeError('TOOL_NOT_ALLOWED', `Tool ${call.name} is not allowed for this Agent`)
-      const entry = this.tools.get(call.name)
-      if (!entry) throw new RuntimeError('TOOL_NOT_FOUND', `Tool ${call.name} is not registered`)
-      const args = call.arguments
-      if (!args || typeof args !== 'object' || Array.isArray(args)
-        || (Object.getPrototypeOf(args) !== Object.prototype && Object.getPrototypeOf(args) !== null)) {
-        throw new RuntimeError('INVALID_TOOL_INPUT', 'Tool arguments must be a plain object')
-      }
-      const { properties, required = [] } = entry.schema.parameters
-      if (required.some(key => !Object.hasOwn(args, key))
-        || Object.entries(args).some(([key, value]) => !Object.hasOwn(properties, key)
-          || typeof value !== properties[key]?.type || (typeof value === 'number' && !Number.isFinite(value)))) {
-        throw new RuntimeError('INVALID_TOOL_INPUT', `Arguments do not match ${call.name}'s schema`)
-      }
-      const content = await entry.execute(structuredClone(args), { signal })
-      signal.throwIfAborted()
-      if (typeof content !== 'string') throw new RuntimeError('INVALID_TOOL_RESULT', 'Tool result must be a string')
-      return { role: 'tool', toolCallId: call.id, name: call.name, content, isError: false }
-    } catch (error) {
-      return this.failure(call, signal.aborted ? 'TOOL_ABORTED' : error instanceof RuntimeError ? error.code : 'TOOL_FAILED',
-        signal.aborted ? 'Tool was interrupted; its outcome may be unknown' : error instanceof Error ? error.message : 'Tool failed')
+    if (signal.aborted) return this.failure(call, 'TOOL_ABORTED')
+    if (!allowed.includes(call.name)) return this.failure(call, 'TOOL_NOT_ALLOWED')
+    const entry = this.tools.get(call.name)
+    if (!entry) return this.failure(call, 'TOOL_NOT_FOUND')
+    const args = call.arguments
+    if (!args || typeof args !== 'object' || Array.isArray(args)
+      || (Object.getPrototypeOf(args) !== Object.prototype && Object.getPrototypeOf(args) !== null)) {
+      return this.failure(call, 'INVALID_TOOL_INPUT')
     }
+    const { properties, required = [] } = entry.schema.parameters
+    if (required.some(key => !Object.hasOwn(args, key))
+      || Object.entries(args).some(([key, value]) => !Object.hasOwn(properties, key)
+        || typeof value !== properties[key]?.type || (typeof value === 'number' && !Number.isFinite(value)))) {
+      return this.failure(call, 'INVALID_TOOL_INPUT')
+    }
+    let content: unknown
+    try {
+      content = await entry.execute(structuredClone(args), { signal })
+    } catch {
+      // Tool execution is an untrusted boundary: a tool may throw any error, including
+      // a RuntimeError whose code or message is not safe. Never forward either.
+      return this.failure(call, signal.aborted ? 'TOOL_ABORTED' : 'TOOL_FAILED')
+    }
+    if (signal.aborted) return this.failure(call, 'TOOL_ABORTED')
+    if (typeof content !== 'string') return this.failure(call, 'INVALID_TOOL_RESULT')
+    return { role: 'tool', toolCallId: call.id, name: call.name, content, isError: false }
   }
 
-  failure(call: ToolCall, code: string, message: string): ToolMessage {
-    return { role: 'tool', toolCallId: call.id, name: call.name, isError: true, content: JSON.stringify({ error: { code, message } }) }
+  failure(call: ToolCall, code: string): ToolMessage {
+    // Only registry-authored codes may be published; an unknown code (or a prototype
+    // key such as `constructor`/`__proto__`) collapses to TOOL_FAILED so a raw or
+    // spoofed value never reaches the model or session history.
+    const safe = Object.hasOwn(TOOL_FAILURE_TEXT, code) ? code : 'TOOL_FAILED'
+    return { role: 'tool', toolCallId: call.id, name: call.name, isError: true, content: JSON.stringify({ error: { code: safe, message: TOOL_FAILURE_TEXT[safe] } }) }
   }
 }

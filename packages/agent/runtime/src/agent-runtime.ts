@@ -18,6 +18,54 @@ interface LiveAgent {
   abort: AbortController | undefined
 }
 
+/**
+ * Fixed, safe text published for a turn failure, keyed by the stable error code.
+ * Exception messages are never forwarded: they may carry request URLs, bodies or
+ * credentials (CQC-009). Codes not listed here fall back to 'Turn failed'.
+ */
+const TURN_FAILURE_MESSAGE: Readonly<Record<string, string>> = {
+  MODEL_PROTOCOL: 'The model returned an invalid response',
+  STEP_LIMIT: 'Agent reached its model-step limit',
+}
+
+/**
+ * Closed allowlist of the codes the Runtime may publish in a TurnResult. These are
+ * the codes produced by the Agent Runtime, Model Providers and Session Persistence.
+ * A RuntimeError carrying any other code (a private or spoofed value such as a
+ * credential fragment) collapses to TURN_FAILED so it never reaches a caller.
+ */
+const EXPOSABLE_ERROR_CODES: ReadonlySet<string> = new Set([
+  'ABORTED',
+  'AGENT_DISPOSED',
+  'DUPLICATE_TOOL',
+  'INVALID_CONFIG',
+  'INVALID_INPUT',
+  'INVALID_SESSION',
+  'INVALID_TOOL',
+  'MODEL_PROTOCOL',
+  'PROVIDER_AUTH',
+  'PROVIDER_CONFIG',
+  'PROVIDER_CREDENTIALS',
+  'PROVIDER_HTTP',
+  'PROVIDER_NETWORK',
+  'PROVIDER_NOT_FOUND',
+  'PROVIDER_RATE_LIMIT',
+  'PROVIDER_TLS',
+  'PROVIDER_TIMEOUT',
+  'RUNTIME_DISPOSED',
+  'SESSION_BUSY',
+  'SESSION_CLOSED',
+  'SESSION_CONFIG',
+  'SESSION_CONFLICT',
+  'SESSION_CORRUPT',
+  'SESSION_MESSAGE',
+  'SESSION_NOT_FOUND',
+  'SESSION_SCHEMA',
+  'SESSION_STORAGE',
+  'STEP_LIMIT',
+  'TOOL_NOT_FOUND',
+])
+
 /** Owns live turns, not provider credentials or persistent storage. */
 export class AgentRuntime {
   private readonly agents = new Map<string, LiveAgent>()
@@ -138,7 +186,7 @@ export class AgentRuntime {
         if (!calls.length) return { status: 'completed', text, steps }
         for (const call of calls) {
           const result = signal.aborted
-            ? this.tools.failure(call, 'TOOL_NOT_STARTED', 'Turn was cancelled before this tool started')
+            ? this.tools.failure(call, 'TOOL_NOT_STARTED')
             : await this.tools.execute(call, state.options.tools ?? [], signal)
           await this.options.sessions.append(state.options.sessionId, [result])
         }
@@ -149,12 +197,17 @@ export class AgentRuntime {
       if (text && !replyCommitted) {
         await this.options.sessions.append(state.options.sessionId, [{ role: 'assistant', content: text, interrupted: true }])
       }
+      const aborted = signal.aborted
+      // Publish only a stable code and fixed text. A failure message is never taken
+      // from an exception (it may contain URLs, bodies or credentials, CQC-009); the
+      // code is accepted only from the Runtime's closed allowlist so a private or
+      // spoofed RuntimeError code (e.g. a credential fragment) cannot leak.
+      const code = !aborted && error instanceof RuntimeError && EXPOSABLE_ERROR_CODES.has(error.code)
+        ? error.code
+        : aborted ? 'ABORTED' : 'TURN_FAILED'
       return {
-        status: signal.aborted ? 'cancelled' : 'failed', text, steps,
-        error: {
-          code: signal.aborted ? 'ABORTED' : error instanceof RuntimeError ? error.code : 'TURN_FAILED',
-          message: signal.aborted ? 'Turn cancelled' : error instanceof Error ? error.message : 'Turn failed',
-        },
+        status: aborted ? 'cancelled' : 'failed', text, steps,
+        error: { code, message: aborted ? 'Turn cancelled' : TURN_FAILURE_MESSAGE[code] ?? 'Turn failed' },
       }
     }
   }

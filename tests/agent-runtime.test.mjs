@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AgentRuntime, MemorySessionStore, ToolRegistry } from '../packages/agent/runtime/lib/index.js';
+import { AgentRuntime, MemorySessionStore, RuntimeError, ToolRegistry } from '../packages/agent/runtime/lib/index.js';
 import { ScriptedModel, textReply, callReply, noopTool } from './fixtures/agent-runtime.mjs';
 import { startAgentRuntime } from '../apps/agent-runtime/lib/index.js';
 
@@ -145,9 +145,43 @@ test('tool exceptions become paired error results rather than breaking the model
     assert.equal((await agent.send('Try')).status, 'completed');
     const result = model.requests[1].messages.at(-1);
     assert.equal(result.toolCallId, 'broken-tool');
-    assert.deepEqual(JSON.parse(result.content), { error: { code: 'TOOL_FAILED', message: 'Tool unavailable' } });
+    assert.deepEqual(JSON.parse(result.content), { error: { code: 'TOOL_FAILED', message: 'Tool failed' } });
   } finally { await runtime.dispose(); }
 });
+
+for (const thrown of [
+  new Error('untrusted tool-secret-raw'),
+  new RuntimeError('LEAKED_CODE', 'untrusted tool-secret-rt'),
+]) {
+  test(`a tool that throws ${thrown.constructor.name} never leaks its code or message`, { timeout: 5000 }, async () => {
+    const tools = new ToolRegistry();
+    tools.register({ ...noopTool(), async execute() { throw thrown; } });
+    const model = new ScriptedModel([callReply({ id: 'broken-tool', name: 'noop', arguments: { value: 'x' } }), textReply('The operation failed')]);
+    const runtime = new AgentRuntime({ model, sessions: new MemorySessionStore(), tools });
+    try {
+      const agent = await runtime.createAgent({ sessionId: 'tool-secret-chat', selection: { provider: 'fake', model: 'scripted' }, tools: ['noop'] });
+      assert.equal((await agent.send('Try')).status, 'completed');
+      const result = model.requests[1].messages.at(-1);
+      assert.equal(result.isError, true);
+      assert.deepEqual(JSON.parse(result.content), { error: { code: 'TOOL_FAILED', message: 'Tool failed' } });
+      assert.equal(JSON.stringify(result).includes('tool-secret'), false);
+      assert.equal(JSON.stringify(result).includes('LEAKED_CODE'), false);
+      const history = JSON.stringify(await agent.history());
+      assert.equal(history.includes('tool-secret'), false);
+      assert.equal(history.includes('LEAKED_CODE'), false);
+    } finally { await runtime.dispose(); }
+  });
+}
+
+for (const code of ['UNKNOWN_TOOL_CODE', 'constructor', '__proto__', 'toString']) {
+  test(`registry failure maps non-authored code ${JSON.stringify(code)} to TOOL_FAILED`, () => {
+    const tools = new ToolRegistry();
+    const call = { id: 'x-1', name: 'noop', arguments: { value: 'x' } };
+    const message = tools.failure(call, code);
+    assert.equal(message.isError, true);
+    assert.deepEqual(JSON.parse(message.content), { error: { code: 'TOOL_FAILED', message: 'Tool failed' } });
+  });
+}
 
 test('a step limit stops a repeating model after settling every requested tool call', { timeout: 5000 }, async () => {
   const tools = new ToolRegistry();
@@ -175,9 +209,67 @@ test('a model failure closes the active turn and a new request can run', { timeo
     const agent = await runtime.createAgent({ sessionId: 'model-error-chat', selection: { provider: 'fake', model: 'scripted' } });
     const failed = await agent.send('First');
     assert.equal(failed.status, 'failed');
-    assert.equal(failed.error.message, 'Model unavailable');
+    assert.equal(failed.error.message, 'Turn failed');
     assert.equal(agent.status, 'idle');
     assert.equal((await agent.send('Second')).text, 'Recovered');
+  } finally { await runtime.dispose(); }
+});
+
+test('a raw model exception never forwards its message into the turn result or history', { timeout: 5000 }, async () => {
+  const secret = 'model-raw-secret-c4f2';
+  const runtime = new AgentRuntime({ model: new ScriptedModel([new Error(`untrusted ${secret}`)]), sessions: new MemorySessionStore() });
+  try {
+    const agent = await runtime.createAgent({ sessionId: 'model-raw-secret', selection: { provider: 'fake', model: 'scripted' } });
+    const failed = await agent.send('First');
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.error.code, 'TURN_FAILED');
+    assert.equal(failed.error.message, 'Turn failed');
+    assert.equal(JSON.stringify(failed).includes(secret), false);
+    assert.equal(JSON.stringify(await agent.history()).includes(secret), false);
+  } finally { await runtime.dispose(); }
+});
+
+test('a model RuntimeError keeps its stable code but never forwards its message', { timeout: 5000 }, async () => {
+  const secret = 'model-rt-secret-1e9b';
+  const runtime = new AgentRuntime({ model: new ScriptedModel([new RuntimeError('PROVIDER_AUTH', `untrusted ${secret}`)]), sessions: new MemorySessionStore() });
+  try {
+    const agent = await runtime.createAgent({ sessionId: 'model-rt-secret', selection: { provider: 'fake', model: 'scripted' } });
+    const failed = await agent.send('First');
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.error.code, 'PROVIDER_AUTH');
+    assert.equal(failed.error.message, 'Turn failed');
+    assert.equal(JSON.stringify(failed).includes(secret), false);
+    assert.equal(JSON.stringify(await agent.history()).includes(secret), false);
+  } finally { await runtime.dispose(); }
+});
+
+test('a model RuntimeError with a non-conforming code collapses to TURN_FAILED', { timeout: 5000 }, async () => {
+  const secret = 'model-code-secret-3b8e';
+  const runtime = new AgentRuntime({ model: new ScriptedModel([new RuntimeError(`secret:${secret}`, 'untrusted message')]), sessions: new MemorySessionStore() });
+  try {
+    const agent = await runtime.createAgent({ sessionId: 'model-code-secret', selection: { provider: 'fake', model: 'scripted' } });
+    const failed = await agent.send('First');
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.error.code, 'TURN_FAILED');
+    assert.equal(failed.error.message, 'Turn failed');
+    assert.equal(JSON.stringify(failed).includes(secret), false);
+    assert.equal(JSON.stringify(await agent.history()).includes(secret), false);
+  } finally { await runtime.dispose(); }
+});
+
+test('a model RuntimeError carrying a private code collapses to TURN_FAILED and never leaks its value', { timeout: 5000 }, async () => {
+  const secret = 'sensitive-value';
+  const runtime = new AgentRuntime({ model: new ScriptedModel([new RuntimeError('PRIVATE_KEY_123456', secret)]), sessions: new MemorySessionStore() });
+  try {
+    const agent = await runtime.createAgent({ sessionId: 'model-private-code', selection: { provider: 'fake', model: 'scripted' } });
+    const failed = await agent.send('First');
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.error.code, 'TURN_FAILED');
+    assert.equal(failed.error.message, 'Turn failed');
+    assert.equal(JSON.stringify(failed).includes('PRIVATE_KEY_123456'), false);
+    assert.equal(JSON.stringify(failed).includes(secret), false);
+    assert.equal(JSON.stringify(await agent.history()).includes('PRIVATE_KEY_123456'), false);
+    assert.equal(JSON.stringify(await agent.history()).includes(secret), false);
   } finally { await runtime.dispose(); }
 });
 
