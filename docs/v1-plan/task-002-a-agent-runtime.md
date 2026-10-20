@@ -146,8 +146,8 @@ pnpm build
 pnpm test:agent-runtime
 pnpm test:session-persistence
 pnpm chat --help
-pnpm test:foundation
-pnpm start:foundation
+pnpm test:cordis-smoke
+pnpm start:cordis-smoke
 ```
 
 PowerShell có thể dùng `pnpm.cmd` khi chặn shim `.ps1`. Toolchain giữ Node

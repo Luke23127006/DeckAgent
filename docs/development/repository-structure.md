@@ -41,13 +41,15 @@ durable rule.
 | `@deckagent/agent-runtime` | `packages/agent/runtime` | `@deepseek-ai/cordis` |
 | `@deckagent/model-providers` | `packages/llm/providers` | `@deckagent/agent-runtime` |
 | `@deckagent/session-persistence` | `packages/session/persistence` | `@deckagent/agent-runtime` |
-| `@deckagent/foundation-fixture` | `packages/testing/foundation-fixture` | `@deepseek-ai/cordis` |
+| `@deckagent/cordis-fixture` | `packages/testing/cordis-fixture` | `@deepseek-ai/cordis` |
 | `@deckagent/agent-runtime-cli` | `apps/agent-runtime` | runtime, providers, persistence, `@deepseek-ai/cordis` |
-| `@deckagent/foundation` | `apps/foundation` | `@deepseek-ai/cordis`, fixture |
+| `@deckagent/cordis-smoke` | `apps/cordis-smoke` | `@deepseek-ai/cordis`, fixture |
 
-Adding a package touches `pnpm-workspace.yaml`, the root `package.json`, the root
-`tsconfig.json`, `tsconfig.base.json`, and the build script; the build script's
-hard-coded root list is known debt (candidate for a later cleanup). Package names do
+Adding a package needs no fixed set of file changes: the build script discovers
+workspace packages through pnpm (so it changes only when a package adds a non-`index`
+entry point), and `pnpm-workspace.yaml`, the root `tsconfig.json`, and
+`tsconfig.base.json` are edited only when a new glob, a root project reference, or a
+workspace path alias is actually required. Package names do
 not always mirror directory paths (`model-providers` in `packages/llm`, `-cli` on
 `apps/agent-runtime`); this drift is recorded as-is and renaming is a separate
 cleanup task.

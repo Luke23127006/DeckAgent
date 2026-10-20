@@ -129,14 +129,14 @@ dùng profile/flags/environment và báo lỗi nếu còn thiếu thông tin.
 Chạy các kiểm thử local:
 
 ```powershell
-pnpm.cmd test:foundation
+pnpm.cmd test:cordis-smoke
 pnpm.cmd test:agent-runtime
 pnpm.cmd test:model-providers
 pnpm.cmd test:session-persistence
 pnpm.cmd test:chat-setup
 ```
 
-Tại snapshot TASK-002-A/B/C ngày 20-10-2026, kết quả là 2 foundation tests,
+Tại snapshot TASK-002-A/B/C ngày 20-10-2026, kết quả là 2 Cordis smoke tests,
 22 Runtime tests, 21 provider/CLI tests, 9 persistence tests và 14 setup tests PASS. Tests dùng
 SQLite tạm và HTTP server local, không cần key thật hoặc gọi cloud. Persistence
 tests có trường hợp chạy hai process CLI riêng để kiểm tra mở lại hội thoại.
@@ -146,7 +146,7 @@ Evidence và trạng thái mới nhất ở
 Có thể chạy riêng smoke demo Cordis:
 
 ```powershell
-pnpm.cmd start:foundation
+pnpm.cmd start:cordis-smoke
 ```
 
 Demo in `Hello, DeckAgent` rồi cleanup. Demo fake model đã được bỏ khỏi app;
@@ -372,10 +372,10 @@ DeckAgent tự xây Agent Harness; Cordis quản lý composition và lifecycle. 
 | `packages/llm/providers/` | Adapter theo giao thức API, credentials và HTTP/SSE |
 | `packages/session/persistence/` | SQLite Session Store, metadata, schema version và atomic append |
 | `apps/agent-runtime/` | Application composition, setup terminal, credentials mã hóa và chat có lưu/mở lại Session |
-| `apps/foundation/` | Boot trực tiếp Cordis bằng `new Context()`/`ctx.plugin()` và smoke fixture |
+| `apps/cordis-smoke/` | Boot trực tiếp Cordis bằng `new Context()`/`ctx.plugin()` và smoke fixture |
 
-[Foundation CI](.github/workflows/foundation.yml) chạy install, build/typecheck,
-foundation tests, Runtime tests, local HTTP provider tests, Session/restart tests, CLI setup/DPAPI, foundation CLI và UX
+[Workspace CI](.github/workflows/workspace.yml) chạy install, build/typecheck,
+Cordis smoke tests, Runtime tests, local HTTP provider tests, Session/restart tests, CLI setup/DPAPI, Cordis smoke CLI và UX
 prototype regression trên Windows cho PR/push vào `dev`/`main`. Summary ghi SHA và
 kết quả từng check. Chỉ dùng evidence đạt yêu cầu trên merged `dev` để đóng Gate;
 local tests hoặc một lần chat thành công không tự đóng Gate 002. Branch protection
