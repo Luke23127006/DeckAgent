@@ -6,10 +6,10 @@ Dashboard giữ current state và handoff cần thiết; scope/acceptance criter
 
 | Mục | Hiện trạng |
 | --- | --- |
-| Mốc cần xác minh đầu tiên | M1 — Foundation / TASK-001; milestone nhóm đang thực sự triển khai: `UNKNOWN` |
+| Mốc đang triển khai | M1 — Foundation / TASK-001; implementation A/B/C đã chạy local, chờ PR vào dev |
 | Stable integration baseline | `NOT_VERIFIED` — chưa có Gate PASS kèm evidence; dev SHA: `UNKNOWN` |
-| Snapshot đã kiểm tra | 20-10-2026, local `main` tại `bfa50fb7225138d95afabdfbab3c39ed44477569`; working tree sạch trước khi tạo dashboard |
-| Phạm vi xác minh | Source tracked trong checkout này và test UX-02; chưa xác minh remote `dev`, PR hoặc branch của các thành viên |
+| Snapshot đã kiểm tra | 20-10-2026, `feature/task-001-foundation` từ dev `51ecb14772c59bab6b608175491daaccdc5a2df6` + working-tree changes chưa commit |
+| Phạm vi xác minh | Remote dev đã đối chiếu cùng SHA qua `git ls-remote`; candidate foundation chạy trên Windows và bản sao source sạch. Chưa có PR của session này; tiến độ ngoài session UNKNOWN |
 | Đích ưu tiên theo plan | M6 — demo UC-001. Gate 007 cũng chưa đủ để kết luận toàn bộ V1 hoàn thành |
 
 `UNKNOWN` = chưa biết thông tin; `NOT_VERIFIED` = chưa có evidence đủ để kết luận. Không suy ra “chưa bắt đầu” hay “đã xong” từ việc thiếu code trên một branch.
@@ -20,7 +20,7 @@ Trạng thái dùng: `NOT_VERIFIED`, `TODO` (owner xác nhận chưa bắt đầ
 
 | Group / milestone | Dependency | Status | Gate result / dev SHA / evidence |
 | --- | --- | --- | --- |
-| TASK-001 — Foundation (M1) | Không; cần kickoff upstream/toolchain/ownership | NOT_VERIFIED | Gate 001: NOT_VERIFIED / UNKNOWN / chưa có |
+| TASK-001 — Foundation (M1) | Không; upstream/toolchain ghi ở shared handoff | IN_PROGRESS | Gate 001 trên dev: NOT_VERIFIED / chưa merge; local candidate PASS, xem evidence bên dưới |
 | TASK-002 — Agent + Session (M2) | Gate 001 PASS | NOT_VERIFIED | Gate 002: NOT_VERIFIED / UNKNOWN / chưa có |
 | TASK-003 — Tools + Browser (M3) | Gate 002 PASS | NOT_VERIFIED | Gate 003: NOT_VERIFIED / UNKNOWN / chưa có |
 | TASK-004 — Local Web (M4) | Gate 003 PASS | NOT_VERIFIED | Gate 004: NOT_VERIFIED / UNKNOWN / chưa có |
@@ -34,12 +34,12 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 
 ### A — Platform / Host
 
-- Thành viên / cập nhật: `UNKNOWN` / chưa xác nhận.
-- Đang làm / branch / PR: `UNKNOWN` / `UNKNOWN` / `UNKNOWN`.
+- Thành viên / cập nhật: Codex triển khai TASK-001 theo yêu cầu task owner / 20-10-2026; danh tính ownership dài hạn UNKNOWN.
+- Đang làm / branch / PR: TASK-001-A, chờ bàn giao / `feature/task-001-foundation` / chưa tạo PR.
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
-| TASK-001-A | Workspace | NOT_VERIFIED | UNKNOWN |
+| TASK-001-A | Workspace | IN_PROGRESS | Local checks PASS; chưa có PR/merge SHA |
 | TASK-002-A | Agent Runtime | NOT_VERIFIED | UNKNOWN |
 | TASK-003-A | File Tools + Safety | NOT_VERIFIED | UNKNOWN |
 | TASK-004-A | Web Host | NOT_VERIFIED | UNKNOWN |
@@ -47,20 +47,20 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 | TASK-006-A | Outline State + Confirmation Guard | NOT_VERIFIED | UNKNOWN |
 | TASK-007-A | Failure + Recovery | NOT_VERIFIED | UNKNOWN |
 
-- Đã hoàn thành: `NOT_VERIFIED`; files/modules cần tiếp tục: `UNKNOWN`.
-- Contracts / quyết định đã chốt (link + revision): `UNKNOWN`; assumptions cần kiểm chứng: `UNKNOWN`.
-- Verification (ngày, SHA, môi trường, lệnh/scenario → kết quả, log): `NOT_VERIFIED`.
-- Blocker / lỗi còn lại / người cần hỗ trợ: `UNKNOWN`.
-- Next action: xác nhận trạng thái trên `dev` và PR thực tế; nếu chưa có foundation, kickoff TASK-001 với upstream SHA, Node/pnpm, thư mục sở hữu và fixture contract trước khi thiết lập workspace.
+- Đã thực hiện local: root workspace, pnpm lockfile, TypeScript references, build script và `apps/foundation`; chưa DONE vì chưa merge.
+- Contracts / assumptions: xem [provenance và fixture contract](../../UPSTREAM.md); foundation là boot smoke cho các nhóm sau.
+- Verification: local candidate và bản sao source sạch PASS; xem evidence chung bên dưới.
+- Blocker / lỗi còn lại: không còn blocker kỹ thuật cho local foundation; chờ PR/merge và Gate trên dev.
+- Next action: review root config/lockfile và `.github/workflows/foundation.yml`, mở PR vào dev; sau merge ghi link CI push run PASS trên merge SHA để đóng Gate 001.
 
 ### B — Web / UX
 
-- Thành viên / cập nhật: `UNKNOWN` / chưa xác nhận.
-- Đang làm / branch / PR: `UNKNOWN` / `UNKNOWN` / `UNKNOWN`.
+- Thành viên / cập nhật: Codex triển khai TASK-001 theo yêu cầu task owner / 20-10-2026; danh tính ownership dài hạn UNKNOWN.
+- Đang làm / branch / PR: TASK-001-B, chờ bàn giao / `feature/task-001-foundation` / chưa tạo PR.
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
-| TASK-001-B | Cordis Boot Dependencies | NOT_VERIFIED | UNKNOWN |
+| TASK-001-B | Cordis Boot Dependencies | IN_PROGRESS | Local checks PASS; chưa có PR/merge SHA |
 | TASK-002-B | Model Providers + Credentials | NOT_VERIFIED | UNKNOWN |
 | TASK-003-B | Host API | NOT_VERIFIED | UNKNOWN |
 | TASK-004-B | Conversation + Settings UI | NOT_VERIFIED | UNKNOWN |
@@ -68,20 +68,20 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 | TASK-006-B | Outline Conversation UI | NOT_VERIFIED | UNKNOWN |
 | TASK-007-B | Chat + Deck History (UC-006) | NOT_VERIFIED | UNKNOWN |
 
-- Đã hoàn thành: `NOT_VERIFIED`; files/modules cần tiếp tục: `UNKNOWN`.
-- Contracts / quyết định đã chốt (link + revision): `UNKNOWN`; assumptions cần kiểm chứng: `UNKNOWN`.
-- Verification (ngày, SHA, môi trường, lệnh/scenario → kết quả, log): `NOT_VERIFIED`.
-- Blocker / lỗi còn lại / người cần hỗ trợ: `UNKNOWN`.
-- Next action: xác nhận subtask/branch/PR thực tế; nếu TASK-001 chưa triển khai, cùng A chốt upstream rồi trace Cordis/Loader/Include/Group/app-boot dependency closure, ghi provenance và yêu cầu root config để A tích hợp.
+- Đã thực hiện local: 11-package closure trong `vendor/*`, `packages/boot/app-boot`, `packages/util/*`; giữ nguyên source/identities/runtime contracts.
+- Contracts / assumptions: inventory, source SHA, license và adaptations ở [UPSTREAM.md](../../UPSTREAM.md).
+- Verification: typecheck/build/boot trên local candidate và bản sao sạch PASS; xem evidence chung.
+- Blocker / lỗi còn lại: chưa test worker/profile APIs hoặc nền tảng khác; không chặn Gate 001 local.
+- Next action: review provenance và dependency closure trước merge; mọi source divergence tương lai phải ghi lý do.
 
 ### C — Agent / Tools / Integration
 
-- Thành viên / cập nhật: `UNKNOWN` / chưa xác nhận.
-- Đang làm / branch / PR: `UNKNOWN` / `UNKNOWN` / `UNKNOWN`.
+- Thành viên / cập nhật: Codex triển khai TASK-001 theo yêu cầu task owner / 20-10-2026; danh tính ownership dài hạn UNKNOWN.
+- Đang làm / branch / PR: TASK-001-C, chờ bàn giao / `feature/task-001-foundation` / chưa tạo PR.
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
-| TASK-001-C | Foundation Smoke Tests | NOT_VERIFIED | UNKNOWN |
+| TASK-001-C | Foundation Smoke Tests | IN_PROGRESS | 2 smoke tests PASS; chưa có PR/merge SHA |
 | TASK-002-C | Session Persistence | NOT_VERIFIED | UNKNOWN |
 | TASK-003-C | Browser Runtime | NOT_VERIFIED | UNKNOWN |
 | TASK-004-C | Right Sidebar + Sample Deck Tab | NOT_VERIFIED | UNKNOWN |
@@ -89,23 +89,27 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 | TASK-006-C | Agent Presentation Workflow | NOT_VERIFIED | UNKNOWN |
 | TASK-007-C | Scoped Slide Editing (UC-002) | NOT_VERIFIED | UNKNOWN |
 
-- Đã hoàn thành: `NOT_VERIFIED`; files/modules cần tiếp tục: `UNKNOWN`.
-- Contracts / quyết định đã chốt (link + revision): `UNKNOWN`; assumptions cần kiểm chứng: `UNKNOWN`.
-- Verification (ngày, SHA, môi trường, lệnh/scenario → kết quả, log): `NOT_VERIFIED`.
-- Blocker / lỗi còn lại / người cần hỗ trợ: `UNKNOWN`.
-- Next action: xác nhận subtask/branch/PR thực tế; nếu TASK-001 chưa triển khai, thống nhất fixture contract với A/B rồi chuẩn bị plugin smoke cho registration, injection, lifecycle/cleanup và checklist Windows theo Gate 001.
+- Đã thực hiện local: provider/consumer fixture trong `packages/testing/foundation-fixture`, 2 integration smokes trong `tests/foundation.test.mjs`, negative config trong `apps/foundation/fixtures`.
+- Contracts / assumptions: `foundationProbe`, `foundationGreeting`, `foundationReady` và cleanup ở [UPSTREAM.md](../../UPSTREAM.md).
+- Verification: test đỏ trước implementation; 2/2 tests PASS sau build, gồm thiếu provider và repeated unload; bản sao sạch cũng PASS.
+- Blocker / lỗi còn lại: chờ merge và kiểm thử trên dev; upstream full suite chưa chạy.
+- Next action: chạy lại `pnpm test:foundation` trên dev sau merge; ghi đúng SHA/evidence để A đóng Gate 001.
 
 ## Shared handoff và verification — A duy trì, B/C gửi thay đổi qua handoff
 
-**Đã xác minh trong snapshot trên:** [package.json](../../package.json) và lockfile chỉ phục vụ tooling review; chưa có application build/test scripts hoặc monorepo runtime trong source tracked. [UX prototype và tài liệu](../design/UX-design/README.md) là mô phỏng UI, không chạy Agent Runtime. [Regression test](../../tests/ux-02-prototype.test.cjs) kiểm tra prototype bằng Node VM. Đây là tài nguyên tham khảo, chưa chứng minh TASK-001 hoặc TASK-004 hoàn tất.
+**Đã xác minh trong candidate hiện tại:** [package.json](../../package.json), pnpm workspace/lockfile, TypeScript references và [build script](../../scripts/build-foundation.mjs) build 11 imported packages cùng fixture/application. [Foundation app](../../apps/foundation/src/index.ts) gọi app-boot thật; [smoke tests](../../tests/foundation.test.mjs) kiểm tra injection, cleanup và startup thiếu provider. [UX prototype](../design/UX-design/README.md) vẫn chỉ là mô phỏng UI. Candidate chưa merge vào dev.
 
-**Contracts và quyết định:** workflow Git bên dưới đã được task owner cung cấp. Upstream SHA, application toolchain, fixture/service contracts và quyết định kỹ thuật implementation đã chốt: `UNKNOWN`. Các boundary/mock strategy trong plan vẫn cần kiểm chứng/chốt tại kickoff; không coi dashboard là phê duyệt kiến trúc. Khi chốt, ghi link tài liệu/PR + revision + tác động tới A/B/C ở đây, không chép lại contract. Cơ chế tạo ảnh mới vẫn chưa chốt theo plan; không tự thu hẹp scope V1.
+**Contracts và quyết định TASK-001:** task owner cho phép triển khai kế hoạch cả group. [UPSTREAM.md](../../UPSTREAM.md) ghi source SHA `687f282e8625c6b8d11ff58211a90524be2e4317`, inventory, license, fixture contract và adaptations. Dùng pnpm `11.28.5`, Node theo upstream `^22.19.0 || >=24`; đã chạy bằng Node `22.19.0` cài local, không đổi Node toàn máy. Giữ nguyên imported src/exports/runtime dependencies; bỏ devDependencies chỉ phục vụ upstream tests, dùng build tools tại root. pnpm lockfile thay npm lockfile; giữ scripts OCR. Source closure gồm Loader/Include/Group và app-boot, không thêm Agent/Web. Boundary của nhóm tiếp theo và cơ chế tạo ảnh mới vẫn chưa chốt.
+
+**CI:** [Foundation CI](../../.github/workflows/foundation.yml), job `Gate 001 (Windows)`, chạy trên PR vào dev/main, push dev/main và manual dispatch. Checks: frozen install → build/typecheck → integration smoke → boot/unload CLI → UX regression. Node 22.19.0, pnpm đọc từ package.json; run summary giữ SHA, kết quả và link evidence. PR run kiểm tra proposed merge; chỉ dùng push run PASS trên merged dev SHA để đóng Gate 001. GitHub-hosted run hiện `NOT_VERIFIED`; workflow chưa push. Không tự cập nhật dashboard hay thay branch protection.
 
 | Evidence | Ngày / revision / môi trường | Check và kết quả | Giới hạn / lỗi còn lại |
 | --- | --- | --- | --- |
-| Snapshot repository | 20-10-2026 / `bfa50fb7225138d95afabdfbab3c39ed44477569` / Windows PowerShell | `git status --short --branch`, `git rev-parse HEAD`, `git ls-tree --name-only HEAD`, `git ls-files`; đọc manifest, prototype và test: checkout sạch, có docs/tooling/prototype | Chỉ local main; remote dev/PR và tiến độ cá nhân UNKNOWN |
-| UX-02 regression | Cùng ngày/SHA / Windows, Node v22.17.1 | `node tests/ux-02-prototype.test.cjs` → exit 0, `Rendered presets: 64`, `UX-02 regression checks passed` | Chưa kiểm tra browser thủ công hoặc application integration; không có lỗi trong lần chạy test này |
-| Application / Integration Gates | NOT_VERIFIED | Build, Cordis boot, model thật, persistence và end-to-end: chưa chạy; chưa có runner application trong checkout | Không đủ điều kiện kết luận PASS/FAIL; lỗi runtime UNKNOWN |
+| Git/source baseline | 20-10-2026 / Codex / dev `51ecb14772c59bab6b608175491daaccdc5a2df6` + candidate chưa commit | `git ls-remote origin refs/heads/dev` và upstream HEAD khớp SHA đã ghi; branch `feature/task-001-foundation` | Remote các branch/PR khác UNKNOWN; chưa có merge SHA candidate |
+| Foundation local candidate | 20-10-2026 / Codex / cùng base + working-tree changes / Windows x64 PowerShell, Node 22.19.0, pnpm 11.28.5 | `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm test:foundation` → PASS, 2/2 tests; `pnpm start:foundation` → greeting, provider/consumer cleanup, exit 0. Chạy lại trên bản sao source sạch không có node_modules/lib cũng PASS | Peer cycle Cordis/Include kế thừa upstream; warning thiếu foundationGreeting là expected trong negative test. Không có missing-module error chưa giải thích. Worker/profile APIs và hệ điều hành khác chưa test |
+| Compatibility và provenance | Cùng ngày/base + candidate / Node 22.19.0, Windows | `node tests/ux-02-prototype.test.cjs` → PASS, 64 presets; `pnpm ocr --version` → 1.12.7; đối chiếu bytes 55 source files/11 packages và tsconfigs với pinned snapshot → khớp; manifests chỉ khác devDependencies đã ghi. Local doc links và `git diff --check` PASS | Chưa chạy upstream full suite; kiểm tra whitespace riêng cho file authored chưa tracked |
+| Foundation CI configuration | 20-10-2026 / Codex / cùng base + working-tree changes | `actionlint` 1.7.12 và PowerShell parser cho mọi run step → PASS. Chạy lại đủ frozen install, build, 2/2 smoke tests, CLI boot/unload và UX regression 64 presets trên source copy sạch ở Windows → PASS | GitHub-hosted execution NOT_VERIFIED đến khi push/mở PR; không dùng local validation để đóng Gate trên dev |
+| Gate 001 integrated / Gates 002–007 | NOT_VERIFIED | Chưa chạy trên dev chứa candidate; model thật, persistence và Web end-to-end chưa chạy | Chờ PR/merge và chạy lại Gate 001 trên đúng dev SHA; không nâng stable baseline |
 
 Khi đóng Gate, thay nội dung evidence của Gate tương ứng bằng: **ngày + người chạy + dev SHA + môi trường/toolchain + lệnh hoặc bước manual + expected/actual + PASS/FAIL + link log/artifact + lỗi/giới hạn còn lại**. Đối chiếu toàn bộ tiêu chí Gate trong parallel plan; thiếu check thì giữ `NOT_VERIFIED`. Chỉ nâng stable baseline tới SHA đã PASS; giữ baseline PASS trước đó nếu tích hợp mới FAIL. Dùng check thực sự tồn tại ở thời điểm đó, không bịa lệnh CI/build hoặc ghi secrets vào evidence.
 

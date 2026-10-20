@@ -1,0 +1,13 @@
+{
+  "name": "@deckagent/foundation-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./consumer": "./lib/consumer.js"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~"
+  }
+}

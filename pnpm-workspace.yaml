@@ -1,0 +1,10 @@
+packages:
+  - vendor/*
+  - packages/*/*
+  - apps/*
+
+allowBuilds:
+  # Existing pinned review tooling: installs its platform binary with checksum validation.
+  '@alibaba-group/open-code-review@1.12.7': true
+  # Upstream uses the package's platform prebuilt; no source install hook needed.
+  node-addon-require-builtin: false

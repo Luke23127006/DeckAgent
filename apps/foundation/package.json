@@ -1,0 +1,12 @@
+{
+  "name": "@deckagent/foundation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-app-boot": "workspace:*",
+    "@deepseek-ai/cordis-plugin-group": "workspace:~",
+    "@deckagent/foundation-fixture": "workspace:*"
+  }
+}
