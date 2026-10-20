@@ -175,10 +175,11 @@
       "license_copy": ".agents/skills/open-code-review-delegate/LICENSE",
       "decision": "Adjust",
       "reason": "Use OCR's deterministic file selection and rule resolution while the active coding agent performs the review without a separate OCR LLM endpoint.",
-      "compatibility": "Compatible after replacing global CLI installation with the pinned repository-local npm dependency and supported frontmatter.",
+      "compatibility": "Compatible after replacing global CLI installation with the pinned repository-local pnpm workspace dependency and supported frontmatter.",
       "dependencies": [
         "Git >= 2.41",
-        "Node.js >= 18 and npm",
+        "Node.js matching package.json engines",
+        "pnpm 11.28.5 (package.json packageManager)",
         "Workspace dev dependency @alibaba-group/open-code-review 1.12.7"
       ],
       "reviewed_resources": [
@@ -188,9 +189,9 @@
         ".opencodereview/rule.json"
       ],
       "local_adaptations": [
-        "Invoke the CLI through repository npm scripts instead of a global installation.",
+        "Invoke the CLI through repository pnpm scripts instead of a global installation.",
         "Remove unsupported compatibility frontmatter and retain compatibility guidance in the skill body.",
-        "Require npm ci when the local binary is missing; the skill may not install or upgrade packages during review.",
+        "Require pnpm install --frozen-lockfile when the local binary is missing; the skill may not install or upgrade packages during review.",
         "Use delegation mode only, so OCR does not require a separate LLM configuration.",
         "Apply DeckAgent-specific review filters and rules from .opencodereview/rule.json."
       ],

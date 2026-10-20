@@ -5,38 +5,53 @@ OpenCodeReview integration. OpenCodeReview is development tooling, not a DeckAge
 runtime dependency. For canonical skill and mirror maintenance, see
 [Shared agent skill maintenance](../agents/skill-maintenance.md).
 
+## Review scope
+
+OpenCodeReview's delegation mode reviews the changed files in the workspace diff.
+The project rule file [`.opencodereview/rule.json`](../../.opencodereview/rule.json)
+does two things:
+
+- it excludes the generated Claude/Codex skill mirrors and `node_modules/`; and
+- it adds a DeckAgent-specific rule for `.agents/**/*` (canonical skill ownership,
+  manifest consistency, portable instructions, provenance, license handling, and
+  mirror synchronization), merged with OCR's built-in system rules.
+
+Files outside `.agents/**/*` — including DeckAgent application code, config, tests,
+and CI — are reviewed against OCR's built-in system rules. Keep this scope unless a
+confirmed defect requires a change.
+
 ## One-time setup after cloning
 
 Requirements:
 
 - Git 2.41 or newer;
-- Node.js 18 or newer;
-- npm.
+- Node.js matching `package.json` `engines`;
+- pnpm `11.28.5` (pinned by `package.json` `packageManager`).
 
 Install the locked workspace dependencies from the repository root:
 
 ```powershell
 # Windows PowerShell
-npm.cmd ci
+pnpm.cmd install --frozen-lockfile
 ```
 
 ```bash
 # macOS or Linux
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 Do not install OpenCodeReview globally. `node_modules/` stays uncommitted;
-`package.json` and `package-lock.json` provide the reproducible setup. Delegation
+`package.json` and `pnpm-lock.yaml` provide the reproducible setup. Delegation
 mode uses the active coding agent as the reviewer, so no separate OCR API key or
 LLM endpoint is required.
 
 Verify the local CLI:
 
 ```powershell
-npm.cmd run ocr -- version
+pnpm.cmd ocr --version
 ```
 
-Use `npm` instead of `npm.cmd` on macOS or Linux.
+Use `pnpm` instead of `pnpm.cmd` on macOS or Linux.
 
 ## Ask an agent to review
 
@@ -61,53 +76,53 @@ review. They do not call an LLM and do not perform the review themselves.
 Preview current staged, unstaged, and untracked changes:
 
 ```powershell
-npm.cmd run ocr:preview -- --background "Reason for the change"
+pnpm.cmd ocr:preview --background "Reason for the change"
 ```
 
 Preview a commit:
 
 ```powershell
-npm.cmd run ocr:preview -- --commit <sha> --background "Reason for the change"
+pnpm.cmd ocr:preview --commit <sha> --background "Reason for the change"
 ```
 
 Preview a branch range:
 
 ```powershell
-npm.cmd run ocr:preview -- --from main --to <branch> --background "Reason for the change"
+pnpm.cmd ocr:preview --from main --to <branch> --background "Reason for the change"
 ```
 
 Inspect the rule applied to files:
 
 ```powershell
-npm.cmd run ocr:rules -- .agents/scripts/sync_skill_mirrors.py
+pnpm.cmd ocr:rules .agents/scripts/sync_skill_mirrors.py
 ```
 
-On macOS or Linux, replace `npm.cmd` with `npm`. Project-specific filters and
+On macOS or Linux, replace `pnpm.cmd` with `pnpm`. Project-specific filters and
 rules live in `.opencodereview/rule.json`. Generated Claude/Codex skill mirrors
 are excluded so the canonical `.agents/skills/` copy is reviewed once.
 
 ## Team update workflow
 
-After pulling changes, run `npm ci` when `package-lock.json` changed. Do not
-commit `node_modules/`, credentials, OCR user configuration, or review output
-containing sensitive code.
+After pulling changes, run `pnpm install --frozen-lockfile` when `pnpm-lock.yaml`
+changed. Do not commit `node_modules/`, credentials, OCR user configuration, or
+review output containing sensitive code.
 
 ## Troubleshooting
 
-### PowerShell blocks npm.ps1
+### PowerShell blocks pnpm.ps1
 
-Use `npm.cmd`, as shown above. Do not weaken the machine execution policy just
+Use `pnpm.cmd`, as shown above. Do not weaken the machine execution policy just
 for this repository.
 
 ### OCR command is missing
 
-Run `npm ci` from the repository root, then retry
-`npm.cmd run ocr -- version`. Do not fall back to a global installation.
+Run `pnpm install --frozen-lockfile` from the repository root, then retry
+`pnpm.cmd ocr --version`. Do not fall back to a global installation.
 
-### npm reports `UNABLE_TO_VERIFY_LEAF_SIGNATURE`
+### pnpm reports UNABLE_TO_VERIFY_LEAF_SIGNATURE
 
 This usually means an antivirus or company proxy is inspecting HTTPS. Configure
-npm/Node to use the organization-approved CA certificate, or ask IT to exempt the
+pnpm/Node to use the organization-approved CA certificate, or ask IT to exempt the
 npm registry according to team policy. Keep TLS verification enabled; do not use
 `strict-ssl=false`. The CA belongs to the machine or organization and must not be
 committed to this repository.
