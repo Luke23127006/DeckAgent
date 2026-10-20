@@ -1,0 +1,7 @@
+- id: foundation
+  name: '@deepseek-ai/cordis-plugin-group'
+  config:
+    - id: foundation-provider
+      name: '@deckagent/foundation-fixture'
+    - id: foundation-consumer
+      name: '@deckagent/foundation-fixture/consumer'

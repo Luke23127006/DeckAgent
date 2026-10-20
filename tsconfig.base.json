@@ -1,0 +1,65 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "composite": true,
+    "incremental": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@deepseek-ai/cosmokit": [
+        "./vendor/cosmokit/src/index.ts"
+      ],
+      "@deepseek-ai/cordis": [
+        "./vendor/cordis/src/index.ts"
+      ],
+      "@deepseek-ai/schemastery": [
+        "./vendor/schemastery/src/index.ts"
+      ],
+      "@deepseek-ai/cordis-plugin-loader": [
+        "./vendor/loader/src/index.ts"
+      ],
+      "@deepseek-ai/cordis-plugin-include": [
+        "./vendor/include/src/index.ts"
+      ],
+      "@deepseek-ai/cordis-plugin-group": [
+        "./vendor/group/src/index.ts"
+      ],
+      "@deepseek-ai/dsh-atomic-write": [
+        "./packages/util/atomic-write/src/index.ts"
+      ],
+      "@deepseek-ai/dsh-package-manifest": [
+        "./packages/util/package-manifest/src/index.ts"
+      ],
+      "@deepseek-ai/dsh-home-paths": [
+        "./packages/util/home-paths/src/index.ts"
+      ],
+      "@deepseek-ai/dsh-launch-environment": [
+        "./packages/util/launch-environment/src/index.ts"
+      ],
+      "@deepseek-ai/dsh-app-boot": [
+        "./packages/boot/app-boot/src/index.ts"
+      ],
+      "@deckagent/foundation-fixture": [
+        "./packages/testing/foundation-fixture/src/index.ts"
+      ]
+    }
+  }
+}

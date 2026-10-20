@@ -18,3 +18,8 @@ __pycache__/
 
 # Node.js development tooling
 /node_modules/
+**/node_modules/
+/vendor/*/lib/
+/packages/*/*/lib/
+/apps/*/lib/
+*.tsbuildinfo
