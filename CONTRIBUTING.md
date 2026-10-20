@@ -35,6 +35,9 @@ Use descriptive branch names and follow the current repository workflow.
 - [OpenCodeReview](docs/tooling/open-code-review.md) (via the
   `open-code-review-delegate` skill) is an optional helper for deterministic file
   selection and rule resolution; its filters live in `.opencodereview/rule.json`.
+  The project rule file adds a DeckAgent-specific rule for `.agents/**/*` and
+  excludes the generated skill mirrors; application code is reviewed against OCR's
+  built-in system rules.
 
 ## Code review criteria and comments
 
@@ -48,8 +51,11 @@ Do not treat every `SHOULD` deviation as blocking.
 ## Checks
 
 Run the focused checks relevant to the change using the scripts in
-[`package.json`](package.json) (typecheck, build, and the area-specific test suites).
-Never delete, disable, or weaken a test to make a change pass.
+[`package.json`](package.json): `typecheck`, `build`, `lint`, and the area-specific
+test suites. Verify formatting with `format:check <changed-files>` and apply it with
+`format <changed-files>` — always pass explicit file paths, since formatting the whole
+workspace would rewrite legacy code that has pre-existing drift. Never delete,
+disable, or weaken a test to make a change pass.
 
 ## Verification evidence
 
