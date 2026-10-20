@@ -58,14 +58,34 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:foundation
 
+      - name: DeckAgent runtime tests (TASK-002-A)
+        id: runtime
+        timeout-minutes: 2
+        run: pnpm test:agent-runtime
+
+      - name: Model provider and manual CLI checks (TASK-002-B, local HTTP only)
+        id: providers
+        timeout-minutes: 2
+        run: pnpm test:model-providers
+
       - name: Boot and unload foundation CLI
         id: boot
         timeout-minutes: 2
         run: pnpm start:foundation
 
+      - name: Durable Session and process restart checks (TASK-002-C, local HTTP only)
+        id: sessions
+        timeout-minutes: 2
+        run: pnpm test:session-persistence
+
       - name: UX prototype regression
         id: ux
         run: node tests/ux-02-prototype.test.cjs
+
+      - name: Chat first-run setup and Windows encrypted credentials (local HTTP only)
+        id: chat_setup
+        timeout-minutes: 2
+        run: pnpm test:chat-setup
 
       - name: Record verification evidence
         if: always()
@@ -76,6 +96,10 @@ jobs:
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
           SMOKE_RESULT: ${{ steps.smoke.outcome }}
+          RUNTIME_RESULT: ${{ steps.runtime.outcome }}
+          PROVIDERS_RESULT: ${{ steps.providers.outcome }}
+          SESSIONS_RESULT: ${{ steps.sessions.outcome }}
+          CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
           BOOT_RESULT: ${{ steps.boot.outcome }}
           UX_RESULT: ${{ steps.ux.outcome }}
         run: |
@@ -87,6 +111,10 @@ jobs:
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
           - Integration smoke: $env:SMOKE_RESULT
+          - DeckAgent runtime (TASK-002-A only): $env:RUNTIME_RESULT
+          - Model providers (TASK-002-B, local HTTP only): $env:PROVIDERS_RESULT
+          - Session persistence (TASK-002-C, local HTTP only): $env:SESSIONS_RESULT
+          - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
           - Boot/unload: $env:BOOT_RESULT
           - UX regression: $env:UX_RESULT
           - Run: $env:RUN_URL

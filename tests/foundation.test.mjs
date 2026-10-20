@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { startFoundation } from '../apps/foundation/lib/index.js';
 
 test('boot loads a provider, injects its service and cleans up on unload', { timeout: 15000 }, async () => {
@@ -26,7 +25,7 @@ test('boot rejects a consumer whose required service is missing', { timeout: 150
     await assert.rejects(async () => {
       unexpectedContext = await startFoundation(
         { record() {} },
-        fileURLToPath(new URL('../apps/foundation/fixtures/missing-provider.yml', import.meta.url)),
+        { withProvider: false },
       );
     }, /foundation-consumer/);
   } finally {

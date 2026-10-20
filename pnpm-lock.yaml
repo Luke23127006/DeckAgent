@@ -27,6 +27,21 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  apps/agent-runtime:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../packages/agent/runtime
+      '@deckagent/model-providers':
+        specifier: workspace:*
+        version: link:../../packages/llm/providers
+      '@deckagent/session-persistence':
+        specifier: workspace:*
+        version: link:../../packages/session/persistence
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../vendor/cordis
+
   apps/foundation:
     dependencies:
       '@deckagent/foundation-fixture':
@@ -35,83 +50,26 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../vendor/cordis
-      '@deepseek-ai/cordis-plugin-group':
-        specifier: workspace:~
-        version: link:../../vendor/group
-      '@deepseek-ai/dsh-app-boot':
-        specifier: workspace:*
-        version: link:../../packages/boot/app-boot
 
-  packages/boot/app-boot:
+  packages/agent/runtime:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      '@deepseek-ai/cordis-plugin-group':
-        specifier: workspace:~
-        version: link:../../../vendor/group
-      '@deepseek-ai/cordis-plugin-include':
-        specifier: workspace:~
-        version: link:../../../vendor/include
-      '@deepseek-ai/cordis-plugin-loader':
-        specifier: workspace:~
-        version: link:../../../vendor/loader
-      '@deepseek-ai/dsh-atomic-write':
+
+  packages/llm/providers:
+    dependencies:
+      '@deckagent/agent-runtime':
         specifier: workspace:*
-        version: link:../../util/atomic-write
-      '@deepseek-ai/dsh-home-paths':
+        version: link:../../agent/runtime
+
+  packages/session/persistence:
+    dependencies:
+      '@deckagent/agent-runtime':
         specifier: workspace:*
-        version: link:../../util/home-paths
-      '@deepseek-ai/dsh-launch-environment':
-        specifier: workspace:*
-        version: link:../../util/launch-environment
-      '@deepseek-ai/dsh-package-manifest':
-        specifier: workspace:*
-        version: link:../../util/package-manifest
-      '@eslint-community/regexpp':
-        specifier: ^4.12.2
-        version: 4.12.2
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      js-yaml:
-        specifier: ^4.3.2
-        version: 4.3.2
-      node-addon-require-builtin:
-        specifier: ^0.1.9
-        version: 0.1.9
-      resolve.exports:
-        specifier: ^2.0.3
-        version: 2.0.4
-      semver:
-        specifier: ^7.8.5
-        version: 7.8.5
+        version: link:../../agent/runtime
 
   packages/testing/foundation-fixture:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-
-  packages/util/atomic-write:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-
-  packages/util/home-paths:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-
-  packages/util/launch-environment:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../../../vendor/cordis
-
-  packages/util/package-manifest:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -218,10 +176,6 @@ packages:
     resolution: {integrity: sha512-A/qU59zLwKEnilGqRYpBrehKbGEYyVG6H1ngZSyGKL+GGH+2zC2YLtUE+kJsRIQxoUXpFs4RhSGRQtm3MzaLBg==}
     engines: {node: '>=14'}
     hasBin: true
-
-  '@eslint-community/regexpp@4.12.2':
-    resolution: {integrity: sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==}
-    engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
 
   '@oxc-project/types@0.154.0':
     resolution: {integrity: sha512-KYOUGQFlLWR+s4QMV2Q9ko38TZm7EdO87Qm7rvZLqk/webse/cDjtyxKhg/47l0byCbs/k46LT8qc4PKjAikzA==}
@@ -499,9 +453,6 @@ packages:
   '@yuku-toolchain/types@0.8.7':
     resolution: {integrity: sha512-2Z53dNxAJL6UvFoIrDZvYf3zlO8s4VJK4O2hhaB4mXVwwpX/7ajtss3cmfqKvamlNLWyt9FSWs4eoYdlbxpnHA==}
 
-  ajv@8.20.0:
-    resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
-
   ansis@4.4.0:
     resolution: {integrity: sha512-9k3v7xcHwgdO/DruxGIg4HtjvlAZlcnsX/mzqUb1t3NkYnl9kK2UJ+Gq0io+vQf7iT//BD/HB/NBkUR1LWxoeA==}
     engines: {node: '>=14'}
@@ -529,12 +480,6 @@ packages:
     resolution: {integrity: sha512-AnfC1ATldl49/cvZdLPDjBfrRNwbDO05aibiOtzQu3qtlbJtomNLhF30HEtn/7iBz50dlMECqATo3fG0LrdEgw==}
     engines: {node: '>=14'}
 
-  fast-deep-equal@3.1.3:
-    resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
-
-  fast-uri@3.1.8:
-    resolution: {integrity: sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==}
-
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
@@ -558,9 +503,6 @@ packages:
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
-
-  json-schema-traverse@1.0.0:
-    resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
 
   node-addon-native-custom-loader@0.1.9:
     resolution: {integrity: sha512-Zh87aubSc1UF8CzZsRws1KtSwXiPDH0tbcg8V/2OA8Tcq9yGJRESFcEOC5NGLFama5IGfC3aJhubZbrj9Un2qA==}
@@ -639,16 +581,8 @@ packages:
   quansync@1.0.0:
     resolution: {integrity: sha512-5xZacEEufv3HSTPQuchrvV6soaiACMFnq1H8wkVioctoH3TRha9Sz66lOxRwPK/qZj7HPiSveih9yAyh98gvqA==}
 
-  require-from-string@2.0.2:
-    resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
-    engines: {node: '>=0.10.0'}
-
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
-
-  resolve.exports@2.0.4:
-    resolution: {integrity: sha512-zepuGL0ulf+nt+XaFrlKeaiTJeyPFPLLY62+ncq1/VTHBdt3HsfXOH60priZ6tnXQozdGcDeIF5JVTanvIcYWQ==}
-    engines: {node: '>=10'}
 
   rolldown-plugin-dts@0.27.14:
     resolution: {integrity: sha512-ZvuDDwoIpRK9RPxDXratCpklFO9QZZWndf/sd0VBFb4LEj0jj07UcHK9OCh7V4XiFz2Z89ziyBC2K6tJiDjrbw==}
@@ -672,11 +606,6 @@ packages:
   rolldown@1.2.14:
     resolution: {integrity: sha512-eTBTTqMR6uHKLgcUqpJP8ntzDI6V4LYA8negAMBEI7gkgVvOdrx6VsvS2Ym+83KhOPdLCHWJu0w7UQFJZhHKNw==}
     engines: {node: ^20.19.0 || >=22.12.0}
-    hasBin: true
-
-  semver@7.8.5:
-    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
-    engines: {node: '>=10'}
     hasBin: true
 
   tinyexec@1.3.1:
@@ -777,8 +706,6 @@ snapshots:
       '@alibaba-group/ocr-linux-x64': 1.12.7
       '@alibaba-group/ocr-win32-arm64': 1.12.7
       '@alibaba-group/ocr-win32-x64': 1.12.7
-
-  '@eslint-community/regexpp@4.12.2': {}
 
   '@oxc-project/types@0.154.0': {}
 
@@ -917,13 +844,6 @@ snapshots:
 
   '@yuku-toolchain/types@0.8.7': {}
 
-  ajv@8.20.0:
-    dependencies:
-      fast-deep-equal: 3.1.3
-      fast-uri: 3.1.8
-      json-schema-traverse: 1.0.0
-      require-from-string: 2.0.2
-
   ansis@4.4.0: {}
 
   argparse@2.0.1: {}
@@ -935,10 +855,6 @@ snapshots:
   dts-resolver@3.0.0: {}
 
   empathic@2.1.0: {}
-
-  fast-deep-equal@3.1.3: {}
-
-  fast-uri@3.1.8: {}
 
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
@@ -955,8 +871,6 @@ snapshots:
   js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
-
-  json-schema-traverse@1.0.0: {}
 
   node-addon-native-custom-loader@0.1.9: {}
 
@@ -1025,11 +939,7 @@ snapshots:
 
   quansync@1.0.0: {}
 
-  require-from-string@2.0.2: {}
-
   resolve-pkg-maps@1.0.0: {}
-
-  resolve.exports@2.0.4: {}
 
   rolldown-plugin-dts@0.27.14(rolldown@1.2.14)(typescript@6.0.3):
     dependencies:
@@ -1065,8 +975,6 @@ snapshots:
       '@rolldown/binding-openharmony-arm64': 1.2.14
       '@rolldown/binding-win32-arm64-msvc': 1.2.14
       '@rolldown/binding-win32-x64-msvc': 1.2.14
-
-  semver@7.8.5: {}
 
   tinyexec@1.3.1: {}
 
