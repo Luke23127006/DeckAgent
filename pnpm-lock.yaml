@@ -54,11 +54,47 @@ importers:
         specifier: workspace:~
         version: link:../../vendor/cordis
 
+  apps/local-web:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../packages/agent/runtime
+      '@deckagent/browser-runtime':
+        specifier: workspace:*
+        version: link:../../packages/client/runtime
+      '@deckagent/file-tools':
+        specifier: workspace:*
+        version: link:../../packages/tools/filesystem
+      '@deckagent/host-api':
+        specifier: workspace:*
+        version: link:../../packages/host/api
+      '@deckagent/model-providers':
+        specifier: workspace:*
+        version: link:../../packages/llm/providers
+      '@deckagent/session-persistence':
+        specifier: workspace:*
+        version: link:../../packages/session/persistence
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../vendor/cordis
+
   packages/agent/runtime:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+
+  packages/client/runtime:
+    dependencies:
+      '@deckagent/host-api':
+        specifier: workspace:*
+        version: link:../../host/api
+
+  packages/host/api:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../agent/runtime
 
   packages/llm/providers:
     dependencies:
@@ -77,6 +113,12 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+
+  packages/tools/filesystem:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../agent/runtime
 
   vendor/cordis:
     dependencies:

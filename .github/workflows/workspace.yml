@@ -91,6 +91,21 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:chat-setup
 
+      - name: File Tools, Host API and browser connection (TASK-003, local fixtures)
+        id: tools_browser
+        timeout-minutes: 2
+        run: pnpm test:tools-browser
+
+      - name: Optional dotenv startup and credential preflight (local fixtures)
+        id: env_startup
+        timeout-minutes: 2
+        run: pnpm test:env-startup
+
+      - name: Real browser Agent and filesystem smoke (Chrome headless, local fixtures)
+        id: browser
+        timeout-minutes: 2
+        run: pnpm test:browser-smoke
+
       - name: Record verification evidence
         if: always()
         env:
@@ -107,6 +122,9 @@ jobs:
           CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
           BOOT_RESULT: ${{ steps.boot.outcome }}
           UX_RESULT: ${{ steps.ux.outcome }}
+          TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
+          BROWSER_RESULT: ${{ steps.browser.outcome }}
+          ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -123,9 +141,14 @@ jobs:
           - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
           - Boot/unload: $env:BOOT_RESULT
           - UX regression: $env:UX_RESULT
+          - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
+          - Real browser reload / Agent / allowed and denied file writes: $env:BROWSER_RESULT
+          - Dotenv startup / environment precedence / credential preflight: $env:ENV_STARTUP_RESULT
           - Run: $env:RUN_URL
 
-          Record a successful push run on the merged dev SHA in PROGRESS.md to close the
-          corresponding integration gate. PR runs verify the proposed merge; they do not
-          close an integration gate on dev.
+          Record this run URL and tested SHA in PROGRESS.md. A successful push run on
+          dev supplies automated evidence; also verify every criterion of the gate.
+          Gate 002 additionally requires a real-model request and history readback
+          after Host restart on the accepted baseline (manual evidence; no cloud keys
+          are required by this workflow). PR runs verify the proposed merge only.
           "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8
