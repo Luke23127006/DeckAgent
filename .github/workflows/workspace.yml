@@ -1,4 +1,4 @@
-name: Foundation CI
+name: Workspace CI
 
 on:
   pull_request:
@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  foundation:
-    name: Gate 001 (Windows)
+  workspace:
+    name: Workspace Verification (Windows)
     runs-on: windows-2022
     timeout-minutes: 15
     defaults:
@@ -53,10 +53,10 @@ jobs:
         id: build
         run: pnpm build
 
-      - name: Foundation integration smoke tests
+      - name: Cordis smoke tests
         id: smoke
         timeout-minutes: 2
-        run: pnpm test:foundation
+        run: pnpm test:cordis-smoke
 
       - name: DeckAgent runtime tests (TASK-002-A)
         id: runtime
@@ -68,10 +68,10 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:model-providers
 
-      - name: Boot and unload foundation CLI
+      - name: Boot and unload Cordis smoke CLI
         id: boot
         timeout-minutes: 2
-        run: pnpm start:foundation
+        run: pnpm start:cordis-smoke
 
       - name: Durable Session and process restart checks (TASK-002-C, local HTTP only)
         id: sessions
@@ -104,7 +104,7 @@ jobs:
           UX_RESULT: ${{ steps.ux.outcome }}
         run: |
           @"
-          ## Foundation verification
+          ## Workspace verification
           - Tested SHA: $env:TESTED_SHA
           - Event: $env:RUN_EVENT
           - Environment: windows-2022, Node 22.19.0; pnpm from package.json
@@ -119,6 +119,7 @@ jobs:
           - UX regression: $env:UX_RESULT
           - Run: $env:RUN_URL
 
-          For Gate 001 on dev, record a successful push run on the merged dev SHA in PROGRESS.md.
-          PR runs verify the proposed merge; they do not close the integration gate on dev.
+          Record a successful push run on the merged dev SHA in PROGRESS.md to close the
+          corresponding integration gate. PR runs verify the proposed merge; they do not
+          close an integration gate on dev.
           "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8
