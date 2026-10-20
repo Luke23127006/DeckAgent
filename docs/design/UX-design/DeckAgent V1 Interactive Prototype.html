@@ -1,0 +1,2174 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeckAgent V1 · Prototype tương tác</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+:root{--ink:#1F1F1D;--mut:#5A5A54;--mut2:#44443F;--line:#C9C9C4;--line2:#D5D5CF;--bg:#F3F3F1;--panel:#fff;--soft:#FAFAF8;--rail:#EDEDE9;--sel:#D9D9D3;--chip:#E8E8E4;--bad:#8A1C1C;--pend:#FFF1CC;--pendInk:#7A4300}
+html,body{height:100%;margin:0}
+body{font:14px/1.4 'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#root{height:100%;filter:grayscale(1)}
+.app{display:flex;height:100%;min-width:860px}
+/* rail */
+.rail{width:236px;flex:none;background:var(--rail);border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.wm{font:600 17px 'IBM Plex Mono',monospace;letter-spacing:.02em;padding:2px 2px 4px}
+.btn{font:600 12.5px 'IBM Plex Sans',sans-serif;border:1.5px solid var(--ink);background:#fff;border-radius:6px;padding:6px 12px;color:var(--ink)}
+.btn:hover:not(:disabled){background:var(--chip)}
+.btn.sm{padding:3px 9px;font-size:11.5px}
+.btn.pr{background:var(--ink);color:#fff}
+.btn.pr:hover:not(:disabled){background:#000}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn.dis{border-color:#A9A9A2;border-style:dashed;color:#6B6B66;background:#ECECE8}
+.rl{font:600 10.5px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.ri{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border:1px solid var(--line2);border-radius:6px;background:#F8F8F5;text-align:left;width:100%;font-size:13px}
+.ri small{font-size:11px;color:var(--mut);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ri.on{background:var(--sel);border-color:#8F8F88}
+.ri:hover{background:#fff}
+.ri.on:hover{background:var(--sel)}
+.rail .empty{border:1.5px dashed #A9A9A2;border-radius:6px;padding:10px;font-size:12px;color:var(--mut2);text-align:center}
+.tg{font:600 10px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:#E3E3DE;color:#2F2F2B;white-space:nowrap;display:inline-block}
+.tg.pd{background:var(--pend);color:var(--pendInk);border:1px dashed #B86E00}
+.tg.o{background:#fff;border:1px solid #A9A9A2}
+.banner{border:1.5px solid var(--ink);border-radius:8px;background:#fff;padding:8px 10px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start}
+.banner .x{margin-left:auto;border:0;background:transparent;padding:2px 4px;line-height:1}
+.banner.bad{border-color:var(--bad)}
+/* center */
+.ctr{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--line)}
+.tb{height:52px;flex:none;border-bottom:1px solid var(--line);padding:0 20px;display:flex;align-items:center;gap:10px;font-weight:600}
+.tb .sub{font-weight:400;font-size:12px;color:var(--mut)}
+.cv{flex:1;min-height:0;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.empty-chat{margin:auto;max-width:420px;text-align:center;border:1.5px dashed #A9A9A2;border-radius:8px;padding:24px;color:var(--mut2);display:flex;flex-direction:column;gap:8px}
+.empty-chat b{font-size:16px;color:var(--ink)}
+.m-u{align-self:flex-end;max-width:84%;background:#DADAD4;border-radius:12px;padding:8px 12px;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.m-u .fl{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.m-s{align-self:flex-start;max-width:94%;background:#F0F0EC;border:1px solid var(--line2);border-radius:12px;padding:9px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:6px;word-break:break-word}
+.m-s p{margin:0}
+.m-s.old{background:#F7F7F4;color:var(--mut);border-style:dashed}
+.lb{font:600 10.5px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.ol li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ol b{font-weight:600}
+.mk2{background:var(--pend);border:1px dashed #B86E00;color:var(--pendInk);padding:0 5px;border-radius:3px;font-size:11.5px}
+.mk3{background:#fff;border:1.5px solid var(--ink);padding:0 5px;border-radius:3px;font-size:11.5px;font-weight:600}
+.m-n{align-self:flex-start;max-width:94%;border:1.5px solid #8F8F88;border-radius:8px;background:#fff;padding:8px 12px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.m-n.bad{border-color:var(--bad)}
+.m-n h4{margin:0;font-size:13px}
+.m-n p{margin:0}
+.m-n .acts{display:flex;gap:8px;flex-wrap:wrap}
+.m-i{align-self:center;font:400 12px 'IBM Plex Mono',monospace;color:var(--mut2);text-align:center}
+.status{font:500 12px 'IBM Plex Mono',monospace;color:var(--ink);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink);animation:pulse 1.2s infinite}
+.dot.w{background:transparent;border:1.5px solid var(--ink);animation:none}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dot,.spin{animation:none}}
+/* dock + composer */
+.dock{flex:none;padding:0 20px 14px;display:flex;flex-direction:column;gap:8px;position:relative}
+.qcard{border:1.5px solid #6B6B66;border-radius:14px;background:#F7F7F4;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.qcard .qt{font-weight:600;font-size:13px}
+.qrow{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;background:#fff;padding:7px 10px;font:500 13px 'IBM Plex Sans',sans-serif}
+.qrow:hover{background:var(--chip)}
+.qrow .qn{display:inline-flex;width:20px;height:20px;border-radius:10px;border:1px solid #6B6B66;align-items:center;justify-content:center;font-size:11px;flex:none}
+.qhint{font-size:11.5px;color:var(--mut2)}
+.hint{font-size:12px;color:var(--mut2)}
+.err{border:1.5px solid var(--bad);border-radius:8px;background:#fff;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:#1F1F1D}
+.err b{color:var(--bad)}
+.err .x{margin-left:auto;border:0;background:transparent;padding:2px 4px}
+.cmp{border:1.5px solid #8F8F88;border-radius:18px;background:#fff;padding:10px 14px;display:flex;flex-direction:column;gap:8px;position:relative}
+.cmp:focus-within{border-color:var(--ink)}
+.cmp textarea{border:0;outline:0;resize:none;width:100%;min-height:44px;max-height:180px;font-size:13.5px;background:transparent;padding:0}
+.cmp.over{border-color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.fc{display:flex;align-items:center;gap:6px;border:1px solid #8F8F88;border-radius:8px;background:#fff;padding:3px 4px 3px 8px;font-size:12px;max-width:230px}
+.fc .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;background:transparent;border:0;padding:0;text-align:left}
+.fc .ty{font:600 9.5px 'IBM Plex Mono',monospace;color:var(--mut)}
+.fc .fx{border:0;background:transparent;padding:2px 4px;line-height:1}
+.fc.bad{border-color:var(--bad);background:#FBF3F3}
+.fc.sent{padding:3px 8px}
+.spin{width:14px;height:14px;border:2px solid #D5D5CF;border-top-color:var(--ink);border-radius:50%;animation:rot .8s linear infinite;flex:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+.cbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plus{width:30px;height:30px;border-radius:15px;border:1.5px solid #6B6B66;background:#fff;font:500 18px/1 'IBM Plex Sans',sans-serif;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.plus:hover{background:var(--chip)}
+.mpick{border-radius:8px;padding:4px 8px;font-size:12px;display:flex;gap:6px;align-items:center;background:#F3F3F1;border:1px solid var(--line);max-width:260px}
+.mpick .mid{font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mpick.warn{border-color:var(--bad);background:#fff}
+.snd{width:30px;height:30px;border-radius:15px;background:var(--ink);color:#fff;border:0;font-size:15px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.snd.off{background:#D5D5CF;color:#6B6B66}
+.snd.stop{font-size:11px}
+.pop{position:absolute;z-index:20;background:#fff;border:1.5px solid var(--ink);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.pop.plusp{left:8px;bottom:calc(100% + 8px);padding:4px;min-width:220px}
+.pop .it{display:flex;gap:8px;align-items:center;width:100%;border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:6px;font-size:13px}
+.pop .it:hover{background:var(--chip)}
+.menu{right:0;bottom:calc(100% + 8px);width:293px;overflow:visible}
+.tabs{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chip{font:500 11.5px 'IBM Plex Sans',sans-serif;padding:4px 8px;border-radius:6px;white-space:nowrap;border:1px solid transparent;color:var(--mut2);background:transparent}
+.chip.on{background:#E3E3DE;border-color:#A9A9A2;color:var(--ink);font-weight:600}
+.tabs .ib{width:26px;height:26px;border:1px solid #A9A9A2;border-radius:6px;background:transparent;padding:0;display:inline-flex;align-items:center;justify-content:center;font:500 15px/1 'IBM Plex Sans',sans-serif}
+.mls{padding:6px;display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto}
+.mi{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font:500 12px 'IBM Plex Mono',monospace;border:0;background:transparent;width:100%;text-align:left;position:relative}
+.mi:hover{background:var(--chip)}
+.mi.on{background:var(--sel)}
+.mi .eff{font:500 11.5px 'IBM Plex Sans',sans-serif;display:inline-flex;gap:4px;align-items:center;border:0;background:transparent;padding:2px 4px;border-radius:4px}
+.mn{padding:8px 12px;font-size:12px;color:var(--mut2)}
+.menu .bn{display:flex;gap:8px;align-items:flex-start;margin:6px 10px 0;padding:6px 8px;border:1px solid #C9C9C4;border-radius:6px;font-size:11.5px;background:#fff}
+.effm{position:absolute;right:0;top:100%;z-index:25;width:200px;background:#fff;border:1.5px solid var(--ink);border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:4px;font:500 12px 'IBM Plex Sans',sans-serif}
+.effm div{padding:6px 8px;border-radius:6px;cursor:pointer}
+.effm div:hover{background:var(--chip)}
+.effm .h{cursor:default;font:600 10px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mut2)}
+/* deck */
+.dk{width:400px;flex:none;background:#F1F1EE;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.dk .hd{display:flex;justify-content:space-between;align-items:center}
+.sl{background:#fff;border:1px solid #6B6B66;aspect-ratio:16/9;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:12px;min-height:0;overflow:hidden}
+.sl h3{margin:0;font-size:15px}
+.sl ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px}
+.sl .ph{border:1px dashed #6B6B66;padding:2px 6px;color:var(--mut);font-size:11px;align-self:flex-start}
+.sl.todo{border-style:dashed;background:transparent;color:var(--mut)}
+.sl.bld{border-style:dashed;color:var(--mut2)}
+.th{display:flex;flex-direction:column;gap:3px;width:62px;font-size:11px;color:var(--mut2);border:0;background:transparent;padding:0;text-align:left}
+.th .sl{padding:5px;gap:3px;aspect-ratio:16/9}
+.bar{height:6px;background:#D0D0CA;border-radius:2px}
+.th.sel .sl{outline:3px solid #1D4ED8;outline-offset:1px}
+.thr{display:flex;flex-wrap:wrap;gap:8px}
+.dkn{border:1px solid #C9C9C4;border-radius:6px;background:#fff;padding:8px 10px;font-size:12px}
+.confirmed{border:1px solid var(--line2);border-radius:8px;background:#fff;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px}
+/* settings */
+.set{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff}
+.set .sh{height:52px;flex:none;border-bottom:1px solid var(--line);padding:0 18px;display:flex;align-items:center;gap:12px;background:var(--chip);font-weight:600}
+.set .sb{flex:1;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;max-width:980px}
+.sec{border:1.5px solid var(--ink);border-radius:8px;background:#fff;display:flex;flex-direction:column}
+.sec>.h{padding:9px 14px;border-bottom:1px solid var(--line);background:var(--chip);display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+.sec>.b{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.cfg{border:1px solid #8F8F88;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--soft)}
+.cfg .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--mut2)}
+.mchip{display:inline-flex;gap:6px;align-items:center;border:1px solid #6B6B66;border-radius:4px;padding:2px 4px 2px 8px;font:500 12px 'IBM Plex Mono',monospace;background:#F6F6F3}
+.mchip button{border:0;background:transparent;padding:0 3px;line-height:1}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.fld label{font-weight:600}
+.fld input,.fld select{border:1px solid #6B6B66;border-radius:5px;padding:6px 8px;background:#fff;font-size:13px;width:100%}
+.fld input:disabled{background:#ECECE8;color:#6B6B66}
+.fld.bad input,.fld.bad select{border-color:var(--bad)}
+.fld .msg{color:var(--bad);font-size:12px}
+.fld .note{color:var(--mut2);font-size:11.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cb{display:flex;gap:8px;align-items:center;font:500 12px 'IBM Plex Mono',monospace;padding:4px 0;border-bottom:1px solid #E1E1DC}
+.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ok{border:1.5px solid var(--ink);border-radius:6px;background:#fff;padding:6px 10px;font-size:12.5px}
+.dlgbk{position:fixed;inset:0;background:rgba(31,31,29,.35);z-index:60;display:flex;align-items:center;justify-content:center}
+.dlg{width:min(460px,92vw);background:#fff;border:1.5px solid var(--ink);border-radius:12px;box-shadow:0 10px 36px rgba(0,0,0,.3);padding:18px;display:flex;flex-direction:column;gap:12px}
+.dlg h2{margin:0;font-size:16px}
+.dlg p{margin:0;font-size:13px}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:70;background:var(--ink);color:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;max-width:80vw}
+/* sim panel */
+.simb{position:fixed;right:14px;bottom:14px;z-index:50;font:600 12px 'IBM Plex Sans',sans-serif;border:1.5px dashed var(--ink);background:#fff;border-radius:20px;padding:7px 14px}
+.sim{position:fixed;right:0;top:0;bottom:0;width:372px;z-index:55;background:#fff;border-left:2px solid var(--ink);display:flex;flex-direction:column;font-size:12px;box-shadow:-6px 0 24px rgba(0,0,0,.15);filter:grayscale(1)}
+.sim .sh2{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--pend);color:var(--pendInk);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.sim .sb2{overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:12px}
+.sim h3{margin:0 0 4px;font:600 10.5px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.sim .g{display:flex;flex-wrap:wrap;gap:5px}
+.sim .btn{font-size:11px;padding:3px 8px}
+.sim select{width:100%;border:1px solid #6B6B66;border-radius:5px;padding:5px 6px;font-size:12px;background:#fff}
+.sim label.k{display:flex;gap:6px;align-items:center}
+.insp{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11.5px}
+.insp b{font-family:'IBM Plex Mono',monospace}
+.log{font:400 11px/1.35 'IBM Plex Mono',monospace;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:5px;padding:6px;background:var(--soft)}
+.log div{padding:1px 0}
+.sim .op{color:var(--pendInk)}
+</style>
+</head>
+<body>
+<div id="root"><div class="app" id="app">
+<aside class="rail" id="rail" aria-label="Chat"></aside>
+<main class="ctr" id="ctr"></main>
+<div class="split" id="split" role="separator" aria-orientation="vertical" aria-label="Đổi độ rộng giữa chat và deck canvas" tabindex="0" title="Kéo để đổi độ rộng. Nhấp đúp để về mặc định." hidden></div>
+<section class="dk" id="dk" aria-label="Deck canvas" hidden></section>
+<section class="set" id="set" aria-label="Cài đặt Provider" hidden></section>
+</div></div>
+<div id="sim"></div>
+<div id="dlg"></div>
+<div id="toast" class="toast" hidden role="status"></div>
+<div id="live" class="sr" role="status" aria-live="polite"></div>
+<input type="file" id="finput" multiple hidden accept=".txt,.md,.pdf,.docx,.png,.jpg,.jpeg,.pptx,.zip,.xlsx">
+<script>
+'use strict';
+/* =====================================================================
+   DeckAgent V1 · Prototype tương tác (mô phỏng UI, không chạy Agent Runtime)
+   Nguồn: canvas "DeckAgent V1 UX Foundation" (Claude Design) + inventory,
+   annotation và bảng case trong docs/design/UX-design.
+   Mã trạng thái (R/C/D/M/H, UX02-T) chỉ hiện trong bảng mô phỏng, không hiện trong UI.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let _id = 0;
+const nid = p => p + (++_id);
+const ALLOWED = ['txt', 'md', 'pdf', 'docx', 'png', 'jpg', 'jpeg', 'pptx'];
+const BUILTINS = ['OpenAI', 'Anthropic', 'Google Gemini', 'DeepSeek'];
+const RESERVED_ID = '[provider ID của built-in]'; // giá trị thật chờ BR-005 V-6
+const EFFORTS = ['Thấp', 'Vừa', 'Cao'];          // tên mức: chỗ giữ chỗ
+const TM = { speed: 1 };
+const SPEEDS = { slow: 1.8, normal: 1, fast: 0.01 };
+const SVG = {
+  clip: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+  gear: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+  x: '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>',
+  retry: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A1C1C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+  up: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
+  warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A1C1C" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 22 20.5H2z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.4" r=".6" fill="#8A1C1C"/></svg>',
+  file: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>'
+};
+
+/* ---------------- state ---------------- */
+let S = null;
+const cur = () => S.chats.find(c => c.id === S.cur);
+const chatById = id => S.chats.find(c => c.id === id);
+const provById = id => S.providers.find(p => p.id === id);
+
+function bulletsFor(i) { return ['Ý chính ' + (i + 1) + '.1 của slide', 'Ý chính ' + (i + 1) + '.2 của slide', 'Ý chính ' + (i + 1) + '.3 của slide']; }
+function mkSlides(titles) { return titles.map((t, i) => ({ id: nid('s'), title: t, bullets: bulletsFor(i), ver: 1, state: 'done', note: '' })); }
+function mkChat(o) {
+  return Object.assign({
+    id: nid('c'), title: 'Chat mới', label: '', clock: 0, empty: true, unreadable: false,
+    messages: [], draft: '', files: [], sel: null, effort: 'Vừa', removedModel: null,
+    outline: { state: 'none', versions: [] }, deck: { slides: [], sel: null }, kept: null,
+    last: 'none', pendingQ: null, usedCfg: null
+  }, o || {});
+}
+function outlineVer(n, titles, opts) {
+  opts = opts || {};
+  const items = titles.map((t, i) => ({ n: i + 1, text: t, tag: (opts.tags || {})[i] || '' }));
+  return { n, items, notes: opts.notes || [], empty: !!opts.empty, gaps: !!opts.gaps };
+}
+const OUTLINE_STD = ['Trang bìa: Đánh giá doanh số Q3', 'Kết quả chính: doanh thu và tăng trưởng', 'Phân tích theo khu vực', 'Chi phí: các khoản chính', 'Bước tiếp theo'];
+
+function seedProviders() {
+  return [
+    { id: 'cfgA', name: 'Work Anthropic', kind: 'builtin', brand: 'Anthropic', pid: '[provider ID chờ chốt]', hasKey: true, base: null, proto: null, models: ['[model ID A]', '[model ID B]'] },
+    { id: 'cfgB', name: 'Personal OpenAI', kind: 'builtin', brand: 'OpenAI', pid: '[provider ID chờ chốt]', hasKey: true, base: null, proto: null, models: ['[model ID C]'] },
+    { id: 'cfgC', name: 'Office gateway', kind: 'custom', brand: null, pid: 'office-gateway', hasKey: false, base: 'https://gateway.example/v1', proto: '[API protocol chờ quyết định]', models: ['[model ID D]'] }
+  ];
+}
+function seedHistory() {
+  const c1 = mkChat({ id: 'c_q3', title: 'Đánh giá doanh số Q3', label: 'Hôm nay 14:20', clock: 40, empty: false });
+  c1.sel = { cfg: 'cfgA', m: '[model ID A]' };
+  c1.deck.slides = mkSlides(['Trang bìa', 'Kết quả chính', 'Khu vực', 'Chi phí', 'Bước tiếp theo', 'Phụ lục']);
+  c1.deck.sel = 0;
+  c1.outline = { state: 'confirmed', versions: [outlineVer(1, ['Trang bìa', 'Kết quả chính', 'Khu vực', 'Chi phí', 'Bước tiếp theo', 'Phụ lục'])] };
+  c1.messages = [
+    { id: nid('m'), t: 'user', text: 'Làm deck từ báo cáo này cho hội đồng. Ngắn gọn.', files: [{ name: 'bao-cao-q3.pdf', ty: 'PDF' }] },
+    { id: nid('m'), t: 'outline-ok', ver: c1.outline.versions[0] },
+    { id: nid('m'), t: 'sys', label: 'Hoàn tất', lines: ['Bản nháp đã sẵn sàng.', 'Slide 1: Trang bìa. Slide 2: Kết quả chính. Slide 3: Khu vực. Slide 4: Chi phí. Slide 5: Bước tiếp theo. Slide 6: Phụ lục.', 'Giả định: đối tượng là hội đồng.'] }
+  ];
+  c1.last = 'completed';
+  const c2 = mkChat({ id: 'c_lv', title: 'Dàn ý bảo vệ luận văn', label: '12 thg 10 17:05', clock: 30, empty: false });
+  c2.sel = { cfg: 'cfgB', m: '[model ID C]' };
+  c2.deck.slides = mkSlides(['Mở đầu', 'Cơ sở lý thuyết', 'Phương pháp', 'Kết quả', 'Kết luận']);
+  c2.deck.sel = 0;
+  c2.outline = { state: 'confirmed', versions: [outlineVer(1, ['Mở đầu', 'Cơ sở lý thuyết', 'Phương pháp', 'Kết quả', 'Kết luận'])] };
+  c2.messages = [{ id: nid('m'), t: 'user', text: 'Làm dàn ý bảo vệ luận văn 5 slide.', files: [] }, { id: nid('m'), t: 'outline-ok', ver: c2.outline.versions[0] }, { id: nid('m'), t: 'sys', label: 'Hoàn tất', lines: ['Bản nháp đã sẵn sàng.'] }];
+  c2.last = 'completed';
+  const c3 = mkChat({ id: 'c_hn', title: 'Hướng dẫn hội nhập', label: '11 thg 10 09:40', clock: 20, empty: false });
+  c3.sel = { cfg: 'cfgA', m: '[model ID B]' };
+  const v3 = outlineVer(1, ['Chào mừng', 'Quy trình ngày đầu', 'Công cụ cần biết', 'Liên hệ hỗ trợ']);
+  c3.outline = { state: 'proposal', versions: [v3] };
+  c3.messages = [{ id: nid('m'), t: 'user', text: 'Làm deck hướng dẫn hội nhập cho nhân viên mới.', files: [] }, { id: nid('m'), t: 'outline', n: 1, cur: true, ver: v3 }];
+  c3.pendingQ = outlineQ();
+  c3.last = 'outline';
+  const c4 = mkChat({ id: 'c_mk', title: 'Kế hoạch marketing 2027', label: '9 thg 10 21:12', clock: 10, empty: false, unreadable: true });
+  return [c1, c2, c3, c4];
+}
+function outlineQ() {
+  return { kind: 'outline', title: 'Bạn muốn làm gì với outline này?', options: [{ id: 'confirm', label: 'Xác nhận outline và tạo slide' }, { id: 'cancel', label: 'Hủy outline' }], free: 'Hoặc gõ thay đổi bạn muốn ở khung bên dưới.' };
+}
+function freshSet() {
+  return { form: { prov: '', name: '', key: '', pid: '', base: '', proto: '[API protocol chờ quyết định]', errors: {}, m: newM(), edit: null }, msgs: {}, flash: '', provOpen: false, wiz: null, confirmRestore: null };
+}
+function seed(preset) {
+  if (S && S.req) { S.req.timers.forEach(clearTimeout); }
+  stopTick();
+  const keepSim = S ? S.sim : null;
+  S = {
+    providers: seedProviders(), chats: [], cur: null, req: null, selHistory: [{ cfg: 'cfgA', m: '[model ID A]' }],
+    ui: { menu: false, plus: false, eff: false, settings: false, sim: S ? S.ui.sim : false, deckW: S ? S.ui.deckW : null, menuTab: null, menuBn: true, discard: false, preview: null },
+    sim: keepSim || { next: 'auto', sticky: false, speed: 'normal', catalogFail: false, limit: 0, known: true, cause: true },
+    set: freshSet(), notes: { send: null, fileErr: [], nav: null, hint: '' }, log: [], clock: 100, lastNav: '', h: ''
+  };
+  const hist = seedHistory();
+  const fresh = mkChat({ id: 'c_new', sel: { cfg: 'cfgA', m: '[model ID A]' } });
+  S.chats = hist.concat([fresh]);
+  S.cur = fresh.id;
+  switch (preset) {
+    case 'm1-nocfg': S.providers = []; S.selHistory = []; fresh.sel = null; break;
+    case 'm1-nomodel': S.providers = [seedProviders()[0]]; S.providers[0].models = []; S.selHistory = []; fresh.sel = null; break;
+    case 'm2': fresh.sel = null; break;
+    case 'm4': fresh.sel = null; fresh.removedModel = '[model ID A]'; break;
+    case 'deck': S.chats = S.chats.filter(c => c.id !== 'c_new'); S.cur = 'c_q3'; break;
+    case 'outline': S.chats = S.chats.filter(c => c.id !== 'c_new'); S.cur = 'c_hn'; break;
+    case 'outline-empty': {
+      S.chats = S.chats.filter(c => c.id !== 'c_new'); S.cur = 'c_hn';
+      const c = chatById('c_hn'); const v = outlineVer(1, [], { empty: true });
+      c.outline.versions = [v]; c.messages[1] = { id: nid('m'), t: 'outline', n: 1, cur: true, ver: v }; c.pendingQ = null; break;
+    }
+    case 'h1': S.chats = [fresh]; break;
+    case 'h8': {
+      S.chats = S.chats.filter(c => c.id !== 'c_new'); S.cur = 'c_q3';
+      const c = chatById('c_q3'); c.last = 'incomplete';
+      c.deck.slides = mkSlides(['Trang bìa', 'Kết quả chính', 'Khu vực']).concat(['Chi phí', 'Bước tiếp theo', 'Phụ lục'].map((t, i) => ({ id: nid('s'), title: t, bullets: bulletsFor(i + 3), ver: 1, state: 'todo', note: '' })));
+      c.messages.push({ id: nid('m'), t: 'notice', kind: 'info', title: 'Yêu cầu trước chưa hoàn tất', lines: ['Phần đã hoàn tất vẫn được giữ; bạn có thể gửi yêu cầu mới.'] });
+      break;
+    }
+    default: break;
+  }
+  S.ui.menuTab = (S.providers[0] || {}).id || null;
+  ev('Nạp tình huống: ' + (preset || 'mặc định'));
+}
+function ev(txt, cid) { S.log.unshift({ txt, cid: cid || '' }); if (S.log.length > 80) S.log.pop(); }
+
+/* ---------------- model helpers ---------------- */
+function allModels() { return S.providers.flatMap(p => p.models.map(m => ({ cfg: p.id, m }))); }
+function modelExists(sel) { return !!sel && S.providers.some(p => p.id === sel.cfg && p.models.includes(sel.m)); }
+function modelState(ch) {
+  if (!allModels().length) return 'M1';
+  if (modelExists(ch.sel)) return 'M3';
+  return ch.removedModel ? 'M4' : 'M2';
+}
+function m1Variant() { return S.providers.length ? 'nomodel' : 'nocfg'; }
+function chooseModel(ch, cfg, m) {
+  ch.sel = { cfg, m }; ch.removedModel = null;
+  S.selHistory = S.selHistory.filter(x => !(x.cfg === cfg && x.m === m)).concat([{ cfg, m }]);
+  S.notes.send = null;
+  ev('Chọn model cho chat (chỉ chat này; request đang chạy giữ model cũ)', 'UX02-T050/T051');
+}
+function purgeModel(cfgId, m) {
+  const gone = x => x.cfg === cfgId && (m == null || x.m === m);
+  S.chats.forEach(c => { if (c.sel && gone(c.sel)) { c.removedModel = c.sel.m; c.sel = null; } });
+  S.selHistory = S.selHistory.filter(x => !gone(x));
+}
+function inheritModel() {
+  for (let i = S.selHistory.length - 1; i >= 0; i--) { if (modelExists(S.selHistory[i])) return Object.assign({}, S.selHistory[i]); }
+  return null;
+}
+function selLabel(sel) { return sel && modelExists(sel) ? sel.m : null; }
+function normName(s) { return String(s || '').trim().toLowerCase(); }
+
+/* ---------------- request-area helpers ---------------- */
+function extOf(n) { const m = /\.([^.]+)$/.exec(n || ''); return m ? m[1].toLowerCase() : ''; }
+function sendable(ch) {
+  const hasText = ch.draft.trim().length > 0;
+  if (!hasText && !ch.files.length) return 'empty';
+  if (ch.files.some(f => f.st === 'prep')) return 'prep';
+  if (ch.files.some(f => f.st === 'bad')) return 'bad';
+  if (ch.files.some(f => f.st === 'fail')) return 'fail';
+  if (S.sim.limit && ch.draft.length > S.sim.limit) return 'long';
+  return 'ok';
+}
+function annotationC(ch) {
+  const s = sendable(ch);
+  if (s === 'empty') return 'C1';
+  if (s === 'prep') return 'C3';
+  if (s === 'bad' || s === 'fail') return 'C4';
+  if (s === 'long') return 'C5';
+  return 'C2';
+}
+function addFile(ch, name, size, blobUrl, force) {
+  const ext = extOf(name);
+  const f = { id: nid('f'), name, ty: (ext || '?').toUpperCase(), st: 'prep', reason: '', url: blobUrl || null, img: ['png', 'jpg', 'jpeg'].includes(ext) };
+  ch.files.push(f);
+  const done = () => {
+    let bad = '';
+    if (!ALLOWED.includes(ext)) bad = 'Loại tệp không được chấp nhận.';
+    else if (/bao-ve|protect|password/i.test(name)) bad = 'Tệp được bảo vệ nên không đọc được.';
+    else if (/hong|corrupt|broken/i.test(name)) bad = 'Tệp bị hỏng hoặc không đọc được.';
+    if (bad) { f.st = 'bad'; f.reason = bad; S.notes.fileErr.push({ id: f.id, name, reason: bad }); ev('Tệp bị từ chối: ' + name, 'UX02-T025'); }
+    else if (/mang|network|offline-up/i.test(name)) { f.st = 'fail'; f.reason = 'Tải lên lỗi'; ev('Tải lên lỗi (có biểu tượng thử lại): ' + name, ''); }
+    else { f.st = 'ready'; ev('Tệp sẵn sàng: ' + name, 'UX02-T024'); }
+    render();
+  };
+  if (!ALLOWED.includes(ext)) { done(); } else { ev('Thêm tệp, đang chuẩn bị: ' + name, 'UX02-T023'); setTimeout(done, 1100 * TM.speed); }
+  render();
+}
+function takeFiles(ch) {
+  const out = ch.files.map(f => ({ name: f.name, ty: f.ty }));
+  ch.files = []; S.notes.fileErr = [];
+  return out;
+}
+</script>
+<script>
+'use strict';
+/* =====================  Bộ mô phỏng hệ thống (không phải Agent Runtime)  ===================== */
+let _tick = null;
+function startTick() { stopTick(); _tick = setInterval(updateStatus, 1000); }
+function stopTick() { if (_tick) { clearInterval(_tick); _tick = null; } }
+function fmtTime(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function updateStatus() { const el = $('#stat-tm'); if (el && S.req) el.textContent = fmtTime(Date.now() - S.req.t0); }
+function announce(t) { const l = $('#live'); if (l) { l.textContent = ''; setTimeout(() => { l.textContent = t; }, 30); } }
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, 3200); }
+
+function after(req, ms, fn) {
+  const t = setTimeout(() => { req.timers.delete(t); if (S.req === req) fn(); }, ms * TM.speed);
+  req.timers.add(t);
+}
+function newReq(ch, kind, label) {
+  S.req = { id: nid('r'), chatId: ch.id, kind, phase: 'running', prev: 'running', label, t0: Date.now(), timers: new Set(), snap: { cfg: ch.sel ? ch.sel.cfg : null, m: ch.sel ? ch.sel.m : null, eff: ch.effort }, changed: [], onAnswer: null };
+  ch.last = 'active'; ch.pendingQ = null; S.notes.nav = null; S.notes.hint = '';
+  startTick(); render();
+  return S.req;
+}
+function lastVer(ch) { const v = ch.outline.versions; return v[v.length - 1] || null; }
+function endReq(ch, last) {
+  if (S.req) { S.req.timers.forEach(clearTimeout); S.req.timers.clear(); }
+  S.req = null; stopTick(); ch.last = last;
+  if (ch.outline.state === 'proposal') { const v = lastVer(ch); ch.pendingQ = v && !v.empty ? outlineQ() : null; } else ch.pendingQ = null;
+  if (S.notes.nav && S.notes.nav.kind === 'warn') S.notes.nav = null;
+  render();
+}
+function say(ch, msg) { msg.id = nid('m'); ch.messages.push(msg); render(); return msg; }
+
+const SIMSETS = {
+  first: ['outline-gaps', 'outline-empty', 'clarify-topic', 'clarify-audience', 'partial-major', 'partial-minor', 'unusable-file', 'fail-key', 'fail-model', 'fail-limit', 'fail-other'],
+  build: ['build-fail-key', 'build-fail-model', 'build-fail-limit', 'build-fail-other', 'build-image-required', 'build-image-optional', 'build-clarify-image'],
+  follow: ['fu-clear', 'fu-unclear', 'fu-unclear-new', 'fu-vague-dir', 'fu-vague-none', 'fu-mismatch', 'fu-fail-key', 'fu-fail-limit', 'fu-fail-other', 'fu-image-required', 'fu-image-optional']
+};
+function takeSim(phase) {
+  const v = S.sim.next;
+  if (v !== 'auto' && SIMSETS[phase].includes(v)) { if (!S.sim.sticky) S.sim.next = 'auto'; return v; }
+  return 'auto';
+}
+
+/* ---------- hỏi làm rõ (R3) ---------- */
+function ask(req, ch, o) {
+  say(ch, { t: 'q', text: o.text });
+  req.prev = req.phase === 'waiting' ? req.prev : req.phase;
+  req.phase = 'waiting'; req.onAnswer = o.onAnswer;
+  ch.pendingQ = { kind: 'clarify', title: o.title || 'Chọn một đáp án', options: o.options || [], skip: !!o.skip, free: o.free || 'Hoặc gõ câu trả lời của bạn…' };
+  ev('R2 → R3 · hệ thống cần làm rõ; request vẫn active, không báo đang chạy', 'UX02-T002');
+  announce(o.text); render();
+}
+function answer(ch, a) {
+  const req = S.req;
+  if (!req || req.phase !== 'waiting' || req.chatId !== ch.id) return;
+  if (a.files && a.files.length) { /* tệp gửi kèm câu trả lời nằm trong tin nhắn */ }
+  say(ch, { t: 'user', text: a.skip ? 'Bỏ qua' : (a.label || a.text || ''), files: a.files || [] });
+  ch.pendingQ = null; req.phase = req.prev || 'running'; const cb = req.onAnswer; req.onAnswer = null;
+  ev('R3 → ' + (req.phase === 'building' ? 'R5' : 'R2') + ' · câu trả lời đi vào cùng request', 'UX02-T003');
+  render();
+  if (cb) cb(a);
+}
+
+/* ---------- đường vào từ composer ---------- */
+function classifyOutline(t) {
+  const s = (t || '').trim().toLowerCase();
+  if (!s) return 'ambiguous';
+  if (/^(xác nhận|ok\b|oke|đồng ý|confirm|tạo slide)/.test(s)) return 'confirm';
+  if (/^(hủy|huỷ|cancel|bỏ outline)/.test(s)) return 'cancel';
+  if (/(đề xuất trước|bản trước|outline trước)/.test(s)) return 'reuse';
+  if (/(thêm|bớt|bỏ|đổi|sửa|thay)/.test(s)) return 'revise';
+  return 'ambiguous';
+}
+function dispatch(ch, text, files) {
+  ch.empty = false; ch.clock = ++S.clock; ch.label = 'Bây giờ';
+  if (ch.title === 'Chat mới') ch.title = (text || (files[0] && files[0].name) || 'Deck mới').slice(0, 44);
+  say(ch, { t: 'user', text, files });
+  const st = ch.outline.state, slides = ch.deck.slides;
+  if (st === 'proposal') return routeOutline(ch, text);
+  if (st === 'confirmed' && slides.some(s => s.state === 'todo')) return continueBuild(ch, text);
+  if (slides.some(s => s.state === 'done')) return runFollow(newReq(ch, 'follow', 'Đang đọc yêu cầu…'), ch, text);
+  return runFirst(newReq(ch, 'first', 'Đang chuẩn bị outline…'), ch, text, files);
+}
+
+/* ---------- lần tạo đầu: outline ---------- */
+function runFirst(req, ch, text, files) {
+  ev('R1 → R2 · gửi request hợp lệ', 'UX02-T001');
+  const sc = takeSim('first');
+  const fname = files && files[0] ? files[0].name : 'bao-cao.pdf';
+  const go = o => { req.label = 'Đang chuẩn bị outline…'; render(); after(req, 1300, () => postOutline(req, ch, text, o || {})); };
+  const askTopic = round => ask(req, ch, {
+    text: round ? 'Mình cần biết chủ đề trước khi đề xuất outline.' : 'Mình cần biết chủ đề trước khi đề xuất outline. Deck này nói về điều gì?',
+    options: [{ id: 't1', label: 'Đánh giá doanh số quý 3' }, { id: 't2', label: 'Kế hoạch dự án mới' }], skip: true,
+    onAnswer: a => { if (a.skip) { ev('R3 → R3 · bỏ qua khi chưa biết chủ đề: không draft outline, hỏi lại', 'UX02-T074'); askTopic(round + 1); } else go({ topic: a.label || a.text }); }
+  });
+  switch (sc) {
+    case 'fail-key': case 'fail-model': case 'fail-limit': case 'fail-other':
+      after(req, 1100, () => failReq(req, ch, sc.slice(5), { phase: 'first' })); break;
+    case 'clarify-topic': after(req, 900, () => askTopic(0)); break;
+    case 'clarify-audience':
+      after(req, 900, () => ask(req, ch, {
+        text: 'Bạn muốn trình bày deck này cho ai? Bạn có thể trả lời bằng lời của mình.',
+        options: [{ id: 'a1', label: 'Hội đồng, lãnh đạo' }, { id: 'a2', label: 'Đồng nghiệp trong nhóm' }], skip: true,
+        onAnswer: a => { if (a.skip) { ev('R3 → R4 · bỏ qua câu hỏi, outline nêu giả định', 'UX02-T075'); go({ assume: 'Giả định: đối tượng là hội đồng (bạn đã bỏ qua câu hỏi này).' }); } else go({ assume: 'Đối tượng: ' + (a.label || a.text) + '.' }); }
+      })); break;
+    case 'partial-major':
+      after(req, 900, () => ask(req, ch, {
+        text: 'Mình chỉ đọc được trang 1–11 của ' + fname + '; trang 12–20 chưa được dùng. Bạn có thể gửi lại phần kết quả thử nghiệm hoặc đổi yêu cầu?',
+        options: [{ id: 'p1', label: 'Tiếp tục với phần đã đọc được' }],
+        onAnswer: () => go({ partial: fname })
+      })); break;
+    case 'partial-minor':
+      req.label = 'Đang đọc tài liệu…'; render();
+      after(req, 900, () => { ev('R2 · chỉ dùng được một phần material, ít ảnh hưởng: tiếp tục', 'UX02-T099'); say(ch, { t: 'sys', lines: ['Mình chỉ đọc được trang 1–11 của ' + fname + '; trang 12–20 chưa được dùng. Mình tiếp tục với phần đã đọc.'] }); go({ partial: fname }); }); break;
+    case 'unusable-file': go({ unusable: fname }); break;
+    case 'outline-gaps': go({ gaps: true }); break;
+    case 'outline-empty': go({ empty: true }); break;
+    default: go();
+  }
+}
+function postOutline(req, ch, text, o) {
+  const prev = ch.outline.versions;
+  const topic = o.topic || (ch.title === 'Chat mới' ? 'Deck mới' : ch.title);
+  let texts = o.items || (o.empty ? [] : ['Trang bìa: ' + topic, 'Kết quả chính: doanh thu và tăng trưởng', 'Phân tích theo khu vực', 'Chi phí: các khoản chính', 'Bước tiếp theo']);
+  const tags = {};
+  if (o.gaps && !o.items) { tags[1] = 'ph'; tags[2] = 'conflict'; }
+  const notes = [];
+  if (o.empty) notes.push('Outline này chưa có nội dung để xác nhận. Hãy yêu cầu sửa outline.');
+  else {
+    if (o.assume) notes.push(o.assume);
+    if (o.gaps) { notes.push('Thiếu dữ kiện: doanh thu Q3 (placeholder). Tài liệu không có con số này nên mình không bịa số.'); notes.push('Hai phần của tài liệu mâu thuẫn ở con số theo khu vực: văn bản ghi 18%, bảng ghi 21%. Mình không chọn bên nào và để điểm này mở. Bạn có thể xác nhận ngay cả khi điểm này còn mở: slide sẽ ghi nó là chưa giải quyết.'); }
+    if (o.partial) notes.push('Tệp ' + o.partial + ' chỉ được dùng một phần: trang 12–20 chưa được dùng.');
+    if (o.unusable) notes.push('Tệp ' + o.unusable + ' đã được nhận nhưng không dùng được vì nội dung không đọc được. Outline dựa trên phần còn lại; mình không nhận là đã đọc tệp này.');
+    if (o.note) notes.push(o.note);
+    if (!notes.length) notes.push('Giả định: 5 slide.');
+  }
+  const ver = { n: prev.length + 1, items: texts.map((t, i) => ({ n: i + 1, text: t, tag: tags[i] || (o.newIdx === i ? 'new' : '') })), notes, empty: !!o.empty, gaps: !!o.gaps };
+  ch.messages.forEach(m => { if (m.t === 'outline') m.cur = false; });
+  prev.push(ver); ch.outline.state = 'proposal';
+  say(ch, { t: 'outline', n: ver.n, cur: true, ver });
+  ev('R2 → ' + (ver.empty ? 'R4a' : 'R4') + ' · outline proposal đã về; request tạo outline kết thúc, chưa có slide', 'UX02-T005');
+  endReq(ch, 'outline');
+  announce(ver.empty ? notes[0] : 'Đây là outline đề xuất. Chưa có slide nào được tạo.');
+}
+function routeOutline(ch, text) {
+  const ver = lastVer(ch);
+  const intent = classifyOutline(text);
+  const req = newReq(ch, 'outline-action', 'Đang đọc chỉ dẫn…');
+  if (ver.empty && intent === 'confirm') {
+    after(req, 500, () => { say(ch, { t: 'sys', lines: ['Outline này chưa có nội dung để xác nhận. Hãy yêu cầu sửa outline.'] }); ev('R4a · typed confirm trên outline rỗng: không confirm, giải thích', 'UX02-T009'); endReq(ch, 'outline'); });
+    return;
+  }
+  handleIntent(req, ch, text, intent);
+}
+function handleIntent(req, ch, text, intent) {
+  switch (intent) {
+    case 'confirm': ev('R4 → R2 · confirm current outline = request mới tạo slide', 'UX02-T006'); req.kind = 'confirm'; req.label = 'Đang chuẩn bị slide…'; render(); after(req, 600, () => startBuild(req, ch)); break;
+    case 'cancel': ev('R4 → R2 → R6 · hủy outline', 'UX02-T008'); cancelOutline(req, ch); break;
+    case 'reuse': reviseOutline(req, ch, text, true); break;
+    case 'revise': ev('R4 → R2 · yêu cầu sửa outline', 'UX02-T007'); reviseOutline(req, ch, text, false); break;
+    default: after(req, 500, () => askIntent(req, ch));
+  }
+}
+function askIntent(req, ch) {
+  const opts = [{ id: 'confirm', label: 'Xác nhận outline hiện tại' }, { id: 'cancel', label: 'Hủy outline' }, { id: 'revise', label: 'Yêu cầu sửa' }];
+  if (ch.outline.versions.length > 1) opts.push({ id: 'reuse', label: 'Dùng lại đề xuất trước' });
+  ev('R4 → R3 · ý định chưa rõ: message thành request mới và hỏi một câu', 'UX02-T076');
+  ask(req, ch, {
+    text: 'Bạn muốn xác nhận outline hiện tại, hủy, yêu cầu sửa hay dùng lại đề xuất trước?', options: opts,
+    onAnswer: a => {
+      if (a.id === 'revise') { return ask(req, ch, { text: 'Bạn muốn sửa điều gì trong outline?', options: [], free: 'Gõ thay đổi bạn muốn…', onAnswer: b => reviseOutline(req, ch, b.text || b.label || '', false) }); }
+      const intent = a.id || classifyOutline(a.text);
+      if (intent === 'ambiguous') return askIntent(req, ch);
+      handleIntent(req, ch, a.text || '', intent);
+    }
+  });
+}
+function reviseOutline(req, ch, text, reuse) {
+  req.label = 'Đang cập nhật outline…'; render();
+  after(req, 1000, () => {
+    const prev = ch.outline.versions;
+    let base = (reuse ? prev[0] : lastVer(ch)).items.map(i => i.text), newIdx = -1, note = '';
+    if (reuse) note = 'Đây là đề xuất mới theo yêu cầu dùng lại đề xuất trước, không phải bản khôi phục chính xác. Các đề xuất cũ vẫn ở trong hội thoại.';
+    else if (/bớt|bỏ/i.test(text) && base.length > 1) base = base.slice(0, -1);
+    else if (/thêm/i.test(text)) { base = base.concat(['Slide bổ sung: ' + (text.replace(/^.*?thêm\s*/i, '').replace(/[.!]$/, '') || 'theo yêu cầu')]); newIdx = base.length - 1; }
+    else base = base.map((t, i) => i === 1 && !/đã chỉnh/.test(t) ? t + ' (đã chỉnh)' : t);
+    postOutline(req, ch, text, { items: base, newIdx, note, gaps: false });
+  });
+}
+function cancelOutline(req, ch) {
+  req.label = 'Đang hủy outline…'; render();
+  after(req, 400, () => {
+    ch.outline.state = 'cancelled';
+    ch.messages.forEach(m => { if (m.t === 'outline' && m.cur) { m.cur = false; m.cancelled = true; } });
+    say(ch, { t: 'sys', lines: ['Đã hủy outline. Chưa có slide nào được tạo.'] });
+    ev('R2 → R6 · outline bị hủy, không tạo slide, không tự draft lại', 'UX02-T008'); endReq(ch, 'completed');
+  });
+}
+
+/* ---------- tạo slide từ outline đã xác nhận ---------- */
+function startBuild(req, ch) {
+  const ver = lastVer(ch);
+  ch.outline.state = 'confirmed';
+  ch.messages.forEach(m => { if (m.t === 'outline' && m.cur) { m.cur = false; m.confirmed = true; } });
+  say(ch, { t: 'outline-ok', ver });
+  ch.deck.slides = ver.items.map((it, i) => ({ id: nid('s'), title: it.text.split(':')[0], bullets: bulletsFor(i), ver: 1, state: 'todo', note: it.tag === 'ph' || it.tag === 'conflict' ? it.tag : '' }));
+  ch.deck.sel = null; ch.pendingQ = null;
+  req.kind = 'build'; ev('R2 → R5 · bắt đầu tạo slide từ outline đã xác nhận', 'UX02-T010/T036');
+  runBuild(req, ch);
+}
+function continueBuild(ch, text) {
+  const req = newReq(ch, 'build', 'Đang tạo slide…');
+  ev('R1/R7/R8 → R2 → R5 · request mới tiếp tục từ outline đã xác nhận; không draft outline thứ hai', 'UX02-T042');
+  after(req, 500, () => { say(ch, { t: 'sys', lines: ['Mình tiếp tục từ outline đã xác nhận và các slide đã hoàn tất. Không có outline mới.'] }); runBuild(req, ch); });
+}
+function runBuild(req, ch) {
+  const sc = takeSim('build');
+  const slides = ch.deck.slides, total = slides.length;
+  const idxs = slides.map((s, i) => i).filter(i => slides[i].state !== 'done');
+  const failPos = Math.min(2, idxs.length - 1);
+  let p = 0, asked = false, skippedImg = null;
+  const step = () => {
+    if (p >= idxs.length) return finish();
+    const i = idxs[p], s = slides[i];
+    s.state = 'building'; req.phase = 'building'; req.label = 'Đang tạo slide ' + (i + 1) + '/' + total + '…'; render();
+    after(req, 1100, () => {
+      if (p === failPos) {
+        if (/^build-fail-/.test(sc)) { s.state = 'todo'; return failReq(req, ch, sc.slice(11), { phase: 'build', slide: i + 1 }); }
+        if (sc === 'build-image-required') { s.state = 'todo'; return failReq(req, ch, 'image', { phase: 'build', slide: i + 1 }); }
+        if (sc === 'build-image-optional') skippedImg = i + 1;
+        if (sc === 'build-clarify-image' && !asked) {
+          asked = true; s.state = 'todo';
+          return ask(req, ch, {
+            text: 'Slide ' + (i + 1) + ' cần một ảnh. Bạn muốn loại ảnh nào?',
+            options: [{ id: 'i1', label: 'Ảnh minh họa' }, { id: 'i2', label: 'Biểu đồ' }, { id: 'i3', label: 'Không dùng ảnh' }],
+            onAnswer: () => { ev('R3 → R5 · chọn loại ảnh, tiếp tục cùng request', 'UX02-T011'); step(); }
+          });
+        }
+      }
+      s.state = 'done'; if (ch.deck.sel == null) ch.deck.sel = i; p++;
+      step();
+    });
+  };
+  const finish = () => {
+    const lines = ['Bản nháp đã sẵn sàng.'].concat(slides.map((s, i) => 'Slide ' + (i + 1) + ': ' + s.title + '.'));
+    const v = lastVer(ch);
+    if (v && v.notes) v.notes.filter(n => /^(Giả định|Đối tượng)/.test(n)).forEach(n => lines.push(n));
+    slides.forEach((s, i) => { if (s.note === 'ph') lines.push('Placeholder: [Cần bổ sung số liệu kết quả] ở slide ' + (i + 1) + '.'); if (s.note === 'conflict') lines.push('Chưa giải quyết: số liệu theo khu vực (văn bản 18%, bảng 21%) ở slide ' + (i + 1) + ' được ghi là chưa giải quyết; mình không chọn bên nào.'); });
+    lines.push('Nội dung bổ sung ngoài tài liệu của bạn: mình không ghi nhận nội dung nào trong ví dụ này.');
+    lines.push('Chưa kiểm tra: mình không đối chiếu số liệu với nguồn gốc.');
+    if (skippedImg) lines.push('Ảnh minh họa dự kiến cho slide ' + skippedImg + ' không tạo được; các phần khác đã hoàn tất.');
+    say(ch, { t: 'sys', label: 'Hoàn tất', lines, pend: true });
+    ev('R5 → R6 · hoàn tất; dừng progress, hiện closing message', 'UX02-T012');
+    endReq(ch, 'completed'); announce('Bản nháp đã sẵn sàng.');
+  };
+  step();
+}
+
+/* ---------- follow-up trên deck có sẵn ---------- */
+function parseFollow(text, ch) {
+  const slides = ch.deck.slides, n = slides.length, t = text || '';
+  const addM = t.match(/thêm\s+(?:một\s+)?slide(?:\s+về)?\s+(.+?)(?:\s+sau\s+slide\s+(\d+))?\s*[.!]?$/i);
+  const tEdit = addM ? t.replace(addM[0], '') : t;
+  const nums = [...tEdit.matchAll(/slide\s*(\d+)/gi)].map(m => +m[1]);
+  const allNums = [...t.matchAll(/slide\s*(\d+)/gi)].map(m => +m[1]);
+  let bad = '';
+  const out = allNums.find(x => x < 1 || x > n);
+  if (out !== undefined) bad = 'Slide ' + out + ' không có trong deck: deck có ' + n + ' slide.';
+  [...t.matchAll(/slide\s*(\d+)\s*["“«]([^"”»]+)["”»]/gi)].forEach(m => {
+    const s = slides[+m[1] - 1];
+    if (!bad && s && normName(s.title) !== normName(m[2])) bad = 'Slide ' + m[1] + ' là “' + s.title + '”, không phải “' + m[2] + '”.';
+  });
+  const whole = /(mọi slide|toàn bộ|cả deck|cả bài)/i.test(t);
+  const shorten = /(rút gọn|ngắn lại|ngắn hơn)/i.test(t);
+  const quote = (t.match(/["“«]([^"”»]+)["”»]/) || [])[1] || '';
+  const vague = /(chưa ổn|không ổn|trông xấu|nhìn xấu|sửa đi\s*[.!]?$)/i.test(t);
+  const unclear = /(trang trọng|thân thiện|chuyên nghiệp hơn)/i.test(t) && !allNums.length && !whole;
+  const add = addM ? { title: addM[1].replace(/^./, c => c.toUpperCase()), after: addM[2] ? +addM[2] : null } : null;
+  const valid = [...new Set(nums.filter(x => x >= 1 && x <= n))];
+  let type = 'clear';
+  if (bad) type = 'mismatch';
+  else if (vague) type = allNums.length ? 'vague-dir' : 'vague-none';
+  else if (unclear) type = 'unclear';
+  else if (!whole && !valid.length && !add) type = 'vague-none';
+  const instr = quote || (t.match(/(trang trọng|thân thiện|chuyên nghiệp hơn)/i) || [])[0] || 'chỉ dẫn này';
+  return { type, bad, nums: valid, allNums, whole, shorten, add, instr, text: t, hasNew: !!add || /thêm\s+(một\s+)?slide|slide mới/i.test(t) };
+}
+function runFollow(req, ch, text) {
+  const sc = takeSim('follow');
+  if (ch.kept && /(rút lại|thay|bỏ)\s+chỉ dẫn/i.test(text)) {
+    return after(req, 600, () => { const old = ch.kept; ch.kept = null; say(ch, { t: 'sys', lines: ['Đã rút lại chỉ dẫn “' + old + '”. Chưa thay đổi hoặc tạo slide nào.'] }); ev('R2 → R6 · rút lại chỉ dẫn đã giữ', 'UX02-T090'); endReq(ch, 'completed'); });
+  }
+  const P = parseFollow(text, ch);
+  const map = { 'fu-clear': 'clear', 'fu-unclear': 'unclear', 'fu-unclear-new': 'unclear-new', 'fu-vague-dir': 'vague-dir', 'fu-vague-none': 'vague-none', 'fu-mismatch': 'mismatch' };
+  let type = map[sc] || P.type;
+  req.label = 'Đang đọc yêu cầu…'; render();
+  after(req, 800, () => {
+    switch (type) {
+      case 'mismatch': return noMatch(req, ch, P);
+      case 'unclear': case 'unclear-new': return askScope(req, ch, P, type === 'unclear-new' || P.hasNew);
+      case 'vague-dir': return askDirections(req, ch, P);
+      case 'vague-none': return askWhat(req, ch);
+      default: return applyChanges(req, ch, planFrom(ch, P, {}), P, sc);
+    }
+  });
+}
+function noMatch(req, ch, P) {
+  const n = ch.deck.slides.length;
+  const part = P.bad || ('Không tìm thấy slide ' + (n + 3) + '; deck hiện có ' + n + ' slide.');
+  say(ch, { t: 'notice', kind: 'na', title: 'Chưa đổi slide nào', lines: [part, 'Deck hiện có ' + n + ' slide. Yêu cầu đã gửi vẫn ở trong hội thoại; mình không sửa hay gửi lại nó.', 'Hãy gửi yêu cầu mới với tham chiếu slide đã sửa.'] });
+  ev('R5 → R6 · tham chiếu slide không khớp; deck giữ nguyên', 'UX02-T093'); endReq(ch, 'completed');
+}
+function askScope(req, ch, P, withNew) {
+  const opts = [{ id: 'all', label: 'Áp dụng cho mọi slide' }];
+  if (withNew) opts.push({ id: 'new', label: 'Chỉ áp dụng cho slide mới' });
+  opts.push({ id: 'keep', label: 'Giữ chỉ dẫn, chưa đổi slide nào' });
+  ev('R2 → R3 · phạm vi chưa rõ' + (withNew ? ' (có slide mới: 3 lựa chọn)' : ' (không có slide mới: 2 lựa chọn)'), withNew ? 'UX02-T086' : 'UX02-T085');
+  ask(req, ch, {
+    text: 'Mình không rõ “' + P.instr + '” áp dụng cho những slide nào. Mình chưa đổi slide nào. Bạn muốn làm gì?', options: opts,
+    onAnswer: a => {
+      if (a.id === 'keep') { ch.kept = P.instr; say(ch, { t: 'sys', lines: ['Mình đã giữ chỉ dẫn “' + P.instr + '”. Mình chưa đổi và chưa tạo slide nào.', 'Chỉ dẫn áp dụng cho các slide mình tạo sau này trong chat này. Bạn có thể thay hoặc rút lại nó trong yêu cầu sau.'] }); ev('R3 → R6 · giữ chỉ dẫn cho slide tạo sau, deck không đổi', 'UX02-T089'); return endReq(ch, 'completed'); }
+      if (a.id === 'all') { ev('R3 → R5 · áp dụng cho mọi slide', 'UX02-T087'); return applyChanges(req, ch, planFrom(ch, P, { all: true }), P, 'auto', { applyAll: true }); }
+      if (a.id === 'new') { ev('R3 → R5 · chỉ tạo slide mới', 'UX02-T088'); return applyChanges(req, ch, planFrom(ch, P, { onlyNew: true }), P, 'auto'); }
+      const P2 = parseFollow(a.text || '', ch);
+      if (P2.type === 'clear') return applyChanges(req, ch, planFrom(ch, P2, {}), P2, 'auto');
+      askScope(req, ch, P, withNew);
+    }
+  });
+}
+function askDirections(req, ch, P) {
+  const n = P.allNums[0];
+  ev('R2 → R3 · phản hồi chưa rõ, có hướng gợi ý', 'UX02-T092');
+  ask(req, ch, {
+    text: 'Mình chưa đổi gì. Bạn muốn mình theo hướng nào cho slide ' + n + '?', title: 'Chọn một hướng hoặc nói rõ thêm',
+    options: [{ id: 'd1', label: 'Rút gọn các ý' }, { id: 'd2', label: 'Làm chữ dễ đọc hơn' }, { id: 'd3', label: 'Đổi bố cục' }], free: 'Hoặc nói rõ thêm bằng lời của bạn…',
+    onAnswer: a => {
+      if (a.id) { const P2 = Object.assign({}, P, { nums: [n], shorten: a.id === 'd1', instr: a.label }); return applyChanges(req, ch, planFrom(ch, P2, {}), P2, 'auto'); }
+      const P3 = parseFollow(a.text || '', ch);
+      if (P3.type === 'clear') return applyChanges(req, ch, planFrom(ch, P3, {}), P3, 'auto');
+      askDirections(req, ch, P);
+    }
+  });
+}
+function askWhat(req, ch) {
+  ev('R2 → R3 · phản hồi chưa nói cần đổi gì, không có hướng gợi ý', 'UX02-T091');
+  ask(req, ch, {
+    text: 'Mình không rõ cần đổi gì. Bạn muốn mình đổi điều gì, ở slide nào?', options: [], free: 'Gõ điều bạn muốn đổi, ở slide nào…',
+    onAnswer: a => { const P2 = parseFollow(a.text || '', ch); if (P2.type === 'clear') return applyChanges(req, ch, planFrom(ch, P2, {}), P2, 'auto'); askWhat(req, ch); }
+  });
+}
+function planFrom(ch, P, o) {
+  const slides = ch.deck.slides;
+  let edit = [];
+  if (o.all || P.whole) edit = slides.map((s, i) => i);
+  else if (!o.onlyNew) edit = P.nums.map(x => x - 1);
+  let add = P.add || (o.onlyNew ? { title: 'Slide mới', after: null } : null);
+  return { edit, add, instr: P.instr, shorten: P.shorten };
+}
+function applyChanges(req, ch, plan, P, sc, o) {
+  o = o || {};
+  const slides = ch.deck.slides;
+  if (!plan.edit.length && !plan.add) return askWhat(req, ch);
+  const failMap = { 'fu-fail-key': 'key', 'fu-fail-limit': 'limit', 'fu-fail-other': 'other', 'fu-image-required': 'image' };
+  const failKind = failMap[sc] || null, imgOptional = sc === 'fu-image-optional';
+  const steps = plan.edit.map(i => ({ kind: 'edit', id: slides[i].id })).concat(plan.add ? [{ kind: 'add' }] : []);
+  const names = plan.edit.map(i => i + 1);
+  const whole = plan.edit.length === slides.length && slides.length > 1;
+  let said = [];
+  if (whole) said.push('đổi mọi slide (' + slides.length + ')'); else if (names.length) said.push('sửa slide ' + names.join(' và '));
+  if (plan.add) said.push('tạo một slide mới ' + (plan.add.after ? 'sau slide ' + plan.add.after : 'ở cuối deck'));
+  req.phase = 'building';
+  req.label = 'Đang ' + said.join(' và ') + '…';
+  say(ch, { t: 'sys', lines: ['Mình đang ' + said.join(' và ') + '.'] });
+  ev('R2 → R5 · follow-up đang đổi slide; không có outline; slide ngoài phạm vi giữ nguyên', 'UX02-T010/T043');
+  const failPos = steps.length >= 2 ? 1 : 0;
+  let p = 0, imgSkip = null;
+  const stepMs = whole ? 700 : 1100;
+  const run = () => {
+    if (p >= steps.length) return done();
+    if (failKind && p === failPos) return failReq(req, ch, failKind, { phase: 'follow', slide: failKind === 'image' ? (plan.add ? (plan.add.after ? plan.add.after + 1 : slides.length + 1) : (plan.edit[0] + 1)) : 0 });
+    after(req, stepMs, () => {
+      const st = steps[p];
+      if (st.kind === 'edit') {
+        const s = slides.find(x => x.id === st.id);
+        s.ver++; s.bullets = plan.shorten ? s.bullets.slice(0, 2) : s.bullets.map(b => b.replace(/ \(đã chỉnh\)$/, '') + ' (đã chỉnh)');
+        req.changed.push({ id: s.id, kind: 'edit' });
+      } else {
+        const ns = { id: nid('s'), title: plan.add.title, bullets: ['Ý chính 1 của slide mới', 'Ý chính 2 của slide mới', 'Ý chính 3 của slide mới'], ver: 1, state: 'done', note: ch.kept ? 'kept' : '' };
+        if (imgOptional) imgSkip = plan.add.title;
+        const at = plan.add.after ? Math.min(plan.add.after, slides.length) : slides.length;
+        slides.splice(at, 0, ns); req.changed.push({ id: ns.id, kind: 'add' });
+        if (ch.deck.sel != null && at <= ch.deck.sel) ch.deck.sel++;
+      }
+      p++; render(); run();
+    });
+  };
+  const done = () => {
+    const lines = [];
+    const numOf = id => slides.findIndex(x => x.id === id) + 1;
+    if (o.applyAll || whole) lines.push('Đã đổi mọi slide: áp dụng chỉ dẫn “' + plan.instr + '”.');
+    else req.changed.filter(c => c.kind === 'edit').forEach(c => { const s = slides.find(x => x.id === c.id); lines.push('Slide ' + numOf(c.id) + ' “' + s.title + '”: ' + (plan.shorten ? 'rút gọn các ý.' : 'đã chỉnh nội dung theo yêu cầu.')); });
+    req.changed.filter(c => c.kind === 'add').forEach(c => { const s = slides.find(x => x.id === c.id); lines.push('Slide ' + numOf(c.id) + ' “' + s.title + '” (slide mới' + (plan.add.after ? ', sau slide ' + plan.add.after : ', ở cuối deck') + '): thêm slide theo yêu cầu.' + (s.note === 'kept' ? ' Slide mới theo chỉ dẫn đã giữ “' + ch.kept + '”.' : '')); });
+    if (imgSkip) lines.push('Ảnh minh họa dự kiến cho slide “' + imgSkip + '” không tạo được; các phần khác đã hoàn tất.');
+    lines.push(o.applyAll || whole ? 'Mọi slide nằm trong phạm vi yêu cầu.' : 'Các slide ngoài phạm vi yêu cầu không đổi.');
+    say(ch, { t: 'sys', label: 'Đã xong', lines });
+    ev('R5 → R6 · follow-up hoàn tất; closing message nêu slide đổi/thêm', 'UX02-T044');
+    endReq(ch, 'completed'); announce(lines[0]);
+  };
+  run();
+}
+
+/* ---------- dừng và lỗi ---------- */
+function slidesDone(ch) { return ch.deck.slides.filter(s => s.state === 'done').length; }
+function stopReq() {
+  const req = S.req; if (!req) return;
+  const ch = chatById(req.chatId);
+  const wasWaiting = req.phase === 'waiting';
+  let lines = [];
+  if (req.kind === 'build') {
+    ch.deck.slides.forEach(s => { if (s.state === 'building') s.state = 'todo'; });
+    const d = slidesDone(ch);
+    if (!S.sim.known) lines = ['Đã dừng yêu cầu. Không xác định được số slide đã hoàn tất.', 'Các slide đã hoàn tất vẫn được giữ và có thể chưa nhất quán với nhau.'];
+    else if (d) lines = ['Đã dừng yêu cầu. ' + d + ' slide đã hoàn tất; những slide còn lại chưa xong.', 'Các slide đã hoàn tất có thể chưa nhất quán với nhau. Mình không đổi slide nào để chúng khớp nhau.'];
+    else lines = ['Đã dừng yêu cầu. Chưa có slide nào hoàn tất. Outline đã xác nhận được giữ.'];
+  } else if (req.kind === 'follow' && req.phase !== 'running' || (req.kind === 'follow' && req.changed.length)) {
+    const c = req.changed.length;
+    if (!S.sim.known) lines = ['Đã dừng thay đổi. Không xác định được số slide đã đổi.', 'Các slide đã hoàn tất vẫn được giữ; slide đang đổi dở vẫn giữ bản trước.'];
+    else if (c) lines = ['Đã dừng thay đổi. ' + c + ' slide đã đổi, gồm cả slide mới. Slide đang đổi dở vẫn giữ bản trước.', 'Các slide đã đổi có thể chưa nhất quán với nhau. Mình không đổi slide nào để chúng khớp nhau.'];
+    else lines = ['Đã dừng thay đổi. Chưa slide nào được đổi; mọi slide giữ bản hoàn tất trước yêu cầu.'];
+  } else lines = ['Đã dừng yêu cầu. Phản hồi bị gián đoạn; mình không tự tiếp tục.'];
+  if (wasWaiting) lines.push('Câu hỏi đang chờ không còn áp dụng.');
+  lines.push('Tin nhắn tiếp theo của bạn là một yêu cầu mới.');
+  say(ch, { t: 'notice', kind: 'stop', title: 'Phản hồi bị gián đoạn', lines });
+  ev('R2/R3/R5 → R7 · Stop; giữ sent request và phần đã hoàn tất', 'UX02-T013');
+  endReq(ch, 'stopped'); announce('Đã dừng yêu cầu.');
+}
+function failReq(req, ch, kind, o) {
+  o = o || {};
+  let head, link = false;
+  if (kind === 'key') { head = 'Provider từ chối API key đã lưu. Bạn có thể cập nhật key trong Cài đặt model.'; link = true; }
+  else if (kind === 'model') { head = 'Provider không cho phép dùng model đã chọn. Bạn có thể chọn model khác hoặc kiểm tra cấu hình trong Cài đặt model.'; link = true; }
+  else if (kind === 'limit') head = 'Tài khoản đã đạt giới hạn sử dụng do provider báo.';
+  else if (kind === 'image') head = 'Không tạo được ảnh cần cho slide ' + o.slide + '. Phần đã xong vẫn được giữ.';
+  else head = S.sim.cause ? 'Có lỗi khi lưu kết quả.' : 'Không xác định được nguyên nhân.';
+  const lines = [head];
+  if (o.phase === 'build') {
+    ch.deck.slides.forEach(s => { if (s.state === 'building') s.state = 'todo'; });
+    const d = slidesDone(ch);
+    if (!S.sim.known) lines.push('Không xác định được số slide đã hoàn tất; các slide hoàn tất vẫn được giữ.');
+    else lines.push(d ? d + ' slide đã hoàn tất; các slide còn lại chưa xong. Các slide đã hoàn tất có thể chưa nhất quán với nhau.' : 'Chưa có slide nào hoàn tất. Outline đã xác nhận được giữ.');
+  } else if (o.phase === 'follow') {
+    const c = req.changed.length;
+    if (!S.sim.known) lines.push('Không xác định được slide nào đã đổi; các slide hoàn tất vẫn được giữ.');
+    else lines.push(c ? c + ' slide đã đổi; các slide còn lại chưa đổi. Các slide đã đổi có thể chưa nhất quán với nhau.' : 'Chưa slide nào được đổi.');
+  }
+  lines.push('Mình không tự thử lại và không tự đổi model. Bạn có thể gửi yêu cầu mới.');
+  say(ch, { t: 'notice', kind: 'fail', title: 'Yêu cầu chưa hoàn tất', lines, link });
+  ev('→ R8 · không thể hoàn tất (' + kind + '); giữ cấu hình, model đã thêm và model đã chọn', kind === 'key' || kind === 'model' ? 'UX02-T016' : kind === 'limit' ? 'UX02-T017' : 'UX02-T014');
+  endReq(ch, 'failed'); announce('Yêu cầu chưa hoàn tất.');
+}
+
+/* ---------- gửi, dừng, chọn đáp án ---------- */
+function onSend() {
+  const ch = cur(), r = S.req;
+  if (r && r.chatId === ch.id) {
+    if (r.phase !== 'waiting' || sendable(ch) !== 'ok') return;
+    const text = ch.draft.trim(), files = takeFiles(ch);
+    ch.draft = ''; setTA('');
+    answer(ch, { text, files }); return;
+  }
+  if (r) return;
+  const sd = sendable(ch);
+  if (sd !== 'ok') return;
+  const ms = modelState(ch);
+  if (ms !== 'M3') { S.notes.send = { ms, variant: m1Variant() }; ev('Gửi bị chặn (' + ms + '): giữ chữ và tệp, không có gì vào hội thoại', ms === 'M1' ? 'UX02-T047' : ms === 'M2' ? 'UX02-T049' : 'UX02-T053'); render(); return; }
+  S.notes.send = null; S.ui.menu = false; S.ui.plus = false;
+  const text = ch.draft.trim(), files = takeFiles(ch);
+  ch.draft = ''; setTA('');
+  dispatch(ch, text, files);
+}
+function pickOption(id) {
+  const ch = cur(), q = ch.pendingQ; if (!q) return;
+  const o = q.options.find(x => x.id === id); if (!o) return;
+  if (q.kind === 'clarify') { answer(ch, { id: o.id, label: o.label }); return; }
+  if (q.kind === 'outline') {
+    if (S.req) return;
+    ch.clock = ++S.clock;
+    say(ch, { t: 'user', text: o.label, files: [] });
+    const req = newReq(ch, 'outline-action', 'Đang đọc chỉ dẫn…');
+    handleIntent(req, ch, o.label, o.id);
+  }
+}
+function skipQ() { const ch = cur(); if (ch.pendingQ && ch.pendingQ.skip) answer(ch, { skip: true }); }
+function staleOption() {
+  const ch = cur();
+  S.notes.hint = 'Lựa chọn này không còn áp dụng vì outline hiện tại đã thay đổi. Hãy chọn lựa chọn của outline hiện tại.';
+  ev('Chọn suggested option đã cũ: không thực thi, nói vì sao', 'UX02-T119'); render();
+}
+function blockNav() {
+  const waiting = S.req && S.req.phase === 'waiting';
+  S.notes.nav = { kind: 'warn', text: waiting ? 'Yêu cầu hiện tại đang chờ câu trả lời. Hãy trả lời hoặc dừng yêu cầu trước khi đổi chat.' : 'Yêu cầu hiện tại vẫn đang chạy. Hãy đợi hoàn tất hoặc dừng yêu cầu trước khi đổi chat.' };
+  S.h = 'H6'; ev('Đổi chat bị chặn ' + (waiting ? '(request đang chờ câu trả lời)' : '(request đang chạy)'), 'UX02-T067'); render();
+}
+function persistLeave(c) {
+  c.files = []; S.notes.fileErr = []; S.notes.send = null; S.notes.hint = ''; S.ui.menu = false; S.ui.plus = false; S.ui.eff = false; S.ui.preview = null;
+  if (c.empty && !c.draft.trim()) S.chats = S.chats.filter(x => x !== c);
+}
+function newChat() {
+  if (S.req) return blockNav();
+  const c = cur();
+  if (c.empty) { toast('Bạn đang ở chat mới.'); return; }
+  persistLeave(c);
+  const f = mkChat({ sel: inheritModel() }); S.chats.push(f); S.cur = f.id; S.notes.nav = null; S.h = 'H5';
+  ev('Tạo chat mới: hội thoại, vùng nhập, deck rỗng; model kế thừa lựa chọn gần nhất còn chọn được', 'UX02-T065/T117');
+  setTA(''); render(); focusTA();
+}
+function openChat(id) {
+  const c = cur(); if (id === c.id) return;
+  if (S.req) return blockNav();
+  const t = chatById(id); if (!t) return;
+  if (t.unreadable) { S.notes.nav = { kind: 'bad', text: 'Không mở được chat này: dữ liệu của chat không đọc được. Chat hiện tại vẫn được giữ.' }; S.h = 'H4'; ev('Mở chat lỗi: giữ chat hiện tại', 'UX02-T063'); render(); return; }
+  persistLeave(c); S.cur = id; S.notes.nav = null; S.h = 'H3';
+  ev('Mở chat cũ; chữ chưa gửi ở lại chat cũ, tệp chưa gửi bị bỏ khỏi vùng nhập', 'UX02-T062/T069');
+  setTA(t.draft); render();
+}
+function reloadUI() {
+  S.ui.menu = S.ui.plus = S.ui.eff = false; S.h = 'H7'; ev('Tải lại Local Web, DeckAgent vẫn chạy: khôi phục cùng chat và request', 'UX02-T070');
+  const r = S.req; render();
+  toast(r ? (r.phase === 'waiting' ? 'Đang chờ câu trả lời của bạn.' : 'Đang tiếp tục yêu cầu hiện tại…') : 'Đã tải lại. Hội thoại và deck được khôi phục như trước.');
+}
+function restartApp() {
+  const r = S.req; let had = false;
+  if (r) {
+    had = true; const ch = chatById(r.chatId); r.timers.forEach(clearTimeout); S.req = null; stopTick();
+    ch.deck.slides.forEach(s => { if (s.state === 'building') s.state = 'todo'; });
+    ch.messages.push({ id: nid('m'), t: 'notice', kind: 'info', title: 'Yêu cầu trước chưa hoàn tất', lines: ['DeckAgent đã dừng khi yêu cầu chưa xong. Phần đã hoàn tất vẫn được giữ; mình không tự tiếp tục. Bạn có thể gửi yêu cầu mới.'] });
+    ch.last = 'incomplete';
+    if (ch.outline.state === 'proposal') { const v = lastVer(ch); ch.pendingQ = v && !v.empty ? outlineQ() : null; } else ch.pendingQ = null;
+  }
+  S.chats.forEach(c => { c.draft = ''; c.files = []; });
+  S.notes = { send: null, fileErr: [], nav: null, hint: '' }; S.ui.menu = S.ui.plus = S.ui.eff = false; S.h = had ? 'H8' : '';
+  ev('Mở lại DeckAgent' + (had ? ' sau khi đã dừng giữa request' : '') + '. Chữ chưa gửi không được hứa giữ (BR-004).', 'UX02-T071');
+  setTA(''); render();
+}
+</script>
+<style>
+[hidden]{display:none!important}
+.mls.effopen{overflow:visible}
+.rail{gap:2px;padding:14px 10px}
+.rail .wm{padding:2px 8px 12px}
+.rnew{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;border-radius:8px;padding:8px 10px;font-size:14px;text-align:left}
+.rnew:hover{background:rgba(0,0,0,.06)}
+.rnew.dis{opacity:.5}
+.rico{width:20px;text-align:center;font-size:20px;line-height:1}
+.rrec{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:16px 10px 6px;font-size:12.5px;color:var(--mut);text-align:left;width:100%}
+.rrec svg{transition:transform .15s}
+.rrec[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.rlist{display:flex;flex-direction:column;gap:1px}
+.rit{display:block;width:100%;border:0;background:transparent;border-radius:8px;padding:8px 10px;font-size:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rit:hover{background:rgba(0,0,0,.06)}
+.rit.on{background:#D3D3CC;font-weight:500}
+.rit.off{opacity:.55}
+.rempty{font-size:12.5px;color:var(--mut2);padding:8px 10px}
+
+.menu .tabs{flex-wrap:nowrap}
+.tabscroll{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding-bottom:2px;overscroll-behavior-x:contain}
+.tabscroll .chip{flex:none}
+.tabfix{flex:none;display:flex;align-items:center;gap:6px;padding-left:6px;border-left:1px solid var(--line)}
+
+.psec{padding:12px 0;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:8px}
+.psec:first-child{padding-top:0}
+.psec:last-child{border-bottom:0}
+.pfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:#F6F6F3}
+.dd{display:flex;justify-content:space-between;align-items:center;width:100%;border:1.5px solid var(--ink);border-radius:5px;padding:7px 10px;background:#fff;font:600 12.5px 'IBM Plex Sans',sans-serif;text-align:left}
+.dd.open{border-radius:5px 5px 0 0}
+.ddl{position:absolute;z-index:30;left:0;right:0;top:100%;border:1.5px solid var(--ink);border-top:0;border-radius:0 0 6px 6px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);overflow:hidden}
+.ddg{padding:4px 10px;font:600 10px 'IBM Plex Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:var(--chip);color:var(--mut2)}
+.ddi{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:7px 10px;font-size:12.5px;text-align:left}
+.ddi:hover{background:var(--chip)}
+.ddi.on{background:var(--sel);font-weight:600}
+.ddi small{color:var(--mut2);font-size:11.5px;font-weight:400}
+.ddn{padding:6px 10px;font-size:11.5px;color:var(--mut2);border-top:1px solid #D5D5CF}
+.cus{border:1px dashed #6B6B66;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;background:#FAFAF8}
+.wiz{width:min(520px,94vw);max-height:92vh;display:flex;flex-direction:column;background:#fff;border:1.5px solid var(--ink);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.3);overflow:hidden}
+.wh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--chip)}
+.wh b{flex:1;font-size:14px}
+.wh .x{border:0;background:transparent;padding:4px;line-height:1}
+.wiz .two{grid-template-columns:1fr}
+.wb{padding:14px;display:flex;flex-direction:column;gap:9px;overflow:auto}
+.wf{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:#F6F6F3}
+.opt{border:1.5px solid #6B6B66;border-radius:5px;padding:8px 10px;background:#fff;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left}
+.opt:hover{background:var(--chip)}
+.opt.on{border-color:var(--ink);background:var(--chip);font-weight:600}
+.opt small{font-size:11.5px;font-weight:400;color:var(--mut2)}
+.nt{border:1px solid #C9C9C4;padding:6px 10px;border-radius:4px;font-size:12px;background:#fff}
+
+.dk{width:var(--dkw,400px)}
+.ctr{border-right:0}
+.split{width:9px;flex:none;cursor:col-resize;touch-action:none;position:relative;background:var(--line2);border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.split::after{content:"";position:absolute;left:3px;top:50%;width:3px;height:36px;margin-top:-18px;border-left:1px solid #8F8F88;border-right:1px solid #8F8F88}
+.split:hover,.split.on,.split:focus-visible{background:#C9C9C4}
+body.resizing{cursor:col-resize;user-select:none}
+body.resizing iframe{pointer-events:none}
+.thr{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:4px 3px 8px;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.thr .th{flex:none;scroll-snap-align:start}
+.set .sh{height:auto;padding:14px 18px;gap:10px;font-size:15px}
+.set .sb{max-width:none;padding:16px 18px;gap:14px}
+.set .sb>*{max-width:none}
+.set .df{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:#F6F6F3}
+.ps{display:flex;flex-direction:column;gap:8px}
+.ps+.ps{border-top:1px solid #D5D5CF;padding-top:14px}
+.ps .pt{margin:0;font-size:12px;color:#2F2F2B}
+.col{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:10px;align-items:center}
+html,body{overflow:hidden}
+.simb{right:auto;left:14px}
+#root.sim-open{margin-right:372px}
+#root.sim-open .rail{width:206px}
+#root.sim-open .dk{width:var(--dkw,330px)}
+.mi .pk{flex:1;border:0;background:transparent;text-align:left;font:inherit;padding:0;color:inherit}
+.mi .ew{position:relative;display:inline-flex}
+.rail .btn.dis{width:100%}
+.rail .btn{width:100%;text-align:left}
+.cfg .acts{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;gap:6px;align-items:center}
+.m-s .q{font-weight:600}
+.sim details summary{cursor:pointer;font-weight:600;padding:2px 0}
+.sim .tgl{display:flex;gap:6px;align-items:center;margin:3px 0}
+.sim input[type=number]{width:70px;border:1px solid #6B6B66;border-radius:4px;padding:2px 4px}
+.card-open{display:flex;flex-direction:column;gap:8px}
+</style>
+<script>
+'use strict';
+/* =====================  Render  ===================== */
+let _built = false;
+function ta() { return $('#ta'); }
+function setTA(v) { const t = ta(); if (t) { t.value = v || ''; autosize(); } }
+function focusTA() { const t = ta(); if (t) t.focus(); }
+function autosize() { const t = ta(); if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 180) + 'px'; }
+
+function render() {
+  if (!S) return;
+  const st = S.ui.settings;
+  $('#ctr').hidden = st; renderRail();
+  if (st) { $('#dk').hidden = true; renderSettings(); } else { $('#set').hidden = true; renderCtr(); renderDeck(); }
+  syncSplit(); renderSim(); renderDlg();
+}
+function renderLight() { renderChips(); renderNotes(); renderCbar(); renderQ(); renderSim(); }
+
+/* ---------- rail ---------- */
+function renderRail() {
+  const c = cur(), blocked = !!S.req, open = S.ui.recents !== false;
+  const others = S.chats.filter(x => x.id !== c.id && (!x.empty || x.draft.trim())).sort((a, b) => b.clock - a.clock);
+  let h = '<div class="wm">DeckAgent</div>';
+  h += '<button class="rnew' + (blocked ? ' dis' : '') + '" data-act="newchat" aria-disabled="' + blocked + '"><span class="rico" aria-hidden="true">+</span><span>Chat mới</span></button>';
+  if (blocked) h += '<div class="hint" style="padding:0 10px">Dùng lại được khi yêu cầu kết thúc.</div>';
+  if (S.notes.nav) h += '<div class="banner' + (S.notes.nav.kind === 'bad' ? ' bad' : '') + '" role="alert"><span>' + esc(S.notes.nav.text) + '</span><button class="x" data-act="dismissnav" aria-label="Đóng thông báo">' + SVG.x + '</button></div>';
+  h += '<button class="rrec" data-act="recents" aria-expanded="' + open + '"><span>Gần đây</span>' + SVG.up.replace('M6 15l6-6 6 6', 'M6 9l6 6 6-6') + '</button>';
+  if (open) {
+    const item = (x, on) => {
+      const name = x.empty && !x.draft.trim() ? 'Chat mới' : (x.empty ? 'Chat mới (có bản nháp)' : x.title);
+      return '<button class="rit' + (on ? ' on' : '') + (blocked && !on ? ' off' : '') + '" data-act="openchat" data-id="' + x.id + '" title="' + esc(name) + '"' + (on ? ' aria-current="true"' : '') + (blocked && !on ? ' aria-disabled="true"' : '') + '>' + esc(name) + '</button>';
+    };
+    h += '<div class="rlist">' + item(c, true) + others.map(x => item(x, false)).join('') + '</div>';
+    if (!others.length) h += '<div class="rempty"><b>Chưa có chat trước</b><br>Các chat bạn bắt đầu sẽ hiện ở đây sau khi bạn gửi yêu cầu đầu tiên.</div>';
+  }
+  $('#rail').innerHTML = h;
+}
+
+/* ---------- center ---------- */
+function buildCtr() {
+  $('#ctr').innerHTML = '<div class="tb" id="tb"></div><div class="cv" id="cv" role="log" aria-label="Hội thoại"></div>' +
+    '<div class="dock" id="dock"><div id="dnotes" class="col" style="gap:8px"></div><div id="qc"></div>' +
+    '<div class="cmp" id="cmp"><div class="chips" id="chips"></div><textarea id="ta" rows="2" aria-label="Yêu cầu" placeholder="Nhập hoặc dán yêu cầu của bạn…"></textarea><div class="cbar" id="cbar"></div></div><div class="hint" id="dhint"></div></div>';
+  ta().addEventListener('input', () => { cur().draft = ta().value; S.notes.send = null; autosize(); renderLight(); });
+  ta().addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); onSend(); } });
+  _built = true;
+}
+function renderCtr() {
+  if (!_built) buildCtr();
+  const ch = cur();
+  if (ta().value !== ch.draft) setTA(ch.draft);
+  $('#tb').innerHTML = '<span>' + esc(ch.empty ? 'Chat mới' : ch.title) + '</span>';
+  const cv = $('#cv');
+  const nearBottom = cv.scrollHeight - cv.scrollTop - cv.clientHeight < 80;
+  let h = '';
+  if (ch.empty && !ch.messages.length) h = '<div class="empty-chat"><b>Hãy mô tả deck bạn muốn</b><span>Dán ghi chú hoặc ý tưởng, hoặc đính kèm tài liệu, ảnh. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.</span></div>';
+  else {
+    ch.messages.forEach(m => { h += msgHTML(m, ch); });
+  }
+  const r = S.req && S.req.chatId === ch.id ? S.req : null;
+  if (r) {
+    if (r.phase === 'waiting') h += '<div class="status" role="status"><span class="dot w"></span><span>Đang chờ câu trả lời của bạn</span></div>';
+    else h += '<div class="status" role="status"><span class="dot"></span><span>' + esc(r.label) + ' · Đã chạy <span id="stat-tm" aria-hidden="true">' + fmtTime(Date.now() - r.t0) + '</span></span></div>';
+  }
+  cv.innerHTML = h;
+  if (nearBottom || r) cv.scrollTop = cv.scrollHeight;
+  renderChips(); renderNotes(); renderCbar(); renderQ();
+}
+function chipSent(f) { return '<span class="fc sent">' + SVG.file + '<span class="nm">' + esc(f.name) + '</span><span class="ty">' + esc(f.ty) + '</span></span>'; }
+function outlineItemHTML(it) {
+  let t = esc(it.text);
+  if (it.tag === 'ph') t += ' <span class="mk2">Placeholder: doanh thu Q3 không có trong tài liệu</span>';
+  if (it.tag === 'conflict') t += ' <span class="mk3">Chưa chốt: văn bản ghi 18%, bảng ghi 21%</span>';
+  if (it.tag === 'new') t += ' <span class="tg">Mới</span>';
+  return '<li><b>' + it.n + '</b><span>' + t + '</span></li>';
+}
+function msgHTML(m, ch) {
+  switch (m.t) {
+    case 'user': return '<div class="m-u">' + (m.text ? esc(m.text) : '') + (m.files && m.files.length ? '<div class="fl">' + m.files.map(chipSent).join('') + '</div>' : '') + '</div>';
+    case 'sys': return '<div class="m-s">' + (m.label ? '<span class="lb">' + esc(m.label) + '</span>' : '') + m.lines.map(l => '<p>' + esc(l) + '</p>').join('') + '' + '</div>';
+    case 'q': return '<div class="m-s"><p class="q">' + esc(m.text) + '</p></div>';
+    case 'outline': {
+      const v = m.ver;
+      const label = m.cancelled ? 'Đề xuất outline ' + m.n + ' · đã hủy' : m.confirmed ? 'Đề xuất outline ' + m.n + ' · đã xác nhận' : m.cur ? 'Đề xuất outline ' + m.n + ' · hiện tại' : 'Đề xuất outline ' + m.n + ' · cũ, không còn là hiện tại';
+      let h = '<div class="m-s' + (m.cur ? '' : ' old') + '"><span class="lb">' + esc(label) + '</span>';
+      if (v.items.length) h += '<ol class="ol">' + v.items.map(outlineItemHTML).join('') + '</ol>';
+      if (v.notes.length) h += '<div style="border-top:1px solid #D5D5CF;padding-top:6px;font-size:12.5px" class="col"><b>Ghi chú</b>' + v.notes.map(n => '<span>' + esc(n) + '</span>').join('') + '</div>';
+      if (m.cur && !v.empty) h += '<b style="font-size:12.5px">Chưa có slide nào được tạo cho đến khi bạn xác nhận.</b>';
+      return h + '</div>';
+    }
+    case 'outline-ok': {
+      const building = S.req && S.req.kind === 'build' && S.req.chatId === ch.id;
+      return '<div class="m-s"><span class="lb">Outline đã xác nhận</span><span style="font-size:12.5px">' + m.ver.items.map(i => i.n + ' ' + esc(i.text.split(':')[0])).join(' · ') + '</span><span class="hint">Chỉ đọc.' + (building ? ' Đang chuẩn bị slide từ outline này.' : '') + '</span></div>';
+    }
+    case 'notice': {
+      let h = '<div class="m-n' + (m.kind === 'fail' ? ' bad' : '') + '" role="note"><h4>' + esc(m.title) + '</h4>' + m.lines.map(l => '<p>' + esc(l) + '</p>').join('');
+      if (m.link) h += '<div class="acts"><button class="btn sm" data-act="opensettings">Mở Cài đặt model</button></div>';
+      return h + '</div>';
+    }
+  }
+  return '';
+}
+function renderChips() {
+  const ch = cur(); let h = '';
+  ch.files.forEach(f => {
+    if (f.st === 'prep') h += '<span class="fc"><span class="spin" aria-label="Đang chuẩn bị"></span><span class="nm">' + esc(f.name) + '</span><span class="ty">' + esc(f.ty) + '</span><button class="fx" data-act="rmfile" data-id="' + f.id + '" aria-label="Gỡ ' + esc(f.name) + '">' + SVG.x + '</button></span>';
+    else if (f.st === 'bad') h += '<span class="fc bad" title="' + esc(f.reason) + '">' + SVG.warn.replace('width="18" height="18"', 'width="14" height="14"') + '<span class="nm">' + esc(f.name) + '</span><span class="ty">' + esc(f.ty) + '</span><button class="fx" data-act="rmfile" data-id="' + f.id + '" aria-label="Gỡ ' + esc(f.name) + '">' + SVG.x + '</button></span>';
+    else if (f.st === 'fail') h += '<span class="fc bad"><button class="fx" data-act="retry" data-id="' + f.id + '" aria-label="Thử lại tải lên ' + esc(f.name) + '">' + SVG.retry + '</button><span class="nm">' + esc(f.name) + '</span><span class="ty">' + esc(f.ty) + '</span><button class="fx" data-act="rmfile" data-id="' + f.id + '" aria-label="Gỡ ' + esc(f.name) + '">' + SVG.x + '</button></span>';
+    else h += '<span class="fc">' + SVG.file + '<button class="nm" data-act="preview" data-id="' + f.id + '">' + esc(f.name) + '</button><span class="ty">' + esc(f.ty) + '</span><button class="fx" data-act="rmfile" data-id="' + f.id + '" aria-label="Gỡ ' + esc(f.name) + '">' + SVG.x + '</button></span>';
+  });
+  const pv = ch.files.find(f => f.id === S.ui.preview);
+  if (pv) h += '<div class="dkn" style="flex-basis:100%">' + (pv.img && pv.url ? '<img alt="' + esc(pv.name) + '" src="' + pv.url + '" style="max-width:160px;max-height:100px">' : 'Không có bản xem trước cho loại file này.') + ' <button class="btn sm ghost" data-act="preview" data-id="' + pv.id + '">Đóng</button></div>';
+  $('#chips').innerHTML = h; $('#chips').hidden = !h;
+}
+function renderNotes() {
+  const ch = cur(); let h = '';
+  const ms = modelState(ch), sn = S.notes.send;
+  if (ms === 'M4') h += '<div class="err" role="alert">' + SVG.warn + '<span>Model <b style="color:inherit;font-family:IBM Plex Mono,monospace">' + esc(ch.removedModel) + '</b> đã bị xóa khỏi danh sách đã thêm. Hãy chọn model khác cho chat này.' + (sn ? ' Chữ và tệp của bạn vẫn được giữ.' : '') + '</span><button class="btn sm" data-act="menu">Chọn model</button></div>';
+  if (sn && ms === 'M1') h += '<div class="err" role="alert">' + SVG.warn + '<span>' + (sn.variant === 'nocfg' ? 'Chưa có provider configuration. Hãy thiết lập provider và thêm model trong Cài đặt model.' : 'Provider configuration đã lưu nhưng chưa có added model. Hãy thêm model trong Cài đặt model.') + ' Chữ và tệp của bạn vẫn được giữ.</span><button class="btn sm" data-act="opensettings">Mở Cài đặt model</button></div>';
+  if (sn && ms === 'M2') h += '<div class="err" role="alert">' + SVG.warn + '<span>Đã có model khả dụng. Hãy chọn một model cho chat này trước khi gửi. Chữ và tệp của bạn vẫn được giữ.</span><button class="btn sm" data-act="menu">Chọn model</button></div>';
+  S.notes.fileErr.forEach(e => { h += '<div class="err" role="alert">' + SVG.warn + '<span><b>Không thể thêm ' + esc(e.name) + '</b><br>' + esc(e.reason) + '</span><button class="x" data-act="dismisserr" data-id="' + e.id + '" aria-label="Đóng">' + SVG.x + '</button></div>'; });
+  if (S.sim.limit && ch.draft.length > S.sim.limit) h += '<div class="err" role="alert">' + SVG.warn + '<span>Nội dung yêu cầu quá dài. Hãy rút ngắn nội dung rồi gửi lại.</span></div>';
+  if (S.notes.hint) h += '<div class="err" role="alert">' + SVG.warn + '<span>' + esc(S.notes.hint) + '</span><button class="x" data-act="dismisshint" aria-label="Đóng">' + SVG.x + '</button></div>';
+  $('#dnotes').innerHTML = h; $('#dnotes').hidden = !h;
+  const r = S.req && S.req.chatId === ch.id ? S.req : null;
+  $('#dhint').textContent = r ? (r.phase === 'waiting' ? 'Câu trả lời này sẽ tiếp tục yêu cầu hiện tại.' : 'Bạn có thể soạn yêu cầu tiếp theo. Hãy đợi yêu cầu hiện tại kết thúc trước khi gửi.') : '';
+  $('#cmp').classList.toggle('over', !!(S.sim.limit && ch.draft.length > S.sim.limit));
+}
+function renderQ() {
+  const ch = cur(), q = ch.pendingQ, r = S.req;
+  const el = $('#qc');
+  const show = q && ((q.kind === 'clarify' && r && r.chatId === ch.id && r.phase === 'waiting') || (q.kind === 'outline' && !r));
+  if (!show) { el.innerHTML = ''; return; }
+  let h = '<div class="qcard" role="group" aria-label="' + esc(q.title) + '"><div class="qt">' + esc(q.kind === 'outline' ? q.title : q.title) + '</div>';
+  q.options.forEach((o, i) => { h += '<button class="qrow" data-act="pick" data-id="' + o.id + '"><span class="qn">' + (i + 1) + '</span>' + esc(o.label) + '</button>'; });
+  if (q.skip) h += '<button class="qrow" data-act="skipq"><span class="qn">–</span>Bỏ qua câu hỏi này</button>';
+  h += '<span class="qhint">' + esc(q.free) + (q.kind === 'outline' ? ' Chọn là gửi ngay; chữ và tệp chưa gửi vẫn ở lại khung nhập.' : '') + '</span></div>';
+  el.innerHTML = h;
+}
+function renderCbar() {
+  const ch = cur(), r = S.req && S.req.chatId === ch.id ? S.req : null, ms = modelState(ch);
+  let h = '<div style="position:relative"><button class="plus" data-act="plus" aria-label="Đính kèm tệp hoặc ảnh" aria-expanded="' + S.ui.plus + '" style="' + (S.ui.plus ? 'background:#D9D9D3' : '') + '">+</button>';
+  if (S.ui.plus) h += '<div class="pop plusp" role="menu"><button class="it" role="menuitem" data-act="attach">' + SVG.clip + '<span>Đính kèm tệp hoặc ảnh</span></button></div>';
+  h += '</div><div class="pill" style="position:relative">';
+  const label = ms === 'M3' ? '<span class="mid">' + esc(ch.sel.m) + '</span>' : (ms === 'M1' ? '<span>Chưa có model</span>' : '<span>Chọn model</span>');
+  h += '<button class="mpick' + (ms === 'M4' ? ' warn' : '') + '" data-act="menu" aria-haspopup="dialog" aria-expanded="' + S.ui.menu + '" aria-label="Chọn model">' + label + SVG.up + '</button>';
+  if (S.ui.menu) h += menuHTML(ch);
+  if (r) {
+    h += '<button class="snd stop" data-act="stop" aria-label="Dừng">■</button>';
+    if (r.phase === 'waiting' && sendable(ch) === 'ok') h += '<button class="snd" data-act="send" aria-label="Gửi câu trả lời">↑</button>';
+  } else {
+    const ok = sendable(ch) === 'ok';
+    h += '<button class="snd' + (ok ? '' : ' off') + '" data-act="send" aria-label="Gửi" aria-disabled="' + (!ok) + '">↑</button>';
+  }
+  h += '</div>';
+  const oldT = $('.tabscroll'), tx = oldT ? oldT.scrollLeft : null;
+  $('#cbar').innerHTML = h;
+  const newT = $('.tabscroll');
+  if (newT) { if (tx != null) newT.scrollLeft = tx; if (S.ui.tabReveal) { S.ui.tabReveal = false; const on = $('.chip.on', newT); if (on) on.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } }
+}
+function menuHTML(ch) {
+  const ps = S.providers;
+  if (!ps.some(p => p.id === S.ui.menuTab)) S.ui.menuTab = ch.sel && provById(ch.sel.cfg) ? ch.sel.cfg : (ps[0] || {}).id;
+  let h = '<div class="pop menu" role="dialog" aria-label="Chọn model"><div class="tabs"><div class="tabscroll" tabindex="0" role="tablist" aria-label="Cấu hình provider, cuộn ngang để xem thêm">';
+  ps.forEach(p => { h += '<button class="chip' + (p.id === S.ui.menuTab ? ' on' : '') + '" role="tab" aria-selected="' + (p.id === S.ui.menuTab) + '" data-act="tab" data-id="' + p.id + '">' + esc(p.name) + '</button>'; });
+  h += '</div><div class="tabfix"><button class="ib" data-act="addcfg" aria-label="Thêm provider">+</button><button class="ib" data-act="opensettings" aria-label="Thiết lập model" style="border:0">' + SVG.gear + '</button></div></div>';
+  if (S.req && S.ui.menuBn) h += '<div class="bn"><span style="flex:1">Yêu cầu đang chạy: lựa chọn mới chỉ áp dụng cho yêu cầu kế tiếp, yêu cầu đang chạy giữ model của nó.</span><button style="border:0;background:transparent" data-act="menubn" aria-label="Đóng thông báo">' + SVG.x + '</button></div>';
+  if (!ps.length) h += '<div class="mn">Chưa có provider configuration. Bấm bánh răng để thiết lập provider và thêm model.</div>';
+  else {
+    const p = provById(S.ui.menuTab);
+    h += '<div class="mls' + (S.ui.eff ? ' effopen' : '') + '">';
+    if (!p.models.length) h += '<div class="mn">Cấu hình này chưa có model. Bấm + để thêm model.</div>';
+    p.models.forEach(m => {
+      const on = ch.sel && ch.sel.cfg === p.id && ch.sel.m === m;
+      h += '<div class="mi' + (on ? ' on' : '') + '"><button class="pk" data-act="pickmodel" data-cfg="' + p.id + '" data-m="' + esc(m) + '">' + (on ? '✓ ' : '') + esc(m) + '</button>';
+      if (on) {
+        h += '<span class="ew"><button class="eff" data-act="eff" aria-label="Chọn mức suy luận" aria-expanded="' + S.ui.eff + '">' + esc(ch.effort) + SVG.up + '</button>';
+        if (S.ui.eff) h += '<div class="effm" role="menu"><div class="h">Mức suy luận</div>' + EFFORTS.map(e => '<div role="menuitem" data-act="seteff" data-e="' + e + '">' + (e === ch.effort ? '✓ ' : '') + e + '</div>').join('') + '</div>';
+        h += '</span>';
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+
+/* ---------- deck canvas ---------- */
+function slideHTML(s, big) {
+  let ph = '';
+  if (s.note === 'ph') ph = '<span class="ph">[Cần bổ sung số liệu kết quả]</span>';
+  if (s.note === 'conflict') ph = '<span class="ph">Chưa giải quyết: văn bản ghi 18%, bảng ghi 21%</span>';
+  if (s.state === 'todo') return '<div class="sl todo"><h3>' + esc(s.title) + '</h3><span>Chưa tới.</span></div>';
+  if (s.state === 'building') return '<div class="sl bld"><h3>' + esc(s.title) + '</h3><span>Đang tạo…</span></div>';
+  return '<div class="sl"><h3>' + esc(s.title) + '</h3><ul>' + s.bullets.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul>' + ph + '</div>';
+}
+function renderDeck() {
+  const dk = $('#dk'), ch = cur(), slides = ch.deck.slides;
+  if (!slides.length) { dk.hidden = true; dk.innerHTML = ''; return; }
+  dk.hidden = false;
+  const done = slides.filter(s => s.state === 'done').length, r = S.req && S.req.chatId === ch.id ? S.req : null;
+  const sel = ch.deck.sel != null && slides[ch.deck.sel] ? ch.deck.sel : null;
+  let h = '<div class="hd"><b>Deck canvas</b><span class="hint">' + (done < slides.length ? 'Đã xong ' + done + '/' + slides.length + ' slide' : slides.length + ' slide') + '</span></div>';
+  if (!done) h += '<div class="dkn">' + (r ? 'Outline đã xác nhận. Đang làm việc: chưa có slide nào hoàn tất.' : 'Chưa có slide nào hoàn tất. Outline đã xác nhận được giữ.') + '</div>';
+  if (sel != null) {
+    h += slideHTML(slides[sel], true);
+    h += '<div style="display:flex;justify-content:space-between;align-items:center"><button class="btn sm" data-act="slide" data-d="-1" ' + (sel === 0 ? 'disabled' : '') + '>◀ Trước</button><span class="hint">Slide ' + (sel + 1) + '/' + slides.length + '</span><button class="btn sm" data-act="slide" data-d="1" ' + (sel === slides.length - 1 ? 'disabled' : '') + '>Sau ▶</button></div>';
+  }
+  h += '<div class="thr" tabindex="0" role="group" aria-label="Danh sách slide, cuộn ngang để xem thêm">' + slides.map((s, i) => '<button class="th' + (i === sel ? ' sel' : '') + '" data-act="thumb" data-i="' + i + '" aria-label="Slide ' + (i + 1) + ', ' + (s.state === 'done' ? 'xong' : s.state === 'building' ? 'đang tạo' : 'chưa tới') + '"><div class="sl' + (s.state === 'todo' ? ' todo' : s.state === 'building' ? ' bld' : '') + '"><div class="bar"></div><div class="bar" style="width:70%"></div></div><span>' + (i + 1) + ' · ' + (s.state === 'done' ? 'xong' : s.state === 'building' ? 'đang tạo' : 'chưa tới') + '</span></button>').join('') + '</div>';
+  if (!r && slides.some(s => s.state === 'todo') && ['stopped', 'failed', 'incomplete'].includes(ch.last)) h += '<div class="dkn">Chỉ hiện các slide đã hoàn tất. Các slide đã hoàn tất có thể chưa nhất quán với nhau.</div>';
+  const oldThr = $('.thr', dk), keepX = oldThr ? oldThr.scrollLeft : 0;
+  dk.innerHTML = h;
+  const thr = $('.thr', dk);
+  if (thr) {
+    thr.scrollLeft = keepX;
+    if (S.ui.reveal) { S.ui.reveal = false; const s = $('.th.sel', thr); if (s) s.scrollIntoView({ inline: 'nearest', block: 'nearest' }); }
+  }
+}
+</script>
+<script>
+'use strict';
+/* =====================  Cài đặt Provider (khung thay khung chat) + popup thêm provider  ===================== */
+function getPath(o, p) { return p.split('.').reduce((a, k) => (a == null ? a : a[k]), o); }
+function setPath(o, p, v) { const ks = p.split('.'); const last = ks.pop(); const t = ks.reduce((a, k) => a[k], o); t[last] = v; }
+function fld(id, label, val, o) {
+  o = o || {};
+  return '<div class="fld' + (o.err ? ' bad' : '') + '"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + (o.type || 'text') + '" value="' + esc(val) + '" data-bind="' + o.bind + '" autocomplete="off"' + (o.dis ? ' disabled' : '') + (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + (o.err ? ' aria-invalid="true"' : '') + '>' + (o.err ? '<span class="msg" role="alert">' + esc(o.err) + '</span>' : '') + (o.note ? '<span class="note">' + o.note + '</span>' : '') + '</div>';
+}
+function availableBuiltins() { return BUILTINS.filter(b => !S.providers.some(p => p.brand === b)); }
+function defaultProv() { const a = availableBuiltins(); return a.length ? 'b:' + a[0] : 'custom'; }
+function newM() { return { catalog: 'idle', picks: {}, manual: '', manualList: [] }; }
+function selCfg() { const v = S.set.form.prov; return v && v.startsWith('cfg:') ? provById(v.slice(4)) : null; }
+function initEdit(p) { const F = S.set.form; F.edit = { name: p.name, key: '', base: p.base || '' }; F.m = newM(); F.errors = {}; }
+function hasM6() {
+  const st = S.set;
+  if (Object.keys(st.form.errors).length) return true;
+  if (st.wiz && Object.keys(st.wiz.errors).length) return true;
+  if (Object.values(st.msgs).some(x => x && x.kind === 'err')) return true;
+  return [st.form.m, st.wiz && st.wiz.m].some(m => m && m.catalog === 'fail');
+}
+function mHasInput(m) { return !!(m && (m.manualList.length || m.manual || Object.values(m.picks).some(Boolean))); }
+function settingsDirty() {
+  const F = S.set.form, p = selCfg();
+  if (p) { const e = F.edit; return !!(e && (e.name !== p.name || e.key || (p.kind === 'custom' && e.base !== (p.base || '')))) || mHasInput(F.m); }
+  return !!(F.name || F.key || F.pid || F.base || mHasInput(F.m) || (F.prov && F.prov !== defaultProv()));
+}
+function openSettings(mode) {
+  S.ui.settings = true; S.ui.menu = S.ui.plus = S.ui.eff = false; S.notes.send = null;
+  ev('Mở Cài đặt model: hội thoại, chữ và tệp chưa gửi giữ nguyên', 'UX02-T055');
+  S.set.scrollAdd = mode === 'add';
+  render();
+}
+function leaveSettings(force) {
+  if (!force && settingsDirty()) { S.ui.dlg = { kind: 'discard' }; return renderDlg(); }
+  S.ui.dlg = null; S.ui.settings = false; S.set = freshSet();
+  ev('Rời Cài đặt: bỏ thay đổi chưa lưu, giữ thay đổi đã lưu; hội thoại, bản nháp và tệp giữ nguyên', 'UX02-T059/T105');
+  render(); focusTA();
+}
+
+/* ---------- soạn model (dùng chung: trang, popup, cấu hình đã lưu) ---------- */
+function getM(ctx) { return ctx === 'form' ? S.set.form.m : S.set.wiz.m; }
+function mBase(ctx) {
+  if (ctx === 'form') { const c = selCfg(); return c ? { existing: c.models, def: false } : { existing: [], def: S.set.form.prov.startsWith('b:') }; }
+  const p = provById(S.set.wiz.cfg); return { existing: p ? p.models : [], def: !!p && p.kind === 'builtin' };
+}
+function mBind(ctx) { return ctx === 'form' ? 'form.m.manual' : 'wiz.m.manual'; }
+function modelsEditorHTML(ctx) {
+  const M = getM(ctx), b = mBase(ctx);
+  let left = '<div class="col" style="gap:8px"><div class="frow"><button class="btn sm" data-act="mcatalog" data-ctx="' + ctx + '">Lấy model catalog</button></div>';
+  left += '<div class="col" style="gap:0;border:1px solid #C9C9C4;border-radius:5px;background:#fff;padding:2px 8px">';
+  if (b.def) left += '<div class="cb" style="padding-left:21px"><span>[default model ID]</span><span class="tg" style="margin-left:auto">Mặc định</span></div>';
+  if (M.catalog === 'ok') {
+    const items = ['[model ID catalog 1]', '[model ID catalog 2]', '[model ID catalog 3]'].filter(x => !b.existing.includes(x));
+    left += items.length ? items.map((x, i) => '<div class="cb"><input type="checkbox" id="cat-' + ctx + i + '" data-mpick="' + esc(x) + '" data-ctx="' + ctx + '"' + (M.picks[x] ? ' checked' : '') + '><label for="cat-' + ctx + i + '">' + esc(x) + '</label></div>').join('') : '<div class="hint" style="padding:6px 0">Mọi model trong catalog đã được thêm.</div>';
+  } else if (M.catalog === 'loading') left += '<div class="hint" style="padding:6px 0" role="status">Đang lấy danh sách model…</div>';
+  else if (!b.def) left += '<div class="hint" style="padding:6px 0">Bấm “Lấy model catalog” để chọn model, hoặc nhập model ID ở bên cạnh.</div>';
+  left += '</div>';
+  if (M.catalog === 'fail') left += '<div class="err" role="alert">' + SVG.warn + '<span>Không lấy được danh sách model. Bạn vẫn có thể nhập model ID.</span></div>';
+  left += '</div>';
+  let right = '<div class="col" style="gap:6px"><div class="fld"><label for="m-' + ctx + '">Thêm bằng model ID</label><div class="frow"><input id="m-' + ctx + '" style="flex:1;min-width:150px;border:1px solid #6B6B66;border-radius:5px;padding:6px 8px" type="text" value="' + esc(M.manual) + '" data-bind="' + mBind(ctx) + '" placeholder="Model ID, kể cả ID không có trong catalog" autocomplete="off"><button class="btn sm" data-act="maddmanual" data-ctx="' + ctx + '">Thêm</button></div></div>';
+  if (M.manualList.length) right += '<div class="frow"><span class="hint">Sẽ thêm:</span>' + M.manualList.map(x => '<span class="mchip">' + esc(x) + '</span>').join('') + '</div>';
+  right += '</div>';
+  return '<div class="two">' + left + right + '</div>';
+}
+function collectModels(M, existing) { return Object.keys(M.picks).filter(k => M.picks[k]).concat(M.manualList).filter((x, i, a) => !existing.includes(x) && a.indexOf(x) === i); }
+function doCatalog(ctx) {
+  const M = getM(ctx); M.catalog = 'loading'; render();
+  setTimeout(() => {
+    const m2 = ctx === 'form' ? S.set.form.m : (S.set.wiz && S.set.wiz.m);
+    if (!m2) return;
+    m2.catalog = S.sim.catalogFail ? 'fail' : 'ok';
+    ev(S.sim.catalogFail ? 'Lấy catalog thất bại; vẫn nhập tay được' : 'Lấy catalog thành công (không đổi model nào)', S.sim.catalogFail ? 'UX02-T057' : '');
+    render();
+  }, 700 * TM.speed);
+}
+function provLabel(v) { if (v && v.startsWith('cfg:')) { const c = provById(v.slice(4)); return c ? c.name : 'Chọn provider…'; } return v === 'custom' ? 'Mô tả một custom model API' : v.startsWith('b:') ? v.slice(2) : 'Chọn provider…'; }
+function provListHTML(sel, ctx) {
+  const avail = availableBuiltins(), taken = BUILTINS.filter(b => !avail.includes(b));
+  let h = '<div class="ddl" role="listbox" aria-label="Provider">';
+  if (S.providers.length) {
+    h += '<div class="ddg">Cấu hình đã lưu</div>';
+    S.providers.forEach(c => { const on = sel === 'cfg:' + c.id; h += '<button class="ddi' + (on ? ' on' : '') + '" role="option" aria-selected="' + on + '" data-act="provpick" data-v="cfg:' + c.id + '" data-ctx="' + ctx + '"><span>' + (on ? '✓ ' : '') + esc(c.name) + '</span></button>'; });
+  }
+  h += '<div class="ddg">Thêm built-in provider</div>';
+  avail.forEach(b => { h += '<button class="ddi' + (sel === 'b:' + b ? ' on' : '') + '" role="option" aria-selected="' + (sel === 'b:' + b) + '" data-act="provpick" data-v="b:' + esc(b) + '" data-ctx="' + ctx + '"><span>' + (sel === 'b:' + b ? '✓ ' : '') + esc(b) + '</span></button>'; });
+  if (taken.length) h += '<div class="ddn">' + esc(taken.join(' và ')) + ' không hiện ở đây: mỗi provider đã có một cấu hình được lưu (chọn ở nhóm trên).</div>';
+  h += '<div class="ddg">Hoặc</div><button class="ddi' + (sel === 'custom' ? ' on' : '') + '" role="option" aria-selected="' + (sel === 'custom') + '" data-act="provpick" data-v="custom" data-ctx="' + ctx + '"><span>' + (sel === 'custom' ? '✓ ' : '') + 'Mô tả một custom model API</span></button></div>';
+  return h;
+}
+function validateCfg(F) {
+  const err = {}, custom = F.prov === 'custom', bi = F.prov.startsWith('b:');
+  if (!F.prov) { err.prov = 'Hãy chọn provider.'; return err; }
+  if (!F.name.trim()) err.name = 'Cấu hình cần có tên hiển thị.';
+  else if (S.providers.some(p => normName(p.name) === normName(F.name))) err.name = 'Một cấu hình đã lưu khác đã có tên hiển thị này.';
+  if (bi && !F.key) err.key = 'Thiếu thông tin bắt buộc: key.';
+  if (custom) {
+    if (!F.pid.trim()) err.pid = 'Thiếu thông tin bắt buộc: provider ID.';
+    else {
+      const dup = S.providers.find(p => normName(p.pid) === normName(F.pid));
+      if (normName(F.pid) === normName(RESERVED_ID)) err.pid = 'Provider ID này được dành riêng cho một built-in provider. Chưa lưu gì.';
+      else if (dup) err.pid = 'Một cấu hình đã lưu đã có provider ID này: “' + dup.name + '”.';
+    }
+    if (!F.base.trim()) err.base = 'Thiếu thông tin bắt buộc: base URL.';
+    if (!F.proto) err.proto = 'Thiếu thông tin bắt buộc: API protocol.';
+  }
+  return err;
+}
+function createCfg(F, extraModels) {
+  const bi = F.prov.startsWith('b:');
+  const p = bi
+    ? { id: nid('cfg'), name: F.name.trim(), kind: 'builtin', brand: F.prov.slice(2), pid: '[provider ID chờ chốt]', hasKey: true, base: null, proto: null, models: ['[default model ID]'] }
+    : { id: nid('cfg'), name: F.name.trim(), kind: 'custom', brand: null, pid: F.pid.trim(), hasKey: !!F.key, base: F.base.trim(), proto: F.proto, models: [] };
+  (extraModels || []).forEach(m => { if (!p.models.includes(m)) p.models.push(m); });
+  S.providers.push(p);
+  if (!S.ui.menuTab) S.ui.menuTab = p.id;
+  ev('Lưu provider configuration; provider ID cố định', 'UX02-T102');
+  return p;
+}
+function evErr(err) { return err.pid ? 'UX02-T112' : err.name ? 'UX02-T113' : 'UX02-T056'; }
+
+/* ---------- trang Cài đặt Provider (ảnh W6.1) ---------- */
+function connFieldsHTML(F, pre, bindRoot) {
+  const er = F.errors || {}, custom = F.prov === 'custom';
+  let h = fld(pre + '-name', 'Tên hiển thị <span class="tg o" style="text-transform:none">bắt buộc</span>', F.name, { bind: bindRoot + '.name', err: er.name, ph: 'Ví dụ: Gemini cá nhân', note: 'Không trùng tên đã lưu. Toàn khoảng trắng coi như rỗng. Không dùng để đặt provider ID.' });
+  if (!custom) {
+    h += '<span class="lb" style="margin-top:4px">Built-in provider (' + esc(provLabel(F.prov)) + ')</span>' + fld(pre + '-key', 'Key', F.key, { bind: bindRoot + '.key', type: 'password', ph: 'Dán key của bạn', err: er.key, note: 'Sau khi lưu, không bao giờ hiện lại bất kỳ phần nào của key.' });
+  } else {
+    h += '<div class="cus"><span class="lb">Khi chọn Custom model API</span><div class="two">' + fld(pre + '-pid', 'Provider ID', F.pid, { bind: bindRoot + '.pid', err: er.pid, note: 'Không đổi được sau khi lưu.' }) + fld(pre + '-base', 'Base URL', F.base, { bind: bindRoot + '.base', err: er.base, ph: 'https://…' }) + '</div>' +
+      '<div class="fld' + (er.proto ? ' bad' : '') + '"><label for="' + pre + '-proto">API protocol</label><select id="' + pre + '-proto" data-bind="' + bindRoot + '.proto"><option value="">Chọn API protocol…</option><option value="[API protocol chờ quyết định]"' + (F.proto ? ' selected' : '') + '>[danh sách chờ quyết định]</option></select>' + (er.proto ? '<span class="msg" role="alert">' + esc(er.proto) + '</span>' : '') + '</div>' +
+      fld(pre + '-ckey', 'Key (chỉ khi dịch vụ cần)', F.key, { bind: bindRoot + '.key', type: 'password' }) + '</div>';
+  }
+  return h;
+}
+function pageConnHTML(F) {
+  const er = F.errors || {}, custom = F.prov === 'custom';
+  let h = fld('f-name', 'Tên hiển thị', F.name, { bind: 'form.name', err: er.name });
+  if (!custom) {
+    h += '<div class="two"><div class="col" style="gap:8px"><span class="lb">Built-in provider (' + esc(provLabel(F.prov)) + ')</span>' +
+      fld('f-key', 'Key', F.key, { bind: 'form.key', type: 'password', ph: 'Dán key của bạn', err: er.key }) +
+      '<div class="row"><span style="font-size:11.5px">Sau khi lưu, không bao giờ hiện lại bất kỳ phần nào của key.</span></div></div></div>';
+  } else {
+    h += '<div class="two"><div class="cus"><div class="row" style="justify-content:space-between"><span class="lb">Khi chọn Custom model API</span></div>' +
+      fld('f-pid', 'Provider ID', F.pid, { bind: 'form.pid', err: er.pid, note: 'Không đổi được sau khi lưu.' }) +
+      fld('f-base', 'Base URL', F.base, { bind: 'form.base', err: er.base, ph: 'https://…' }) +
+      '<div class="row" style="align-items:flex-end"><div class="fld' + (er.proto ? ' bad' : '') + '" style="flex:1"><label for="f-proto">API protocol</label><select id="f-proto" data-bind="form.proto"><option value="">Chọn API protocol…</option><option value="[API protocol chờ quyết định]"' + (F.proto ? ' selected' : '') + '>[danh sách chờ quyết định]</option></select>' + (er.proto ? '<span class="msg" role="alert">' + esc(er.proto) + '</span>' : '') + '</div></div>' +
+      fld('f-ckey', 'Key (chỉ khi dịch vụ cần)', F.key, { bind: 'form.key', type: 'password' }) + '</div></div>';
+  }
+  return h;
+}
+function editConnHTML(c, F) {
+  const e = F.edit, er = F.errors || {};
+  let h = fld('f-name', 'Tên hiển thị', e.name, { bind: 'form.edit.name', err: er.name });
+  if (c.kind === 'builtin') {
+    h += '<div class="two"><div class="col" style="gap:8px"><span class="lb">Built-in provider (' + esc(c.brand) + ')</span><div class="meta"><span>Provider ID: <b>' + esc(c.pid) + '</b></span><span>Key: <b>' + (c.hasKey ? 'đã lưu' : 'chưa lưu') + '</b></span></div>' +
+      fld('f-key', 'Key mới (để trống nếu không đổi)', e.key, { bind: 'form.edit.key', type: 'password', ph: 'Dán key mới để thay. Key đã lưu không được hiển thị.' }) +
+      '<div class="row"><span style="font-size:11.5px">Sau khi lưu, không bao giờ hiện lại bất kỳ phần nào của key.</span></div>' +
+      fld('f-base', 'Base URL', '', { bind: 'form.edit.base', dis: true, note: 'Chỉ đổi được khi provider cho phép.' }) + '</div></div>';
+  } else {
+    h += '<div class="two"><div class="cus"><div class="row" style="justify-content:space-between"><span class="lb">Custom model API</span></div>' +
+      fld('f-pid', 'Provider ID', c.pid, { bind: 'form.edit.pid', dis: true, note: 'Không đổi được sau khi lưu.' }) +
+      fld('f-base', 'Base URL', e.base, { bind: 'form.edit.base' }) +
+      '<div class="row" style="align-items:flex-end"><div class="fld" style="flex:1"><label for="f-proto">API protocol</label><input id="f-proto" type="text" value="' + esc(c.proto) + '" disabled></div></div>' +
+      '<span class="hint">Key: <b>' + (c.hasKey ? 'đã lưu' : 'chưa lưu') + '</b></span>' + fld('f-ckey', 'Key mới (để trống nếu không đổi)', e.key, { bind: 'form.edit.key', type: 'password' }) + '</div></div>';
+  }
+  return h;
+}
+function addPageHTML() {
+  const F = S.set.form; if (!F.prov) F.prov = defaultProv();
+  const c = selCfg(), open = S.set.provOpen, m = c ? S.set.msgs[c.id] : null;
+  let h = '<div class="ps"><span class="lb">1 · Chọn provider</span><p class="pt">Key lấy từ tài khoản của chính bạn với provider. Mỗi yêu cầu chạy qua cấu hình này sẽ được gửi tới provider đó.</p>' +
+    '<div class="fld"><label for="provbtn">Provider</label><div style="position:relative"><button id="provbtn" class="dd' + (open ? ' open' : '') + '" type="button" data-act="provopen" aria-haspopup="listbox" aria-expanded="' + !!open + '"><span>' + esc(provLabel(F.prov)) + '</span>' + SVG.up.replace('M6 15l6-6 6 6', open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6') + '</button>' + (open ? provListHTML(F.prov, 'form') : '') + '</div></div>';
+  if (m) h += '<div class="' + (m.kind === 'err' ? 'err' : 'ok') + '" role="' + (m.kind === 'err' ? 'alert' : 'status') + '">' + (m.kind === 'err' ? SVG.warn : '') + '<span>' + esc(m.text) + '</span></div>';
+  h += '</div>';
+  h += '<div class="ps"><span class="lb">2 · Thông tin kết nối và tên</span>' + (c ? editConnHTML(c, F) : pageConnHTML(F)) + '</div>';
+  h += '<div class="ps"><span class="lb">3 · Thêm model</span>';
+  if (c) {
+    h += '<div class="frow"><span class="hint">Model đã thêm:</span>' + (c.models.length ? c.models.map(x => '<span class="mchip">' + esc(x) + '<button data-act="rmmodel" data-id="' + c.id + '" data-m="' + esc(x) + '" aria-label="Gỡ model ' + esc(x) + '">' + SVG.x + '</button></span>').join('') : '<span class="hint">chưa có model nào</span>') + '</div>';
+  }
+  h += modelsEditorHTML('form');
+  if (c && c.kind === 'builtin') {
+    h += '<div class="frow"><button class="btn sm" data-act="cfgrestore" data-id="' + c.id + '">Khôi phục model mặc định</button><span class="hint">Thay danh sách model đã thêm bằng model mặc định (hỏi xác nhận trước).</span></div>';
+  }
+  return h + '</div>';
+}
+function renderSettings() {
+  const el = $('#set'); el.hidden = false;
+  const sbOld = $('.sb', el), sc = sbOld ? sbOld.scrollTop : 0, st = S.set, c = selCfg();
+  let h = '<div class="sh"><button class="btn sm" data-act="setback" aria-label="Quay lại chat">◀&nbsp;</button><b>Cài đặt Provider</b></div><div class="sb" id="addform">';
+  if (st.flash) h += '<div class="ok" role="status">' + esc(st.flash) + '</div>';
+  h += addPageHTML();
+  h += '</div><div class="df">' + (c ? '<div class="frow"><button class="btn" data-act="cfgdel" data-id="' + c.id + '">Xóa cấu hình</button><span class="hint">Chỉ xóa khỏi DeckAgent; không đổi gì ở tài khoản provider.</span></div>' : '<span></span>') + '<div class="frow"><button class="btn" data-act="formcancel">Hủy</button><button class="btn pr" data-act="formsave">Lưu</button></div></div>';
+  el.innerHTML = h;
+  const sb = $('.sb', el);
+  if (S.set.scrollAdd) { S.set.scrollAdd = false; if (sb) sb.scrollTop = 0; } else if (sb) sb.scrollTop = sc;
+}
+function saveCfg() {
+  const F = S.set.form; if (!F.prov) F.prov = defaultProv();
+  if (selCfg()) return saveEditForm();
+  const err = validateCfg(F);
+  if (Object.keys(err).length) { F.errors = err; ev('Lưu cấu hình bị chặn: ' + Object.values(err).join(' | '), evErr(err)); return render(); }
+  const extra = collectModels(F.m, []);
+  const p = createCfg(F, extra);
+  S.set.form = freshSet().form;
+  const added = p.models.slice();
+  S.set.flash = 'Đã lưu cấu hình “' + p.name + '”. Provider ID giữ nguyên về sau. ' + (added.length ? 'Đã thêm model: ' + added.join(', ') + '.' : 'Cấu hình chưa có model; chọn cấu hình này ở danh sách Provider để thêm model.');
+  announce(S.set.flash); render();
+}
+function saveEditForm() {
+  const F = S.set.form, p = selCfg(), e = F.edit; if (!p || !e) return;
+  F.errors = {};
+  if (!e.name.trim()) F.errors.name = 'Cấu hình cần có tên hiển thị.';
+  else if (S.providers.some(x => x.id !== p.id && normName(x.name) === normName(e.name))) F.errors.name = 'Một cấu hình đã lưu khác đã có tên hiển thị này.';
+  if (Object.keys(F.errors).length) { ev('Sửa cấu hình bị chặn: tên hiển thị không hợp lệ', 'UX02-T113'); return render(); }
+  const ch = [];
+  if (e.name.trim() !== p.name) { p.name = e.name.trim(); ch.push('tên hiển thị'); }
+  if (e.key) { p.hasKey = true; ch.push('key'); }
+  if (p.kind === 'custom' && e.base.trim() && e.base.trim() !== p.base) { p.base = e.base.trim(); ch.push('base URL'); }
+  const add = collectModels(F.m, p.models);
+  if (add.length) p.models = p.models.concat(add);
+  S.set.msgs[p.id] = { kind: 'ok', text: (ch.length ? 'Đã đổi: ' + ch.join(', ') + '. Provider ID, model đã thêm và model đã chọn giữ nguyên.' : 'Không có thay đổi cấu hình.') + (add.length ? ' Đã thêm model: ' + add.join(', ') + '.' : '') + (S.req && S.req.snap.cfg === p.id ? ' Yêu cầu đang chạy giữ thiết lập cũ.' : '') };
+  ev('Sửa cấu hình: provider ID và model giữ nguyên; không hiện key; request đang chạy dùng thiết lập cũ', 'UX02-T106/T123');
+  initEdit(p); render();
+}
+function openWizard() {
+  S.ui.menu = S.ui.plus = S.ui.eff = false;
+  S.set.wiz = { step: 1, prov: '', name: '', key: '', pid: '', base: '', proto: '[API protocol chờ quyết định]', errors: {}, cfg: null, m: newM() };
+  ev('Bấm +: hiện lần lượt các popup thêm provider (Bước 1 → 2 → 3)', 'UX02-T100');
+  render();
+}
+function closeWizard(note) {
+  const w = S.set.wiz; if (!w) return;
+  S.set.wiz = null;
+  if (note) { toast(note); announce(note); }
+  render();
+}
+function wizHTML() {
+  const w = S.set.wiz, er = w.errors || {};
+  const titles = ['Bước 1 · Chọn provider', 'Bước 2 · Thông tin kết nối và tên', 'Bước 3 · Thêm model'];
+  let h = '<div class="dlgbk"><div class="wiz" role="dialog" aria-modal="true" aria-labelledby="wt"><div class="wh"><b id="wt">' + titles[w.step - 1] + '</b><span class="hint">' + w.step + '/3</span><button class="x" data-act="wizclose" aria-label="Đóng">' + SVG.x + '</button></div><div class="wb">';
+  if (w.step === 1) {
+    const avail = availableBuiltins(), taken = BUILTINS.filter(b => !avail.includes(b));
+    h += '<div class="hint">Key lấy từ tài khoản của chính bạn với provider. Mỗi yêu cầu chạy qua cấu hình này sẽ được gửi tới provider đó.</div><span class="lb">Built-in provider</span>';
+    avail.forEach(b => { h += '<button class="opt' + (w.prov === 'b:' + b ? ' on' : '') + '" data-act="wizpick" data-v="b:' + esc(b) + '" aria-pressed="' + (w.prov === 'b:' + b) + '"><span>' + esc(b) + '</span><small>cần: một key</small></button>'; });
+    if (taken.length) h += '<div class="nt">' + esc(taken.join(' và ')) + ' không hiện: mỗi provider đã có một cấu hình được lưu.</div>';
+    h += '<span class="lb">Hoặc</span><button class="opt' + (w.prov === 'custom' ? ' on' : '') + '" data-act="wizpick" data-v="custom" aria-pressed="' + (w.prov === 'custom') + '"><span>Custom model API</span><small>bạn tự mô tả</small></button>';
+    if (w.prov === 'custom') h += '<span class="lb">API protocol có thể dùng</span><div class="nt" style="font:500 12px IBM Plex Mono,monospace;display:flex;flex-direction:column;gap:3px"><span>[API protocol 1]</span><span>[API protocol 2]</span><span>[API protocol 3]</span></div>';
+    if (er.prov) h += '<span class="msg" role="alert" style="color:var(--bad)">' + esc(er.prov) + '</span>';
+    h += '</div><div class="wf"><button class="btn" data-act="wizclose">Hủy</button><button class="btn pr" data-act="wiznext">Tiếp</button></div>';
+  } else if (w.step === 2) {
+    const F = { prov: w.prov, name: w.name, key: w.key, pid: w.pid, base: w.base, proto: w.proto, errors: er };
+    h += connFieldsHTML(F, 'w', 'wiz') + '</div><div class="wf"><button class="btn" data-act="wizback">Quay lại</button><button class="btn pr" data-act="wizsave">Lưu</button></div>';
+  } else {
+    const p = provById(w.cfg);
+    h += '<div class="ok" role="status">Đã lưu cấu hình “' + esc(p ? p.name : '') + '”. Provider ID giữ nguyên về sau.</div>' + modelsEditorHTML('wiz') + '</div><div class="wf"><button class="btn" data-act="wizskip">Bỏ qua</button><button class="btn pr" data-act="wizmodels">Lưu</button></div>';
+  }
+  return h + '</div></div>';
+}
+function wizNext() {
+  const w = S.set.wiz;
+  if (!w.prov) { w.errors = { prov: 'Hãy chọn provider.' }; return render(); }
+  w.errors = {}; w.step = 2; ev('Bước 2: nhập thông tin kết nối và tên', 'UX02-T101'); render();
+}
+function wizSave() {
+  const w = S.set.wiz, F = { prov: w.prov, name: w.name, key: w.key, pid: w.pid, base: w.base, proto: w.proto };
+  const err = validateCfg(F);
+  if (Object.keys(err).length) { w.errors = err; ev('Lưu cấu hình bị chặn: ' + Object.values(err).join(' | '), evErr(err)); return render(); }
+  const p = createCfg(F, []);
+  w.cfg = p.id; w.step = 3; w.key = ''; w.errors = {}; announce('Đã lưu cấu hình ' + p.name + '. Hãy thêm model.'); render();
+}
+function wizModels() {
+  const w = S.set.wiz, p = provById(w.cfg), add = collectModels(w.m, p.models);
+  p.models = p.models.concat(add);
+  ev('Lưu added models (không chạy thử model)', 'UX02-T103');
+  closeWizard('Đã lưu cấu hình “' + p.name + '”. Model đã thêm: ' + (p.models.length ? p.models.join(', ') : 'chưa có') + '.');
+}
+function renderDlg() {
+  const d = S.ui.dlg, el = $('#dlg');
+  if (S.set && S.set.wiz) {
+    const ae = document.activeElement, aid = ae && ae.id && el.contains(ae) ? ae.id : '';
+    el.innerHTML = wizHTML(); focusWiz();
+    if (aid) { const n = document.getElementById(aid); if (n) n.focus(); }
+    return;
+  }
+  _wizFocus = '';
+  if (!d) { el.innerHTML = ''; return; }
+  if (d.kind === 'discard') el.innerHTML = '<div class="dlgbk"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Bỏ các thay đổi chưa lưu?</h2><p>Các thay đổi chưa lưu trong Cài đặt model sẽ bị bỏ. Các thay đổi đã lưu được giữ. Hội thoại, bản nháp và tệp đính kèm không đổi.</p><div class="acts"><button class="btn" id="dfirst" data-act="dlgstay">Ở lại chỉnh sửa</button><button class="btn pr" data-act="dlgdiscard">Bỏ thay đổi và quay lại</button></div></div></div>';
+  if (d.kind === 'restore') { const p = provById(d.cfg); el.innerHTML = '<div class="dlgbk"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Khôi phục model mặc định?</h2><p>Khôi phục model mặc định sẽ thay danh sách model đã thêm của “' + esc(p ? p.name : '') + '” bằng model mặc định (<span style="font-family:IBM Plex Mono,monospace">[default model ID]</span>). Mọi model khác đã thêm sẽ bị gỡ. Bạn có muốn tiếp tục?</p><div class="acts"><button class="btn" id="dfirst" data-act="restorecancel">Hủy</button><button class="btn pr" data-act="restoreok">Khôi phục</button></div></div></div>'; }
+  const f = $('#dfirst'); if (f) f.focus();
+}
+let _wizFocus = '';
+function focusWiz() {
+  const w = S.set.wiz, key = w ? w.step + ':' + (w.cfg || '') : '';
+  if (key === _wizFocus) return;
+  _wizFocus = key;
+  const f = $('#dlg .wb input, #dlg .wb .opt, #dlg .wf .btn'); if (f) f.focus();
+}
+
+/* =====================  Hành động  ===================== */
+function act(a, el) {
+  const d = el.dataset, ch = cur();
+  switch (a) {
+    case 'newchat': return newChat();
+    case 'openchat': return openChat(d.id);
+    case 'dismissnav': S.notes.nav = null; return render();
+    case 'recents': S.ui.recents = S.ui.recents === false; return renderRail();
+    case 'plus': S.ui.plus = !S.ui.plus; S.ui.menu = false; return renderCbar();
+    case 'attach': S.ui.plus = false; renderCbar(); return $('#finput').click();
+    case 'menu': S.ui.menu = !S.ui.menu; S.ui.plus = false; S.ui.eff = false; if (S.ui.menu) { S.ui.menuTab = ch.sel && provById(ch.sel.cfg) ? ch.sel.cfg : (S.providers[0] || {}).id; S.ui.tabReveal = true; } return renderCbar();
+    case 'tab': S.ui.menuTab = d.id; S.ui.tabReveal = true; return renderCbar();
+    case 'pickmodel': chooseModel(ch, d.cfg, d.m); S.ui.menu = false; S.ui.eff = false; return render();
+    case 'eff': S.ui.eff = !S.ui.eff; return renderCbar();
+    case 'seteff': ch.effort = d.e; S.ui.eff = false; return renderCbar();
+    case 'menubn': S.ui.menuBn = false; return renderCbar();
+    case 'addcfg': return openWizard();
+    case 'opensettings': return openSettings();
+    case 'send': return onSend();
+    case 'stop': return stopReq();
+    case 'pick': return pickOption(d.id);
+    case 'skipq': return skipQ();
+    case 'rmfile': ch.files = ch.files.filter(f => f.id !== d.id); S.notes.fileErr = S.notes.fileErr.filter(e => e.id !== d.id); if (S.ui.preview === d.id) S.ui.preview = null; ev('Gỡ tệp khỏi vùng nhập; đánh giá lại khả năng gửi', 'UX02-T026/T027'); return render();
+    case 'retry': { const f = ch.files.find(x => x.id === d.id); if (f) { f.st = 'prep'; renderChips(); renderCbar(); setTimeout(() => { f.st = 'ready'; render(); }, 900 * TM.speed); } return; }
+    case 'preview': S.ui.preview = S.ui.preview === d.id ? null : d.id; return renderChips();
+    case 'dismisserr': S.notes.fileErr = S.notes.fileErr.filter(e => e.id !== d.id); return renderNotes();
+    case 'dismisshint': S.notes.hint = ''; return renderNotes();
+    case 'slide': { const n = ch.deck.slides.length; ch.deck.sel = Math.max(0, Math.min(n - 1, (ch.deck.sel || 0) + (+d.d))); S.ui.reveal = true; return renderDeck(); }
+    case 'thumb': ch.deck.sel = +d.i; S.ui.reveal = true; return renderDeck();
+    /* settings */
+    case 'setback': return leaveSettings(false);
+    case 'dlgstay': S.ui.dlg = null; return renderDlg();
+    case 'dlgdiscard': return leaveSettings(true);
+    case 'provopen': S.set.provOpen = !S.set.provOpen; return render();
+    case 'provpick': {
+      S.set.provOpen = false;
+      if (S.set.form.prov !== d.v) {
+        const F = S.set.form; F.prov = d.v; F.errors = {}; F.m = newM(); F.edit = null;
+        if (d.v.startsWith('cfg:')) initEdit(provById(d.v.slice(4)));
+      }
+      return render();
+    }
+    case 'formcancel': { const c = selCfg(); S.set.provOpen = false; if (c) initEdit(c); else S.set.form = freshSet().form; return render(); }
+    case 'formsave': return saveCfg();
+    case 'mcatalog': return doCatalog(d.ctx);
+    case 'maddmanual': { const m = getM(d.ctx); const v = (m.manual || '').trim(); if (v && !m.manualList.includes(v)) m.manualList.push(v); m.manual = ''; return render(); }
+    case 'rmmodel': { const p = provById(d.id); p.models = p.models.filter(x => x !== d.m); purgeModel(p.id, d.m); S.set.msgs[p.id] = { kind: 'ok', text: 'Đã gỡ model “' + d.m + '” khỏi cấu hình. Không có gì thay đổi ở provider.' }; ev('Gỡ added model; chat chọn nó không có selected model', 'UX02-T107'); return render(); }
+    case 'cfgdel': {
+      const p = provById(d.id);
+      if (S.req && S.req.snap.cfg === p.id) { S.set.msgs[p.id] = { kind: 'err', text: 'Không thể xóa cấu hình này khi một yêu cầu đang dùng nó' + (S.req.phase === 'waiting' ? ' (kể cả khi yêu cầu đang chờ câu trả lời)' : '') + '. Yêu cầu không bị dừng và không đổi model. Bạn xóa được sau khi yêu cầu kết thúc.' }; ev('Xóa cấu hình bị chặn: request active đang dùng', 'UX02-T058'); return render(); }
+      S.providers = S.providers.filter(x => x.id !== p.id); purgeModel(p.id, null);
+      S.set.form = freshSet().form;
+      S.set.flash = 'Đã xóa cấu hình “' + p.name + '” khỏi DeckAgent. Chat và deck được giữ; không có gì thay đổi ở tài khoản provider.';
+      ev('Xóa provider configuration (chưa có bước xác nhận: quyết định mở)', 'UX02-T108'); return render();
+    }
+    case 'cfgrestore': S.ui.dlg = { kind: 'restore', cfg: d.id }; ev('Restore default models: hỏi xác nhận trước', 'UX02-T109'); return renderDlg();
+    case 'restorecancel': S.ui.dlg = null; ev('Hủy restore: không đổi model nào', 'UX02-T110'); return renderDlg();
+    case 'restoreok': {
+      const p = provById(S.ui.dlg.cfg); const removed = p.models.filter(x => x !== '[default model ID]');
+      p.models = ['[default model ID]']; removed.forEach(x => purgeModel(p.id, x));
+      S.set.msgs[p.id] = { kind: 'ok', text: 'Đã khôi phục model mặc định. Model thay đổi: ' + (removed.length ? 'đã gỡ ' + removed.join(', ') + '; ' : '') + 'danh sách còn [default model ID].' };
+      S.ui.dlg = null; ev('Confirm restore: added models = defaults; chat mất model không tự chọn thay', 'UX02-T111'); return render();
+    }
+    /* popup thêm provider */
+    case 'wizclose': { const w = S.set.wiz; if (w && w.step === 3) return closeWizard('Đã lưu cấu hình. Model chưa được thêm; bạn thêm sau bằng “Thêm model”.'); return closeWizard(); }
+    case 'wizpick': S.set.wiz.prov = d.v; S.set.wiz.errors = {}; return render();
+    case 'wiznext': return wizNext();
+    case 'wizback': S.set.wiz.step = 1; S.set.wiz.errors = {}; return render();
+    case 'wizsave': return wizSave();
+    case 'wizskip': { const p = provById(S.set.wiz.cfg); return closeWizard('Đã lưu cấu hình “' + (p ? p.name : '') + '”. Cấu hình chưa có model; bạn thêm sau bằng “Thêm model”.'); }
+    case 'wizmodels': return wizModels();
+  }
+}
+</script>
+<script>
+'use strict';
+/* =====================  Bảng mô phỏng + kiểm tra trạng thái  ===================== */
+function states() {
+  const ch = cur(), r = S.req && S.req.chatId === ch.id ? S.req : null;
+  let R = 'R1';
+  if (r) R = r.phase === 'waiting' ? 'R3' : (r.phase === 'building' ? 'R5' : 'R2');
+  else if (ch.last === 'outline') { const v = lastVer(ch); R = v && v.empty ? 'R4a' : 'R4'; }
+  else if (ch.last === 'completed') R = 'R6';
+  else if (ch.last === 'stopped') R = 'R7';
+  else if (ch.last === 'failed') R = 'R8';
+  const C = [annotationC(ch)]; if (r) C.push('C6');
+  const sl = ch.deck.slides, dn = sl.filter(s => s.state === 'done').length;
+  let D;
+  if (!sl.length) D = ch.outline.state === 'confirmed' ? 'D2' : 'D1';
+  else if (r && r.kind === 'follow' && r.phase === 'building') D = 'D5';
+  else if (sl.some(s => s.state !== 'done')) D = dn ? 'D3' : 'D2';
+  else D = 'D4';
+  const v = lastVer(ch);
+  if (v && v.gaps && ch.outline.state === 'proposal') D += ' + D6';
+  const M = [modelState(ch)]; if (S.ui.settings || S.set.wiz) { M.push('M5'); if (hasM6()) M.push('M6'); }
+  const others = S.chats.filter(x => x.id !== ch.id && (!x.empty || x.draft.trim()));
+  const H = [others.length ? 'H2' : 'H1']; if (S.h) H.push(S.h);
+  return { R, C: C.join(' + '), D, M: M.join(' + '), H: H.join(' + ') };
+}
+const NEXT_OPTS = [
+  ['auto', 'Tự động (theo ngữ cảnh)'],
+  ['Lần tạo đầu · yêu cầu đầu tiên của chat', [['outline-gaps', 'Outline có placeholder và dữ kiện mâu thuẫn'], ['outline-empty', 'Outline rỗng'], ['clarify-topic', 'Hỏi chủ đề (có Bỏ qua)'], ['clarify-audience', 'Hỏi đối tượng (có Bỏ qua)'], ['partial-major', 'Chỉ đọc được một phần tệp, phần thiếu ảnh hưởng nhiều'], ['partial-minor', 'Chỉ đọc được một phần tệp, ít ảnh hưởng'], ['unusable-file', 'Tệp nhận được nhưng không dùng được'], ['fail-key', 'Lỗi: provider từ chối key'], ['fail-model', 'Lỗi: provider từ chối model'], ['fail-limit', 'Lỗi: chạm giới hạn tài khoản'], ['fail-other', 'Lỗi khác']]],
+  ['Sau khi xác nhận outline · tạo slide', [['build-fail-key', 'Lỗi giữa chừng: key bị từ chối'], ['build-fail-model', 'Lỗi giữa chừng: model bị từ chối'], ['build-fail-limit', 'Lỗi giữa chừng: chạm giới hạn'], ['build-fail-other', 'Lỗi giữa chừng: lỗi khác'], ['build-image-required', 'Ảnh bắt buộc không tạo được'], ['build-image-optional', 'Ảnh hệ thống tự chọn không tạo được'], ['build-clarify-image', 'Hỏi loại ảnh giữa chừng']]],
+  ['Follow-up · chat đã có deck', [['fu-clear', 'Phạm vi rõ (làm ngay)'], ['fu-unclear', 'Phạm vi chưa rõ, không có slide mới (2 lựa chọn)'], ['fu-unclear-new', 'Phạm vi chưa rõ, có slide mới (3 lựa chọn)'], ['fu-vague-dir', 'Phản hồi mơ hồ, có hướng gợi ý'], ['fu-vague-none', 'Phản hồi mơ hồ, không có hướng gợi ý'], ['fu-mismatch', 'Tham chiếu slide không khớp'], ['fu-fail-key', 'Lỗi giữa chừng: key bị từ chối'], ['fu-fail-limit', 'Lỗi giữa chừng: chạm giới hạn'], ['fu-fail-other', 'Lỗi giữa chừng: lỗi khác'], ['fu-image-required', 'Ảnh bắt buộc không tạo được'], ['fu-image-optional', 'Ảnh tự chọn không tạo được']]]
+];
+const PRESETS = [['default', 'Chat mới (W1)'], ['deck', 'Chat có deck đầy đủ'], ['outline', 'Outline đang chờ xác nhận'], ['outline-empty', 'Outline rỗng'], ['m1-nocfg', 'Chưa có provider (M1)'], ['m1-nomodel', 'Có provider, chưa có model (M1)'], ['m2', 'Có model, chat chưa chọn (M2)'], ['m4', 'Model đã chọn bị xóa (M4)'], ['h1', 'Không có chat cũ (H1)'], ['h8', 'Mở lại sau khi dừng giữa request (H8)']];
+const SAMPLE_FILES = [['bao-cao-q3.pdf', 'PDF sẵn sàng'], ['ghi-chu.docx', 'DOCX sẵn sàng'], ['du-lieu.zip', 'Sai loại (.zip)'], ['bao-ve-tai-lieu.pdf', 'Bị bảo vệ'], ['hong.docx', 'Hỏng'], ['mang-loi.pdf', 'Tải lên lỗi (thử lại)']];
+const FOLLOW_SAMPLES = [['Rút gọn slide 3 và thêm một slide về rủi ro sau slide 4.', 'Rõ phạm vi + slide mới'], ['Làm cho trang trọng hơn và thêm một slide về rủi ro.', 'Phạm vi chưa rõ'], ['Slide 3 nhìn chưa ổn.', 'Mơ hồ, có số slide'], ['Sửa đi.', 'Mơ hồ, không số slide'], ['Rút gọn slide 9 và slide 3 "Chi phí".', 'Tham chiếu sai']];
+function simHTML() {
+  const s = states(), sm = S.sim;
+  let h = '<div class="sim" role="complementary" aria-label="Bảng mô phỏng"><div class="sh2"><div><b>Bảng mô phỏng</b><br><span style="font-size:11px">Không thuộc sản phẩm. Prototype chỉ mô phỏng UI, không chạy Agent Runtime.</span></div><button class="btn sm" data-act="simclose" aria-label="Đóng bảng mô phỏng">Đóng</button></div><div class="sb2">';
+  h += '<div><h3>Trạng thái hiện tại</h3><div class="insp"><span>Request</span><b>' + esc(s.R) + '</b><span>Vùng nhập</span><b>' + esc(s.C) + '</b><span>Deck/outline</span><b>' + esc(s.D) + '</b><span>Model</span><b>' + esc(s.M) + '</b><span>Chat</span><b>' + esc(s.H) + '</b></div><div class="hint" style="margin-top:4px">Mã lấy từ state inventory UX-02, chỉ để kiểm thử; không hiện trong UI người dùng.</div></div>';
+  h += '<div><h3>Hệ thống sẽ làm gì ở bước kế tiếp</h3><select data-sim="next" aria-label="Hành vi mô phỏng kế tiếp">';
+  NEXT_OPTS.forEach(o => { if (typeof o[1] === 'string') h += '<option value="' + o[0] + '"' + (sm.next === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; else h += '<optgroup label="' + esc(o[0]) + '">' + o[1].map(x => '<option value="' + x[0] + '"' + (sm.next === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>').join('') + '</optgroup>'; });
+  h += '</select><label class="tgl"><input type="checkbox" data-sim="sticky"' + (sm.sticky ? ' checked' : '') + '> Giữ lựa chọn cho các request sau</label><div class="hint">Tự động: chat trống → outline; sau khi xác nhận → tạo đủ slide; chat có deck → đọc “slide N”, “mọi slide”, “thêm slide … sau slide N”, “trang trọng”, “chưa ổn”. Lựa chọn chỉ có tác dụng ở đúng giai đoạn của nó.</div></div>';
+  h += '<div><h3>Câu follow-up mẫu (điền vào khung nhập)</h3><div class="g">' + FOLLOW_SAMPLES.map((x, i) => '<button class="btn" data-act="simfill" data-i="' + i + '">' + esc(x[1]) + '</button>').join('') + '</div></div>';
+  h += '<div><h3>Nạp tình huống</h3><div class="g">' + PRESETS.map(x => '<button class="btn" data-act="simpreset" data-p="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</div></div>';
+  h += '<div><h3>Thêm tệp mẫu vào vùng nhập</h3><div class="g">' + SAMPLE_FILES.map(x => '<button class="btn" data-act="simfile" data-n="' + esc(x[0]) + '">' + esc(x[1]) + '</button>').join('') + '</div></div>';
+  h += '<div><h3>Sự kiện</h3><div class="g"><button class="btn" data-act="simreload">Tải lại Local Web (DeckAgent còn chạy)</button><button class="btn" data-act="simrestart">Đóng và mở lại DeckAgent</button><button class="btn" data-act="simstale">Chọn gợi ý đã cũ</button><button class="btn" data-act="simreserved">Điền provider ID dành riêng</button></div></div>';
+  h += '<div><h3>Tùy chọn</h3><label class="tgl"><input type="checkbox" data-sim="known"' + (sm.known ? ' checked' : '') + '> Hệ thống biết số slide đã hoàn tất/đã đổi khi dừng hoặc lỗi</label><label class="tgl"><input type="checkbox" data-sim="cause"' + (sm.cause ? ' checked' : '') + '> Hệ thống biết nguyên nhân lỗi khác</label><label class="tgl"><input type="checkbox" data-sim="catalog"' + (sm.catalogFail ? ' checked' : '') + '> Lấy model catalog thất bại</label><label class="tgl">Tốc độ <select data-sim="speed" style="width:auto">' + [['slow', 'Chậm'], ['normal', 'Bình thường'], ['fast', 'Nhanh']].map(x => '<option value="' + x[0] + '"' + (sm.speed === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label><label class="tgl">Giới hạn độ dài chữ <input type="number" min="0" data-sim="limit" value="' + sm.limit + '" aria-label="Giới hạn độ dài thử nghiệm"> ký tự</label><div class="hint"><span class="tg pd">Không phải giá trị spec</span> Độ dài tối đa của yêu cầu (BR-002) chưa đặt; 0 là tắt. Chỉ để thử trạng thái “chữ quá dài”.</div></div>';
+  h += '<div><h3>Quyết định còn mở, đã đánh dấu</h3><div class="hint op">Hộp thoại bỏ thay đổi chưa lưu: đề xuất. Xác nhận trước khi xóa cấu hình: chưa quyết định (đang xóa ngay). Kiểm tra key khi lưu: chưa quyết định, không có. Cảnh báo trước khi bỏ tệp đính kèm khi đổi chat: spec không có, không thêm. Offline, Try again, export, sửa slide trực tiếp: không thuộc V1, không có.</div></div>';
+  h += '<div><h3>Nhật ký chuyển trạng thái</h3><div class="log" tabindex="0">' + (S.log.slice(0, 14).map(l => '<div>' + esc(l.txt) + (l.cid ? ' <b>[' + esc(l.cid) + ']</b>' : '') + '</div>').join('') || '<div>(chưa có)</div>') + '</div></div>';
+  return h + '</div></div>';
+}
+function renderSim() {
+  const el = $('#sim');
+  $('#root').classList.toggle('sim-open', !!S.ui.sim);
+  if (!S.ui.sim) { el.innerHTML = '<button class="simb" data-act="simopen">Bảng mô phỏng</button>'; return; }
+  const keep = $('.sb2', el), sc = keep ? keep.scrollTop : 0;
+  el.innerHTML = simHTML();
+  const n = $('.sb2', el); if (n) n.scrollTop = sc;
+}
+function simChange(t) {
+  const k = t.dataset.sim, sm = S.sim;
+  if (k === 'next') sm.next = t.value;
+  else if (k === 'sticky') sm.sticky = t.checked;
+  else if (k === 'known') sm.known = t.checked;
+  else if (k === 'cause') sm.cause = t.checked;
+  else if (k === 'catalog') sm.catalogFail = t.checked;
+  else if (k === 'speed') { sm.speed = t.value; TM.speed = SPEEDS[t.value]; }
+  else if (k === 'limit') { sm.limit = Math.max(0, parseInt(t.value, 10) || 0); render(); return; }
+  renderSim();
+}
+
+/* =====================  Sự kiện toàn cục  ===================== */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  const inPop = e.target.closest('.pop') || e.target.closest('[data-act="plus"],[data-act="menu"],[data-act="eff"]');
+  if (!inPop && (S.ui.plus || S.ui.menu)) { S.ui.plus = S.ui.menu = S.ui.eff = false; if (!b) renderCbar(); }
+  if (S.set.provOpen && !e.target.closest('.ddl') && !(b && b.dataset.act === 'provopen')) { S.set.provOpen = false; if (!b) return render(); }
+  if (!b) return;
+  const a = b.dataset.act;
+  if (b.getAttribute('aria-disabled') === 'true' && a === 'send') return;
+  if (a === 'simopen') { S.ui.sim = true; return renderSim(); }
+  if (a === 'simclose') { S.ui.sim = false; return renderSim(); }
+  if (a === 'simpreset') { seed(b.dataset.p); setTA(cur().draft); render(); return; }
+  if (a === 'simfill') { const c = cur(); c.draft = FOLLOW_SAMPLES[+b.dataset.i][0]; setTA(c.draft); renderLight(); return focusTA(); }
+  if (a === 'simfile') { const c = cur(); addFile(c, b.dataset.n, 0, null); return; }
+  if (a === 'simreload') return reloadUI();
+  if (a === 'simrestart') return restartApp();
+  if (a === 'simstale') return staleOption();
+  if (a === 'simreserved') { S.ui.settings = true; S.set.form.prov = 'custom'; S.set.form.pid = RESERVED_ID; S.set.form.name = S.set.form.name || 'Dịch vụ thử'; S.set.form.base = S.set.form.base || 'https://example.test/v1'; S.set.form.errors = {}; render(); return; }
+  act(a, b);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.bind) { setPath(S.set, t.dataset.bind, t.value); renderSim(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'finput') { const c = cur(); Array.from(t.files).forEach(f => addFile(c, f.name, f.size, f.type.indexOf('image/') === 0 ? URL.createObjectURL(f) : null)); t.value = ''; return; }
+  if (t.dataset && t.dataset.sim) return simChange(t);
+  if (t.dataset && t.dataset.mpick) { getM(t.dataset.ctx).picks[t.dataset.mpick] = t.checked; return renderSim(); }
+  if (t.dataset && t.dataset.bind && t.tagName === 'SELECT') { setPath(S.set, t.dataset.bind, t.value); render(); }
+});
+document.addEventListener('wheel', e => {
+  const t = e.target.closest && e.target.closest('.thr, .tabscroll');
+  if (!t || t.scrollWidth <= t.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  e.preventDefault(); t.scrollLeft += e.deltaY;
+}, { passive: false });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (S.set.wiz) { return act('wizclose', { dataset: {} }); }
+  if (S.set.provOpen) { S.set.provOpen = false; return render(); }
+  if (S.ui.dlg) { S.ui.dlg = null; return renderDlg(); }
+  if (S.ui.menu || S.ui.plus || S.ui.eff) { S.ui.menu = S.ui.plus = S.ui.eff = false; renderCbar(); focusTA(); }
+});
+
+
+/* =====================  Kéo đổi độ rộng chat ↔ deck canvas  ===================== */
+const DK_MIN = 260, CTR_MIN = 360, DK_KEY = 'deckagent.proto.deckW';
+function deckBounds() {
+  const app = $('#app'), rail = $('#rail');
+  const total = app.clientWidth - (rail ? rail.offsetWidth : 0) - 9;
+  return { min: DK_MIN, max: Math.max(DK_MIN, total - CTR_MIN) };
+}
+function curDeckW() { const d = $('#dk'); return d && !d.hidden ? d.offsetWidth : null; }
+function applyDeckW() {
+  const app = $('#app'), w = S.ui.deckW;
+  if (w == null) { app.style.removeProperty('--dkw'); return; }
+  const b = deckBounds(); S.ui.deckW = Math.max(b.min, Math.min(b.max, Math.round(w)));
+  app.style.setProperty('--dkw', S.ui.deckW + 'px');
+}
+function setDeckW(w, save) {
+  S.ui.deckW = w; applyDeckW();
+  if (save !== false) { try { if (S.ui.deckW == null) localStorage.removeItem(DK_KEY); else localStorage.setItem(DK_KEY, String(S.ui.deckW)); } catch (e) { /* bộ nhớ có thể bị chặn */ } }
+  syncSplit();
+}
+function syncSplit() {
+  const sp = $('#split'), dk = $('#dk');
+  if (!sp) return;
+  sp.hidden = !dk || dk.hidden;
+  if (!sp.hidden) {
+    applyDeckW();
+    const b = deckBounds(), w = curDeckW();
+    sp.setAttribute('aria-valuemin', b.min); sp.setAttribute('aria-valuemax', b.max); sp.setAttribute('aria-valuenow', w);
+  }
+}
+(function wireSplit() {
+  const sp = $('#split');
+  let sx = 0, sw = 0;
+  const move = e => { setDeckW(sw + (sx - e.clientX), false); };
+  const up = () => { sp.classList.remove('on'); document.body.classList.remove('resizing'); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); setDeckW(S.ui.deckW, true); };
+  sp.addEventListener('pointerdown', e => {
+    if (e.button > 0) return;
+    e.preventDefault(); sx = e.clientX; sw = curDeckW() || 400;
+    sp.classList.add('on'); document.body.classList.add('resizing');
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  });
+  sp.addEventListener('dblclick', () => setDeckW(null));
+  sp.addEventListener('keydown', e => {
+    const w = curDeckW() || 400, step = e.shiftKey ? 80 : 24;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setDeckW(w + step); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); setDeckW(w - step); }
+    else if (e.key === 'Home') { e.preventDefault(); setDeckW(deckBounds().min); }
+    else if (e.key === 'End') { e.preventDefault(); setDeckW(deckBounds().max); }
+    else if (e.key === 'Enter') { e.preventDefault(); setDeckW(null); }
+  });
+  window.addEventListener('resize', () => { if (S.ui.deckW != null) { applyDeckW(); } syncSplit(); });
+})();
+
+/* =====================  Khởi động  ===================== */
+(function boot() {
+  const q = new URLSearchParams(location.search);
+  seed(q.get('preset') || 'default');
+  try { const v = parseInt(localStorage.getItem(DK_KEY), 10); if (v > 0) S.ui.deckW = v; } catch (e) { /* bỏ qua */ }
+  if (q.get('speed') && SPEEDS[q.get('speed')]) { S.sim.speed = q.get('speed'); TM.speed = SPEEDS[q.get('speed')]; }
+  if (q.has('sim')) S.ui.sim = true;
+  if (q.has('settings')) S.ui.settings = true;
+  if (q.has('menu')) S.ui.menu = true;
+  render();
+})();
+window.__proto = {
+  get S() { return S; }, openWizard, setDeckW, deckBounds, curDeckW, seed, render, states, setTA, cur, onSend, stopReq, pickOption, skipQ, openChat, newChat, reloadUI, restartApp, openSettings, leaveSettings,
+  type(t) { const c = cur(); c.draft = t; setTA(t); renderLight(); },
+  setNext(v) { S.sim.next = v; }, setSpeed(k) { S.sim.speed = k; TM.speed = SPEEDS[k]; }
+};
+</script>
+<script>
+'use strict';
+/* =====================  ?selftest · kiểm tra tự động các nhánh chính  ===================== */
+(function () {
+  if (!new URLSearchParams(location.search).has('selftest')) return;
+  const P = window.__proto, res = [];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function until(fn, ms) { const t0 = Date.now(); while (Date.now() - t0 < (ms || 5000)) { if (fn()) return true; await sleep(10); } return false; }
+  const ok = (name, cond, info) => res.push({ name, pass: !!cond, info: cond ? '' : (info || '') });
+  const idle = () => until(() => !P.S.req);
+  const waiting = () => until(() => P.S.req && P.S.req.phase === 'waiting');
+  const msgs = () => P.cur().messages;
+  const lastMsg = () => msgs()[msgs().length - 1];
+  const txt = m => m ? (m.text || '') + ' ' + (m.lines || []).join(' ') + ' ' + (m.title || '') : '';
+  const anyMsg = re => msgs().some(m => re.test(txt(m)));
+  const st = () => P.states();
+  const uiHTML = () => ['#app', '#sim', '#dlg', '#toast', '#live'].map(s => document.querySelector(s).innerHTML).join('');
+  function reset(preset) { P.S && (P.S.sim.next = 'auto'); P.seed(preset); const s = P.S.sim; s.sticky = false; s.known = true; s.cause = true; s.catalogFail = false; s.limit = 0; P.setSpeed('fast'); P.render(); }
+  function send(t) { P.type(t); P.onSend(); }
+
+  async function run() {
+    try {
+      /* khởi đầu */
+      reset('default');
+      ok('Khởi đầu: R1, C1, M3, D1, có chat cũ', st().R === 'R1' && st().C === 'C1' && st().M === 'M3' && st().D === 'D1' && /H2/.test(st().H), JSON.stringify(st()));
+      P.type('xin chào'); ok('Gõ chữ → C2', st().C === 'C2'); P.type(''); ok('Xóa chữ → C1 (không báo lỗi rỗng)', st().C === 'C1' && !document.querySelector('#dnotes .err'));
+      P.onSend(); ok('Gửi khi rỗng không làm gì', !P.S.req && P.cur().messages.length === 0);
+
+      /* lần tạo đầu → R4 → xác nhận → R6 */
+      send('Làm deck đánh giá doanh số Q3 cho hội đồng.');
+      ok('Gửi hợp lệ → R2 và Stop xuất hiện', st().R === 'R2' && !!document.querySelector('[data-act="stop"]'));
+      ok('Đang chạy: Chat mới bị chặn (R2)', (P.newChat(), P.S.notes.nav && /đang chạy/.test(P.S.notes.nav.text)) && st().H.includes('H6'));
+      await idle();
+      ok('Outline về → R4, chưa có slide, có Xác nhận/Hủy', st().R === 'R4' && st().D === 'D1' && P.cur().pendingQ && P.cur().pendingQ.options.length === 2 && !document.querySelector('#dk:not([hidden])'));
+      const oid = P.cur().id;
+      P.openChat('c_q3'); ok('R4: đổi chat được phép', P.cur().id === 'c_q3'); P.openChat(oid); ok('Quay lại chat có outline vẫn chờ xác nhận', st().R === 'R4');
+      send('thêm một slide về chi phí');
+      await idle();
+      ok('Sửa outline → proposal 2, bản 1 thành cũ', P.cur().outline.versions.length === 2 && P.cur().messages.filter(m => m.t === 'outline' && m.cur).length === 1 && st().R === 'R4');
+      send('xin chào bạn');
+      ok('Ý định mơ hồ → R3 ngay trong request mới', await waiting() && st().R === 'R3');
+      ok('R3 chặn đổi chat', (P.openChat('c_q3'), P.cur().id === oid && /chờ câu trả lời/.test(P.S.notes.nav.text)));
+      P.stopReq(); ok('Stop ở R3 → R7, không gọi là lỗi', st().R === 'R7' && lastMsg().kind === 'stop' && !/chưa hoàn tất:/.test(txt(lastMsg())));
+      ok('Sau Stop, outline vẫn chờ (có lại Xác nhận/Hủy)', P.cur().pendingQ && P.cur().pendingQ.kind === 'outline');
+      send('xác nhận outline');
+      ok('Confirm bằng chữ → request mới', P.S.req && P.S.req.kind === 'confirm');
+      await until(() => P.cur().deck.slides.length > 0);
+      ok('Có confirmed outline chỉ đọc và canvas', P.cur().messages.some(m => m.t === 'outline-ok') && !document.querySelector('#dk').hidden);
+      await idle();
+      ok('Hoàn tất → R6, D4, 6 slide', st().R === 'R6' && st().D === 'D4' && P.cur().deck.slides.length === 6 && P.cur().deck.slides.every(s => s.state === 'done'), JSON.stringify(st()));
+      ok('Closing message nêu từng slide', anyMsg(/Bản nháp đã sẵn sàng/) && anyMsg(/Slide 6/));
+
+      /* follow-up rõ phạm vi */
+      const before = P.cur().deck.slides.map(s => s.id + ':' + s.ver);
+      send('Rút gọn slide 3 và thêm một slide về rủi ro sau slide 4.');
+      ok('Follow-up: không hỏi, không outline mới', !!P.S.req && !P.cur().pendingQ);
+      await idle();
+      const sl = P.cur().deck.slides;
+      ok('Slide 3 đổi tại chỗ, slide mới ở vị trí 5, tổng 7', sl.length === 7 && sl[2].ver === 2 && sl[2].bullets.length === 2 && sl[4].title === 'Rủi ro', sl.map(s => s.title).join('|'));
+      ok('Slide ngoài phạm vi giữ nguyên', [0, 1, 3, 5, 6].every(i => { const id = sl[i].id; return before.includes(id + ':1'); }));
+      ok('Closing message follow-up nêu slide đổi/thêm và không đổi gì khác', anyMsg(/Slide 3/) && anyMsg(/slide mới/) && anyMsg(/ngoài phạm vi yêu cầu không đổi/));
+      ok('Không có outline mới trong follow-up', P.cur().outline.versions.length === 2 && st().R === 'R6');
+
+      /* A5 */
+      send('Rút gọn slide 9 và slide 3 "Chi phí".'); await idle();
+      ok('Tham chiếu sai → deck nguyên, nêu số slide, R6', P.cur().deck.slides.length === 7 && anyMsg(/deck có 7 slide/) && st().R === 'R6');
+      /* A1 hai lựa chọn → keep */
+      send('Làm cho trang trọng hơn.'); ok('A1 → R3', await waiting() && st().R === 'R3');
+      ok('A1 không có slide mới: 2 lựa chọn', P.cur().pendingQ.options.length === 2 && !P.cur().pendingQ.options.some(o => o.id === 'new'));
+      P.pickOption('keep'); await idle();
+      ok('Keep → R6, không slide nào đổi, chỉ dẫn được giữ', P.cur().kept && P.cur().deck.slides.length === 7 && st().R === 'R6' && anyMsg(/Chưa đổi và chưa tạo slide nào|chưa đổi và chưa tạo slide nào/i));
+      /* A1 ba lựa chọn → new */
+      send('Làm cho trang trọng hơn và thêm một slide về rủi ro.'); await waiting();
+      ok('A1 có slide mới: 3 lựa chọn', P.cur().pendingQ.options.length === 3);
+      P.pickOption('new'); await idle();
+      ok('Chỉ slide mới: thêm ở cuối, slide cũ giữ nguyên', P.cur().deck.slides.length === 8 && P.cur().deck.slides.slice(0, 7).every(s => s.ver <= 2) && P.cur().deck.slides[7].note === 'kept', P.cur().deck.slides.map(s => s.title + s.ver).join('|'));
+      /* A10 / A6 */
+      send('Slide 3 nhìn chưa ổn.'); await waiting();
+      ok('A10: có hướng gợi ý và chưa đổi slide', P.cur().pendingQ.options.length === 3 && st().R === 'R3');
+      P.stopReq();
+      send('Sửa đi.'); await waiting();
+      ok('A6: không có đáp án gợi ý', P.cur().pendingQ.options.length === 0 && st().R === 'R3');
+      send('Rút gọn slide 2'); await idle();
+      ok('Trả lời rõ → cùng request tiếp tục và hoàn tất', st().R === 'R6' && P.cur().deck.slides[1].ver === 2);
+      /* apply all */
+      send('Làm cho trang trọng hơn.'); await waiting(); P.pickOption('all'); await idle();
+      ok('Apply all: mọi slide đổi', P.cur().deck.slides.every(s => s.ver >= 2));
+
+      /* Stop / failure biết và không biết số */
+      reset('default'); TM.speed = 0.25;
+      send('Deck về báo cáo quý'); await idle(); P.pickOption('confirm');
+      await until(() => P.cur().deck.slides.filter(s => s.state === 'done').length >= 2, 6000);
+      P.stopReq();
+      ok('Stop khi build: D3, giữ slide xong, nêu số và khả năng không nhất quán', st().D === 'D3' && st().R === 'R7' && /slide đã hoàn tất/.test(txt(lastMsg())) && /chưa nhất quán/.test(txt(lastMsg())), txt(lastMsg()));
+      ok('Sau Stop: canvas không trống, có giải thích', /Chỉ hiện các slide đã hoàn tất/.test(document.querySelector('#dk').textContent));
+      send('tiếp tục'); ok('Request mới sau Stop dùng outline đã xác nhận', P.S.req && P.S.req.kind === 'build' && P.cur().outline.versions.length === 1);
+      await idle(); ok('Tiếp tục xong → D4, không outline thứ hai', st().D === 'D4' && P.cur().outline.versions.length === 1);
+      TM.speed = 0.01;
+      reset('default'); P.S.sim.known = false; TM.speed = 0.25;
+      send('Deck về báo cáo'); await idle(); P.pickOption('confirm');
+      await until(() => P.cur().deck.slides.filter(s => s.state === 'done').length >= 1, 6000); P.stopReq();
+      ok('Stop với số không xác định → nói không xác định, không bịa số', /Không xác định được số slide/.test(txt(lastMsg())) && !/\d+ slide đã hoàn tất/.test(txt(lastMsg())), txt(lastMsg()));
+      TM.speed = 0.01;
+
+      /* lỗi */
+      for (const [k, re, link] of [['fail-key', /từ chối API key/, true], ['fail-model', /không cho phép dùng model/, true], ['fail-limit', /giới hạn sử dụng/, false], ['fail-other', /lỗi khi lưu kết quả/i, false]]) {
+        reset('default'); P.setNext(k); send('Deck mới'); await idle();
+        ok('Lỗi ' + k + ' → R8, nêu nguyên nhân, ' + (link ? 'có link Cài đặt model' : 'không link'), st().R === 'R8' && re.test(txt(lastMsg())) && !!lastMsg().link === link && !/Thử lại/.test(txt(lastMsg())), txt(lastMsg()));
+      }
+      reset('default'); P.S.sim.cause = false; P.setNext('fail-other'); send('Deck mới'); await idle();
+      ok('Lỗi không rõ nguyên nhân: không bịa', /Không xác định được nguyên nhân/.test(txt(lastMsg())));
+      reset('default'); P.setNext('build-image-required'); send('Deck ảnh'); await idle(); P.pickOption('confirm'); await idle();
+      ok('Ảnh bắt buộc lỗi → R8, giữ slide đã xong, không đổi model', st().R === 'R8' && /Không tạo được ảnh cần cho slide/.test(txt(lastMsg())) && P.cur().sel.m === '[model ID A]');
+      reset('default'); P.setNext('build-image-optional'); send('Deck ảnh'); await idle(); P.pickOption('confirm'); await idle();
+      ok('Ảnh tự chọn lỗi → vẫn hoàn tất và nêu trong closing message', st().R === 'R6' && anyMsg(/Ảnh minh họa dự kiến/));
+      reset('default'); P.setNext('build-clarify-image'); send('Deck ảnh'); await idle(); P.pickOption('confirm'); ok('Hỏi loại ảnh giữa chừng → R3', await waiting() && st().R === 'R3'); P.pickOption('i1'); await idle(); ok('Trả lời xong → hoàn tất', st().R === 'R6');
+      reset('deck'); P.S.sim.known = true; P.setNext('fu-fail-limit'); send('Rút gọn slide 2 và slide 3.'); await idle();
+      ok('Follow-up lỗi giữa chừng: nêu đã đổi/chưa đổi', st().R === 'R8' && /slide đã đổi/.test(txt(lastMsg())) && P.cur().deck.slides[1].ver === 2 && P.cur().deck.slides[2].ver === 1, txt(lastMsg()));
+      reset('deck'); P.S.sim.known = false; P.setNext('fu-fail-other'); send('Rút gọn slide 2 và slide 3.'); await idle();
+      ok('Follow-up lỗi, số không biết → nói không xác định', /Không xác định được slide nào đã đổi/.test(txt(lastMsg())));
+
+      /* hỏi chủ đề / đối tượng / một phần tệp */
+      reset('default'); P.setNext('clarify-topic'); send('Làm deck cho tôi'); await waiting();
+      ok('Hỏi chủ đề → R3 có Bỏ qua', st().R === 'R3' && P.cur().pendingQ.skip);
+      P.skipQ(); await waiting(); ok('Bỏ qua khi chưa biết chủ đề → vẫn R3, không có outline', st().R === 'R3' && P.cur().outline.versions.length === 0);
+      P.pickOption('t1'); await idle(); ok('Trả lời chủ đề → outline R4', st().R === 'R4');
+      reset('default'); P.setNext('clarify-audience'); send('Làm deck'); await waiting(); P.skipQ(); await idle();
+      ok('Bỏ qua câu hỏi đối tượng → outline nêu giả định', st().R === 'R4' && /Giả định/.test(P.cur().outline.versions[0].notes.join(' ')));
+      reset('default'); P.setNext('partial-major'); send('Làm deck'); ok('Chỉ dùng một phần tệp, thiếu nhiều → R3', await waiting() && /chỉ đọc được trang/.test(txt(msgs().filter(m => m.t === 'q')[0])));
+      P.pickOption('p1'); await idle();
+      reset('default'); P.setNext('partial-minor'); send('Làm deck'); await idle(); ok('Thiếu ít → tiếp tục và nêu rõ', st().R === 'R4' && anyMsg(/Mình tiếp tục với phần đã đọc/));
+      reset('default'); P.setNext('unusable-file'); send('Làm deck'); await idle(); ok('Tệp không dùng được → outline nêu tên và lý do', /không dùng được/.test(P.cur().outline.versions[0].notes.join(' ')));
+      reset('default'); P.setNext('outline-gaps'); send('Làm deck'); await idle();
+      ok('D6: placeholder và mâu thuẫn, không chọn bên', /D6/.test(st().D) && P.cur().outline.versions[0].items.some(i => i.tag === 'conflict') && P.cur().outline.versions[0].items.some(i => i.tag === 'ph'));
+      P.pickOption('confirm'); await idle();
+      ok('Confirm khi điểm mở còn → slide ghi chưa giải quyết', P.cur().deck.slides.some(s => s.note === 'conflict') && anyMsg(/chưa giải quyết/));
+      reset('default'); P.setNext('outline-empty'); send('Làm deck'); await idle();
+      ok('R4a: không offer confirm', st().R === 'R4a' && !P.cur().pendingQ);
+      send('xác nhận'); await idle(); ok('Typed confirm trên outline rỗng → giải thích, không lỗi build', anyMsg(/chưa có nội dung để xác nhận/) && st().R === 'R4a' && !P.cur().deck.slides.length);
+      reset('outline'); P.pickOption('cancel'); await idle(); ok('Hủy outline → R6, không slide, không tự draft lại', st().R === 'R6' && P.cur().deck.slides.length === 0 && !P.S.req);
+      reset('outline-empty'); ok('Preset outline rỗng: R4a', st().R === 'R4a');
+
+      /* Model */
+      reset('m1-nocfg'); P.type('x'); P.onSend();
+      ok('M1 không cấu hình: chặn gửi, giữ chữ, không có gì vào hội thoại', st().M === 'M1' && P.S.notes.send.variant === 'nocfg' && P.cur().draft === 'x' && !P.cur().messages.length);
+      reset('m1-nomodel'); P.type('x'); P.onSend(); ok('M1 có cấu hình nhưng chưa có model: thông báo khác', P.S.notes.send.variant === 'nomodel');
+      reset('m2'); P.type('x'); P.onSend(); ok('M2: yêu cầu chọn model, không tự mở settings', st().M === 'M2' && P.S.notes.send.ms === 'M2' && !P.S.ui.settings);
+      reset('m4'); ok('M4: hiện ngay khi chat hiển thị, nêu tên model đã xóa', st().M === 'M4' && /đã bị xóa/.test(document.querySelector('#dnotes').textContent) && /model ID A/.test(document.querySelector('#dnotes').textContent));
+      reset('default'); const c0 = P.cur(); P.S.chats.find(c => c.id === 'c_q3').sel = { cfg: 'cfgA', m: '[model ID A]' };
+      send('Deck'); const snap = P.S.req.snap.m; document.querySelector('[data-act="menu"]').click();
+      ok('Menu model hiện banner khi đang chạy', /chỉ áp dụng cho yêu cầu kế tiếp/.test(document.querySelector('.menu').textContent));
+      document.querySelector('[data-act="pickmodel"][data-m="[model ID B]"]').click();
+      ok('Đổi model khi đang chạy: chat nhận lựa chọn mới, request đang chạy giữ model cũ', c0.sel.m === '[model ID B]' && P.S.req.snap.m === snap);
+      await idle();
+
+      /* Cài đặt */
+      reset('default'); P.openSettings(); ok('Mở settings thay khung chat, giữ draft', P.S.ui.settings && document.querySelector('#ctr').hidden && !document.querySelector('#set').hidden && st().M.includes('M5'));
+      const F = () => P.S.set.form;
+      F().prov = 'b:Google Gemini'; F().name = ''; F().key = ''; document.querySelector('[data-act="formsave"]') || P.render(); P.render(); document.querySelector('[data-act="formsave"]').click();
+      ok('A10 tên trống + A5 thiếu key: không lưu, nêu lý do', F().errors.name && F().errors.key && P.S.providers.length === 3 && /M6/.test(st().M));
+      F().name = '  work anthropic '; F().key = 'k'; document.querySelector('[data-act="formsave"]').click();
+      ok('A10 tên trùng không phân biệt hoa/thường và khoảng trắng', /đã có tên hiển thị này/.test(F().errors.name || ''));
+      F().name = 'Gemini cá nhân'; F().key = 'sk-SECRET-123'; document.querySelector('[data-act="formsave"]').click();
+      ok('Lưu built-in thành công, provider mới có model mặc định (chờ giá trị)', P.S.providers.length === 4 && P.S.providers[3].models[0] === '[default model ID]');
+      ok('Key đã lưu không xuất hiện ở bất kỳ đâu', !uiHTML().includes('sk-SECRET-123') && P.S.providers[3].hasKey === true && !JSON.stringify(P.S.providers).includes('sk-SECRET-123'));
+      ok('Google Gemini không còn được đưa ra khi thêm provider', !availableBuiltins().includes('Google Gemini') && availableBuiltins().includes('DeepSeek'));
+      F().prov = 'custom'; F().name = 'Cổng thử'; F().pid = 'Office-Gateway '; F().base = 'https://x.test'; F().proto = '[API protocol chờ quyết định]'; P.render(); document.querySelector('[data-act="formsave"]').click();
+      ok('A9 provider ID trùng: nêu tên cấu hình đã có', /Office gateway/.test(F().errors.pid || ''));
+      F().pid = '[provider ID của built-in]'; document.querySelector('[data-act="formsave"]').click();
+      ok('A9 provider ID dành riêng: không lưu gì', /dành riêng/.test(F().errors.pid || ''));
+      F().pid = 'lab-1'; document.querySelector('[data-act="formsave"]').click();
+      ok('Lưu custom API: không model mặc định, báo chưa có model', P.S.providers.length === 5 && P.S.providers[4].kind === 'custom' && P.S.providers[4].models.length === 0 && /chưa có model/.test(P.S.set.flash));
+      act('provpick', { dataset: { v: 'cfg:' + P.S.providers[4].id } }); P.S.sim.catalogFail = true; document.querySelector('[data-act="mcatalog"][data-ctx="form"]').click(); await until(() => P.S.set.form.m.catalog === 'fail');
+      ok('Catalog lỗi: báo không lấy được, vẫn nhập tay', /Không lấy được danh sách model/.test(document.querySelector('#set').textContent));
+      P.S.set.form.m.manual = '[model ID tay]'; document.querySelector('[data-act="maddmanual"][data-ctx="form"]').click(); document.querySelector('[data-act="formsave"]').click();
+      ok('Thêm model bằng ID tay → chọn được', P.S.providers[4].models.includes('[model ID tay]') && /Đã thêm model: \[model ID tay\]/.test(document.querySelector('#set').textContent));
+      P.S.sim.catalogFail = false;
+      /* rời settings có thay đổi chưa lưu */
+      P.S.set.form.edit.name = 'dở dang'; P.leaveSettings(false);
+      ok('Rời khi có thay đổi chưa lưu → hộp thoại', P.S.ui.dlg && P.S.ui.dlg.kind === 'discard' && /Ở lại chỉnh sửa/.test(document.querySelector('#dlg').textContent) && document.querySelectorAll('[role="alertdialog"]').length === 1);
+      document.querySelector('[data-act="dlgstay"]').click(); ok('Ở lại chỉnh sửa: vẫn ở Cài đặt, đóng hộp thoại', P.S.ui.settings && !P.S.ui.dlg && !document.querySelector('#dlg').innerHTML); P.leaveSettings(false); document.querySelector('[data-act="dlgdiscard"]').click(); ok('Bỏ thay đổi và quay lại: giữ phần đã lưu', !P.S.ui.settings && P.S.providers.length === 5 && P.S.providers[4].name !== 'dở dang');
+      /* xóa bị chặn khi request dùng cfg, kể cả chờ answer */
+      reset('default'); P.setNext('clarify-topic'); send('Deck'); await waiting(); P.openSettings();
+      act('provpick', { dataset: { v: 'cfg:cfgA' } }); document.querySelector('[data-act="cfgdel"]').click();
+      ok('A12 xóa bị chặn khi request chờ answer đang dùng cfg', P.S.providers.some(p => p.id === 'cfgA') && P.S.set.msgs.cfgA.kind === 'err' && P.S.req.phase === 'waiting');
+      act('provpick', { dataset: { v: 'cfg:cfgC' } }); document.querySelector('[data-act="cfgdel"]').click(); ok('Cfg khác không bị dùng xóa được', !P.S.providers.some(p => p.id === 'cfgC'));
+      P.leaveSettings(true); P.stopReq(); P.openSettings();
+      act('provpick', { dataset: { v: 'cfg:cfgA' } }); document.querySelector('[data-act="cfgdel"]').click(); P.leaveSettings(true);
+      ok('Sau khi kết thúc xóa được; chat mất model → M4', st().M === 'M4' && P.cur().removedModel === '[model ID A]');
+      /* restore defaults */
+      reset('default'); P.openSettings(); act('provpick', { dataset: { v: 'cfg:cfgA' } }); document.querySelector('[data-act="cfgrestore"]').click();
+      ok('Restore cần xác nhận bằng hộp thoại, chưa đổi model', P.S.ui.dlg.kind === 'restore' && P.S.providers[0].models.length === 2 && document.querySelectorAll('[role="alertdialog"]').length === 1);
+      document.querySelector('[data-act="restorecancel"]').click(); ok('Hủy restore: giữ nguyên', P.S.providers[0].models.length === 2 && !P.S.ui.dlg);
+      document.querySelector('[data-act="cfgrestore"]').click(); document.querySelector('[data-act="restoreok"]').click();
+      ok('Xác nhận restore: danh sách = mặc định, chat mất model không tự chọn thay', P.S.providers[0].models.join() === '[default model ID]' && P.cur().sel === null && P.cur().removedModel === '[model ID A]');
+      P.leaveSettings(true);
+      /* đổi key cfg đã lưu */
+      reset('default'); P.openSettings(); act('provpick', { dataset: { v: 'cfg:cfgC' } });
+      P.S.set.form.edit.key = 'sk-NEW-KEY'; P.S.set.form.edit.name = 'Cổng văn phòng'; document.querySelector('[data-act="formsave"]').click();
+      ok('Đổi key + tên: giữ provider ID và model, không lộ key', P.S.providers[2].name === 'Cổng văn phòng' && P.S.providers[2].pid === 'office-gateway' && P.S.providers[2].hasKey && !uiHTML().includes('sk-NEW-KEY') && /Đã đổi: tên hiển thị, key/.test(document.querySelector('#set').textContent));
+      P.leaveSettings(true);
+
+      /* cấu hình đã lưu nằm trong dropdown Provider, chọn để xem/sửa */
+      reset('default'); P.openSettings(); P.S.set.provOpen = true; P.render();
+      ok('Dropdown có nhóm Cấu hình đã lưu với đủ 3 cấu hình', document.querySelectorAll('.ddl [data-act="provpick"][data-v^="cfg:"]').length === 3 && /Cấu hình đã lưu/.test(document.querySelector('.ddl').textContent));
+      ok('Không còn mục Cấu hình đã lưu dư thừa trong trang', !document.querySelector('#set .cfg') && !/CẤU HÌNH ĐÃ LƯU/i.test([...document.querySelectorAll('#set .sb > .ps > .lb')].map(e => e.textContent).join('|')));
+      document.querySelector('[data-act="provpick"][data-v="cfg:cfgA"]').click();
+      ok('Chọn cấu hình đã lưu → hiện thông tin: tên, key đã lưu, model đã thêm, nút khôi phục và xóa', document.querySelector('#f-name').value === 'Work Anthropic' && /Key: đã lưu/.test(document.querySelector('#set').textContent) && document.querySelectorAll('#set [data-act="rmmodel"]').length === 2 && !!document.querySelector('[data-act="cfgrestore"]') && !!document.querySelector('[data-act="cfgdel"]'));
+      ok('Chọn cấu hình built-in: không đổi được Base URL, key mới để trống', document.querySelector('#f-base').disabled && document.querySelector('#f-key').value === '');
+      document.querySelector('[data-act="rmmodel"][data-m="[model ID B]"]').click();
+      ok('Gỡ model trong màn sửa → danh sách còn 1 model', P.S.providers[0].models.join() === '[model ID A]' && document.querySelectorAll('#set [data-act="rmmodel"]').length === 1);
+      act('provpick', { dataset: { v: 'cfg:cfgC' } });
+      ok('Cấu hình custom: Provider ID chỉ đọc, Base URL sửa được, không có nút khôi phục', document.querySelector('#f-pid').disabled && !document.querySelector('#f-base').disabled && !document.querySelector('[data-act="cfgrestore"]'));
+      P.S.set.form.edit.name = '  work anthropic '; P.S.set.form.edit.name = 'Work Anthropic'; act('provpick', { dataset: { v: 'cfg:cfgC' } });
+      P.S.set.form.edit.name = 'personal openai'; document.querySelector('[data-act="formsave"]').click();
+      ok('Sửa tên trùng không phân biệt hoa/thường → báo lỗi, không lưu', /đã có tên hiển thị này/.test(P.S.set.form.errors.name || '') && P.S.providers[2].name === 'Office gateway');
+      document.querySelector('[data-act="formcancel"]').click(); ok('Hủy khi sửa → hoàn lại giá trị đã lưu', document.querySelector('#f-name').value === 'Office gateway');
+      act('provpick', { dataset: { v: 'b:Google Gemini' } }); ok('Chọn built-in chưa lưu → quay lại chế độ thêm mới', !selCfg() && !!document.querySelector('[data-act="formsave"]') && !document.querySelector('#set [data-act="cfgdel"]') && !/Lưu xong sẽ báo/.test(document.querySelector('#set .df').textContent));
+      P.leaveSettings(true);
+      /* popup thêm provider (nút +) */
+      reset('default'); P.S.ui.menu = true; P.render();
+      document.querySelector('[data-act="addcfg"]').click();
+      const D = () => document.querySelector('#dlg'), W = () => P.S.set.wiz;
+      ok('Bấm + → popup Bước 1 (không vào trang Cài đặt)', !!W() && W().step === 1 && /Bước 1 · Chọn provider/.test(D().textContent) && !P.S.ui.settings);
+      ok('Bước 1 chỉ đưa ra built-in chưa lưu và custom', /Google Gemini/.test(D().textContent) && /DeepSeek/.test(D().textContent) && !/Work Anthropic/.test(D().textContent) && /OpenAI và Anthropic không hiện/.test(D().textContent) && /Custom model API/.test(D().textContent));
+      D().querySelector('[data-act="wiznext"]').click(); ok('Tiếp khi chưa chọn → báo chọn provider, không sang bước 2', W().step === 1 && /Hãy chọn provider/.test(D().textContent));
+      D().querySelector('[data-act="wizpick"][data-v="custom"]').click(); ok('Chọn custom → hiện danh sách API protocol (chờ giá trị)', /\[API protocol 1\]/.test(D().textContent));
+      D().querySelector('[data-act="wiznext"]').click(); ok('Bước 2 custom có provider ID, base URL, protocol, key tùy chọn, tên hiển thị', W().step === 2 && ['#w-pid', '#w-base', '#w-proto', '#w-ckey', '#w-name'].every(q => D().querySelector(q)));
+      D().querySelector('[data-act="wizsave"]').click(); ok('Bước 2 lưu thiếu dữ liệu → nêu từng lỗi, không lưu', Object.keys(W().errors).length >= 3 && P.S.providers.length === 3);
+      D().querySelector('[data-act="wizback"]').click(); ok('Quay lại → Bước 1, giữ lựa chọn', W().step === 1 && W().prov === 'custom');
+      D().querySelector('[data-act="wizpick"][data-v="b:Google Gemini"]').click(); D().querySelector('[data-act="wiznext"]').click();
+      ok('Bước 2 built-in chỉ có key và tên hiển thị', !D().querySelector('#w-pid') && !!D().querySelector('#w-key') && !!D().querySelector('#w-name'));
+      W().name = 'Gemini popup'; W().key = 'sk-POPUP-777'; D().querySelector('[data-act="wizsave"]').click();
+      ok('Lưu ở Bước 2 → Bước 3, cấu hình đã lưu với model mặc định (chờ giá trị)', W().step === 3 && P.S.providers.length === 4 && P.S.providers[3].models.join() === '[default model ID]' && /Mặc định/.test(D().textContent));
+      ok('Key trong popup không còn ở đâu sau khi lưu', !uiHTML().includes('sk-POPUP-777') && W().key === '');
+      D().querySelector('[data-act="mcatalog"][data-ctx="wiz"]').click(); await until(() => W().m.catalog === 'ok');
+      const cb = D().querySelector('[data-mpick="[model ID catalog 2]"]'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
+      D().querySelector('[data-act="wizmodels"]').click();
+      ok('Bước 3 lưu → đóng popup, model đã chọn được thêm và báo tên model', !W() && P.S.providers[3].models.includes('[model ID catalog 2]') && /Model đã thêm/.test(document.querySelector('#toast').textContent) && !document.querySelector('#dlg').innerHTML);
+      ok('Model mới chọn được trong menu của chat', (P.S.ui.menu = true, P.S.ui.menuTab = P.S.providers[3].id, P.render(), /model ID catalog 2/.test(document.querySelector('.menu').textContent)));
+      document.querySelector('[data-act="addcfg"]').click(); D().querySelector('[data-act="wizpick"][data-v="custom"]').click(); D().querySelector('[data-act="wiznext"]').click();
+      W().name = 'Cổng popup'; W().pid = 'office-gateway'; W().base = 'https://y.test'; D().querySelector('[data-act="wizsave"]').click();
+      ok('Popup: provider ID trùng nêu tên cấu hình đã có', /Office gateway/.test(W().errors.pid || '') && P.S.providers.length === 4);
+      W().pid = 'lab-popup'; D().querySelector('[data-act="wizsave"]').click(); D().querySelector('[data-act="wizskip"]').click();
+      ok('Bước 3 Bỏ qua → đóng, cấu hình không có model', !W() && P.S.providers.length === 5 && P.S.providers[4].models.length === 0);
+      P.S.ui.menu = true; P.render(); document.querySelector('[data-act="addcfg"]').click(); D().querySelector('[data-act="wizclose"]').click();
+      ok('Đóng popup ở Bước 1 → không lưu gì', !W() && P.S.providers.length === 5);
+      P.S.ui.menu = false;
+      /* chat/lịch sử */
+      reset('default'); P.type('bản nháp ở chat mới'); P.S.chats.find(c => c.id === 'c_new').draft = 'bản nháp ở chat mới';
+      P.openChat('c_q3'); P.type('nháp ở Q3'); ok('Chữ chưa gửi gắn với từng chat', P.S.chats.find(c => c.id === 'c_new').draft === 'bản nháp ở chat mới' && P.cur().draft === 'nháp ở Q3');
+      const q3 = P.cur(); q3.files.push({ id: 'ff1', name: 'a.pdf', ty: 'PDF', st: 'ready' }); P.openChat('c_new');
+      ok('Quay lại chat cũ: chữ còn, tệp chưa gửi bị bỏ', P.cur().draft === 'bản nháp ở chat mới' && q3.files.length === 0 && ta().value === 'bản nháp ở chat mới');
+      P.openChat('c_mk'); ok('H4: chat không mở được → giữ chat hiện tại', P.cur().id === 'c_new' && /Không mở được chat này/.test(P.S.notes.nav.text) && st().H.includes('H4'));
+      P.openChat('c_hn'); ok('H3: mở chat chưa có slide → outline vẫn chờ, không có ghi chú có/chưa có slide', st().R === 'R4' && !/Chat này chưa có slide/.test(document.querySelector('#cv').textContent) && !/Có slide|Chưa có slide/i.test(document.querySelector('#rail').textContent));
+      reset('h1'); ok('H1: không có chat cũ', /H1/.test(st().H) && /Chưa có chat trước/.test(document.querySelector('#rail').textContent));
+      reset('default'); const cn = P.cur(); P.S.selHistory = [{ cfg: 'cfgA', m: '[model ID A]' }, { cfg: 'cfgB', m: '[model ID C]' }];
+      P.openChat('c_q3'); P.newChat(); ok('Chat mới kế thừa model gần nhất còn chọn được', P.cur().sel && P.cur().sel.m === '[model ID C]', JSON.stringify(P.cur().sel));
+      P.S.providers[1].models = []; P.S.selHistory = P.S.selHistory.filter(x => x.m !== '[model ID C]');
+      P.openChat('c_q3'); P.newChat(); ok('Model bị gỡ không được kế thừa, dùng lựa chọn cũ hơn', P.cur().sel && P.cur().sel.m === '[model ID A]');
+      P.S.providers[1].models = ['[model ID C]'];
+      P.openChat('c_q3'); P.newChat(); ok('Thêm lại model đã gỡ không tự khôi phục lựa chọn', P.cur().sel.m === '[model ID A]');
+      /* H7 / H8 */
+      reset('default'); P.setNext('clarify-topic'); send('Deck'); await waiting(); P.reloadUI();
+      ok('H7: reload giữ request đang chờ, không báo gián đoạn', P.S.req && P.S.req.phase === 'waiting' && st().R === 'R3' && /Đang chờ câu trả lời/.test(document.querySelector('#cv').textContent));
+      P.restartApp(); ok('H8: mở lại sau khi dừng giữa request: nói chưa hoàn tất, không tự tiếp tục', !P.S.req && /chưa hoàn tất/.test(document.querySelector('#cv').textContent) && st().H.includes('H8') && P.cur().draft === '');
+      /* tệp */
+      reset('default'); const cf = P.cur();
+      document.querySelector('[data-act="plus"]').click(); ok('Nút + mở menu đính kèm', !!document.querySelector('.plusp'));
+      document.querySelector('[data-act="plus"]').click();
+      addFile(cf, 'bao-cao-q3.pdf', 1, null); ok('Tệp đang chuẩn bị → C3 chặn gửi', st().C === 'C3' && sendable(cf) === 'prep');
+      await until(() => cf.files[0].st === 'ready'); ok('Tệp sẵn sàng → C2, gửi được dù không có chữ', st().C === 'C2');
+      addFile(cf, 'du-lieu.zip', 1, null); await until(() => cf.files.some(f => f.st === 'bad'));
+      ok('Tệp sai loại → C4, có popup lý do, chặn gửi', st().C === 'C4' && P.S.notes.fileErr.length === 1 && sendable(cf) === 'bad');
+      P.onSend(); ok('C4 chặn gửi: chữ/tệp giữ nguyên', !P.S.req && cf.files.length === 2);
+      document.querySelector('[data-act="rmfile"][data-id="' + cf.files[1].id + '"]').click(); ok('Xóa tệp bị từ chối → C2', st().C === 'C2');
+      addFile(cf, 'mang-loi.pdf', 1, null); await until(() => cf.files.some(f => f.st === 'fail')); ok('Tải lên lỗi → có thử lại, chặn gửi', sendable(cf) === 'fail' && !!document.querySelector('[data-act="retry"]'));
+      document.querySelector('[data-act="retry"]').click(); await until(() => cf.files.every(f => f.st === 'ready')); ok('Thử lại tải lên xong → gửi được', sendable(cf) === 'ok');
+      cf.files = []; P.S.sim.limit = 10; P.type('0123456789ABC'); ok('C5: chữ quá dài → báo, giữ chữ, chặn gửi', st().C === 'C5' && /quá dài/.test(document.querySelector('#dnotes').textContent)); P.onSend(); ok('Không gửi khi chữ quá dài', !P.S.req && P.cur().draft.length === 13);
+      P.S.sim.limit = 0; P.type('');
+      /* C6 + sent attachments */
+      reset('default'); send('Deck'); P.type('yêu cầu kế tiếp'); ok('C6: soạn draft khi request active, chưa gửi được', st().C.includes('C6') && P.S.req && (P.onSend(), cur().messages.filter(m => m.t === 'user').length === 1)); await idle();
+      /* thumbnail: một dòng, cuộn ngang */
+      reset('deck'); P.cur().deck.slides = P.cur().deck.slides.concat(P.cur().deck.slides.map(s => Object.assign({}, s, { id: s.id + 'x' }))); P.render();
+      const thr = document.querySelector('.thr');
+      ok('Thumbnail: một dòng, tràn thì cuộn ngang', thr && thr.scrollWidth > thr.clientWidth && getComputedStyle(thr).flexWrap === 'nowrap' && getComputedStyle(thr).overflowX === 'auto' && thr.querySelectorAll('.th')[0].offsetTop === thr.querySelectorAll('.th')[11].offsetTop);
+      document.querySelector('[data-act="thumb"][data-i="11"]').click();
+      const thr2 = document.querySelector('.thr'), sel2 = thr2.querySelector('.th.sel');
+      ok('Chọn slide ở cuối: thumbnail được cuộn vào vùng nhìn', thr2.scrollLeft > 0 && sel2.getBoundingClientRect().right <= thr2.getBoundingClientRect().right + 1);
+      const keep = thr2.scrollLeft; P.render(); ok('Render lại không làm mất vị trí cuộn', document.querySelector('.thr').scrollLeft === keep);
+      /* menu model: tab provider một dòng, + và bánh răng cố định */
+      reset('default'); ['Cổng A dài dòng', 'Cổng B dài dòng', 'Cổng C dài dòng', 'Cổng D dài dòng', 'hehe'].forEach((n, i) => P.S.providers.push({ id: 'cx' + i, name: n, kind: 'custom', brand: null, pid: 'x' + i, hasKey: false, base: 'u', proto: 'p', models: ['[m' + i + ']'] }));
+      P.S.ui.menu = true; P.render();
+      const tabs = document.querySelector('.tabscroll'), chips = tabs.querySelectorAll('.chip'), plusB = document.querySelector('[data-act="addcfg"]'), gearB = document.querySelector('[data-act="opensettings"]');
+      ok('Tab provider nằm một dòng, tràn thì cuộn ngang', tabs.scrollWidth > tabs.clientWidth && chips[0].offsetTop === chips[chips.length - 1].offsetTop && getComputedStyle(tabs).overflowX === 'auto');
+      ok('Nút + và bánh răng cố định ở một chỗ, cùng hàng với tab', Math.abs(plusB.getBoundingClientRect().top - chips[0].getBoundingClientRect().top) < 12 && Math.abs(gearB.getBoundingClientRect().top - plusB.getBoundingClientRect().top) < 4 && plusB.getBoundingClientRect().right <= document.querySelector('.menu').getBoundingClientRect().right);
+      const px = plusB.getBoundingClientRect().left; tabs.scrollLeft = 9999; ok('Cuộn tab không làm + và bánh răng dịch chuyển', Math.abs(plusB.getBoundingClientRect().left - px) < 1);
+      P.S.ui.menu = false; P.render();
+      reset('default'); P.S.ui.menu = true; P.render();
+      ok('Box chọn model rộng 2/3 so với trước (440 → 293px)', Math.abs(document.querySelector('.menu').offsetWidth - 293) <= 1, document.querySelector('.menu').offsetWidth);
+      P.S.ui.menu = false; P.render();
+      reset('default'); P.S.ui.menu = true; P.S.ui.eff = true; P.render();
+      { const em = document.querySelector('.effm'), mn = document.querySelector('.menu').getBoundingClientRect(), r = em.getBoundingClientRect();
+        ok('Menu mức suy luận không bị cắt trong menu model', r.height > 80 && em.querySelectorAll('[data-act="seteff"]').length === 3 && r.left >= mn.left - 1 && getComputedStyle(document.querySelector('.mls')).overflowY === 'visible'); }
+      P.S.ui.menu = false; P.S.ui.eff = false; P.render();
+      reset('default'); P.openSettings(); P.render(); ok('Không còn câu ghi chú dưới ô thêm model ID và ở chân trang', !/không hỏi provider|ID sai sẽ báo lỗi|Lưu xong sẽ báo/.test(document.querySelector('#set').textContent));
+      P.leaveSettings(true); P.S.ui.menu = true; P.render(); document.querySelector('[data-act="addcfg"]').click(); P.S.set.wiz.step = 1; P.S.set.wiz.prov = 'b:Google Gemini'; document.querySelector('[data-act="wiznext"]').click(); P.S.set.wiz.name = 'G'; P.S.set.wiz.key = 'k'; document.querySelector('[data-act="wizsave"]').click();
+      ok('Popup Bước 3 cũng không có câu ghi chú đó', P.S.set.wiz.step === 3 && !/không hỏi provider|ID sai sẽ báo lỗi/.test(document.querySelector('#dlg').textContent)); document.querySelector('[data-act="wizclose"]').click();
+      reset('default'); P.openSettings(); P.S.set.provOpen = true; P.render();
+      ok('Dropdown Provider không còn chú thích phụ (Built-in · key đã lưu, cần: một key)', !document.querySelector('.ddl small') && !/key đã lưu|cần: một key|chưa có key/.test(document.querySelector('.ddl').textContent) && document.querySelectorAll('.ddl [data-act="provpick"]').length >= 6);
+      P.leaveSettings(true);
+      /* kéo đổi độ rộng chat ↔ deck */
+      reset('deck'); P.setDeckW(null);
+      const sp = document.querySelector('#split'), dk = document.querySelector('#dk'), ct = document.querySelector('#ctr');
+      ok('Có thanh chia giữa chat và deck khi có deck, ẩn khi chưa có deck', !sp.hidden && (reset('default'), document.querySelector('#split').hidden) && (reset('deck'), !document.querySelector('#split').hidden));
+      const w0 = document.querySelector('#dk').offsetWidth;
+      document.querySelector('#split').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      const w1 = document.querySelector('#dk').offsetWidth;
+      ok('Phím ← mở rộng deck, chat hẹp lại', w1 > w0 && document.querySelector('#ctr').offsetWidth < ct.offsetWidth + 1, w0 + '→' + w1);
+      const s2 = document.querySelector('#split'); const r = s2.getBoundingClientRect();
+      s2.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + 3, button: 0, bubbles: true }));
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left - 117 }));
+      const w2 = document.querySelector('#dk').offsetWidth;
+      window.dispatchEvent(new PointerEvent('pointerup', {}));
+      ok('Kéo sang trái 120px → deck rộng thêm khoảng 120px', Math.abs((w2 - w1) - 120) <= 2, w1 + '→' + w2);
+      P.setDeckW(10); ok('Không cho deck nhỏ hơn mức tối thiểu', document.querySelector('#dk').offsetWidth === P.deckBounds().min, document.querySelector('#dk').offsetWidth);
+      P.setDeckW(99999); ok('Không cho chat hẹp hơn mức tối thiểu', document.querySelector('#ctr').offsetWidth >= 359 && document.querySelector('#dk').offsetWidth === P.deckBounds().max);
+      document.querySelector('#split').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      ok('Nhấp đúp về độ rộng mặc định', document.querySelector('#dk').offsetWidth === 400);
+      P.setDeckW(320); reset('deck'); ok('Độ rộng giữ nguyên khi đổi chat/tình huống', document.querySelector('#dk').offsetWidth === 320); P.setDeckW(null);
+      /* không còn note nét đứt kiểu "Chờ giá trị" trong UI sản phẩm */
+      reset('default'); P.openSettings(); P.render();
+      const pdIn = () => ['#rail', '#ctr', '#dk', '#set', '#dlg'].some(s => document.querySelector(s) && document.querySelector(s).querySelector('.tg.pd'));
+      ok('Trang Cài đặt không có nhãn Chờ giá trị/Chưa quyết định', !pdIn() && !/Quyết định chưa chốt|Chờ giá trị/.test(document.querySelector('#set').textContent));
+      P.S.set.provOpen = true; P.render(); act('provpick', { dataset: { v: 'custom' } }); act('provpick', { dataset: { v: 'cfg:cfgA' } }); ok('Chế độ sửa không có nhãn pending', !pdIn());
+      P.leaveSettings(true); P.S.ui.menu = true; P.render(); document.querySelector('[data-act="addcfg"]').click(); D().querySelector('[data-act="wizpick"][data-v="custom"]').click();
+      ok('Popup Bước 1 không có nhãn pending', !pdIn() && !/Chờ giá trị/.test(D().textContent));
+      D().querySelector('[data-act="wiznext"]').click(); ok('Popup Bước 2 không có nhãn pending', !pdIn()); D().querySelector('[data-act="wizclose"]').click();
+      reset('deck'); ok('Deck canvas không có ghi chú "Chỉ để xem" và không nét đứt kiểu pending', !/Chỉ để xem/.test(document.querySelector('#dk').textContent) && !pdIn());
+      /* rail chat không hiện thời gian */
+      reset('default'); ok('Danh sách chat không hiện thời gian', !/\d{1,2}:\d{2}|thg \d+|Hôm nay|Bây giờ/.test(document.querySelector('#rail').textContent), document.querySelector('#rail').textContent);
+      P.type('Deck mới'); P.onSend(); await idle(); ok('Sau khi gửi, chat vừa tạo cũng không hiện thời gian', !/Bây giờ|\d{1,2}:\d{2}/.test(document.querySelector('#rail').textContent));
+      /* lịch sử chat theo layout Claude: danh sách phẳng, Gần đây thu gọn được, không thẻ/nhãn/thời gian */
+      reset('default'); const rl = document.querySelector('.rlist');
+      ok('Lịch sử chat: tiêu đề Gần đây + danh sách phẳng, chat hiện tại được tô', /Gần đây/.test(document.querySelector('#rail').textContent) && rl.querySelectorAll('.rit').length === 5 && rl.querySelector('.rit.on').textContent === 'Chat mới' && !rl.querySelector('small'));
+      ok('Mỗi mục chỉ một dòng, cắt bằng dấu …', [...rl.querySelectorAll('.rit')].every(e => getComputedStyle(e).whiteSpace === 'nowrap' && getComputedStyle(e).textOverflow === 'ellipsis' && e.offsetHeight < 44));
+      document.querySelector('[data-act="recents"]').click(); ok('Bấm Gần đây thu gọn danh sách', !document.querySelector('.rlist') && document.querySelector('[data-act="recents"]').getAttribute('aria-expanded') === 'false');
+      document.querySelector('[data-act="recents"]').click(); ok('Bấm lần nữa mở lại', !!document.querySelector('.rlist'));
+      ok('Không có ô tìm kiếm, đổi tên hay xóa chat (ngoài V1)', !/Tìm|Search/i.test(document.querySelector('#rail').textContent) && !document.querySelector('#rail [aria-label*="Xóa"], #rail [aria-label*="Đổi tên"]'));
+      /* stale option */
+      reset('outline'); document.querySelector('[data-act="simstale"]') || 0; window.staleOption(); ok('Gợi ý đã cũ: không thực thi, nói vì sao', /không còn áp dụng/.test(document.querySelector('#dnotes').textContent) && !P.S.req);
+    } catch (e) { ok('NGOẠI LỆ: ' + e.message, false, e.stack); }
+    const pass = res.filter(r => r.pass).length, fail = res.length - pass;
+    const pre = document.createElement('pre');
+    pre.id = 'selftest'; pre.style.cssText = 'position:fixed;left:0;top:0;z-index:999;background:#fff;color:#000;font:11px/1.3 monospace;max-height:100vh;overflow:auto;padding:8px;margin:0;max-width:60vw';
+    pre.textContent = 'SELFTEST ' + pass + ' pass / ' + fail + ' fail\n' + res.map(r => (r.pass ? 'PASS ' : 'FAIL ') + r.name + (r.info ? '  → ' + r.info : '')).join('\n');
+    document.body.appendChild(pre); document.title = 'SELFTEST ' + pass + '/' + res.length + (fail ? ' FAIL' : ' OK');
+  }
+  const cur = () => P.cur(); const ta = () => document.querySelector('#ta');
+  setTimeout(run, 50);
+})();
+</script>
+</body>
+</html>
