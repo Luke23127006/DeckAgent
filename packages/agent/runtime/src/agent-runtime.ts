@@ -124,7 +124,8 @@ export class AgentRuntime {
     if (state.disposed) throw new RuntimeError('AGENT_DISPOSED', 'Agent is disposed')
     if (state.active) throw new RuntimeError('SESSION_BUSY', 'A turn is already running in this session')
     if (!input.trim()) throw new RuntimeError('INVALID_INPUT', 'User message must not be empty')
-    const abort = state.abort = new AbortController()
+    const abort = new AbortController()
+    state.abort = abort
     const cancel = () => abort.abort()
     if (signal?.aborted) cancel()
     else signal?.addEventListener('abort', cancel, { once: true })
@@ -224,11 +225,14 @@ export class AgentRuntime {
 
   dispose(): Promise<void> {
     this.disposed = true
-    return this.disposal ??= Promise.allSettled([
-      ...this.opening.values(), ...[...this.agents.values()].map(state => this.disposeAgent(state)),
-    ]).then(results => {
-      const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
-      if (errors.length) throw new AggregateError(errors, 'Agent disposal failed')
-    })
+    if (this.disposal === undefined) {
+      this.disposal = Promise.allSettled([
+        ...this.opening.values(), ...[...this.agents.values()].map(state => this.disposeAgent(state)),
+      ]).then(results => {
+        const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+        if (errors.length) throw new AggregateError(errors, 'Agent disposal failed')
+      })
+    }
+    return this.disposal
   }
 }

@@ -25,8 +25,22 @@ const help = `DeckAgent chat
   History persists locally in sessions.sqlite. Use the same data directory after restarting.
   An existing session keeps its provider/model; --tools must be enabled again when needed.`
 
+type ChatArgsValues = {
+  config?: string
+  provider?: string
+  model?: string
+  prompt?: string
+  tools?: boolean
+  help?: boolean
+  session?: string
+  'data-dir'?: string
+  'list-sessions'?: boolean
+  history?: boolean
+  setup?: boolean
+}
+
 async function main(): Promise<void> {
-  let values
+  let values: ChatArgsValues
   try {
     values = parseArgs({ options: {
       config: { type: 'string' }, provider: { type: 'string' }, model: { type: 'string' },
@@ -59,7 +73,7 @@ async function main(): Promise<void> {
     }
     const configPath = values.config ?? (process.env.DECKAGENT_MODELS_CONFIG || undefined)
     const terminal = process.stdin.isTTY && process.stdout.isTTY && values.prompt === undefined ? new TerminalPrompts() : undefined
-    let prepared
+    let prepared: Awaited<ReturnType<typeof prepareChat>>
     try {
       prepared = await prepareChat({
         dataDir, setup: Boolean(values.setup),

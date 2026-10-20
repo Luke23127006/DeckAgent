@@ -10,6 +10,9 @@
     "ocr:rules": "ocr delegate rule --format json",
     "build": "tsc -b && node scripts/build-workspace.mjs",
     "typecheck": "tsc -b",
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "format:check": "biome format",
     "test:cordis-smoke": "node --test tests/cordis-smoke.test.mjs",
     "start:cordis-smoke": "node apps/cordis-smoke/lib/cli.js",
     "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
@@ -20,11 +23,12 @@
   },
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",
-    "typescript": "^6.0.3",
-    "tsdown": "^0.22.2",
-    "@types/node": "^22.20.1",
+    "@biomejs/biome": "^2.5.15",
     "@types/js-yaml": "^4.0.9",
-    "@types/semver": "^7.8.0"
+    "@types/node": "^22.20.1",
+    "@types/semver": "^7.8.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@11.28.5",
   "workspaces": [

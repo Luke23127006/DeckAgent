@@ -60,7 +60,7 @@ async function connections(path: string): Promise<readonly ModelConnection[]> {
 async function choose(prompts: SetupPrompts, choices: readonly ModelConnection[]): Promise<ModelConnection> {
   prompts.info('Chọn provider:')
   const labels: Record<string, string> = { google: 'Google Gemini', openai: 'OpenAI', anthropic: 'Anthropic', deepseek: 'DeepSeek' }
-  choices.forEach((connection, index) => prompts.info(`  ${index + 1}. ${labels[connection.id] ?? connection.id}`))
+  choices.forEach((connection, index) => { prompts.info(`  ${index + 1}. ${labels[connection.id] ?? connection.id}`) })
   prompts.info(`  ${choices.length + 1}. Endpoint tương thích khác`)
   for (;;) {
     const answer = (await prompts.ask('Provider (số hoặc connection ID): ')).trim()

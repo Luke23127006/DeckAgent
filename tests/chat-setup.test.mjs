@@ -38,7 +38,7 @@ function prompts(answers) {
 test('first launch guides model selection, checks the endpoint and remembers defaults for the next launch', async t => {
   const dir = await workspace(t);
   let hits = 0;
-  const baseUrl = await endpoint(t, (req, res) => { hits++; reply(res); });
+  const baseUrl = await endpoint(t, (_req, res) => { hits++; reply(res); });
   const configPath = join(dir, 'models.json');
   await writeFile(configPath, JSON.stringify({ connections: [{ id: 'local', protocol: 'chat-completions', baseUrl }] }));
   const first = await prepareChat({ dataDir: dir, configPath, environment: {}, prompts: prompts(['1', 'selected-model']) });
@@ -102,7 +102,7 @@ test('terminal key input is hidden and cannot be recalled into the next answer',
 
 test('a user can configure another compatible endpoint without editing JSON', async t => {
   const dir = await workspace(t);
-  const baseUrl = await endpoint(t, (req, res) => reply(res));
+  const baseUrl = await endpoint(t, (_req, res) => reply(res));
   const configPath = join(dir, 'models.json');
   await writeFile(configPath, JSON.stringify({ connections: [{ id: 'example', protocol: 'gemini', baseUrl: 'https://example.test' }] }));
   const result = await prepareChat({ dataDir: dir, configPath, environment: {}, prompts: prompts(['2', '1', baseUrl, 'k', 'custom-model']) });
@@ -237,7 +237,7 @@ test('noninteractive startup fails clearly when setup is required and does not s
 test('cancelling failed reconfiguration preserves the previously usable profile without leaking provider bodies', async t => {
   const dir = await workspace(t);
   let hits = 0;
-  const baseUrl = await endpoint(t, (req, res) => {
+  const baseUrl = await endpoint(t, (_req, res) => {
     if (++hits === 1) reply(res);
     else { res.writeHead(503); res.end('private-provider-details'); }
   });
@@ -276,8 +276,8 @@ test('Ctrl+C during hidden input cancels setup and releases the terminal', async
 test('changing the default custom endpoint preserves the connection used by older Sessions', async t => {
   const dir = await workspace(t);
   let hitsA = 0, hitsB = 0;
-  const urlA = await endpoint(t, (req, res) => { hitsA++; reply(res); });
-  const urlB = await endpoint(t, (req, res) => { hitsB++; reply(res); });
+  const urlA = await endpoint(t, (_req, res) => { hitsA++; reply(res); });
+  const urlB = await endpoint(t, (_req, res) => { hitsB++; reply(res); });
   const configPath = join(dir, 'models.json');
   await writeFile(configPath, JSON.stringify({ connections: [{ id: 'example', protocol: 'chat-completions', baseUrl: 'https://example.test' }] }));
   const first = await prepareChat({ dataDir: dir, configPath, environment: {}, prompts: prompts(['2', '1', urlA, 'k', 'model']) });
@@ -290,7 +290,7 @@ test('changing the default custom endpoint preserves the connection used by olde
 test('cancellation while unlocking saved credentials prevents entering chat', async t => {
   const dir = await workspace(t);
   const credential = randomUUID();
-  const baseUrl = await endpoint(t, (req, res) => reply(res));
+  const baseUrl = await endpoint(t, (_req, res) => reply(res));
   const configPath = join(dir, 'models.json');
   await writeFile(configPath, JSON.stringify({ connections: [{ id: 'local', protocol: 'chat-completions', baseUrl, apiKeyEnv: 'TEST_TOKEN' }] }));
   await prepareChat({ dataDir: dir, configPath, environment: { TEST_TOKEN: credential }, prompts: prompts(['1', 'model']) });
