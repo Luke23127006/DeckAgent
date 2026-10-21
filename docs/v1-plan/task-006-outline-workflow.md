@@ -2,7 +2,9 @@
 
 Updated: 21-10-2026. Local A/B/C implementation on
 `feature/task-006-outline-workflow`, based on TASK-005 commit
-`7bb0685a84c0c1be15e0f48b0518d7596c152d10`. No TASK-006 commit, push or PR yet.
+`7bb0685a84c0c1be15e0f48b0518d7596c152d10`. Implementation and the tool-argument
+instruction fix were pushed as `4e13984` to `origin/feature/task-006-outline-workflow`
+at the task owner's request. No PR or merge into `dev` yet.
 Gate 005 and Gate 006 remain `NOT_VERIFIED`; local checks do not replace acceptance
 on integrated `dev` or a real-model demo.
 
