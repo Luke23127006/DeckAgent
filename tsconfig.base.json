@@ -24,6 +24,8 @@
       "node"
     ],
     "paths": {
+      "@deckagent/presentation-tools": ["./packages/tools/presentation/src/index.ts"],
+      "@deckagent/deck": ["./packages/presentation/deck/src/index.ts"],
       "@deckagent/session-persistence": [
         "./packages/session/persistence/src/index.ts"
       ],

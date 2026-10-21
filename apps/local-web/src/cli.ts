@@ -61,11 +61,12 @@ async function main() {
       port: { type: 'string' },
       help: { type: 'boolean' },
       'no-open': { type: 'boolean' },
+      'confirmed-deck': { type: 'string' },
     },
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--port 0] [--no-open]\nOpens Settings even without a model. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. Ctrl+C shuts down Host and drains active work.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--confirmed-deck config/deck.confirmed.example.json] [--port 0] [--no-open]\nOpens Settings even without a model. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for TASK-005 manual testing only; it is not the TASK-006 outline workflow. Ctrl+C shuts down Host and drains active work.',
     )
     return
   }
@@ -82,7 +83,18 @@ async function main() {
   }
   const port = Number(values.port ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
+  let confirmedDecks: NonNullable<Parameters<typeof startLocalWeb>[0]['confirmedDecks']> = []
+  if (values['confirmed-deck']) {
+    const value: unknown = JSON.parse(await readFile(values['confirmed-deck'], 'utf8'))
+    if (!object(value) || typeof value.sessionId !== 'string' || typeof value.outlineId !== 'string' || !Array.isArray(value.slides)
+      || Object.keys(value).some(key => !['sessionId', 'outlineId', 'slides'].includes(key))) throw new Error('Invalid confirmed deck fixture')
+    confirmedDecks = [{ sessionId: value.sessionId, outlineId: value.outlineId, slides: value.slides.map((slide: unknown) => {
+      if (!object(slide) || typeof slide.slideId !== 'string' || typeof slide.title !== 'string' || Object.keys(slide).some(key => !['slideId', 'title'].includes(key))) throw new Error('Invalid planned slide')
+      return { slideId: slide.slideId, title: slide.title }
+    }) }]
+  }
   const app = await startLocalWeb({
+    confirmedDecks,
     connections,
     ...(provider && model ? { selection: { provider, model } } : {}),
     workspace: values.workspace ?? '.deckagent/workspace',

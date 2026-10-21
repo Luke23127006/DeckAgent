@@ -12,8 +12,13 @@ import { page, style } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
+import { DeckService } from '@deckagent/deck'
+import type { ConfirmedDeckPlan } from '@deckagent/deck'
+import { registerPublishSlide } from '@deckagent/presentation-tools'
 
 export interface LocalWebOptions {
+  /** Trusted test/manual plans only; no model-facing confirmation bypass. */
+  readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly model?: ModelAdapter
   readonly selection?: ModelSelection
   readonly connections?: readonly ModelConnection[]
@@ -32,14 +37,22 @@ export async function startLocalWeb(options: LocalWebOptions) {
   const dataRelative = relative(workspace, dataDir)
   const outside = dataRelative === '..' || dataRelative.startsWith(`..${sep}`) || isAbsolute(dataRelative)
   if (!outside) throw new Error('Host data must be outside the Agent workspace')
-  const tools = new ToolRegistry()
-  const files = await registerFileTools(tools, { root: workspace })
   let sessions: SqliteSessionStore | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
+  let decks: DeckService | undefined
   try {
     sessions = new SqliteSessionStore(join(dataDir, 'sessions.sqlite'))
     const store = sessions
+    const presentation = new DeckService(join(dataDir, 'decks.sqlite'))
+    decks = presentation
+    for (const plan of options.confirmedDecks ?? []) {
+      if (!(await store.getInfo(plan.sessionId))) {
+        if (initial) await store.bind(plan.sessionId, initial)
+        else await store.open(plan.sessionId)
+      }
+      presentation.confirm(plan.sessionId, plan)
+    }
     const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot())
     web = state
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
@@ -59,6 +72,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
         }
     }
     const host = await startHost({
+      decks: presentation,
       assets,
       ...(options.port === undefined ? {} : { port: options.port }),
       async openAgent(sessionId, requestId) {
@@ -74,12 +88,21 @@ export async function startLocalWeb(options: LocalWebOptions) {
           throw error
         }
         const ctx = new Context()
+        const scopedTools = new ToolRegistry()
+        let scopedFiles: Awaited<ReturnType<typeof registerFileTools>> | undefined
+        let removePublish: (() => void) | undefined
         try {
+          scopedFiles = await registerFileTools(scopedTools, { root: workspace })
+          removePublish = await registerPublishSlide(scopedTools, { root: workspace, sessionId, decks: presentation })
           ctx.provide('agentModel', captured.model)
           ctx.provide('agentSessions', store)
-          ctx.provide('agentTools', tools)
-          await ctx.plugin(runtimePlugin, { systemPrompt: 'You are DeckAgent. Use read_file and write_file only within the granted workspace. Write HTML drafts as new files; do not overwrite existing files.' })
-          const agent = await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: files.names })
+          ctx.provide('agentTools', scopedTools)
+          const deck = presentation.snapshot(sessionId)
+          const instructions = deck.outlineId
+            ? `Host-confirmed slide plan: ${JSON.stringify(deck)}. Write static HTML/CSS as a new workspace draft, then use publish_slide for its planned slide ID with expectedRevision and a unique publicationId. No scripts, links, embeds or external assets. A draft is not published until publish_slide succeeds.`
+            : 'This chat has no Host-confirmed slide plan. Do not build or publish presentation slides. The outline confirmation workflow is not available yet.'
+          await ctx.plugin(runtimePlugin, { systemPrompt: `You are DeckAgent. Use read_file and write_file only within the granted workspace. Write drafts as new files; do not overwrite existing files. ${instructions}` })
+          const agent = await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: [...scopedFiles.names, ...(deck.outlineId ? ['publish_slide'] : [])] })
           return {
             sessionId, get status() { return agent.status }, history: () => agent.history(),
             send: async (input, control) => {
@@ -97,10 +120,10 @@ export async function startLocalWeb(options: LocalWebOptions) {
               state.finishRequest(requestId, result)
               return result
             },
-            dispose: async () => { try { await ctx.fiber.dispose() } finally { captured.release() } },
+            dispose: async () => { try { await ctx.fiber.dispose() } finally { removePublish?.(); scopedFiles?.dispose(); captured.release() } },
           }
         } catch (error) {
-          try { await ctx.fiber.dispose() } finally { captured.release() }
+          try { await ctx.fiber.dispose() } finally { removePublish?.(); scopedFiles?.dispose(); captured.release() }
           throw error
         }
       },
@@ -128,11 +151,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
             try {
               await catalog.close()
             } finally {
-              try {
-                files.dispose()
-              } finally {
-                try { state.close() } finally { store.close() }
-              }
+              try { presentation.close() } finally { try { state.close() } finally { store.close() } }
             }
           }
         })()
@@ -143,11 +162,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     try {
       await providers?.close()
     } finally {
-      try {
-        files.dispose()
-      } finally {
-        try { web?.close() } finally { sessions?.close() }
-      }
+      try { decks?.close() } finally { try { web?.close() } finally { sessions?.close() } }
     }
     throw error
   }

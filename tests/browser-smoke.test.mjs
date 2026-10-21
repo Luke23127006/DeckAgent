@@ -60,7 +60,7 @@ async function connect(url) {
     pending.clear()
   })
   return {
-    call(method, params = {}) {
+    call(method, params = {}, sessionId) {
       return new Promise((resolve, reject) => {
         const id = ++next
         const timeout = setTimeout(() => {
@@ -68,12 +68,113 @@ async function connect(url) {
           reject(new Error('Browser command timed out'))
         }, 10000)
         pending.set(id, { resolve, reject, timeout })
-        socket.send(JSON.stringify({ id, method, params }))
+        socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }))
       })
     },
     close: () => socket.close(),
   }
 }
+
+test('Deck Canvas renders published revisions over SSE, keeps selection and restores content after Host restart', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-canvas-browser-'))
+  let app, browser, protocol
+  t.after(async () => {
+    try {
+      if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+      if (browser && browser.exitCode === null) browser.kill()
+      await app?.close()
+    } finally { await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) }
+  })
+  const profile = join(dir, 'chrome')
+  browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const port = await eventually(async () => {
+    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
+  }, 'Browser did not start')
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (result.exceptionDetails) throw new Error(`Browser script failed: ${result.exceptionDetails.text}`)
+    return result.result.value
+  }
+  const options = {
+    workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    confirmedDecks: [{ sessionId: 'browser-deck', outlineId: 'confirmed', slides: [{ slideId: 'intro', title: 'Introduction' }, { slideId: 'second', title: 'Second' }, { slideId: 'draft', title: 'Unpublished' }] }],
+    selection: { provider: 'fixture', model: 'canvas' },
+    model: { async *stream(request) {
+      const user = [...request.messages].reverse().find(m => m.role === 'user').content
+      const slideId = user.includes('first') ? 'intro' : 'second'
+      const last = request.messages.at(-1)
+      if (last.role === 'user') {
+        yield { type: 'tool-call', call: { id: `write-${slideId}`, name: 'write_file', arguments: { path: `${slideId}.html`, content: `<style>body{background:#eef4dd}h1{color:rgb(0, 100, 0)}</style><h1>${slideId} published</h1>` } } }
+      } else if (last.name === 'write_file') {
+        yield { type: 'tool-call', call: { id: `publish-${slideId}`, name: 'publish_slide', arguments: { outlineId: 'confirmed', slideId, expectedRevision: 0, publicationId: `publish-${slideId}`, path: `${slideId}.html` } } }
+      } else {
+        yield { type: 'text-delta', text: `Published ${slideId}` }; yield { type: 'finish', reason: 'stop' }; return
+      }
+      yield { type: 'finish', reason: 'tool-calls' }
+    } },
+  }
+  app = await startLocalWeb(options)
+  await writeFile(join(dir, 'workspace', 'unpublished.html'), '<h1>PRIVATE DRAFT</h1>')
+  const navigate = async () => {
+    await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+    await eventually(() => evaluate(`Boolean([...document.querySelectorAll('.chat-navigation button')].find(b=>b.title==='browser-deck'))`), 'Fixture Session missing')
+    await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]'))`), 'Initial chat did not finish opening')
+    await evaluate(`[...document.querySelectorAll('.chat-navigation button')].find(b=>b.title==='browser-deck').click(); true`)
+    await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('Unpublished')`), 'Deck plan missing')
+  }
+  await navigate()
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').hidden`), true)
+  const send = async text => {
+    await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Composer unavailable')
+    await evaluate(`document.querySelector('.composer textarea').value=${JSON.stringify(text)}; document.querySelector('.composer').requestSubmit(); true`)
+  }
+  await send('Publish first')
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('intro published')`), 'First published content missing')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').getAttribute('sandbox')`), '')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').contentDocument === null`), true)
+  await send('Publish second')
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('2. Second · Revision 1')`), 'Second publication did not arrive over SSE')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').textContent`), '1. Introduction · Revision 1')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('PRIVATE DRAFT')`), false)
+  await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Next').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('second published')`), 'Slide navigation failed')
+  await evaluate(`const w=document.querySelector('.published-deck-sidebar input[type=range]'); w.value='640'; w.dispatchEvent(new Event('input')); true`)
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
+  await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Fullscreen').click(); true`)
+  await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')
+  await evaluate('document.exitFullscreen(); true')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe')?.srcdoc.includes('intro published')`), 'Reload did not restore published content')
+  await app.close()
+  app = await startLocalWeb(options)
+  await navigate()
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('intro published')`), 'Host restart lost slide content')
+  const slideFrame = await eventually(async () => {
+    const tree = await protocol.call('Page.getFrameTree')
+    const child = tree.frameTree.childFrames?.find(frame => frame.frame.url === 'about:srcdoc')
+    if (child) return { frameId: child.frame.id }
+    const targets = await protocol.call('Target.getTargets')
+    const target = targets.targetInfos.find(info => info.type === 'iframe' && info.url === 'about:srcdoc')
+    return target ? { targetId: target.targetId } : undefined
+  }, 'Rendered iframe missing')
+  let contextId, sessionId
+  if (slideFrame.targetId) sessionId = (await protocol.call('Target.attachToTarget', { targetId: slideFrame.targetId, flatten: true })).sessionId
+  else contextId = (await protocol.call('Page.createIsolatedWorld', { frameId: slideFrame.frameId, worldName: 'deck-verification' })).executionContextId
+  const rendered = await eventually(async () => {
+    const result = await protocol.call('Runtime.evaluate', { expression: `document.querySelector('h1') && ({text:document.body.textContent,color:getComputedStyle(document.querySelector('h1')).color})`, ...(contextId ? { contextId } : {}), returnByValue: true }, sessionId)
+    return result.result.value?.text.includes('intro published') ? result.result.value : undefined
+  }, 'Published HTML did not render')
+  assert.match(rendered.text, /intro published/)
+  assert.equal(rendered.color, 'rgb(0, 100, 0)', 'Static inline CSS must render under CSP')
+  await protocol.call('Page.captureScreenshot', { format: 'png' }).then(async result => {
+    await writeFile(process.env.DECKAGENT_CANVAS_SCREENSHOT ?? join(dir, 'canvas.png'), Buffer.from(result.data, 'base64'))
+  })
+})
 
 test('real browser boots, sends an Agent request, shows completion and restores history after reload', {
   timeout: 45000,
@@ -204,11 +305,13 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await readFile(join(dir, 'workspace', 'browser.html'), 'utf8'), '<h1>Browser round-trip</h1>')
   await protocol.call('Page.reload')
   await eventually(() => evaluate('Boolean(document.querySelector("form"))'), 'Browser reload failed')
+  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Restored Composer is not ready')
   await evaluate(`document.querySelector('#reconnect').click(); true`)
   await eventually(
     () => evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`),
     'Browser history restore failed',
   )
+  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Composer is not ready for the next request')
   await evaluate(
     `document.querySelector('.composer textarea').value='Write outside'; document.querySelector('.composer').requestSubmit(); true`,
   )

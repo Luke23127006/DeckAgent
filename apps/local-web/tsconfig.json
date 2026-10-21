@@ -8,6 +8,8 @@
     "src"
   ],
   "references": [
+    { "path": "../../packages/presentation/deck" },
+    { "path": "../../packages/tools/presentation" },
     {
       "path": "../../vendor/cordis"
     },

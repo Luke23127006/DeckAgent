@@ -5,6 +5,8 @@ import { button, element, field } from './dom.ts'
 import { settingsPanel } from './settings-panel.ts'
 import { mountDeckTab } from './deck-tab.ts'
 import { ConversationView } from './conversation-view.ts'
+import { DeckClient } from './deck-client.ts'
+import { mountDeckCanvas } from './deck-canvas.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -38,6 +40,9 @@ submit.disabled = true
 const deck = element('aside', undefined, 'deck-sidebar')
 deck.hidden = true
 mountDeckTab(deck)
+const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-sidebar')
+publishedDeck.hidden = true
+const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true })
 let current: WebSession | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
@@ -48,6 +53,8 @@ const selecting = new Set<string>()
 const drafts = new Map<string, string>()
 let polling = false
 let disposed = false
+let reconnecting = false
+let opening: number | undefined
 
 function remember(id: string) {
   try {
@@ -75,6 +82,8 @@ function controls() {
   model.disabled = !current || selecting.has(current.sessionId)
   submit.disabled =
     !current ||
+    reconnecting ||
+    opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
     !!current.activeRequestId ||
@@ -162,15 +171,22 @@ async function open(session: WebSession) {
   watch?.abort()
   if (current?.sessionId !== session.sessionId) timeline.reset()
   current = session
+  deckModel.open(session.sessionId)
   remember(session.sessionId)
   const expected = generation
+  opening = expected
   renderModels()
   renderChats()
   status.hidden = true
   if (session.activeRequestId)
     timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
   controls()
-  await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected)])
+  try {
+    await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected)])
+  } finally {
+    if (opening === expected) opening = undefined
+    controls()
+  }
   if (session.activeRequestId && generation === expected)
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
@@ -190,21 +206,32 @@ navigation.append(
 heading.append(
   title,
   button('Open sample deck', () => {
+    publishedDeck.hidden = true
     deck.hidden = false
   }),
+  button('Open deck', () => { deck.hidden = true; publishedDeck.hidden = false }),
 )
-const reconnect = button('Reconnect / read history', () =>
+const reconnect = button('Reconnect / read history', () => {
+  if (reconnecting) return
+  reconnecting = true
+  controls()
+  const expected = generation
   run(
     (async () => {
-      await refresh()
-      if (current) await open(current)
+      try {
+        await refresh()
+        if (current && generation === expected) await open(current)
+      } finally {
+        reconnecting = false
+        controls()
+      }
     })(),
-  ),
-)
+  )
+})
 reconnect.id = 'reconnect'
 form.append(input, submit)
 conversation.append(heading, field('Model for next request', model), status, reconnect, messages, form)
-root.replaceChildren(navigation, conversation, deck)
+root.replaceChildren(navigation, conversation, deck, publishedDeck)
 model.addEventListener('change', () => {
   if (!model.value || !current) return
   const id = current.sessionId
@@ -286,6 +313,7 @@ window.addEventListener(
   () => {
     disposed = true
     clearInterval(timer)
+    deckModel.close()
     watch?.abort()
   },
   { once: true },

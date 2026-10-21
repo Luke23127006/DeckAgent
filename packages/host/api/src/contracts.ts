@@ -1,4 +1,5 @@
 import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
+import type { DeckReader } from '@deckagent/deck'
 
 export interface AgentRequest {
   readonly sessionId: string
@@ -24,6 +25,7 @@ export interface HostOptions {
   readonly readHistory: (sessionId: string) => Promise<readonly Message[]>
   readonly port?: number
   readonly management?: WebManagement
+  readonly decks?: DeckReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
   readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
 }

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@deckagent/deck": "workspace:*",
+    "@deckagent/presentation-tools": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deckagent/agent-runtime": "workspace:*",
     "@deckagent/file-tools": "workspace:*",

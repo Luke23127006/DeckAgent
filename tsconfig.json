@@ -1,6 +1,8 @@
 {
   "files": [],
   "references": [
+    { "path": "packages/tools/presentation" },
+    { "path": "packages/presentation/deck" },
     {
       "path": "vendor/cosmokit"
     },

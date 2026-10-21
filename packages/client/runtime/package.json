@@ -13,6 +13,7 @@
     "./boot": "./lib/boot.js"
   },
   "dependencies": {
+    "@deckagent/deck": "workspace:*",
     "@deckagent/host-api": "workspace:*"
   }
 }

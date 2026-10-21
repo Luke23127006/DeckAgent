@@ -1,2 +1,4 @@
 export { HostClient } from './host-client.ts'
 export { LayoutSlots } from './layout.ts'
+export { DeckClient } from './deck-client.ts'
+export { DeckModel } from './deck-model.ts'

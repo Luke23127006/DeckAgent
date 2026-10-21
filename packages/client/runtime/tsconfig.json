@@ -13,6 +13,7 @@
     "src"
   ],
   "references": [
+    { "path": "../../presentation/deck" },
     {
       "path": "../../host/api"
     }

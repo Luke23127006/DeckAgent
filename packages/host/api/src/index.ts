@@ -1,6 +1,8 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { DeckError } from '@deckagent/deck'
+import { routeDeck } from './deck-routes.ts'
 import type { HostOptions, RequestSnapshot } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
 
@@ -65,7 +67,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -73,8 +75,9 @@ export async function startHost(options: HostOptions) {
         return
       }
       const known = error instanceof HttpError
-      json(res, known ? error.status : 500, {
-        error: { code: known ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
+      const deck = error instanceof DeckError
+      json(res, known ? error.status : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
+        error: { code: known ? error.code : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
       })
     })
   })
@@ -105,6 +108,7 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const management = options.management
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
