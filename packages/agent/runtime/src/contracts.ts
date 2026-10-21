@@ -83,10 +83,24 @@ export interface AgentOptions {
 export interface AgentHandle {
   readonly sessionId: string
   readonly status: 'idle' | 'running' | 'disposed'
-  send(input: string, options?: { signal?: AbortSignal }): Promise<TurnResult>
+  send(input: string, options?: SendOptions): Promise<TurnResult>
   history(): Promise<readonly Message[]>
   /** Cancel and await active work. Keeps session history; releases the live identity. */
   dispose(): Promise<void>
+}
+
+/** Observable work only; never contains model reasoning, credentials or raw exceptions. */
+export interface ActivityEvent {
+  readonly id: string
+  readonly kind: 'model' | 'tool'
+  readonly label: string
+  readonly status: 'running' | 'completed' | 'failed' | 'stopped' | 'unknown'
+}
+
+export interface SendOptions {
+  readonly signal?: AbortSignal
+  /** Awaited before proceeding so a durable sink can preserve activity ordering. */
+  readonly onActivity?: (event: ActivityEvent) => Promise<void>
 }
 
 export class RuntimeError extends Error {

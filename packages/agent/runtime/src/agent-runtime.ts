@@ -1,5 +1,5 @@
 import { RuntimeError } from './contracts.ts'
-import type { AgentHandle, AgentOptions, JsonValue, ModelAdapter, SessionStore, ToolCall, TurnResult } from './contracts.ts'
+import type { ActivityEvent, SendOptions, AgentHandle, AgentOptions, JsonValue, ModelAdapter, SessionStore, ToolCall, TurnResult } from './contracts.ts'
 import { buildPrompt } from './prompt.ts'
 import { ToolRegistry } from './tool-registry.ts'
 
@@ -106,7 +106,7 @@ export class AgentRuntime {
       return {
         sessionId: owned.sessionId,
         get status() { return state.disposed ? 'disposed' : state.active ? 'running' : 'idle' },
-        send: (input, control) => this.send(state, input, control?.signal),
+        send: (input, control) => this.send(state, input, control),
         history: () => this.options.sessions.read(owned.sessionId),
         dispose: () => this.disposeAgent(state),
       }
@@ -119,7 +119,8 @@ export class AgentRuntime {
     if (this.disposed) throw new RuntimeError('RUNTIME_DISPOSED', 'Agent Runtime is disposed')
   }
 
-  private async send(state: LiveAgent, input: string, signal?: AbortSignal): Promise<TurnResult> {
+  private async send(state: LiveAgent, input: string, control?: SendOptions): Promise<TurnResult> {
+    const signal = control?.signal
     this.assertActive()
     if (state.disposed) throw new RuntimeError('AGENT_DISPOSED', 'Agent is disposed')
     if (state.active) throw new RuntimeError('SESSION_BUSY', 'A turn is already running in this session')
@@ -129,7 +130,7 @@ export class AgentRuntime {
     const cancel = () => abort.abort()
     if (signal?.aborted) cancel()
     else signal?.addEventListener('abort', cancel, { once: true })
-    const active = this.turn(state, input, abort.signal).finally(() => {
+    const active = this.turn(state, input, abort.signal, control?.onActivity).finally(() => {
       signal?.removeEventListener('abort', cancel)
       state.active = undefined
       state.abort = undefined
@@ -138,10 +139,15 @@ export class AgentRuntime {
     return active
   }
 
-  private async turn(state: LiveAgent, input: string, signal: AbortSignal): Promise<TurnResult> {
+  private async turn(state: LiveAgent, input: string, signal: AbortSignal, onActivity?: SendOptions['onActivity']): Promise<TurnResult> {
     let text = ''
     let steps = 0
     let replyCommitted = false
+    let activity: ActivityEvent | undefined
+    const report = async (event: ActivityEvent) => {
+      await onActivity?.(event)
+      activity = event.status === 'running' ? event : undefined
+    }
     try {
       signal.throwIfAborted()
       await this.options.sessions.append(state.options.sessionId, [{ role: 'user', content: input }])
@@ -155,6 +161,7 @@ export class AgentRuntime {
         const calls: ToolCall[] = []
         let providerState: JsonValue | undefined
         let finish: 'stop' | 'tool-calls' | undefined
+        await report({ id: `model-${steps}`, kind: 'model', label: 'Model response', status: 'running' })
         for await (const event of this.options.model.stream({
           selection: structuredClone(state.options.selection),
           messages: buildPrompt(history, this.options.systemPrompt ?? ''),
@@ -184,17 +191,21 @@ export class AgentRuntime {
           ...(providerState !== undefined ? { providerState: { ...state.options.selection, data: providerState } } : {}),
         }])
         replyCommitted = true
+        await report({ id: `model-${steps}`, kind: 'model', label: 'Model response', status: 'completed' })
         if (!calls.length) return { status: 'completed', text, steps }
         for (const call of calls) {
+          if (!signal.aborted) await report({ id: `tool-${call.id}`, kind: 'tool', label: call.name, status: 'running' })
           const result = signal.aborted
             ? this.tools.failure(call, 'TOOL_NOT_STARTED')
             : await this.tools.execute(call, state.options.tools ?? [], signal)
           await this.options.sessions.append(state.options.sessionId, [result])
+          if (activity) await report({ ...activity, status: result.isError ? (signal.aborted ? 'unknown' : 'failed') : 'completed' })
         }
         signal.throwIfAborted()
       }
       throw new RuntimeError('STEP_LIMIT', 'Agent reached its model-step limit')
     } catch (error) {
+      if (activity) await report({ ...activity, status: activity.kind === 'tool' ? 'unknown' : signal.aborted ? 'stopped' : 'failed' })
       if (text && !replyCommitted) {
         await this.options.sessions.append(state.options.sessionId, [{ role: 'assistant', content: text, interrupted: true }])
       }

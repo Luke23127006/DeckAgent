@@ -6,15 +6,21 @@ Dashboard giữ current state và handoff cần thiết; scope/acceptance criter
 
 | Mục | Hiện trạng |
 | --- | --- |
-| Mốc đang triển khai | TASK-003 local implementation + manual acceptance PASS theo task owner; chờ commit/PR/merge và xác minh trên dev |
-| Stable integration baseline | Gate 001 và Gate 002 PASS: `75793de6becd563e11f170cd0930b1b45b9606d4`; Gate 002 gồm manual acceptance do task owner xác nhận trong session |
-| Snapshot test hiện tại | 21-10-2026 / `feature/task-003-tools-browser` từ dev `75793de` + working tree TASK-003 chưa commit; manual PASS do user xác nhận |
-| Phạm vi xác minh | 20-10-2026: local và remote dev cùng `75793de`; PR #19 merged `0501830`. Push CI tất cả steps PASS; local build/lint và 78/78 tests PASS. Xem evidence tích hợp bên dưới; không chạy model thật trong lượt này |
+| Mốc đang triển khai | TASK-004 A/B/C local implementation; chờ manual acceptance và PR/tích hợp dev |
+| Stable integration baseline | Gate 003 PASS: dev `049fa77d50361e768b022384637ddde108224b8b`, PR #20 merged; CI tích hợp PASS và manual acceptance TASK-003 do user xác nhận |
+| Snapshot test hiện tại | 21-10-2026 / `feature/task-004-local-web`, base dev `049fa77` + working tree chưa commit; chưa PR/push |
+| Phạm vi xác minh | Latest inline Status/Activity: build/lint + 10/10 focused tests PASS. Snapshot rộng trước thay đổi UI: source copy sạch frozen install/build, 102/102 tests và UX 64 presets PASS; actionlint PASS. Không gọi cloud bằng key thật |
 | Đích ưu tiên theo plan | M6 — demo UC-001. Gate 007 cũng chưa đủ để kết luận toàn bộ V1 hoàn thành |
 
 `UNKNOWN` = chưa biết thông tin; `NOT_VERIFIED` = chưa có evidence đủ để kết luận. Không suy ra “chưa bắt đầu” hay “đã xong” từ việc thiếu code trên một branch.
 
-**Cập nhật tích hợp — 20-10-2026:** PR #19 đã merge A/B/C tại `0501830f3ba428936d0c7878e4f417a3e56829c4`. [Push CI trên dev `75793de`](https://github.com/Luke23127006/DeckAgent/actions/runs/39435037179) PASS. Các mô tả “chưa PR/merge/hosted CI” trong snapshot/handoff TASK-002 cũ bên dưới đã được thay thế bởi cập nhật này; chỉ giữ ngữ cảnh kỹ thuật. TASK-003 candidate hiện tại chưa merge.
+**Cập nhật tích hợp — 21-10-2026:** [PR #20](https://github.com/Luke23127006/DeckAgent/pull/20) merged vào dev `049fa77d50361e768b022384637ddde108224b8b`; [push CI](https://github.com/Luke23127006/DeckAgent/actions/runs/39475687854) success đúng SHA, gồm automated browser/file-policy acceptance. Kết hợp manual checklist TASK-003 user đã xác nhận PASS: Gate 003 PASS, A/B/C DONE. Manual không được chạy lại trên merge SHA; successful Session ID/toolchain manual vẫn UNKNOWN. Các mô tả chưa commit/PR/merge và Gate 003 NOT_VERIFIED trong handoff cũ bên dưới được thay thế bởi cập nhật này; không dùng chúng làm current state.
+
+**TASK-004 current handoff — 21-10-2026:** task owner đã đồng ý xử lý ba gaps kickoff. Đã có Web mở không cần model/key, Settings/provider catalog + key DPAPI, đổi selected model theo chat nhưng request giữ model/config/key snapshot, Session History và Activity Log thực/lưu bền. Deck Tab dùng ba slides mẫu với navigation/resize/fullscreen và iframe sandbox. Chỉ reuse Cordis; không thêm production dependency. Contracts/files/compatibility và [checklist manual TASK-004](task-004-local-web.md#manual-acceptance-checklist--task-004) ở [handoff](task-004-local-web.md). A/B/C do Codex triển khai theo yêu cầu task owner; shared wiring/layout có cùng owner.
+
+**TASK-004-B layout current — 21-10-2026:** theo phương án task owner chọn, Status/Activity đã gộp thành một dòng mặc định thu gọn trong conversation cho mỗi request; bỏ footer Activity. `conversation-view.ts` giữ DOM/keyboard focus/expansion qua polling; count và trạng thái vẫn cập nhật khi thu gọn. Record mới gắn đúng user message bằng optional `StoredRequest.historyStart`; record cũ không anchor giữ ở cuối history, không đoán association hoặc sửa messages. Build/lint và 10/10 focused tests PASS; screenshot fixture local đã kiểm tra chat/Composer. Handoff/manual đã cập nhật; user manual acceptance và Gate 004 vẫn NOT_VERIFIED. Khởi động lại Host để nạp assets mới.
+
+**TASK-004 next actions / limits:** chạy checklist manual bằng data directory riêng; ghi revision/provider/model/Session ID và kết quả từng bước, không key/token. Sau acceptance, review rồi tạo PR theo chỉ dẫn task owner và kiểm tra integrated dev trước đóng Gate 004. Chưa commit/push/PR; manual/cloud/hosted CI candidate NOT_VERIFIED. BR-005 default model IDs/Restore defaults vẫn chưa chốt; candidate dùng IDs/protocols đã có làm compatibility values, không sửa spec hoặc tự chọn model mặc định. Không claim đầy đủ UC-005, Stop UI, Deck publication hoặc TASK-007 recovery. Các đoạn TASK-002/003 cũ bên dưới chỉ giữ tham chiếu kỹ thuật; current state theo bảng và handoff này.
 
 **Snapshot trước merge — 20-10-2026:** theo yêu cầu task owner, gộp TASK-002-A/B/C,
 CLI onboarding, phần thay boot cần thiết, tests và tài liệu trong commit bàn giao
@@ -32,8 +38,8 @@ Trạng thái dùng: `NOT_VERIFIED`, `TODO` (owner xác nhận chưa bắt đầ
 | --- | --- | --- | --- |
 | TASK-001 — Foundation (M1) | Không; upstream/toolchain ghi ở shared handoff | DONE | Gate 001 PASS / dev `75793de` / push CI smoke injection/cleanup + boot; PR #17 và boot sửa qua #19 đã merge |
 | TASK-002 — Agent + Session (M2) | Gate 001 PASS | DONE | Gate 002 PASS / dev `75793de` / PR #19 merged, CI và 78/78 local tests PASS; task owner xác nhận checklist manual live model/restart thành công |
-| TASK-003 — Tools + Browser (M3) | Gate 002 PASS | IN_PROGRESS | Local automated + manual 5 bước PASS (user, 21-10). Gate 003 trên dev NOT_VERIFIED: source chưa commit/PR/merge; chưa hosted CI candidate |
-| TASK-004 — Local Web (M4) | Gate 003 PASS | NOT_VERIFIED | Gate 004: NOT_VERIFIED / UNKNOWN / chưa có |
+| TASK-003 — Tools + Browser (M3) | Gate 002 PASS | DONE | Gate 003 PASS / dev `049fa77` / PR #20 merged + push CI success; manual checklist PASS theo user, attribution/giới hạn ở cập nhật tích hợp |
+| TASK-004 — Local Web (M4) | Gate 003 PASS | IN_PROGRESS | Local build/lint, 102/102 tests + UX PASS; manual/PR/merged dev chưa có. Gate 004 NOT_VERIFIED |
 | TASK-005 — Slide Pipeline (M5) | Gate 004 PASS | NOT_VERIFIED | Gate 005: NOT_VERIFIED / UNKNOWN / chưa có |
 | TASK-006 — UC-001 Demo (M6) | Gate 005 PASS | NOT_VERIFIED | Gate 006: NOT_VERIFIED / UNKNOWN / chưa có |
 | TASK-007 — Recovery / History / Editing (M7) | Gate 006 PASS | NOT_VERIFIED | Gate 007: NOT_VERIFIED / UNKNOWN / chưa có |
@@ -44,15 +50,15 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 
 ### A — Platform / Host
 
-- Thành viên / cập nhật: Codex / 20-10-2026; task owner đã chốt chỉ reuse Cordis và giữ cấu trúc `packages/` + `apps/`.
-- Đang làm / branch / PR: TASK-003-A local hoàn tất, chờ review/PR / `feature/task-003-tools-browser` từ dev `75793de` / chưa PR. Contracts/files/evidence hiện tại ở shared handoff TASK-003; phần TASK-002 dưới đây là tham chiếu kỹ thuật.
+- Thành viên / cập nhật: Codex / 21-10-2026; task owner đã đồng ý triển khai TASK-004 sau rà soát blockers.
+- Đang làm / branch / PR: TASK-004-A / `feature/task-004-local-web`, base dev `049fa77` / chưa PR. Sở hữu composition, Settings/Session API, credential snapshots và persistence; [files/contracts/evidence](task-004-local-web.md).
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
 | TASK-001-A | Workspace | DONE | PR #17 + #19 merged; Gate 001 PASS / dev `75793de` / [CI](https://github.com/Luke23127006/DeckAgent/actions/runs/39435037179) |
 | TASK-002-A | Agent Runtime do DeckAgent tự xây trên Cordis | DONE | [PR #19](https://github.com/Luke23127006/DeckAgent/pull/19) merged `0501830`; Gate 002 PASS / dev `75793de` / CI + local tests + user manual acceptance |
-| TASK-003-A | File Tools + Safety | IN_PROGRESS | Automated policy + manual create/read và outside denial PASS; local implementation hoàn tất, chưa PR/merge |
-| TASK-004-A | Web Host | NOT_VERIFIED | UNKNOWN |
+| TASK-003-A | File Tools + Safety | DONE | PR #20 merged dev `049fa77`; Gate 003 PASS; push CI + user manual acceptance (xem cập nhật tích hợp) |
+| TASK-004-A | Web Host | IN_PROGRESS | Settings/Session/request snapshots và activity persistence có local evidence; xem handoff TASK-004; chưa PR |
 | TASK-005-A | Deck Service | NOT_VERIFIED | UNKNOWN |
 | TASK-006-A | Outline State + Confirmation Guard | NOT_VERIFIED | UNKNOWN |
 | TASK-007-A | Failure + Recovery | NOT_VERIFIED | UNKNOWN |
@@ -63,19 +69,19 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 - Files sở hữu: `packages/agent/runtime`, `apps/agent-runtime`, `tests/agent-runtime.test.mjs`, `tests/fixtures/agent-runtime.mjs`; thay đổi tích hợp cần thiết ở foundation, root manifests/references/build, CI, provenance và tài liệu handoff. Không sửa implementation vendor hoặc phần handoff B/C.
 - Verification: 20-10-2026, base `20a832f` + candidate chưa commit, Windows x64 PowerShell, Node 22.19.0 và pnpm 11.28.5. Frozen install, build/typecheck, 22/22 Runtime tests, 2/2 foundation tests, hai CLI và UX regression 64 presets PASS. Source copy không có node_modules/lib trước install cũng build và chạy các checks tương ứng PASS; sau sửa cleanup khi storage lỗi, build và 22/22 Runtime tests trên bản sao PASS lại. Schema/PowerShell của CI, local doc links và diff whitespace PASS. Xem evidence chung bên dưới.
 - Contracts / handoff: [Runtime contract](task-002-a-agent-runtime.md) định nghĩa `ModelAdapter.stream()` cho B, `SessionStore.open/read/append` cho C và application injection points. Runtime giữ schema object đóng/primitive và cancellation hợp tác. B đã nối provider thật; C đã nối SQLite/metadata và test restart, đồng thời sửa disposal chờ Session đang mở. Chi tiết ở [Session Persistence](task-002-c-session-persistence.md); chưa có advanced crash recovery, File Tools/sandbox hoặc Web.
-- Next action: manual File Tools đã PASS theo user; review path policy và giới hạn, chuẩn bị PR/merge rồi xác minh trên dev.
+- Next action: chạy manual TASK-004 bằng data directory riêng; xác minh provider setup/model change/restart, rồi chuẩn bị review/PR theo chỉ dẫn task owner.
 
 ### B — Web / UX
 
-- Thành viên / cập nhật: Codex triển khai TASK-002-B theo yêu cầu task owner / 20-10-2026; task owner chốt lớp chung cho nhiều model, không chuyên biệt một provider.
-- Đang làm / branch / PR: TASK-003-B local hoàn tất, chờ review/PR / cùng `feature/task-003-tools-browser`, base dev `75793de` / chưa PR. Scope hiện tại ở shared handoff TASK-003; TASK-002-B đã merge chung qua PR #19.
+- Thành viên / cập nhật: Codex theo yêu cầu task owner / 21-10-2026; TASK-004-B dùng contracts đã thống nhất.
+- Đang làm / branch / PR: TASK-004-B / cùng `feature/task-004-local-web`, base dev `049fa77` / chưa PR. Sở hữu Conversation/Composer, Models Settings, History và Activity UI; [handoff](task-004-local-web.md).
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
 | TASK-001-B | Cordis Boot Dependencies | DONE | PR #17 + #19 merged; Gate 001 PASS / dev `75793de` / [CI](https://github.com/Luke23127006/DeckAgent/actions/runs/39435037179) |
 | TASK-002-B | Model Providers + Credentials | DONE | [PR #19](https://github.com/Luke23127006/DeckAgent/pull/19) merged `0501830`; Gate 002 PASS / dev `75793de` / CI + local tests + user manual acceptance |
-| TASK-003-B | Host API | IN_PROGRESS | Automated API/auth/drain + manual request/status/history PASS; local implementation hoàn tất, chưa PR/merge |
-| TASK-004-B | Conversation + Settings UI | NOT_VERIFIED | UNKNOWN |
+| TASK-003-B | Host API | DONE | PR #20 merged dev `049fa77`; Gate 003 PASS; push CI + user manual acceptance (xem cập nhật tích hợp) |
+| TASK-004-B | Conversation + Settings UI | IN_PROGRESS | Inline Status/Activity mặc định thu gọn; build/lint + 10 focused tests PASS; manual NOT_VERIFIED; chưa PR |
 | TASK-005-B | Deck Client Model + Canvas | NOT_VERIFIED | UNKNOWN |
 | TASK-006-B | Outline Conversation UI | NOT_VERIFIED | UNKNOWN |
 | TASK-007-B | Chat + Deck History (UC-006) | NOT_VERIFIED | UNKNOWN |
@@ -90,7 +96,7 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 - Manual live check: ngày 20-10-2026, task owner gửi output PowerShell của lệnh Node 22.19.0 với `--use-system-ca`, connection `google`, model `gemini-3.8-flash`, `--tools` và prompt gọi noop. Output có `Tool noop: DeckAgent`, tiếp theo assistant trả lời kết quả hàm noop là DeckAgent. Đây là evidence model/tool round-trip thành công do user cung cấp; agent không nhận hoặc in key.
 - Handoff cho người clone repo: [README](../../README.md) đã cập nhật bằng tiếng Việt theo trình tự prerequisites/checkout → install/build → tests và demo offline → cấu hình provider/key → test API/tool → chat nhiều lượt. Có lệnh một dòng cho key `Process`/`User`, nạp key User vào process hiện tại, kiểm tra định dạng không in key, system CA và troubleshooting; các lệnh chạy dùng Node trên máy, không phụ thuộc `trash`. Kiểm tra cú pháp 13 khối PowerShell, 11 script references và doc links PASS; demo foundation, demo Runtime và chat help chạy lại PASS. Không chạy lệnh ghi User environment, cài toolchain global hoặc gọi API có key trong lượt sửa tài liệu này.
 - Giới hạn: manual live evidence chỉ cho Gemini/model đã chọn trên candidate hiện tại, chưa phải kiểm tra độc lập bởi agent hoặc nghiệm thu trên merged dev SHA. Chưa có live checks cho providers khác, hosted CI hoặc Ctrl+C bằng bàn phím. Không có số đo latency dù trước đó user thấy CLI im lặng trong lúc chờ. Chỉ text/function tools; model-specific capabilities và protocol khác cần check riêng. Evidence live của B có trước C, không chứng minh cloud restart; C đã kiểm tra durable restart qua local HTTP. TASK-002-B chưa DONE, Gate 002 giữ NOT_VERIFIED.
-- Next action: review HTTP/SSE contracts, auth và request lifecycle theo shared handoff TASK-003; xác minh CI candidate sau PR/merge.
+- Next action: manual chọn model/chat, Settings không mất draft, đọc history/activities không gửi request; default model lists vẫn pending theo BR-005.
 
 - Bổ sung theo task owner — CLI onboarding: `pnpm chat` hướng dẫn provider/model/key khi thiếu, kiểm tra connection và vào chat; những lần sau dùng profile/key mã hóa. `--setup` cấu hình lại; endpoint khác dùng ba protocols hiện có. Settings version 1 ở `.deckagent/profile.json` giữ selection và các connections đã chọn để Session cũ vẫn mở đúng endpoint khi đổi default.
 - Credentials/lifecycle của onboarding: environment ưu tiên, rồi DPAPI CurrentUser trên Windows, rồi hidden input; lưu key opt-in, không ghi JSON/Session/logs/command arguments hoặc User/System environment. OS khác chỉ environment/key trong lần chạy. Prompt không echo hoặc giữ readline history; cancel khi đang nhập/check API/unlock credentials không vào chat. Giữ nguyên contract của provider/runtime/store. Chi tiết ở [CLI onboarding](task-002-cli-onboarding.md).
@@ -98,15 +104,15 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 
 ### C — Agent / Tools / Integration
 
-- Thành viên / cập nhật: Codex triển khai TASK-002-C theo yêu cầu task owner / 20-10-2026; đã chốt SQLite local và cleanup fake demo.
-- Đang làm / branch / PR: TASK-003-C local hoàn tất, chờ review/PR / cùng `feature/task-003-tools-browser`, base dev `75793de` / chưa PR. Scope hiện tại ở shared handoff TASK-003; TASK-002-C đã merge chung qua PR #19.
+- Thành viên / cập nhật: Codex theo yêu cầu task owner / 21-10-2026; TASK-004-C dùng slides mẫu độc lập với Deck Service.
+- Đang làm / branch / PR: TASK-004-C / cùng `feature/task-004-local-web`, base dev `049fa77` / chưa PR. Sở hữu Deck Tab/navigation/resize/fullscreen và browser checks; [handoff](task-004-local-web.md).
 
 | Subtask | Kết quả theo plan | Status | PR / evidence |
 | --- | --- | --- | --- |
 | TASK-001-C | Foundation Smoke Tests | DONE | PR #17 + #19 merged; Gate 001 PASS / dev `75793de` / [CI](https://github.com/Luke23127006/DeckAgent/actions/runs/39435037179) |
 | TASK-002-C | Session Persistence | DONE | [PR #19](https://github.com/Luke23127006/DeckAgent/pull/19) merged `0501830`; Gate 002 PASS / dev `75793de` / CI + local tests + user manual acceptance |
-| TASK-003-C | Browser Runtime | IN_PROGRESS | Automated Chrome + manual reload giữa turn/reconnect/restart history PASS; local implementation hoàn tất, chưa PR/merge |
-| TASK-004-C | Right Sidebar + Sample Deck Tab | NOT_VERIFIED | UNKNOWN |
+| TASK-003-C | Browser Runtime | DONE | PR #20 merged dev `049fa77`; Gate 003 PASS; push CI + user manual acceptance (xem cập nhật tích hợp) |
+| TASK-004-C | Right Sidebar + Sample Deck Tab | IN_PROGRESS | Browser navigation/resize/fullscreen/sandbox PASS; manual NOT_VERIFIED; chưa PR |
 | TASK-005-C | publish_slide Tool | NOT_VERIFIED | UNKNOWN |
 | TASK-006-C | Agent Presentation Workflow | NOT_VERIFIED | UNKNOWN |
 | TASK-007-C | Scoped Slide Editing (UC-002) | NOT_VERIFIED | UNKNOWN |
@@ -119,7 +125,7 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 - Verification: Windows x64 PowerShell, Node 22.19.0/pnpm 11.28.5, base `20a832f` + working tree chưa commit. Tests đỏ trước implementation cho persistence, atomic rollback, incompatible schema, CLI restart và pending-open disposal; sau implementation build/typecheck và 54/54 tests PASS (Runtime 22, providers 21, persistence 9, foundation 2). Source copy 97 files chưa có node_modules/lib: frozen offline install, build và cùng 54/54 tests PASS. CLI restart test chạy process mới, kiểm tra exact Gemini signature/tool response replay và đọc history không key/config. Graceful shutdown giữ partial text sau reopen. Không dùng API key thật.
 - Kiểm tra bàn giao: CLI help PASS; workflow YAML/script references và cú pháp 10 PowerShell CI steps PASS; 16 PowerShell blocks trong README parse PASS; 45 local doc links PASS. Không có dependency ngoài workspace mới hoặc root dependency đổi; scan 33 app/package source/config files không thấy Harness imports hay credential patterns. `git diff --check` PASS; generated fake CLI cũ đã xóa, data directory mặc định được Git bỏ qua.
 - Giới hạn / chưa nghiệm thu: Node 22.19.0 in ExperimentalWarning của SQLite; chưa có authenticated cloud restart, keyboard Ctrl+C, kill/power-loss recovery, hosted CI hoặc merged dev evidence. Không đánh dấu C DONE hoặc Gate 002 PASS chỉ từ checks local. Historical evidence A/B dưới đây mô tả các snapshot trước khi cleanup/persistence của C.
-- Next action: manual browser đã PASS theo user; chạy browser smoke/acceptance trên merged dev và đóng Gate khi đủ evidence.
+- Next action: manual kiểm tra Deck Tab/slides đọc được, resize/fullscreen và reload; không coi layout state là durable Deck Storage.
 
 ## Shared handoff và verification — A duy trì, B/C gửi thay đổi qua handoff
 
@@ -149,6 +155,9 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 
 | Evidence | Ngày / revision / môi trường | Check và kết quả | Giới hạn / lỗi còn lại |
 | --- | --- | --- | --- |
+| TASK-004-B inline Status/Activity — current | 21-10-2026 / Codex / base `049fa77` + working tree / Windows, Node 22.19.0, Chrome headless | Build/lint + 10/10 focused browser/client/Web/Session tests PASS. Running/completed collapsed by default; counts, anchors/reload, focus/expansion, no extra Agent work, chat height và Composer visibility PASS. Visual screenshot `.local-only/task-004-inline-ui.png` đã xem | Log `.local-only/task-004-inline-tests.log`. Không chạy lại broad suite/cloud; manual user/hosted CI/merge chưa có. Optional anchor không migrate/rewrite history cũ |
+| TASK-004 local candidate | 21-10-2026 / Codex / `feature/task-004-local-web`, dev `049fa77` + working tree / Windows x64, Node 22.19.0, pnpm 11.28.5, Chrome headless | Source copy 142 files không node_modules/lib trước install: frozen offline install/build, 102/102 tests PASS (0 skipped), UX 64 presets PASS. Lint/actionlint PASS. Final clean-copy rebuild + 102/102 Node tests PASS sau fix initialization race/provider deletion; gồm Composer visibility và sửa key DPAPI hỏng. Sau review cleanup: checkout build + 7/7 focused Web tests PASS | Logs local `.local-only/task-004-clean-tests-final.log`, `task-004-final-focused.log`; screenshot fixture `task-004-ui.png`. Không cloud key/live model/manual user/hosted CI candidate/PR/merge. Gate 004 NOT_VERIFIED; default models/Restore defaults pending, không claim full UC-005 |
+| Gate 003 integrated current | 21-10-2026 / GitHub API / dev `049fa77d50361e768b022384637ddde108224b8b` | PR #20 merged + [push CI 39475687854](https://github.com/Luke23127006/DeckAgent/actions/runs/39475687854) success; kết hợp manual user PASS đã ghi: Gate 003 PASS | Manual không chạy lại trên merge SHA; attribution theo user/session, successful Session ID UNKNOWN. Các rows TASK-003 candidate phía dưới là historical |
 | TASK-003 manual current | 21-10-2026 / task owner xác nhận trong session / local candidate base `75793de` + uncommitted source | Checklist 5 bước PASS theo user; [bước và expected results](task-003-tools-browser.md#manual-acceptance-checklist--task-003) đã lưu để chạy lại | Không có successful Session ID/log/SHA output riêng; attribution theo session context. Gate 003 integrated NOT_VERIFIED; không kết luận nguyên nhân lỗi HTTP cũ đã được sửa |
 | TASK-003 candidate + clean source | 20-10-2026 / Codex / branch `feature/task-003-tools-browser`, base dev `75793de` + working tree / Windows x64, Node 22.19.0, pnpm 11.28.5, Chrome headless | Frozen install/build/lint và 89/89 tests PASS trên source copy sạch; 11 tests mới gồm browser request/reload/reconnect, exact file, denied write, Host auth/drain, client/mock. CI syntax `actionlint` PASS | Log local `.local-only/task-003-clean-tests.log`; chưa PR/merge/hosted CI mới; không cloud key. Gate 003 NOT_VERIFIED |
 | Gate 002 manual acceptance — current | 20-10-2026 / task owner / baseline hướng dẫn `75793de`, HEAD checkout vẫn cùng SHA | Task owner xác nhận “manual test đã thành công” sau checklist: live model trả lời hoàn tất, history có user/assistant, thoát process rồi mở lại Session đọc history và tiếp tục hội thoại. Kết hợp PR #19 + CI + local tests: Gate 002 PASS theo xác nhận user | Không chạy lại bởi agent; terminal artifact, Session ID, provider/model và toolchain manual UNKNOWN. Baseline gắn theo checklist/session context, không có SHA output riêng từ user. Không kiểm tra mọi providers hoặc crash recovery |
@@ -168,11 +177,11 @@ A/B/C là vai trò trong plan; danh tính và việc đang làm phải do thành
 | Credential preflight và lỗi không có transport code | 20-10-2026 / Codex / cùng base + candidate / Windows, Node 22.19.0 | User cung cấp hai boolean `KeyPresent=True`, `PrintableAsciiNoSpaces=False`. Credential giả chứa zero-width Unicode tái hiện lỗi public adapter trước HTTP; regression fail trước fix. Preflight mới từ chối Unicode/whitespace bằng `PROVIDER_CREDENTIALS`, không echo credential; regression xác minh HTTP hits=0. `pnpm build` + `pnpm test:model-providers` → PASS 21/21 | Chưa có kết quả user nhập lại key; không suy ra quota/quyền/model compatibility hoặc completed live turn. Gate 002 giữ NOT_VERIFIED |
 | Gemini live model/tool round-trip — manual user evidence | 20-10-2026 / task owner chạy và gửi terminal output / candidate cùng branch/base, chưa commit / Windows PowerShell, local Node 22.19.0 | Lệnh `& .\trash\task-002-a\node.exe --use-system-ca .\apps\agent-runtime\lib\chat.js --provider google --model $deckagentModel --tools --prompt 'Gọi noop với value DeckAgent rồi đọc lại kết quả.'`. Output xác nhận `Connection: google; model: gemini-3.8-flash`, `Tool noop: DeckAgent`, rồi `Assistant: Kết quả trả về từ hàm noop là: DeckAgent` (bỏ Markdown emphasis khi trích). Manual round-trip model → tool → model PASS theo output user cung cấp | Agent không chạy lại request với key; không suy ra latency, mọi model/providers đều tương thích hoặc history tồn tại sau restart. Chưa có PR/merge SHA/hosted CI. Đây không đóng Gate 002 |
 | README setup/test cho bản clone | 20-10-2026 / Codex / cùng branch/base + candidate chưa commit / Windows PowerShell, Node 22.19.0, pnpm 11.28.5 | PowerShell parser kiểm tra 13 code blocks PASS; 11 pnpm script references hợp lệ; build entrypoints có trên working tree. `pnpm start:foundation`, `pnpm start:agent-runtime` và `pnpm chat --help` chạy lại PASS qua toolchain cục bộ của session. Local doc links (33) và `git diff --check` PASS | Lệnh nhập/lưu key và global toolchain install chỉ parse syntax; không ghi User environment hoặc gọi cloud với key. Không install/build/full-suite lại cho thay đổi docs-only; fresh-source evidence và automated tests ở các rows trước. Nội dung README yêu cầu code đã được commit/push, không khẳng định candidate hiện tại đã có trên remote |
-| Gates hiện tại | 20-10-2026 / dev `75793de` | Gate 001 và 002 PASS; Gates 003–007 NOT_VERIFIED | Manual Gate 002 do user xác nhận; giữ rõ giới hạn attribution ở evidence phía trên |
+| Gates hiện tại | 21-10-2026 / stable dev `049fa77` | Gates 001–003 PASS; Gates 004–007 NOT_VERIFIED | TASK-004 chỉ có local candidate evidence; cần manual/PR/tích hợp |
 
 **Quyết định TASK-003 đã chốt:** task owner đồng ý policy/API trong session; implementation và next actions ở handoff TASK-003 phía trên. Không sửa scope hoặc implementation plan.
 
-**Pipeline review:** giữ nguyên các checks TASK-002; thêm `test:tools-browser` và `test:browser-smoke` cho TASK-003, summary ghi riêng kết quả. Chrome/Edge phải được cài sẵn hoặc cung cấp `CHROME_BIN`. Không cần cloud secrets. Hosted PASS đã xác minh thuộc dev baseline cũ; workflow TASK-003 mới chỉ được kiểm tra local.
+**Pipeline review:** giữ các checks đã PASS trên dev ở TASK-003; TASK-004 thêm `test:local-web`, mở rộng `test:model-providers` cho catalog/provider switch và browser smoke cho Settings/Deck. `test:env-startup` kiểm tra Web mở được để sửa credentials. Actionlint/local verification PASS; hosted CI candidate NOT_VERIFIED. Không cần cloud secrets.
 
 Khi đóng Gate, thay nội dung evidence của Gate tương ứng bằng: **ngày + người chạy + dev SHA + môi trường/toolchain + lệnh hoặc bước manual + expected/actual + PASS/FAIL + link log/artifact + lỗi/giới hạn còn lại**. Đối chiếu toàn bộ tiêu chí Gate trong parallel plan; thiếu check thì giữ `NOT_VERIFIED`. Chỉ nâng stable baseline tới SHA đã PASS; giữ baseline PASS trước đó nếu tích hợp mới FAIL. Dùng check thực sự tồn tại ở thời điểm đó, không bịa lệnh CI/build hoặc ghi secrets vào evidence.
 

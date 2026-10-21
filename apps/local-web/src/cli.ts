@@ -60,31 +60,31 @@ async function main() {
       'data-dir': { type: 'string' },
       port: { type: 'string' },
       help: { type: 'boolean' },
+      'no-open': { type: 'boolean' },
     },
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web --provider <connection-id> --model <model-id> [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--port 0]\nKeys come from the configured environment variables. Opens the authenticated local browser; do not share its URL. Ctrl+C shuts down Host and drains active work.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--port 0] [--no-open]\nOpens Settings even without a model. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. Ctrl+C shuts down Host and drains active work.',
     )
     return
   }
   const provider = values.provider ?? process.env.DECKAGENT_PROVIDER
   const model = values.model ?? process.env.DECKAGENT_MODEL
-  if (!provider?.trim() || !model?.trim()) throw new Error('Provider and model required')
-  const config: unknown = JSON.parse(
-    await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'),
-  )
-  if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections'))
-    throw new Error('Invalid config')
-  const connections = config.connections.map(connection)
-  if (!connections.some(entry => entry.id === provider)) throw new Error('Unknown provider')
+  if (!!provider !== !!model) throw new Error('Supply provider and model together')
+  let connections: ModelConnection[] = []
+  if (provider && model) {
+    const config: unknown = JSON.parse(await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'))
+    if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections')) throw new Error('Invalid config')
+    connections = config.connections.map(connection)
+    if (!connections.some(entry => entry.id === provider)) throw new Error('Unknown provider')
+    new ModelProviders(connections)
+  }
   const port = Number(values.port ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
-  const providers = new ModelProviders(connections)
-  providers.validateSelection({ provider, model })
   const app = await startLocalWeb({
-    model: providers,
-    selection: { provider, model },
+    connections,
+    ...(provider && model ? { selection: { provider, model } } : {}),
     workspace: values.workspace ?? '.deckagent/workspace',
     dataDir: values['data-dir'] ?? '.deckagent',
     port,
@@ -102,6 +102,10 @@ async function main() {
   }
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
+  if (values['no-open']) {
+    console.log(`DeckAgent Local Host: ${app.origin}. Browser opening disabled. Ctrl+C to stop.`)
+    return
+  }
   try {
     const url = `${app.origin}/#token=${app.token}`
     // No shell interpolation and no capability token in stdout/stderr.

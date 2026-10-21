@@ -50,11 +50,12 @@ export class RequestController {
     })
     let agent: AgentHandle
     try {
-      agent = await this.openAgent(request.sessionId)
-    } catch {
+      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId)
+    } catch (error) {
       this.busy.delete(request.sessionId)
       this.entries.delete(entry.snapshot.requestId)
       admit()
+      if (error instanceof HttpError) throw error
       throw new HttpError(409, 'SESSION_UNAVAILABLE')
     }
     if (this.closed) entry.abort.abort()
@@ -70,6 +71,10 @@ export class RequestController {
     const entry = this.entries.get(id)
     if (!entry) throw new HttpError(404, 'REQUEST_NOT_FOUND')
     return structuredClone(entry.snapshot)
+  }
+
+  active(sessionId: string): string | undefined {
+    return [...this.entries.values()].find(entry => entry.snapshot.sessionId === sessionId && entry.snapshot.status === 'running')?.snapshot.requestId
   }
 
   subscribe(listener: (snapshot: RequestSnapshot) => void): () => void {

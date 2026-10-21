@@ -97,7 +97,7 @@ test('chat command loads .env credentials and terminal environment takes precede
   }
 })
 
-test('Local Web rejects missing and malformed credentials before opening a browser or creating data', {
+test('Local Web opens the management API with missing or malformed environment keys so Settings can repair them', {
   timeout: 15000,
 }, async t => {
   const dir = await directory(t)
@@ -112,24 +112,29 @@ test('Local Web rejects missing and malformed credentials before opening a brows
   )
   for (const value of ['', 'fixture invalid value']) {
     await writeFile(join(dir, '.env'), `DECKAGENT_TEST_TOKEN="${value}"\n`)
-    // A file as workspace also prevents browser launch on the pre-fix path.
-    const output = await launch(t, dir, 'start:local-web', [
-      '--config',
-      config,
-      '--provider',
-      'fixture',
-      '--model',
-      'fixture',
-      '--workspace',
-      config,
-      '--data-dir',
-      join(dir, 'data'),
-    ])
-    assert.equal(output.code, 1)
-    assert.match(output.stderr, /PROVIDER_CREDENTIALS/)
-    assert.match(output.stderr, /\.env/)
-    if (value) assert.equal((output.stdout + output.stderr).includes(value), false)
-    await assert.rejects(readFile(join(dir, 'data', 'sessions.sqlite')), { code: 'ENOENT' })
+    const child = spawn(process.execPath, ['--env-file-if-exists=.env', '--use-system-ca', join(root, 'apps/local-web/lib/cli.js'),
+      '--config', config, '--provider', 'fixture', '--model', 'fixture', '--workspace', join(dir, 'workspace'),
+      '--data-dir', join(dir, 'data'), '--no-open'], {
+      cwd: dir, windowsHide: true, env: { ...process.env, DECKAGENT_TEST_TOKEN: value }, stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    const closed = once(child, 'close')
+    t.after(() => child.kill())
+    let output = ''
+    child.stderr.on('data', bytes => { output += bytes })
+    const origin = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Local Web did not start')), 5000)
+      child.stdout.on('data', bytes => {
+        output += bytes
+        const match = /Local Host: (http:\/\/127\.0\.0\.1:\d+)/.exec(output)
+        if (match) { clearTimeout(timer); resolve(match[1]) }
+      })
+      child.once('close', () => { clearTimeout(timer); reject(new Error('Local Web exited before Settings could open')) })
+    })
+    assert.equal((await fetch(origin)).status, 200)
+    assert.equal((await fetch(`${origin}/api/settings`)).status, 401, 'Settings still require the browser capability token')
+    if (value) assert.equal(output.includes(value), false)
+    child.kill()
+    await closed
   }
 })
 

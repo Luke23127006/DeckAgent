@@ -1,101 +1,309 @@
-import { HostClient, LayoutSlots } from './index.ts'
+import type { WebSession, WebSettings } from '@deckagent/host-api'
+import { HostClient } from './host-client.ts'
+import { ManagementClient } from './management-client.ts'
+import { button, element, field } from './dom.ts'
+import { settingsPanel } from './settings-panel.ts'
+import { mountDeckTab } from './deck-tab.ts'
+import { ConversationView } from './conversation-view.ts'
 
+const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
+const client = new HostClient(location.origin, token)
+const management = new ManagementClient(location.origin, token)
 const root = document.querySelector<HTMLElement>('#app')!
-const client = new HostClient(location.origin, new URLSearchParams(location.hash.slice(1)).get('token') ?? '')
-const slots = new LayoutSlots(root)
-const form = document.createElement('form')
-const session = document.createElement('input')
-session.name = 'session'
-session.setAttribute('aria-label', 'Session ID')
-session.value = sessionStorage.getItem('deckagent-session') ?? `chat-${crypto.randomUUID()}`
-const input = document.createElement('textarea')
-input.name = 'input'
-input.setAttribute('aria-label', 'Agent request')
-input.placeholder = 'Ask the Agent to create a new HTML file in the workspace.'
-input.required = true
-const submit = document.createElement('button')
-submit.textContent = 'Send request'
-const reconnect = document.createElement('button')
-reconnect.type = 'button'
-reconnect.textContent = 'Reconnect / read history'
-form.append(session, input, submit, reconnect)
-const status = document.createElement('p')
+const navigation = element('aside', undefined, 'chat-navigation')
+const chats = element('nav')
+chats.setAttribute('aria-label', 'Chat history')
+const conversation = element('section', undefined, 'conversation')
+const heading = element('header', undefined, 'conversation-header')
+const title = element('h1', 'Your next idea starts here')
+const model = element('select')
+model.disabled = true
+model.setAttribute('aria-label', 'Selected model')
+const status = element('p', '', 'request-status')
 status.setAttribute('role', 'status')
-status.textContent = 'Ready'
-const history = document.createElement('pre')
-history.setAttribute('aria-label', 'Session history')
-const unmount = [slots.mount('request', form), slots.mount('status', status), slots.mount('history', history)]
-let watching: AbortController | undefined
-let pending = false
+status.hidden = true
+const messages = element('div', undefined, 'messages')
+messages.setAttribute('aria-label', 'Conversation')
+const timeline = new ConversationView(messages)
+const form = element('form', undefined, 'composer')
+form.dataset.slot = 'request'
+const input = element('textarea')
+input.name = 'input'
+input.required = true
+input.placeholder = 'What would you like to work on?'
+input.setAttribute('aria-label', 'Agent request')
+const submit = element('button', 'Send request')
+submit.type = 'submit'
+submit.disabled = true
+const deck = element('aside', undefined, 'deck-sidebar')
+deck.hidden = true
+mountDeckTab(deck)
+let current: WebSession | undefined
+let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
+let sessions: readonly WebSession[] = []
+let watch: AbortController | undefined
+let generation = 0
+const sending = new Set<string>()
+const selecting = new Set<string>()
+const drafts = new Map<string, string>()
+let polling = false
+let disposed = false
 
-async function restore() {
-  history.textContent = (await client.history(session.value))
-    .map(message => `${message.role}: ${message.content}`)
-    .join('\n\n')
+function remember(id: string) {
+  try {
+    sessionStorage.setItem('deckagent-session', id)
+  } catch {
+    /* Session can still be selected from History. */
+  }
 }
-
-async function follow(id: string) {
-  watching?.abort()
+function run(work: Promise<void>) {
+  work.catch(error => {
+    status.hidden = false
+    status.dataset.kind = 'error'
+    const code = error instanceof Error ? error.message : ''
+    status.textContent =
+      code === 'PROVIDER_CREDENTIALS'
+        ? 'Set a valid API key for this provider in Models & settings.'
+        : code === 'MODEL_NOT_SELECTABLE'
+          ? 'This model is no longer available. Choose another model.'
+          : code === 'AUTH_REQUIRED'
+            ? 'This connection expired. Reopen the browser from the running Host.'
+            : 'Unable to complete this action. Check your connection or reopen Settings.'
+  })
+}
+function controls() {
+  model.disabled = !current || selecting.has(current.sessionId)
+  submit.disabled =
+    !current ||
+    sending.has(current.sessionId) ||
+    selecting.has(current.sessionId) ||
+    !!current.activeRequestId ||
+    !current.selectable
+  title.textContent = current ? 'Conversation' : 'Your next idea starts here'
+  if (!current?.selectable && !current?.activeRequestId) {
+    status.hidden = false
+    status.dataset.kind = 'setup'
+    status.textContent = current?.selection
+      ? `Model unavailable: ${current.selection.model}. Choose another model.`
+      : 'Choose a model to send a request. You can add one in Settings.'
+  } else if (status.dataset.kind === 'setup') {
+    status.hidden = true
+  }
+}
+function renderModels() {
+  model.replaceChildren(new Option('Choose a model', ''))
+  for (const provider of settings.providers) {
+    const group = element('optgroup')
+    group.label = provider.displayName
+    for (const id of provider.models) group.append(new Option(id, JSON.stringify({ provider: provider.id, model: id })))
+    model.append(group)
+  }
+  model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
+  controls()
+}
+function renderChats() {
+  chats.replaceChildren()
+  for (const session of sessions) {
+    const item = button(`${session.selection?.model ?? 'New chat'} · ${session.messageCount} messages`, () =>
+      run(open(session)),
+    )
+    item.title = session.sessionId
+    item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
+    chats.append(item)
+  }
+}
+async function refresh() {
+  const [nextSettings, nextSessions] = await Promise.all([management.settings(), management.sessions()])
+  settings = nextSettings
+  sessions = nextSessions
+  if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
+  renderModels()
+  renderChats()
+}
+async function showHistory(id: string, expected: number) {
+  const history = await client.history(id)
+  if (generation !== expected) return
+  timeline.setHistory(history)
+}
+async function showActivities(id: string, expected: number) {
+  const [entries, requests] = await Promise.all([management.activities(id), management.requests(id)])
+  if (generation !== expected) return
+  timeline.setRecords(requests, entries)
+}
+async function follow(id: string, sessionId: string, expected: number) {
+  watch?.abort()
   const control = new AbortController()
-  watching = control
+  watch = control
   try {
     for await (const snapshot of client.watch(id, control.signal)) {
-      status.textContent =
-        snapshot.status +
-        (snapshot.result && snapshot.result.status !== 'completed' ? `: ${snapshot.result.error.code}` : '')
+      if (generation !== expected) return
+      timeline.snapshot(snapshot)
+      status.hidden = true
       if (snapshot.status !== 'running') {
-        sessionStorage.removeItem('deckagent-request')
-        await restore()
+        await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected)])
+        await refresh()
       }
     }
   } catch {
-    if (!control.signal.aborted) status.textContent = 'Connection lost. Use reconnect to read the current state.'
-  }
-}
-
-form.addEventListener('submit', event => {
-  event.preventDefault()
-  if (pending) return
-  pending = true
-  submit.disabled = true
-  session.disabled = true
-  const send = async () => {
-    try {
-      status.textContent = 'Sending'
-      sessionStorage.setItem('deckagent-session', session.value)
-      const accepted = await client.send({ sessionId: session.value, input: input.value })
-      sessionStorage.setItem('deckagent-request', accepted.requestId)
-      await follow(accepted.requestId)
-    } catch {
-      status.textContent = 'Request failed. Check Host configuration or reconnect.'
-    } finally {
-      pending = false
-      submit.disabled = false
-      session.disabled = false
+    if (!control.signal.aborted && generation === expected) {
+      timeline.connectionLost(id)
+      try {
+        await Promise.all([refresh(), showHistory(sessionId, expected), showActivities(sessionId, expected)])
+      } catch {
+        // The inline record keeps the last known outcome and offers reconnect; no work is replayed.
+      }
     }
   }
-  // send renders its failures and always restores controls.
-  send().catch(() => {
-    status.textContent = 'Browser storage is unavailable'
-  })
+}
+async function open(session: WebSession) {
+  if (current) drafts.set(current.sessionId, input.value)
+  input.value = drafts.get(session.sessionId) ?? ''
+  generation++
+  watch?.abort()
+  if (current?.sessionId !== session.sessionId) timeline.reset()
+  current = session
+  remember(session.sessionId)
+  const expected = generation
+  renderModels()
+  renderChats()
+  status.hidden = true
+  if (session.activeRequestId)
+    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
+  controls()
+  await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected)])
+  if (session.activeRequestId && generation === expected)
+    run(follow(session.activeRequestId, session.sessionId, expected))
+}
+async function newChat() {
+  const created = await management.create()
+  await refresh()
+  await open(created)
+}
+const settingsUI = settingsPanel(management, refresh)
+navigation.append(
+  element('div', 'DeckAgent', 'wordmark'),
+  button('New chat', () => run(newChat())),
+  element('h2', 'History'),
+  chats,
+  button('Models & settings', () => run(settingsUI.open())),
+)
+heading.append(
+  title,
+  button('Open sample deck', () => {
+    deck.hidden = false
+  }),
+)
+const reconnect = button('Reconnect / read history', () =>
+  run(
+    (async () => {
+      await refresh()
+      if (current) await open(current)
+    })(),
+  ),
+)
+reconnect.id = 'reconnect'
+form.append(input, submit)
+conversation.append(heading, field('Model for next request', model), status, reconnect, messages, form)
+root.replaceChildren(navigation, conversation, deck)
+model.addEventListener('change', () => {
+  if (!model.value || !current) return
+  const id = current.sessionId
+  selecting.add(id)
+  model.disabled = true
+  controls()
+  run(
+    (async () => {
+      try {
+        const value: unknown = JSON.parse(model.value)
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          !('provider' in value) ||
+          !('model' in value) ||
+          typeof value.provider !== 'string' ||
+          typeof value.model !== 'string'
+        )
+          return
+        await management.select(id, { provider: value.provider, model: value.model })
+        await refresh()
+        if (current?.sessionId === id) status.hidden = true
+      } finally {
+        selecting.delete(id)
+        model.disabled = false
+        controls()
+      }
+    })(),
+  )
 })
-reconnect.addEventListener('click', () => {
-  const id = sessionStorage.getItem('deckagent-request')
-  const work = id ? follow(id) : restore()
-  work.catch(() => {
-    status.textContent = 'Unable to restore this Session'
-  })
+form.addEventListener('submit', event => {
+  event.preventDefault()
+  if (submit.disabled || !current) return
+  const id = current.sessionId,
+    expected = generation,
+    text = input.value
+  sending.add(id)
+  controls()
+  status.textContent = 'Sending'
+  status.hidden = false
+  status.dataset.kind = 'sending'
+  run(
+    (async () => {
+      try {
+        const accepted = await client.send({ sessionId: id, input: text })
+        if (generation === expected && current) {
+          input.value = ''
+          current = { ...current, activeRequestId: accepted.requestId }
+          timeline.snapshot(accepted)
+          status.hidden = true
+          controls()
+        }
+        await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
+        if (generation === expected) await follow(accepted.requestId, id, expected)
+      } finally {
+        sending.delete(id)
+        controls()
+      }
+    })(),
+  )
 })
-const active = sessionStorage.getItem('deckagent-request')
-if (active)
-  follow(active).catch(() => {
-    status.textContent = 'Unable to reconnect'
-  })
+const timer = setInterval(() => {
+  if (!current?.activeRequestId || polling || disposed) return
+  polling = true
+  const id = current.sessionId,
+    expected = generation
+  run(
+    showActivities(id, expected)
+      .catch(() => {
+        if (generation === expected && current?.activeRequestId) timeline.connectionLost(current.activeRequestId)
+      })
+      .finally(() => {
+        polling = false
+      }),
+  )
+}, 750)
 window.addEventListener(
   'pagehide',
   () => {
-    watching?.abort()
-    for (const remove of unmount) remove()
+    disposed = true
+    clearInterval(timer)
+    watch?.abort()
   },
   { once: true },
+)
+window.addEventListener('pageshow', event => {
+  if (event.persisted) location.reload()
+})
+run(
+  (async () => {
+    await refresh()
+    let remembered: string | null = null
+    try {
+      remembered = sessionStorage.getItem('deckagent-session')
+    } catch {
+      /* History remains available. */
+    }
+    const previous = sessions.find(session => session.sessionId === remembered)
+    if (previous) await open(previous)
+    else await newChat()
+  })(),
 )

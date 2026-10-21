@@ -1,9 +1,11 @@
 import { RuntimeError } from '@deckagent/agent-runtime'
-import type { ModelAdapter, ModelEvent, ModelRequest, ModelSelection } from '@deckagent/agent-runtime'
+import type { Message, ModelAdapter, ModelEvent, ModelRequest, ModelSelection } from '@deckagent/agent-runtime'
 import { chatBody, chatEvents } from './chat-completions.ts'
 import { anthropicBody, anthropicEvents } from './anthropic-messages.ts'
 import { geminiBody, geminiEvents } from './gemini.ts'
 import { events } from './wire.ts'
+import { listModels } from './model-catalog.ts'
+export { transformCredential } from './credential-protection.ts'
 
 export interface ModelConnection {
   readonly id: string
@@ -77,6 +79,12 @@ export class ModelProviders implements ModelAdapter {
     this.resolve(selection)
   }
 
+  /** User-initiated metadata lookup; does not validate or select a particular model. */
+  async listModels(provider: string, signal?: AbortSignal): Promise<readonly string[]> {
+    const { connection, credential } = this.resolve({ provider, model: 'catalog' })
+    return listModels(connection, credential, AbortSignal.any([AbortSignal.timeout(30_000), ...(signal ? [signal] : [])]))
+  }
+
   private resolve(selection: ModelSelection): { connection: ModelConnection; credential: string | undefined } {
     if (typeof selection.model !== 'string' || !selection.model.trim()) invalidConfig()
     const connection = this.connections.get(selection.provider)
@@ -104,7 +112,8 @@ export class ModelProviders implements ModelAdapter {
       signal.throwIfAborted()
       const anthropic = connection.protocol === 'anthropic-messages'
       const gemini = connection.protocol === 'gemini'
-      const payload = gemini ? geminiBody(request) : anthropic ? anthropicBody(request) : chatBody(request)
+      const portable = { ...request, messages: portableHistory(request, gemini) }
+      const payload = gemini ? geminiBody(portable) : anthropic ? anthropicBody(portable) : chatBody(portable)
       if (anthropic) payload.max_tokens = connection.maxOutputTokens ?? 4096
       else if (!gemini && connection.maxOutputTokens !== undefined) payload[connection.tokenLimitField ?? 'max_tokens'] = connection.maxOutputTokens
       if (gemini) {
@@ -142,4 +151,23 @@ export class ModelProviders implements ModelAdapter {
       await response?.body?.cancel().catch(() => {})
     }
   }
+}
+
+/** Foreign signed tool turns are transcript context, never fabricated native calls/signatures. */
+function portableHistory(request: ModelRequest, requiresSignedCalls: boolean): readonly Message[] {
+  const foreignCalls = new Set<string>()
+  return request.messages.map(message => {
+    if (message.role === 'assistant' && message.toolCalls?.length) {
+      const source = message.providerState
+      const foreign = source ? source.provider !== request.selection.provider || source.model !== request.selection.model : requiresSignedCalls
+      if (foreign) {
+        for (const call of message.toolCalls) foreignCalls.add(call.id)
+        return { role: 'assistant', content: [message.content, ...message.toolCalls.map(call => `[Earlier tool call: ${call.name} ${JSON.stringify(call.arguments)}]`)].filter(Boolean).join('\n') }
+      }
+    }
+    if (message.role === 'tool' && foreignCalls.has(message.toolCallId)) {
+      return { role: 'user', content: `[Earlier tool result: ${message.name}; ${message.isError ? 'failed' : 'completed'}]\n${message.content}` }
+    }
+    return message
+  })
 }
