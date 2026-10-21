@@ -4,7 +4,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { HostOptions, RequestSnapshot } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
 
-export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot } from './contracts.ts'
+export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export { HttpError } from './request-controller.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -13,7 +14,7 @@ function json(res: ServerResponse, status: number, value: unknown) {
   res.end(JSON.stringify(value))
 }
 
-async function body(req: IncomingMessage): Promise<{ sessionId: string; input: string }> {
+async function readJson(req: IncomingMessage): Promise<unknown> {
   if (req.headers['content-type']?.split(';')[0] !== 'application/json') throw new HttpError(415, 'JSON_REQUIRED')
   let bytes = 0
   const chunks: Buffer[] = []
@@ -28,6 +29,11 @@ async function body(req: IncomingMessage): Promise<{ sessionId: string; input: s
   } catch {
     throw new HttpError(400, 'INVALID_REQUEST')
   }
+  return value
+}
+
+async function body(req: IncomingMessage): Promise<{ sessionId: string; input: string }> {
+  const value = await readJson(req)
   if (
     !value ||
     typeof value !== 'object' ||
@@ -59,7 +65,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -92,12 +98,47 @@ export async function startHost(options: HostOptions) {
       const asset =
         options.assets && Object.hasOwn(options.assets, url.pathname) ? options.assets[url.pathname] : undefined
       if (req.method !== 'GET' || !asset) throw new HttpError(404, 'NOT_FOUND')
+      if (asset.sandboxed) res.setHeader('content-security-policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
       res.writeHead(200, { 'content-type': asset.contentType })
       res.end(asset.body)
       return
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const management = options.management
+    if (management) {
+      if (url.pathname === '/api/settings' && req.method === 'GET') {
+        json(res, 200, await management.settings()); return
+      }
+      const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
+      if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
+        if (req.method === 'PUT') await management.saveProvider(provider[1]!, await readJson(req))
+        else await management.deleteProvider(provider[1]!)
+        json(res, 200, { saved: true }); return
+      }
+      const catalog = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(url.pathname)
+      if (catalog && req.method === 'GET') { json(res, 200, await management.catalog(catalog[1]!)); return }
+      if (url.pathname === '/api/sessions') {
+        if (req.method === 'GET') {
+          const sessions = await management.sessions()
+          json(res, 200, sessions.map(session => {
+            const activeRequestId = controller.active(session.sessionId)
+            return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
+          })); return
+        }
+        if (req.method === 'POST') { json(res, 201, await management.createSession(await readJson(req))); return }
+      }
+      const resource = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(url.pathname)
+      if (resource?.[2] === 'selection' && req.method === 'PUT') {
+        json(res, 200, await management.selectModel(resource[1]!, await readJson(req))); return
+      }
+      if (resource?.[2] === 'activities' && req.method === 'GET') {
+        json(res, 200, await management.activities(resource[1]!)); return
+      }
+      if (resource?.[2] === 'requests' && req.method === 'GET') {
+        json(res, 200, await management.requests(resource[1]!)); return
+      }
+    }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       json(res, 202, await controller.submit(await body(req)))
       return

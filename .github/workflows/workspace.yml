@@ -96,10 +96,15 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:tools-browser
 
-      - name: Optional dotenv startup and credential preflight (local fixtures)
+      - name: Dotenv and repairable Web startup (local fixtures)
         id: env_startup
         timeout-minutes: 2
         run: pnpm test:env-startup
+
+      - name: Local Web settings, model snapshots and activities (TASK-004, local HTTP and DPAPI)
+        id: local_web
+        timeout-minutes: 2
+        run: pnpm test:local-web
 
       - name: Real browser Agent and filesystem smoke (Chrome headless, local fixtures)
         id: browser
@@ -125,6 +130,7 @@ jobs:
           TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
           BROWSER_RESULT: ${{ steps.browser.outcome }}
           ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
+          LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -143,7 +149,8 @@ jobs:
           - UX regression: $env:UX_RESULT
           - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Real browser reload / Agent / allowed and denied file writes: $env:BROWSER_RESULT
-          - Dotenv startup / environment precedence / credential preflight: $env:ENV_STARTUP_RESULT
+          - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
+          - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in PROGRESS.md. A successful push run on

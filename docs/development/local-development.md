@@ -106,8 +106,8 @@ GEMINI_API_KEY=your-key-here
 The real `.env` is gitignored; never commit or share it. Existing terminal variables
 override `.env`, even when empty. If an old terminal key is masking the file, run
 `Remove-Item Env:GEMINI_API_KEY -ErrorAction SilentlyContinue`, then restart the
-CLI/Host. Editing `.env` does not change an already running process. Local Web checks
-key presence/format before opening the browser; this does not verify cloud access.
+CLI/Host. Editing `.env` does not change an already running process. Local Web opens
+Settings even without a usable key; request admission checks credentials before sending.
 
 To set a key for the current PowerShell session without printing it:
 
@@ -123,31 +123,43 @@ gets a generated ID printed as `Session: chat-<id>`; resume it later with
 conflicting selection. Sessions are local-only — do not run two CLIs against the same
 session concurrently. `--list-sessions` and `--history` read without calling a model.
 
-## Local Web connection and File Tools
+## Local Web, Models Settings and File Tools
 
-After build, configure a provider's API key in the root `.env` or terminal (as above), then:
+After build, start Web and configure a provider/key/model in Models & settings:
 
 ```powershell
-pnpm.cmd start:local-web --provider google --model <model-id>
+pnpm.cmd start:local-web
 ```
 
-This opens an authenticated local browser. The smoke page sends requests, displays
-status/history, and exposes workspace `read_file`/`write_file` tools to the Agent.
+This opens an authenticated local browser with Conversation, model selection, Settings,
+History, Activity Log and a Sample Deck tab. Settings can be opened before a model is set up.
+The Agent has workspace `read_file`/`write_file` tools.
 Default workspace is `.deckagent/workspace`; writes create new files, never overwrite.
-Host data stays in `.deckagent`. The entry point reads `config/models.example.json`
-and environment credentials (including the optional `.env`); it does not use the CLI's saved wizard profile/key.
+Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sqlite`
+stores Web Settings, encrypted keys and activity/request records. Web key persistence
+uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change
+within a chat; active work keeps its captured model and settings until completion.
+
+To bootstrap the previous environment-based workflow, use
+`pnpm.cmd start:local-web --provider google --model <model-id>`. This reads
+`config/models.example.json` and environment credentials (including optional `.env`).
+Saving that provider in Web Settings makes the saved configuration take precedence
+on later starts. Web does not use the CLI's saved wizard profile/key.
 Use `--help` for overrides. Do not share the browser URL. Ctrl+C drains and stops Host.
 Do not run CLI and Web against the same Session concurrently.
 
 ```powershell
 pnpm.cmd test:tools-browser  # File policy + API/SSE + client + SQLite integration
 pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM and reload/reconnect
-pnpm.cmd test:env-startup   # dotenv, terminal precedence and credential preflight
+pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
+pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
 ```
 
-Both tests use local model fixtures and require no cloud keys. See the
-[TASK-003 contract and verification](../v1-plan/task-003-tools-browser.md) for limits
-and manual acceptance.
+These checks use local fixtures and require no cloud keys. See
+[TASK-004 contracts and manual acceptance](../v1-plan/task-004-local-web.md) for
+the current checklist and pending default-model values. The
+[TASK-003 handoff](../v1-plan/task-003-tools-browser.md) describes the underlying
+file policy and Host/browser connection baseline.
 
 ## Tests
 

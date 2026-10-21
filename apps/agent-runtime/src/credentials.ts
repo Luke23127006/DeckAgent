@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { transformCredential } from '@deckagent/model-providers'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { RuntimeError } from '@deckagent/agent-runtime'
@@ -35,21 +35,8 @@ export class WindowsCredentialVault implements CredentialVault {
   }
 
   private transform(operation: 'Protect' | 'Unprotect', bytes: Buffer): Promise<Buffer> {
-    // The encoded script is constant; the credential travels on stdin, never in process arguments.
-    const script = `$ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.Security
-$bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd())
-$result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
-[Console]::Write([Convert]::ToBase64String($result))`
-    return new Promise((resolve, reject) => {
-      const child = execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
-        windowsHide: true, timeout: 10000, maxBuffer: 65536, encoding: 'utf8',
-      }, (error, stdout) => {
-        if (error) reject(new RuntimeError('CLI_CREDENTIALS', 'Cannot access saved Windows credentials. Enter the key again or check Windows DPAPI availability'))
-        else resolve(Buffer.from(stdout.trim(), 'base64'))
-      })
-      child.stdin?.on('error', () => {}) // Process errors are reported by execFile without exposing input.
-      child.stdin?.end(bytes.toString('base64'))
+    return transformCredential(operation, bytes).catch(() => {
+      throw new RuntimeError('CLI_CREDENTIALS', 'Cannot access saved Windows credentials. Enter the key again or check Windows DPAPI availability')
     })
   }
 }

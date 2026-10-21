@@ -16,14 +16,15 @@
     "test:cordis-smoke": "node --test tests/cordis-smoke.test.mjs",
     "start:cordis-smoke": "node apps/cordis-smoke/lib/cli.js",
     "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
-    "test:model-providers": "node --test tests/model-providers.test.mjs",
+    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs",
     "test:session-persistence": "node --test tests/session-persistence.test.mjs",
     "test:chat-setup": "node --test tests/chat-setup.test.mjs",
     "chat": "node --env-file-if-exists=.env --use-system-ca apps/agent-runtime/lib/chat.js",
     "test:tools-browser": "node --test tests/file-tools.test.mjs tests/host-api.test.mjs tests/browser-runtime.test.mjs tests/local-web.test.mjs",
     "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js",
     "test:browser-smoke": "node --test tests/browser-smoke.test.mjs",
-    "test:env-startup": "node --test tests/env-startup.test.mjs"
+    "test:env-startup": "node --test tests/env-startup.test.mjs",
+    "test:local-web": "node --test tests/web-session.test.mjs tests/web-management.test.mjs"
   },
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",

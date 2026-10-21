@@ -66,8 +66,10 @@ export class HostClient {
       headers: { ...init.headers, authorization: `Bearer ${this.token}` },
     })
     if (!response.ok) {
-      const code =
-        response.status === 401 ? 'AUTH_REQUIRED' : response.status === 409 ? 'SESSION_BUSY' : 'HOST_REQUEST_FAILED'
+      const data: unknown = await response.json()
+      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND']
+      const code = object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
+        ? data.error.code : response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'
       throw new Error(code)
     }
     return response

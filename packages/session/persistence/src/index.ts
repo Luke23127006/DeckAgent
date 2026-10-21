@@ -56,6 +56,16 @@ export class SqliteSessionStore implements SessionStore {
     return this.access(() => { this.validateId(sessionId); return this.info(sessionId) })
   }
 
+  /** Web selection affects future requests only; callers capture it at request admission. */
+  async select(sessionId: string, selection: ModelSelection): Promise<SessionInfo> {
+    return this.access(() => this.transaction(() => {
+      this.requireSession(sessionId)
+      if (!selection.provider.trim() || !selection.model.trim()) throw new RuntimeError('SESSION_CONFIG', 'Provider and model are required')
+      this.db.prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?').run(selection.provider, selection.model, sessionId)
+      return this.info(sessionId)!
+    }))
+  }
+
   async list(): Promise<readonly SessionInfo[]> {
     return this.access(() => this.db.prepare('SELECT id FROM sessions ORDER BY updated_at DESC, id').all().map(row => this.info(String(row.id))!))
   }
