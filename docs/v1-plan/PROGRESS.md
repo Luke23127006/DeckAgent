@@ -187,6 +187,8 @@ Khi đóng Gate, thay nội dung evidence của Gate tương ứng bằng: **ng�
 
 ## Cập nhật và tiếp tục session
 
+Manual TASK-004: đã lưu [checklist double-check inline Status/Activity](task-004-local-web.md#inline-statusactivity-double-check), gồm polling/expansion, nhiều requests, reload, tool failure và chat/Composer layout. Đây là hướng dẫn kiểm tra, chưa phải evidence manual PASS; Gate 004 giữ `NOT_VERIFIED`.
+
 1. **Bắt đầu subtask:** đọc dashboard trên `dev` mới nhất có thể xác minh, kiểm tra checkout/status và Gate dependency. Cập nhật đúng phần A/B/C: tên, ngày, subtask, branch tạo từ `dev`, status, files sở hữu, contract/mock và next action. Trong cùng group có thể làm song song qua contracts/mocks đã chốt; chỉ merge phần phụ thuộc baseline tiếp theo sau Gate trước PASS.
 2. **Hoàn thành PR:** mỗi subtask thông thường có một feature branch và một PR vào `dev`; hiện không yêu cầu approval. Ghi PR link/trạng thái, commit đã test, kết quả và phần còn thiếu trong phần mình. PR mở dùng `PR_OPEN`; sau merge xác minh merge SHA và acceptance trước `DONE`. A tổng hợp group; không đánh dấu Gate bằng trạng thái PR.
 3. **Gặp blocker hoặc kết thúc session:** ghi phần đã làm, file/điểm tiếp tục, assumption, lỗi tái hiện, người cần hỗ trợ và một next action cụ thể. Dùng `BLOCKED` khi có blocker đã biết; không biến UNKNOWN thành blocker suy đoán. Thay handoff cũ khi hết hữu ích.
