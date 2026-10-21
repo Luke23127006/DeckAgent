@@ -1,6 +1,7 @@
 import type { ToolRegistry } from '@deckagent/agent-runtime'
 import { createWorkspaceReader } from '@deckagent/file-tools'
 import type { DeckPublisher } from '@deckagent/deck'
+export { registerProposeOutline } from './propose-outline.ts'
 
 /** Scope belongs to Host, never to model arguments. Tool has no confirmation capability. */
 export async function registerPublishSlide(

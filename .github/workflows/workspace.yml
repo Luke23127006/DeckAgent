@@ -116,7 +116,13 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:slide-pipeline
 
+      - name: Outline confirmation and presentation workflow (TASK-006, local fixtures)
+        id: outline_workflow
+        timeout-minutes: 2
+        run: pnpm test:outline-workflow
+
       - name: Record verification evidence
+        # TASK-006 browser coverage runs in the existing browser step above.
         if: always()
         env:
           TESTED_SHA: ${{ github.sha }}
@@ -137,6 +143,7 @@ jobs:
           ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
           LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
           SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
+          OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -158,6 +165,7 @@ jobs:
           - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
+          - Outline proposals / confirmation guards / two-request generation: $env:OUTLINE_WORKFLOW_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in PROGRESS.md. A successful push run on

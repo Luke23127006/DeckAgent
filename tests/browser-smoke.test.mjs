@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
+import { workflowModel } from './fixtures/outline-workflow.mjs'
 
 async function eventually(operation, message) {
   for (let i = 0; i < 200; i++) {
@@ -74,6 +75,82 @@ async function connect(url) {
     close: () => socket.close(),
   }
 }
+
+test('outline conversation confirms in a new request, preserves viewing state and progressively opens the deck', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-outline-browser-'))
+  let app, browser, protocol, releaseSecond
+  const secondReady = new Promise(resolve => { releaseSecond = resolve })
+  let modelCalls = 0
+  const fixture = workflowModel(async (id, signal) => {
+    if (id === 'slide-2') await Promise.race([secondReady, new Promise(resolve => {
+      if (signal.aborted) resolve()
+      else signal.addEventListener('abort', resolve, { once: true })
+    })])
+  })
+  t.after(async () => {
+    releaseSecond()
+    try {
+      if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+      if (browser && browser.exitCode === null) browser.kill()
+      await app?.close()
+    } finally { await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) }
+  })
+  const profile = join(dir, 'chrome')
+  browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const port = await eventually(async () => {
+    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
+  }, 'Browser did not start')
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (result.exceptionDetails) throw new Error('Browser script failed')
+    return result.result.value
+  }
+  app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'outline' }, model: { async *stream(request) { modelCalls++; yield* fixture.stream(request) } } })
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`document.querySelector('.conversation select')?.options.length > 1 && !document.querySelector('.conversation select').disabled`), 'Models did not load')
+  await evaluate(`document.querySelector('.conversation select').selectedIndex=1;document.querySelector('.conversation select').dispatchEvent(new Event('change'));true`)
+  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Model not selected')
+  await evaluate(`document.querySelector('.composer textarea').value='Create two slides about recycling';[...document.querySelectorAll('.composer button')].find(b=>b.textContent==='Create presentation').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current]') && !document.querySelector('.composer button').disabled`), 'Current outline missing')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').hidden`), true)
+  assert.equal(await evaluate(`document.querySelectorAll('.outline-proposal .planned-slide').length`), 2)
+  assert.equal(await evaluate(`document.querySelectorAll('.planned-slide[open]').length`), 0)
+  const before = modelCalls
+  await evaluate(`[...document.querySelectorAll('.outline-viewing button')].find(b=>b.textContent==='Expand all').click();document.querySelector('.planned-slide summary').focus();true`)
+  await delay(950)
+  assert.equal(await evaluate(`document.querySelectorAll('.planned-slide[open]').length`), 2)
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('.planned-slide summary')`), true)
+  assert.equal(modelCalls, before, 'Viewing detail must send no Agent request')
+  assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 1)
+  if (process.env.DECKAGENT_OUTLINE_SCREENSHOT) {
+    const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
+    await writeFile(process.env.DECKAGENT_OUTLINE_SCREENSHOT, Buffer.from(shot.data, 'base64'))
+  }
+  await evaluate(`[...document.querySelectorAll('.outline-actions button')].find(b=>b.textContent==='Confirm outline').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=confirmed]') && document.querySelector('.published-deck-sidebar .deck-slide-list')?.textContent.includes('Revision 1')`), 'First slide missing')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').hidden`), false)
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('Pending')`), true)
+  assert.equal(await evaluate(`document.querySelector('.outline-proposal .outline-actions').hidden`), true)
+  assert.equal(await evaluate(`document.querySelectorAll('.planned-slide[open]').length`), 2, 'Confirmation preserves reading state')
+  await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list button').click();true`)
+  releaseSecond()
+  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2 && !document.querySelector('.composer button').disabled`), 'Confirmation request did not finish')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar [aria-current=true]').textContent`), '1. Why recycle · Revision 1')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('Pending')`), false)
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Local rules were not checked')`), true)
+  if (process.env.DECKAGENT_WORKFLOW_SCREENSHOT) {
+    const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
+    await writeFile(process.env.DECKAGENT_WORKFLOW_SCREENSHOT, Buffer.from(shot.data, 'base64'))
+  }
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=confirmed]') && document.querySelector('.published-deck-sidebar .deck-slide-list')?.textContent.includes('Revision 1')`), 'Reload lost confirmed outline/deck')
+})
 
 test('Deck Canvas renders published revisions over SSE, keeps selection and restores content after Host restart', {
   timeout: 45000,

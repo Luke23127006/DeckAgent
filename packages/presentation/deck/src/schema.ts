@@ -25,13 +25,25 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id=1145128004;
         PRAGMA user_version=1;
       `)
-    } else if (owner !== 1145128004 || version !== 1) throw new DeckError('DECK_SCHEMA')
+    } else if (owner !== 1145128004 || ![1, 2].includes(version)) throw new DeckError('DECK_SCHEMA')
+    if (version < 2) {
+      db.exec(`
+        CREATE TABLE outline_heads(session_id TEXT PRIMARY KEY,version INTEGER NOT NULL,
+          current_id TEXT,confirmed_id TEXT) STRICT;
+        CREATE TABLE outline_proposals(session_id TEXT NOT NULL,outline_id TEXT NOT NULL,version INTEGER NOT NULL,
+          request_id TEXT NOT NULL,response_index INTEGER NOT NULL,payload TEXT NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY(session_id,outline_id),UNIQUE(session_id,version),UNIQUE(session_id,request_id)) STRICT;
+        PRAGMA user_version=2;
+      `)
+    }
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
       throw new DeckError('DECK_CORRUPT')
     db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()
     db.prepare('SELECT session_id,slide_id,title,position,revision FROM slides LIMIT 0').all()
     db.prepare('SELECT session_id,slide_id,revision,html FROM revisions LIMIT 0').all()
     db.prepare('SELECT session_id,publication_id,fingerprint,receipt FROM publications LIMIT 0').all()
+    db.prepare('SELECT session_id,version,current_id,confirmed_id FROM outline_heads LIMIT 0').all()
+    db.prepare('SELECT session_id,outline_id,version,request_id,response_index,payload,cancelled FROM outline_proposals LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

@@ -3,7 +3,8 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DeckError } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
-import type { HostOptions, RequestSnapshot } from './contracts.ts'
+import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
+import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
 
 export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
@@ -34,7 +35,14 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return value
 }
 
-async function body(req: IncomingMessage): Promise<{ sessionId: string; input: string }> {
+function outlineTarget(value: unknown): OutlineTarget {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || !('outlineId' in value) || typeof value.outlineId !== 'string' ||
+    !idPattern.test(value.outlineId) || !('version' in value) || typeof value.version !== 'number' ||
+    !Number.isSafeInteger(value.version) || value.version < 1) throw new HttpError(400, 'INVALID_REQUEST')
+  return { outlineId: value.outlineId, version: value.version }
+}
+
+async function body(req: IncomingMessage): Promise<AgentRequest> {
   const value = await readJson(req)
   if (
     !value ||
@@ -47,17 +55,35 @@ async function body(req: IncomingMessage): Promise<{ sessionId: string; input: s
     typeof value.input !== 'string' ||
     !value.input.trim() ||
     value.input.length > 16000 ||
-    Object.keys(value).some(key => !['sessionId', 'input'].includes(key))
+    Object.keys(value).some(key => !['sessionId', 'input', 'presentation', 'outlineTarget', 'outlineAction'].includes(key))
   )
     throw new HttpError(400, 'INVALID_REQUEST')
-  return { sessionId: value.sessionId, input: value.input }
+  if ('presentation' in value && value.presentation !== true) throw new HttpError(400, 'INVALID_REQUEST')
+  const request: AgentRequest = { sessionId: value.sessionId, input: value.input,
+    ...('presentation' in value ? { presentation: true as const } : {}) }
+  let target: OutlineTarget | undefined
+  if ('outlineTarget' in value) {
+    const reference = value.outlineTarget
+    if (!reference || typeof reference !== 'object' || Array.isArray(reference) ||
+      Object.keys(reference).some(key => !['outlineId', 'version'].includes(key)))
+      throw new HttpError(400, 'INVALID_REQUEST')
+    target = outlineTarget(reference)
+  }
+  if ('outlineAction' in value) {
+    const action = value.outlineAction
+    const ref = outlineTarget(action)
+    if (!action || typeof action !== 'object' || !('type' in action) || (action.type !== 'confirm' && action.type !== 'cancel') ||
+      Object.keys(action).some(key => !['type', 'outlineId', 'version'].includes(key))) throw new HttpError(400, 'INVALID_REQUEST')
+    return { ...request, ...(target ? { outlineTarget: target } : {}), outlineAction: { ...ref, type: action.type } }
+  }
+  return { ...request, ...(target ? { outlineTarget: target } : {}) }
 }
 
 /** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a turn. */
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent)
+  const controller = new RequestController(options.openAgent, options.finishRequest)
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -76,8 +102,9 @@ export async function startHost(options: HostOptions) {
       }
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
-      json(res, known ? error.status : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: { code: known ? error.code : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
+      const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
+      json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
+        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
       })
     })
   })
@@ -109,6 +136,10 @@ export async function startHost(options: HostOptions) {
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
+    const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
+    if (outline && options.outlines && req.method === 'GET') {
+      json(res, 200, options.outlines.outlineSnapshot(outline[1]!)); return
+    }
     const management = options.management
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {

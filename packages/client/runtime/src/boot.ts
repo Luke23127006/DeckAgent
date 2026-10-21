@@ -1,4 +1,5 @@
-import type { WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, WebSession, WebSettings } from '@deckagent/host-api'
+import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
 import { button, element, field } from './dom.ts'
@@ -7,10 +8,13 @@ import { mountDeckTab } from './deck-tab.ts'
 import { ConversationView } from './conversation-view.ts'
 import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
+import { OutlineClient } from './outline-client.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
 const management = new ManagementClient(location.origin, token)
+const outlines = new OutlineClient(location.origin, token)
+let outlineState: OutlineSnapshot | undefined
 const root = document.querySelector<HTMLElement>('#app')!
 const navigation = element('aside', undefined, 'chat-navigation')
 const chats = element('nav')
@@ -26,7 +30,15 @@ status.setAttribute('role', 'status')
 status.hidden = true
 const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Conversation')
-const timeline = new ConversationView(messages)
+const timeline = new ConversationView(messages, (type, proposal) => {
+  run(submitRequest(type === 'confirm' ? 'Confirm outline' : 'Cancel outline', {
+    outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
+  }))
+}, () => {
+  if (!input.value) input.value = 'Revise outline: '
+  input.focus()
+  input.setSelectionRange(input.value.length, input.value.length)
+})
 const form = element('form', undefined, 'composer')
 form.dataset.slot = 'request'
 const input = element('textarea')
@@ -37,6 +49,10 @@ input.setAttribute('aria-label', 'Agent request')
 const submit = element('button', 'Send request')
 submit.type = 'submit'
 submit.disabled = true
+const createPresentation = button('Create presentation', () => {
+  if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
+})
+createPresentation.disabled = true
 const deck = element('aside', undefined, 'deck-sidebar')
 deck.hidden = true
 mountDeckTab(deck)
@@ -75,7 +91,11 @@ function run(work: Promise<void>) {
           ? 'This model is no longer available. Choose another model.'
           : code === 'AUTH_REQUIRED'
             ? 'This connection expired. Reopen the browser from the running Host.'
-            : 'Unable to complete this action. Check your connection or reopen Settings.'
+              : code === 'OUTLINE_STALE'
+                ? 'The outline changed. Review the current proposal before confirming.'
+                : code === 'OUTLINE_ALREADY_CONFIRMED'
+                  ? 'This outline is already confirmed. Read the saved deck; confirmation was not replayed.'
+                  : 'Unable to complete this action. Check your connection or reopen Settings.'
   })
 }
 function controls() {
@@ -88,6 +108,9 @@ function controls() {
     selecting.has(current.sessionId) ||
     !!current.activeRequestId ||
     !current.selectable
+  createPresentation.disabled = submit.disabled
+  createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
+  timeline.setOutlineBusy(submit.disabled)
   title.textContent = current ? 'Conversation' : 'Your next idea starts here'
   if (!current?.selectable && !current?.activeRequestId) {
     status.hidden = false
@@ -139,6 +162,14 @@ async function showActivities(id: string, expected: number) {
   if (generation !== expected) return
   timeline.setRecords(requests, entries)
 }
+async function showOutlines(id: string, expected: number) {
+  const next = await outlines.snapshot(id)
+  if (generation !== expected || current?.sessionId !== id) return
+  if (outlineState?.sessionId === id && outlineState.version > next.version) return
+  outlineState = next
+  timeline.setOutlines(next)
+  controls()
+}
 async function follow(id: string, sessionId: string, expected: number) {
   watch?.abort()
   const control = new AbortController()
@@ -149,7 +180,7 @@ async function follow(id: string, sessionId: string, expected: number) {
       timeline.snapshot(snapshot)
       status.hidden = true
       if (snapshot.status !== 'running') {
-        await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected)])
+        await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
         await refresh()
       }
     }
@@ -157,7 +188,7 @@ async function follow(id: string, sessionId: string, expected: number) {
     if (!control.signal.aborted && generation === expected) {
       timeline.connectionLost(id)
       try {
-        await Promise.all([refresh(), showHistory(sessionId, expected), showActivities(sessionId, expected)])
+        await Promise.all([refresh(), showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
       } catch {
         // The inline record keeps the last known outcome and offers reconnect; no work is replayed.
       }
@@ -169,7 +200,7 @@ async function open(session: WebSession) {
   input.value = drafts.get(session.sessionId) ?? ''
   generation++
   watch?.abort()
-  if (current?.sessionId !== session.sessionId) timeline.reset()
+  if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
   current = session
   deckModel.open(session.sessionId)
   remember(session.sessionId)
@@ -182,7 +213,7 @@ async function open(session: WebSession) {
     timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
   controls()
   try {
-    await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected)])
+    await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected), showOutlines(session.sessionId, expected)])
   } finally {
     if (opening === expected) opening = undefined
     controls()
@@ -229,7 +260,9 @@ const reconnect = button('Reconnect / read history', () => {
   )
 })
 reconnect.id = 'reconnect'
-form.append(input, submit)
+const composerActions = element('div', undefined, 'composer-actions')
+composerActions.append(submit, createPresentation)
+form.append(input, composerActions)
 conversation.append(heading, field('Model for next request', model), status, reconnect, messages, form)
 root.replaceChildren(navigation, conversation, deck, publishedDeck)
 model.addEventListener('change', () => {
@@ -264,42 +297,47 @@ model.addEventListener('change', () => {
 })
 form.addEventListener('submit', event => {
   event.preventDefault()
+  run(submitRequest(input.value))
+})
+async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
   if (submit.disabled || !current) return
   const id = current.sessionId,
-    expected = generation,
-    text = input.value
+    expected = generation
+  const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
   controls()
   status.textContent = 'Sending'
   status.hidden = false
   status.dataset.kind = 'sending'
-  run(
-    (async () => {
-      try {
-        const accepted = await client.send({ sessionId: id, input: text })
-        if (generation === expected && current) {
-          input.value = ''
-          current = { ...current, activeRequestId: accepted.requestId }
-          timeline.snapshot(accepted)
-          status.hidden = true
-          controls()
-        }
-        await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
-        if (generation === expected) await follow(accepted.requestId, id, expected)
-      } finally {
-        sending.delete(id)
-        controls()
-      }
-    })(),
-  )
-})
+  try {
+    const accepted = await client.send({ sessionId: id, input: text,
+      ...(target && !extra.outlineAction ? { outlineTarget: { outlineId: target.outlineId, version: target.version } } : {}),
+      ...extra })
+    if (generation === expected && current) {
+      if (!extra.outlineAction) input.value = ''
+      current = { ...current, activeRequestId: accepted.requestId }
+      timeline.snapshot(accepted)
+      status.hidden = true
+      controls()
+    }
+    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected), showOutlines(id, expected)])
+    if (generation === expected) await follow(accepted.requestId, id, expected)
+  } catch (error) {
+    try { await showOutlines(id, expected) } catch { /* Keep the last saved outline if reconnect also fails. */ }
+    throw error
+  } finally {
+    sending.delete(id)
+    controls()
+  }
+}
 const timer = setInterval(() => {
   if (!current?.activeRequestId || polling || disposed) return
   polling = true
   const id = current.sessionId,
     expected = generation
   run(
-    showActivities(id, expected)
+    Promise.all([showActivities(id, expected), showOutlines(id, expected)])
+      .then(() => {})
       .catch(() => {
         if (generation === expected && current?.activeRequestId) timeline.connectionLost(current.activeRequestId)
       })

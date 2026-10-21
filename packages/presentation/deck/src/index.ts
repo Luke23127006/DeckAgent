@@ -15,8 +15,12 @@ import type {
 } from './contracts.ts'
 import { validateSlideHtml } from './html-policy.ts'
 import { initialize } from './schema.ts'
+import { OutlineStorage } from './outline-store.ts'
+import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
 
 export { DeckError } from './contracts.ts'
+export { validateOutlineDraft } from './outline-store.ts'
+export type { OutlineDraft, OutlineProposal, OutlineReader, OutlineSnapshot, OutlineTarget } from './contracts.ts'
 export type {
   ConfirmedDeckPlan,
   DeckChange,
@@ -34,6 +38,7 @@ export type {
  */
 export class DeckService implements DeckReader, DeckPublisher {
   private readonly db: DatabaseSync
+  private readonly outlines: OutlineStorage
   private closed = false
   private readonly listeners = new Map<string, Set<(change: DeckChange) => void>>()
 
@@ -45,13 +50,14 @@ export class DeckService implements DeckReader, DeckPublisher {
       db = new DatabaseSync(path)
       initialize(db)
       this.db = db
+      this.outlines = new OutlineStorage(db)
     } catch (error) {
       db?.close()
       throw error instanceof DeckError ? error : new DeckError('DECK_STORAGE')
     }
   }
 
-  /** TASK-006 will call this after its own confirmation workflow. Currently Host fixtures only. */
+  /** Trusted compatibility import for operator-controlled TASK-005 fixtures only. */
   confirm(sessionId: string, plan: ConfirmedDeckPlan): void {
     this.access(() => {
       this.id(sessionId)
@@ -67,25 +73,56 @@ export class DeckService implements DeckReader, DeckPublisher {
         new Set(plan.slides.map(s => s.slideId)).size !== plan.slides.length
       )
         throw new DeckError('DECK_INVALID_PLAN')
-      const normalized = JSON.stringify({
-        outlineId: plan.outlineId,
-        slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })),
-      })
-      const changed = this.transaction(() => {
-        const existing = this.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
-        if (existing) {
-          if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
-          return false
-        }
-        this.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
-        const insert = this.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
-        plan.slides.forEach((s, i) => {
-          insert.run(sessionId, s.slideId, s.title, i)
-        })
-        return true
-      })
+      const changed = this.transaction(() => this.insertPlan(sessionId, plan))
       if (changed) this.notify(sessionId, 1)
     })
+  }
+
+  outlineSnapshot(sessionId: string): OutlineSnapshot {
+    return this.access(() => { this.id(sessionId); return this.outlines.snapshot(sessionId) })
+  }
+
+  beginOutline(sessionId: string): void {
+    this.access(() => { this.id(sessionId); this.outlines.begin(sessionId) })
+  }
+
+  /** Called by Host only after a successful completed response, never by a model tool. */
+  proposeOutline(sessionId: string, input: { readonly requestId: string; readonly responseIndex: number; readonly draft: OutlineDraft }): OutlineProposal {
+    return this.access(() => { this.id(sessionId); return this.transaction(() => this.outlines.propose(sessionId, input)) })
+  }
+
+  currentOutline(sessionId: string, target: OutlineTarget): OutlineProposal {
+    return this.access(() => { this.id(sessionId); return this.outlines.current(sessionId, target) })
+  }
+
+  confirmOutline(sessionId: string, target: OutlineTarget): void {
+    this.access(() => {
+      this.id(sessionId)
+      this.transaction(() => {
+        const proposal = this.outlines.current(sessionId, target)
+        this.insertPlan(sessionId, proposal)
+        this.outlines.confirm(sessionId, target)
+      })
+      this.notify(sessionId, 1)
+    })
+  }
+
+  cancelOutline(sessionId: string, target: OutlineTarget): void {
+    this.access(() => { this.id(sessionId); this.transaction(() => this.outlines.cancel(sessionId, target)) })
+  }
+
+  private insertPlan(sessionId: string, plan: ConfirmedDeckPlan): boolean {
+    const normalized = JSON.stringify({ outlineId: plan.outlineId,
+      slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })) })
+    const existing = this.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
+    if (existing) {
+      if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
+      return false
+    }
+    this.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
+    const insert = this.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
+    plan.slides.forEach((s, i) => { insert.run(sessionId, s.slideId, s.title, i) })
+    return true
   }
 
   snapshot(sessionId: string): DeckSnapshot {

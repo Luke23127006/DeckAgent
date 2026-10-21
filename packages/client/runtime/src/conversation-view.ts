@@ -1,5 +1,8 @@
 import type { HistoryMessage, RequestSnapshot, StoredActivity, StoredRequest } from '@deckagent/host-api'
 import { element } from './dom.ts'
+import type { OutlineSnapshot } from '@deckagent/deck'
+import { OutlineView } from './outline-view.ts'
+import type { OutlineAction } from './outline-view.ts'
 
 interface ActivityRow {
   readonly node: HTMLDetailsElement
@@ -26,8 +29,20 @@ export class ConversationView {
   private readonly disconnected = new Set<string>()
   private readonly rows = new Map<string, RequestRow>()
   private readonly messages = new Map<number, { value: HistoryMessage; node: HTMLElement }>()
+  private outlines: OutlineSnapshot | undefined
+  private readonly outlineView: OutlineView
 
-  constructor(private readonly container: HTMLElement) {}
+  constructor(private readonly container: HTMLElement, action?: OutlineAction, revise?: () => void) {
+    this.outlineView = new OutlineView(action, revise)
+  }
+
+  setOutlines(snapshot: OutlineSnapshot): void {
+    if (this.outlines?.sessionId === snapshot.sessionId && this.outlines.version > snapshot.version) return
+    this.outlines = snapshot
+    this.render()
+  }
+
+  setOutlineBusy(busy: boolean): void { this.outlineView.setBusy(busy) }
 
   reset(): void {
     this.history = []
@@ -37,6 +52,8 @@ export class ConversationView {
     this.disconnected.clear()
     this.rows.clear()
     this.messages.clear()
+    this.outlines = undefined
+    this.outlineView.reset()
     this.container.replaceChildren()
   }
 
@@ -187,7 +204,14 @@ export class ConversationView {
       const value = this.history[index]
       if (value) {
         const node = this.message(index, value)
-        if (node) nodes.push(node)
+        if (node) {
+          nodes.push(node)
+          const proposal = this.outlines?.proposals.find(p => p.responseIndex === index)
+          if (proposal && value.role === 'assistant') {
+            const outline = this.outlineView.render(proposal)
+            if (outline.parentElement !== node) node.append(outline)
+          }
+        }
       }
     }
     for (const [index, node] of nodes.entries()) {

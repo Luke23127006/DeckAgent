@@ -59,6 +59,39 @@ export interface DeckPublisher {
   publish(sessionId: string, input: PublishSlide, signal?: AbortSignal): PublishedSlide
 }
 
+export interface OutlineDraft {
+  readonly overview: string
+  readonly slides: readonly { readonly title: string; readonly content: string }[]
+}
+
+export interface OutlineTarget {
+  readonly outlineId: string
+  readonly version: number
+}
+
+export interface OutlineProposal extends OutlineTarget {
+  readonly requestId: string
+  /** Index of the completed assistant response in the public, non-system history. */
+  readonly responseIndex: number
+  readonly overview: string
+  readonly slides: readonly { readonly slideId: string; readonly title: string; readonly content: string }[]
+  readonly status: 'current' | 'superseded' | 'cancelled' | 'confirmed'
+}
+
+export interface OutlineSnapshot {
+  readonly sessionId: string
+  readonly active: boolean
+  /** Independent of Deck publication versions. Increments on each outline transition. */
+  readonly version: number
+  readonly currentId: string | null
+  readonly confirmedId: string | null
+  readonly proposals: readonly OutlineProposal[]
+}
+
+export interface OutlineReader {
+  outlineSnapshot(sessionId: string): OutlineSnapshot
+}
+
 export class DeckError extends Error {
   constructor(public readonly code: string) {
     super(code)

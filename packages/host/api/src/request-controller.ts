@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { DeckError } from '@deckagent/deck'
 import type { AgentHandle, TurnResult } from '@deckagent/agent-runtime'
 import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
 
@@ -25,7 +26,7 @@ export class RequestController {
   private closed = false
   private cleanupFailed = false
 
-  constructor(private readonly openAgent: HostOptions['openAgent']) {}
+  constructor(private readonly openAgent: HostOptions['openAgent'], private readonly finishRequest?: HostOptions['finishRequest']) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {
     if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
@@ -50,17 +51,19 @@ export class RequestController {
     })
     let agent: AgentHandle
     try {
-      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId)
+      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId, request)
     } catch (error) {
       this.busy.delete(request.sessionId)
       this.entries.delete(entry.snapshot.requestId)
       admit()
       if (error instanceof HttpError) throw error
+      if (error instanceof DeckError && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code))
+        throw new HttpError(409, error.code)
       throw new HttpError(409, 'SESSION_UNAVAILABLE')
     }
     if (this.closed) entry.abort.abort()
     const accepted = structuredClone(entry.snapshot)
-    const execution = this.run(entry, request.input, agent)
+    const execution = this.run(entry, request, agent)
     // run handles all failures as safe outcomes, including handle disposal.
     entry.work = execution
     execution.then(admit, admit)
@@ -91,10 +94,10 @@ export class RequestController {
     if (this.cleanupFailed) throw new Error('Agent cleanup failed')
   }
 
-  private async run(entry: RequestEntry, input: string, agent: AgentHandle): Promise<void> {
+  private async run(entry: RequestEntry, request: AgentRequest, agent: AgentHandle): Promise<void> {
     let result: TurnResult
     try {
-      result = await agent.send(input, { signal: entry.abort.signal })
+      result = await agent.send(request.input, { signal: entry.abort.signal })
     } catch {
       result = { status: 'failed', text: '', steps: 0, error: { code: 'REQUEST_FAILED', message: 'Request failed' } }
     }
@@ -108,6 +111,12 @@ export class RequestController {
         steps: result.steps,
         error: { code: 'CLEANUP_FAILED', message: 'Agent cleanup failed' },
       }
+    }
+    try {
+      await this.finishRequest?.(request, entry.snapshot.requestId, result)
+    } catch {
+      result = { status: 'failed', text: result.text, steps: result.steps,
+        error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } }
     }
     entry.snapshot = { ...entry.snapshot, status: result.status, result }
     this.busy.delete(entry.snapshot.sessionId)
