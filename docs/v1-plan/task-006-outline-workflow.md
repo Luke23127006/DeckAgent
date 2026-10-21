@@ -8,9 +8,9 @@ at the task owner's request. No PR or merge into `dev` yet.
 Gate 005 and Gate 006 remain `NOT_VERIFIED`; local checks do not replace acceptance
 on integrated `dev` or a real-model demo.
 
-A further local fix after published HEAD `4e449d1` assigns request-specific draft
-paths to avoid collisions in the shared workspace. That follow-up is not committed
-or pushed yet; current verification and continuation are in `PROGRESS.md`.
+A follow-up after `4e449d1` assigns request-specific draft paths to avoid collisions
+in the shared workspace. That fix was pushed as `068996f` on the same branch at the
+task owner's request; current verification and continuation are in `PROGRESS.md`.
 
 ## Behavior and ownership
 
