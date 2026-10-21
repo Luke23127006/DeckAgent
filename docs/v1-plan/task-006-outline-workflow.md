@@ -8,6 +8,10 @@ at the task owner's request. No PR or merge into `dev` yet.
 Gate 005 and Gate 006 remain `NOT_VERIFIED`; local checks do not replace acceptance
 on integrated `dev` or a real-model demo.
 
+A further local fix after published HEAD `4e449d1` assigns request-specific draft
+paths to avoid collisions in the shared workspace. That follow-up is not committed
+or pushed yet; current verification and continuation are in `PROGRESS.md`.
+
 ## Behavior and ownership
 
 The user enters a presentation request and chooses **Create presentation**. The
@@ -114,6 +118,14 @@ TASK-005 snapshot/content/SSE/publish contracts remain unchanged. Older applicat
 versions reject schema v2; downgrade requires a separate data migration or backup.
 
 Generation gets the confirmed detailed plan and current Deck revision metadata.
+Host also includes a draft-path map in each generation request's system prompt:
+`draft-<requestId>-<slideId>.html`, directly under the existing workspace root.
+Each request uses new names, including a request continuing a confirmed Pending deck
+after restart. These paths are generation instructions, not a new File Tool argument
+or HTTP contract. The model passes the same path to `publish_slide` after a successful
+write. Existing files stay protected by exclusive creation; no draft is overwritten
+or deleted. A failed write must not lead to publishing an older file or repeating
+identical failed arguments. A response ending does not schedule background retries.
 The existing runtime plugin receives a bounded budget `max(8, 2 * slideCount + 5)`
 (at most 205 model steps). Instructions require publication per finished slide and
 a final per-slide summary, assumptions, placeholders, content beyond the supplied

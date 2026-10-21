@@ -128,7 +128,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
           ctx.provide('agentModel', captured.model)
           ctx.provide('agentSessions', store)
           ctx.provide('agentTools', scopedTools)
-          const instructions = presentationInstructions(deck, confirmed ?? action.current, reviewing)
+          const instructions = presentationInstructions(deck, confirmed ?? action.current, reviewing, requestId)
           await ctx.plugin(runtimePlugin, {
             maxSteps: Math.max(8, 2 * deck.slides.length + 5),
             systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. ${instructions}`,

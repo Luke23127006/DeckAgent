@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -7,6 +7,75 @@ import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 
 import { proposal, workflowModel } from './fixtures/outline-workflow.mjs'
+
+test('shared workspace keeps earlier drafts and gives each confirmed request separate publishable paths', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-collision-'))
+  const workspace = join(dir, 'workspace')
+  const app = await startLocalWeb({ workspace, dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'draft-paths' }, model: workflowModel() })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  await writeFile(join(workspace, 'slide-1.html'), '<h1>Keep earlier first draft</h1>')
+  await writeFile(join(workspace, 'slide-2.html'), '<h1>Keep earlier second draft</h1>')
+  const client = new HostClient(app.origin, app.token), deck = new DeckClient(app.origin, app.token)
+  const paths = []
+  for (const sessionId of ['first-deck', 'second-deck']) {
+    await completed(client, { sessionId, input: 'Create a presentation about recycling', presentation: true })
+    const accepted = await client.send({ sessionId, input: 'Confirm outline' })
+    let terminal
+    for await (const snapshot of client.watch(accepted.requestId)) terminal = snapshot
+    const history = await client.history(sessionId)
+    const writes = history.filter(message => message.role === 'tool' && message.content.includes('TOOL_FAILED'))
+    assert.equal(writes.length, 0, writes[0]?.content)
+    assert.equal(terminal.status, 'completed', JSON.stringify(terminal))
+    const snapshot = await deck.snapshot(sessionId)
+    assert.deepEqual(snapshot.slides.map(slide => slide.status), ['published', 'published'])
+    assert.match((await deck.content(sessionId, 'slide-1', 1)).html, /Why recycle/)
+    paths.push(...(await readdir(workspace)).filter(name => name.includes(accepted.requestId)))
+  }
+  assert.equal(paths.length, 4)
+  assert.equal(new Set(paths).size, 4)
+  assert.equal(await readFile(join(workspace, 'slide-1.html'), 'utf8'), '<h1>Keep earlier first draft</h1>')
+  assert.equal(await readFile(join(workspace, 'slide-2.html'), 'utf8'), '<h1>Keep earlier second draft</h1>')
+})
+
+test('a confirmed deck can retry after a colliding write without another confirmation or overwriting the old draft', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-retry-'))
+  const workspace = join(dir, 'workspace')
+  let failFirstGeneration = true
+  const base = workflowModel()
+  const options = { workspace, dataDir: join(dir, 'data'), selection: { provider: 'fixture', model: 'retry' },
+    model: { async *stream(request) {
+      if (failFirstGeneration && request.tools.some(tool => tool.name === 'publish_slide')) {
+        if (request.messages.at(-1).role === 'user') {
+          yield { type: 'tool-call', call: { id: 'older-write', name: 'write_file',
+            arguments: { path: 'slide-1.html', content: '<h1>Should not overwrite</h1>' } } }
+          yield { type: 'finish', reason: 'tool-calls' }
+        } else {
+          yield { type: 'text-delta', text: 'The draft write failed.' }
+          yield { type: 'finish', reason: 'stop' }
+        }
+      } else yield* base.stream(request)
+    } } }
+  let app = await startLocalWeb(options)
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  await writeFile(join(workspace, 'slide-1.html'), '<h1>Keep old draft</h1>')
+  let client = new HostClient(app.origin, app.token)
+  await completed(client, { sessionId: 'retry', input: 'Create a presentation', presentation: true })
+  const first = await client.send({ sessionId: 'retry', input: 'Confirm outline' })
+  let failed
+  for await (const value of client.watch(first.requestId)) failed = value
+  assert.equal(failed.status, 'failed')
+  assert.equal(failed.result.error.code, 'DECK_INCOMPLETE')
+  failFirstGeneration = false
+  await app.close()
+  app = await startLocalWeb(options)
+  client = new HostClient(app.origin, app.token)
+  const retry = await completed(client, { sessionId: 'retry', input: 'Retry the unfinished slides using the new draft paths' })
+  assert.notEqual(first.requestId, retry.requestId)
+  assert.equal((await readdir(workspace)).filter(name => name.includes(retry.requestId)).length, 2)
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('retry')).slides.map(slide => slide.status), ['published', 'published'])
+  assert.equal(await readFile(join(workspace, 'slide-1.html'), 'utf8'), '<h1>Keep old draft</h1>')
+})
 
 test('ordinary Send request gives the model a schema-valid outline argument example', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-outline-envelope-'))

@@ -24,18 +24,22 @@ export function workflowModel(beforePublish = async () => {}) {
       return
     }
     const plan = JSON.parse(system.split('Host-confirmed slide plan: ')[1].split('\n')[0])
+    const assigned = /^Host-assigned draft paths: (.+)$/m.exec(system)
+    const paths = assigned ? JSON.parse(assigned[1]) : {}
+    if (last.role === 'tool') assert.equal(last.isError, false, last.content)
     const published = request.messages.filter(m => m.role === 'tool' && m.name === 'publish_slide' && !m.isError).length
     const slide = plan.slides[published]
     if (!slide) {
       yield { type: 'text-delta', text: 'Draft ready: Why recycle explains reuse; Next actions lists collection steps. Assumption: general audience. No placeholders. Local rules were not checked. Advice beyond the material is general knowledge.' }
       yield { type: 'finish', reason: 'stop' }
     } else {
+      const path = paths[slide.slideId] ?? `${slide.slideId}.html`
       if (last.name === 'write_file') await beforePublish(slide.slideId, request.signal)
       yield { type: 'tool-call', call: last.name === 'write_file'
         ? { id: `publish-${slide.slideId}`, name: 'publish_slide', arguments: {
-          outlineId: plan.outlineId, slideId: slide.slideId, expectedRevision: 0, publicationId: `first-${slide.slideId}`, path: `${slide.slideId}.html` } }
+          outlineId: plan.outlineId, slideId: slide.slideId, expectedRevision: 0, publicationId: `first-${slide.slideId}`, path } }
         : { id: `write-${slide.slideId}`, name: 'write_file', arguments: {
-          path: `${slide.slideId}.html`, content: `<style>h1{color:green}</style><h1>${slide.title}</h1>` } } }
+          path, content: `<style>h1{color:green}</style><h1>${slide.title}</h1>` } } }
       yield { type: 'finish', reason: 'tool-calls' }
     }
   } }
