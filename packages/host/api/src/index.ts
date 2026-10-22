@@ -178,6 +178,11 @@ export async function startHost(options: HostOptions) {
       json(res, 202, await controller.submit(await body(req)))
       return
     }
+    const stop = /^\/api\/requests\/([\w-]+)\/stop$/.exec(url.pathname)
+    if (stop && req.method === 'POST') {
+      json(res, 200, controller.stop(stop[1]!))
+      return
+    }
     const request = /^\/api\/requests\/([\w-]+)(\/events)?$/.exec(url.pathname)
     if (request && req.method === 'GET') {
       const snapshot = controller.get(request[1]!)

@@ -53,6 +53,10 @@ const createPresentation = button('Create presentation', () => {
   if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
+const stopRequest = button('Stop', () => {
+  if (current?.activeRequestId) run(client.stop(current.activeRequestId).then(() => {}))
+})
+stopRequest.hidden = true
 const deck = element('aside', undefined, 'deck-sidebar')
 deck.hidden = true
 mountDeckTab(deck)
@@ -99,6 +103,9 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  stopRequest.hidden = !current?.activeRequestId
+  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked()
+  newChatButton.disabled = switchingBlocked()
   model.disabled = !current || selecting.has(current.sessionId)
   submit.disabled =
     !current ||
@@ -141,6 +148,7 @@ function renderChats() {
     )
     item.title = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
+    item.disabled = switchingBlocked()
     chats.append(item)
   }
 }
@@ -196,6 +204,13 @@ async function follow(id: string, sessionId: string, expected: number) {
   }
 }
 async function open(session: WebSession) {
+  const switching = current?.sessionId !== session.sessionId
+  if (switching && switchingBlocked()) return
+  // Read everything before replacing current state. A failed open leaves the old chat intact.
+  const previousGeneration = generation
+  const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
+    management.requests(session.sessionId), outlines.snapshot(session.sessionId)])
+  if (generation !== previousGeneration || (switching && switchingBlocked())) return
   if (current) drafts.set(current.sessionId, input.value)
   input.value = drafts.get(session.sessionId) ?? ''
   generation++
@@ -212,24 +227,29 @@ async function open(session: WebSession) {
   if (session.activeRequestId)
     timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
   controls()
-  try {
-    await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected), showOutlines(session.sessionId, expected)])
-  } finally {
-    if (opening === expected) opening = undefined
-    controls()
-  }
+  timeline.setHistory(loaded[0])
+  timeline.setRecords(loaded[2], loaded[1])
+  outlineState = loaded[3]
+  timeline.setOutlines(loaded[3])
+  if (opening === expected) opening = undefined
+  controls()
   if (session.activeRequestId && generation === expected)
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
 async function newChat() {
+  if (switchingBlocked()) return
   const created = await management.create()
   await refresh()
   await open(created)
 }
 const settingsUI = settingsPanel(management, refresh)
+function switchingBlocked(): boolean {
+  return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
+}
+const newChatButton = button('New chat', () => run(newChat()))
 navigation.append(
   element('div', 'DeckAgent', 'wordmark'),
-  button('New chat', () => run(newChat())),
+  newChatButton,
   element('h2', 'History'),
   chats,
   button('Models & settings', () => run(settingsUI.open())),
@@ -261,7 +281,7 @@ const reconnect = button('Reconnect / read history', () => {
 })
 reconnect.id = 'reconnect'
 const composerActions = element('div', undefined, 'composer-actions')
-composerActions.append(submit, createPresentation)
+composerActions.append(submit, createPresentation, stopRequest)
 form.append(input, composerActions)
 conversation.append(heading, field('Model for next request', model), status, reconnect, messages, form)
 root.replaceChildren(navigation, conversation, deck, publishedDeck)

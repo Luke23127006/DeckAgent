@@ -132,7 +132,7 @@ export class ConversationView {
             ? `Failed${errorCode ? `: ${errorCode}` : ''}`
             : state === 'cancelled'
               ? 'Stopped'
-              : 'Outcome unconfirmed after interruption'
+              : 'Work interrupted; outcome unconfirmed. Saved slides kept; nothing resumes automatically.'
     if (row.status.textContent !== label) row.status.textContent = label
     row.node.dataset.status = state
     row.model.hidden = !stored

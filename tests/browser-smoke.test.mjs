@@ -210,16 +210,23 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
     await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Composer unavailable')
     await evaluate(`document.querySelector('.composer textarea').value=${JSON.stringify(text)}; document.querySelector('.composer').requestSubmit(); true`)
   }
-  await send('Publish first')
+  await send('Publish slide 1 first')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('intro published')`), 'First published content missing')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').getAttribute('sandbox')`), '')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').contentDocument === null`), true)
-  await send('Publish second')
+  await send('Publish slide 2 second')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('2. Second · Revision 1')`), 'Second publication did not arrive over SSE')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').textContent`), '1. Introduction · Revision 1')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('PRIVATE DRAFT')`), false)
   await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Next').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('second published')`), 'Slide navigation failed')
+  const savedModel = await evaluate(`document.querySelector('.conversation select').value`)
+  await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='New chat').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.messages').children.length === 0 && document.querySelector('.conversation select').value === ''`), 'Empty chat did not open independently')
+  await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.title==='browser-deck').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe')?.srcdoc.includes('second published')`), 'History did not restore the deck and its selected slide')
+  assert.equal(await evaluate(`document.querySelector('.conversation select').value`), savedModel, 'History must restore its own model')
+  assert.equal((await (await fetch(`${app.origin}/api/sessions/browser-deck/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()).length, 2, 'History must not send a new request')
   await evaluate(`const w=document.querySelector('.published-deck-sidebar input[type=range]'); w.value='640'; w.dispatchEvent(new Event('input')); true`)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
   await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Fullscreen').click(); true`)
@@ -315,6 +322,12 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     model: {
       async *stream(request) {
         modelRequests++
+        if (request.messages.at(-1).content === 'Stop fixture') {
+          await new Promise((_, reject) => {
+            if (request.signal.aborted) reject(request.signal.reason)
+            else request.signal.addEventListener('abort', () => reject(request.signal.reason), { once: true })
+          })
+        }
         if (request.messages.at(-1).role === 'tool') {
           yield { type: 'text-delta', text: request.messages.at(-1).isError ? 'Write denied' : 'Browser HTML created' }
           yield { type: 'finish', reason: 'stop' }
@@ -357,6 +370,8 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await evaluate(`document.querySelector('.request-record').getBoundingClientRect().height <= 48`), true, 'Collapsed activity should occupy a single line')
   assert.equal(await evaluate(`document.querySelector('.messages').clientHeight >= document.querySelector('.conversation').clientHeight * .5`), true, 'Chat should retain most available vertical space')
   const requestsBeforeViewing = modelRequests
+  assert.equal(await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].every(button => button.disabled)`), true, 'History must be disabled while work runs')
+  assert.equal(await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'New chat').disabled`), true)
   await evaluate(`document.querySelector('.request-record > summary').click(); document.querySelector('.request-record > summary').focus(); true`)
   assert.equal(await evaluate(`document.querySelector('.request-record').open`), true)
   await delay(900)
@@ -432,6 +447,18 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.textContent.includes('messages')&&!button.textContent.includes('0 messages')).click(); true`)
   await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`), 'History did not reopen the right chat')
   assert.equal(modelRequests, requestCount, 'Opening Settings/new chat/history must not start Agent work')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Keep my draft', 'History must restore the draft of its own chat')
+  await evaluate(`window.task007Fetch=window.fetch; window.fetch=(url,options)=>String(url).endsWith('/history')?Promise.resolve(new Response('{}',{status:503})):window.task007Fetch(url,options); [...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.textContent.includes('0 messages')).click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.conversation > [role=status]').hidden === false`), 'Failed history open was not reported')
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`), true, 'Failed open must preserve the current conversation')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Keep my draft', 'Failed open must preserve the current draft')
+  await evaluate(`window.fetch=window.task007Fetch; delete window.task007Fetch; true`)
+  assert.equal(modelRequests, requestCount, 'Failed history open must not start work')
+  await evaluate(`document.querySelector('.composer textarea').value='Stop fixture'; document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Stop')?.hidden === false`), 'Stop did not become available')
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Stop').click(); true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'cancelled'`), 'Stop did not terminate the request')
+  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Stop did not release the Composer')
   assert.equal(await evaluate(`document.querySelector('.composer button').getBoundingClientRect().bottom <= innerHeight`), true, 'Composer must remain visible while conversation history scrolls')
   if (process.env.DECKAGENT_BROWSER_SCREENSHOT) {
     const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })

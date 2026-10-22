@@ -91,6 +91,10 @@ export class HostClient {
     return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
   }
 
+  async stop(id: string): Promise<RequestSnapshot> {
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json())
+  }
+
   async history(id: string): Promise<readonly HistoryMessage[]> {
     const data: unknown = await (await this.request(`/api/sessions/${encodeURIComponent(id)}/history`)).json()
     if (!Array.isArray(data)) throw new Error('INVALID_RESPONSE')

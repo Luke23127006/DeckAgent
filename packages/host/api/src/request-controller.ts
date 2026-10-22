@@ -80,6 +80,14 @@ export class RequestController {
     return [...this.entries.values()].find(entry => entry.snapshot.sessionId === sessionId && entry.snapshot.status === 'running')?.snapshot.requestId
   }
 
+  stop(id: string): RequestSnapshot {
+    const entry = this.entries.get(id)
+    if (!entry) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+    if (entry.snapshot.status === 'running') entry.abort.abort()
+    // Admission and finalization still own the Session lock until run settles.
+    return structuredClone(entry.snapshot)
+  }
+
   subscribe(listener: (snapshot: RequestSnapshot) => void): () => void {
     this.listeners.add(listener)
     return () => {

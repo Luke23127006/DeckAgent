@@ -6,7 +6,7 @@ import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 import { fork } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 
@@ -102,6 +102,11 @@ test('reopening Web after a killed Host preserves unconfirmed activity without r
   assert.equal(requests[0].status, 'unknown')
   assert.equal(activities[0].status, 'unknown')
   assert.equal(modelRequests, 0)
+  const decks = new DeckClient(app.origin, app.token)
+  assert.deepEqual((await decks.snapshot('interrupted-chat')).slides.map(slide => [slide.slideId, slide.revision, slide.status]),
+    [['saved', 1, 'published'], ['pending', 0, 'pending']])
+  assert.equal((await decks.content('interrupted-chat', 'saved', 1)).html, '<h1>Durable before crash</h1>')
+  assert.equal(modelRequests, 0, 'Reading a restored deck must not replay work')
   assert.equal(
     (await new HostClient(app.origin, app.token).history('interrupted-chat'))[0].content,
     'Work until the Host is killed',
