@@ -162,15 +162,24 @@ function renderModels() {
     for (const id of provider.models) group.append(new Option(id, JSON.stringify({ provider: provider.id, model: id })))
     model.append(group)
   }
+  model.append(new Option('Add or manage models…', '__settings'))
   model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
   controls()
 }
 function renderChats() {
   chats.replaceChildren()
+  if (!sessions.length) chats.append(element('p', 'No chats yet. Start a new chat.'))
   for (const session of sessions) {
-    const item = button(`${session.selection?.model ?? 'New chat'} · ${session.messageCount} messages`, () =>
+    const item = button('', () =>
       run(open(session)),
     )
+    const updated = element('time')
+    updated.dateTime = session.updatedAt
+    const date = new Date(session.updatedAt)
+    updated.textContent = Number.isNaN(date.getTime()) ? 'Updated time unavailable' : date.toLocaleString()
+    const slides = session.hasSlides === undefined ? 'Slides unknown' : session.hasSlides ? 'Has slides' : 'No slides yet'
+    item.append(element('strong', session.title ?? (session.messageCount ? 'Untitled chat' : 'New chat')), updated,
+      element('small', `${slides}${session.activeRequestId ? ' · Working…' : ''}`))
     item.title = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
     item.disabled = switchingBlocked()
@@ -332,6 +341,11 @@ input.addEventListener('input', fitInput)
 conversation.append(heading, status, welcome, messages, form)
 root.replaceChildren(navigation, conversation, deck, publishedDeck)
 model.addEventListener('change', () => {
+  if (model.value === '__settings') {
+    model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
+    run(settingsUI.open())
+    return
+  }
   if (!model.value || !current) return
   const id = current.sessionId
   selecting.add(id)

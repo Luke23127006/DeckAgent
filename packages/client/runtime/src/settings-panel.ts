@@ -8,6 +8,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const message = element('p')
   message.setAttribute('role', 'status')
   const chooser = element('select')
+  const providerList = element('section', undefined, 'provider-list')
+  providerList.setAttribute('aria-label', 'Configured providers')
   const kind = element('select')
   const form = element('form')
   const fields = element('fieldset')
@@ -98,6 +100,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     message.textContent = value?.hasKey
       ? value.keyAvailable ? 'A key is saved. Leave the key field blank to keep it.' : 'The saved key is unavailable for this Windows user. Enter the key again.'
       : 'No saved key. Enter the key if this provider requires one.'
+    for (const card of providerList.querySelectorAll<HTMLButtonElement>('button[data-provider]'))
+      card.setAttribute('aria-pressed', String(card.dataset.provider === value?.id))
   }
   kind.addEventListener('change', () => {
     if (!chooser.value) fill()
@@ -108,7 +112,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     kind.disabled = !!value
     fill(value)
   })
-  async function refresh() {
+  async function refresh(selectedId = '') {
     const settings = await client.settings()
     providers = settings.providers
     builtIns = settings.builtIns
@@ -124,7 +128,22 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     kind.disabled = false
     chooser.replaceChildren(new Option('Add provider', ''))
     for (const provider of providers) chooser.append(new Option(provider.displayName, provider.id))
-    fill()
+    providerList.replaceChildren(element('h3', 'Your providers'))
+    if (!providers.length) providerList.append(element('p', 'No providers configured. Add a connection below.'))
+    for (const provider of providers) {
+      const card = button('', () => {
+        if (busy) return
+        chooser.value = provider.id
+        chooser.dispatchEvent(new Event('change'))
+      })
+      card.dataset.provider = provider.id
+      card.append(element('strong', provider.displayName),
+        element('small', `${builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Key available' : provider.hasKey ? 'Saved key unavailable' : 'No saved key'}`),
+        element('span', provider.models.length ? provider.models.join(' · ') : 'No models added'))
+      providerList.append(card)
+    }
+    chooser.value = selectedId
+    chooser.dispatchEvent(new Event('change'))
     if (!settings.persistentKeys)
       message.textContent = 'Saving keys requires Windows. Existing environment connections remain available.'
   }
@@ -134,6 +153,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     fields.disabled = true
     save.disabled = true
     chooser.disabled = true
+    for (const card of providerList.querySelectorAll<HTMLButtonElement>('button')) card.disabled = true
     remove.disabled = true
     try {
       await action()
@@ -152,6 +172,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       fields.disabled = false
       save.disabled = false
       chooser.disabled = false
+      for (const card of providerList.querySelectorAll<HTMLButtonElement>('button')) card.disabled = false
       remove.disabled = !chooser.value
     }
   }
@@ -171,7 +192,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     }
     perform(async () => {
       await client.save(id.value, value)
-      await refresh()
+      await refresh(id.value)
       await changed()
       message.textContent = 'Provider saved. Choose its model in your chat.'
     }).catch(showUnexpected)
@@ -180,23 +201,27 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     key.value = ''
     dialog.close()
   })
-  fields.append(
+  const connection = element('section', undefined, 'settings-section')
+  connection.append(element('h3', 'Connection'),
     field('Provider type', kind),
     field('Provider ID', id),
     field('Display name', name),
     field('API protocol', protocol),
     field('Base URL', url),
-    field('API key', key),
-    field('Remove saved key', removeKey),
+  )
+  const credentials = element('section', undefined, 'settings-section')
+  credentials.append(element('h3', 'API key'), element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
+    field('API key', key), field('Remove saved key', removeKey))
+  const modelSection = element('section', undefined, 'settings-section')
+  modelSection.append(element('h3', 'Models'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
     field('Added model IDs', models),
     loadCatalog,
     field('Model catalog', available),
     addCatalog,
-    save,
-    remove,
   )
+  fields.append(connection, credentials, modelSection, save, remove)
   form.append(fields)
-  dialog.append(title, field('Provider configuration', chooser), message, form, close)
+  dialog.append(title, providerList, field('Provider configuration', chooser), message, form, close)
   dialog.addEventListener('close', () => {
     key.value = ''
   })

@@ -1,6 +1,6 @@
 # UI/UX — Checklist đối chiếu prototype V1
 
-Cập nhật: 22-10-2026. Nhóm 1–3 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Nhóm 4–5 chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
+Cập nhật: 22-10-2026. Nhóm 1–4 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Nhóm 5 chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
 
 Tham chiếu: [UX Prototype](../design/UX-design/DeckAgent%20V1%20UX%20Prototype.html). [README thiết kế](../design/UX-design/README.md) xác định prototype là mô phỏng; Product Spec vẫn quyết định hành vi. Checklist này theo dõi các chỉnh sửa đã đề xuất, không tự mở rộng scope implementation plan hoặc thay trạng thái Integration Gates trong [PROGRESS.md](PROGRESS.md).
 
@@ -71,12 +71,25 @@ Evidence: test đỏ được chạy trước từng slice tool-output, turn-fin
 
 ## 4. History và Models settings — sau các nhóm trên
 
-- [ ] **History dùng tên chat:** hiển thị tên theo nội dung thay cho model + message count; cần chốt nguồn tạo/lưu title và fallback.
-- [ ] **History có thông tin phụ:** thời điểm cập nhật và có/chưa có slides từ dữ liệu thật; giữ selected state, empty state và active-request guard.
-- [ ] **Settings rõ cấu trúc provider/model:** đối chiếu bố cục danh sách provider, phần chỉnh cấu hình và thao tác model với prototype; giữ các validation và security behavior hiện có.
-- [ ] **Model selector có đường tới Settings:** giúp người dùng thêm/đổi cấu hình từ vị trí chọn model; không tự đổi selected model hoặc gửi request.
+- [x] **History dùng tên chat:** lấy user message đầu tiên đã lưu, thu gọn whitespace và tối đa 64 ký tự + `…`; fallback `New chat`, không gọi model đặt tên.
+- [x] **History có thông tin phụ:** hiển thị `updatedAt` theo giờ máy và có/chưa có revision đã publish; confirmed plan chỉ có pending chưa tính là có slide. Giữ selected state, empty state và active-request guard.
+- [x] **Settings rõ cấu trúc provider/model:** thẻ provider hiển thị loại, trạng thái key và model IDs; chọn thẻ để sửa. Form chia Connection / API key / Models; sau Save giữ provider đang sửa. Giữ validation, catalog và key masking/clearing hiện có.
+- [x] **Model selector có đường tới Settings:** `Add or manage models…` mở Settings, giữ selection/draft và không gửi request.
 
 Điểm sửa dự kiến: client `settings-panel.ts`, `management-client.ts`, `boot.ts`; History có thể cần thay đổi contracts/metadata. Default model IDs và Restore defaults chưa chốt không được tự triển khai từ dữ liệu mẫu prototype.
+
+Files thực tế: ba client files trên, Host `contracts.ts`, local-web `web-state.ts`, `index.ts`, `ui-assets.ts`; tests `browser-smoke.test.mjs`, `web-management.test.mjs`. `WebSession` thêm optional `title`/`hasSlides`; client kiểm tra kiểu, Host cũ thiếu metadata dùng fallback `Untitled chat`/`Slides unknown`. Title đọc qua public SessionStore; publication qua public DeckService, không migration hoặc đổi quyền publish. `updatedAt` vẫn là thời gian lưu message, không phải thời điểm đổi model.
+
+Evidence: build/typecheck và lint PASS; Chrome **3/3 PASS**, browser runtime **4/4 PASS**, session **3/3 PASS**; management **5/5 PASS** sau khi sửa Content-Type của fixture mới. Kiểm tra title Unicode/whitespace/truncation, timestamp, pending/published, Host restart, Settings/model/draft, chuyển provider, key không lộ và không tự chạy Agent. Đã xem screenshot fixture `.local-only/ui-group-4-settings.png`. Manual acceptance/hosted CI `NOT_VERIFIED`; không dùng provider thật. Giới hạn: list hiện đọc history từng session để dẫn xuất title; chưa tối ưu cho số lượng chat lớn.
+
+Manual check nhóm 4 — restart Host và reload UI sau build:
+
+1. Mở chat có history: sidebar hiển thị tên từ yêu cầu đầu, thời gian cập nhật và selected state đúng. Chat mới có tên `New chat`; đổi model không đổi tên chat.
+2. Chat chỉ confirmed outline/pending hiển thị `No slides yet`; sau publish ít nhất một slide đổi thành `Has slides`. Reload/restart vẫn đúng.
+3. Soạn draft, ghi nhớ model đang chọn, mở `Add or manage models…`: Settings mở nhưng model/draft không đổi; đóng Settings không tạo request.
+4. Chọn từng thẻ provider: đúng cấu hình, model IDs và trạng thái key. Save giữ provider đang sửa; key input trống sau save/chuyển provider, không hiện lại key đã lưu.
+5. Thêm/xóa model ID rồi Save: selector phản ánh cấu hình; model đã xóa cần chọn lại, history vẫn còn. Duplicate display name/URL sai vẫn báo lỗi; không lưu key thật vào screenshot/log.
+6. Khi request đang chạy, History/New chat vẫn bị khóa. Thu hẹp cửa sổ: Settings cuộn được và thẻ provider chuyển về một cột ở màn hình nhỏ.
 
 ## 5. Hoàn thiện trình bày và kiểm tra
 

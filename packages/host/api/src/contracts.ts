@@ -65,6 +65,10 @@ export interface ProviderTemplate {
 }
 
 export interface WebSession {
+  /** Derived from the first user message; absent on older Hosts. */
+  readonly title?: string
+  /** True only when at least one slide has a published revision. */
+  readonly hasSlides?: boolean
   readonly sessionId: string
   readonly createdAt: string
   readonly updatedAt: string

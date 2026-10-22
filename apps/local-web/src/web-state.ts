@@ -83,12 +83,15 @@ export class WebState {
     )
   }
 
-  private project(info: SessionInfo): WebSession {
-    return { ...info, selectable: this.selectable(info.selection) }
+  private async project(info: SessionInfo): Promise<WebSession> {
+    const history = await this.sessions.read(info.sessionId)
+    const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+    const title = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
+    return { ...info, title, selectable: this.selectable(info.selection) }
   }
 
   async list(): Promise<readonly WebSession[]> {
-    return (await this.sessions.list()).map(info => this.project(info))
+    return Promise.all((await this.sessions.list()).map(info => this.project(info)))
   }
 
   async create(value: unknown): Promise<WebSession> {
