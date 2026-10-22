@@ -193,7 +193,10 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   }
   const options = {
     workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
-    confirmedDecks: [{ sessionId: 'browser-deck', outlineId: 'confirmed', slides: [{ slideId: 'intro', title: 'Introduction' }, { slideId: 'second', title: 'Second' }, { slideId: 'draft', title: 'Unpublished' }] }],
+    confirmedDecks: [
+      { sessionId: 'browser-deck', outlineId: 'confirmed', slides: [{ slideId: 'intro', title: 'Introduction' }, { slideId: 'second', title: 'Second' }, { slideId: 'draft', title: 'Unpublished' }] },
+      { sessionId: 'large-deck', outlineId: 'large', slides: Array.from({ length: 60 }, (_, index) => ({ slideId: `slide-${index}`, title: `Long deck slide ${index + 1}` })) },
+    ],
     selection: { provider: 'fixture', model: 'canvas' },
     model: { async *stream(request) {
       const user = [...request.messages].reverse().find(m => m.role === 'user').content
@@ -220,20 +223,37 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   }
   await navigate()
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').hidden`), true)
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-placeholder').hidden`), false, 'Pending slides need a visible canvas placeholder')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`), '0/3 slides published')
+  assert.equal(await evaluate(`document.querySelector('.deck-stage').getBoundingClientRect().bottom <= document.querySelector('.published-deck-sidebar .deck-slide-list').getBoundingClientRect().top`), true, 'Canvas must precede the slide strip')
   const send = async text => {
     await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Composer unavailable')
     await evaluate(`document.querySelector('.composer textarea').value=${JSON.stringify(text)}; document.querySelector('.composer').requestSubmit(); true`)
   }
   await send('Publish slide 1 first')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('intro published')`), 'First published content missing')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`), '1/3 slides published')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-placeholder').hidden`), true)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').getAttribute('sandbox')`), '')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').contentDocument === null`), true)
+  await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').focus(); true`)
   await send('Publish slide 2 second')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('2. Second · Revision 1')`), 'Second publication did not arrive over SSE')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').textContent`), '1. Introduction · Revision 1')
+  assert.equal(await evaluate(`document.activeElement === document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]')`), true, 'Publication must preserve focus on slide controls')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`), '2/3 slides published')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('PRIVATE DRAFT')`), false)
   await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Next').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('second published')`), 'Slide navigation failed')
+  await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [data-status=pending]').click(); true`)
+  assert.equal(await evaluate(`!document.querySelector('.published-deck-sidebar .deck-placeholder').hidden && document.querySelector('.published-deck-sidebar iframe').hidden`), true, 'Selecting pending must show a placeholder without old HTML')
+  await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Previous').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe').srcdoc.includes('second published')`), 'Returning from pending lost the saved slide')
+  await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.title==='large-deck').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').children.length === 60`), 'Large deck did not load')
+  assert.equal(await evaluate(`(() => { const strip=document.querySelector('.published-deck-sidebar .deck-slide-list'); const stage=document.querySelector('.deck-stage'); return strip.getBoundingClientRect().height <= 100 && strip.scrollWidth>strip.clientWidth && stage.getBoundingClientRect().height>=180 && stage.getBoundingClientRect().bottom<=strip.getBoundingClientRect().top; })()`), true, 'Large decks must scroll horizontally without crowding out the canvas')
+  await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.title==='browser-deck').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe')?.srcdoc.includes('second published')`), 'Returning from large deck lost selection')
   const savedModel = await evaluate(`document.querySelector('.conversation select').value`)
   await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='New chat').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.messages').children.length === 0 && document.querySelector('.conversation select').value === ''`), 'Empty chat did not open independently')

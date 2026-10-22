@@ -1,6 +1,6 @@
 # UI/UX — Checklist đối chiếu prototype V1
 
-Cập nhật: 22-10-2026. Nhóm 1 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Các nhóm sau chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
+Cập nhật: 22-10-2026. Nhóm 1–2 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Nhóm 3–5 chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
 
 Tham chiếu: [UX Prototype](../design/UX-design/DeckAgent%20V1%20UX%20Prototype.html). [README thiết kế](../design/UX-design/README.md) xác định prototype là mô phỏng; Product Spec vẫn quyết định hành vi. Checklist này theo dõi các chỉnh sửa đã đề xuất, không tự mở rộng scope implementation plan hoặc thay trạng thái Integration Gates trong [PROGRESS.md](PROGRESS.md).
 
@@ -28,13 +28,22 @@ Files: client `boot.ts`, `apps/local-web/src/ui-assets.ts` và composition CSS t
 
 ## 2. Presentation — ưu tiên cao
 
-- [ ] **Canvas là vùng chính:** chuyển danh sách slide dài phía trên xuống dải điều hướng gọn bên dưới. Deck nhiều slides không đẩy canvas ra khỏi vùng nhìn.
-- [ ] **Header có tiến độ:** hiển thị số slides đã publish/tổng số theo Deck snapshot; phân biệt pending và published, không suy diễn request hoàn thành từ count.
-- [ ] **Pending placeholder:** hiển thị khung slide với giải thích rõ khi slide chưa publish; không hiển thị draft hoặc HTML chưa hoàn thành.
-- [ ] **Điều hướng dưới canvas:** Previous/Next, vị trí hiện tại và dải chọn slide có selected/pending states rõ. Đối chiếu behavior biên với spec trước khi đổi cách điều hướng hiện tại.
-- [ ] **Hướng dẫn viewing:** thêm dòng ngắn cho biết muốn sửa slide thì gửi yêu cầu trong chat; không tạo cảm giác có thể sửa trực tiếp canvas.
+- [x] **Canvas là vùng chính:** danh sách đã chuyển xuống dải ngang bên dưới; Chrome kiểm tra deck 60 slides, strip cao tối đa 100px và canvas vẫn hiện phía trên.
+- [x] **Header có tiến độ:** số published/tổng theo Deck snapshot; Chrome kiểm tra 0/3 → 1/3 → 2/3. Không dùng count để đánh dấu request completed.
+- [x] **Pending placeholder:** khung 16:9 giải thích slide chưa publish; khi chọn pending, HTML của slide trước bị ẩn. Tách thông báo loading/error khi đọc published revision.
+- [x] **Điều hướng dưới canvas:** Previous/Next, caption, Fullscreen và dải chọn có selected/pending/revision states. Giữ hành vi quay vòng ở đầu/cuối và cho chọn pending như implementation trước; không tự áp dụng việc disable pending/endpoints của prototype. Giữ button DOM ổn định để publication không làm mất focus.
+- [x] **Hướng dẫn viewing:** footer hướng dẫn gửi request trong chat để sửa, cùng trạng thái kết nối; không có direct-edit controls.
 
-Điểm sửa dự kiến: client `deck-canvas.ts`, CSS; giữ Deck Model, revision guards và iframe sandbox.
+Files: client `deck-canvas.ts`, CSS trong `ui-assets.ts`, composition CSS và browser smoke. Không đổi Deck Model/Host contracts, sandbox/CSP, source safety hoặc publication semantics. Build/lint PASS; Chrome smoke **3/3 PASS, 0 skipped**, gồm progress/placeholder, 60 slides, focus/selection, divider/keyboard, fullscreen, History, reload/Host restart và mobile. Đã xem screenshot fixture `.local-only/ui-group-2-presentation.png`. Sample deck không chuyển sang layout mới vì không có authoritative Deck snapshot/progress.
+
+### Manual check nhóm 2
+
+- [ ] Restart Host và reload, mở chat có deck: header có số published/tổng; canvas ở trên, nút điều hướng và dải chọn ở dưới, footer có hướng dẫn viewing.
+- [ ] Tạo deck mới và confirm: thấy placeholder khi chưa có slide, count tăng theo từng publication. Không hiển thị draft HTML chưa publish; count không tự hứa công việc vẫn chạy sau stop/lỗi.
+- [ ] Chọn một slide pending: thấy giải thích thay cho HTML cũ; khi slide đó publish thì nội dung hiện ra. Đang xem slide khác thì selection không tự nhảy.
+- [ ] Previous/Next và dải chọn hoạt động, trạng thái selected/pending rõ; ở đầu/cuối vẫn quay vòng như trước. Tab/focus trên dải chọn không mất khi publication khác xuất hiện.
+- [ ] Với nhiều slides hoặc panel hẹp: dải chọn cuộn ngang, canvas không bị danh sách đẩy xuống; tên đầy đủ xem qua tooltip/accessibility label từ text của nút.
+- [ ] Kéo divider, fullscreen, reload và mở lại History: giữ nội dung/revision đúng chat; chỉ xem không tạo request hoặc sửa deck. Màn hình hẹp vẫn đọc/điều hướng được.
 
 ## 3. Conversation, Activity và kết quả — ưu tiên cao
 
