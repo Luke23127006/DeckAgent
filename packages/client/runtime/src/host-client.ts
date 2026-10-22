@@ -102,10 +102,16 @@ export class HostClient {
       if (
         !object(message) ||
         (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'tool') ||
-        typeof message.content !== 'string'
+        typeof message.content !== 'string' ||
+        (message.toolCallId !== undefined && (message.role !== 'tool' || typeof message.toolCallId !== 'string' || !message.toolCallId || message.toolCallId.length > 2000)) ||
+        (message.name !== undefined && (message.role !== 'tool' || typeof message.name !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(message.name))) ||
+        (message.isError !== undefined && (message.role !== 'tool' || typeof message.isError !== 'boolean'))
       )
         throw new Error('INVALID_RESPONSE')
-      return { role: message.role, content: message.content }
+      return { role: message.role, content: message.content,
+        ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
+        ...(typeof message.name === 'string' ? { name: message.name } : {}),
+        ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}) }
     })
   }
 

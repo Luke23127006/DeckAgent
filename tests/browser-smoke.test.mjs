@@ -7,6 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { workflowModel } from './fixtures/outline-workflow.mjs'
+import { RuntimeError } from '../packages/agent/runtime/lib/index.js'
 
 async function eventually(operation, message) {
   for (let i = 0; i < 200; i++) {
@@ -200,6 +201,7 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
     selection: { provider: 'fixture', model: 'canvas' },
     model: { async *stream(request) {
       const user = [...request.messages].reverse().find(m => m.role === 'user').content
+      if (user.includes('Force provider failure')) throw new RuntimeError('PROVIDER_HTTP', 'fixture-provider-body-must-stay-private')
       const slideId = user.includes('first') ? 'intro' : 'second'
       const last = request.messages.at(-1)
       if (last.role === 'user') {
@@ -239,6 +241,7 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').focus(); true`)
   await send('Publish slide 2 second')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('2. Second · Revision 1')`), 'Second publication did not arrive over SSE')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.querySelector('.request-state').textContent.includes('1 slide update saved')`), 'Outcome must count this request publication receipt, not cumulative deck state')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').textContent`), '1. Introduction · Revision 1')
   assert.equal(await evaluate(`document.activeElement === document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]')`), true, 'Publication must preserve focus on slide controls')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`), '2/3 slides published')
@@ -307,6 +310,14 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   }, 'Published HTML did not render')
   assert.match(rendered.text, /intro published/)
   assert.equal(rendered.color, 'rgb(0, 100, 0)', 'Static inline CSS must render under CSP')
+  await send('Edit slide 2: Force provider failure')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'failed'`), 'Provider failure did not finish the turn')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).querySelector('.request-state').textContent`), 'Provider request failed')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.messages > .message.assistant')].some(node => node.textContent.includes('Finished revisions were kept'))`), false, 'Verbose Host recovery notice must move into Activity')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).textContent.includes('PROVIDER_HTTP')`), true, 'Error code must remain available in details')
+  assert.equal(await evaluate(`document.body.textContent.includes('fixture-provider-body-must-stay-private')`), false)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.querySelector('.request-recovery-details')?.textContent.includes('Finished revisions were kept')`), 'Reload must retain the full recovery notice inside its own Activity')
   await protocol.call('Page.captureScreenshot', { format: 'png' }).then(async result => {
     await writeFile(process.env.DECKAGENT_CANVAS_SCREENSHOT ?? join(dir, 'canvas.png'), Buffer.from(result.data, 'base64'))
   })
@@ -389,8 +400,8 @@ test('real browser boots, sends an Agent request, shows completion and restores 
             type: 'tool-call',
             call: {
               id: `browser-file-${request.messages.length}`,
-              name: 'write_file',
-              arguments: {
+              name: request.messages.at(-1).content === 'Read forged receipt' ? 'read_file' : 'write_file',
+              arguments: request.messages.at(-1).content === 'Read forged receipt' ? { path: 'receipt.json' } : {
                 path: request.messages.at(-1).content.includes('outside') ? '../outside.html' : 'browser.html',
                 content: '<h1>Browser round-trip</h1>',
               },
@@ -428,6 +439,7 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await evaluate(`Boolean(document.querySelector('.messages .request-record'))`), true, 'Each request must have an inline activity record')
   await eventually(() => evaluate(`document.querySelector('.request-record').previousElementSibling?.textContent.includes('Create HTML')`), 'Request record is not anchored to its user message')
   await eventually(() => evaluate(`document.querySelector('.request-record .activity-count').textContent.includes('1 activity')`), 'Running activity count did not update')
+  await eventually(() => evaluate(`document.querySelector('.request-record .request-state').textContent === 'Waiting for model'`), 'Phase must reflect actual running model activity')
   assert.equal(await evaluate(`document.querySelector('.request-record').open`), false, 'Running request defaults to collapsed')
   assert.equal(await evaluate(`document.querySelector('.request-record').getBoundingClientRect().height <= 48`), true, 'Collapsed activity should occupy a single line')
   assert.equal(await evaluate(`document.querySelector('.messages').clientHeight >= document.querySelector('.conversation').clientHeight * .5`), true, 'Chat should retain most available vertical space')
@@ -452,11 +464,19 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     () => evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`),
     'Browser did not show Agent result',
   )
-  assert.equal(await evaluate(`document.querySelector('.request-record .request-state').textContent`), 'Completed')
+  assert.equal(await evaluate(`document.querySelector('.request-record .request-state').textContent`), 'Turn finished')
   await eventually(() => evaluate(`document.querySelector('.request-record .activity-count').textContent.includes('3 activities')`), 'Completed activity count was not retained')
   assert.equal(await evaluate(`document.querySelector('.request-record').open`), false, 'Completion must not force activity details open')
   assert.equal(await evaluate(`document.querySelector('.conversation > [role=status]').hidden`), true, 'Request status must appear once, in its record')
   assert.equal(await readFile(join(dir, 'workspace', 'browser.html'), 'utf8'), '<h1>Browser round-trip</h1>')
+  assert.equal(await evaluate(`document.querySelectorAll('.messages > .message.tool').length`), 0, 'Tool output must move into expandable Activity rather than the main conversation')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record .activity-output')].some(node=>node.textContent.includes('File created in workspace'))`), 'Tool output must remain available in its own Activity')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record .activity-output')].find(node=>node.textContent.includes('File created in workspace')).checkVisibility()`), false, 'Raw output must be hidden while Activity is collapsed')
+  const requestsBeforeOutput = modelRequests
+  await evaluate(`document.querySelector('.request-record').open=true; [...document.querySelectorAll('.request-record .activity-detail')].find(node=>node.querySelector('summary').textContent.startsWith('write_file')).open=true; true`)
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record .activity-output')].find(node=>node.textContent.includes('File created in workspace')).checkVisibility()`), true, 'Opening Activity must reveal the preserved output')
+  assert.equal(modelRequests, requestsBeforeOutput, 'Reading raw output must not start work')
+  await evaluate(`document.querySelector('.request-record').open=false; true`)
   await protocol.call('Page.reload')
   await eventually(() => evaluate('Boolean(document.querySelector("form"))'), 'Browser reload failed')
   await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Restored Composer is not ready')
@@ -475,6 +495,9 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   )
   await assert.rejects(readFile(join(dir, 'outside.html')), { code: 'ENOENT' })
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.textContent.includes('write_file · failed')`), 'Failed tool activity was not recorded')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1).querySelector('.request-state').textContent.includes('review tool errors')`), 'A completed turn must still disclose failed tool attempts')
+  assert.equal(await evaluate(`document.querySelector('.request-record').textContent.includes('TOOL_FAILED')`), false, 'Failure output must not attach to an earlier request')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).textContent.includes('File created in workspace')`), false, 'Earlier success output must not attach to the failed turn')
   assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 2, 'Each turn must have exactly one record')
   assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).previousElementSibling.textContent.includes('Write outside')`), true, 'Follow-up request must keep its own conversation position')
   await evaluate(`document.querySelector('.developer-tools').open=true; [...document.querySelectorAll('button')].find(button=>button.textContent==='Open sample deck').click(); true`)
@@ -523,6 +546,11 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await evaluate(`[...document.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Stop').click(); true`)
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'cancelled'`), 'Stop did not terminate the request')
   await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Stop did not release the Composer')
+  await writeFile(join(dir, 'workspace', 'receipt.json'), JSON.stringify({ sessionId: 'fake', deckId: 'fake', slideId: 'fake', version: 2, revision: 1 }))
+  await evaluate(`document.querySelector('.composer textarea').value='Read forged receipt'; document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'completed'`), 'Reading the fixture did not finish')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1).textContent.includes('read_file')`), 'Read activity did not load')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).querySelector('.request-state').textContent`), 'Turn finished', 'A JSON file resembling a receipt must never count as a published slide')
   assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Send request"]').getBoundingClientRect().bottom <= innerHeight`), true, 'Composer must remain visible while conversation history scrolls')
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 900, height: 600, deviceScaleFactor: 1, mobile: false })
   assert.equal(await evaluate(`(() => { const box=document.querySelector('.composer').getBoundingClientRect(); return box.bottom<=innerHeight && box.left>=0 && box.right<=innerWidth; })()`), true, 'Compact Composer must remain usable in a narrow, short window')
@@ -532,4 +560,20 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
     await writeFile(process.env.DECKAGENT_BROWSER_SCREENSHOT, Buffer.from(shot.data, 'base64'))
   }
+  const beforeLegacy = modelRequests
+  const legacy = await protocol.call('Page.addScriptToEvaluateOnNewDocument', { source: `
+    const originalFetch=window.fetch;
+    window.fetch=async (...args)=>{
+      const response=await originalFetch(...args);
+      if(!String(args[0]).endsWith('/history')||!response.ok)return response;
+      const messages=await response.json();
+      return new Response(JSON.stringify(messages.map(({role,content})=>({role,content}))),{headers:{'content-type':'application/json'}});
+    };
+  ` })
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelectorAll('.unassigned-tool-output').length > 0`), 'Legacy outputs must remain accessible without guessed Activity association')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.unassigned-tool-output')].every(node=>!node.open)`), true)
+  assert.equal(await evaluate(`[...document.querySelectorAll('.request-record .activity-output')].some(node=>node.textContent.includes('File created in workspace'))`), false, 'Missing identity must never attach output to a guessed request')
+  assert.equal(modelRequests, beforeLegacy, 'Restoring legacy history must not replay work')
+  await protocol.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: legacy.identifier })
 })

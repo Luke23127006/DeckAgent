@@ -8,7 +8,7 @@ import type { ModelConnection } from '@deckagent/model-providers'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError, startHost } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { page, style, deckResizeStyle, composerStyle, presentationStyle } from './ui-assets.ts'
+import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
@@ -64,7 +64,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -122,6 +122,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
         let removeProposal: (() => void) | undefined
         let removeRead: (() => void) | undefined
         let staged: OutlineDraft | undefined
+        let noticeIndex: number | undefined
         try {
           scopedFiles = await registerFileTools(scopedTools, { root: workspace })
           removePublish = await registerPublishSlide(scopedTools, { root: workspace, sessionId, decks: presentation, allowedSlideIds: scope })
@@ -138,7 +139,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
             : presentationInstructions(deck, confirmed ?? action.current, reviewing, requestId)
           await ctx.plugin(runtimePlugin, {
             maxSteps: Math.max(8, (editing ? 3 : 2) * scope.length + 5),
-            systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. ${instructions}`,
+            systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
           })
           const agent: AgentHandle = staticText ? {
             sessionId, status: 'idle', history: () => store.read(sessionId), dispose: async () => {},
@@ -165,10 +166,10 @@ export async function startLocalWeb(options: LocalWebOptions) {
                 // A crash between these stores leaves text without a proposal, never an unfinished current outline.
                 state.finishRequest(requestId, result)
                 presentation.proposeOutline(sessionId, { requestId, responseIndex: history.length - 1, draft: staged })
-              } else state.finishRequest(requestId, result)
+              } else state.finishRequest(requestId, result, noticeIndex)
             } catch {
               state.finishRequest(requestId, { status: 'failed', text: result.text, steps: result.steps,
-                error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } })
+                error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } }, noticeIndex)
               throw new Error('Request finalization failed')
             }
           })
@@ -205,6 +206,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
                 const remaining = scope.filter(id => !changed.some(slide => slide.slideId === id)).length
                 const text = `${result.status === 'cancelled' ? 'Stopped' : 'Work did not finish'}. ${changed.length} slides published or changed in this request. ${remaining} requested slides were not changed. ${unfinished.length} planned slides remain unfinished.${unfinished.length ? ' The draft is not ready.' : ''} Finished revisions were kept; unfinished edits keep their last published revision. The deck may be inconsistent; consistency was not checked. Nothing will resume automatically.`
                 await store.append(sessionId, [{ role: 'assistant', content: text }])
+                noticeIndex = (await store.read(sessionId)).filter(message => message.role !== 'system').length - 1
                 result = { ...result, text }
               }
               return result

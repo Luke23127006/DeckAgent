@@ -1,3 +1,17 @@
+export const activityStyle = `
+.request-record[data-tool-errors=true]{border-color:#d8bc87;background:#fffaf0}
+.request-record[data-status=failed]{border-color:#d8aaa6;background:#fff9f7}
+.request-record[data-status=cancelled],.request-record[data-status=unknown]{border-color:#d2c6b4}
+.request-record[data-tool-errors=true] .request-state{color:#835b23}
+.request-record[data-status=failed] .request-state{color:#9b3e2f}
+.request-feedback{line-height:1.6;margin:0 0 10px;color:#52654e}
+.request-diagnostic{font-size:11px;color:#788271;margin:0 0 10px}
+.activity-output{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:240px;overflow:auto;font:11px/1.5 ui-monospace,Consolas,monospace;background:#fff;border:1px solid #e0e6d9;border-radius:6px;padding:10px;margin:10px 0 0}
+.request-recovery-details{margin:8px 0 12px}
+.request-recovery-details summary,.unassigned-tool-output summary{cursor:pointer;font-size:12px;color:#66735d}
+.unassigned-tool-output{padding:8px 12px;border:1px solid #e0e6d9;border-radius:8px;background:#f5f7f1}
+`
+
 export const presentationStyle = `
 .published-deck-sidebar{padding:0;background:#f8f9f7}
 .published-deck-sidebar .deck-panel{display:flex;flex-direction:column;overflow:auto;min-height:0}

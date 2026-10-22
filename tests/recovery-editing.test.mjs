@@ -148,6 +148,10 @@ for (const mode of ['stop', 'failure']) test(`interrupted editing (${mode}) keep
   for await (const snapshot of client.watch(accepted.requestId)) terminal = snapshot
   assert.equal(terminal.status, mode === 'stop' ? 'cancelled' : 'failed')
   assert.match(terminal.result.text, /1 slides published or changed/)
+  const requests = await (await fetch(`${app.origin}/api/sessions/editing/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()
+  const record = requests.find(item => item.requestId === accepted.requestId)
+  assert.ok(Number.isSafeInteger(record.noticeIndex) && record.noticeIndex >= record.historyStart)
+  assert.equal((await client.history('editing'))[record.noticeIndex].content, terminal.result.text, 'Recovery provenance must point at the exact saved Host notice')
   const api = new DeckClient(app.origin, app.token)
   assert.deepEqual((await api.snapshot('editing')).slides.map(slide => slide.revision), [2, 1, 1])
   assert.equal((await api.content('editing', 'two', 1)).html, '<h1>Details</h1>')

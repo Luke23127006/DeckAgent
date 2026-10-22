@@ -1,6 +1,6 @@
 # UI/UX — Checklist đối chiếu prototype V1
 
-Cập nhật: 22-10-2026. Nhóm 1–2 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Nhóm 3–5 chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
+Cập nhật: 22-10-2026. Nhóm 1–3 đã triển khai và kiểm tra tự động; manual acceptance còn `NOT_VERIFIED`. Nhóm 4–5 chưa triển khai. `[x]` bên dưới ghi nhận implementation có evidence, không thay cho nghiệm thu manual hoặc Integration Gate.
 
 Tham chiếu: [UX Prototype](../design/UX-design/DeckAgent%20V1%20UX%20Prototype.html). [README thiết kế](../design/UX-design/README.md) xác định prototype là mô phỏng; Product Spec vẫn quyết định hành vi. Checklist này theo dõi các chỉnh sửa đã đề xuất, không tự mở rộng scope implementation plan hoặc thay trạng thái Integration Gates trong [PROGRESS.md](PROGRESS.md).
 
@@ -47,13 +47,27 @@ Files: client `deck-canvas.ts`, CSS trong `ui-assets.ts`, composition CSS và br
 
 ## 3. Conversation, Activity và kết quả — ưu tiên cao
 
-- [ ] **Giảm raw tool output:** chuyển JSON/thông báo kỹ thuật khỏi nội dung chính sang chi tiết Activity có thể mở rộng. Không xóa dữ liệu history và không gắn tool result vào nhầm request.
-- [ ] **Trạng thái theo giai đoạn:** dùng thông điệp như đang chuẩn bị outline/đang tạo slides khi có dữ liệu xác thực. Nếu thêm thời gian chạy hoặc phase metadata, cập nhật producer/consumer cùng nhau.
-- [ ] **Phân biệt kết thúc lượt và đạt kết quả:** tránh để `Completed` khiến người dùng hiểu nhầm slide đã sửa khi publish thất bại; dùng outcome/receipts thực tế, không chỉ đổi wording để che failure.
-- [ ] **Thông báo lỗi dễ hiểu:** giải thích nguyên nhân đã biết và hành động tiếp theo; giữ error code trong chi tiết. Không đề xuất xin Host cấp quyền qua một flow không tồn tại, không hiện raw provider response hoặc secrets.
-- [ ] **Thông báo stop/recovery gọn:** trình bày phần đã lưu và phần chưa hoàn thành; giữ thông tin không tự resume và không claim đã kiểm tra consistency.
+- [x] **Giảm raw tool output:** ghép bằng tool-call ID và name vào đúng Activity; output là text thu gọn, không còn tool bubbles riêng. Legacy thiếu identity giữ trong mục thu gọn tại vị trí cũ và ghi không xác định được request; không đoán association hoặc xóa history.
+- [x] **Trạng thái theo giai đoạn:** Preparing outline/Publishing slide/Reading published slide/Writing workspace draft/Waiting for model dựa trên Activity thực sự running. Mất kết nối không claim live progress. Không thêm timer vì chưa có timestamps đủ tin cậy.
+- [x] **Phân biệt kết thúc lượt và đạt kết quả:** dùng `Turn finished`, thêm `review tool errors` khi có lỗi tool; chỉ đếm slide updates từ publish receipts thành công của đúng request, không từ model prose, file JSON hay tổng số slides của deck.
+- [x] **Thông báo lỗi dễ hiểu:** dùng copy cố định cho các mã đã biết và fallback an toàn; code nằm trong chi tiết request, raw provider exceptions không được đưa ra UI. Scope error hướng dẫn yêu cầu rõ slide, không xin Host cấp quyền. Instructions cũng ghi không có manual approval flow này; chưa sửa grammar resolve scope.
+- [x] **Thông báo stop/recovery gọn:** notice do Host tạo được nhận diện bằng persisted index và đưa vào Activity; nội dung đầy đủ vẫn đọc được sau reload. Summary dựa trên receipts đã lưu, không claim hoàn tất/consistency hoặc tự resume.
 
-Điểm sửa dự kiến: client `conversation-view.ts`, `boot.ts`; phase/timing/outcome mới có thể cần Host metadata, không chỉ CSS.
+Files: client `conversation-view.ts`, `request-feedback.ts`, `boot.ts`, Host/client history projection, management request projection và Local Web finalization/WebState. CSS cho warning/error và output details; tests browser/public API/recovery đã mở rộng.
+
+Contracts bổ sung tương thích: `HistoryMessage` có optional `toolCallId`, `name`, `isError`; `StoredRequest` có optional `noticeIndex` trỏ vào public history. Host tạo/validate dữ liệu và client validate trước dùng. Không expose tool arguments, provider state hoặc thêm database schema/dependency. Request metadata vẫn nằm trong JSON payload WebState hiện có; dữ liệu cũ thiếu fields vẫn đọc được. Recovery cũ không có provenance index giữ nguyên message thay vì tự nhận diện theo câu chữ.
+
+Evidence: test đỏ được chạy trước từng slice tool-output, turn-finished wording và recovery folding; sau sửa build/lint PASS, combined focused run **32/32 PASS, 0 skipped**; final build/lint và focused browser/API/recovery **13/13 PASS, 0 skipped** sau rà soát. Coverage gồm public projection/legacy/invalid optional metadata, association đúng request, mở output không làm việc mới, phase thật, receipts theo request, JSON file giả receipt không được đếm, provider errors không lộ raw body, recovery provenance/reload, Stop/restart và outline regression. Đã xem screenshot fixture `.local-only/ui-group-3-provider-error.png`; chưa chạy manual model thật hoặc hosted CI. Các test đã có trong suites CI hiện hữu.
+
+### Manual check nhóm 3
+
+- [ ] Restart Host, reload và gửi request có gọi tool: conversation chỉ có user/reply chính và Activity gọn, không có Tool result/JSON thành bubble riêng.
+- [ ] Mở Activity rồi mở tool detail: đọc được output đúng lần gọi; đóng lại chat gọn. Không xuất hiện request mới chỉ vì xem chi tiết; expansion/focus giữ qua polling.
+- [ ] Sửa một slide bằng yêu cầu rõ scope: summary chỉ đếm updates của lượt đó, không đếm tổng deck. Nếu tool attempt lỗi, `Turn finished` vẫn kèm cảnh báo review tool errors; draft không bị tính là publication.
+- [ ] Theo dõi lúc chạy: phase phù hợp Activity thật; mất kết nối có thông báo không còn cập nhật live, reconnect không chạy lại yêu cầu.
+- [ ] Stop hoặc gặp lỗi khi tạo/sửa slides: summary dễ đọc, mở Saved recovery details thấy phần đã lưu/chưa hoàn tất. Reload/mở History vẫn đọc được thông tin và revisions; không tự tiếp tục.
+- [ ] Nếu gặp provider lỗi, xem thông báo dễ hiểu và mã trong chi tiết; không lộ key/raw provider response. Scope bị từ chối không hướng dẫn xin quyền qua một flow không tồn tại.
+- [ ] Đối chiếu chat cũ: dữ liệu thiếu identity/provenance có thể dùng fallback thu gọn hoặc giữ recovery message cũ; không mất dữ liệu, không gắn sang request khác.
 
 ## 4. History và Models settings — sau các nhóm trên
 

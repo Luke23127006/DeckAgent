@@ -9,6 +9,7 @@ import { ConversationView } from './conversation-view.ts'
 import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
+import { failureFeedback } from './request-feedback.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -112,18 +113,9 @@ function run(work: Promise<void>) {
     status.hidden = false
     status.dataset.kind = 'error'
     const code = error instanceof Error ? error.message : ''
-    status.textContent =
-      code === 'PROVIDER_CREDENTIALS'
-        ? 'Set a valid API key for this provider in Models & settings.'
-        : code === 'MODEL_NOT_SELECTABLE'
-          ? 'This model is no longer available. Choose another model.'
-          : code === 'AUTH_REQUIRED'
-            ? 'This connection expired. Reopen the browser from the running Host.'
-              : code === 'OUTLINE_STALE'
-                ? 'The outline changed. Review the current proposal before confirming.'
-                : code === 'OUTLINE_ALREADY_CONFIRMED'
-                  ? 'This outline is already confirmed. Read the saved deck; confirmation was not replayed.'
-                  : 'Unable to complete this action. Check your connection or reopen Settings.'
+    const feedback = failureFeedback(code)
+    status.textContent = `${feedback.label}. ${feedback.detail}`
+    status.title = feedback.code ? `Error code: ${feedback.code}` : ''
   })
 }
 function controls() {

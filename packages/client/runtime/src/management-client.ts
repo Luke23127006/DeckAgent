@@ -202,7 +202,8 @@ export class ManagementClient {
           value.status !== 'unknown') ||
         (value.errorCode !== undefined &&
           (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0))
+        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
+        (value.noticeIndex !== undefined && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
       )
         invalid()
       return {
@@ -211,6 +212,7 @@ export class ManagementClient {
         status: value.status,
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
         ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
+        ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
       }
     })
   }
