@@ -8,7 +8,7 @@ import type { ModelConnection } from '@deckagent/model-providers'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError, startHost } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { page, style } from './ui-assets.ts'
+import { page, style, deckResizeStyle } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
@@ -64,7 +64,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {

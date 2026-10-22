@@ -36,6 +36,20 @@ async function browserPath() {
   throw new Error('Chrome/Edge required; set CHROME_BIN to its executable')
 }
 
+async function resizeDeck(protocol, evaluate, selector, width) {
+  const start = await evaluate(`(() => {
+    const panel = document.querySelector(${JSON.stringify(selector)});
+    const divider = panel.querySelector('[role=separator]').getBoundingClientRect();
+    return { x: divider.x + divider.width / 2, y: divider.y + 80, width: panel.getBoundingClientRect().width };
+  })()`)
+  const end = start.x + start.width - width
+  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y })
+  await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', buttons: 1, clickCount: 1 })
+  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, buttons: 1 })
+  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: end, y: start.y, button: 'left', buttons: 0, clickCount: 1 })
+  await eventually(() => evaluate(`document.querySelector('.deck-resize-overlay') === null`), 'Resize overlay must be removed after dragging')
+}
+
 async function connect(url) {
   const socket = new WebSocket(url)
   await new Promise((resolve, reject) => {
@@ -227,13 +241,31 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe')?.srcdoc.includes('second published')`), 'History did not restore the deck and its selected slide')
   assert.equal(await evaluate(`document.querySelector('.conversation select').value`), savedModel, 'History must restore its own model')
   assert.equal((await (await fetch(`${app.origin}/api/sessions/browser-deck/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()).length, 2, 'History must not send a new request')
-  await evaluate(`const w=document.querySelector('.published-deck-sidebar input[type=range]'); w.value='640'; w.dispatchEvent(new Event('input')); true`)
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar input[type=range]') === null`), true, 'Width slider must be removed')
+  await protocol.call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowLeft', code: 'ArrowLeft' })
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '656px', 'Focused divider must support keyboard resizing')
+  await protocol.call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowLeft', code: 'ArrowLeft' })
+  await protocol.call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight' })
+  await protocol.call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight' })
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 1100)
+  assert.equal(await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 320`), true, 'Dragging must preserve usable chat width')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= 1000`), true)
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 200)
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px')
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Fullscreen').click(); true`)
   await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')
   await evaluate('document.exitFullscreen(); true')
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar iframe')?.srcdoc.includes('intro published')`), 'Reload did not restore published content')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px', 'Dragged width must survive reload')
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 680, height: 1000, deviceScaleFactor: 1, mobile: false })
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.published-deck-sidebar [role=separator]')).display`), 'none', 'Stacked mobile layout must hide horizontal resizing')
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= innerWidth`), true)
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
   await app.close()
   app = await startLocalWeb(options)
   await navigate()
@@ -420,7 +452,7 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await evaluate(`document.querySelector('iframe').getAttribute('sandbox')`), '')
   await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='Next').click(); true`)
   assert.match(await evaluate(`document.querySelector('.slide-caption').textContent`), /Slide 2 of 3/)
-  await evaluate(`const width=document.querySelector('input[type=range]'); width.value='640'; width.dispatchEvent(new Event('input')); true`)
+  await resizeDeck(protocol, evaluate, '.deck-sidebar', 640)
   assert.equal(await evaluate(`document.querySelector('.deck-sidebar').style.width`), '640px')
   assert.equal(await evaluate(`document.querySelector('iframe').contentDocument === null`), true, 'Sandboxed slide must not expose an accessible same-origin document')
   const sample = await fetch(`${app.origin}/samples/2.html`)

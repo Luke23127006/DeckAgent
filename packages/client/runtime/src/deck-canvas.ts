@@ -1,6 +1,7 @@
 import type { DeckClient } from './deck-client.ts'
 import { DeckModel } from './deck-model.ts'
-import { button, element, field } from './dom.ts'
+import { button, element } from './dom.ts'
+import { mountDeckResizer } from './deck-resizer.ts'
 
 /** Published content never joins the application DOM. Empty sandbox => opaque origin.
  * srcdoc inherits Host CSP; its leading CSP further disallows every network source.
@@ -100,30 +101,21 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       })
     }),
   )
-  const width = element('input')
-  width.type = 'range'
-  width.min = '320'
-  width.max = '1000'
-  width.value = '520'
+  let width = 520
   try {
     const saved = localStorage.getItem('deckagent-canvas-width')
-    if (saved && Number(saved) >= 320 && Number(saved) <= 1000) width.value = saved
+    if (saved && Number(saved) >= 320 && Number(saved) <= 1000) width = Number(saved)
   } catch {
     /* Optional layout only. */
   }
-  const resize = () => {
-    container.style.width = `${width.value}px`
-  }
-  width.addEventListener('input', () => {
-    resize()
+  mountDeckResizer(container, width, value => {
     try {
-      localStorage.setItem('deckagent-canvas-width', width.value)
+      localStorage.setItem('deckagent-canvas-width', String(value))
     } catch {
       /* Layout remains usable. */
     }
   })
-  resize()
-  panel.append(heading, state, slides, frame, caption, controls, field('Deck width', width))
+  panel.append(heading, state, slides, frame, caption, controls)
   container.append(panel)
   return model
 }

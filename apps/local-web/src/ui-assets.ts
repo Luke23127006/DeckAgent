@@ -1,3 +1,14 @@
+export const deckResizeStyle = `
+.deck-sidebar{position:relative;overflow:hidden}
+.deck-sidebar .deck-panel{height:100%;overflow:auto}
+.deck-resizer{position:absolute;inset:0 auto 0 0;width:10px;cursor:col-resize;touch-action:none;z-index:2}
+.deck-resizer::after{content:'';position:absolute;inset:0 auto 0 0;width:3px;background:transparent;transition:background .15s}
+.deck-resizer:hover::after,.deck-resizer:focus-visible::after{background:#839f78}
+.deck-resizer:focus-visible{outline:2px solid #315b3e;outline-offset:-2px}
+.deck-resize-overlay{position:fixed;inset:0;z-index:10000;cursor:col-resize;touch-action:none;user-select:none}
+@media(max-width:720px){.deck-resizer{display:none}.deck-sidebar .deck-panel{height:auto;overflow:visible}}
+`
+
 export const page = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DeckAgent</title><link rel="stylesheet" href="/style.css"></head>

@@ -1,4 +1,5 @@
-import { button, element, field } from './dom.ts'
+import { button, element } from './dom.ts'
+import { mountDeckResizer } from './deck-resizer.ts'
 
 /** Sample-only tab. It has no Session–Deck mapping or publication/storage responsibilities. */
 export function mountDeckTab(container: HTMLElement): void {
@@ -39,20 +40,12 @@ export function mountDeckTab(container: HTMLElement): void {
     })
   })
   controls.append(previous, next, fullscreen)
-  const width = element('input')
-  width.type = 'range'
-  width.min = '320'
-  width.max = '1000'
-  width.value = '520'
-  width.addEventListener('input', () => {
-    container.style.width = `${width.value}px`
-    save()
-  })
+  let width = '520'
   function save() {
     try {
       localStorage.setItem(
         'deckagent-sample-layout',
-        JSON.stringify({ current, width: width.value, open: !container.hidden }),
+        JSON.stringify({ current, width, open: !container.hidden }),
       )
     } catch {
       /* Layout persistence is optional; controls remain usable without browser storage. */
@@ -78,13 +71,13 @@ export function mountDeckTab(container: HTMLElement): void {
       Number(saved.width) >= 320 &&
       Number(saved.width) <= 1000
     )
-      width.value = saved.width
+      width = saved.width
     if (saved && typeof saved === 'object' && 'open' in saved && saved.open === true) container.hidden = false
   } catch {
     /* Ignore invalid optional layout state. */
   }
-  container.style.width = `${width.value}px`
-  panel.append(heading, frame, caption, controls, field('Deck width', width))
+  mountDeckResizer(container, Number(width), value => { width = String(value); save() })
+  panel.append(heading, frame, caption, controls)
   container.append(panel)
   render()
 }
