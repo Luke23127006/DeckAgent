@@ -5,6 +5,8 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-workflow.test.mjs tests/outline-client.test.mjs",
+    "test:slide-pipeline": "node --test tests/deck-service.test.mjs tests/publish-slide.test.mjs tests/deck-pipeline.test.mjs tests/deck-model.test.mjs tests/deck-client.test.mjs",
     "ocr": "ocr",
     "ocr:preview": "ocr delegate preview --format json",
     "ocr:rules": "ocr delegate rule --format json",

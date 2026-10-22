@@ -56,6 +56,12 @@ importers:
 
   apps/local-web:
     dependencies:
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../packages/presentation/deck
+      '@deckagent/presentation-tools':
+        specifier: workspace:*
+        version: link:../../packages/tools/presentation
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../packages/agent/runtime
@@ -86,12 +92,18 @@ importers:
 
   packages/client/runtime:
     dependencies:
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../presentation/deck
       '@deckagent/host-api':
         specifier: workspace:*
         version: link:../../host/api
 
   packages/host/api:
     dependencies:
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../presentation/deck
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../agent/runtime
@@ -107,6 +119,20 @@ importers:
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../agent/runtime
+
+  packages/presentation/deck: {}
+
+  packages/tools/presentation:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../agent/runtime
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../presentation/deck
+      '@deckagent/file-tools':
+        specifier: workspace:*
+        version: link:../filesystem
 
   packages/testing/cordis-fixture:
     dependencies:

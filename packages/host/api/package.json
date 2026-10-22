@@ -12,6 +12,7 @@
     }
   },
   "dependencies": {
+    "@deckagent/deck": "workspace:*",
     "@deckagent/agent-runtime": "workspace:*"
   }
 }

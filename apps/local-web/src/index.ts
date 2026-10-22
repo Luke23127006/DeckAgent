@@ -3,7 +3,7 @@ import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import { RuntimeError, ToolRegistry, runtimePlugin } from '@deckagent/agent-runtime'
-import type { ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
+import type { AgentHandle, ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError, startHost } from '@deckagent/host-api'
@@ -12,8 +12,15 @@ import { page, style } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
+import { DeckService } from '@deckagent/deck'
+import type { ConfirmedDeckPlan, OutlineDraft } from '@deckagent/deck'
+import { registerProposeOutline, registerPublishSlide } from '@deckagent/presentation-tools'
+import { presentationInstructions, reviewAction } from './outline-workflow.ts'
+import { outlineStyle } from './outline-style.ts'
 
 export interface LocalWebOptions {
+  /** Trusted test/manual plans only; no model-facing confirmation bypass. */
+  readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly model?: ModelAdapter
   readonly selection?: ModelSelection
   readonly connections?: readonly ModelConnection[]
@@ -32,14 +39,22 @@ export async function startLocalWeb(options: LocalWebOptions) {
   const dataRelative = relative(workspace, dataDir)
   const outside = dataRelative === '..' || dataRelative.startsWith(`..${sep}`) || isAbsolute(dataRelative)
   if (!outside) throw new Error('Host data must be outside the Agent workspace')
-  const tools = new ToolRegistry()
-  const files = await registerFileTools(tools, { root: workspace })
   let sessions: SqliteSessionStore | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
+  let decks: DeckService | undefined
   try {
     sessions = new SqliteSessionStore(join(dataDir, 'sessions.sqlite'))
     const store = sessions
+    const presentation = new DeckService(join(dataDir, 'decks.sqlite'))
+    decks = presentation
+    for (const plan of options.confirmedDecks ?? []) {
+      if (!(await store.getInfo(plan.sessionId))) {
+        if (initial) await store.bind(plan.sessionId, initial)
+        else await store.open(plan.sessionId)
+      }
+      presentation.confirm(plan.sessionId, plan)
+    }
     const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot())
     web = state
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
@@ -48,7 +63,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -58,15 +73,39 @@ export async function startLocalWeb(options: LocalWebOptions) {
           body: await readFile(join(clientDir, name), 'utf8'),
         }
     }
+    const finalizers = new Map<string, (result: TurnResult) => Promise<void>>()
     const host = await startHost({
+      decks: presentation,
+      outlines: presentation,
       assets,
       ...(options.port === undefined ? {} : { port: options.port }),
-      async openAgent(sessionId, requestId) {
+      async finishRequest(_request, requestId, result) {
+        const finalize = finalizers.get(requestId)
+        try { await finalize?.(result) } finally { finalizers.delete(requestId) }
+      },
+      async openAgent(sessionId, requestId, request) {
         let info = await store.getInfo(sessionId)
         // Compatibility for TASK-003 clients sending a fresh ID with an explicit CLI default.
         if (!info && initial) info = await store.bind(sessionId, initial)
         if (!info?.selection || !state.selectable(info.selection)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
         const chosen = info.selection
+        const outlineState = presentation.outlineSnapshot(sessionId)
+        const action = reviewAction(request, outlineState)
+        if (request.outlineTarget) presentation.currentOutline(sessionId, request.outlineTarget)
+        const candidate = action.command && action.target ? presentation.currentOutline(sessionId, action.target) : undefined
+        if (request.outlineAction && !candidate) throw new HttpError(409, 'OUTLINE_STALE')
+        const confirming = action.command === 'confirm' ? candidate : undefined
+        const staticText = action.command === 'cancel' && candidate
+          ? 'Outline cancelled. It stays in the conversation. Send a new request for a new proposal; no slides were built.'
+          : action.command && !candidate
+            ? 'There is no current outline to review. Ask for a presentation outline first, or open the existing deck. No outline action was applied.' : undefined
+        const deck = confirming ? {
+          sessionId, deckId: sessionId, outlineId: confirming.outlineId, version: 1,
+          slides: confirming.slides.map((slide, order) => ({ slideId: slide.slideId, title: slide.title, order,
+            status: 'pending' as const, revision: 0 })),
+        } : presentation.snapshot(sessionId)
+        const confirmed = confirming ?? outlineState.proposals.find(p => p.status === 'confirmed')
+        const reviewing = !deck.outlineId && (request.presentation === true || outlineState.active)
         let captured: ReturnType<ProviderStore['capture']>
         try { captured = catalog.capture(chosen) }
         catch (error) {
@@ -74,12 +113,58 @@ export async function startLocalWeb(options: LocalWebOptions) {
           throw error
         }
         const ctx = new Context()
+        const scopedTools = new ToolRegistry()
+        let scopedFiles: Awaited<ReturnType<typeof registerFileTools>> | undefined
+        let removePublish: (() => void) | undefined
+        let removeProposal: (() => void) | undefined
+        let staged: OutlineDraft | undefined
         try {
+          scopedFiles = await registerFileTools(scopedTools, { root: workspace })
+          removePublish = await registerPublishSlide(scopedTools, { root: workspace, sessionId, decks: presentation })
+          removeProposal = registerProposeOutline(scopedTools, draft => {
+            if (staged) throw new Error('Only one proposal per request')
+            staged = draft
+          })
           ctx.provide('agentModel', captured.model)
           ctx.provide('agentSessions', store)
-          ctx.provide('agentTools', tools)
-          await ctx.plugin(runtimePlugin, { systemPrompt: 'You are DeckAgent. Use read_file and write_file only within the granted workspace. Write HTML drafts as new files; do not overwrite existing files.' })
-          const agent = await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: files.names })
+          ctx.provide('agentTools', scopedTools)
+          const instructions = presentationInstructions(deck, confirmed ?? action.current, reviewing, requestId)
+          await ctx.plugin(runtimePlugin, {
+            maxSteps: Math.max(8, 2 * deck.slides.length + 5),
+            systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. ${instructions}`,
+          })
+          const agent: AgentHandle = staticText ? {
+            sessionId, status: 'idle', history: () => store.read(sessionId), dispose: async () => {},
+            async send(input, control) {
+              control?.signal?.throwIfAborted()
+              if (action.command === 'cancel' && candidate) presentation.cancelOutline(sessionId, candidate)
+              await store.append(sessionId, [{ role: 'user', content: input }, { role: 'assistant', content: staticText }])
+              return { status: 'completed', text: staticText, steps: 0 }
+            },
+          } : await ctx.agentRuntime.createAgent({ sessionId, selection: chosen,
+            tools: deck.outlineId ? [...scopedFiles.names, 'publish_slide'] :
+              reviewing ? ['read_file', 'propose_outline'] : [...scopedFiles.names, 'propose_outline'] })
+          // Admission has validated/captured the model and created the handle under the Session lock.
+          // No asynchronous operation follows confirmation before returning that admitted handle.
+          if (confirming) presentation.confirmOutline(sessionId, confirming)
+          else if (reviewing) presentation.beginOutline(sessionId)
+          finalizers.set(requestId, async result => {
+            try {
+              if (staged && result.status === 'completed') {
+                const history = (await store.read(sessionId)).filter(message => message.role !== 'system')
+                const response = history.at(-1)
+                if (response?.role !== 'assistant' || !response.content.trim()) throw new Error('Outline response incomplete')
+                // Save successful request evidence before making the proposal confirmable.
+                // A crash between these stores leaves text without a proposal, never an unfinished current outline.
+                state.finishRequest(requestId, result)
+                presentation.proposeOutline(sessionId, { requestId, responseIndex: history.length - 1, draft: staged })
+              } else state.finishRequest(requestId, result)
+            } catch {
+              state.finishRequest(requestId, { status: 'failed', text: result.text, steps: result.steps,
+                error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } })
+              throw new Error('Request finalization failed')
+            }
+          })
           return {
             sessionId, get status() { return agent.status }, history: () => agent.history(),
             send: async (input, control) => {
@@ -91,16 +176,21 @@ export async function startLocalWeb(options: LocalWebOptions) {
                   state.saveActivity(sessionId, requestId, event)
                   await control?.onActivity?.(event)
                 } })
+                if (confirming && result.status === 'completed' && presentation.snapshot(sessionId).slides.some(slide => slide.status === 'pending')) {
+                  const text = 'Generation ended before all planned slides were published. The draft is not ready; review the saved deck before retrying.'
+                  await store.append(sessionId, [{ role: 'assistant', content: text }])
+                  result = { status: 'failed', text, steps: result.steps,
+                    error: { code: 'DECK_INCOMPLETE', message: 'Some planned slides remain unpublished' } }
+                }
               } catch {
                 result = { status: 'failed', text: '', steps: 0, error: { code: 'REQUEST_FAILED', message: 'Request failed' } }
               }
-              state.finishRequest(requestId, result)
               return result
             },
-            dispose: async () => { try { await ctx.fiber.dispose() } finally { captured.release() } },
+            dispose: async () => { try { await ctx.fiber.dispose() } finally { removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() } },
           }
         } catch (error) {
-          try { await ctx.fiber.dispose() } finally { captured.release() }
+          try { await ctx.fiber.dispose() } finally { removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() }
           throw error
         }
       },
@@ -128,11 +218,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
             try {
               await catalog.close()
             } finally {
-              try {
-                files.dispose()
-              } finally {
-                try { state.close() } finally { store.close() }
-              }
+              try { presentation.close() } finally { try { state.close() } finally { store.close() } }
             }
           }
         })()
@@ -143,11 +229,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     try {
       await providers?.close()
     } finally {
-      try {
-        files.dispose()
-      } finally {
-        try { web?.close() } finally { sessions?.close() }
-      }
+      try { decks?.close() } finally { try { web?.close() } finally { sessions?.close() } }
     }
     throw error
   }

@@ -1,8 +1,13 @@
 import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
+import type { DeckReader, OutlineReader, OutlineTarget } from '@deckagent/deck'
 
 export interface AgentRequest {
   readonly sessionId: string
   readonly input: string
+  /** Explicit presentation entry preserves generic chat/file requests. */
+  readonly presentation?: true
+  readonly outlineTarget?: OutlineTarget
+  readonly outlineAction?: OutlineTarget & { readonly type: 'confirm' | 'cancel' }
 }
 
 export interface RequestSnapshot {
@@ -20,10 +25,14 @@ export interface HistoryMessage {
 
 export interface HostOptions {
   /** Host owns the returned handle until the turn and disposal finish. */
-  readonly openAgent: (sessionId: string, requestId: string) => Promise<AgentHandle>
+  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest) => Promise<AgentHandle>
+  /** Runs after handle disposal and before terminal snapshot/Session lock release. */
+  readonly finishRequest?: (request: AgentRequest, requestId: string, result: TurnResult) => Promise<void>
   readonly readHistory: (sessionId: string) => Promise<readonly Message[]>
   readonly port?: number
   readonly management?: WebManagement
+  readonly decks?: DeckReader
+  readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
   readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
 }
