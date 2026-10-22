@@ -1,3 +1,39 @@
+export const composerStyle = `
+.conversation{padding:0;gap:0}
+.conversation-header{min-height:64px;padding:12px 22px;border-bottom:1px solid #ebeeea;flex-shrink:0}
+.chat-heading{min-width:0;flex:1}
+.conversation-header h1{font-size:16px;letter-spacing:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-state{display:block;color:#758074;font-size:11px;margin-top:4px}
+.chat-heading-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.chat-heading-actions button{font-size:12px;padding:7px 10px}
+.chat-more-actions{position:relative}
+.chat-more-actions>summary{cursor:pointer;list-style:none;border-radius:8px;padding:2px 10px;font-size:22px}
+.chat-more-actions>summary::-webkit-details-marker{display:none}
+.chat-more-actions[open]>button{position:absolute;right:0;top:100%;z-index:4;width:190px;background:#fff;box-shadow:0 6px 18px #163d2520}
+.conversation>.request-status{margin:12px 22px 0;flex-shrink:0}
+.messages{padding:24px 30px;gap:15px}
+.messages[hidden],.welcome[hidden],.composer button[hidden],.chat-heading-actions button[hidden]{display:none}
+.welcome{flex:1;min-height:120px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:28px;color:#647067}
+.welcome h2{font-family:Georgia,serif;font-size:30px;font-weight:400;letter-spacing:0;text-transform:none;color:#203b31;max-width:560px}
+.welcome p{max-width:480px;line-height:1.6;margin-bottom:0}
+.conversation>.composer{margin:0 22px 18px;gap:8px;border-radius:18px;box-shadow:0 3px 16px #163d2510}
+.composer textarea{min-height:58px;max-height:150px;resize:none;padding:4px;line-height:1.5;overflow-y:auto}
+.composer-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.composer-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.composer-model{flex:1 1 120px;max-width:240px;min-width:0}
+.composer-model>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.composer-model select{padding:7px 8px;background:#f0f3ef;border:0;min-width:0;width:100%;font-size:12px;text-overflow:ellipsis}
+.composer-controls button{font-size:11px;padding:7px 9px;background:transparent;color:#42634d;border-color:#d6dfd1;white-space:nowrap}
+.composer-primary{display:flex;align-items:center;justify-content:flex-end}
+.composer-primary button{width:34px;height:34px;border:0;border-radius:50%;padding:0;font-size:20px;background:#285947;color:#fff}
+.composer-primary .stop-action{background:#9a514a;font-size:14px}
+.developer-tools{font-size:11px;color:#69766a}
+.developer-tools summary{cursor:pointer;padding:5px 0}
+.developer-tools button{font-size:11px;padding:6px 8px;margin-top:6px}
+@media(max-width:1000px){.conversation{padding:0}}
+@media(max-width:720px){.conversation{padding:0}.conversation-header{padding:12px 16px}.messages{padding:16px}.conversation>.composer{margin:0 12px 12px}.welcome{padding:22px 16px}.welcome h2{font-size:26px}}
+`
+
 export const deckResizeStyle = `
 .deck-sidebar{position:relative;overflow:hidden}
 .deck-sidebar .deck-panel{height:100%;overflow:auto}

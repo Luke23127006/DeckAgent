@@ -129,9 +129,9 @@ test('outline conversation confirms in a new request, preserves viewing state an
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`document.querySelector('.conversation select')?.options.length > 1 && !document.querySelector('.conversation select').disabled`), 'Models did not load')
   await evaluate(`document.querySelector('.conversation select').selectedIndex=1;document.querySelector('.conversation select').dispatchEvent(new Event('change'));true`)
-  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Model not selected')
+  await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Model not selected')
   await evaluate(`document.querySelector('.composer textarea').value='Create two slides about recycling';[...document.querySelectorAll('.composer button')].find(b=>b.textContent==='Create presentation').click();true`)
-  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current]') && !document.querySelector('.composer button').disabled`), 'Current outline missing')
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current]') && !document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Current outline missing')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').hidden`), true)
   assert.equal(await evaluate(`document.querySelectorAll('.outline-proposal .planned-slide').length`), 2)
   assert.equal(await evaluate(`document.querySelectorAll('.planned-slide[open]').length`), 0)
@@ -154,7 +154,7 @@ test('outline conversation confirms in a new request, preserves viewing state an
   assert.equal(await evaluate(`document.querySelectorAll('.planned-slide[open]').length`), 2, 'Confirmation preserves reading state')
   await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list button').click();true`)
   releaseSecond()
-  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2 && !document.querySelector('.composer button').disabled`), 'Confirmation request did not finish')
+  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2 && !document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Confirmation request did not finish')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar [aria-current=true]').textContent`), '1. Why recycle · Revision 1')
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').textContent.includes('Pending')`), false)
   assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Local rules were not checked')`), true)
@@ -221,7 +221,7 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   await navigate()
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').hidden`), true)
   const send = async text => {
-    await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Composer unavailable')
+    await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Composer unavailable')
     await evaluate(`document.querySelector('.composer textarea').value=${JSON.stringify(text)}; document.querySelector('.composer').requestSubmit(); true`)
   }
   await send('Publish slide 1 first')
@@ -385,8 +385,13 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate('document.querySelector(".conversation select")?.options.length > 1 && !document.querySelector(".conversation select").disabled'), 'Browser boot failed')
+  assert.equal(await evaluate(`document.querySelector('.composer select') !== null`), true, 'Model picker belongs in the Composer')
+  assert.equal(await evaluate(`document.querySelector('.welcome').hidden`), false, 'Empty chat must show welcome state')
+  assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'New chat')
+  assert.equal(await evaluate(`document.querySelector('.conversation-header').textContent.includes('Open sample deck')`), false, 'Sample tools must not crowd the chat header')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').getBoundingClientRect().height < 95`), true, 'Empty Composer must be compact')
   await evaluate(`document.querySelector('.conversation select').selectedIndex=1; document.querySelector('.conversation select').dispatchEvent(new Event('change')); true`)
-  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Model selection was not saved')
+  await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Model selection was not saved')
   await evaluate(
     `document.querySelector('.composer textarea').value='Create HTML'; document.querySelector('.composer').requestSubmit(); true`,
   )
@@ -394,6 +399,11 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     () => evaluate(`document.querySelector('.messages .request-record')?.dataset.status === 'running'`),
     'Browser did not show running status',
   )
+  assert.equal(await evaluate(`document.querySelector('.welcome').hidden`), true, 'Welcome must disappear after sending')
+  assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'Create HTML', 'Header derives its title from saved user history')
+  assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Send request"]').hidden && !document.querySelector('.composer [aria-label="Stop"]').hidden`), true, 'Stop replaces Send while active')
+  await evaluate(`document.querySelector('.composer textarea').value='Next unsent request'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); true`)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').disabled`), false, 'Active work must allow drafting')
   assert.equal(await evaluate(`Boolean(document.querySelector('.conversation > .activities'))`), false, 'Activity must not reserve a separate footer below chat')
   assert.equal(await evaluate(`Boolean(document.querySelector('.messages .request-record'))`), true, 'Each request must have an inline activity record')
   await eventually(() => evaluate(`document.querySelector('.request-record').previousElementSibling?.textContent.includes('Create HTML')`), 'Request record is not anchored to its user message')
@@ -429,13 +439,13 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await readFile(join(dir, 'workspace', 'browser.html'), 'utf8'), '<h1>Browser round-trip</h1>')
   await protocol.call('Page.reload')
   await eventually(() => evaluate('Boolean(document.querySelector("form"))'), 'Browser reload failed')
-  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Restored Composer is not ready')
+  await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Restored Composer is not ready')
   await evaluate(`document.querySelector('#reconnect').click(); true`)
   await eventually(
     () => evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`),
     'Browser history restore failed',
   )
-  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Composer is not ready for the next request')
+  await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Composer is not ready for the next request')
   await evaluate(
     `document.querySelector('.composer textarea').value='Write outside'; document.querySelector('.composer').requestSubmit(); true`,
   )
@@ -447,7 +457,7 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.textContent.includes('write_file · failed')`), 'Failed tool activity was not recorded')
   assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 2, 'Each turn must have exactly one record')
   assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).previousElementSibling.textContent.includes('Write outside')`), true, 'Follow-up request must keep its own conversation position')
-  await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='Open sample deck').click(); true`)
+  await evaluate(`document.querySelector('.developer-tools').open=true; [...document.querySelectorAll('button')].find(button=>button.textContent==='Open sample deck').click(); true`)
   assert.equal(await evaluate(`document.querySelector('.deck-sidebar').hidden`), false)
   assert.equal(await evaluate(`document.querySelector('iframe').getAttribute('sandbox')`), '')
   await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='Next').click(); true`)
@@ -476,8 +486,10 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   const requestCount = modelRequests
   await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='New chat').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.messages').children.length === 0`), 'New chat did not open')
+  assert.equal(await evaluate(`!document.querySelector('.welcome').hidden && document.querySelector('.conversation-header h1').textContent === 'New chat'`), true)
   await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.textContent.includes('messages')&&!button.textContent.includes('0 messages')).click(); true`)
   await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Browser HTML created')`), 'History did not reopen the right chat')
+  assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'Create HTML', 'History must restore the title of its own chat')
   assert.equal(modelRequests, requestCount, 'Opening Settings/new chat/history must not start Agent work')
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Keep my draft', 'History must restore the draft of its own chat')
   await evaluate(`window.task007Fetch=window.fetch; window.fetch=(url,options)=>String(url).endsWith('/history')?Promise.resolve(new Response('{}',{status:503})):window.task007Fetch(url,options); [...document.querySelectorAll('.chat-navigation nav button')].find(button=>button.textContent.includes('0 messages')).click(); true`)
@@ -487,12 +499,16 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await evaluate(`window.fetch=window.task007Fetch; delete window.task007Fetch; true`)
   assert.equal(modelRequests, requestCount, 'Failed history open must not start work')
   await evaluate(`document.querySelector('.composer textarea').value='Stop fixture'; document.querySelector('.composer').requestSubmit(); true`)
-  await eventually(() => evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Stop')?.hidden === false`), 'Stop did not become available')
-  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Stop').click(); true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Stop')?.hidden === false`), 'Stop did not become available')
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Stop').click(); true`)
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'cancelled'`), 'Stop did not terminate the request')
-  await eventually(() => evaluate(`!document.querySelector('.composer button').disabled`), 'Stop did not release the Composer')
-  assert.equal(await evaluate(`document.querySelector('.composer button').getBoundingClientRect().bottom <= innerHeight`), true, 'Composer must remain visible while conversation history scrolls')
+  await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Stop did not release the Composer')
+  assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Send request"]').getBoundingClientRect().bottom <= innerHeight`), true, 'Composer must remain visible while conversation history scrolls')
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 900, height: 600, deviceScaleFactor: 1, mobile: false })
+  assert.equal(await evaluate(`(() => { const box=document.querySelector('.composer').getBoundingClientRect(); return box.bottom<=innerHeight && box.left>=0 && box.right<=innerWidth; })()`), true, 'Compact Composer must remain usable in a narrow, short window')
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
   if (process.env.DECKAGENT_BROWSER_SCREENSHOT) {
+    await evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`)
     const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
     await writeFile(process.env.DECKAGENT_BROWSER_SCREENSHOT, Buffer.from(shot.data, 'base64'))
   }
