@@ -6,6 +6,33 @@ import { AgentRuntime, MemorySessionStore } from '../packages/agent/runtime/lib/
 import { startHost } from '../packages/host/api/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 
+test('waiting snapshots require a valid question and an SSE stream continues through reply to completion', async t => {
+  const question = { questionId: 'question', version: 1, prompt: 'Chủ đề?', options: ['Tái chế'], allowSkip: true }
+  const waiting = { requestId: 'waiting', sessionId: 'chat', status: 'awaiting_user', question }
+  let payload = waiting
+  const server = createServer((req, res) => {
+    if (req.url.endsWith('/events')) {
+      res.writeHead(200, { 'content-type': 'text/event-stream' })
+      res.end([waiting, { requestId: 'waiting', sessionId: 'chat', status: 'running' },
+        { requestId: 'waiting', sessionId: 'chat', status: 'completed', result: { status: 'completed', text: 'Outline ready', steps: 2 } }]
+        .map(value => `event: snapshot\ndata: ${JSON.stringify(value)}\n\n`).join(''))
+    } else res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(payload))
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) }))
+  const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture')
+  assert.deepEqual(await client.snapshot('waiting'), waiting)
+  const states = []
+  for await (const value of client.watch('waiting')) states.push(value.status)
+  assert.deepEqual(states, ['awaiting_user', 'running', 'completed'])
+  for (const bad of [undefined, { ...question, version: 0 }, { ...question, options: [3] }, { ...question, allowSkip: 'yes' }]) {
+    payload = { ...waiting, question: bad }
+    await assert.rejects(client.snapshot('waiting'), /INVALID_RESPONSE/)
+  }
+  payload = { ...waiting, status: 'running' }
+  await assert.rejects(client.snapshot('waiting'), /INVALID_RESPONSE/)
+})
+
 test('history exposes tool identity for Activity without exposing internal fields or arguments', async t => {
   const host = await startHost({
     openAgent: async () => { throw new Error('No work should start') },

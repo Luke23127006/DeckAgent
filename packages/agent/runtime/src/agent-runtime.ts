@@ -130,7 +130,7 @@ export class AgentRuntime {
     const cancel = () => abort.abort()
     if (signal?.aborted) cancel()
     else signal?.addEventListener('abort', cancel, { once: true })
-    const active = this.turn(state, input, abort.signal, control?.onActivity).finally(() => {
+    const active = this.turn(state, input, abort.signal, control?.onActivity, control?.continuation).finally(() => {
       signal?.removeEventListener('abort', cancel)
       state.active = undefined
       state.abort = undefined
@@ -139,7 +139,7 @@ export class AgentRuntime {
     return active
   }
 
-  private async turn(state: LiveAgent, input: string, signal: AbortSignal, onActivity?: SendOptions['onActivity']): Promise<TurnResult> {
+  private async turn(state: LiveAgent, input: string, signal: AbortSignal, onActivity?: SendOptions['onActivity'], continuation = false): Promise<TurnResult> {
     let text = ''
     let steps = 0
     let replyCommitted = false
@@ -150,7 +150,7 @@ export class AgentRuntime {
     }
     try {
       signal.throwIfAborted()
-      await this.options.sessions.append(state.options.sessionId, [{ role: 'user', content: input }])
+      if (!continuation) await this.options.sessions.append(state.options.sessionId, [{ role: 'user', content: input }])
       while (steps < this.maxSteps) {
         signal.throwIfAborted()
         steps++

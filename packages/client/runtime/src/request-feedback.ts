@@ -19,6 +19,10 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   SESSION_BUSY: ['Chat đang có yêu cầu hoạt động', 'Đợi hoàn tất hoặc dừng yêu cầu trước khi gửi yêu cầu khác.'],
   OUTLINE_STALE: ['Outline đã thay đổi', 'Xem đề xuất hiện tại trước khi xác nhận.'],
   OUTLINE_ALREADY_CONFIRMED: ['Outline đã được xác nhận', 'Mở deck đã lưu. Hệ thống không xác nhận lại.'],
+  REPLY_STALE: ['Câu hỏi đã thay đổi hoặc yêu cầu đã kết thúc', 'Kết nối lại để xem trạng thái hiện tại trước khi trả lời.'],
+  REPLY_CONFLICT: ['Câu trả lời gửi lại không khớp', 'Kiểm tra câu hỏi hiện tại rồi gửi lại câu trả lời.'],
+  INVALID_REPLY: ['Câu trả lời chưa hợp lệ', 'Nhập câu trả lời hoặc chọn một gợi ý hiện tại.'],
+  INTERACTION_INVALID: ['Chưa xác định được thao tác với outline', 'Kiểm tra outline hiện tại rồi gửi yêu cầu rõ hơn. Chưa tự xác nhận.'],
   DECK_INCOMPLETE: ['Bản nháp chưa sẵn sàng', 'Một số slide chưa được lưu. Phần hoàn tất vẫn được giữ; gửi yêu cầu mới để tiếp tục.'],
   EDIT_INCOMPLETE: ['Chưa hoàn tất thay đổi', 'Một số slide yêu cầu sửa chưa được lưu. Các bản đã lưu vẫn được giữ; gửi yêu cầu mới với phạm vi rõ ràng.'],
   SLIDE_SCOPE_DENIED: ['Không được phép lưu slide ngoài phạm vi', 'Gửi yêu cầu mới nêu số slide hoặc tiêu đề chính xác. Không có bước xin quyền Host riêng.'],
@@ -52,7 +56,10 @@ export function requestFeedback(state: StoredRequest['status'], errorCode: strin
   const savedText = saved.size ? `Đã lưu cập nhật ${saved.size} slide` : ''
   let label: string
   let detail = savedText ? `${savedText}. ` : ''
-  if (state === 'running') {
+  if (state === 'awaiting_user') {
+    label = 'Đang chờ bạn trả lời'
+    detail += 'Chọn gợi ý hoặc nhập câu trả lời. Hệ thống không làm việc trong lúc chờ; bạn có thể dừng yêu cầu.'
+  } else if (state === 'running') {
     const current = records.findLast(entry => entry.status === 'running')
     const phases: Readonly<Record<string, string>> = { propose_outline: 'Đang chuẩn bị outline', publish_slide: 'Đang lưu slide',
       read_slide: 'Đang đọc slide đã lưu', write_file: 'Đang ghi bản nháp', read_file: 'Đang đọc tài liệu trong workspace' }

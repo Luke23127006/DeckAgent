@@ -11,6 +11,31 @@ import { fork } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
+test('a killed Host turns a waiting request into unknown without replay and rejects old reply controls', { timeout: 15000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-waiting-recovery-'))
+  const child = fork(new URL('./fixtures/waiting-web.mjs', import.meta.url), [dir], { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+  const closed = once(child, 'exit')
+  let app
+  t.after(async () => { child.kill(); await closed; await app?.close(); await rm(dir, { recursive: true, force: true }) })
+  const [waiting] = await Promise.race([once(child, 'message'), closed.then(() => { throw new Error('Waiting fixture exited') })])
+  child.kill('SIGKILL')
+  await closed
+  let calls = 0
+  app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'waiting' }, model: { async *stream() { calls++; yield { type: 'finish', reason: 'stop' } } } })
+  const headers = { authorization: `Bearer ${app.token}` }
+  const records = await (await fetch(`${app.origin}/api/sessions/waiting-chat/requests`, { headers })).json()
+  assert.equal(records[0].status, 'unknown')
+  assert.equal(records[0].question.questionId, waiting.question.questionId)
+  const sessions = await (await fetch(`${app.origin}/api/sessions`, { headers })).json()
+  assert.equal(sessions[0].activeRequestId, undefined)
+  await assert.rejects(new HostClient(app.origin, app.token).reply(waiting.requestId, {
+    sessionId: 'waiting-chat', questionId: waiting.question.questionId, version: waiting.question.version,
+    replyId: 'old-button', answer: { type: 'option', index: 0 },
+  }), /REQUEST_NOT_FOUND/)
+  assert.equal(calls, 0)
+})
+
 test('History summaries derive titles and timestamps from saved sessions without starting work', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-history-summary-'))
   const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))

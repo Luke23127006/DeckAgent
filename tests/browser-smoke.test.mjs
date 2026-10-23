@@ -168,6 +168,78 @@ test('interactive composer selects a model without work, sends with Enter and pr
   assert.equal(calls, 1, 'New chat, reload and Settings must not start work')
 })
 
+test('clarification UI waits, restores after reload and answers without sending the unsent draft', { timeout: 45000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-question-browser-'))
+  let app, browser, protocol
+  let calls = 0
+  const base = workflowModel()
+  t.after(async () => {
+    if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+    if (browser && browser.exitCode === null) browser.kill()
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'question-ui' }, model: { async *stream(request) {
+      calls++
+      const last = request.messages.at(-1)
+      if (last.role === 'user' && (last.content === 'Tạo bài trình bày' || last.content === 'Hỏi lại')) {
+        yield { type: 'tool-call', call: { id: `ask-ui-${request.messages.length}`, name: 'ask_clarification', arguments: {
+          question: JSON.stringify({ prompt: 'Bạn muốn nói về chủ đề gì?', options: ['Tái chế'], allowSkip: true }),
+        } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (last.name === 'ask_clarification') {
+        yield { type: 'text-delta', text: 'Bạn muốn nói về chủ đề gì?' }
+        yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  const profile = join(dir, 'chrome')
+  browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const port = await eventually(async () => { try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch {} }, 'Browser did not start')
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
+    return result.result.value
+  }
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.composer select option[value]:not([value=""])')`), 'Models missing')
+  await evaluate(`const select=document.querySelector('.composer select'); select.selectedIndex=1; select.dispatchEvent(new Event('change')); true`)
+  await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`), 'Model not selected')
+  await evaluate(`const ta=document.querySelector('.composer textarea'); ta.value='Tạo bài trình bày'; document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.clarification-question:not([hidden]) button')`), 'Question controls missing')
+  const before = calls
+  await delay(100)
+  assert.equal(calls, before, 'Silence must not poll the model')
+  assert.equal(await evaluate(`document.querySelector('.chat-state').textContent`), 'Đang chờ bạn trả lời')
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+  if (process.env.DECKAGENT_CLARIFICATION_SCREENSHOT) {
+    const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
+    await writeFile(process.env.DECKAGENT_CLARIFICATION_SCREENSHOT, Buffer.from(shot.data, 'base64'))
+  }
+  const geometry = await evaluate(`({question:document.querySelector('.clarification-question').getBoundingClientRect().toJSON(),composer:document.querySelector('.composer').getBoundingClientRect().toJSON(),width:innerWidth,height:innerHeight})`)
+  assert.equal(geometry.question.left>=0 && geometry.question.right<=geometry.width && geometry.composer.bottom<=geometry.height, true, `Question and composer must stay usable: ${JSON.stringify(geometry)}`)
+  await evaluate(`const savedDraft=document.querySelector('.composer textarea'); savedDraft.value='Giữ bản nháp này';savedDraft.dispatchEvent(new Event('input'));true`)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!document.querySelector('.clarification-question:not([hidden]) button:not(:disabled)')`), 'Reload lost the pending question')
+  assert.equal(calls, before)
+  await evaluate(`document.querySelector('.clarification-options button').click();true`)
+  await eventually(async () => {
+    const state = await evaluate(`({outline:!!document.querySelector('.outline-proposal'), status:document.querySelector('.request-record')?.dataset.status, feedback:document.querySelector('.conversation > [role=status]')?.textContent})`)
+    if (state.status === 'failed') throw new Error(`Answer failed: ${JSON.stringify(state)}`)
+    return state.outline && state.status === 'completed'
+  }, 'Answer did not produce outline')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Giữ bản nháp này')
+  assert.equal(await evaluate(`[...document.querySelectorAll('.message.user')].filter(node=>node.textContent.includes('Tái chế')).length`), 1)
+  assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 1)
+  await evaluate(`const ta=document.querySelector('.composer textarea'); ta.value='Hỏi lại'; document.querySelector('.composer').requestSubmit();true`)
+  await eventually(() => evaluate(`!!document.querySelector('.clarification-question:not([hidden]) button')`), 'Second question missing')
+  await evaluate(`document.querySelector('[aria-label=Stop]').click();true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1).dataset.status==='cancelled'`), 'Stop did not end waiting')
+  assert.equal(await evaluate(`document.querySelector('.clarification-question').hidden`), true)
+})
+
 test('outline conversation confirms in a new request, preserves viewing state and progressively opens the deck', {
   timeout: 45000,
 }, async t => {

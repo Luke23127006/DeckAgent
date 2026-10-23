@@ -8,6 +8,180 @@ import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 
 import { proposal, workflowModel } from './fixtures/outline-workflow.mjs'
 
+test('clarification waits without building, then an answer creates the outline in the same request', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-clarify-'))
+  let calls = 0
+  const base = workflowModel()
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'questions' }, model: { async *stream(request) {
+      calls++
+      const last = request.messages.at(-1)
+      if (last.role === 'user' && last.content === 'Tạo bài trình bày') {
+        yield { type: 'tool-call', call: { id: 'ask-topic', name: 'ask_clarification', arguments: {
+          question: JSON.stringify({ prompt: 'Bạn muốn trình bày chủ đề gì?', options: ['Tái chế', 'Tiết kiệm năng lượng'], allowSkip: true }),
+        } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (last.name === 'ask_clarification') {
+        yield { type: 'text-delta', text: 'Bạn muốn trình bày chủ đề gì?' }
+        yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'clarify', input: 'Tạo bài trình bày', presentation: true })
+  let waiting
+  for (let i = 0; i < 100; i++) {
+    waiting = await (await fetch(`${app.origin}/api/requests/${accepted.requestId}`, { headers: { authorization: `Bearer ${app.token}` } })).json()
+    if (waiting.status !== 'running') break
+    await new Promise(resolve => setTimeout(resolve, 5))
+  }
+  assert.equal(waiting.status, 'awaiting_user')
+  const idleCalls = calls
+  await new Promise(resolve => setTimeout(resolve, 30))
+  assert.equal(calls, idleCalls)
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  const resumed = await client.reply(accepted.requestId, { sessionId: 'clarify', questionId: waiting.question.questionId,
+    version: waiting.question.version, replyId: 'topic-answer', answer: { type: 'option', index: 0 } })
+  assert.equal(resumed.requestId, accepted.requestId)
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'completed')
+  const history = await client.history('clarify')
+  assert.deepEqual(history.filter(m => m.role === 'user').map(m => m.content), ['Tạo bài trình bày', 'Tái chế'])
+  const stored = await (await fetch(`${app.origin}/api/sessions/clarify/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()
+  assert.equal(stored.length, 1)
+  assert.equal(stored[0].status, 'completed')
+})
+
+test('explicit skip can ask again for an unknown topic and waiting retains its captured model after selection changes', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-skip-capture-'))
+  const base = workflowModel()
+  const selections = []
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'captured' }, model: { async *stream(request) {
+      selections.push(request.selection.model)
+      const last = request.messages.at(-1)
+      if (last.role === 'user' && last.content !== 'Tái chế') {
+        yield { type: 'tool-call', call: { id: `ask-topic-${request.messages.length}`, name: 'ask_clarification', arguments: {
+          question: JSON.stringify({ prompt: 'Cần chủ đề trước khi lập outline', options: ['Tái chế'], allowSkip: false }),
+        } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (last.name === 'ask_clarification') {
+        yield { type: 'text-delta', text: 'Cần chủ đề trước khi lập outline' }; yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'skip-topic', input: 'Tạo trình bày', presentation: true })
+  async function question() {
+    for await (const value of client.watch(accepted.requestId)) if (value.status === 'awaiting_user') return value.question
+    throw new Error('Expected waiting')
+  }
+  const first = await question()
+  assert.equal(first.allowSkip, true, 'Host must allow explicit skip before the first outline')
+  await client.reply(accepted.requestId, { sessionId: 'skip-topic', questionId: first.questionId, version: first.version,
+    replyId: 'skip-topic', answer: { type: 'skip' } })
+  const second = await question()
+  assert.notEqual(second.questionId, first.questionId)
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  const headers = { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }
+  const provider = { displayName: 'Capture fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:1', models: ['later'] }
+  assert.equal((await fetch(`${app.origin}/api/providers/fixture`, { method: 'PUT', headers, body: JSON.stringify(provider) })).status, 200)
+  assert.equal((await fetch(`${app.origin}/api/sessions/skip-topic/selection`, { method: 'PUT', headers, body: JSON.stringify({ provider: 'fixture', model: 'later' }) })).status, 200)
+  assert.equal((await fetch(`${app.origin}/api/providers/fixture`, { method: 'DELETE', headers })).status, 409)
+  await client.reply(accepted.requestId, { sessionId: 'skip-topic', questionId: second.questionId, version: second.version,
+    replyId: 'topic', answer: { type: 'text', text: 'Tái chế' } })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'completed')
+  assert.ok(selections.every(model => model === 'captured'))
+  assert.equal((await fetch(`${app.origin}/api/providers/fixture`, { method: 'DELETE', headers })).status, 200)
+})
+
+test('natural review asks about ambiguity, revises without confirming, then confirms through Host with no duplicated user message', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-natural-review-'))
+  const base = workflowModel()
+  const model = { async *stream(request) {
+    const last = request.messages.at(-1)
+    if (request.tools.some(tool => tool.name === 'publish_slide')) { yield* base.stream(request); return }
+    if (last.role === 'user' && last.content === 'Ổn rồi, nhưng sửa slide 2') {
+      yield { type: 'tool-call', call: { id: `revise-${request.messages.length}`, name: 'propose_outline',
+        arguments: { proposal: JSON.stringify({ ...proposal, overview: 'Revised outline' }) } } }
+      yield { type: 'finish', reason: 'tool-calls' }
+    } else if (last.role === 'user' && last.content === 'OK?') {
+      yield { type: 'tool-call', call: { id: 'ambiguous-review', name: 'ask_clarification', arguments: {
+        question: JSON.stringify({ prompt: 'Bạn muốn xác nhận hay sửa outline?', options: ['Xác nhận và tạo slide', 'Sửa outline'], allowSkip: true }),
+      } } }
+      yield { type: 'finish', reason: 'tool-calls' }
+    } else if (last.role === 'user' && last.content === 'Xác nhận và tạo slide') {
+      assert.ok(request.tools.some(tool => tool.name === 'review_outline'))
+      assert.equal(request.tools.some(tool => tool.name === 'write_file'), false)
+      yield { type: 'tool-call', call: { id: 'natural-confirm', name: 'review_outline', arguments: { intent: 'confirm' } } }
+      yield { type: 'finish', reason: 'tool-calls' }
+    } else if (last.name === 'ask_clarification' || last.name === 'review_outline') {
+      assert.equal(last.isError, false)
+      yield { type: 'text-delta', text: 'Host will handle your answer.' }
+      yield { type: 'finish', reason: 'stop' }
+    } else yield* base.stream(request)
+  } }
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'natural' }, model })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const headers = { authorization: `Bearer ${app.token}` }
+  const outlines = () => fetch(`${app.origin}/api/sessions/natural/outline`, { headers }).then(r => r.json())
+  await completed(client, { sessionId: 'natural', input: 'Create presentation', presentation: true })
+  const first = (await outlines()).currentId
+  await completed(client, { sessionId: 'natural', input: 'Ổn rồi, nhưng sửa slide 2' })
+  const revised = await outlines()
+  assert.notEqual(revised.currentId, first)
+  assert.equal(revised.confirmedId, null)
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  const accepted = await client.send({ sessionId: 'natural', input: 'OK?' })
+  let question
+  for await (const value of client.watch(accepted.requestId)) {
+    if (value.status === 'awaiting_user') { question = value.question; break }
+  }
+  assert.equal(question.allowSkip, false, 'Skipping ambiguous intent must never grant confirmation')
+  await assert.rejects(client.reply(accepted.requestId, { sessionId: 'natural', questionId: question.questionId, version: question.version,
+    replyId: 'cannot-skip', answer: { type: 'skip' } }), /INVALID_REPLY/)
+  await client.reply(accepted.requestId, { sessionId: 'natural', questionId: question.questionId, version: question.version,
+    replyId: 'confirm-choice', answer: { type: 'option', index: 0 } })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'completed')
+  assert.equal((await outlines()).confirmedId, revised.currentId)
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('natural')).slides.map(slide => slide.status), ['published', 'published'])
+  assert.deepEqual((await client.history('natural')).filter(message => message.role === 'user').map(message => message.content),
+    ['Create presentation', 'Ổn rồi, nhưng sửa slide 2', 'OK?', 'Xác nhận và tạo slide'])
+})
+
+for (const mode of ['provider-failure', 'conflicting-decisions']) test(`staged natural confirmation cannot commit after ${mode}`, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-review-rejection-'))
+  const base = workflowModel()
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'review-rejection' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (last.role === 'user' && last.content === 'Ổn rồi tạo slide đi') {
+        yield { type: 'tool-call', call: { id: 'staged-confirm', name: 'review_outline', arguments: { intent: 'confirm' } } }
+        if (mode === 'conflicting-decisions') yield { type: 'tool-call', call: { id: 'also-revise', name: 'propose_outline', arguments: { proposal: JSON.stringify(proposal) } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (request.messages.some(message => message.toolCalls?.some(call => call.id === 'staged-confirm'))) {
+        if (mode === 'provider-failure') throw new Error('fixture-provider-failure')
+        yield { type: 'text-delta', text: 'Done' }; yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  await completed(client, { sessionId: 'reject-review', input: 'Create presentation', presentation: true })
+  const accepted = await client.send({ sessionId: 'reject-review', input: 'Ổn rồi tạo slide đi' })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'failed')
+  assert.equal((await new DeckClient(app.origin, app.token).snapshot('reject-review')).version, 0)
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+})
+
 test('shared workspace keeps earlier drafts and gives each confirmed request separate publishable paths', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-collision-'))
   const workspace = join(dir, 'workspace')

@@ -6,6 +6,7 @@ import type {
   WebSession,
   WebSettings,
 } from '@deckagent/host-api'
+import { userQuestion } from './user-question.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -200,6 +201,7 @@ export class ManagementClient {
         typeof value.selection.provider !== 'string' ||
         typeof value.selection.model !== 'string' ||
         (value.status !== 'running' &&
+          value.status !== 'awaiting_user' &&
           value.status !== 'completed' &&
           value.status !== 'failed' &&
           value.status !== 'cancelled' &&
@@ -210,10 +212,12 @@ export class ManagementClient {
         (value.noticeIndex !== undefined && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
       )
         invalid()
+      if (value.status === 'awaiting_user' && value.question === undefined) invalid()
       return {
         requestId: value.requestId,
         selection: { provider: value.selection.provider, model: value.selection.model },
         status: value.status,
+        ...(value.question === undefined ? {} : { question: userQuestion(value.question) }),
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
         ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
         ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),

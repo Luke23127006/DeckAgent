@@ -4,6 +4,59 @@ import { request as httpRequest } from 'node:http'
 import { AgentRuntime, MemorySessionStore } from '../packages/agent/runtime/lib/index.js'
 import { startHost } from '../packages/host/api/lib/index.js'
 
+test('a question keeps one request active; replies are bound, idempotent and Stop drains waiting work', async t => {
+  const inputs = []
+  let question
+  let disposed = 0
+  const host = await startHost({
+    readHistory: async () => [],
+    openAgent: async sessionId => ({ sessionId, status: 'idle', history: async () => [],
+      question: () => question,
+      send: async input => {
+        inputs.push(input)
+        question = { prompt: inputs.length === 1 ? 'Chủ đề của bạn?' : 'Đối tượng nghe?', options: ['Sinh viên', 'Đồng nghiệp'], allowSkip: true }
+        return { status: 'completed', text: question.prompt, steps: 1 }
+      }, dispose: async () => { disposed++ },
+    }),
+  })
+  t.after(() => host.close())
+  const headers = { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' }
+  const post = (path, value) => fetch(`${host.origin}/api/${path}`, { method: 'POST', headers, body: JSON.stringify(value) })
+  const accepted = await (await post('requests', { sessionId: 'questions', input: 'Tạo bài trình bày' })).json()
+  const get = () => fetch(`${host.origin}/api/requests/${accepted.requestId}`, { headers }).then(r => r.json())
+  async function waiting() {
+    for (let i = 0; i < 100; i++) {
+      const value = await get()
+      if (value.status !== 'running') return value
+      await new Promise(resolve => setTimeout(resolve, 5))
+    }
+    throw new Error('Question not exposed')
+  }
+  const first = await waiting()
+  assert.equal(first.status, 'awaiting_user')
+  assert.equal(first.question.prompt, 'Chủ đề của bạn?')
+  assert.deepEqual(inputs, ['Tạo bài trình bày'])
+  assert.equal((await post('requests', { sessionId: 'questions', input: 'Another request' })).status, 409)
+  const reply = { sessionId: 'questions', questionId: first.question.questionId, version: first.question.version,
+    replyId: 'reply-one', answer: { type: 'text', text: 'Tái chế' } }
+  const path = `requests/${accepted.requestId}/reply`
+  assert.equal((await post(path, { ...reply, sessionId: 'other' })).status, 409)
+  assert.equal((await post(path, reply)).status, 202)
+  assert.equal((await post(path, reply)).status, 202)
+  assert.equal((await post(path, { ...reply, answer: { type: 'text', text: 'Changed' } })).status, 409)
+  const second = await waiting()
+  assert.equal(second.status, 'awaiting_user')
+  assert.equal(second.requestId, accepted.requestId)
+  assert.notEqual(second.question.questionId, first.question.questionId)
+  assert.deepEqual(inputs, ['Tạo bài trình bày', 'Tái chế'])
+  assert.equal((await post(path, { ...reply, replyId: 'late' })).status, 409)
+  await post(`requests/${accepted.requestId}/stop`, {})
+  const final = await waiting()
+  assert.equal(final.status, 'cancelled')
+  assert.equal(disposed, 1)
+  assert.equal((await post(path, { ...reply, replyId: 'after-stop' })).status, 409)
+})
+
 test('HTTP request completes and SSE reconnect returns its final snapshot and history', async t => {
   const sessions = new MemorySessionStore()
   const runtime = new AgentRuntime({

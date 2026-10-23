@@ -1,5 +1,7 @@
 # TASK-006 — Outline review and presentation generation
 
+**Follow-up thử nghiệm local 23-10-2026:** branch `feature/outline-clarification-confirm` bổ sung hỏi làm rõ/trả lời trong cùng request và natural-language review. [Kế hoạch và handoff](outline-confirmation-clarification-plan.md#9-trạng-thái-bàn-giao) ghi contracts, compatibility, evidence và giới hạn. Phần mô tả parser hai request bên dưới là snapshot TASK-006 ban đầu; candidate mới giữ nút/aliases cũ, thêm staging ý định và Host-owned confirmation, không cấp quyền tự confirm cho model. Owner đã yêu cầu commit/push branch này; chưa PR hoặc manual provider thật, Gates không thay đổi.
+
 **Trạng thái kiểm tra lại ngày 22-10-2026:** A/B/C đã merge qua
 [PR #27](https://github.com/Luke23127006/DeckAgent/pull/27) vào dev
 `6efd4df8887912b9cda8133c2276c0619f08c245`.

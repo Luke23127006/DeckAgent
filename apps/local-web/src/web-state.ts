@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import type { ActivityEvent, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
-import { HttpError } from '@deckagent/host-api'
-import type { StoredActivity, StoredRequest, WebSession, WebSettings } from '@deckagent/host-api'
+import { HttpError, validateUserQuestion } from '@deckagent/host-api'
+import type { RequestSnapshot, StoredActivity, StoredRequest, WebSession, WebSettings } from '@deckagent/host-api'
 import type { SqliteSessionStore, SessionInfo } from '@deckagent/session-persistence'
 
 export function record(value: unknown): value is Record<string, unknown> {
@@ -62,7 +62,7 @@ export class WebState {
         .run()
       this.db
         .prepare(
-          "UPDATE requests SET payload=json_set(payload, '$.status', 'unknown') WHERE json_extract(payload, '$.status')='running'",
+          "UPDATE requests SET payload=json_set(payload, '$.status', 'unknown') WHERE json_extract(payload, '$.status') IN ('running','awaiting_user')",
         )
         .run()
       if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
@@ -131,6 +131,11 @@ export class WebState {
       .run(result.status, result.status === 'completed' ? null : result.error.code, noticeIndex ?? null, requestId)
   }
 
+  requestState(snapshot: RequestSnapshot): void {
+    this.db.prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?)) WHERE id=? AND session_id=?")
+      .run(snapshot.status, JSON.stringify(snapshot.question ?? null), snapshot.requestId, snapshot.sessionId)
+  }
+
   requests(id: string): readonly StoredRequest[] {
     return this.db
       .prepare('SELECT payload FROM requests WHERE session_id=? ORDER BY sequence')
@@ -144,6 +149,7 @@ export class WebState {
           typeof value.selection.provider !== 'string' ||
           typeof value.selection.model !== 'string' ||
           (value.status !== 'running' &&
+            value.status !== 'awaiting_user' &&
             value.status !== 'completed' &&
             value.status !== 'failed' &&
             value.status !== 'cancelled' &&
@@ -153,10 +159,12 @@ export class WebState {
           (value.noticeIndex != null && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
         )
           throw new HttpError(500, 'ACTIVITY_STORAGE')
+        if (value.status === 'awaiting_user' && value.question == null) throw new HttpError(500, 'ACTIVITY_STORAGE')
         return {
           requestId: value.requestId,
           selection: { provider: value.selection.provider, model: value.selection.model },
           status: value.status,
+          ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
           ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
           ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
           ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),

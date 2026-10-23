@@ -1,4 +1,4 @@
-import type { AgentRequest, HistoryMessage, WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -11,6 +11,7 @@ import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
+import { questionView } from './question-view.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -41,6 +42,7 @@ const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Conversation')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
+const questionUI = questionView(answer => run(replyToQuestion(answer)))
 const timeline = new ConversationView(messages, (type, proposal) => {
   run(submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
     outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
@@ -81,6 +83,8 @@ const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-s
 publishedDeck.hidden = true
 const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = false })
 let current: WebSession | undefined
+let waiting: RequestSnapshot | undefined
+let pendingReply: { key: string; value: RequestReply } | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
 let watch: AbortController | undefined
@@ -152,8 +156,9 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
-  submit.hidden = !!current?.activeRequestId
+  submit.hidden = !!current?.activeRequestId && !question
   for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
   model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
@@ -164,17 +169,19 @@ function controls() {
     opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
-    !!current.activeRequestId ||
-    !current.selectable
+    (!!current.activeRequestId && !question) ||
+    (!current.selectable && !question)
   createPresentation.disabled = submit.disabled
   submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > 16000))
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
-  timeline.setOutlineBusy(submit.disabled)
+  timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
+  questionUI.update(question, submit.disabled)
+  input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
   picker.update(settings, !!current?.activeRequestId)
   title.textContent = chatTitle
   title.title = chatTitle
   const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
-  headerState.textContent = current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
+  headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
     : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : current?.selectable ? '' : 'Chọn model để bắt đầu'
   navigationHint.hidden = !active
   welcome.hidden = historyPresent || active || !current || opening !== undefined
@@ -262,6 +269,8 @@ async function follow(id: string, sessionId: string, expected: number) {
     for await (const snapshot of client.watch(id, control.signal)) {
       if (generation !== expected) return
       timeline.snapshot(snapshot)
+      waiting = snapshot.status === 'awaiting_user' ? snapshot : undefined
+      controls()
       status.hidden = true
       if (snapshot.status !== 'running') {
         await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
@@ -295,6 +304,8 @@ async function open(session: WebSession) {
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
   current = session
+  const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
+  waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
   deckModel.open(session.sessionId)
   remember(session.sessionId)
   const expected = generation
@@ -412,9 +423,12 @@ input.addEventListener('keydown', event => {
   }
 })
 const dock = element('div', undefined, 'composer-dock')
-dock.append(outlineDock, form)
+dock.append(questionUI.node, outlineDock, form)
 conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
+// Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
+const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
+navigationSize.observe(navigation)
 model.addEventListener('change', () => {
   if (model.value === '__settings') {
     model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
@@ -464,6 +478,10 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi.'
     return
   }
+  if (waiting?.question && current.activeRequestId === waiting.requestId) {
+    if (!extra.outlineAction) await replyToQuestion({ type: 'text', text })
+    return
+  }
   const id = current.sessionId,
     expected = generation
   const target = outlineState?.proposals.find(p => p.status === 'current')
@@ -484,7 +502,7 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
       controls()
     }
     await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected), showOutlines(id, expected)])
-    if (generation === expected) await follow(accepted.requestId, id, expected)
+    if (generation === expected) run(follow(accepted.requestId, id, expected))
   } catch (error) {
     try { await showOutlines(id, expected) } catch { /* Keep the last saved outline if reconnect also fails. */ }
     throw error
@@ -492,6 +510,27 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     sending.delete(id)
     controls()
   }
+}
+
+async function replyToQuestion(answer: RequestReply['answer']): Promise<void> {
+  if (!current || !waiting?.question || submit.disabled || waiting.sessionId !== current.sessionId) return
+  const id = current.sessionId, expected = generation, snapshot = waiting, question = waiting.question
+  const key = JSON.stringify([id, question.questionId, question.version, answer])
+  if (pendingReply?.key !== key) pendingReply = { key, value: { sessionId: id, questionId: question.questionId,
+    version: question.version, replyId: crypto.randomUUID(), answer } }
+  sending.add(id)
+  controls()
+  try {
+    const accepted = await client.reply(snapshot.requestId, pendingReply.value)
+    if (generation !== expected) return
+    pendingReply = undefined
+    waiting = undefined
+    timeline.snapshot(accepted)
+    if (answer.type === 'text' && input.value === answer.text) { input.value = ''; saveDraft() }
+    controls()
+    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
+    if (generation === expected) run(follow(accepted.requestId, id, expected))
+  } finally { sending.delete(id); controls() }
 }
 const timer = setInterval(() => {
   if (!current?.activeRequestId || polling || disposed) return
@@ -513,6 +552,7 @@ window.addEventListener(
   'pagehide',
   () => {
     saveDraft()
+    navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
     deckModel.close()

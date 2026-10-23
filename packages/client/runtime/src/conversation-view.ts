@@ -76,7 +76,7 @@ export class ConversationView {
     const knownRequests = new Map(this.requests.map(request => [request.requestId, request]))
     for (const request of requests) {
       const previous = knownRequests.get(request.requestId)
-      if (!previous || previous.status === 'running' || request.status !== 'running')
+      if (!previous || previous.status === 'running' || previous.status === 'awaiting_user' || (request.status !== 'running' && request.status !== 'awaiting_user'))
         knownRequests.set(request.requestId, request)
     }
     this.requests = [...knownRequests.values()]
@@ -93,7 +93,8 @@ export class ConversationView {
 
   snapshot(value: RequestSnapshot): void {
     const previous = this.live.get(value.requestId)
-    if (previous && previous.status !== 'running' && value.status === 'running') return
+    if (previous && previous.status !== 'running' && previous.status !== 'awaiting_user' &&
+      (value.status === 'running' || value.status === 'awaiting_user')) return
     this.live.set(value.requestId, value)
     this.disconnected.delete(value.requestId)
     this.render()
@@ -137,7 +138,8 @@ export class ConversationView {
     const row = this.requestRow(id)
     const live = this.live.get(id)
     // A terminal snapshot cannot be regressed by an older polling response.
-    const state = live && live.status !== 'running' ? live.status : (stored?.status ?? live?.status ?? 'unknown')
+    const state = live && live.status !== 'running' && live.status !== 'awaiting_user' ? live.status
+      : stored && stored.status !== 'running' && stored.status !== 'awaiting_user' ? stored.status : (live?.status ?? stored?.status ?? 'unknown')
     const errorCode = live?.result && live.result.status === 'failed' ? live.result.error.code : stored?.errorCode
     const records = this.activities.filter(activity => activity.requestId === id)
     const tools = this.history.filter(message => message.role === 'tool' && message.toolCallId &&
@@ -145,7 +147,7 @@ export class ConversationView {
     const feedback = requestFeedback(state, errorCode, records, tools, this.disconnected.has(id))
     const { label } = feedback
     if (row.feedback.textContent !== feedback.detail) row.feedback.textContent = feedback.detail
-    row.notice.hidden = state === 'running' || state === 'completed'
+    row.notice.hidden = state === 'running' || state === 'awaiting_user' || state === 'completed'
     row.notice.dataset.status = state
     const summaryText = `${feedback.label}. ${feedback.detail}`
     if (row.notice.textContent !== summaryText) row.notice.textContent = summaryText
