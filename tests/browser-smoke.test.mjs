@@ -46,16 +46,24 @@ async function resizeDeck(protocol, evaluate, selector, width, { releaseOnly = f
   })()`)
   const end = start.x + start.width - width
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y })
+  if (releaseOnly) {
+    // Register before pointerdown installs the resizer's window listener. Move the native mouse
+    // normally, but omit that DOM move from the resizer; teleporting CDP mouseReleased across
+    // an out-of-process iframe can lose pointerup before it reaches the page.
+    await evaluate(`window.addEventListener('pointermove', event => event.stopImmediatePropagation(), {capture: true, once: true})`)
+  }
   await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', buttons: 1, clickCount: 1 })
   assert.equal(await evaluate(`document.querySelector('.deck-resize-overlay') !== null`), true, `Divider must capture drag at ${JSON.stringify(start)}`)
   await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
   assert.equal(await evaluate(`document.elementFromPoint(Math.max(1,Math.min(${end},innerWidth-1)),${start.y})?.classList.contains('deck-resize-overlay')`), true, 'Overlay must cover slide iframe hit targets')
-  if (!releaseOnly) {
-    await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, buttons: 1 })
-    await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
+  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, button: 'left', buttons: 1 })
+  await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
+  if (releaseOnly) {
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect().width`), start.width, 'Omitted move must not resize before pointerup')
   }
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: end, y: start.y, button: 'left', buttons: 0, clickCount: 1 })
-  await eventually(() => evaluate(`document.querySelector('.deck-resize-overlay') === null`), 'Resize overlay must be removed after dragging')
+  await eventually(() => evaluate(`document.querySelector('.deck-resize-overlay') === null`), `Resize overlay must be removed after dragging (${JSON.stringify({ start, end, releaseOnly })})`)
+  assert.equal(await evaluate(`document.body.classList.contains('deck-resizing')`), false, 'Dragging must restore the cursor and iframe interaction')
 }
 
 async function connect(url) {

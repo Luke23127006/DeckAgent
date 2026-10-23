@@ -2,6 +2,14 @@
 
 Dashboard giữ current state và handoff cần thiết; scope/acceptance criteria ở [parallel team plan](deckagent-parallel-team-implementation-plan.md), lý do và chuỗi giá trị ở [value-chain plan](deckagent-value-chain-implementation-plan.md). Gate 001–007 dưới đây thuộc parallel plan, không phải G1–G8 của value-chain plan. Không sao chép Jira hoặc lịch sử implementation vào đây.
 
+## Sửa input của browser smoke khi release trên iframe — 24-10-2026
+
+- Owner cung cấp CI mới: 4/5 PASS, Canvas thất bại với `Resize overlay must be removed after dragging` ở ca bỏ move cuối. Bản sửa tọa độ release bên dưới chưa giải quyết hết độ ổn định của helper. Luồng gốc vẫn PASS 12/12 lần chạy local Node 22.19.0; chưa tái hiện tự nhiên chuỗi sự kiện hosted runner.
+- Probe có kiểm soát cho iframe nhận hit test tái hiện đúng overlay kẹt: trang cha có pointerdown nhưng không có pointerup/mouseup. Thử pointer capture không giải quyết được probe đó và đã gỡ. Probe còn cho thấy CDP mouseMoved thiếu `button: 'left'` làm mất capture trước move khi bật capture; không giữ thay đổi runtime dựa trên giả thuyết này.
+- Thay đổi cuối chỉ ở `tests/browser-smoke.test.mjs`: khai báo nút đang giữ khi move; ca bỏ move cuối vẫn di chuyển con trỏ native trước release, nhưng chặn riêng DOM pointermove trước listener resize. Không còn đổi tọa độ chỉ trong CDP release qua iframe. Thêm assertion width chưa đổi trước release để chứng minh move thật sự bị chặn; giữ assertion width cuối/overlay, thêm kiểm tra class cursor đã dọn và ngữ cảnh tọa độ khi cleanup thất bại. Không thêm timeout, retry test hay sleep; không thay đổi runtime/API/layout.
+- Verification Node **22.19.0**: build/typecheck/bundle và lint PASS; Chrome browser smoke **5/5 PASS**; Canvas với CPU Chrome giảm tốc 6 lần **5/5 PASS**; Edge Canvas **1/1 PASS**. Kiểm tra ngược: tạm bỏ cập nhật tọa độ pointerup thì regression mới đỏ đúng `1000px !== 320px`; đã phục hồi source và rebuild. Các probe, pointer capture thử nghiệm và cấu hình CPU tạm đã gỡ.
+- Handoff: owner yêu cầu commit bản sửa local trên `feature/outline-clarification-confirm`; chưa push. Cần CI chạy lại candidate này để xác nhận trên hosted runner; không coi các kết quả local là bằng chứng CI đã hết flaky. Integration Gates giữ nguyên.
+
 ## Sửa resize Canvas trong browser smoke — 24-10-2026
 
 - Owner cung cấp CI Windows thất bại với `1000px !== 320px` khi thu nhỏ Canvas sau khi kéo tới maximum. Luồng cũ pass 12/12 lần chạy riêng trên máy local; chưa xác minh chính xác event sequence trên hosted runner. Regression Chrome bỏ final pointermove và release ở vị trí mới tái hiện đúng `1000px !== 320px` trước fix.
