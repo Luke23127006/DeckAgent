@@ -9,15 +9,15 @@ import { mountDeckResizer } from './deck-resizer.ts'
 export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reveal: () => void): DeckModel {
   const panel = element('section', undefined, 'deck-panel')
   panel.setAttribute('aria-label', 'Presentation deck')
-  const title = element('h2', 'Presentation')
-  const progress = element('small', '0/0 slides published', 'deck-progress')
+  const title = element('h2', 'Deck canvas')
+  const progress = element('small', '0/0 slide đã lưu', 'deck-progress')
   progress.setAttribute('aria-live', 'polite')
   const headingText = element('div', undefined, 'deck-heading')
   headingText.append(title, progress)
   const heading = element('header')
   heading.append(
     headingText,
-    button('Close deck', () => {
+    button('Đóng', () => {
       container.hidden = true
     }),
   )
@@ -35,8 +35,12 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   const placeholder = element('div', undefined, 'deck-placeholder')
   placeholder.setAttribute('role', 'status')
   stage.append(frame, placeholder)
-  const caption = element('p', 'No confirmed deck in this chat', 'slide-caption')
+  const caption = element('p', 'Chat này chưa có deck đã xác nhận', 'slide-caption')
   caption.setAttribute('aria-live', 'polite')
+  const previous = button('◀ Trước', () => navigate(-1))
+  const next = button('Sau ▶', () => navigate(1))
+  previous.disabled = true
+  next.disabled = true
   let rendered = '',
     lastSession = '',
     appeared = false
@@ -47,7 +51,9 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       frame.hidden = true
       slides.replaceChildren()
       slideButtons.clear()
-      caption.textContent = 'Loading deck'
+      caption.textContent = 'Đang tải deck'
+      previous.disabled = true
+      next.disabled = true
       container.hidden = true
       appeared = false
       return
@@ -64,15 +70,15 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     }
     state.textContent =
       value.connection === 'live'
-        ? 'Connected'
+        ? 'Đã kết nối'
         : value.connection === 'error'
-          ? 'Unable to load deck. Reopen the connection.'
+          ? 'Không tải được deck. Hãy kết nối lại.'
           : value.connection === 'reconnecting'
-            ? 'Reconnecting — showing last saved state'
-            : 'Connecting'
-    title.textContent = snapshot.outlineId ? 'Presentation' : 'Deck'
+            ? 'Đang kết nối lại — hiển thị bản đã lưu gần nhất'
+            : 'Đang kết nối'
+    title.textContent = 'Deck canvas'
     const published = snapshot.slides.filter(slide => slide.status === 'published').length
-    progress.textContent = `${published}/${snapshot.slides.length} slides published`
+    progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
     for (const [id, item] of slideButtons) if (!snapshot.slides.some(slide => slide.slideId === id)) {
       item.remove()
       slideButtons.delete(id)
@@ -81,24 +87,34 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       let item = slideButtons.get(slide.slideId)
       if (!item) {
         item = button('', () => model.select(slide.slideId))
+        const thumbnail = element('span', undefined, 'thumbnail')
+        thumbnail.setAttribute('aria-hidden', 'true')
+        thumbnail.append(element('i'), element('i'))
+        item.append(thumbnail, element('span', '', 'thumbnail-label'))
         slideButtons.set(slide.slideId, item)
       }
-      const text = `${slide.order + 1}. ${slide.title} · ${slide.status === 'pending' ? 'Pending' : `Revision ${slide.revision}`}`
-      if (item.textContent !== text) item.textContent = text
+      const text = `${slide.order + 1}. ${slide.title} · ${slide.status === 'pending' ? 'Chưa tạo xong' : `Bản ${slide.revision}`}`
+      const label = item.querySelector('.thumbnail-label')!
+      const short = `${slide.order + 1} · ${slide.status === 'pending' ? 'chưa tới' : 'xong'}`
+      if (label.textContent !== short) label.textContent = short
       item.title = text
+      item.setAttribute('aria-label', text)
       item.dataset.status = slide.status
       item.setAttribute('aria-current', String(slide.slideId === value.selectedId))
       if (slides.children[index] !== item) slides.insertBefore(item, slides.children[index] ?? null)
     }
     const selected = snapshot.slides.find(s => s.slideId === value.selectedId)
+    const selectedIndex = snapshot.slides.findIndex(slide => slide.slideId === value.selectedId)
+    previous.disabled = selectedIndex <= 0
+    next.disabled = selectedIndex < 0 || selectedIndex >= snapshot.slides.length - 1
     caption.textContent = selected
-      ? `Slide ${selected.order + 1} of ${snapshot.slides.length} · ${selected.status === 'pending' ? 'Pending publication' : `Revision ${selected.revision}`}`
-      : 'No confirmed deck in this chat'
+      ? `Slide ${selected.order + 1}/${snapshot.slides.length} · ${selected.status === 'pending' ? 'Chưa tạo xong' : `Bản ${selected.revision}`}`
+      : 'Chat này chưa có deck đã xác nhận'
     placeholder.hidden = value.html !== undefined
     placeholder.textContent = selected?.status === 'pending'
-      ? 'This slide has not been published. Finished content will appear here.'
-      : value.connection === 'error' ? 'Unable to load this published revision. Reconnect to try again.'
-        : 'Loading published revision…'
+      ? 'Slide này chưa được tạo xong. Nội dung hoàn tất sẽ hiện ở đây sau khi được lưu.'
+      : value.connection === 'error' ? 'Không tải được bản slide đã lưu. Hãy kết nối lại.'
+        : 'Đang tải bản slide đã lưu…'
     const key = value.html === undefined ? '' : `${snapshot.sessionId}/${selected?.slideId}/${selected?.revision}`
     if (key !== rendered) {
       rendered = key
@@ -112,22 +128,23 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     const snapshot = model.state.snapshot
     if (!snapshot?.slides.length) return
     const index = snapshot.slides.findIndex(s => s.slideId === model.state.selectedId)
-    model.select(snapshot.slides[(index + offset + snapshot.slides.length) % snapshot.slides.length]!.slideId)
+    const slide = snapshot.slides[index + offset]
+    if (slide) model.select(slide.slideId)
   }
   const controls = element('nav', undefined, 'deck-controls')
   controls.setAttribute('aria-label', 'Slide navigation')
   controls.append(
-    button('Previous', () => navigate(-1)),
+    previous,
     caption,
-    button('Next', () => navigate(1)),
-    button('Fullscreen', () => {
+    next,
+    button('Toàn màn hình', () => {
       const work = document.fullscreenElement ? document.exitFullscreen() : panel.requestFullscreen()
       work.catch(() => {
-        state.textContent = 'Fullscreen is unavailable in this browser'
+        state.textContent = 'Trình duyệt không hỗ trợ toàn màn hình'
       })
     }),
   )
-  let width = 520
+  let width = 400
   try {
     const saved = localStorage.getItem('deckagent-canvas-width')
     if (saved && Number(saved) >= 320 && Number(saved) <= 1000) width = Number(saved)
@@ -142,7 +159,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     }
   })
   const footer = element('footer', undefined, 'deck-footer')
-  footer.append(element('p', 'View only. To change a slide, send a request in chat.'), state)
+  footer.append(element('p', 'Chỉ xem. Để sửa slide, hãy gửi yêu cầu trong chat.'), state)
   panel.append(heading, stage, controls, slides, footer)
   container.append(panel)
   return model

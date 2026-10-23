@@ -7,7 +7,7 @@ export function editingScope(input: string, deck: DeckSnapshot): readonly string
   if (/\b(?:except|excluding|not|don't|do not|add|insert|remove|delete|or)\b|ngoại trừ|trừ slide|không|thêm|chèn|xóa|hoặc/u.test(text)) return []
   const command = text.replace(/^(?:(?:please|hãy|chỉ)\s+)*/u, '').trim()
   const ids = new Set<string>()
-  const target = /^(?:edit|change|update|revise|publish|generate|sửa|chỉnh sửa|cập nhật|đổi|tạo|hoàn thành)\s+(.+)$/u.exec(command)?.[1]
+  const target = /^(?:edit|change|update|revise|publish|generate|sửa|chỉnh sửa|cập nhật|đổi|tạo|hoàn thành|rút gọn)\s+(.+)$/u.exec(command)?.[1]
   if (target && /^(?:all slides|every slide|(?:the )?whole deck|toàn bộ (?:deck|slides?)|tất cả (?:các )?slides?)(?:\b|\s)/u.test(target)) {
     if (/\bslides?\s*\d/u.test(command)) return []
     return deck.slides.map(slide => slide.slideId)

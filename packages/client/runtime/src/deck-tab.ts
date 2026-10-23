@@ -6,11 +6,11 @@ export function mountDeckTab(container: HTMLElement): void {
   const panel = element('section', undefined, 'deck-panel')
   panel.setAttribute('aria-label', 'Sample Deck')
   const heading = element('header')
-  const close = button('Close deck', () => {
+  const close = button('Đóng deck', () => {
     container.hidden = true
     save()
   })
-  heading.append(element('h2', 'Sample deck'), close)
+  heading.append(element('h2', 'Deck mẫu'), close)
   const frame = element('iframe')
   frame.title = 'Sample slide'
   frame.setAttribute('sandbox', '')
@@ -20,23 +20,23 @@ export function mountDeckTab(container: HTMLElement): void {
   let current = 0
   const render = () => {
     frame.src = `/samples/${current + 1}.html`
-    caption.textContent = `Slide ${current + 1} of 3 · Sample content`
+    caption.textContent = `Slide ${current + 1}/3 · Nội dung mẫu`
     save()
   }
   const controls = element('nav', undefined, 'deck-controls')
   controls.setAttribute('aria-label', 'Slide navigation')
-  const previous = button('Previous', () => {
+  const previous = button('◀ Trước', () => {
     current = (current + 2) % 3
     render()
   })
-  const next = button('Next', () => {
+  const next = button('Sau ▶', () => {
     current = (current + 1) % 3
     render()
   })
-  const fullscreen = button('Fullscreen', () => {
+  const fullscreen = button('Toàn màn hình', () => {
     const work = document.fullscreenElement ? document.exitFullscreen() : panel.requestFullscreen()
     work.catch(() => {
-      caption.textContent = 'Fullscreen is unavailable in this browser'
+      caption.textContent = 'Trình duyệt không hỗ trợ toàn màn hình'
     })
   })
   controls.append(previous, next, fullscreen)

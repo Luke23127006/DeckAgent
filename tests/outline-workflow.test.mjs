@@ -229,7 +229,7 @@ test('failed model admission leaves the outline unconfirmed; a later explicit ty
   assert.equal((await new DeckClient(app.origin, app.token).snapshot('admit')).version, 0)
   await app.close()
   app = await startLocalWeb(options)
-  await completed(new HostClient(app.origin, app.token), { sessionId: 'admit', input: 'Xác nhận dàn ý' })
+  await completed(new HostClient(app.origin, app.token), { sessionId: 'admit', input: 'Xác nhận outline' })
   assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('admit')).slides.map(s => s.status), ['published', 'published'])
 })
 

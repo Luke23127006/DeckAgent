@@ -4,8 +4,8 @@ import type { DeckSnapshot, OutlineProposal, OutlineSnapshot } from '@deckagent/
 /** Conservative, whole-message commands only; positive text plus a revision never confirms. */
 export function outlineCommand(input: string): 'confirm' | 'cancel' | undefined {
   const text = input.trim().replace(/[.!。]+$/, '').trim().toLocaleLowerCase().normalize('NFC')
-  if (['confirm', 'confirm outline', 'confirm the outline', 'xác nhận', 'xác nhận dàn ý', 'xác nhận đề cương', 'tạo slide theo dàn ý'].includes(text)) return 'confirm'
-  if (['cancel outline', 'cancel the outline', 'hủy dàn ý', 'huỷ dàn ý', 'hủy đề cương'].includes(text)) return 'cancel'
+  if (['confirm', 'confirm outline', 'confirm the outline', 'xác nhận', 'xác nhận outline', 'xác nhận dàn ý', 'xác nhận đề cương', 'tạo slide theo dàn ý'].includes(text)) return 'confirm'
+  if (['cancel outline', 'cancel the outline', 'hủy outline', 'huỷ outline', 'hủy dàn ý', 'huỷ dàn ý', 'hủy đề cương'].includes(text)) return 'cancel'
   return undefined
 }
 

@@ -36,7 +36,7 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
     drag = undefined
     active.control.abort()
     active.overlay.remove()
-    if (divider.hasPointerCapture(active.pointer)) divider.releasePointerCapture(active.pointer)
+    document.body.classList.remove('deck-resizing')
     save(preferred)
   }
   divider.addEventListener('pointerdown', event => {
@@ -46,16 +46,19 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
     const overlay = element('div', undefined, 'deck-resize-overlay')
     const control = new AbortController()
     drag = { pointer: event.pointerId, start: event.clientX, width: container.getBoundingClientRect().width, overlay, control }
-    divider.setPointerCapture(event.pointerId)
+    document.body.classList.add('deck-resizing')
     document.body.append(overlay)
+    // Track on the fixed overlay/window: native capture can be lost across opaque iframe widgets.
     // Window capture also handles a pointer released over the iframe/overlay boundary.
     window.addEventListener('pointermove', move => {
-      if (drag?.pointer === move.pointerId) resize(drag.width + drag.start - move.clientX)
+      if (drag?.pointer !== move.pointerId) return
+      if (!move.buttons) { finish(); return }
+      resize(drag.width + drag.start - move.clientX)
     }, { capture: true, signal: control.signal })
     window.addEventListener('pointerup', finish, { capture: true, signal: control.signal })
     window.addEventListener('pointercancel', finish, { capture: true, signal: control.signal })
+    window.addEventListener('blur', finish, { signal: control.signal })
   })
-  divider.addEventListener('lostpointercapture', finish)
   divider.addEventListener('keydown', event => {
     if (innerWidth <= 720) return
     const current = container.getBoundingClientRect().width

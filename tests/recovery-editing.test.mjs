@@ -17,6 +17,8 @@ const deck = { slides: plan.slides.map((slide, order) => ({ ...slide, order, rev
 test('scope resolves explicit references and denies ambiguous, mismatched and excluded targets', () => {
   for (const [input, expected] of [
     ['Sửa slide 2', ['two']], ['Edit slides 1 and 3', ['one', 'three']],
+    ['Rút gọn slide 3', ['three']], ['Rút gọn slide 2 và thêm slide về rủi ro', []],
+    ['Rút gọn slide 1 "Details"', []], ['Rút gọn slide 4', []],
     ['Edit slides 1-2', ['one', 'two']], ['Sửa slide "Details"', ['two']],
     ['Continue', ['three']], ['Edit all slides', ['one', 'two', 'three']],
     ['Make it better', []], ['Edit slide 4', []], ['Edit slides 1-999999999', []],
