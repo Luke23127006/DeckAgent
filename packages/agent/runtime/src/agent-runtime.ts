@@ -1,5 +1,5 @@
 import { RuntimeError } from './contracts.ts'
-import type { ActivityEvent, SendOptions, AgentHandle, AgentOptions, JsonValue, ModelAdapter, SessionStore, ToolCall, TurnResult } from './contracts.ts'
+import type { ActivityEvent, SendOptions, AgentHandle, AgentOptions, JsonValue, Message, ModelAdapter, SessionStore, ToolCall, TurnResult } from './contracts.ts'
 import { buildPrompt } from './prompt.ts'
 import { ToolRegistry } from './tool-registry.ts'
 
@@ -130,7 +130,8 @@ export class AgentRuntime {
     const cancel = () => abort.abort()
     if (signal?.aborted) cancel()
     else signal?.addEventListener('abort', cancel, { once: true })
-    const active = this.turn(state, input, abort.signal, control?.onActivity, control?.continuation).finally(() => {
+    const promptContext = control?.promptContext === undefined ? undefined : structuredClone(control.promptContext)
+    const active = this.turn(state, input, abort.signal, control?.onActivity, control?.continuation, promptContext).finally(() => {
       signal?.removeEventListener('abort', cancel)
       state.active = undefined
       state.abort = undefined
@@ -139,7 +140,7 @@ export class AgentRuntime {
     return active
   }
 
-  private async turn(state: LiveAgent, input: string, signal: AbortSignal, onActivity?: SendOptions['onActivity'], continuation = false): Promise<TurnResult> {
+  private async turn(state: LiveAgent, input: string, signal: AbortSignal, onActivity?: SendOptions['onActivity'], continuation = false, promptContext?: readonly Message[]): Promise<TurnResult> {
     let text = ''
     let steps = 0
     let replyCommitted = false
@@ -151,6 +152,7 @@ export class AgentRuntime {
     try {
       signal.throwIfAborted()
       if (!continuation) await this.options.sessions.append(state.options.sessionId, [{ role: 'user', content: input }])
+      const contextStart = promptContext === undefined ? 0 : (await this.options.sessions.read(state.options.sessionId)).length
       while (steps < this.maxSteps) {
         signal.throwIfAborted()
         steps++
@@ -164,7 +166,7 @@ export class AgentRuntime {
         await report({ id: `model-${steps}`, kind: 'model', label: 'Model response', status: 'running' })
         for await (const event of this.options.model.stream({
           selection: structuredClone(state.options.selection),
-          messages: buildPrompt(history, this.options.systemPrompt ?? ''),
+          messages: buildPrompt(promptContext === undefined ? history : [...promptContext, ...history.slice(contextStart)], this.options.systemPrompt ?? ''),
           tools: this.tools.schemas(state.options.tools ?? []), signal,
         })) {
           signal.throwIfAborted()

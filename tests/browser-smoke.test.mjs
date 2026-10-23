@@ -37,7 +37,7 @@ async function browserPath() {
   throw new Error('Chrome/Edge required; set CHROME_BIN to its executable')
 }
 
-async function resizeDeck(protocol, evaluate, selector, width) {
+async function resizeDeck(protocol, evaluate, selector, width, { releaseOnly = false } = {}) {
   await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`)
   const start = await evaluate(`(() => {
     const panel = document.querySelector(${JSON.stringify(selector)});
@@ -50,8 +50,10 @@ async function resizeDeck(protocol, evaluate, selector, width) {
   assert.equal(await evaluate(`document.querySelector('.deck-resize-overlay') !== null`), true, `Divider must capture drag at ${JSON.stringify(start)}`)
   await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
   assert.equal(await evaluate(`document.elementFromPoint(Math.max(1,Math.min(${end},innerWidth-1)),${start.y})?.classList.contains('deck-resize-overlay')`), true, 'Overlay must cover slide iframe hit targets')
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, buttons: 1 })
-  await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
+  if (!releaseOnly) {
+    await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, buttons: 1 })
+    await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
+  }
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: end, y: start.y, button: 'left', buttons: 0, clickCount: 1 })
   await eventually(() => evaluate(`document.querySelector('.deck-resize-overlay') === null`), 'Resize overlay must be removed after dragging')
 }
@@ -352,7 +354,10 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
     model: { async *stream(request) {
       const user = [...request.messages].reverse().find(m => m.role === 'user').content
       if (user.includes('Force provider failure')) throw new RuntimeError('PROVIDER_HTTP', 'fixture-provider-body-must-stay-private')
-      const slideId = user.includes('first') ? 'intro' : 'second'
+      // Host task may contain older source material. Choose the currently granted ID, not a word in that material.
+      const granted = /^Host-authorized slide IDs: (\[[^\n]*?\])\./m.exec(request.messages[0].content)
+      const slideId = granted ? JSON.parse(granted[1])[0] : undefined
+      assert.ok(slideId, 'Canvas fixture requires a Host-authorized target')
       const last = request.messages.at(-1)
       if (last.role === 'user') {
         yield { type: 'tool-call', call: { id: `write-${slideId}`, name: 'write_file', arguments: { path: `${slideId}.html`, content: `<style>body{background:#eef4dd}h1{color:rgb(0, 100, 0)}</style><h1>${slideId} published</h1>` } } }
@@ -431,6 +436,10 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= 1000`), true)
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 200)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px')
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 1100)
+  // The release coordinate must win even when Chrome omits the final pointermove.
+  await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 200, { releaseOnly: true })
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px', 'Pointer release must commit the final position without a preceding move')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Toàn màn hình').click(); true`)
   await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')

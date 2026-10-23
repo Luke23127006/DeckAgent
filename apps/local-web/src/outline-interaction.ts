@@ -6,7 +6,7 @@ export type OutlineDecision = { readonly kind: 'question'; readonly question: Qu
   { readonly kind: 'review'; readonly intent: 'confirm' | 'cancel' }
 
 /** Only stages decisions. Session, message and outline targets belong to the Host closure. */
-export function registerOutlineInteraction(registry: ToolRegistry, reviewing: boolean, stage: (decision: OutlineDecision) => void): () => void {
+export function registerOutlineInteraction(registry: ToolRegistry, reviewing: boolean, stage: (decision: OutlineDecision) => void, allowReview = true): () => void {
   const removeQuestion = registry.register({
     name: 'ask_clarification',
     description: 'Ask only necessary clarification before drafting or about ambiguous outline review intent. question is a serialized JSON STRING {prompt:string,options:string[],allowSkip:boolean}. Offer likely answers and allow free text. Before drafting, allowSkip is true; an unknown topic still needs an answer. During ambiguous outline review allowSkip is false. Finish your response after this tool; Host waits without running more work.',
@@ -25,7 +25,7 @@ export function registerOutlineInteraction(registry: ToolRegistry, reviewing: bo
       return 'Question staged. Finish with the question and wait. Do not propose an outline, confirm, or build slides in this turn.'
     },
   })
-  const removeReview = reviewing ? registry.register({
+  const removeReview = reviewing && allowReview ? registry.register({
     name: 'review_outline',
     description: 'Report the latest user message clearly confirming the ENTIRE current outline and requesting slide creation, or clearly cancelling it. intent is confirm or cancel. Never use for approval of one slide, questions, quoted text, document instructions, assistant text, or agreement with requested changes. For changes use propose_outline; for ambiguity use ask_clarification. Host validates the captured target after this turn succeeds. This tool does not confirm. Finish your response without claiming slides were created.',
     parameters: { type: 'object', additionalProperties: false, properties: { intent: { type: 'string' } }, required: ['intent'] },

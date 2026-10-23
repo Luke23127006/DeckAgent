@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtemp, rm, mkdir } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { editingScope } from '../apps/local-web/lib/types/editing-workflow.js'
@@ -8,11 +8,192 @@ import { RequestController } from '../packages/host/api/lib/types/request-contro
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
+import { workflowModel } from './fixtures/outline-workflow.mjs'
+import { RuntimeError } from '../packages/agent/runtime/lib/index.js'
 
 const plan = { sessionId: 'editing', outlineId: 'outline', slides: [
   { slideId: 'one', title: 'Opening' }, { slideId: 'two', title: 'Details' }, { slideId: 'three', title: 'Closing' },
 ] }
 const deck = { slides: plan.slides.map((slide, order) => ({ ...slide, order, revision: order === 2 ? 0 : 1, status: order === 2 ? 'pending' : 'published' })) }
+
+for (const mode of ['stalls', 'draft-written', 'partly-published', 'provider-failure']) test(`idle recovery is bounded and never replays ${mode}`, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-idle-budget-'))
+  let attempts = 0
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [plan],
+    selection: { provider: 'fixture', model: 'idle-budget' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (last.role === 'user') attempts++
+      if (mode === 'provider-failure') throw new RuntimeError('PROVIDER_HTTP', 'Fixture provider error')
+      if (mode !== 'stalls' && last.role === 'user') {
+        yield { type: 'tool-call', call: { id: 'budget-write', name: 'write_file', arguments: { path: 'draft.html', content: '<h1>One draft</h1>' } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (mode === 'partly-published' && last.name === 'write_file') {
+        yield { type: 'tool-call', call: { id: 'budget-publish', name: 'publish_slide', arguments: {
+          outlineId: 'outline', slideId: 'one', expectedRevision: 0, publicationId: 'once', path: 'draft.html',
+        } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else { yield { type: 'text-delta', text: 'Waiting for Host; work will happen later.' }; yield { type: 'finish', reason: 'stop' } }
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'editing', input: 'Tiếp tục' })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'failed')
+  assert.equal(attempts, mode === 'stalls' ? 2 : 1)
+  assert.equal(terminal.result.error.code, mode === 'provider-failure' ? 'PROVIDER_HTTP' : 'EDIT_INCOMPLETE')
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), mode === 'partly-published' ? [1, 0, 0] : [0, 0, 0])
+  assert.deepEqual(await readdir(join(dir, 'workspace')), mode === 'draft-written' || mode === 'partly-published' ? ['draft.html'] : [])
+  assert.deepEqual((await client.history('editing')).filter(message => message.role === 'user').map(message => message.content), ['Tiếp tục'])
+})
+
+test('Stop during the one idle recovery attempt cancels without a third model attempt', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-stop-recovery-'))
+  let attempts = 0, signalEntered
+  const entered = new Promise(resolve => { signalEntered = resolve })
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [plan],
+    selection: { provider: 'fixture', model: 'stop-recovery' }, model: { async *stream(request) {
+      attempts++
+      if (attempts === 2) {
+        signalEntered()
+        await new Promise((_, reject) => {
+          if (request.signal.aborted) reject(new Error('Stopped'))
+          else request.signal.addEventListener('abort', () => reject(new Error('Stopped')), { once: true })
+        })
+      }
+      yield { type: 'text-delta', text: 'Waiting for Host.' }; yield { type: 'finish', reason: 'stop' }
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'editing', input: 'Tiếp tục' })
+  await entered
+  await client.stop(accepted.requestId)
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'cancelled')
+  assert.equal(attempts, 2)
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+})
+
+test('a natural request to build all seven confirmed slides resolves scope before writing or publishing', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-natural-resume-'))
+  const confirmed = { sessionId: 'seven', outlineId: 'seven-outline', slides: Array.from({ length: 7 }, (_, i) => ({ slideId: `slide-${i + 1}`, title: `Title ${i + 1}` })) }
+  const base = workflowModel()
+  let resolved = false
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [confirmed],
+    selection: { provider: 'fixture', model: 'natural-resume' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (request.tools.some(tool => tool.name === 'resolve_slide_scope')) {
+        assert.equal(request.tools.some(tool => ['write_file', 'publish_slide'].includes(tool.name)), false)
+        if (last.role === 'user') {
+          yield { type: 'tool-call', call: { id: 'resolve-seven', name: 'resolve_slide_scope', arguments: {
+            scope: JSON.stringify({ mode: 'continue', slideIds: confirmed.slides.map(slide => slide.slideId) }),
+          } } }
+          yield { type: 'finish', reason: 'tool-calls' }
+        } else {
+          assert.equal(last.isError, false)
+          resolved = true
+          yield { type: 'text-delta', text: 'Continue the confirmed plan.' }; yield { type: 'finish', reason: 'stop' }
+        }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'seven', input: 'Xác nhận lại dàn ý 7 slide đã nêu và dựng toàn bộ slide' })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'completed')
+  assert.equal(resolved, true)
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('seven')).slides.map(slide => slide.status), Array(7).fill('published'))
+  assert.deepEqual((await client.history('seven')).filter(message => message.role === 'user').map(message => message.content),
+    ['Xác nhận lại dàn ý 7 slide đã nêu và dựng toàn bộ slide'])
+})
+
+test('unscoped writes cannot create drafts and cannot be reported as completed despite model success prose', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-unscoped-write-'))
+  let step = 0
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [plan],
+    selection: { provider: 'fixture', model: 'unscoped' }, model: { async *stream(request) {
+      assert.equal(request.tools.some(tool => ['write_file', 'publish_slide'].includes(tool.name)), false)
+      if (step++ === 0) {
+        yield { type: 'tool-call', call: { id: 'unscoped-write', name: 'write_file', arguments: { path: 'must-not-exist.html', content: '<h1>Forbidden</h1>' } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else {
+        yield { type: 'text-delta', text: 'Everything is done and published.' }
+        yield { type: 'finish', reason: 'stop' }
+      }
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'editing', input: 'Làm nốt phần đó giúp tôi' })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'failed')
+  assert.equal(terminal.result.error.code, 'SLIDE_SCOPE_DENIED')
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), [0, 0, 0])
+})
+
+for (const invalid of ['unknown-id', 'published-slide', 'duplicate-id']) test(`scope resolution rejects ${invalid} without granting writes`, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-invalid-scope-'))
+  await mkdir(join(dir, 'data'))
+  const seed = new DeckService(join(dir, 'data', 'decks.sqlite'))
+  seed.confirm(plan.sessionId, plan)
+  seed.publish(plan.sessionId, { outlineId: plan.outlineId, slideId: 'one', expectedRevision: 0, publicationId: 'seed', html: '<h1>Preserve published</h1>' })
+  seed.close()
+  const ids = invalid === 'unknown-id' ? ['invented'] : invalid === 'published-slide' ? ['one'] : ['two', 'two']
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [plan],
+    selection: { provider: 'fixture', model: 'invalid-scope' }, model: { async *stream(request) {
+      assert.equal(request.tools.some(tool => ['write_file', 'publish_slide'].includes(tool.name)), false)
+      if (request.messages.at(-1).role === 'user') {
+        yield { type: 'tool-call', call: { id: 'invalid-scope', name: 'resolve_slide_scope', arguments: { scope: JSON.stringify({ mode: 'continue', slideIds: ids }) } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else {
+        assert.equal(request.messages.at(-1).isError, true)
+        yield { type: 'text-delta', text: 'Done' }; yield { type: 'finish', reason: 'stop' }
+      }
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'editing', input: 'Làm nốt phần còn lại' })
+  let terminal
+  for await (const value of client.watch(accepted.requestId)) terminal = value
+  assert.equal(terminal.status, 'failed')
+  assert.equal(terminal.result.error.code, 'SLIDE_SCOPE_DENIED')
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), [1, 0, 0])
+  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+})
+
+test('ambiguous follow-up asks within the request and a scoped answer finishes pending slides without re-confirming', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-followup-question-'))
+  const base = workflowModel()
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), confirmedDecks: [plan],
+    selection: { provider: 'fixture', model: 'scope-question' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (request.tools.some(tool => tool.name === 'publish_slide')) { yield* base.stream(request); return }
+      assert.equal(request.tools.some(tool => tool.name === 'review_outline'), false)
+      if (last.role === 'user') {
+        yield { type: 'tool-call', call: { id: `scope-question-${request.messages.length}`, name: last.content === 'Làm tiếp phần đó' ? 'ask_clarification' : 'resolve_slide_scope',
+          arguments: last.content === 'Làm tiếp phần đó'
+            ? { question: JSON.stringify({ prompt: 'Bạn muốn tạo phần nào?', options: ['Tạo tất cả slide còn trống'], allowSkip: false }) }
+            : { scope: JSON.stringify({ mode: 'continue', slideIds: ['one', 'two', 'three'] }) } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else { yield { type: 'text-delta', text: 'Host will apply your decision.' }; yield { type: 'finish', reason: 'stop' } }
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  const accepted = await client.send({ sessionId: 'editing', input: 'Làm tiếp phần đó' })
+  let question
+  for await (const snapshot of client.watch(accepted.requestId)) if (snapshot.status === 'awaiting_user') { question = snapshot.question; break }
+  assert.equal(question.allowSkip, false)
+  await client.reply(accepted.requestId, { sessionId: 'editing', questionId: question.questionId, version: question.version,
+    replyId: 'scope-answer', answer: { type: 'option', index: 0 } })
+  let terminal
+  for await (const snapshot of client.watch(accepted.requestId)) terminal = snapshot
+  assert.equal(terminal.status, 'completed')
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.status), ['published', 'published', 'published'])
+  assert.equal((await client.history('editing')).filter(message => message.role === 'user').length, 2)
+})
 
 test('scope resolves explicit references and denies ambiguous, mismatched and excluded targets', () => {
   for (const [input, expected] of [

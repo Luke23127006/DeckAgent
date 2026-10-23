@@ -55,7 +55,12 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
       if (!move.buttons) { finish(); return }
       resize(drag.width + drag.start - move.clientX)
     }, { capture: true, signal: control.signal })
-    window.addEventListener('pointerup', finish, { capture: true, signal: control.signal })
+    window.addEventListener('pointerup', release => {
+      if (drag?.pointer !== release.pointerId) return
+      // The final move may be coalesced or omitted; commit the actual release position before saving.
+      resize(drag.width + drag.start - release.clientX)
+      finish()
+    }, { capture: true, signal: control.signal })
     window.addEventListener('pointercancel', finish, { capture: true, signal: control.signal })
     window.addEventListener('blur', finish, { signal: control.signal })
   })

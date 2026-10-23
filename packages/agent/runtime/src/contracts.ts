@@ -101,6 +101,8 @@ export interface SendOptions {
   readonly signal?: AbortSignal
   /** Host starts another phase using the same recorded user input; append no synthetic user message. */
   readonly continuation?: true
+  /** Host working context replaces earlier dialogue for this turn only. Durable history is unchanged; new tool pairs stay in context. */
+  readonly promptContext?: readonly Message[]
   /** Awaited before proceeding so a durable sink can preserve activity ordering. */
   readonly onActivity?: (event: ActivityEvent) => Promise<void>
 }

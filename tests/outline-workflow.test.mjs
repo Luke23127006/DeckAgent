@@ -8,6 +8,45 @@ import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 
 import { proposal, workflowModel } from './fixtures/outline-workflow.mjs'
 
+test('a stalled generation retries once with a clean Host task and keeps the original conversation', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-stalled-generation-'))
+  const base = workflowModel()
+  let starts = 0
+  const material = 'Create a presentation. Source material: reuse bottles and sort paper.'
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'stall-once' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (request.tools.some(tool => tool.name === 'publish_slide')) {
+        assert.equal(request.messages.some(message => message.content === 'I have sent your outline to Host and must wait.'), false)
+        if (last.role === 'user') {
+          starts++
+          assert.match(last.content, /Host-issued slide task/)
+          assert.ok(last.content.includes('reuse bottles and sort paper'))
+          if (starts === 1) {
+            yield { type: 'text-delta', text: 'I am waiting for Host.' }; yield { type: 'finish', reason: 'stop' }; return
+          }
+          assert.match(last.content, /Recovery attempt 1 of 1/)
+        }
+        yield* base.stream(request)
+      } else if (last.role === 'user' && last.content === 'Looks good, go ahead') {
+        yield { type: 'tool-call', call: { id: 'stall-confirm', name: 'review_outline', arguments: { intent: 'confirm' } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (last.name === 'review_outline') {
+        yield { type: 'text-delta', text: 'I have sent your outline to Host and must wait.' }; yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  await completed(client, { sessionId: 'stall', input: material, presentation: true })
+  const result = await completed(client, { sessionId: 'stall', input: 'Looks good, go ahead' })
+  assert.equal(result.status, 'completed')
+  assert.equal(starts, 2)
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('stall')).slides.map(slide => slide.status), ['published', 'published'])
+  const history = await client.history('stall')
+  assert.ok(history.some(message => message.content === 'I have sent your outline to Host and must wait.'))
+  assert.deepEqual(history.filter(message => message.role === 'user').map(message => message.content), [material, 'Looks good, go ahead'])
+})
+
 test('clarification waits without building, then an answer creates the outline in the same request', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-clarify-'))
   let calls = 0
@@ -51,6 +90,36 @@ test('clarification waits without building, then an answer creates the outline i
   const stored = await (await fetch(`${app.origin}/api/sessions/clarify/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()
   assert.equal(stored.length, 1)
   assert.equal(stored[0].status, 'completed')
+})
+
+test('generation receives an explicit committed Host phase after a natural confirmation', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-generation-phase-'))
+  const base = workflowModel()
+  let generationStarted = false
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'phase' }, model: { async *stream(request) {
+      const last = request.messages.at(-1)
+      if (request.tools.some(tool => tool.name === 'publish_slide')) {
+        const prompt = request.messages[0].content
+        if (!prompt.includes('Host execution phase: GENERATION. Confirmation has ALREADY COMMITTED.')) {
+          yield { type: 'text-delta', text: 'Host must confirm before I build.' }; yield { type: 'finish', reason: 'stop' }; return
+        }
+        generationStarted = true
+        yield* base.stream(request)
+      } else if (last.role === 'user' && last.content === 'Hmmm outline ổn đấy tiếp tục đi') {
+        yield { type: 'tool-call', call: { id: 'phase-confirm', name: 'review_outline', arguments: { intent: 'confirm' } } }
+        yield { type: 'finish', reason: 'tool-calls' }
+      } else if (last.name === 'review_outline') {
+        yield { type: 'text-delta', text: 'I have passed your decision to Host; Host will handle the next phase.' }
+        yield { type: 'finish', reason: 'stop' }
+      } else yield* base.stream(request)
+    } } })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const client = new HostClient(app.origin, app.token)
+  await completed(client, { sessionId: 'phase', input: 'Create a presentation', presentation: true })
+  await completed(client, { sessionId: 'phase', input: 'Hmmm outline ổn đấy tiếp tục đi' })
+  assert.equal(generationStarted, true)
+  assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('phase')).slides.map(slide => slide.status), ['published', 'published'])
 })
 
 test('explicit skip can ask again for an unknown topic and waiting retains its captured model after selection changes', async t => {

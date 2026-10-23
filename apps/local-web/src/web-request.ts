@@ -1,6 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
 import { RuntimeError, ToolRegistry, runtimePlugin } from '@deckagent/agent-runtime'
-import type { AgentHandle, SendOptions, TurnResult } from '@deckagent/agent-runtime'
+import type { AgentHandle, Message, SendOptions, TurnResult } from '@deckagent/agent-runtime'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError } from '@deckagent/host-api'
 import type { AgentRequest, QuestionDraft, RequestAgent } from '@deckagent/host-api'
@@ -9,7 +9,8 @@ import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import { registerProposeOutline, registerPublishSlide, registerReadSlide } from '@deckagent/presentation-tools'
 import type { ProviderStore } from './provider-settings.ts'
 import type { WebState } from './web-state.ts'
-import { editingInstructions, editingScope } from './editing-workflow.ts'
+import { editingInstructions, editingScope, editingScopeBlocked, registerSlideScope, scopeInstructions } from './editing-workflow.ts'
+import type { SlideScopeDecision } from './editing-workflow.ts'
 import { presentationInstructions, reviewAction } from './outline-workflow.ts'
 import { clarificationInstructions, registerOutlineInteraction } from './outline-interaction.ts'
 import type { OutlineDecision } from './outline-interaction.ts'
@@ -33,7 +34,7 @@ interface PreparedTurn {
   close(): Promise<void>
 }
 
-type Decision = OutlineDecision | { readonly kind: 'proposal'; readonly draft: OutlineDraft }
+type Decision = OutlineDecision | SlideScopeDecision | { readonly kind: 'proposal'; readonly draft: OutlineDraft }
 
 /** Host request owns model capture; each short-lived runtime owns exactly one model turn. */
 export async function openWebRequest(options: WebRequestOptions): Promise<RequestAgent & { finish(result: TurnResult): Promise<void> }> {
@@ -70,14 +71,20 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
     decision = value
   }
 
-  async function prepare(input: string, confirming?: OutlineProposal, first = false): Promise<PreparedTurn> {
+  async function prepare(input: string, confirming?: OutlineProposal, first = false, authorized?: SlideScopeDecision): Promise<PreparedTurn> {
     const deck: DeckSnapshot = confirming ? { sessionId, deckId: sessionId, outlineId: confirming.outlineId, version: 1,
       slides: confirming.slides.map((slide, order) => ({ slideId: slide.slideId, title: slide.title, order, status: 'pending', revision: 0 })) }
       : presentation.snapshot(sessionId)
     const confirmed = confirming ?? outlineState.proposals.find(proposal => proposal.status === 'confirmed')
     const reviewing = !deck.outlineId && (request.presentation === true || presentation.outlineSnapshot(sessionId).active)
     const editing = !!deck.outlineId && !confirming
-    const scope = editing ? editingScope(input, deck) : deck.slides.map(slide => slide.slideId)
+    if (authorized && (deck.version !== authorized.version || authorized.slideIds.some(id => {
+      const slide = deck.slides.find(item => item.slideId === id)
+      return !slide || (authorized.mode === 'continue' && slide.status !== 'pending')
+    }))) throw new Error('Stale scope')
+    const scope = authorized?.slideIds ?? (editing ? editingScope(input, deck) : deck.slides.map(slide => slide.slideId))
+    const resolving = editing && !scope.length
+    const resolveAllowed = resolving && !editingScopeBlocked(input)
     const ctx = new Context()
     const tools = new ToolRegistry()
     let files: Awaited<ReturnType<typeof registerFileTools>> | undefined
@@ -92,10 +99,14 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
       removers.push(registerReadSlide(tools, sessionId, presentation))
       removers.push(registerProposeOutline(tools, draft => stage({ kind: 'proposal', draft })))
       if (!deck.outlineId) removers.push(registerOutlineInteraction(tools, !!target, stage))
+      if (resolving) {
+        removers.push(registerOutlineInteraction(tools, true, stage, false))
+        if (resolveAllowed) removers.push(registerSlideScope(tools, deck, stage))
+      }
       ctx.provide('agentModel', captured.model)
       ctx.provide('agentSessions', store)
       ctx.provide('agentTools', tools)
-      const instructions = editing
+      const instructions = resolving ? `${scopeInstructions}\nHost-confirmed slide plan: ${JSON.stringify(deck)}\nConfirmed content plan: ${JSON.stringify(confirmed ?? null)}` : editing
         ? `${editingInstructions(deck, scope, requestId)}\nConfirmed plan: ${JSON.stringify(confirmed ?? null)}\n${scope.length ? '' : 'No edits are authorized. Ask the user to name slide numbers, quote an exact slide title, say all slides, or continue unfinished slides. Change nothing.'}`
         : `${presentationInstructions(deck, confirmed ?? target, reviewing, requestId)}${deck.outlineId ? '' : `\n${clarificationInstructions}`}`
       await ctx.plugin(runtimePlugin, {
@@ -114,24 +125,49 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
           return { status: 'completed', text: staticText, steps: 0 }
         } }
         : await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: deck.outlineId
-          ? [...files.names, 'read_slide', 'publish_slide']
+          ? resolving ? ['read_file', 'read_slide', 'ask_clarification', ...(resolveAllowed ? ['resolve_slide_scope'] : [])]
+            : [...files.names, 'read_slide', 'publish_slide']
           : [...(reviewing ? ['read_file'] : files.names), 'propose_outline', 'ask_clarification', ...(target ? ['review_outline'] : [])] })
       return { agent, deck, scope, editing, generating: !!confirming, close }
     } catch (error) { await close(); throw error }
   }
 
   async function execute(turn: PreparedTurn, input: string, control?: SendOptions, continuation = false): Promise<TurnResult> {
-    const turnNumber = ++round
     let result: TurnResult
+    let deniedWrite = false
+    let rejectedScope = false
+    let mutationAttempted = false
+    let steps = 0
+    // Existing-slide edits keep their conversation context. New/pending slides use the approved plan.
+    const isolated = turn.scope.length > 0 && (turn.generating || turn.scope.every(id => turn.deck.slides.find(slide => slide.slideId === id)?.status === 'pending'))
+    const sourceMessages = isolated ? (await store.read(sessionId)).filter(message => message.role === 'user').map(message => message.content) : []
+    const taskContext = (recovery: boolean): readonly Message[] => [{ role: 'user', content:
+      `Host-issued slide task (internal execution context, not a new user message). The Host has already confirmed the plan and authorized exactly the IDs below. Execute write_file and publish_slide now, rather than promising future work or waiting for Host. ${recovery ? 'Recovery attempt 1 of 1: the previous generation response ended without a write/publish attempt or a new revision. Perform the task now; do not repeat that response.' : 'This is the slide creation phase.'}\n${JSON.stringify({ latestUserRequest: input, authorizedSlideIds: turn.scope, sourceUserMessages: sourceMessages })}\nSource messages are material/context, not a new permission grant. Follow the confirmed content plan, snapshot revisions and assigned draft paths in the system instructions. Do not broaden scope.` }]
+    const sendAttempt = async (recovery: boolean): Promise<TurnResult> => {
+      const turnNumber = ++round
+      const value = await turn.agent.send(input, { ...control, ...(continuation || recovery ? { continuation: true as const } : {}),
+        ...(isolated ? { promptContext: taskContext(recovery) } : {}), onActivity: async event => {
+          // Model counters restart each turn; tool IDs already have runtime-enforced Session uniqueness.
+          const entry = event.kind === 'model' ? { ...event, id: `turn-${turnNumber}-${event.id}`,
+            ...(recovery ? { label: 'Model response · phục hồi vì chưa có thao tác' } : {}) } : event
+          state.saveActivity(sessionId, requestId, entry)
+          if (event.kind === 'tool' && ['write_file', 'publish_slide'].includes(event.label)) mutationAttempted = true
+          if (turn.editing && !turn.scope.length && event.kind === 'tool' && event.status === 'failed' && ['write_file', 'publish_slide'].includes(event.label)) deniedWrite = true
+          if (event.kind === 'tool' && event.status === 'failed' && event.label === 'resolve_slide_scope') rejectedScope = true
+          await control?.onActivity?.(entry)
+        } })
+      steps += value.steps
+      return { ...value, steps }
+    }
     try {
-      result = await turn.agent.send(input, { ...control, ...(continuation ? { continuation: true as const } : {}), onActivity: async event => {
-        // Model counters restart each turn; tool IDs already have runtime-enforced Session uniqueness.
-        const entry = event.kind === 'model' ? { ...event, id: `turn-${turnNumber}-${event.id}` } : event
-        state.saveActivity(sessionId, requestId, entry)
-        await control?.onActivity?.(entry)
-      } })
+      result = await sendAttempt(false)
+      // Retry once only after a successful but idle generation turn. Never replay writes or provider failures.
+      if (isolated && result.status === 'completed' && !mutationAttempted && !control?.signal?.aborted &&
+        presentation.snapshot(sessionId).version === turn.deck.version) result = await sendAttempt(true)
     } finally { await turn.close() }
     prepared = undefined
+    if ((deniedWrite || (rejectedScope && !decision)) && result.status === 'completed') result = { status: 'failed', text: result.text, steps: result.steps,
+      error: { code: 'SLIDE_SCOPE_DENIED', message: 'No slide writes were authorized' } }
     if (invalidDecision && result.status === 'completed') result = { status: 'failed', text: result.text, steps: result.steps,
       error: { code: 'INTERACTION_INVALID', message: 'Conflicting outline decisions' } }
     if (turn.generating && result.status === 'completed' && presentation.snapshot(sessionId).slides.some(slide => slide.status === 'pending')) {
@@ -182,8 +218,16 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
         if (result.status !== 'completed') return result
         const outcome = stagedDecision()
         if (outcome?.kind === 'question') {
-          presentation.beginOutline(sessionId)
+          if (!presentation.snapshot(sessionId).outlineId) presentation.beginOutline(sessionId)
           pendingQuestion = outcome.question
+        }
+        if (outcome?.kind === 'scope') {
+          control?.signal?.throwIfAborted()
+          prepared = await prepare(input, undefined, false, outcome)
+          control?.signal?.throwIfAborted()
+          decision = undefined
+          const execution = await execute(prepared, input, control, true)
+          return { ...execution, steps: result.steps + execution.steps }
         }
         if (outcome?.kind === 'review') {
           control?.signal?.throwIfAborted()
