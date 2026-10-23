@@ -6,9 +6,12 @@ import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
 import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
+import { requestReply } from './request-reply.ts'
 
 export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
 export { HttpError } from './request-controller.ts'
+export { validateUserQuestion } from './request-reply.ts'
+export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -83,7 +86,7 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent, options.finishRequest)
+  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState)
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -178,6 +181,10 @@ export async function startHost(options: HostOptions) {
       json(res, 202, await controller.submit(await body(req)))
       return
     }
+    const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)
+    if (reply && req.method === 'POST') {
+      json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req)))); return
+    }
     const stop = /^\/api\/requests\/([\w-]+)\/stop$/.exec(url.pathname)
     if (stop && req.method === 'POST') {
       json(res, 200, controller.stop(stop[1]!))
@@ -196,7 +203,7 @@ export async function startHost(options: HostOptions) {
       const send = (value: RequestSnapshot) => {
         if (value.requestId !== snapshot.requestId || res.destroyed || res.writableEnded) return
         const ready = res.write(`event: snapshot\ndata: ${JSON.stringify(value)}\n\n`)
-        if (value.status !== 'running' || !ready) res.end()
+        if ((value.status !== 'running' && value.status !== 'awaiting_user') || !ready) res.end()
       }
       const unsubscribe = controller.subscribe(send)
       const heartbeat = setInterval(() => {

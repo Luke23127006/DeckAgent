@@ -4,6 +4,31 @@ import { AgentRuntime, MemorySessionStore, RuntimeError, ToolRegistry, ToolFailu
 import { ScriptedModel, textReply, callReply, noopTool } from './fixtures/agent-runtime.mjs';
 import { startAgentRuntime } from '../apps/agent-runtime/lib/index.js';
 
+test('a Host working context excludes earlier dialogue but keeps current tool pairs and durable history', async () => {
+  const sessions = new MemorySessionStore();
+  await sessions.open('phase-context');
+  await sessions.append('phase-context', [{ role: 'user', content: 'Original material' }, { role: 'assistant', content: 'Waiting for Host confirmation' }]);
+  const requests = [];
+  const tools = new ToolRegistry(); tools.register(noopTool());
+  const runtime = new AgentRuntime({ sessions, tools, systemPrompt: 'Host has confirmed.', model: { async *stream(request) {
+    requests.push(request);
+    if (requests.length === 1) yield* new ScriptedModel([callReply({ id: 'phase-noop', name: 'noop', arguments: { value: 'test' } })]).stream(request);
+    else { yield { type: 'text-delta', text: 'Completed phase' }; yield { type: 'finish', reason: 'stop' }; }
+  } } });
+  try {
+    const agent = await runtime.createAgent({ sessionId: 'phase-context', selection: { provider: 'fixture', model: 'phase' }, tools: ['noop'] });
+    const result = await agent.send('Confirm', { promptContext: [{ role: 'user', content: 'Host task: build from the approved plan and original material.' }] });
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(requests[0].messages.map(message => message.content), ['Host has confirmed.', 'Host task: build from the approved plan and original material.']);
+    assert.deepEqual(requests[1].messages.slice(-2).map(message => message.role), ['assistant', 'tool']);
+    assert.equal(requests[1].messages.at(-1).toolCallId, 'phase-noop');
+    const history = await agent.history();
+    assert.equal(history[1].content, 'Waiting for Host confirmation');
+    assert.deepEqual(history.filter(message => message.role === 'user').map(message => message.content), ['Original material', 'Confirm']);
+    assert.equal(history.some(message => message.content.includes('Host task:')), false);
+  } finally { await runtime.dispose(); }
+});
+
 test('an Agent sends the system prompt and user history to a model and saves the response', { timeout: 5000 }, async () => {
   const requests = [];
   const model = {

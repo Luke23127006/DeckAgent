@@ -13,8 +13,33 @@ export interface AgentRequest {
 export interface RequestSnapshot {
   readonly requestId: string
   readonly sessionId: string
-  readonly status: 'running' | 'completed' | 'failed' | 'cancelled'
+  readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled'
+  readonly question?: UserQuestion
   readonly result?: TurnResult
+}
+
+export interface QuestionDraft {
+  readonly prompt: string
+  readonly options: readonly string[]
+  readonly allowSkip: boolean
+}
+
+export interface UserQuestion extends QuestionDraft {
+  readonly questionId: string
+  readonly version: number
+}
+
+export interface RequestReply {
+  readonly sessionId: string
+  readonly questionId: string
+  readonly version: number
+  readonly replyId: string
+  readonly answer: { readonly type: 'text'; readonly text: string } | { readonly type: 'option'; readonly index: number } | { readonly type: 'skip' }
+}
+
+/** Application wrapper releases each model turn before exposing a pending question. */
+export interface RequestAgent extends AgentHandle {
+  question?(): QuestionDraft | undefined
 }
 
 /** Browser projection deliberately excludes provider protocol metadata and tool arguments. */
@@ -29,7 +54,9 @@ export interface HistoryMessage {
 
 export interface HostOptions {
   /** Host owns the returned handle until the turn and disposal finish. */
-  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest) => Promise<AgentHandle>
+  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest) => Promise<RequestAgent>
+  /** Persist an active transition before it becomes visible or starts more model work. */
+  readonly requestState?: (snapshot: RequestSnapshot) => Promise<void>
   /** Runs after handle disposal and before terminal snapshot/Session lock release. */
   readonly finishRequest?: (request: AgentRequest, requestId: string, result: TurnResult) => Promise<void>
   readonly readHistory: (sessionId: string) => Promise<readonly Message[]>
@@ -86,7 +113,8 @@ export interface StoredActivity extends ActivityEvent {
 export interface StoredRequest {
   readonly requestId: string
   readonly selection: ModelSelection
-  readonly status: 'running' | 'completed' | 'failed' | 'cancelled' | 'unknown'
+  readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled' | 'unknown'
+  readonly question?: UserQuestion
   readonly errorCode?: string
   /** Index before this turn in the public (non-system) history. Absent on older records. */
   readonly historyStart?: number

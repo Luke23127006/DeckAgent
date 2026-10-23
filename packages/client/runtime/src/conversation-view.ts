@@ -24,6 +24,7 @@ interface RequestRow {
   readonly empty: HTMLElement
   readonly list: HTMLElement
   readonly activities: Map<string, ActivityRow>
+  readonly notice: HTMLElement
 }
 
 /** Owns one scrollable conversation. Stable DOM nodes preserve focus and expansion during polling. */
@@ -38,13 +39,14 @@ export class ConversationView {
   private outlines: OutlineSnapshot | undefined
   private readonly outlineView: OutlineView
 
-  constructor(private readonly container: HTMLElement, action?: OutlineAction, revise?: () => void) {
-    this.outlineView = new OutlineView(action, revise)
+  constructor(private readonly container: HTMLElement, action?: OutlineAction, revise?: () => void, private readonly dock?: HTMLElement) {
+    this.outlineView = new OutlineView(action, revise, dock)
   }
 
   setOutlines(snapshot: OutlineSnapshot): void {
     if (this.outlines?.sessionId === snapshot.sessionId && this.outlines.version > snapshot.version) return
     this.outlines = snapshot
+    if (this.dock) this.dock.hidden = !snapshot.proposals.some(proposal => proposal.status === 'current')
     this.render()
   }
 
@@ -60,6 +62,7 @@ export class ConversationView {
     this.messages.clear()
     this.outlines = undefined
     this.outlineView.reset()
+    if (this.dock) { this.dock.replaceChildren(); this.dock.hidden = true }
     this.container.replaceChildren()
   }
 
@@ -73,7 +76,7 @@ export class ConversationView {
     const knownRequests = new Map(this.requests.map(request => [request.requestId, request]))
     for (const request of requests) {
       const previous = knownRequests.get(request.requestId)
-      if (!previous || previous.status === 'running' || request.status !== 'running')
+      if (!previous || previous.status === 'running' || previous.status === 'awaiting_user' || (request.status !== 'running' && request.status !== 'awaiting_user'))
         knownRequests.set(request.requestId, request)
     }
     this.requests = [...knownRequests.values()]
@@ -90,7 +93,8 @@ export class ConversationView {
 
   snapshot(value: RequestSnapshot): void {
     const previous = this.live.get(value.requestId)
-    if (previous && previous.status !== 'running' && value.status === 'running') return
+    if (previous && previous.status !== 'running' && previous.status !== 'awaiting_user' &&
+      (value.status === 'running' || value.status === 'awaiting_user')) return
     this.live.set(value.requestId, value)
     this.disconnected.delete(value.requestId)
     this.render()
@@ -116,13 +120,16 @@ export class ConversationView {
     const diagnostic = element('p', undefined, 'request-diagnostic')
     const recoveryDetails = element('details', undefined, 'request-recovery-details')
     const recovery = element('pre', undefined, 'activity-output')
-    recoveryDetails.append(element('summary', 'Saved recovery details'), recovery)
+    recoveryDetails.append(element('summary', 'Chi tiết khôi phục đã lưu'), recovery)
     recoveryDetails.hidden = true
-    const empty = element('p', 'No recorded activity.')
+    const empty = element('p', 'Chưa ghi nhận hoạt động.')
     const list = element('div', undefined, 'activity-list')
     node.append(summary, feedback, model, diagnostic, recoveryDetails, empty, list)
     // Native details defaults to collapsed for both running and completed requests.
-    row = { node, status, count, model, feedback, diagnostic, recoveryDetails, recovery, empty, list, activities: new Map() }
+    const notice = element('aside', '', 'request-notice')
+    notice.setAttribute('role', 'note')
+    notice.hidden = true
+    row = { node, status, count, model, feedback, diagnostic, recoveryDetails, recovery, empty, list, activities: new Map(), notice }
     this.rows.set(id, row)
     return row
   }
@@ -131,7 +138,8 @@ export class ConversationView {
     const row = this.requestRow(id)
     const live = this.live.get(id)
     // A terminal snapshot cannot be regressed by an older polling response.
-    const state = live && live.status !== 'running' ? live.status : (stored?.status ?? live?.status ?? 'unknown')
+    const state = live && live.status !== 'running' && live.status !== 'awaiting_user' ? live.status
+      : stored && stored.status !== 'running' && stored.status !== 'awaiting_user' ? stored.status : (live?.status ?? stored?.status ?? 'unknown')
     const errorCode = live?.result && live.result.status === 'failed' ? live.result.error.code : stored?.errorCode
     const records = this.activities.filter(activity => activity.requestId === id)
     const tools = this.history.filter(message => message.role === 'tool' && message.toolCallId &&
@@ -139,10 +147,14 @@ export class ConversationView {
     const feedback = requestFeedback(state, errorCode, records, tools, this.disconnected.has(id))
     const { label } = feedback
     if (row.feedback.textContent !== feedback.detail) row.feedback.textContent = feedback.detail
+    row.notice.hidden = state === 'running' || state === 'awaiting_user' || state === 'completed'
+    row.notice.dataset.status = state
+    const summaryText = `${feedback.label}. ${feedback.detail}`
+    if (row.notice.textContent !== summaryText) row.notice.textContent = summaryText
     row.node.dataset.toolErrors = String(feedback.toolErrors)
     const diagnostic = failureFeedback(errorCode).code
     row.diagnostic.hidden = !diagnostic
-    if (diagnostic) row.diagnostic.textContent = `Error code: ${diagnostic}`
+    if (diagnostic) row.diagnostic.textContent = `Mã lỗi: ${diagnostic}`
     const notice = stored?.noticeIndex === undefined ? undefined : this.history[stored.noticeIndex]
     row.recoveryDetails.hidden = notice?.role !== 'assistant' || state === 'completed' || state === 'running'
     if (!row.recoveryDetails.hidden && row.recovery.textContent !== notice?.content) row.recovery.textContent = notice?.content ?? ''
@@ -153,7 +165,7 @@ export class ConversationView {
       const model = `Model: ${stored.selection.provider} / ${stored.selection.model}`
       if (row.model.textContent !== model) row.model.textContent = model
     }
-    const count = ` · ${records.length} ${records.length === 1 ? 'activity' : 'activities'}`
+    const count = ` · ${records.length} hoạt động`
     if (row.count.textContent !== count) row.count.textContent = count
     row.empty.hidden = records.length > 0
     for (const entry of records) {
@@ -197,7 +209,7 @@ export class ConversationView {
     let item = this.messages.get(index)
     if (!item || item.value.role !== value.role || item.value.content !== value.content) {
       const node = value.role === 'tool' ? element('details', undefined, 'unassigned-tool-output') : element('article', undefined, `message ${value.role}`)
-      if (value.role === 'tool') node.append(element('summary', 'Tool output · request association unavailable'), element('pre', value.content, 'activity-output'))
+      if (value.role === 'tool') node.append(element('summary', 'Kết quả công cụ · chưa xác định được yêu cầu'), element('pre', value.content, 'activity-output'))
       else node.append(
         element('small', value.role === 'assistant' ? 'DeckAgent' : value.role === 'user' ? 'You' : 'Tool result'),
         element('p', value.content),
@@ -223,7 +235,9 @@ export class ConversationView {
           ? this.history.length
           : Math.min(start + (this.history[start]?.role === 'user' ? 1 : 0), this.history.length)
       const items = positions.get(position) ?? []
-      items.push(this.updateRequest(id, request).node)
+      const row = this.updateRequest(id, request)
+      items.push(row.node)
+      if (!row.notice.hidden) items.push(row.notice)
       positions.set(position, items)
     }
     const nodes: HTMLElement[] = []

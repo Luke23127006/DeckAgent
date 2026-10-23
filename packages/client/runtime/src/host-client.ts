@@ -1,4 +1,5 @@
-import type { AgentRequest, HistoryMessage, RequestSnapshot } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot } from '@deckagent/host-api'
+import { userQuestion } from './user-question.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -11,10 +12,15 @@ function snapshot(value: unknown): RequestSnapshot {
     !/^[\w-]+$/.test(value.requestId) ||
     typeof value.sessionId !== 'string' ||
     !/^[\w-]{1,100}$/.test(value.sessionId) ||
-    !['running', 'completed', 'failed', 'cancelled'].includes(String(value.status))
+    !['running', 'awaiting_user', 'completed', 'failed', 'cancelled'].includes(String(value.status))
   )
     throw new Error('INVALID_RESPONSE')
   const result = value.result
+  if (value.status !== 'awaiting_user' && value.question !== undefined) throw new Error('INVALID_RESPONSE')
+  if (value.status === 'awaiting_user') {
+    if (result !== undefined) throw new Error('INVALID_RESPONSE')
+    return { requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', question: userQuestion(value.question) }
+  }
   if (value.status === 'running') {
     if (result !== undefined) throw new Error('INVALID_RESPONSE')
     return { requestId: value.requestId, sessionId: value.sessionId, status: 'running' }
@@ -67,7 +73,7 @@ export class HostClient {
     })
     if (!response.ok) {
       const data: unknown = await response.json()
-      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT']
+      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT', 'REPLY_STALE', 'REPLY_CONFLICT', 'INVALID_REPLY']
       const code = object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
         ? data.error.code : response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'
       throw new Error(code)
@@ -89,6 +95,12 @@ export class HostClient {
 
   async snapshot(id: string): Promise<RequestSnapshot> {
     return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
+  }
+
+  async reply(id: string, reply: RequestReply): Promise<RequestSnapshot> {
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/reply`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
+    })).json())
   }
 
   async stop(id: string): Promise<RequestSnapshot> {
@@ -142,7 +154,7 @@ export class HostClient {
             const value = snapshot(JSON.parse(data))
             if (value.requestId !== id) throw new Error('INVALID_RESPONSE')
             yield value
-            if (value.status !== 'running') return
+            if (value.status !== 'running' && value.status !== 'awaiting_user') return
           }
           boundary = buffer.indexOf('\n\n')
         }

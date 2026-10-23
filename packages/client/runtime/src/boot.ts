@@ -1,8 +1,9 @@
-import type { AgentRequest, HistoryMessage, WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
-import { button, element, field } from './dom.ts'
+import { button, element } from './dom.ts'
+import { modelPicker } from './model-picker.ts'
 import { settingsPanel } from './settings-panel.ts'
 import { mountDeckTab } from './deck-tab.ts'
 import { ConversationView } from './conversation-view.ts'
@@ -10,6 +11,7 @@ import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
+import { questionView } from './question-view.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -17,18 +19,19 @@ const management = new ManagementClient(location.origin, token)
 const outlines = new OutlineClient(location.origin, token)
 let outlineState: OutlineSnapshot | undefined
 const root = document.querySelector<HTMLElement>('#app')!
+root.replaceChildren()
 const navigation = element('aside', undefined, 'chat-navigation')
 const chats = element('nav')
 chats.setAttribute('aria-label', 'Chat history')
 const conversation = element('section', undefined, 'conversation')
 const heading = element('header', undefined, 'conversation-header')
-const title = element('h1', 'Your next idea starts here')
+const title = element('h1', 'Chat mới')
 const headerState = element('small', '', 'chat-state')
 headerState.setAttribute('aria-live', 'polite')
 const welcome = element('section', undefined, 'welcome')
 welcome.hidden = true
-welcome.append(element('h2', 'Your next presentation starts here'),
-  element('p', 'Describe your topic and audience below. Choose a model, then send a message or create a presentation.'))
+welcome.append(element('h2', 'Hãy mô tả deck bạn muốn'),
+  element('p', 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.'))
 const model = element('select')
 model.disabled = true
 model.setAttribute('aria-label', 'Selected model')
@@ -37,28 +40,32 @@ status.setAttribute('role', 'status')
 status.hidden = true
 const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Conversation')
+const outlineDock = element('section', undefined, 'outline-dock')
+outlineDock.hidden = true
+const questionUI = questionView(answer => run(replyToQuestion(answer)))
 const timeline = new ConversationView(messages, (type, proposal) => {
-  run(submitRequest(type === 'confirm' ? 'Confirm outline' : 'Cancel outline', {
+  run(submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
     outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
   }))
 }, () => {
-  if (!input.value) input.value = 'Revise outline: '
+  if (!input.value) input.value = 'Sửa outline: '
   input.focus()
   input.setSelectionRange(input.value.length, input.value.length)
-})
+}, outlineDock)
 const form = element('form', undefined, 'composer')
+form.noValidate = true
 form.dataset.slot = 'request'
 const input = element('textarea')
 input.name = 'input'
 input.required = true
-input.placeholder = 'What would you like to work on?'
+input.placeholder = 'Nhập hoặc dán yêu cầu của bạn…'
 input.setAttribute('aria-label', 'Agent request')
 const submit = element('button', '↑', 'send-action')
 submit.setAttribute('aria-label', 'Send request')
-submit.title = 'Send request'
+submit.title = 'Gửi yêu cầu (Enter)'
 submit.type = 'submit'
 submit.disabled = true
-const createPresentation = button('Create presentation', () => {
+const createPresentation = button('Đề xuất outline', () => {
   if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
@@ -67,7 +74,7 @@ const stopRequest = button('■', () => {
 })
 stopRequest.className = 'stop-action'
 stopRequest.setAttribute('aria-label', 'Stop')
-stopRequest.title = 'Stop request'
+stopRequest.title = 'Dừng yêu cầu'
 stopRequest.hidden = true
 const deck = element('aside', undefined, 'deck-sidebar')
 deck.hidden = true
@@ -76,6 +83,8 @@ const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-s
 publishedDeck.hidden = true
 const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = false })
 let current: WebSession | undefined
+let waiting: RequestSnapshot | undefined
+let pendingReply: { key: string; value: RequestReply } | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
 let watch: AbortController | undefined
@@ -83,22 +92,50 @@ let generation = 0
 const sending = new Set<string>()
 const selecting = new Set<string>()
 const drafts = new Map<string, string>()
+let recentModels: { provider: string; model: string }[] = []
+try {
+  const saved: unknown = JSON.parse(sessionStorage.getItem('deckagent-recent-models') ?? '[]')
+  if (Array.isArray(saved)) recentModels = saved.filter(value => value && typeof value === 'object' &&
+    typeof value.provider === 'string' && typeof value.model === 'string').slice(-100)
+} catch { /* Optional tab-local preferences; Host remains the source of selectable models. */ }
 let polling = false
 let disposed = false
 let reconnecting = false
 let opening: number | undefined
+let creating = false
 let historyPresent = false
-let chatTitle = 'New chat'
+let chatTitle = 'Chat mới'
 
 function describeHistory(history: readonly HistoryMessage[]) {
   historyPresent = history.length > 0
   const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
-  chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
+  chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'Chat mới'
 }
 
 function fitInput() {
   input.style.height = 'auto'
-  input.style.height = `${Math.min(150, Math.max(58, input.scrollHeight))}px`
+  input.style.height = `${Math.min(180, Math.max(44, input.scrollHeight))}px`
+}
+
+function saveDraft() {
+  if (!current) return
+  drafts.set(current.sessionId, input.value)
+  try {
+    const key = `deckagent-draft:${current.sessionId}`
+    if (input.value) sessionStorage.setItem(key, input.value)
+    else sessionStorage.removeItem(key)
+  } catch { /* Drafts still survive switching chats within this page. */ }
+}
+function readDraft(id: string): string {
+  if (drafts.has(id)) return drafts.get(id)!
+  let saved = ''
+  try { saved = sessionStorage.getItem(`deckagent-draft:${id}`) ?? '' } catch { /* Optional tab-local recovery. */ }
+  drafts.set(id, saved)
+  return saved
+}
+function rememberModel(value: { provider: string; model: string }) {
+  recentModels = recentModels.filter(item => item.provider !== value.provider || item.model !== value.model).concat(value).slice(-100)
+  try { sessionStorage.setItem('deckagent-recent-models', JSON.stringify(recentModels)) } catch { /* Optional tab-local preference. */ }
 }
 
 function remember(id: string) {
@@ -119,27 +156,34 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
-  submit.hidden = !!current?.activeRequestId
-  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked()
-  newChatButton.disabled = switchingBlocked()
-  model.disabled = !current || selecting.has(current.sessionId)
+  submit.hidden = !!current?.activeRequestId && !question
+  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
+  newChatButton.disabled = switchingBlocked() || creating
+  model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
   submit.disabled =
     !current ||
+    creating ||
     reconnecting ||
     opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
-    !!current.activeRequestId ||
-    !current.selectable
+    (!!current.activeRequestId && !question) ||
+    (!current.selectable && !question)
   createPresentation.disabled = submit.disabled
+  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > 16000))
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
-  timeline.setOutlineBusy(submit.disabled)
+  timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
+  questionUI.update(question, submit.disabled)
+  input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
+  picker.update(settings, !!current?.activeRequestId)
   title.textContent = chatTitle
   title.title = chatTitle
   const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
-  headerState.textContent = current?.activeRequestId ? 'Working' : active ? 'Sending…'
-    : outlineState?.currentId ? 'Waiting for outline confirmation' : current?.selectable ? 'Ready' : 'Choose a model'
+  headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
+    : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : current?.selectable ? '' : 'Chọn model để bắt đầu'
+  navigationHint.hidden = !active
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
   openDeck.hidden = !outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)
@@ -148,28 +192,30 @@ function controls() {
     status.hidden = false
     status.dataset.kind = 'setup'
     status.textContent = current?.selection
-      ? `Model unavailable: ${current.selection.model}. Choose another model.`
-      : 'Choose a model to send a request. You can add one in Settings.'
+      ? `Model ${current.selection.model} không còn chọn được. Hãy chọn model khác.`
+      : 'Chọn model để gửi yêu cầu. Bạn có thể thêm model trong Cài đặt.'
   } else if (status.dataset.kind === 'setup') {
     status.hidden = true
   }
 }
 function renderModels() {
-  model.replaceChildren(new Option('Choose a model', ''))
+  model.replaceChildren(new Option('Chọn model', ''))
   for (const provider of settings.providers) {
     const group = element('optgroup')
     group.label = provider.displayName
     for (const id of provider.models) group.append(new Option(id, JSON.stringify({ provider: provider.id, model: id })))
     model.append(group)
   }
-  model.append(new Option('Add or manage models…', '__settings'))
+  model.append(new Option('Thêm hoặc quản lý model…', '__settings'))
   model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
   controls()
 }
 function renderChats() {
   chats.replaceChildren()
-  if (!sessions.length) chats.append(element('p', 'No chats yet. Start a new chat.'))
-  for (const session of sessions) {
+  const visible = sessions.filter(session => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides || readDraft(session.sessionId).trim())
+  visible.sort((a, b) => a.sessionId === current?.sessionId ? -1 : b.sessionId === current?.sessionId ? 1 : b.updatedAt.localeCompare(a.updatedAt))
+  if (!visible.length) chats.append(element('p', 'Chưa có chat trước.'))
+  for (const session of visible) {
     const item = button('', () =>
       run(open(session)),
     )
@@ -178,9 +224,10 @@ function renderChats() {
     const date = new Date(session.updatedAt)
     updated.textContent = Number.isNaN(date.getTime()) ? 'Updated time unavailable' : date.toLocaleString()
     const slides = session.hasSlides === undefined ? 'Slides unknown' : session.hasSlides ? 'Has slides' : 'No slides yet'
-    item.append(element('strong', session.title ?? (session.messageCount ? 'Untitled chat' : 'New chat')), updated,
+    item.append(element('strong', !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'), updated,
       element('small', `${slides}${session.activeRequestId ? ' · Working…' : ''}`))
-    item.title = session.sessionId
+    item.title = `${session.title ?? 'Chat mới'} · ${updated.textContent} · ${slides}\n${session.sessionId}`
+    item.dataset.sessionId = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
     item.disabled = switchingBlocked()
     chats.append(item)
@@ -222,6 +269,8 @@ async function follow(id: string, sessionId: string, expected: number) {
     for await (const snapshot of client.watch(id, control.signal)) {
       if (generation !== expected) return
       timeline.snapshot(snapshot)
+      waiting = snapshot.status === 'awaiting_user' ? snapshot : undefined
+      controls()
       status.hidden = true
       if (snapshot.status !== 'running') {
         await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
@@ -242,17 +291,21 @@ async function follow(id: string, sessionId: string, expected: number) {
 async function open(session: WebSession) {
   const switching = current?.sessionId !== session.sessionId
   if (switching && switchingBlocked()) return
+  if (switching && !settingsUI.leave()) return
+  picker.close()
   // Read everything before replacing current state. A failed open leaves the old chat intact.
   const previousGeneration = generation
   const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
     management.requests(session.sessionId), outlines.snapshot(session.sessionId)])
   if (generation !== previousGeneration || (switching && switchingBlocked())) return
-  if (current) drafts.set(current.sessionId, input.value)
-  input.value = drafts.get(session.sessionId) ?? ''
+  if (current) saveDraft()
+  input.value = readDraft(session.sessionId)
   generation++
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
   current = session
+  const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
+  waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
   deckModel.open(session.sessionId)
   remember(session.sessionId)
   const expected = generation
@@ -274,32 +327,53 @@ async function open(session: WebSession) {
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
 async function newChat() {
-  if (switchingBlocked()) return
-  const created = await management.create()
-  await refresh()
-  await open(created)
+  if (switchingBlocked() || creating) return
+  if (!settingsUI.leave()) return
+  if (current && !historyPresent) { input.focus(); return }
+  const selection = [...recentModels].reverse().find(item => settings.providers.some(provider =>
+    provider.id === item.provider && provider.models.includes(item.model)))
+  creating = true
+  controls()
+  try {
+    const created = await management.create(selection)
+    await refresh()
+    await open(created)
+  } finally { creating = false; controls() }
 }
-const settingsUI = settingsPanel(management, refresh)
+const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
+const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
 function switchingBlocked(): boolean {
   return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
 }
-const newChatButton = button('New chat', () => run(newChat()))
+const newChatButton = button('+  Chat mới', () => run(newChat()))
+newChatButton.dataset.action = 'new-chat'
+const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
+navigationHint.hidden = true
+const recents = button('Gần đây ⌄', () => {
+  chats.hidden = !chats.hidden
+  recents.setAttribute('aria-expanded', String(!chats.hidden))
+})
+recents.className = 'recents-toggle'
+recents.setAttribute('aria-expanded', 'true')
+recents.setAttribute('aria-controls', 'recent-chats')
+chats.id = 'recent-chats'
 const developerTools = element('details', undefined, 'developer-tools')
-developerTools.append(element('summary', 'Developer tools'), button('Open sample deck', () => {
+developerTools.append(element('summary', 'Công cụ phát triển'), button('Mở deck mẫu', () => {
   publishedDeck.hidden = true
   deck.hidden = false
 }))
 navigation.append(
   element('div', 'DeckAgent', 'wordmark'),
   newChatButton,
-  element('h2', 'History'),
+  navigationHint,
+  recents,
   chats,
-  button('Models & settings', () => run(settingsUI.open())),
+  button('⚙  Cài đặt model', () => run(settingsUI.open())),
   developerTools,
 )
 const headingText = element('div', undefined, 'chat-heading')
 headingText.append(title, headerState)
-const openDeck = button('Open deck', () => { deck.hidden = true; publishedDeck.hidden = false })
+const openDeck = button('Mở deck', () => { deck.hidden = true; publishedDeck.hidden = false })
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
 const moreActions = element('details', undefined, 'chat-more-actions')
@@ -309,7 +383,7 @@ moreSummary.title = 'More chat actions'
 moreActions.append(moreSummary)
 headingActions.append(openDeck, moreActions)
 heading.append(headingText, headingActions)
-const reconnect = button('Reconnect / read history', () => {
+const reconnect = button('Kết nối lại / đọc lịch sử', () => {
   if (reconnecting) return
   reconnecting = true
   controls()
@@ -330,16 +404,31 @@ reconnect.id = 'reconnect'
 moreActions.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
-const modelField = field('Model for next request', model)
-modelField.className = 'composer-model'
-composerControls.append(modelField, createPresentation)
+const attachment = button('+', () => {})
+attachment.disabled = true
+attachment.className = 'attachment-action'
+attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
+attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
+composerControls.append(attachment)
+moreActions.append(createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
-primaryAction.append(submit, stopRequest)
+primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
 form.append(input, composerActions)
-input.addEventListener('input', fitInput)
-conversation.append(heading, status, welcome, messages, form)
-root.replaceChildren(navigation, conversation, deck, publishedDeck)
+input.addEventListener('input', () => { saveDraft(); controls() })
+input.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault()
+    if (!submit.disabled && input.value.trim()) form.requestSubmit()
+  }
+})
+const dock = element('div', undefined, 'composer-dock')
+dock.append(questionUI.node, outlineDock, form)
+conversation.append(heading, status, welcome, messages, dock)
+root.prepend(navigation, conversation, deck, publishedDeck)
+// Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
+const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
+navigationSize.observe(navigation)
 model.addEventListener('change', () => {
   if (model.value === '__settings') {
     model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
@@ -365,6 +454,7 @@ model.addEventListener('change', () => {
         )
           return
         await management.select(id, { provider: value.provider, model: value.model })
+        rememberModel({ provider: value.provider, model: value.model })
         await refresh()
         if (current?.sessionId === id) status.hidden = true
       } finally {
@@ -381,12 +471,23 @@ form.addEventListener('submit', event => {
 })
 async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
   if (submit.disabled || !current) return
+  if (!text.trim()) return
+  if (text.length > 16000) {
+    status.hidden = false
+    status.dataset.kind = 'error'
+    status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi.'
+    return
+  }
+  if (waiting?.question && current.activeRequestId === waiting.requestId) {
+    if (!extra.outlineAction) await replyToQuestion({ type: 'text', text })
+    return
+  }
   const id = current.sessionId,
     expected = generation
   const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
   controls()
-  status.textContent = 'Sending'
+  status.textContent = 'Đang gửi'
   status.hidden = false
   status.dataset.kind = 'sending'
   try {
@@ -394,14 +495,14 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
       ...(target && !extra.outlineAction ? { outlineTarget: { outlineId: target.outlineId, version: target.version } } : {}),
       ...extra })
     if (generation === expected && current) {
-      if (!extra.outlineAction) input.value = ''
+      if (!extra.outlineAction && input.value === text) { input.value = ''; saveDraft() }
       current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
       status.hidden = true
       controls()
     }
     await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected), showOutlines(id, expected)])
-    if (generation === expected) await follow(accepted.requestId, id, expected)
+    if (generation === expected) run(follow(accepted.requestId, id, expected))
   } catch (error) {
     try { await showOutlines(id, expected) } catch { /* Keep the last saved outline if reconnect also fails. */ }
     throw error
@@ -409,6 +510,27 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     sending.delete(id)
     controls()
   }
+}
+
+async function replyToQuestion(answer: RequestReply['answer']): Promise<void> {
+  if (!current || !waiting?.question || submit.disabled || waiting.sessionId !== current.sessionId) return
+  const id = current.sessionId, expected = generation, snapshot = waiting, question = waiting.question
+  const key = JSON.stringify([id, question.questionId, question.version, answer])
+  if (pendingReply?.key !== key) pendingReply = { key, value: { sessionId: id, questionId: question.questionId,
+    version: question.version, replyId: crypto.randomUUID(), answer } }
+  sending.add(id)
+  controls()
+  try {
+    const accepted = await client.reply(snapshot.requestId, pendingReply.value)
+    if (generation !== expected) return
+    pendingReply = undefined
+    waiting = undefined
+    timeline.snapshot(accepted)
+    if (answer.type === 'text' && input.value === answer.text) { input.value = ''; saveDraft() }
+    controls()
+    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
+    if (generation === expected) run(follow(accepted.requestId, id, expected))
+  } finally { sending.delete(id); controls() }
 }
 const timer = setInterval(() => {
   if (!current?.activeRequestId || polling || disposed) return
@@ -429,6 +551,8 @@ const timer = setInterval(() => {
 window.addEventListener(
   'pagehide',
   () => {
+    saveDraft()
+    navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
     deckModel.close()

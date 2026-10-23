@@ -9,7 +9,7 @@ export class OutlineView {
     buttons: readonly HTMLButtonElement[]; proposal: OutlineProposal }>()
   private busy = false
 
-  constructor(private readonly action?: OutlineAction, private readonly revise?: () => void) {}
+  constructor(private readonly action?: OutlineAction, private readonly revise?: () => void, private readonly dock?: HTMLElement) {}
 
   reset(): void { this.cards.clear() }
 
@@ -24,7 +24,7 @@ export class OutlineView {
     if (!card) {
       const node = element('section', undefined, 'outline-proposal')
       node.dataset.outlineId = proposal.outlineId
-      node.setAttribute('aria-label', 'Presentation outline')
+      node.setAttribute('aria-label', 'Outline đề xuất')
       const status = element('p', '', 'outline-status')
       const overview = element('p', proposal.overview, 'outline-overview')
       const slides = proposal.slides.map((slide, index) => {
@@ -33,23 +33,26 @@ export class OutlineView {
         return detail
       })
       const viewing = element('div', undefined, 'outline-viewing')
-      viewing.append(button('Expand all', () => { for (const slide of slides) slide.open = true }),
-        button('Collapse all', () => { for (const slide of slides) slide.open = false }))
+      viewing.append(button('Mở chi tiết', () => { for (const slide of slides) slide.open = true }),
+        button('Thu gọn', () => { for (const slide of slides) slide.open = false }))
       const actions = element('div', undefined, 'outline-actions')
-      const buttons = [button('Confirm outline', () => this.action?.('confirm', proposal)),
-        button('Cancel outline', () => this.action?.('cancel', proposal)),
-        button('Revise outline', () => this.revise?.())]
-      actions.append(...buttons)
-      node.append(element('h3', 'Presentation outline'), status, overview, viewing, ...slides, actions)
+      const buttons = [button('①  Xác nhận outline và tạo slide', () => this.action?.('confirm', proposal)),
+        button('②  Hủy outline', () => this.action?.('cancel', proposal)),
+        button('Yêu cầu sửa outline', () => this.revise?.())]
+      actions.append(element('strong', 'Bạn muốn làm gì với outline này?'), ...buttons,
+        element('p', 'Hoặc gõ thay đổi bạn muốn ở khung bên dưới. Chọn là gửi ngay; chữ chưa gửi vẫn ở lại khung nhập.'))
+      node.append(element('h3', 'Đề xuất outline'), status, overview, viewing, ...slides)
+      if (!this.dock) node.append(actions)
       card = { node, status, actions, buttons, proposal }
       this.cards.set(proposal.outlineId, card)
     }
     card.proposal = proposal
-    const label = proposal.status === 'confirmed' ? 'Confirmed · read-only' : proposal.status === 'current'
-      ? 'Review the plan. No slides are built until you confirm.' : proposal.status === 'cancelled' ? 'Cancelled' : 'Earlier proposal · superseded'
+    const label = proposal.status === 'confirmed' ? 'Đã xác nhận · chỉ đọc' : proposal.status === 'current'
+      ? 'Hiện tại · Chưa có slide nào được tạo cho đến khi bạn xác nhận.' : proposal.status === 'cancelled' ? 'Đã hủy' : 'Đề xuất cũ · không còn là hiện tại'
     if (card.status.textContent !== label) card.status.textContent = label
     card.node.dataset.status = proposal.status
     card.actions.hidden = proposal.status !== 'current'
+    if (proposal.status === 'current' && this.dock && card.actions.parentElement !== this.dock) this.dock.replaceChildren(card.actions)
     for (const control of card.buttons) control.disabled = this.busy || proposal.status !== 'current' || !this.action
     return card.node
   }
