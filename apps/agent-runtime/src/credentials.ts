@@ -35,8 +35,10 @@ export class WindowsCredentialVault implements CredentialVault {
   }
 
   private transform(operation: 'Protect' | 'Unprotect', bytes: Buffer): Promise<Buffer> {
-    return transformCredential(operation, bytes).catch(() => {
-      throw new RuntimeError('CLI_CREDENTIALS', 'Cannot access saved Windows credentials. Enter the key again or check Windows DPAPI availability')
+    return transformCredential(operation, bytes).catch(error => {
+      const detail = error instanceof RuntimeError && error.code === 'PROVIDER_CREDENTIALS'
+        ? error.message : 'Cannot access saved Windows credentials'
+      throw new RuntimeError('CLI_CREDENTIALS', `${detail}. Enter the key again or check Windows DPAPI availability`)
     })
   }
 }
