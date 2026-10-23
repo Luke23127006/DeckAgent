@@ -10,19 +10,29 @@ Add-Type -AssemblyName System.Security
 $bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd())
 $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
 [Console]::Write([Convert]::ToBase64String($result))`
+  // Include cold PowerShell/.NET startup, while bounding hung credential operations.
+  const deadline = AbortSignal.timeout(30_000)
   return new Promise((resolve, reject) => {
     const child = execFile(
       'powershell.exe',
       ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')],
       {
         windowsHide: true,
-        timeout: 10000,
+        signal: deadline,
         maxBuffer: 65536,
         encoding: 'utf8',
       },
       (error, stdout) => {
-        if (error) reject(new RuntimeError('PROVIDER_CREDENTIALS', 'Cannot access Windows encrypted credentials'))
-        else resolve(Buffer.from(stdout.trim(), 'base64'))
+        if (error) reject(new RuntimeError('PROVIDER_CREDENTIALS', deadline.aborted
+          ? 'Windows credential operation timed out after 30 seconds'
+          : 'Cannot access Windows encrypted credentials'))
+        else {
+          const encoded = stdout.trim()
+          const result = Buffer.from(encoded, 'base64')
+          if (!result.length || result.toString('base64') !== encoded)
+            reject(new RuntimeError('PROVIDER_CREDENTIALS', 'Windows credential operation returned invalid output'))
+          else resolve(result)
+        }
       },
     )
     // execFile reports process failure; never publish pipe diagnostics containing input.

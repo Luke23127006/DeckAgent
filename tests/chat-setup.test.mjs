@@ -8,9 +8,12 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { spawn } from 'node:child_process';
+import childProcess from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
 import { prepareChat } from '../apps/agent-runtime/lib/types/setup.js';
 import { WindowsCredentialVault } from '../apps/agent-runtime/lib/types/credentials.js';
 import { TerminalPrompts } from '../apps/agent-runtime/lib/types/terminal.js';
+import { transformCredential } from '../packages/llm/providers/lib/index.js';
 
 async function workspace(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-setup-'));
@@ -35,6 +38,106 @@ function prompts(answers) {
   };
 }
 
+// Simulate the subprocess boundary, including its deadline; real DPAPI round trips remain below.
+function credentialProcess(t, { duration, failure, output = Buffer.alloc(0), response, diagnostic }) {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(AbortSignal, 'timeout', milliseconds => {
+    const control = new AbortController();
+    setTimeout(() => control.abort(new DOMException('Deadline exceeded', 'TimeoutError')), milliseconds);
+    return control.signal;
+  });
+  const calls = [];
+  const mock = t.mock.method(childProcess, 'execFile', (file, args, options, callback) => {
+    const stdin = new PassThrough();
+    const call = { file, args, input: '', hidden: options.windowsHide };
+    stdin.on('data', bytes => { call.input += bytes; });
+    calls.push(call);
+    let settled = false;
+    const complete = (error, stdout = '') => {
+      if (settled) return;
+      settled = true;
+      callback(error, stdout, diagnostic);
+    };
+    const abort = () => complete(Object.assign(new Error(diagnostic), { code: 'ABORT_ERR' }));
+    if (options.signal) options.signal.addEventListener('abort', abort, { once: true });
+    // Also reproduce the old execFile timeout, so the delayed-success regression goes red on it.
+    if (options.timeout) setTimeout(() => complete(Object.assign(new Error(diagnostic), { killed: true, signal: 'SIGTERM' })), options.timeout);
+    if (duration !== undefined) setTimeout(() => complete(failure, response ?? output.toString('base64')), duration);
+    return { stdin };
+  });
+  syncBuiltinESMExports();
+  t.after(() => { mock.mock.restore(); syncBuiltinESMExports(); });
+  return calls;
+}
+
+test('credential subprocess can finish after a slow Windows startup without exposing input in arguments', { skip: process.platform !== 'win32' }, async t => {
+  const credential = randomUUID();
+  const encrypted = Buffer.from(randomUUID());
+  const calls = credentialProcess(t, { duration: 11000, output: encrypted, diagnostic: credential });
+  const pending = transformCredential('Protect', Buffer.from(credential));
+  const success = assert.doesNotReject(pending);
+  t.mock.timers.tick(11000);
+  await success;
+  assert.deepEqual(await pending, encrypted);
+  assert.equal(calls.length, 1, 'A slow process must not be retried');
+  assert.equal(calls[0].file, 'powershell.exe');
+  assert.equal(calls[0].hidden, true);
+  assert.equal(calls[0].args.join(' ').includes(credential), false);
+  assert.equal(calls[0].input, Buffer.from(credential).toString('base64'));
+});
+
+test('credential subprocess deadline is reported safely through the CLI and writes no credential file', { skip: process.platform !== 'win32' }, async t => {
+  const dir = await workspace(t);
+  const credential = randomUUID();
+  const calls = credentialProcess(t, { diagnostic: credential });
+  const connection = { id: 'custom', protocol: 'chat-completions', baseUrl: 'https://api.example.test/v1' };
+  const check = code => error => {
+    assert.equal(error.code, code);
+    assert.match(error.message, /timed out/i);
+    assert.equal(error.message.includes(credential), false);
+    assert.equal(error.cause, undefined, 'Raw process diagnostics must not escape');
+    return true;
+  };
+  const provider = assert.rejects(transformCredential('Protect', Buffer.from(credential)), check('PROVIDER_CREDENTIALS'));
+  const cli = assert.rejects(new WindowsCredentialVault(dir).write(connection, credential), check('CLI_CREDENTIALS'));
+  t.mock.timers.runAll();
+  await Promise.all([provider, cli]);
+  assert.equal(calls.length, 2, 'Each operation must terminate without retry');
+  assert.deepEqual(await readdir(dir), [], 'Failure must not persist plaintext or partial ciphertext');
+});
+
+test('credential subprocess execution errors stay distinct from timeouts and redact diagnostics', { skip: process.platform !== 'win32' }, async t => {
+  const credential = randomUUID();
+  credentialProcess(t, { duration: 0, failure: Object.assign(new Error(credential), { code: 'EACCES' }), diagnostic: credential });
+  const failure = assert.rejects(transformCredential('Protect', Buffer.from(credential)), error => {
+    assert.equal(error.code, 'PROVIDER_CREDENTIALS');
+    assert.doesNotMatch(error.message, /timed out/i);
+    assert.equal(error.message.includes(credential), false);
+    assert.equal(error.cause, undefined);
+    return true;
+  });
+  t.mock.timers.tick(0);
+  await failure;
+});
+
+for (const response of ['', 'not valid base64!']) {
+  test(`credential subprocess ${response ? 'malformed' : 'empty'} output cannot save a key`, { skip: process.platform !== 'win32' }, async t => {
+    const dir = await workspace(t);
+    const credential = randomUUID();
+    credentialProcess(t, { duration: 0, response, diagnostic: credential });
+    const connection = { id: 'custom', protocol: 'chat-completions', baseUrl: 'https://api.example.test/v1' };
+    const failure = assert.rejects(new WindowsCredentialVault(dir).write(connection, credential), error => {
+      assert.equal(error.code, 'CLI_CREDENTIALS');
+      assert.doesNotMatch(error.message, /timed out/i);
+      assert.equal(error.message.includes(credential), false);
+      return true;
+    });
+    t.mock.timers.tick(0);
+    await failure;
+    assert.deepEqual(await readdir(dir), [], 'Invalid output must not persist a credential file');
+  });
+}
+
 test('first launch guides model selection, checks the endpoint and remembers defaults for the next launch', async t => {
   const dir = await workspace(t);
   let hits = 0;
@@ -50,7 +153,7 @@ test('first launch guides model selection, checks the endpoint and remembers def
   assert.deepEqual(JSON.parse(await readFile(join(dir, 'profile.json'), 'utf8')).selection, first.selection);
 });
 
-test('Windows credentials survive reopening as DPAPI ciphertext and are bound to their endpoint', { skip: process.platform !== 'win32', timeout: 15000 }, async t => {
+test('Windows credentials survive reopening as DPAPI ciphertext and are bound to their endpoint', { skip: process.platform !== 'win32', timeout: 75000 }, async t => {
   const dir = await workspace(t);
   const connection = { id: 'custom', protocol: 'chat-completions', baseUrl: 'https://api.example.test/v1', apiKeyEnv: 'TEST_TOKEN' };
   const credential = randomUUID();
@@ -64,7 +167,7 @@ test('Windows credentials survive reopening as DPAPI ciphertext and are bound to
   assert.equal((await readFile(join(dir, 'credentials', files[0]))).includes(Buffer.from(credential)), false);
 });
 
-test('setup saves an opted-in key separately and the next launch authenticates without environment setup', { skip: process.platform !== 'win32', timeout: 15000 }, async t => {
+test('setup saves an opted-in key separately and the next launch authenticates without environment setup', { skip: process.platform !== 'win32', timeout: 75000 }, async t => {
   const dir = await workspace(t);
   const credential = randomUUID();
   const requests = [];
