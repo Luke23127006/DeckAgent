@@ -1,5 +1,14 @@
 # TASK-006 — Outline review and presentation generation
 
+**Trạng thái kiểm tra lại ngày 22-10-2026:** A/B/C đã merge qua
+[PR #27](https://github.com/Luke23127006/DeckAgent/pull/27) vào dev
+`6efd4df8887912b9cda8133c2276c0619f08c245`.
+[Push CI](https://github.com/Luke23127006/DeckAgent/actions/runs/39710094725) PASS
+mọi bước trên đúng SHA. Build và 23/23 kiểm thử outline/pipeline/browser chạy lại
+trên dev đều PASS, không skipped. User cho biết đã test xong; phạm vi demo model thật
+cụ thể chưa được đối chiếu. Gate 005/006 vẫn `NOT_VERIFIED`; xem evidence và next action
+trong [PROGRESS.md](PROGRESS.md). Các mô tả publication dưới đây là snapshot trước merge.
+
 Updated: 21-10-2026. Local A/B/C implementation on
 `feature/task-006-outline-workflow`, based on TASK-005 commit
 `7bb0685a84c0c1be15e0f48b0518d7596c152d10`. Implementation and the tool-argument

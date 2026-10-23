@@ -141,7 +141,7 @@ test('Agent publishes through SSE/snapshot/content; drafts stay private and revi
   assert.equal((await changes.next()).value.version, 1)
   const change = changes.next()
   const chat = new HostClient(app.origin, app.token)
-  const accepted = await chat.send({ sessionId: 'pipeline', input: 'Publish intro' })
+  const accepted = await chat.send({ sessionId: 'pipeline', input: 'Publish slide 1' })
   let completed
   for await (const state of chat.watch(accepted.requestId)) completed = state
   assert.equal(completed.status, 'completed')

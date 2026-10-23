@@ -8,13 +8,14 @@ import type { ModelConnection } from '@deckagent/model-providers'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError, startHost } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { page, style } from './ui-assets.ts'
+import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { DeckService } from '@deckagent/deck'
 import type { ConfirmedDeckPlan, OutlineDraft } from '@deckagent/deck'
-import { registerProposeOutline, registerPublishSlide } from '@deckagent/presentation-tools'
+import { registerProposeOutline, registerPublishSlide, registerReadSlide } from '@deckagent/presentation-tools'
+import { editingInstructions, editingScope } from './editing-workflow.ts'
 import { presentationInstructions, reviewAction } from './outline-workflow.ts'
 import { outlineStyle } from './outline-style.ts'
 
@@ -63,7 +64,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -106,6 +107,8 @@ export async function startLocalWeb(options: LocalWebOptions) {
         } : presentation.snapshot(sessionId)
         const confirmed = confirming ?? outlineState.proposals.find(p => p.status === 'confirmed')
         const reviewing = !deck.outlineId && (request.presentation === true || outlineState.active)
+        const editing = !!deck.outlineId && !confirming
+        const scope = editing ? editingScope(request.input, deck) : deck.slides.map(slide => slide.slideId)
         let captured: ReturnType<ProviderStore['capture']>
         try { captured = catalog.capture(chosen) }
         catch (error) {
@@ -117,10 +120,13 @@ export async function startLocalWeb(options: LocalWebOptions) {
         let scopedFiles: Awaited<ReturnType<typeof registerFileTools>> | undefined
         let removePublish: (() => void) | undefined
         let removeProposal: (() => void) | undefined
+        let removeRead: (() => void) | undefined
         let staged: OutlineDraft | undefined
+        let noticeIndex: number | undefined
         try {
           scopedFiles = await registerFileTools(scopedTools, { root: workspace })
-          removePublish = await registerPublishSlide(scopedTools, { root: workspace, sessionId, decks: presentation })
+          removePublish = await registerPublishSlide(scopedTools, { root: workspace, sessionId, decks: presentation, allowedSlideIds: scope })
+          removeRead = registerReadSlide(scopedTools, sessionId, presentation)
           removeProposal = registerProposeOutline(scopedTools, draft => {
             if (staged) throw new Error('Only one proposal per request')
             staged = draft
@@ -128,10 +134,12 @@ export async function startLocalWeb(options: LocalWebOptions) {
           ctx.provide('agentModel', captured.model)
           ctx.provide('agentSessions', store)
           ctx.provide('agentTools', scopedTools)
-          const instructions = presentationInstructions(deck, confirmed ?? action.current, reviewing, requestId)
+          const instructions = editing
+            ? `${editingInstructions(deck, scope, requestId)}\nConfirmed plan: ${JSON.stringify(confirmed ?? null)}\n${scope.length ? '' : 'No edits are authorized. Ask the user to name slide numbers, quote an exact slide title, say all slides, or continue unfinished slides. Change nothing.'}`
+            : presentationInstructions(deck, confirmed ?? action.current, reviewing, requestId)
           await ctx.plugin(runtimePlugin, {
-            maxSteps: Math.max(8, 2 * deck.slides.length + 5),
-            systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. ${instructions}`,
+            maxSteps: Math.max(8, (editing ? 3 : 2) * scope.length + 5),
+            systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
           })
           const agent: AgentHandle = staticText ? {
             sessionId, status: 'idle', history: () => store.read(sessionId), dispose: async () => {},
@@ -142,7 +150,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
               return { status: 'completed', text: staticText, steps: 0 }
             },
           } : await ctx.agentRuntime.createAgent({ sessionId, selection: chosen,
-            tools: deck.outlineId ? [...scopedFiles.names, 'publish_slide'] :
+            tools: deck.outlineId ? [...scopedFiles.names, 'read_slide', 'publish_slide'] :
               reviewing ? ['read_file', 'propose_outline'] : [...scopedFiles.names, 'propose_outline'] })
           // Admission has validated/captured the model and created the handle under the Session lock.
           // No asynchronous operation follows confirmation before returning that admitted handle.
@@ -158,10 +166,10 @@ export async function startLocalWeb(options: LocalWebOptions) {
                 // A crash between these stores leaves text without a proposal, never an unfinished current outline.
                 state.finishRequest(requestId, result)
                 presentation.proposeOutline(sessionId, { requestId, responseIndex: history.length - 1, draft: staged })
-              } else state.finishRequest(requestId, result)
+              } else state.finishRequest(requestId, result, noticeIndex)
             } catch {
               state.finishRequest(requestId, { status: 'failed', text: result.text, steps: result.steps,
-                error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } })
+                error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } }, noticeIndex)
               throw new Error('Request finalization failed')
             }
           })
@@ -185,12 +193,28 @@ export async function startLocalWeb(options: LocalWebOptions) {
               } catch {
                 result = { status: 'failed', text: '', steps: 0, error: { code: 'REQUEST_FAILED', message: 'Request failed' } }
               }
+              if (editing && scope.length && result.status === 'completed') {
+                const saved = presentation.snapshot(sessionId)
+                const incomplete = scope.some(id => saved.slides.find(slide => slide.slideId === id)!.revision <= deck.slides.find(slide => slide.slideId === id)!.revision)
+                if (incomplete) result = { status: 'failed', text: result.text, steps: result.steps,
+                  error: { code: 'EDIT_INCOMPLETE', message: 'Some requested slides were not published' } }
+              }
+              if (deck.outlineId && result.status !== 'completed') {
+                const saved = presentation.snapshot(sessionId)
+                const changed = saved.slides.filter(slide => slide.revision > (deck.slides.find(before => before.slideId === slide.slideId)?.revision ?? 0))
+                const unfinished = saved.slides.filter(slide => slide.status === 'pending')
+                const remaining = scope.filter(id => !changed.some(slide => slide.slideId === id)).length
+                const text = `${result.status === 'cancelled' ? 'Stopped' : 'Work did not finish'}. ${changed.length} slides published or changed in this request. ${remaining} requested slides were not changed. ${unfinished.length} planned slides remain unfinished.${unfinished.length ? ' The draft is not ready.' : ''} Finished revisions were kept; unfinished edits keep their last published revision. The deck may be inconsistent; consistency was not checked. Nothing will resume automatically.`
+                await store.append(sessionId, [{ role: 'assistant', content: text }])
+                noticeIndex = (await store.read(sessionId)).filter(message => message.role !== 'system').length - 1
+                result = { ...result, text }
+              }
               return result
             },
-            dispose: async () => { try { await ctx.fiber.dispose() } finally { removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() } },
+            dispose: async () => { try { await ctx.fiber.dispose() } finally { removeRead?.(); removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() } },
           }
         } catch (error) {
-          try { await ctx.fiber.dispose() } finally { removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() }
+          try { await ctx.fiber.dispose() } finally { removeRead?.(); removeProposal?.(); removePublish?.(); scopedFiles?.dispose(); captured.release() }
           throw error
         }
       },
@@ -200,7 +224,9 @@ export async function startLocalWeb(options: LocalWebOptions) {
         saveProvider: (id, value) => catalog.save(id, value),
         deleteProvider: id => catalog.remove(id),
         catalog: id => catalog.catalog(id),
-        sessions: () => state.list(), createSession: value => state.create(value),
+        sessions: async () => (await state.list()).map(session => ({ ...session,
+          hasSlides: presentation.snapshot(session.sessionId).slides.some(slide => slide.revision > 0),
+        })), createSession: value => state.create(value),
         selectModel: (id, value) => state.select(id, value),
         activities: async id => state.activities(id),
         requests: async id => state.requests(id),

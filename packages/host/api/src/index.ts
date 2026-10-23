@@ -178,6 +178,11 @@ export async function startHost(options: HostOptions) {
       json(res, 202, await controller.submit(await body(req)))
       return
     }
+    const stop = /^\/api\/requests\/([\w-]+)\/stop$/.exec(url.pathname)
+    if (stop && req.method === 'POST') {
+      json(res, 200, controller.stop(stop[1]!))
+      return
+    }
     const request = /^\/api\/requests\/([\w-]+)(\/events)?$/.exec(url.pathname)
     if (request && req.method === 'GET') {
       const snapshot = controller.get(request[1]!)
@@ -211,7 +216,8 @@ export async function startHost(options: HostOptions) {
       json(
         res,
         200,
-        messages.filter(message => message.role !== 'system').map(({ role, content }) => ({ role, content })),
+        messages.filter(message => message.role !== 'system').map(message => ({ role: message.role, content: message.content,
+          ...(message.role === 'tool' ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true } : {}) })),
       )
       return
     }

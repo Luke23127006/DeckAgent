@@ -21,6 +21,10 @@ export interface RequestSnapshot {
 export interface HistoryMessage {
   readonly role: 'user' | 'assistant' | 'tool'
   readonly content: string
+  /** Optional tool identity for matching output to its Activity; no tool arguments. */
+  readonly toolCallId?: string
+  readonly name?: string
+  readonly isError?: boolean
 }
 
 export interface HostOptions {
@@ -61,6 +65,10 @@ export interface ProviderTemplate {
 }
 
 export interface WebSession {
+  /** Derived from the first user message; absent on older Hosts. */
+  readonly title?: string
+  /** True only when at least one slide has a published revision. */
+  readonly hasSlides?: boolean
   readonly sessionId: string
   readonly createdAt: string
   readonly updatedAt: string
@@ -82,6 +90,8 @@ export interface StoredRequest {
   readonly errorCode?: string
   /** Index before this turn in the public (non-system) history. Absent on older records. */
   readonly historyStart?: number
+  /** Public history index of a Host-authored recovery notice, when saved. */
+  readonly noticeIndex?: number
 }
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */

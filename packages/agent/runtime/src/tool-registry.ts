@@ -1,5 +1,6 @@
 import { RuntimeError } from './contracts.ts'
 import type { Message, ToolCall, ToolDefinition, ToolSchema } from './contracts.ts'
+import { ToolFailure, TOOL_RECOVERY_TEXT } from './tool-failure.ts'
 
 type ToolMessage = Extract<Message, { role: 'tool' }>
 interface Entry { schema: ToolSchema; execute: ToolDefinition['execute'] }
@@ -17,6 +18,7 @@ const TOOL_FAILURE_TEXT: Readonly<Record<string, string>> = {
   INVALID_TOOL_RESULT: 'Tool result must be a string',
   TOOL_FAILED: 'Tool failed',
   TOOL_NOT_STARTED: 'Turn was cancelled before this tool started',
+  ...TOOL_RECOVERY_TEXT,
 }
 
 /** Real dispatch with explicit Agent allowlists and a small, validated schema subset. */
@@ -75,10 +77,11 @@ export class ToolRegistry {
     let content: unknown
     try {
       content = await entry.execute(structuredClone(args), { signal })
-    } catch {
+    } catch (error) {
       // Tool execution is an untrusted boundary: a tool may throw any error, including
-      // a RuntimeError whose code or message is not safe. Never forward either.
-      return this.failure(call, signal.aborted ? 'TOOL_ABORTED' : 'TOOL_FAILED')
+      // a RuntimeError whose code or message is not safe. Only explicit ToolFailure
+      // codes use registry-authored text; raw error messages are never forwarded.
+      return this.failure(call, signal.aborted ? 'TOOL_ABORTED' : error instanceof ToolFailure ? error.code : 'TOOL_FAILED')
     }
     if (signal.aborted) return this.failure(call, 'TOOL_ABORTED')
     if (typeof content !== 'string') return this.failure(call, 'INVALID_TOOL_RESULT')

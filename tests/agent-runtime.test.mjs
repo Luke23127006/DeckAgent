@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AgentRuntime, MemorySessionStore, RuntimeError, ToolRegistry } from '../packages/agent/runtime/lib/index.js';
+import { AgentRuntime, MemorySessionStore, RuntimeError, ToolRegistry, ToolFailure } from '../packages/agent/runtime/lib/index.js';
 import { ScriptedModel, textReply, callReply, noopTool } from './fixtures/agent-runtime.mjs';
 import { startAgentRuntime } from '../apps/agent-runtime/lib/index.js';
 
@@ -152,6 +152,7 @@ test('tool exceptions become paired error results rather than breaking the model
 for (const thrown of [
   new Error('untrusted tool-secret-raw'),
   new RuntimeError('LEAKED_CODE', 'untrusted tool-secret-rt'),
+  new RuntimeError('SLIDE_UNSAFE_HTML', 'untrusted tool-secret-spoof'),
 ]) {
   test(`a tool that throws ${thrown.constructor.name} never leaks its code or message`, { timeout: 5000 }, async () => {
     const tools = new ToolRegistry();
@@ -182,6 +183,22 @@ for (const code of ['UNKNOWN_TOOL_CODE', 'constructor', '__proto__', 'toString']
     assert.deepEqual(JSON.parse(message.content), { error: { code: 'TOOL_FAILED', message: 'Tool failed' } });
   });
 }
+
+test('ToolFailure exposes fixed recovery text only and rejects unknown codes', async () => {
+  const tools = new ToolRegistry();
+  let thrown = new ToolFailure('SLIDE_UNSAFE_HTML');
+  thrown.message = 'tool-secret-must-not-leak';
+  tools.register({ ...noopTool(), async execute() { throw thrown; } });
+  const call = { id: 'safe-diagnostic', name: 'noop', arguments: { value: 'x' } };
+  const result = await tools.execute(call, ['noop'], new AbortController().signal);
+  assert.equal(result.isError, true);
+  assert.equal(JSON.parse(result.content).error.code, 'SLIDE_UNSAFE_HTML');
+  assert.match(JSON.parse(result.content).error.message, /meta/);
+  assert.equal(result.content.includes('tool-secret'), false);
+  thrown = new ToolFailure('PRIVATE_CODE');
+  const unknown = await tools.execute(call, ['noop'], new AbortController().signal);
+  assert.deepEqual(JSON.parse(unknown.content), { error: { code: 'TOOL_FAILED', message: 'Tool failed' } });
+});
 
 test('a step limit stops a repeating model after settling every requested tool call', { timeout: 5000 }, async () => {
   const tools = new ToolRegistry();

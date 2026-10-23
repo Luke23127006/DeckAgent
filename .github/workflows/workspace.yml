@@ -121,7 +121,13 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:outline-workflow
 
+      - name: Recovery, history and scoped editing (TASK-007, local fixtures)
+        id: recovery_editing
+        timeout-minutes: 2
+        run: pnpm test:recovery-editing
+
       - name: Record verification evidence
+        # TASK-007 browser coverage runs in the existing browser step above.
         # TASK-006 browser coverage runs in the existing browser step above.
         if: always()
         env:
@@ -144,6 +150,7 @@ jobs:
           LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
           SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
+          RECOVERY_EDITING_RESULT: ${{ steps.recovery_editing.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -166,6 +173,7 @@ jobs:
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
           - Outline proposals / confirmation guards / two-request generation: $env:OUTLINE_WORKFLOW_RESULT
+          - Recovery / Stop / scoped editing / history: $env:RECOVERY_EDITING_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in PROGRESS.md. A successful push run on

@@ -1,4 +1,4 @@
-import type { AgentRequest, WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, WebSession, WebSettings } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -9,6 +9,7 @@ import { ConversationView } from './conversation-view.ts'
 import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
+import { failureFeedback } from './request-feedback.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -22,6 +23,12 @@ chats.setAttribute('aria-label', 'Chat history')
 const conversation = element('section', undefined, 'conversation')
 const heading = element('header', undefined, 'conversation-header')
 const title = element('h1', 'Your next idea starts here')
+const headerState = element('small', '', 'chat-state')
+headerState.setAttribute('aria-live', 'polite')
+const welcome = element('section', undefined, 'welcome')
+welcome.hidden = true
+welcome.append(element('h2', 'Your next presentation starts here'),
+  element('p', 'Describe your topic and audience below. Choose a model, then send a message or create a presentation.'))
 const model = element('select')
 model.disabled = true
 model.setAttribute('aria-label', 'Selected model')
@@ -46,19 +53,28 @@ input.name = 'input'
 input.required = true
 input.placeholder = 'What would you like to work on?'
 input.setAttribute('aria-label', 'Agent request')
-const submit = element('button', 'Send request')
+const submit = element('button', '↑', 'send-action')
+submit.setAttribute('aria-label', 'Send request')
+submit.title = 'Send request'
 submit.type = 'submit'
 submit.disabled = true
 const createPresentation = button('Create presentation', () => {
   if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
+const stopRequest = button('■', () => {
+  if (current?.activeRequestId) run(client.stop(current.activeRequestId).then(() => {}))
+})
+stopRequest.className = 'stop-action'
+stopRequest.setAttribute('aria-label', 'Stop')
+stopRequest.title = 'Stop request'
+stopRequest.hidden = true
 const deck = element('aside', undefined, 'deck-sidebar')
 deck.hidden = true
 mountDeckTab(deck)
 const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-sidebar')
 publishedDeck.hidden = true
-const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true })
+const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = false })
 let current: WebSession | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
@@ -71,6 +87,19 @@ let polling = false
 let disposed = false
 let reconnecting = false
 let opening: number | undefined
+let historyPresent = false
+let chatTitle = 'New chat'
+
+function describeHistory(history: readonly HistoryMessage[]) {
+  historyPresent = history.length > 0
+  const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+  chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
+}
+
+function fitInput() {
+  input.style.height = 'auto'
+  input.style.height = `${Math.min(150, Math.max(58, input.scrollHeight))}px`
+}
 
 function remember(id: string) {
   try {
@@ -84,21 +113,16 @@ function run(work: Promise<void>) {
     status.hidden = false
     status.dataset.kind = 'error'
     const code = error instanceof Error ? error.message : ''
-    status.textContent =
-      code === 'PROVIDER_CREDENTIALS'
-        ? 'Set a valid API key for this provider in Models & settings.'
-        : code === 'MODEL_NOT_SELECTABLE'
-          ? 'This model is no longer available. Choose another model.'
-          : code === 'AUTH_REQUIRED'
-            ? 'This connection expired. Reopen the browser from the running Host.'
-              : code === 'OUTLINE_STALE'
-                ? 'The outline changed. Review the current proposal before confirming.'
-                : code === 'OUTLINE_ALREADY_CONFIRMED'
-                  ? 'This outline is already confirmed. Read the saved deck; confirmation was not replayed.'
-                  : 'Unable to complete this action. Check your connection or reopen Settings.'
+    const feedback = failureFeedback(code)
+    status.textContent = `${feedback.label}. ${feedback.detail}`
+    status.title = feedback.code ? `Error code: ${feedback.code}` : ''
   })
 }
 function controls() {
+  stopRequest.hidden = !current?.activeRequestId
+  submit.hidden = !!current?.activeRequestId
+  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked()
+  newChatButton.disabled = switchingBlocked()
   model.disabled = !current || selecting.has(current.sessionId)
   submit.disabled =
     !current ||
@@ -111,7 +135,15 @@ function controls() {
   createPresentation.disabled = submit.disabled
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
   timeline.setOutlineBusy(submit.disabled)
-  title.textContent = current ? 'Conversation' : 'Your next idea starts here'
+  title.textContent = chatTitle
+  title.title = chatTitle
+  const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
+  headerState.textContent = current?.activeRequestId ? 'Working' : active ? 'Sending…'
+    : outlineState?.currentId ? 'Waiting for outline confirmation' : current?.selectable ? 'Ready' : 'Choose a model'
+  welcome.hidden = historyPresent || active || !current || opening !== undefined
+  messages.hidden = !welcome.hidden
+  openDeck.hidden = !outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)
+  fitInput()
   if (!current?.selectable && !current?.activeRequestId) {
     status.hidden = false
     status.dataset.kind = 'setup'
@@ -130,17 +162,27 @@ function renderModels() {
     for (const id of provider.models) group.append(new Option(id, JSON.stringify({ provider: provider.id, model: id })))
     model.append(group)
   }
+  model.append(new Option('Add or manage models…', '__settings'))
   model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
   controls()
 }
 function renderChats() {
   chats.replaceChildren()
+  if (!sessions.length) chats.append(element('p', 'No chats yet. Start a new chat.'))
   for (const session of sessions) {
-    const item = button(`${session.selection?.model ?? 'New chat'} · ${session.messageCount} messages`, () =>
+    const item = button('', () =>
       run(open(session)),
     )
+    const updated = element('time')
+    updated.dateTime = session.updatedAt
+    const date = new Date(session.updatedAt)
+    updated.textContent = Number.isNaN(date.getTime()) ? 'Updated time unavailable' : date.toLocaleString()
+    const slides = session.hasSlides === undefined ? 'Slides unknown' : session.hasSlides ? 'Has slides' : 'No slides yet'
+    item.append(element('strong', session.title ?? (session.messageCount ? 'Untitled chat' : 'New chat')), updated,
+      element('small', `${slides}${session.activeRequestId ? ' · Working…' : ''}`))
     item.title = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
+    item.disabled = switchingBlocked()
     chats.append(item)
   }
 }
@@ -156,6 +198,8 @@ async function showHistory(id: string, expected: number) {
   const history = await client.history(id)
   if (generation !== expected) return
   timeline.setHistory(history)
+  describeHistory(history)
+  controls()
 }
 async function showActivities(id: string, expected: number) {
   const [entries, requests] = await Promise.all([management.activities(id), management.requests(id)])
@@ -196,6 +240,13 @@ async function follow(id: string, sessionId: string, expected: number) {
   }
 }
 async function open(session: WebSession) {
+  const switching = current?.sessionId !== session.sessionId
+  if (switching && switchingBlocked()) return
+  // Read everything before replacing current state. A failed open leaves the old chat intact.
+  const previousGeneration = generation
+  const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
+    management.requests(session.sessionId), outlines.snapshot(session.sessionId)])
+  if (generation !== previousGeneration || (switching && switchingBlocked())) return
   if (current) drafts.set(current.sessionId, input.value)
   input.value = drafts.get(session.sessionId) ?? ''
   generation++
@@ -212,36 +263,52 @@ async function open(session: WebSession) {
   if (session.activeRequestId)
     timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
   controls()
-  try {
-    await Promise.all([showHistory(session.sessionId, expected), showActivities(session.sessionId, expected), showOutlines(session.sessionId, expected)])
-  } finally {
-    if (opening === expected) opening = undefined
-    controls()
-  }
+  timeline.setHistory(loaded[0])
+  describeHistory(loaded[0])
+  timeline.setRecords(loaded[2], loaded[1])
+  outlineState = loaded[3]
+  timeline.setOutlines(loaded[3])
+  if (opening === expected) opening = undefined
+  controls()
   if (session.activeRequestId && generation === expected)
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
 async function newChat() {
+  if (switchingBlocked()) return
   const created = await management.create()
   await refresh()
   await open(created)
 }
 const settingsUI = settingsPanel(management, refresh)
+function switchingBlocked(): boolean {
+  return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
+}
+const newChatButton = button('New chat', () => run(newChat()))
+const developerTools = element('details', undefined, 'developer-tools')
+developerTools.append(element('summary', 'Developer tools'), button('Open sample deck', () => {
+  publishedDeck.hidden = true
+  deck.hidden = false
+}))
 navigation.append(
   element('div', 'DeckAgent', 'wordmark'),
-  button('New chat', () => run(newChat())),
+  newChatButton,
   element('h2', 'History'),
   chats,
   button('Models & settings', () => run(settingsUI.open())),
+  developerTools,
 )
-heading.append(
-  title,
-  button('Open sample deck', () => {
-    publishedDeck.hidden = true
-    deck.hidden = false
-  }),
-  button('Open deck', () => { deck.hidden = true; publishedDeck.hidden = false }),
-)
+const headingText = element('div', undefined, 'chat-heading')
+headingText.append(title, headerState)
+const openDeck = button('Open deck', () => { deck.hidden = true; publishedDeck.hidden = false })
+openDeck.hidden = true
+const headingActions = element('div', undefined, 'chat-heading-actions')
+const moreActions = element('details', undefined, 'chat-more-actions')
+const moreSummary = element('summary', '⋯')
+moreSummary.setAttribute('aria-label', 'More chat actions')
+moreSummary.title = 'More chat actions'
+moreActions.append(moreSummary)
+headingActions.append(openDeck, moreActions)
+heading.append(headingText, headingActions)
 const reconnect = button('Reconnect / read history', () => {
   if (reconnecting) return
   reconnecting = true
@@ -260,12 +327,25 @@ const reconnect = button('Reconnect / read history', () => {
   )
 })
 reconnect.id = 'reconnect'
+moreActions.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
-composerActions.append(submit, createPresentation)
+const composerControls = element('div', undefined, 'composer-controls')
+const modelField = field('Model for next request', model)
+modelField.className = 'composer-model'
+composerControls.append(modelField, createPresentation)
+const primaryAction = element('div', undefined, 'composer-primary')
+primaryAction.append(submit, stopRequest)
+composerActions.append(composerControls, primaryAction)
 form.append(input, composerActions)
-conversation.append(heading, field('Model for next request', model), status, reconnect, messages, form)
+input.addEventListener('input', fitInput)
+conversation.append(heading, status, welcome, messages, form)
 root.replaceChildren(navigation, conversation, deck, publishedDeck)
 model.addEventListener('change', () => {
+  if (model.value === '__settings') {
+    model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
+    run(settingsUI.open())
+    return
+  }
   if (!model.value || !current) return
   const id = current.sessionId
   selecting.add(id)

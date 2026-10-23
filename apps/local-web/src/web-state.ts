@@ -83,12 +83,15 @@ export class WebState {
     )
   }
 
-  private project(info: SessionInfo): WebSession {
-    return { ...info, selectable: this.selectable(info.selection) }
+  private async project(info: SessionInfo): Promise<WebSession> {
+    const history = await this.sessions.read(info.sessionId)
+    const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+    const title = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
+    return { ...info, title, selectable: this.selectable(info.selection) }
   }
 
   async list(): Promise<readonly WebSession[]> {
-    return (await this.sessions.list()).map(info => this.project(info))
+    return Promise.all((await this.sessions.list()).map(info => this.project(info)))
   }
 
   async create(value: unknown): Promise<WebSession> {
@@ -122,10 +125,10 @@ export class WebState {
       .run(requestId, sessionId, JSON.stringify({ requestId, selection: chosen, status: 'running', historyStart }))
   }
 
-  finishRequest(requestId: string, result: TurnResult): void {
+  finishRequest(requestId: string, result: TurnResult, noticeIndex?: number): void {
     this.db
-      .prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.errorCode', ?) WHERE id=?")
-      .run(result.status, result.status === 'completed' ? null : result.error.code, requestId)
+      .prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.errorCode', ?, '$.noticeIndex', ?) WHERE id=?")
+      .run(result.status, result.status === 'completed' ? null : result.error.code, noticeIndex ?? null, requestId)
   }
 
   requests(id: string): readonly StoredRequest[] {
@@ -146,7 +149,8 @@ export class WebState {
             value.status !== 'cancelled' &&
             value.status !== 'unknown') ||
           (value.errorCode != null && (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-          (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0))
+          (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
+          (value.noticeIndex != null && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
         )
           throw new HttpError(500, 'ACTIVITY_STORAGE')
         return {
@@ -155,6 +159,7 @@ export class WebState {
           status: value.status,
           ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
           ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
+          ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
         }
       })
   }

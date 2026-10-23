@@ -6,6 +6,32 @@ import { AgentRuntime, MemorySessionStore } from '../packages/agent/runtime/lib/
 import { startHost } from '../packages/host/api/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 
+test('history exposes tool identity for Activity without exposing internal fields or arguments', async t => {
+  const host = await startHost({
+    openAgent: async () => { throw new Error('No work should start') },
+    readHistory: async () => [{ role: 'tool', content: 'Saved output', toolCallId: 'call-one', name: 'read_file', isError: false,
+      arguments: { internal: 'private-fixture-marker' }, providerState: { private: 'private-fixture-marker' } }],
+  })
+  t.after(() => host.close())
+  const history = await new HostClient(host.origin, host.token).history('chat')
+  assert.deepEqual(history, [{ role: 'tool', content: 'Saved output', toolCallId: 'call-one', name: 'read_file', isError: false }])
+  assert.equal(JSON.stringify(history).includes('private-fixture-marker'), false)
+})
+
+test('history accepts legacy tool output and rejects malformed optional Activity identity', async t => {
+  let payload = [{ role: 'tool', content: 'Earlier output' }]
+  const server = createServer((_req, res) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(payload)) })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  t.after(() => new Promise(resolve => server.close(resolve)))
+  const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture')
+  assert.deepEqual(await client.history('chat'), payload)
+  for (const field of [{ toolCallId: 3 }, { name: '<script>' }, { isError: 'false' }]) {
+    payload = [{ role: 'tool', content: 'Earlier output', ...field }]
+    await assert.rejects(client.history('chat'), /INVALID_RESPONSE/)
+  }
+})
+
 test('browser connection submits a request, follows snapshots and restores history', async t => {
   const sessions = new MemorySessionStore()
   const runtime = new AgentRuntime({

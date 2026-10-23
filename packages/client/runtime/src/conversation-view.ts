@@ -3,11 +3,13 @@ import { element } from './dom.ts'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { OutlineView } from './outline-view.ts'
 import type { OutlineAction } from './outline-view.ts'
+import { failureFeedback, requestFeedback } from './request-feedback.ts'
 
 interface ActivityRow {
   readonly node: HTMLDetailsElement
   readonly summary: HTMLElement
   readonly detail: HTMLElement
+  readonly output: HTMLElement
 }
 
 interface RequestRow {
@@ -15,6 +17,10 @@ interface RequestRow {
   readonly status: HTMLElement
   readonly count: HTMLElement
   readonly model: HTMLElement
+  readonly feedback: HTMLElement
+  readonly diagnostic: HTMLElement
+  readonly recoveryDetails: HTMLDetailsElement
+  readonly recovery: HTMLElement
   readonly empty: HTMLElement
   readonly list: HTMLElement
   readonly activities: Map<string, ActivityRow>
@@ -106,11 +112,17 @@ export class ConversationView {
     const count = element('span', undefined, 'activity-count')
     summary.append(status, count)
     const model = element('p', undefined, 'request-model')
+    const feedback = element('p', undefined, 'request-feedback')
+    const diagnostic = element('p', undefined, 'request-diagnostic')
+    const recoveryDetails = element('details', undefined, 'request-recovery-details')
+    const recovery = element('pre', undefined, 'activity-output')
+    recoveryDetails.append(element('summary', 'Saved recovery details'), recovery)
+    recoveryDetails.hidden = true
     const empty = element('p', 'No recorded activity.')
     const list = element('div', undefined, 'activity-list')
-    node.append(summary, model, empty, list)
+    node.append(summary, feedback, model, diagnostic, recoveryDetails, empty, list)
     // Native details defaults to collapsed for both running and completed requests.
-    row = { node, status, count, model, empty, list, activities: new Map() }
+    row = { node, status, count, model, feedback, diagnostic, recoveryDetails, recovery, empty, list, activities: new Map() }
     this.rows.set(id, row)
     return row
   }
@@ -121,18 +133,19 @@ export class ConversationView {
     // A terminal snapshot cannot be regressed by an older polling response.
     const state = live && live.status !== 'running' ? live.status : (stored?.status ?? live?.status ?? 'unknown')
     const errorCode = live?.result && live.result.status === 'failed' ? live.result.error.code : stored?.errorCode
-    const label =
-      state === 'running'
-        ? this.disconnected.has(id)
-          ? 'Connection interrupted · Reconnect to read state'
-          : 'Working…'
-        : state === 'completed'
-          ? 'Completed'
-          : state === 'failed'
-            ? `Failed${errorCode ? `: ${errorCode}` : ''}`
-            : state === 'cancelled'
-              ? 'Stopped'
-              : 'Outcome unconfirmed after interruption'
+    const records = this.activities.filter(activity => activity.requestId === id)
+    const tools = this.history.filter(message => message.role === 'tool' && message.toolCallId &&
+      records.some(entry => entry.id === `tool-${message.toolCallId}` && entry.label === message.name))
+    const feedback = requestFeedback(state, errorCode, records, tools, this.disconnected.has(id))
+    const { label } = feedback
+    if (row.feedback.textContent !== feedback.detail) row.feedback.textContent = feedback.detail
+    row.node.dataset.toolErrors = String(feedback.toolErrors)
+    const diagnostic = failureFeedback(errorCode).code
+    row.diagnostic.hidden = !diagnostic
+    if (diagnostic) row.diagnostic.textContent = `Error code: ${diagnostic}`
+    const notice = stored?.noticeIndex === undefined ? undefined : this.history[stored.noticeIndex]
+    row.recoveryDetails.hidden = notice?.role !== 'assistant' || state === 'completed' || state === 'running'
+    if (!row.recoveryDetails.hidden && row.recovery.textContent !== notice?.content) row.recovery.textContent = notice?.content ?? ''
     if (row.status.textContent !== label) row.status.textContent = label
     row.node.dataset.status = state
     row.model.hidden = !stored
@@ -140,7 +153,6 @@ export class ConversationView {
       const model = `Model: ${stored.selection.provider} / ${stored.selection.model}`
       if (row.model.textContent !== model) row.model.textContent = model
     }
-    const records = this.activities.filter(activity => activity.requestId === id)
     const count = ` · ${records.length} ${records.length === 1 ? 'activity' : 'activities'}`
     if (row.count.textContent !== count) row.count.textContent = count
     row.empty.hidden = records.length > 0
@@ -151,26 +163,42 @@ export class ConversationView {
         node.dataset.activityId = entry.id
         const summary = element('summary')
         const detail = element('p')
-        node.append(summary, detail)
-        activity = { node, summary, detail }
+        const output = element('pre', undefined, 'activity-output')
+        output.hidden = true
+        node.append(summary, detail, output)
+        activity = { node, summary, detail, output }
         row.activities.set(entry.id, activity)
         row.list.append(node)
       }
       const outcome = entry.status === 'unknown' ? 'Outcome unconfirmed' : entry.status
       const text = `${entry.label} · ${outcome}`
       if (activity.summary.textContent !== text) activity.summary.textContent = text
-      const detail = `${entry.kind === 'tool' ? 'Tool execution' : 'Model response'} · ${outcome}.`
+      const tool = this.history.find(message => message.role === 'tool' && message.toolCallId &&
+        `tool-${message.toolCallId}` === entry.id && message.name === entry.label)
+      let detail = `${entry.kind === 'tool' ? 'Tool execution' : 'Model response'} · ${outcome}.`
+      if (tool?.isError) {
+        let code: string | undefined
+        try { code = JSON.parse(tool.content)?.error?.code } catch { /* Raw output stays in the text-only detail. */ }
+        const failure = failureFeedback(code)
+        detail = `${failure.label}. ${failure.detail}`
+      }
       if (activity.detail.textContent !== detail) activity.detail.textContent = detail
+      activity.output.hidden = !tool
+      if (tool && activity.output.textContent !== tool.content) activity.output.textContent = tool.content
     }
     return row
   }
 
   private message(index: number, value: HistoryMessage): HTMLElement | undefined {
     if (value.role === 'assistant' && !value.content) return undefined
+    if (value.role === 'assistant' && this.requests.some(request => request.noticeIndex === index &&
+      request.status !== 'running' && request.status !== 'completed')) return undefined
+    if (value.role === 'tool' && value.toolCallId && this.activities.some(entry => entry.id === `tool-${value.toolCallId}` && entry.label === value.name)) return undefined
     let item = this.messages.get(index)
     if (!item || item.value.role !== value.role || item.value.content !== value.content) {
-      const node = element('article', undefined, `message ${value.role}`)
-      node.append(
+      const node = value.role === 'tool' ? element('details', undefined, 'unassigned-tool-output') : element('article', undefined, `message ${value.role}`)
+      if (value.role === 'tool') node.append(element('summary', 'Tool output · request association unavailable'), element('pre', value.content, 'activity-output'))
+      else node.append(
         element('small', value.role === 'assistant' ? 'DeckAgent' : value.role === 'user' ? 'You' : 'Tool result'),
         element('p', value.content),
       )

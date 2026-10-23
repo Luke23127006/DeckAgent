@@ -45,7 +45,9 @@ function session(value: unknown): WebSession {
     typeof value.updatedAt !== 'string' ||
     typeof value.messageCount !== 'number' ||
     typeof value.selectable !== 'boolean' ||
-    (value.activeRequestId !== undefined && typeof value.activeRequestId !== 'string')
+    (value.activeRequestId !== undefined && typeof value.activeRequestId !== 'string') ||
+    (value.title !== undefined && typeof value.title !== 'string') ||
+    (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean')
   )
     invalid()
   const chosen = value.selection
@@ -59,6 +61,8 @@ function session(value: unknown): WebSession {
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
     messageCount: value.messageCount,
+    ...(typeof value.title === 'string' ? { title: value.title } : {}),
+    ...(typeof value.hasSlides === 'boolean' ? { hasSlides: value.hasSlides } : {}),
     selectable: value.selectable,
     ...(object(chosen) && typeof chosen.provider === 'string' && typeof chosen.model === 'string'
       ? { selection: { provider: chosen.provider, model: chosen.model } }
@@ -202,7 +206,8 @@ export class ManagementClient {
           value.status !== 'unknown') ||
         (value.errorCode !== undefined &&
           (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0))
+        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
+        (value.noticeIndex !== undefined && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
       )
         invalid()
       return {
@@ -211,6 +216,7 @@ export class ManagementClient {
         status: value.status,
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
         ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
+        ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
       }
     })
   }

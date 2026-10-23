@@ -6,9 +6,37 @@ import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 import { fork } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
+import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
+
+test('History summaries derive titles and timestamps from saved sessions without starting work', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-history-summary-'))
+  const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
+  const input = `  Tái chế\n${'nội dung '.repeat(12)}`
+  await store.open('saved')
+  await store.append('saved', [{ role: 'user', content: input }])
+  const saved = await store.getInfo('saved')
+  store.close()
+  const app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: dir,
+    confirmedDecks: [{ sessionId: 'saved', outlineId: 'outline', slides: [{ slideId: 'one', title: 'Pending' }] }],
+  })
+  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  const headers = { authorization: `Bearer ${app.token}` }
+  const list = await (await fetch(`${app.origin}/api/sessions`, { headers })).json()
+  const summary = list.find(session => session.sessionId === 'saved')
+  assert.equal(summary.title, `${input.replace(/\s+/g, ' ').trim().slice(0, 64)}…`)
+  assert.equal(summary.updatedAt, saved.updatedAt)
+  assert.equal(summary.hasSlides, false, 'A pending plan must not count as published slides')
+  assert.equal(summary.messageCount, 1)
+  assert.deepEqual(await new HostClient(app.origin, app.token).history('saved'), [{ role: 'user', content: input }])
+  const response = await fetch(`${app.origin}/api/sessions`, { method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' }, body: '{}' })
+  assert.equal(response.status, 201)
+  const created = await response.json()
+  assert.equal(created.title, 'New chat')
+})
 
 test('empty Web opens Settings without a model and can create an empty chat without sending work', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-management-'))
@@ -102,6 +130,11 @@ test('reopening Web after a killed Host preserves unconfirmed activity without r
   assert.equal(requests[0].status, 'unknown')
   assert.equal(activities[0].status, 'unknown')
   assert.equal(modelRequests, 0)
+  const decks = new DeckClient(app.origin, app.token)
+  assert.deepEqual((await decks.snapshot('interrupted-chat')).slides.map(slide => [slide.slideId, slide.revision, slide.status]),
+    [['saved', 1, 'published'], ['pending', 0, 'pending']])
+  assert.equal((await decks.content('interrupted-chat', 'saved', 1)).html, '<h1>Durable before crash</h1>')
+  assert.equal(modelRequests, 0, 'Reading a restored deck must not replay work')
   assert.equal(
     (await new HostClient(app.origin, app.token).history('interrupted-chat'))[0].content,
     'Work until the Host is killed',
