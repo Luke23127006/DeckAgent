@@ -1,0 +1,184 @@
+name: Workspace CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace:
+    name: Workspace Verification (Windows)
+    runs-on: windows-2022
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.19.0'
+          package-manager-cache: false
+
+      - name: Set up pnpm from package.json
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          run_install: false
+          cache: true
+
+      - name: Record toolchain
+        run: |
+          node --version
+          pnpm --version
+
+      - name: Install locked dependencies
+        id: install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and build
+        id: build
+        run: pnpm build
+
+      - name: Lint (Biome)
+        id: lint
+        run: pnpm lint
+
+      - name: Cordis smoke tests
+        id: smoke
+        timeout-minutes: 2
+        run: pnpm test:cordis-smoke
+
+      - name: DeckAgent runtime tests (TASK-002-A)
+        id: runtime
+        timeout-minutes: 2
+        run: pnpm test:agent-runtime
+
+      - name: Model provider and manual CLI checks (TASK-002-B, local HTTP only)
+        id: providers
+        timeout-minutes: 2
+        run: pnpm test:model-providers
+
+      - name: Boot and unload Cordis smoke CLI
+        id: boot
+        timeout-minutes: 2
+        run: pnpm start:cordis-smoke
+
+      - name: Durable Session and process restart checks (TASK-002-C, local HTTP only)
+        id: sessions
+        timeout-minutes: 2
+        run: pnpm test:session-persistence
+
+      - name: UX prototype regression
+        id: ux
+        run: node tests/ux-02-prototype.test.cjs
+
+      - name: Chat first-run setup and Windows encrypted credentials (local HTTP only)
+        id: chat_setup
+        timeout-minutes: 3
+        run: pnpm test:chat-setup
+
+      - name: File Tools, Host API and browser connection (TASK-003, local fixtures)
+        id: tools_browser
+        timeout-minutes: 2
+        run: pnpm test:tools-browser
+
+      - name: Dotenv and repairable Web startup (local fixtures)
+        id: env_startup
+        timeout-minutes: 2
+        run: pnpm test:env-startup
+
+      - name: Local Web settings, model snapshots and activities (TASK-004, local HTTP and DPAPI)
+        id: local_web
+        timeout-minutes: 2
+        run: pnpm test:local-web
+
+      - name: Real browser Agent and filesystem smoke (Chrome headless, local fixtures)
+        id: browser
+        timeout-minutes: 2
+        run: pnpm test:browser-smoke
+
+      - name: Slide publication, Deck SSE and client state (TASK-005, local fixtures)
+        id: slide_pipeline
+        timeout-minutes: 2
+        run: pnpm test:slide-pipeline
+
+      - name: Outline confirmation and presentation workflow (TASK-006, local fixtures)
+        id: outline_workflow
+        timeout-minutes: 2
+        run: pnpm test:outline-workflow
+
+      - name: Recovery, history and scoped editing (TASK-007, local fixtures)
+        id: recovery_editing
+        timeout-minutes: 2
+        run: pnpm test:recovery-editing
+
+      - name: Record verification evidence
+        # TASK-007 browser coverage runs in the existing browser step above.
+        # TASK-006 browser coverage runs in the existing browser step above.
+        if: always()
+        env:
+          TESTED_SHA: ${{ github.sha }}
+          RUN_EVENT: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          INSTALL_RESULT: ${{ steps.install.outcome }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          SMOKE_RESULT: ${{ steps.smoke.outcome }}
+          RUNTIME_RESULT: ${{ steps.runtime.outcome }}
+          PROVIDERS_RESULT: ${{ steps.providers.outcome }}
+          SESSIONS_RESULT: ${{ steps.sessions.outcome }}
+          CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
+          BOOT_RESULT: ${{ steps.boot.outcome }}
+          UX_RESULT: ${{ steps.ux.outcome }}
+          TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
+          BROWSER_RESULT: ${{ steps.browser.outcome }}
+          ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
+          LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
+          SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
+          OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
+          RECOVERY_EDITING_RESULT: ${{ steps.recovery_editing.outcome }}
+        run: |
+          @"
+          ## Workspace verification
+          - Tested SHA: $env:TESTED_SHA
+          - Event: $env:RUN_EVENT
+          - Environment: windows-2022, Node 22.19.0; pnpm from package.json
+          - Install: $env:INSTALL_RESULT
+          - Build/typecheck: $env:BUILD_RESULT
+          - Lint (Biome): $env:LINT_RESULT
+          - Integration smoke: $env:SMOKE_RESULT
+          - DeckAgent runtime (TASK-002-A only): $env:RUNTIME_RESULT
+          - Model providers (TASK-002-B, local HTTP only): $env:PROVIDERS_RESULT
+          - Session persistence (TASK-002-C, local HTTP only): $env:SESSIONS_RESULT
+          - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
+          - Boot/unload: $env:BOOT_RESULT
+          - UX regression: $env:UX_RESULT
+          - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
+          - Real browser reload / Agent / allowed and denied file writes: $env:BROWSER_RESULT
+          - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
+          - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
+          - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
+          - Outline proposals / confirmation guards / two-request generation: $env:OUTLINE_WORKFLOW_RESULT
+          - Recovery / Stop / scoped editing / history: $env:RECOVERY_EDITING_RESULT
+          - Run: $env:RUN_URL
+
+          Record this run URL and tested SHA in PROGRESS.md. A successful push run on
+          dev supplies automated evidence; also verify every criterion of the gate.
+          Gate 002 additionally requires a real-model request and history readback
+          after Host restart on the accepted baseline (manual evidence; no cloud keys
+          are required by this workflow). PR runs verify the proposed merge only.
+          "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8

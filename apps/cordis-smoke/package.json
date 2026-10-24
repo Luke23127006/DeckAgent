@@ -1,0 +1,10 @@
+{
+  "name": "@deckagent/cordis-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deckagent/cordis-fixture": "workspace:*"
+  }
+}

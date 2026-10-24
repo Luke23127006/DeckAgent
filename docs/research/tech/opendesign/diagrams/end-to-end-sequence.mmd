@@ -1,0 +1,57 @@
+sequenceDiagram
+    actor User
+    participant CLI as CLI hoặc Chat
+    participant Runner
+    participant Planner
+    participant LLM as LLMBackend
+    participant Tools as Tool handlers
+    participant State as ToolContext
+    participant Critic as CriticAgent
+    participant Disk as Filesystem
+    User->>CLI: Brief và attachments
+    CLI->>Runner: run(brief, attachments)
+    Runner->>Runner: Chuẩn bị brief, enhancer nếu được bật
+    Runner->>State: Khởi tạo ToolContext cho run mới
+    Runner->>Runner: Claim extraction nếu có PDF và được bật
+    Runner->>State: Lưu claim_graph hoặc None
+    Runner->>Planner: run(planner_input_brief, ctx)
+    Note over Planner,LLM: LLMBackend ở cột này thuộc planner
+    loop Tối đa max_planner_turns
+        Planner->>LLM: create_turn(system, messages, TOOL_SCHEMAS)
+        LLM-->>Planner: TurnResponse
+        Planner->>Planner: Append assistant vào messages
+        alt Không có tool calls
+            Planner->>Planner: Thoát vòng planner
+        else Có tool calls
+            loop Từng tool call, theo thứ tự trong response
+                Planner->>Tools: _invoke(name, args, ctx)
+                alt composite cho deck, đủ preconditions
+                    Tools->>State: Đọc spec và assets
+                    Tools->>Disk: Ghi deck.pptx, slide PNG và preview
+                    Tools->>State: Lưu composition
+                else critique, đủ preconditions
+                    Tools->>State: Đọc spec, composition, source, claim_graph
+                    Tools->>Critic: critique với dữ liệu đã thu thập
+                    Critic->>Critic: Backend riêng, vòng model và critic tools
+                    Critic->>Disk: Append trajectory/critic.jsonl trong vòng critic
+                    Critic-->>Tools: CritiqueReport
+                    Tools->>State: Append critique_results
+                    Tools->>Disk: Ghi critique_N.json
+                else finalize
+                    Tools->>State: finalized = true, finalize_notes
+                else Tool khác hoặc preconditions không đạt
+                    Tools->>Tools: Chạy handler hoặc tạo result lỗi
+                end
+                Tools-->>Planner: ToolResultRecord: ok hoặc error
+            end
+            Planner->>Planner: Append toàn bộ tool results vào messages
+            Planner->>State: Kiểm tra finalized sau cả batch
+            State-->>Planner: Nếu true thì thoát vòng, nếu false thì lượt tiếp
+        end
+    end
+    Planner-->>Runner: Agent trace
+    Runner->>Runner: Tính terminal_status, reward và metadata
+    Runner->>Disk: Ghi DistillTrajectory JSON
+    Runner-->>CLI: Trajectory và đường dẫn JSON
+    CLI-->>User: Hiển thị kết quả run
+    Note over Runner,LLM: Hình thể hiện nhánh planner trả về bình thường.<br/>Lỗi create_turn của planner được raise, có thể chưa ghi JSON cuối.

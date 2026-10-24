@@ -54,7 +54,7 @@ The four initial engineering skills come from `mattpocock/skills`. The two
 repository-local Mermaid skills were promoted from the existing
 Claude configuration into the canonical collection. The OpenCodeReview delegation
 skill comes from `alibaba/open-code-review` and is adapted to the repository-local,
-pinned npm tooling. The supplied `ComposioHQ/awesome-claude-skills` catalog was
+pinned pnpm workspace dependency. The supplied `ComposioHQ/awesome-claude-skills` catalog was
 consulted, but no skill from that catalog was adopted. The manifest records
 reconsideration conditions for `pptx`, `research`, and `webapp-testing`. The optional
 debugging shell template needs Bash (for example Git Bash or WSL); native commands

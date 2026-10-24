@@ -1,6 +1,8 @@
 # Private local state
+/.deckagent/
 **/.env
 **/.env.*
+!/.env.example
 
 # Google OAuth credentials must never be committed
 client_secret*.json
@@ -17,4 +19,10 @@ __pycache__/
 /trash/
 
 # Node.js development tooling
+/.pnpm-store/
 /node_modules/
+**/node_modules/
+/vendor/*/lib/
+/packages/*/*/lib/
+/apps/*/lib/
+*.tsbuildinfo

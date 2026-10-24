@@ -6,6 +6,8 @@ These rules apply to every coding agent used to develop DeckAgent, regardless of
 
 Before starting a task, read this file and identify the affected files and boundaries.
 
+For V1 implementation tasks, read `docs/v1-plan/PROGRESS.md` first and update your owned status, verification evidence, and handoff before ending the task; mark a group Done only when its Integration Gate passes.
+
 If the target directory or one of its parent directories contains another `AGENTS.md`, read the closest applicable file before editing. More specific rules extend these root rules.
 
 Read a contract, schema, or design document only when the task changes an API, database structure, shared type, configuration contract, or another module boundary.
@@ -34,6 +36,12 @@ Preserve existing repository instructions unless the requested change explicitly
 
 Read [`docs/AGENTS.md`](docs/AGENTS.md) before creating or editing any file under `docs/`. It holds the documentation rules.
 
+## Coding conventions and repository structure
+
+Follow the approved DeckAgent conventions in [`docs/development/coding-conventions.md`](docs/development/coding-conventions.md) and the directory and package rules in [`docs/development/repository-structure.md`](docs/development/repository-structure.md). Examples there illustrate the rules; where the current codebase deviates, the gap is marked as drift and is not to be copied.
+
+When implementing or reviewing code, apply the criteria in [`docs/development/code-review-criteria.md`](docs/development/code-review-criteria.md): its `MUST` / `SHOULD` / `MAY` levels and its review comment severities are the shared standard for judging a change. Do not duplicate those criteria here.
+
 ## Boundaries and architecture
 
 - Respect recorded module responsibilities, data ownership, and dependency directions. Do not bypass a component's public interface by reaching into its private implementation.
@@ -47,3 +55,4 @@ Read [`docs/AGENTS.md`](docs/AGENTS.md) before creating or editing any file unde
 - Do not delete or disable tests, weaken assertions, suppress errors, or skip required checks to make a change appear successful. Update tests when expected behavior changes, and report failures even if they predate the task.
 - Never put passwords, tokens, API keys, or other secrets in source code, fixtures, logs, commits, or responses. Do not run destructive operations on shared data or environments, publish changes, or alter access settings unless explicitly authorized.
 - Review the final diff for unrelated edits, unintended contract changes, and exposed secrets. Report behavior changed, affected interfaces or components, checks and results, unresolved assumptions, and decisions needed from the team.
+- After implementation changes, verify the affected behavior using existing focused checks or a minimal smoke test. Record actual results and limitations in `docs/v1-plan/PROGRESS.md`. Never mark a task or Integration Gate as PASS without evidence. Do not run unrelated full-suite tests after every small change.

@@ -1,0 +1,19 @@
+{
+  "name": "@deckagent/browser-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./boot": "./lib/boot.js"
+  },
+  "dependencies": {
+    "@deckagent/deck": "workspace:*",
+    "@deckagent/host-api": "workspace:*"
+  }
+}

@@ -2,6 +2,7 @@
 
 These rules extend the root `AGENTS.md` for every file under `docs/`.
 
+- **Placement.** Developer-facing conventions and reference go under `docs/development/`, agent guidance under `docs/agents/`, tooling guides under `docs/tooling/`, product specs under `docs/spec/`, planning and handoff under the current plan's folder (`docs/v1-plan/` today), and research under `docs/research/`.
 - **Standalone readability.** A reader must understand a file without opening another file to decode an ID. When a file cites another source, it says what the source shows in words (for example `claude-report (stop before any slide exists keeps an empty canvas)`), not by an opaque code such as `CS-01 B15` or `row 3.12`. Meaningful IDs that the project defines and resolves (`UC-001`, `A12`, `FR-004`) are fine; row or step numbers inside another document are not.
 - **Name research and reference files for their content** (`claude-deck-generation-behavior.md`), not for a sequence number.
 - **Write once.** A behavior shared by several flows is written once, in a common section; each flow states only what differs.

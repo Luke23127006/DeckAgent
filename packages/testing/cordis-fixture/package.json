@@ -1,0 +1,13 @@
+{
+  "name": "@deckagent/cordis-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./consumer": { "types": "./lib/types/consumer.d.ts", "default": "./lib/consumer.js" }
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~"
+  }
+}

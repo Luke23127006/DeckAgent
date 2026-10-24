@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    { "path": "../../packages/presentation/deck" },
+    { "path": "../../packages/tools/presentation" },
+    {
+      "path": "../../vendor/cordis"
+    },
+    {
+      "path": "../../packages/agent/runtime"
+    },
+    {
+      "path": "../../packages/tools/filesystem"
+    },
+    {
+      "path": "../../packages/host/api"
+    },
+    {
+      "path": "../../packages/client/runtime"
+    },
+    {
+      "path": "../../packages/llm/providers"
+    },
+    {
+      "path": "../../packages/session/persistence"
+    }
+  ]
+}
