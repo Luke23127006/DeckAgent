@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeckAgent — Đối chiếu phạm vi triển khai V1</title>
+  <style>
+    :root { color-scheme: light; --ink:#172b42; --muted:#526277; --line:#dce4ec; --blue:#215ac4; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#f1f4f8; color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:1120px; margin:36px auto; padding:36px; background:white; border:1px solid var(--line); border-radius:16px; }
+    h1 { margin:8px 0 12px; font-size:clamp(26px,4vw,36px); line-height:1.25; letter-spacing:-.7px; }
+    h2 { margin:30px 0 12px; font-size:22px; line-height:1.35; }
+    h3 { margin:0 0 8px; font-size:18px; }
+    p { margin:8px 0 12px; }
+    .eyebrow { color:var(--blue); font-size:12px; font-weight:750; text-transform:uppercase; letter-spacing:1.2px; }
+    .meta,.small { color:var(--muted); font-size:13px; }
+    .lead { padding:18px 20px; background:#edf4ff; border-left:4px solid var(--blue); border-radius:6px; }
+    .legend { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0; }
+    .tag { display:inline-block; padding:3px 9px; border-radius:5px; font-size:12px; font-weight:700; }
+    .outside { color:#8d3516; background:#fff0e6; }
+    .early { color:#5840a0; background:#f1ebff; }
+    .detail { color:#245c54; background:#e8f5ef; }
+    .table-wrap { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th,td { padding:16px 13px; text-align:left; vertical-align:top; border:1px solid var(--line); }
+    th { background:#f4f7fa; font-size:13px; }
+    th:first-child { width:23%; } th:nth-child(2) { width:42%; }
+    td p:last-child { margin-bottom:0; }
+    td strong { color:#162c49; }
+    .ref { display:block; margin-top:10px; font-size:12px; color:var(--muted); }
+    a { color:#215ac4; text-underline-offset:3px; overflow-wrap:anywhere; }
+    code { font:12px/1.5 Consolas,monospace; overflow-wrap:anywhere; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .box { border:1px solid var(--line); border-radius:8px; padding:18px; }
+    ul,ol { padding-left:23px; margin:8px 0; } li { margin:7px 0; }
+    details { border-top:1px solid var(--line); margin-top:24px; padding-top:15px; }
+    summary { cursor:pointer; font-weight:650; }
+    footer { margin-top:24px; padding-top:16px; border-top:1px solid var(--line); }
+    @media(max-width:700px) { main { margin:0; padding:22px 16px; border:0; border-radius:0; } .grid { grid-template-columns:1fr; } table,tbody,tr,td { display:block; } thead { display:none; } td { border-top:0; } tr { margin-bottom:18px; border-top:1px solid var(--line); } td::before { display:block; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; } td:nth-child(2)::before { content:"Plan → Hiện tại"; } td:nth-child(3)::before { content:"Đề xuất cho tech lead"; } }
+    @media print { body { background:white; font-size:11pt; } main { margin:0; padding:0; border:0; max-width:none; } h1 { font-size:24pt; } h2 { break-after:avoid; } tr,.box { break-inside:avoid; } .small,.meta { font-size:9pt; } details { display:block; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Tài liệu review dành cho tech lead · 24/10/2026</div>
+    <h1>Những phần triển khai nhiều hơn<br>mức tối thiểu của plan V1</h1>
+    <p class="meta">Checkout: <code>E:\Final_Project\Test\DeckAgent</code> · Branch: <code>feature/outline-clarification-confirm</code> · HEAD: <code>95fd3dc</code></p>
+  </header>
+
+  <div class="lead">
+    <strong>Kết luận:</strong> CLI chat có trải nghiệm riêng nằm ngoài giao diện sản phẩm V1 đã chọn. Các phần mở rộng đáng chú ý còn lại chủ yếu là <strong>làm trước mốc demo</strong> hoặc <strong>chi tiết triển khai bổ sung</strong>, vẫn phục vụ yêu cầu V1. Điểm cần xử lý trước là code đã đi xa hơn hồ sơ nghiệm thu: <strong>Gates 004–007 vẫn NOT_VERIFIED trong PROGRESS</strong>.
+  </div>
+  <p class="small">Căn cứ: scope sản phẩm trong VERSIONS, plan chia nhóm TASK-001–007 và code hiện tại. Không dùng “nhiều code hơn” để kết luận làm thừa; các đề xuất dưới đây chưa phải quyết định của dự án.</p>
+  <div class="legend" aria-label="Phân loại">
+    <span class="tag outside">Ngoài giao diện V1</span>
+    <span class="tag early">Làm trước mốc demo</span>
+    <span class="tag detail">Chi tiết bổ sung cho V1</span>
+  </div>
+
+  <section aria-labelledby="findings">
+    <h2 id="findings">5 phần cần review</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phần đã triển khai</th><th>Plan → Hiện tại</th><th>Đề xuất cho tech lead</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><h3>1. CLI chat và onboarding riêng</h3><span class="tag outside">Ngoài giao diện V1</span></td>
+            <td><p><strong>Plan:</strong> V1 chọn Local Web. TASK-002 cần gọi model thật và lưu/mở lại Session; CLI là cách kiểm tra nền tảng hợp lý.</p><p><strong>Hiện tại:</strong> CLI còn có wizard chọn provider/model, nhập key, kiểm tra kết nối, lưu profile/key mã hóa, chat nhiều lượt, xem history và mở lại Session.</p><span class="ref">[S1] Interface · [S2] TASK-002 · [S3] CLI</span></td>
+            <td><p><strong>Giữ như công cụ nội bộ</strong> để debug/smoke test. Chưa ưu tiên hoàn thiện như giao diện thứ hai. Phần vượt mức tối thiểu là trải nghiệm onboarding/chat riêng; không coi toàn bộ CLI là công việc thừa.</p></td>
+          </tr>
+          <tr>
+            <td><h3>2. Recovery, History và sửa slide</h3><span class="tag early">Làm trước mốc demo</span></td>
+            <td><p><strong>Plan:</strong> TASK-007 nối tiếp Gate 006: dừng an toàn, mở lại deck và sửa đúng phạm vi.</p><p><strong>Hiện tại:</strong> đã có candidate xử lý restart không tự chạy lại, giữ revisions, đọc slide và cấp quyền sửa theo IDs/revisions; history nối đúng Session/deck. Gates 004–006 chưa có bản ghi đóng đầy đủ.</p><span class="ref">[S2] TASK-007 · [S4] Recovery/editing · [S5] Task Groups</span></td>
+            <td><p><strong>Giữ code, ưu tiên xác nhận nền tảng trước.</strong> Đóng evidence demo rồi nghiệm thu recovery/editing riêng. Đây là phạm vi V1 làm sớm, không phải tính năng ngoài V1; plan cho phép chuẩn bị độc lập trước Gate.</p></td>
+          </tr>
+          <tr>
+            <td><h3>3. Hỏi đáp nhiều lượt và confirm tự nhiên</h3><span class="tag detail">Chi tiết bổ sung cho V1</span></td>
+            <td><p><strong>Plan demo:</strong> outline → confirm → tạo slide. V1 đầy đủ còn yêu cầu hỏi làm rõ và chờ câu trả lời.</p><p><strong>Hiện tại:</strong> một request có thể chuyển sang chờ, nhận lựa chọn/text/bỏ qua rồi tiếp tục; có reply chống xử lý lặp, câu hỏi theo version và model diễn giải ý định xác nhận/sửa/hủy.</p><span class="ref">[S6] UC-001 / UC-003 · [S7] Waiting/reply và outline interaction</span></td>
+            <td><p><strong>Tách thành đầu việc nghiệm thu rõ ràng.</strong> Review state/API và thử model thật: câu mơ hồ, vừa đồng ý vừa yêu cầu sửa, reply cũ và Stop. Fixture PASS chưa chứng minh model hiểu đúng mọi cách nói. Đây là phần sâu hơn demo tối thiểu, vẫn thuộc V1.</p></td>
+          </tr>
+          <tr>
+            <td><h3>4. Tách context và gọi lại một lần khi model chưa làm việc</h3><span class="tag detail">Cơ chế bổ sung</span></td>
+            <td><p><strong>Plan:</strong> tạo/publish đúng slide, xử lý thất bại và không tự chạy lại request sau restart; chưa mô tả cơ chế này.</p><p><strong>Hiện tại:</strong> lượt tạo slide dùng context riêng từ nhiệm vụ Host và tài liệu user. Nếu model kết thúc nhưng chưa thử ghi/publish và deck chưa đổi, Host gọi thêm tối đa một lần. Không gọi lại khi lỗi provider, Stop hoặc đã thử ghi.</p><span class="ref">[S8] Context và idle recovery · [S5] Handoff 23/10</span></td>
+            <td><p><strong>Review như bản sửa độ tin cậy.</strong> Đo tỷ lệ hoàn thành, số lượt gọi model và chi phí trước/sau; xác nhận giới hạn một lần. Không hiểu đây là tự resume sau restart hoặc cơ chế retry mọi lỗi.</p></td>
+          </tr>
+          <tr>
+            <td><h3>5. Nhiều đợt căn chỉnh UI theo prototype</h3><span class="tag early">Đầu tư thêm trước acceptance</span></td>
+            <td><p><strong>Plan:</strong> TASK-004 cần Chat, Models, History và Canvas dùng được.</p><p><strong>Hiện tại:</strong> đã có các đợt alignment, sau đó chuyển sang mẫu Interactive: shell/rail, model popover, Settings page/wizard, outline dock, thumbnails, Enter/IME và responsive. Đây là các đợt owner yêu cầu, không phải tự ý thêm tính năng.</p><span class="ref">[S9] Interactive UI plan · [S5] UI candidate</span></td>
+            <td><p><strong>Chốt một mẫu UI và checklist.</strong> Nghiệm thu các màn hiện có trước khi tiếp tục tinh chỉnh. Tách lỗi cản trở thao tác khỏi khác biệt hình thức để tránh làm lại UI nhiều vòng khi V1 còn thiếu chức năng.</p></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="boundaries">
+    <h2 id="boundaries">Hai điều cần tránh hiểu nhầm</h2>
+    <div class="grid">
+      <article class="box"><h3>Tự xây Harness là thay đổi đã được chỉ đạo</h3><p>Value-chain plan cũ thiên về reuse nhiều phần DeepSeek. Parallel plan đã ghi chỉ dẫn <strong>20/10: chỉ reuse Cordis cùng vendor hiện có, Harness do DeckAgent tự xây</strong>. Runtime, Host API và client tự viết vì vậy không thể bị coi là vượt plan chỉ dựa vào tài liệu reuse cũ.</p><p class="small">Căn cứ: [S2], mục 1. Cần cập nhật tài liệu cũ để tránh giao việc trùng hoặc đánh giá sai phạm vi.</p></article>
+      <article class="box"><h3>Code đi trước không có nghĩa V1 đã đủ</h3><p><strong>Attachments, tạo ảnh mới và thêm/xóa/đổi thứ tự slide chưa được triển khai đầy đủ trong slice đã khảo sát.</strong> Nút đính kèm còn disabled; generation hiện giới hạn HTML tĩnh, không ảnh và không đổi số lượng/thứ tự slide.</p><p class="small">Căn cứ: [S1] Images; [S9] phần còn thiếu; <code>boot.ts:407–412</code>, <code>outline-workflow.ts:20</code>, <code>editing-workflow.ts</code>. Đây là việc cần đối chiếu scope tiếp, không phải phần làm thừa.</p></article>
+    </div>
+  </section>
+
+  <section aria-labelledby="next">
+    <h2 id="next">Thứ tự triển khai tiếp theo — đề xuất</h2>
+    <ol>
+      <li><strong>Chốt baseline nghiệm thu:</strong> chọn SHA tích hợp; đối chiếu Gates 004–006 bằng luồng model thật, ghi đầu vào, provider/model, Session và kết quả từng tiêu chí.</li>
+      <li><strong>Ổn định phần đã mở rộng:</strong> nghiệm thu TASK-007 và waiting/confirm; đo hiệu quả gọi lại khi model không làm việc. Không cần triển khai lại các phần đã có.</li>
+      <li><strong>Lập backlog phần V1 còn thiếu:</strong> attachments → quy tắc ảnh/cơ chế tạo ảnh cần chốt → thay cấu trúc deck và các alternative flows được chọn cho V1. Mỗi phần có owner, contract và acceptance riêng.</li>
+      <li><strong>Chốt phạm vi hỗ trợ:</strong> CLI là công cụ nội bộ; UI theo một prototype đã chọn. Tạm giảm đầu tư thêm ở hai nhánh này nếu không chặn acceptance.</li>
+    </ol>
+  </section>
+
+  <details>
+    <summary>Nguồn đối chiếu — mở khi cần kiểm tra code</summary>
+    <ul class="small">
+      <li id="s1"><strong>[S1]</strong> <a href="../spec/00-current-scope/VERSIONS.md">VERSIONS — Interface, Content editing, Images, Chats and workspace</a>: ràng buộc V1; scope flow cụ thể vẫn do trường versions của use case quyết định.</li>
+      <li id="s2"><strong>[S2]</strong> <a href="deckagent-parallel-team-implementation-plan.md">Parallel implementation plan</a>: chỉ dẫn Cordis 20/10; TASK-002, 004, 006, 007 và quy tắc Gates. <a href="deckagent-value-chain-implementation-plan.md">Value-chain plan</a>: định hướng reuse cũ, mốc demo và mở rộng sau demo.</li>
+      <li id="s3"><strong>[S3]</strong> <a href="../../apps/agent-runtime/src/chat.ts">chat.ts</a> (help: 11–24); <a href="../../apps/agent-runtime/src/setup.ts">setup.ts</a> (prepareChat: 141–215); <a href="../../README.md">README — Optional terminal CLI</a>.</li>
+      <li id="s4"><strong>[S4]</strong> <a href="../../apps/local-web/src/editing-workflow.ts">editing-workflow.ts</a> (editingScope, registerSlideScope, editingInstructions); <a href="../../packages/tools/presentation/src/index.ts">presentation tools</a> (registerReadSlide); <a href="../../apps/local-web/src/web-state.ts">web-state.ts</a> (restart chuyển request sang unknown); <a href="../../tests/recovery-editing.test.mjs">recovery/editing tests</a>.</li>
+      <li id="s5"><strong>[S5]</strong> <a href="PROGRESS.md">PROGRESS</a>: Task Groups; handoff UI, clarification, context/recovery ngày 23/10 và credential/browser ngày 24/10. Các đoạn lịch sử không thay thế bảng Gate hoặc evidence mới hơn.</li>
+      <li id="s6"><strong>[S6]</strong> <a href="../spec/03-use-cases/UC-001.md">UC-001 — hỏi trước outline và xác nhận proposal</a>; <a href="../spec/03-use-cases/UC-003.md">UC-003 — chờ câu trả lời trong request</a>; <a href="outline-confirmation-clarification-plan.md">Kế hoạch clarification/confirmation và handoff</a>.</li>
+      <li id="s7"><strong>[S7]</strong> <a href="../../packages/host/api/src/request-controller.ts">request-controller.ts</a> (reply, run); <a href="../../apps/local-web/src/outline-interaction.ts">outline-interaction.ts</a> (ask_clarification, review_outline); <a href="../../apps/local-web/src/web-request.ts">web-request.ts</a> (staging và chuyển phase).</li>
+      <li id="s8"><strong>[S8]</strong> <a href="../../apps/local-web/src/web-request.ts">web-request.ts</a> (execute, taskContext, sendAttempt); <a href="../../packages/agent/runtime/src/agent-runtime.ts">agent-runtime.ts</a> (promptContext và lịch sử lưu đầy đủ); <a href="../../tests/recovery-editing.test.mjs">tests</a> (idle recovery và Stop).</li>
+      <li id="s9"><strong>[S9]</strong> <a href="interactive-ui-migration-plan.md">Interactive UI migration plan</a> (mục 1, 8); <a href="../../packages/client/runtime/src/settings-panel.ts">settings-panel.ts</a>; <a href="../../packages/client/runtime/src/deck-canvas.ts">deck-canvas.ts</a>; <a href="../../packages/client/runtime/src/boot.ts">boot.ts</a>; <a href="../../apps/local-web/src/outline-workflow.ts">outline-workflow.ts</a>.</li>
+    </ul>
+  </details>
+
+  <footer class="small"><strong>Giới hạn xác minh:</strong> đối chiếu tài liệu, source và nội dung tests tại checkout nêu trên; không chạy lại runtime tests, model thật hoặc hosted CI trong lượt lập báo cáo. Graph có dữ liệu cũ/chưa theo dõi một số file nên các kết luận triển khai được đối chiếu trực tiếp source. Trạng thái Gate trích từ PROGRESS, không phải kết quả nghiệm thu mới. File HTML tự chứa CSS, đọc offline; liên kết nguồn cần giữ cùng repository. Không thay source ứng dụng hoặc trạng thái Gate.</footer>
+</main>
+</body>
+</html>
