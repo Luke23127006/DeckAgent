@@ -213,10 +213,29 @@ test('clarification UI waits, restores after reload and answers without sending 
     if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
     return result.result.value
   }
+  // Hold initial chat creation so the model catalog is visible before the chat is ready.
+  await protocol.call('Page.enable')
+  const startup = await protocol.call('Page.addScriptToEvaluateOnNewDocument', { source: `
+    const startupFetch = window.fetch;
+    window.fetch = async (...args) => {
+      if (String(args[0]).endsWith('/api/sessions') && args[1]?.method === 'POST') {
+        window.fetch = startupFetch;
+        await new Promise(resolve => { window.releaseChatCreation = resolve; });
+      }
+      return startupFetch(...args);
+    };
+  ` })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-  await eventually(() => evaluate(`!!document.querySelector('.composer select option[value]:not([value=""])')`), 'Models missing')
-  await evaluate(`const select=document.querySelector('.composer select'); select.selectedIndex=1; select.dispatchEvent(new Event('change')); true`)
-  await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`), 'Model not selected')
+  await eventually(() => evaluate(`!!window.releaseChatCreation && !!document.querySelector('.composer select option[value]:not([value=""])')`), 'Startup gate or models missing')
+  await protocol.call('Page.removeScriptToEvaluateOnNewDocument', { identifier: startup.identifier })
+  assert.equal(await evaluate(`document.querySelector('.composer select').disabled`), true, 'The catalog alone must not enable selection before the chat is ready')
+  await evaluate(`window.releaseChatCreation(); delete window.releaseChatCreation; true`)
+  await eventually(() => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`), 'Chat not ready for model selection')
+  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.model-options button')].some(button => button.textContent === 'question-ui' && !button.disabled)`), 'Clarification model missing')
+  await evaluate(`[...document.querySelectorAll('.model-options button')].find(button => button.textContent === 'question-ui').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.composer select').value === JSON.stringify({provider:'fixture',model:'question-ui'}) && !document.querySelector('.composer select').disabled && !document.querySelector('[aria-label="Send request"]').disabled`), 'Clarification model selection not saved')
+  assert.equal(calls, 0, 'Opening a chat and selecting a model must not start Agent work')
   await evaluate(`const ta=document.querySelector('.composer textarea'); ta.value='Tạo bài trình bày'; document.querySelector('.composer').requestSubmit(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.clarification-question:not([hidden]) button')`), 'Question controls missing')
   const before = calls

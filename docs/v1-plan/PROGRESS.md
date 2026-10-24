@@ -2,6 +2,13 @@
 
 Dashboard giữ current state và handoff cần thiết; scope/acceptance criteria ở [parallel team plan](deckagent-parallel-team-implementation-plan.md), lý do và chuỗi giá trị ở [value-chain plan](deckagent-value-chain-implementation-plan.md). Gate 001–007 dưới đây thuộc parallel plan, không phải G1–G8 của value-chain plan. Không sao chép Jira hoặc lịch sử implementation vào đây.
 
+## Sửa chọn model quá sớm trong browser smoke hỏi làm rõ — 24-10-2026
+
+- Owner cung cấp CI browser smoke 4/5 PASS; ca clarification thất bại `Model not selected` trước khi gửi yêu cầu. Ca gốc PASS khi chạy riêng local. Probe giữ POST tạo Session tái hiện đúng lỗi: catalog đã hiển thị nhưng chat chưa mở, select còn disabled và change handler bỏ qua vì chưa có current Session. Chưa tái hiện tự nhiên timing của hosted runner; probe chứng minh một đường gây đúng triệu chứng đó.
+- Chỉ sửa `tests/browser-smoke.test.mjs`: giữ bước tạo chat có kiểm soát để khóa regression, giải phóng rồi chờ control chọn model sẵn sàng; chọn đúng fixture `question-ui` qua popover và xác nhận selection đã lưu cùng composer được mở. Kiểm tra chọn model không gọi Agent. Không tăng timeout, thêm sleep/retry hoặc đổi runtime/API; giữ assertions hỏi đáp, Stop, reload và bản nháp. Startup script chỉ áp dụng navigation đầu và được gỡ trước reload.
+- Verification local Windows, Node **22.19.0**: regression với startup gate và cách chọn cũ FAIL đúng `Model not selected`, sau sửa **1/1 PASS**; build/typecheck/bundle, lint và Chrome browser smoke đầy đủ **5/5 PASS, 0 skipped**. Diff whitespace PASS. Không dùng provider/key/data người dùng; chưa có hosted CI mới.
+- Handoff: owner yêu cầu commit và push bản sửa lên `origin/feature/outline-clarification-confirm`; kết quả push/SHA được xác minh riêng sau commit. Cần chạy lại CI trên candidate mới; không coi local PASS là xác nhận timing hosted đã hết lỗi. Integration Gates giữ nguyên.
+
 ## Windows credential subprocess: deadline và chẩn đoán an toàn — 24-10-2026
 
 - Owner báo CI `test:chat-setup` 13/14 PASS; DPAPI write lỗi CLI_CREDENTIALS sau 10.031 giây. Giới hạn cũ là 10 giây; cold startup chậm là giả thuyết phù hợp thời gian nhưng chưa được xác nhận bằng exit metadata của hosted runner. Suite gốc chạy local 14/14 PASS trước sửa.
