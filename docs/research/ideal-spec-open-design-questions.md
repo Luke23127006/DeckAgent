@@ -12,6 +12,7 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Whether adding the same folder again as a workspace binds the chats it had, or starts without them.
 - What the system does when the place it uses for the workspace data of a workspace already holds content that DeckAgent did not write. The system changes none of that content (FR-071); where it keeps its own data then is open.
 - Where the workspace data of the default workspace sits, which has no folder.
+- Whether the product keeps a copy of the workspace data outside the folder of its workspace, for example a backup, so that the chats outlive the folder. The chats are kept in that folder, so a folder deleted with its data takes them with it (FR-074).
 
 ## Requests that stopped or failed early (UC-002, UC-003 Note 18, UC-006, UC-008)
 
