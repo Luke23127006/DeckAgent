@@ -80,8 +80,8 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
 | **workspace** | A named group of chats on the user's computer. The user adds one by choosing a folder. Removing it changes no folder, no file and no chat |
 | **default workspace** | The workspace the system gives for a first start, before the user chose a folder |
-| **permission** | What the agent of one chat can reach on the computer and in other chats, and where it must ask the user first |
-| **reference** | A file or a folder the request names as material. Naming it gives the agent no permission by itself. It becomes part of the data of the request when a request reads it |
+| **permission** | What the agent of one chat can reach on the computer, and where it must ask the user first. The files of the workspace of the chat are inside it. The data of another chat never is |
+| **reference** | A file or a folder the request names as material. Naming it raises no permission by itself. It becomes part of the data of the request when a request reads it |
 | **reasoning level** | How much an added model thinks about a request, as the user chooses it for a chat. The model and its provider set which levels it has |
 | **context usage** | How much of the context of the selected model the conversation and the request in preparation use. It is an estimate unless the provider reported it |
 | **compact** | A summary the system makes of the earlier conversation, so the work stays within the context of the selected model. The whole conversation stays readable |
@@ -93,13 +93,13 @@ No tooling exists yet, so review does it. There are two checks.
 **Words.** Run this on the response text of a use case's interactions, on the prose of `Goal`, `Preconditions` and `Behavior constraints`, and on `Situation and goal` in users and the vision. Each hit is fixed or has a stated reason.
 
 ```
-grep -nEi '(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)'
+grep -nEi '\b(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)\b'
 ```
 
 **Interface (rule 10).** Run this on the whole use case, except the frontmatter and the flow IDs. Diagram labels count. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
 
 ```
-grep -nEi '(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)'
+grep -nEi '\b(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)\b'
 ```
 
 Then apply the **swap test** to each sentence: picture the same product with another interface, such as touch only, voice only, or a different layout. If the sentence is still true, it passes. If it is not, it describes the interface and is rewritten.

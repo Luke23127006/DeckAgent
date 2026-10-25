@@ -55,6 +55,10 @@ A flow within a use case can also be retired, when the behavior it held is no lo
 Retired flow IDs:
 
 - UC-016 A4, retired on 25-10-2026. It imported a session archive and restored a chat from it. The archive is a record for reading and handover; the product builds no chat from it. Import of a session stays a candidate for later research. It merged into no flow.
+- UC-001 A7, retirement date not recorded. It answered a request with no topic by showing a sample outline with placeholder headings. A request with no topic gets a question first; A32 asks it. It merged into A32.
+- UC-001 A21, retirement date not recorded. It stopped the work while the outline was drafted. UC-003 A31 gives the same response at that step, through `includes`. It merged into UC-003 A31.
+- UC-003 A1, retirement date not recorded. It typed or pasted the request text. Writing the request text is the main flow (S1). It merged into S1.
+- UC-003 A20, retirement date not recorded. It attached a file that the selected model could not read. A file the system does not accept is rejected when it is added (A8). It merged into no flow.
 
 ### Version scope
 
