@@ -1,8 +1,9 @@
 # Local development
 
 Practical setup, configuration, and day-to-day commands for developing DeckAgent.
-This guide covers only what developers need in this repository; product capabilities
-and review standards are linked from [`README.md`](../../README.md).
+README.md stays small: an intro, a quick start and document pointers. This guide
+owns the rest: provider configuration, the Web app walkthrough, CLI usage, session
+persistence, testing, and common problems.
 
 ## Requirements
 
@@ -139,6 +140,43 @@ Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sq
 stores Web Settings, encrypted keys and activity/request records. Web key persistence
 uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change
 within a chat; active work keeps its captured model and settings until completion.
+
+The presentation workflow once the model is ready:
+
+1. Enter your presentation request, including the topic, language and number of
+   slides, and choose **Create presentation** to start the outline workflow.
+2. Read the proposed outline. Expand or collapse planned-slide details, ask for
+   changes through **Revise outline**, or choose **Cancel outline**.
+3. Choose **Confirm outline** on the current proposal. The confirmed outline becomes
+   read-only, the Canvas opens and slides move from Pending to published as they
+   finish.
+4. Use **History** to reopen a chat. Reloading or restarting with the same data
+   directory preserves conversations, confirmed outlines and published slides.
+
+**Send request** stays available for ordinary chat and follow-up instructions. If a
+confirmed deck still has Pending slides after an error, send a request to continue
+the unfinished slides; do not confirm the same outline again.
+
+With no arguments, `pnpm.cmd start:local-web` uses these paths relative to the
+repository root:
+
+```text
+.deckagent/
+├── sessions.sqlite   # conversations
+├── web.sqlite        # Web settings, requests and activities
+├── decks.sqlite      # outlines, Deck metadata and published slide content/revisions
+└── workspace/        # files read/created by the Agent; shared by chats
+```
+
+Missing directories are created automatically; existing data is reused. To use
+separate demo data and workspace, run:
+
+```powershell
+pnpm.cmd start:local-web --data-dir .deckagent/demo --workspace .deckagent/demo/workspace
+```
+
+Restart with the same arguments to reopen that demo's data. API keys, databases and
+workspace files stay outside Git.
 
 To bootstrap the previous environment-based workflow, use
 `pnpm.cmd start:local-web --provider google --model <model-id>`. This reads
