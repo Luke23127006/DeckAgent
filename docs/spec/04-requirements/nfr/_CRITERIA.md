@@ -121,14 +121,14 @@ Retired NFR IDs: none.
 
 Links go top-down only (`../../03-use-cases/_CRITERIA.md`, section 1).
 
-- A use case block (`System` or `When`), an FR or the vision cites an NFR as `[NFR-xxx]`.
+- A use case interaction or behavior constraint, an FR or the vision cites an NFR as `[NFR-xxx]`.
 - An NFR names no use case, step, flow, segment, FR or other NFR. It can cite a BR in `Conditions`. A BR cites nothing, so no cycle arises.
 - An NFR has no version field. A version scope file lists an NFR only as a product-wide NFR of that version (below).
 - **Scope.** An NFR belongs to a version when a block of a flow that the version scope file names cites it. It also belongs when an FR of that version cites it. It also belongs when that version lists it as a product-wide NFR (below). A citation in the vision gives no scope. An NFR selects no flow.
 - **Product-wide NFR.** Applying to every part of the product is not the same as belonging to a version. The citation rule above still decides membership.
   - A product-wide NFR that no block or FR of a version cites belongs to that version only when the version lists it.
   - The list is the section "Quality requirements for the whole version" of that version in `docs/versions/<version>/SCOPE.md`. It holds NFR IDs only. It holds no target and no wording of an NFR.
-  - A version lists an NFR only when no FR and no `System` response of a flow it names states a behavior that the NFR constrains. A citation added only to give scope is not allowed.
+  - A version lists an NFR only when no FR and no response of a flow it names states a behavior that the NFR constrains. A citation added only to give scope is not allowed.
   - An NFR that a block of a named flow or an FR of the version cites is not listed. Listing it again would be a second source of scope.
   - Listing is an owner decision. It confirms no statement and no target.
   - A product-wide NFR that is neither cited nor listed has an open scope question for that version. The review report lists it until the owner resolves it. The question does not block other BR or NFR work.

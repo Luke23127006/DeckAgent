@@ -1,9 +1,9 @@
 # V1 — Phạm vi
 
-Đây là bản ghi phạm vi của V1: mục tiêu, tiêu chí thành công, các lựa chọn sản phẩm và những flow V1 nhận. Product Spec trong [`docs/spec/`](../../spec/) mô tả một sản phẩm lý tưởng: từng use case ghi mọi flow đáng cân nhắc, và spec không chọn flow, không ghi trạng thái Open/Active, không đặt version.
+Đây là bản ghi phạm vi của V1: mục tiêu, tiêu chí thành công, các lựa chọn sản phẩm và những flow V1 nhận. Product Spec trong [`docs/spec/`](../../spec/) mô tả một sản phẩm lý tưởng: từng use case mô tả các tương tác **Active** của sản phẩm và ghi lại ngắn gọn những flow được cân nhắc nhưng **Closed**. Spec không chọn flow cho phiên bản nào và không đặt version. Active/Closed là trạng thái thiết kế sản phẩm; việc V1 nhận hay giữ lại (Held) một flow không quyết định trạng thái đó.
 
 - Chỉ file này chọn flow cho V1. Một flow của V1 hoặc vào V1, hoặc nằm trong spec như lựa chọn giữ lại cho sau (Held).
-- Flow giữ lại vẫn ở trong behavioral model như flow được nhận: nó có bước, System response, `Reqs`, evidence, câu hỏi mở.
+- Flow giữ lại vẫn là một flow Active của sản phẩm lý tưởng trong spec, cùng với tương tác của nó trong diagram, các FR/NFR/BR nó trích, evidence và câu hỏi mở.
 - Việc V1 nhận một flow không đổi nội dung của flow đó trong spec. Nội dung flow nằm trong use case; file này chỉ ghi mã flow, flow làm gì và vì sao giữ lại.
 - Một flow nằm trong behavioral model mà không ở danh sách nào của file này thì chưa được cân nhắc cho version nào. Duyệt hết các flow của behavioral model là cách kiểm điều này.
 - File này không dùng `Updated at` của spec: nó không phải một block của spec.

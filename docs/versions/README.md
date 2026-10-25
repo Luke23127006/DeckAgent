@@ -31,7 +31,10 @@ repeats no scope; each version folder holds its own scope file.
 
 ## Scope and the spec
 
-`docs/spec/` describes one ideal product. It holds no version and selects no flow.
+`docs/spec/` describes one ideal product. It holds no version and selects no flow. Flows in
+the use cases carry the product-design statuses **Active** and **Closed**
+(`docs/spec/03-use-cases/_CRITERIA.md`); which of the Active flows a version builds, holds or
+has not considered is decided only in the scope file of that version.
 
 - The scope file of a version (`v1/SCOPE.md`) is the record of what that version takes:
   its goal, its success criteria, its product choices and the flows it accepts.

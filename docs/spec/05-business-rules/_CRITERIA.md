@@ -96,7 +96,7 @@ Retired BR IDs:
 
 Links go top-down only (`../03-use-cases/_CRITERIA.md`, section 1).
 
-- A use case block (`System` or `When`), an FR, an NFR or the vision cites a BR as `[BR-xxx]`.
+- A use case interaction or behavior constraint, an FR, an NFR or the vision cites a BR as `[BR-xxx]`.
 - A BR names no use case, step, flow, segment, FR or NFR. It cites no other BR.
 - A BR has no version field. A version scope file lists no BR.
 - **Scope.** A BR belongs to a version when a block of a flow that the version scope file names cites it. It also belongs when an FR or an NFR of that version cites it. A citation in the vision gives no scope. A BR selects no flow.
