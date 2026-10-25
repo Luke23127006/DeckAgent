@@ -10,6 +10,8 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Which workspaces the product sets up by default besides the default workspace, if any [BR-?].
 - Where the chats of a removed workspace appear. Removing a workspace keeps them reachable; the default workspace is one example [BR-004 V-3 names no place].
 - Whether adding the same folder again as a workspace binds the chats it had, or starts without them.
+- What the system does when the place it uses for the workspace data of a workspace already holds content that DeckAgent did not write. The system changes none of that content (FR-071); where it keeps its own data then is open.
+- Where the workspace data of the default workspace sits, which has no folder.
 
 ## Requests that stopped or failed early (UC-002, UC-003 Note 18, UC-006, UC-008)
 

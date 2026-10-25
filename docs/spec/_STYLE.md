@@ -78,9 +78,11 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
 | **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
-| **workspace** | A named group of chats on the user's computer. The user adds one by choosing a folder. Removing it changes no folder, no file and no chat |
+| **workspace** | A named group of chats on the user's computer. The user adds one by choosing a folder. Removing it changes no file of the user and no chat |
 | **default workspace** | The workspace the system gives for a first start, before the user chose a folder |
-| **permission** | What the agent of one chat can reach on the computer, and where it must ask the user first. The files of the workspace of the chat are inside it. The data of another chat never is |
+| **file of the user** | A file or a folder the user put in the folder of a workspace. DeckAgent changes none of them |
+| **workspace data** | The data DeckAgent keeps for a workspace: its chats, their conversations, outlines and decks, and the last saved state of each. Where the workspace has a folder, it sits in that folder. DeckAgent writes it as the product works, and the agent reaches it only through what DeckAgent lets a request do |
+| **permission** | What the agent of one chat can reach on the computer, and where it must ask the user first. The files of the user in the folder of the workspace of the chat are inside it. The data of another chat never is |
 | **reference** | A file or a folder the request names as material. Naming it raises no permission by itself. It becomes part of the data of the request when a request reads it |
 | **reasoning level** | How much an added model thinks about a request, as the user chooses it for a chat. The model and its provider set which levels it has |
 | **context usage** | How much of the context of the selected model the conversation and the request in preparation use. It is an estimate unless the provider reported it |
