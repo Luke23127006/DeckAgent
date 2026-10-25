@@ -58,6 +58,7 @@ Tiêu chí cấp sản phẩm, không phải acceptance test.
   - Một chat giữ một deck. Deck mới bắt đầu ở chat mới.
   - Request text chưa gửi ở lại với đúng chat của nó khi DeckAgent chạy. Attachment chưa gửi bị bỏ khi người dùng đổi chat. Không hứa gì cho phần chưa gửi sau khi DeckAgent kết thúc.
   - Chat, conversation và deck của chúng được giữ không giới hạn thời gian (BR-004).
+  - Cập nhật Ideal Product 2026-10-25 (D1, D4): spec cho phép đổi chat hoặc workspace khi request đang chạy và công việc cũ tiếp tục (UC-012 Note 8, UC-006 Note 10, UC-013), và thêm workspace theo folder với default workspace (UC-013). V1 giữ nguyên hai giới hạn trên: một workspace mặc định và không đổi chat khi request đang hoạt động. Danh sách flow V1 nhận không đổi.
 - **Đã cân nhắc:** chỉ một chat (option A), không chọn; workspace theo folder (option C), một lựa chọn về sau chưa gán version (UC-012 Note 2); một chat chứa nhiều deck, không chọn cho V1.
 - **Nguồn:** owner; owner, 2026-10-13 (reload hoặc đóng giao diện); owner, 2026-10-13 (một deck cho mỗi chat, request text và attachment chưa gửi, lịch sử giữ không giới hạn).
 - **Vì sao:** người dùng bắt đầu việc deck mới mà không phải chọn folder hay quản lý workspace.
@@ -77,6 +78,7 @@ Tiêu chí cấp sản phẩm, không phải acceptance test.
 - **Nguồn:** owner, 2026-10-12; owner, 2026-10-13 (không hứa model chạy trên máy người dùng).
 - **Vì sao:** chưa ghi.
 - **Không nói:** không đặt tổng số provider configuration. Cách tổ chức settings là hướng owner chọn, không phải thiết kế giao diện; use case vẫn không chứa chi tiết giao diện. UC-005 và UC-003 mô tả hành vi. V1 đặt bốn built-in provider lên trước (BR-005). Custom model API vẫn thuộc V1. Storage chưa cố định.
+- Cập nhật Ideal Product 2026-10-25 (D5): mỗi added model có model settings (context window, max output tokens, input types) và reasoning levels riêng, và người dùng chọn reasoning level cho chat (UC-005 Note 15, UC-003 A27, FR-042, FR-055, BR-005 V-7, V-8). V1 không nhận phần này; behavior Models của V1 vẫn như các dòng trên.
 
 ### Hình ảnh
 
