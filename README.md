@@ -76,8 +76,7 @@ pnpm.cmd start:local-web --data-dir .deckagent/demo --workspace .deckagent/demo/
 ```
 
 Restart with the same arguments to reopen that demo's data. API keys, databases and
-workspace files stay outside Git. The [TASK-006 demo checklist](docs/v1-plan/task-006-outline-workflow.md#verification-and-manual-acceptance)
-describes the full outline-to-slides check and remaining acceptance work.
+workspace files stay outside Git.
 
 ## Optional terminal CLI
 
@@ -105,4 +104,5 @@ live under `.deckagent/` (gitignored): `profile.json`, `credentials/`, and
 - [Repository structure](docs/development/repository-structure.md) — where code lives.
 - [Code review criteria](docs/development/code-review-criteria.md) — how changes are judged.
 - [Contributing](CONTRIBUTING.md) — proposing, scoping, reviewing, and verifying changes.
+- [Implementation plans](docs/versions/README.md) — where the plan and progress of each version live.
 - [OpenCodeReview tooling](docs/tooling/open-code-review.md) — repository-local review tooling.
