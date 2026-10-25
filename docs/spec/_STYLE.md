@@ -69,9 +69,9 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **design system** | A set of design rules the user can choose for different decks, such as colours, fonts and a logo |
 | **default design system** | The design system the system uses when the user chose none |
 | **look** | How one deck is shown: its colours, fonts and arrangement on the slides. A look can use a design system |
-| **deck state** | The content and the look of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`00-current-scope/`) |
+| **deck state** | The content and the look of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
 | **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
-| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. Each version sets it (`00-current-scope/VERSIONS.md`). In V1 a chat holds one deck |
+| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. A version decides that in its scope file (`docs/versions/`) |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
 | **provider configuration** | One saved connection to a model service. It is more than a key. It connects to a built-in provider or to a custom model API. It holds a provider ID, a display name and what the provider needs, such as a key. It also holds its added models |
 | **built-in provider** | A model provider that DeckAgent offers by name [BR-005]. DeckAgent knows its provider ID and its default settings |

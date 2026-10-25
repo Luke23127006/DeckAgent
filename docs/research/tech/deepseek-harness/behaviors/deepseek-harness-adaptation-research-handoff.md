@@ -192,7 +192,7 @@ Source links: [storage subsystem](https://github.com/deepseek-ai/deepseek-harnes
 * NFR-004 không thực thi model-generated code với quyền ứng dụng; NFR-009 kiểm tra display integrity, tiếng Việt/English; NFR-013 yêu cầu accessibility cho text.
 * FR-066 yêu cầu dùng images từ attachments và **có thể tạo ảnh mới**. Cơ chế tạo ảnh mới chưa được chọn, phụ thuộc provider/model và các giới hạn đã chốt. Đây là **gap thật** để hoàn tất tất cả V1 acceptance conditions.
 
-**Product spec:** [VERSIONS.md](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/00-current-scope/VERSIONS.md) (Local Web, Windows-first, một deck/chat, một default workspace, no direct editing và no export trong V1).
+**Product spec:** [V1 SCOPE.md](https://github.com/Luke23127006/DeckAgent/blob/main/docs/versions/v1/SCOPE.md) (Local Web, Windows-first, một deck/chat, một default workspace, no direct editing và no export trong V1).
 
 ## 5. Lộ trình implementation ngắn để demo
 
@@ -267,7 +267,7 @@ Source links: [storage subsystem](https://github.com/deepseek-ai/deepseek-harnes
 * Reuse hiện có. Đừng sửa theo cách riêng trước demo trừ khi không thể chọn model và chạy request.
 * V1 spec chi tiết hơn DeepSeek ở các trường hợp nhiều provider configurations/custom model API. Đối chiếu sau; không tuyên bố đã đạt toàn bộ UC-005 nếu chưa test.
 
-**Sources:** [Plugin Manager](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.md), [Cordis composition](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-tutorial/06-composition-and-hmr.md), [DeckAgent V1 scope](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/00-current-scope/VERSIONS.md).
+**Sources:** [Plugin Manager](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-plugin-manager/README.md), [Cordis composition](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-tutorial/06-composition-and-hmr.md), [DeckAgent V1 scope](https://github.com/Luke23127006/DeckAgent/blob/main/docs/versions/v1/SCOPE.md).
 
 ## 8. Research alternatives đã xét — giữ để cân nhắc, không implement ngay
 
@@ -375,7 +375,7 @@ References: [OpenDesign edit_layer](https://github.com/EthanGuo2022/OpenDesign/b
 
 ## 12. Nguồn DeckAgent ưu tiên đọc
 
-* [V1 scope — VERSIONS.md](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/00-current-scope/VERSIONS.md)
+* [V1 scope — SCOPE.md](https://github.com/Luke23127006/DeckAgent/blob/main/docs/versions/v1/SCOPE.md)
 * [UC-001 — Generate initial draft](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-001.md)
 * [UC-002 — Change my draft deck](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-002.md)
 * [UC-003 — Send a request](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-003.md)

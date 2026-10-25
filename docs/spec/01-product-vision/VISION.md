@@ -90,7 +90,7 @@ status: Draft
 - **Source:** owner
 - **Why:** not recorded
 - **Means for specs:**
-  - This direction fixes neither which interface exists now nor which one is in scope. `00-current-scope/` says that.
+  - This direction fixes neither which interface exists now nor which one a version takes. The scope file of a version (`docs/versions/`) says that.
   - A use case states intent and response (`_STYLE.md` rule 11), so it holds for every interface.
   - No spec describes the two interfaces as separate products.
 - **Updated at:** 09-10-2026

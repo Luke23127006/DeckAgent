@@ -1,6 +1,6 @@
 # Gate: Non-functional Requirement
 
-Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../03-use-cases/`, `../fr/`, `../../01-product-vision/`. Rule values: `../../05-business-rules/`. Versions: `../../00-current-scope/`.
+Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../03-use-cases/`, `../fr/`, `../../01-product-vision/`. Rule values: `../../05-business-rules/`. Versions: `docs/versions/`.
 
 ## 1. What a non-functional requirement is, and is not
 
@@ -17,7 +17,7 @@ An NFR can relate to an FR, and to the same part of the product. It adds a quali
 | A threshold used to compare, choose or tune models during research | Not in the specs. It is research work |
 | How the system reaches a target: engine, storage, framework, tool | An ADR or architecture work |
 | How the product looks or how the user operates it | UI design work (no folder yet) |
-| A task, a priority, progress or a version | Not in an NFR. Versions: the `versions` field of each use case |
+| A task, a priority, progress or a version | Not in an NFR. Versions: the scope file of that version under `docs/versions/` |
 
 ### When to write an NFR
 
@@ -83,13 +83,13 @@ Two levels, as in `../fr/_CRITERIA.md`. Nothing else carries approval.
 - To confirm a target: set `Target` and `Met when`, remove the `Status` line, and set `Source` to the owner decision with its date. `Why` can stay.
 - To confirm a proposed statement: set `Status` to `confirmed` and `Source` to the owner decision with its date.
 
-Status and completeness are separate. A confirmed statement can hold pending targets. The version check lists them (NFG-13).
+Status and completeness are separate. A confirmed statement can hold pending targets. The scope review lists them (NFG-13).
 
 ### Sources and confirmation
 
 A confirmed statement or target traces to confirmed product behavior or to an explicit owner decision.
 
-- **Confirmed product behavior** is a response of a use case flow that a version selects, or an owner decision recorded in a use case note or in the vision. A response or a note that the use case marks as a proposal, or as an open question, is not confirmed behavior.
+- **Confirmed product behavior** is a response of a use case flow that a version scope file names, or an owner decision recorded in a use case note or in the vision. A response or a note that the use case marks as a proposal, or as an open question, is not confirmed behavior.
 - **A statement** is confirmed when such a source states the quality the product must have. `Source: use case flow` or `Source: owner decision, yyyy-mm-dd: <what was decided>`.
 - **A target** is confirmed only when such a source states the target itself. An `[NFR-?: topic]` marker in a confirmed flow shows that a quality requirement is needed. It confirms no target.
 - **Not a source of confirmation:** a citation in another file, a draft, a proposed item, an alternative under an open question, a research threshold or a reference product.
@@ -123,13 +123,13 @@ Links go top-down only (`../../03-use-cases/_CRITERIA.md`, section 1).
 
 - A use case block (`System` or `When`), an FR or the vision cites an NFR as `[NFR-xxx]`.
 - An NFR names no use case, step, flow, segment, FR or other NFR. It can cite a BR in `Conditions`. A BR cites nothing, so no cycle arises.
-- An NFR has no version field. `../../00-current-scope/VERSIONS.md` lists an NFR only as a product-wide NFR of a version (below).
-- **Scope.** An NFR belongs to a version when a block in that version's flow set cites it. It also belongs when an FR of that version cites it. It also belongs when that version lists it as a product-wide NFR (below). A citation in the vision gives no scope. An NFR changes no flow set.
+- An NFR has no version field. A version scope file lists an NFR only as a product-wide NFR of that version (below).
+- **Scope.** An NFR belongs to a version when a block of a flow that the version scope file names cites it. It also belongs when an FR of that version cites it. It also belongs when that version lists it as a product-wide NFR (below). A citation in the vision gives no scope. An NFR selects no flow.
 - **Product-wide NFR.** Applying to every part of the product is not the same as belonging to a version. The citation rule above still decides membership.
   - A product-wide NFR that no block or FR of a version cites belongs to that version only when the version lists it.
-  - The list is the block "Quality requirements for the whole version" of that version in `../../00-current-scope/VERSIONS.md`. It holds NFR IDs only. It holds no target and no wording of an NFR.
-  - A version lists an NFR only when no FR and no selected `System` response states a behavior that the NFR constrains. A citation added only to give scope is not allowed.
-  - An NFR that a block or an FR of the version cites is not listed. Listing it again would be a second source of scope.
+  - The list is the section "Quality requirements for the whole version" of that version in `docs/versions/<version>/SCOPE.md`. It holds NFR IDs only. It holds no target and no wording of an NFR.
+  - A version lists an NFR only when no FR and no `System` response of a flow it names states a behavior that the NFR constrains. A citation added only to give scope is not allowed.
+  - An NFR that a block of a named flow or an FR of the version cites is not listed. Listing it again would be a second source of scope.
   - Listing is an owner decision. It confirms no statement and no target.
   - A product-wide NFR that is neither cited nor listed has an open scope question for that version. The review report lists it until the owner resolves it. The question does not block other BR or NFR work.
 - To find what cites an NFR, search the spec files for its ID. There is no reverse field.
@@ -153,7 +153,7 @@ An NFR makes no claim about another product, so it carries no evidence tag. `Sou
 
 "Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment, *CI* = checked across files. No tooling exists yet; until it does, Lint and CI rows are checked by review.
 
-"Applies to": *Model* = every NFR file. *Version* = only the NFRs in the scope of the version being checked. A version check gives a report. It is not a status of the NFR.
+"Applies to": *Model* = every NFR file. *Version* = only the NFRs in the scope of the version being checked. A scope review gives a report. It is not a status of the NFR.
 
 | ID | Criterion | Prevents | Check | Applies to | Source |
 |---|---|---|---|---|---|
@@ -169,7 +169,7 @@ An NFR makes no claim about another product, so it carries no evidence tag. `Sou
 | NFG-10 | A target lives in one NFR only. Use cases, FRs and the vision cite the ID and never restate the target. A marker is replaced only when the NFR covers its whole meaning. A marker the NFR covers in part stays, and the report names the gap. A changed target is checked against every file that cites the NFR | The same target in many files; targets changed in one place and not the others; markers cleared by a similar topic | Lint (numbers in citing files) + CI (IDs resolve) + Review (each marker replaced or reported) | Model | Project rule |
 | NFG-11 | Text follows `_STYLE.md` rules 1 to 10 in `Statement`, `Conditions`, `Measure` and `Target`. No interface design (rule 11) | Requirements with two meanings; design fixed through a quality target | Lint (banned words) + Review | Model | Project rule |
 | NFG-12 | The file name is `NFR-xxx.md` with three digits, and equals the frontmatter `id`. IDs are unique. A new ID follows the highest existing or retired ID. A retired ID is listed in section 1 and never reused. Neither NFR IDs nor measurement IDs are renumbered. The NFR names no use case, step, flow, segment, FR or other NFR, and has no version field | Two meanings for one ID; links pointing up; a second source of scope | Lint (name, format, no `UC-`, `USR-`, `FR-` or other `NFR-`) + CI (unique, not retired) | Model | Project rule |
-| NFG-13 | The version check lists two groups apart. First, each NFR in the version that is not fully decided: a proposed statement, a proposed target or a pending target, with its `Not specified` items. Second, each NFR with an incomplete measurement definition. An NFR in the second group is not documentation-complete | Open or proposed targets read as approved because a selected block cites them; incomplete definitions hidden among pending targets | CI (report) | Version | Project rule |
+| NFG-13 | The scope review lists two groups apart. First, each NFR in the version that is not fully decided: a proposed statement, a proposed target or a pending target, with its `Not specified` items. Second, each NFR with an incomplete measurement definition. An NFR in the second group is not documentation-complete | Open or proposed targets read as approved because a block of a flow in the version cites them; incomplete definitions hidden among pending targets | CI (report) | Version | Project rule |
 | NFG-14 | `Updated at` is the date of the last change to the file, as `dd-mm-yyyy`. Any edit sets it. Measurement blocks have no date of their own | Files whose date is out of step with their text | Lint (format) + Review | Model | Project rule |
 
 A reviewer accepts an NFR file when NFG-01 to NFG-12 and NFG-14 hold. Each target that is not confirmed is listed in the review report. A file with an incomplete measurement definition is reported as a documentation gap, not as complete.

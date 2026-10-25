@@ -1,6 +1,6 @@
 # Gate: Business Rule
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Cited by: `../03-use-cases/`, `../04-requirements/fr/`, `../04-requirements/nfr/`, `../01-product-vision/`. Versions: `../00-current-scope/`.
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Cited by: `../03-use-cases/`, `../04-requirements/fr/`, `../04-requirements/nfr/`, `../01-product-vision/`. Versions: `docs/versions/`.
 
 ## 1. What a business rule is, and is not
 
@@ -18,7 +18,7 @@ Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Cited by: `../03-use-cases/`, `
 | A user goal, a journey, a step, the user's intent | `../03-use-cases/` |
 | How the system keeps or checks a value: code, storage, configuration | An ADR or architecture work |
 | How the product looks or how the user operates it | UI design work (no folder yet) |
-| A task, a priority, progress or a version | Not in a BR. Versions: the `versions` field of each use case |
+| A task, a priority, progress or a version | Not in a BR. Versions: the scope file of that version under `docs/versions/` |
 | Where an idea came from | The use case and its research card |
 
 A `[BR-?: topic]` marker names a topic, not a decision. Writing the rule can show that the topic holds no value of its own. A marker is replaced only by a BR that covers its whole meaning. Otherwise it is changed or removed only by an owner decision (Single source of truth, below).
@@ -60,7 +60,7 @@ Two levels, as in `../04-requirements/fr/_CRITERIA.md`. Nothing else carries app
 - To confirm a value: set `Value`, remove its `Status` line, and set `Source` to the owner decision with its date. `Why` can stay.
 - To confirm a proposed rule: set `Status` to `confirmed` and `Source` to the owner decision with its date.
 
-Status and completeness are separate. A confirmed rule can hold pending values. The version check lists them (BRG-13). They do not block the FRs that cite the rule.
+Status and completeness are separate. A confirmed rule can hold pending values. The scope review lists them (BRG-13). They do not block the FRs that cite the rule.
 
 ### Sources and confirmation
 
@@ -98,8 +98,8 @@ Links go top-down only (`../03-use-cases/_CRITERIA.md`, section 1).
 
 - A use case block (`System` or `When`), an FR, an NFR or the vision cites a BR as `[BR-xxx]`.
 - A BR names no use case, step, flow, segment, FR or NFR. It cites no other BR.
-- A BR has no version field. `../00-current-scope/VERSIONS.md` lists no BR.
-- **Scope.** A BR belongs to a version when a block in that version's flow set cites it. It also belongs when an FR or an NFR of that version cites it. A citation in the vision gives no scope. A BR changes no flow set.
+- A BR has no version field. A version scope file lists no BR.
+- **Scope.** A BR belongs to a version when a block of a flow that the version scope file names cites it. It also belongs when an FR or an NFR of that version cites it. A citation in the vision gives no scope. A BR selects no flow.
 - To find what cites a BR, search the spec files for its ID. There is no reverse field.
 
 ### Single source of truth
@@ -121,7 +121,7 @@ A BR makes no claim about another product, so it carries no evidence tag. `Sourc
 
 "Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment, *CI* = checked across files. No tooling exists yet; until it does, Lint and CI rows are checked by review.
 
-"Applies to": *Model* = every BR file. *Version* = only the BRs in the scope of the version being checked. A version check gives a report. It is not a status of the BR.
+"Applies to": *Model* = every BR file. *Version* = only the BRs in the scope of the version being checked. A scope review gives a report. It is not a status of the BR.
 
 | ID | Criterion | Prevents | Check | Applies to | Source |
 |---|---|---|---|---|---|
@@ -136,8 +136,8 @@ A BR makes no claim about another product, so it carries no evidence tag. `Sourc
 | BRG-09 | A value lives in one BR only. Use cases, FRs, NFRs and the vision cite the ID and never restate the value. A marker is replaced only when the BR covers its whole meaning. A marker the BR covers in part stays, and the report names the gap. A changed value is checked against every file that cites the BR | The same value in many files; values changed in one place and not the others; markers cleared by a similar topic | Lint (numbers in citing files) + CI (IDs resolve) + Review (each marker replaced or reported) | Model | Project rule |
 | BRG-10 | Text follows `_STYLE.md` rules 1 to 10 in `Statement` and `Value`. No interface design (rule 11) | Rules with two meanings; design fixed through a rule | Lint (banned words) + Review | Model | Project rule |
 | BRG-11 | The file name is `BR-xxx.md` with three digits, and equals the frontmatter `id`. IDs are unique. A new ID follows the highest existing or retired ID. A retired ID is listed in section 1 and never reused. Neither BR IDs nor value IDs are renumbered | Two meanings for one ID; broken citations | Lint (name, format) + CI (unique, not retired) | Model | Project rule |
-| BRG-12 | The BR names no use case, step, flow, segment, FR, NFR or other BR. It has no version field. `VERSIONS.md` lists no BR | Links pointing up; a second source of scope | Lint (no `UC-`, `USR-`, `FR-`, `NFR-`, `BR-` other than its own `id`) + Review | Model | Project rule |
-| BRG-13 | The version check lists each BR in the version that is not fully decided: a proposed rule, a proposed value or a pending value. It also lists each `Not specified` item of those BRs | Open or proposed limits read as approved because a selected block cites them | CI (report) | Version | Project rule |
+| BRG-12 | The BR names no use case, step, flow, segment, FR, NFR or other BR. It has no version field. A version scope file lists no BR | Links pointing up; a second source of scope | Lint (no `UC-`, `USR-`, `FR-`, `NFR-`, `BR-` other than its own `id`) + Review | Model | Project rule |
+| BRG-13 | The scope review lists each BR in the version that is not fully decided: a proposed rule, a proposed value or a pending value. It also lists each `Not specified` item of those BRs | Open or proposed limits read as approved because a block of a flow in the version cites them | CI (report) | Version | Project rule |
 | BRG-14 | `Updated at` is the date of the last change to the file, as `dd-mm-yyyy`. Any edit sets it. Value blocks have no date of their own | Files whose date is out of step with their text | Lint (format) + Review | Model | Project rule |
 
 A reviewer accepts a BR file when BRG-01 to BRG-12 and BRG-14 hold. Each value that is not confirmed is listed in the review report.
@@ -151,7 +151,7 @@ IDs below are examples. They are not allocated. No value below is a decision.
 > BR-000 · Status: confirmed · Source: owner decision: attachments are accepted in a limited set of formats.
 > V-1 · Accepted file types · Status: pending · Value: not set · Why: the owner has not chosen the formats.
 > V-2 · Number of attachments · Status: proposed · Value: a number with its bound · Why: the reason and the trade-off.
-> BR-000 is not fully decided. The version check lists V-1 and V-2.
+> BR-000 is not fully decided. The scope review lists V-1 and V-2.
 
 **BRG-01: a judgment is not a value.**
 

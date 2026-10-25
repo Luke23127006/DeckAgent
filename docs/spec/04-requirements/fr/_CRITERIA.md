@@ -1,6 +1,6 @@
 # Gate: Functional Requirement
 
-Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../03-use-cases/` (the `Reqs` field). Rule values: `../../05-business-rules/`. Quality targets: `../nfr/`. Versions: `../../00-current-scope/`.
+Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../03-use-cases/` (the `Reqs` field). Rule values: `../../05-business-rules/`. Quality targets: `../nfr/`. Versions: `docs/versions/`.
 
 ## 1. What a functional requirement is, and is not
 
@@ -15,7 +15,7 @@ Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../03-use-case
 | How the system achieves a behavior (model, queue, storage, API) | An ADR or architecture work |
 | A task to build something, or how far it is built or tested | Not in the specs. An FR holds no progress, no priority and no version |
 | Where an idea came from (a recording, a reference product) | The use case and its research card. An FR has no evidence field |
-| The owner's choice of which flows a version must meet | The `versions` field of each use case. An FR selects nothing |
+| The owner's choice of which flows a version must meet | The scope file of that version under `docs/versions/`. An FR selects nothing |
 
 A rule without a value stays in an FR. An example is "the user cannot start a new chat while a request is active". A rule that holds a value goes to `../../05-business-rules/`.
 
@@ -26,7 +26,7 @@ A rule without a value stays in an FR. An example is "the user cannot start a ne
   1. Its outcomes can fail on their own, under conditions that differ in a material way.
   2. Other use case blocks need only part of it.
   3. It joins responsibilities that are not related.
-  4. An acceptance condition would add behavior that only flows outside the version need. That behavior goes to its own FR.
+  4. An acceptance condition would add behavior that only flows a version does not name need. That behavior goes to its own FR.
 - **Reuse** an FR when another block needs the same behavior: the same kind of condition and the same expected outcome. The use case and the data (which slide, which file) can differ. A block that adds its own behavior cites the shared FR and its own FR.
 - **Same words are not the same behavior.** Reuse an FR only when the meaning is the same. Reusing it for a case with an open question decides that question silently.
 - **No duplicate FR.** Before writing an FR, search the statements in this folder. A behavior an FR already covers gets no second FR.
@@ -77,7 +77,7 @@ Each acceptance condition is a block `### AC-n · Short name` with the fields `G
 - For model-dependent behavior, write invariants as `deterministic` conditions and content quality as `judged` ones, where both apply. A preservation guarantee is checked by comparing the state before and after, not by reading a message of the system.
 - An acceptance condition can give example inputs, such as "a deck of five slides". It never defines a limit or a target. Those are BR and NFR values.
 
-**Verification is not validation.** FR verification asks: does the behavior meet the stated condition? Product validation asks: does the product meet the user's expectations and the goal of the version (`../../00-current-scope/`)? The same person can take part in both. The conclusions differ. An FR does not copy a validation scenario and does not name one.
+**Verification is not validation.** FR verification asks: does the behavior meet the stated condition? Product validation asks: does the product meet the user's expectations and the goal of the version (`docs/versions/<version>/SCOPE.md`)? The same person can take part in both. The conclusions differ. An FR does not copy a validation scenario and does not name one.
 
 ### Interface
 
@@ -94,7 +94,7 @@ FRs follow the intent of `_STYLE.md` rule 11. An FR describes behavior the user 
 - The `id` in the frontmatter equals the file name.
 - A new FR takes the ID after the highest ID in this folder and in the retired IDs below. Gaps stay.
 - An ID never changes when the title or the wording changes. An ID is never reused.
-- An ID is retired only when its behavior leaves the behavioral model or merges into another FR. Removing a flow from a version retires no FR. A retired ID is listed below with the date and, after a merge, the FR it merged into.
+- An ID is retired only when its behavior leaves the behavioral model or merges into another FR. Leaving a flow out of a version retires no FR. A retired ID is listed below with the date and, after a merge, the FR it merged into.
 - A split keeps the ID on one part. The other part takes a new ID. The same change updates every `Reqs` that cites the ID.
 - Acceptance condition IDs are `AC-1`, `AC-2` within one FR. They are never renumbered to close a gap.
 - There is no FR index. The files of this folder are the list.
@@ -109,9 +109,9 @@ Links go top-down only (`../../03-use-cases/_CRITERIA.md`, section 1).
 
 - A use case block cites FRs in its `Reqs` field. One FR can serve many blocks. One block can cite many FRs.
 - An FR names no use case, no step, no flow and no user segment.
-- An FR has no version field. `../../00-current-scope/VERSIONS.md` lists no FR.
-- **Scope.** An FR belongs to a version when a block in that version's flow set cites it. An FR that only unselected blocks cite is in no version. An FR changes no flow set.
-- A citation is not an approval. A selected block can cite an FR with proposed defaults (section 1, Status and approval).
+- An FR has no version field. A version scope file lists no FR.
+- **Scope.** An FR belongs to a version when a block of a flow that the version scope file names cites it. An FR that only other blocks cite is in no version. An FR selects no flow.
+- A citation is not an approval. A block of a flow that a version names can cite an FR with proposed defaults (section 1, Status and approval).
 - To find the blocks that use an FR, search `Reqs` in `../../03-use-cases/` for its ID. There is no reverse field.
 - An FR changes with the blocks it serves. A change to the meaning of an FR is checked against every block that cites it, in the same change. A change to a block `System` is checked against its FRs (`../../03-use-cases/_CRITERIA.md`, Requirements traceability).
 
@@ -123,7 +123,7 @@ An FR makes no claim about another product, so it carries no evidence tag. The s
 
 "Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment, *CI* = checked across files. No tooling exists yet; until it does, Lint and CI rows are checked by review.
 
-"Applies to": *Model* = every FR file. *Version* = only the FRs that a block in the flow set of the version cites. A version check gives a report. It is not a status of the FR.
+"Applies to": *Model* = every FR file. *Version* = only the FRs that a block of a flow the version scope file names cites. A scope review gives a report. It is not a status of the FR.
 
 | ID | Criterion | Prevents | Check | Applies to | Source |
 |---|---|---|---|---|---|
@@ -135,11 +135,11 @@ An FR makes no claim about another product, so it carries no evidence tag. The s
 | FRG-06 | A proposed statement or a proposed default changes to confirmed only by an explicit owner decision, recorded in `Source` with its date. A citation in `Reqs`, a commit or a merge confirms nothing | Defaults approved by accident | Review | Model | Project rule |
 | FRG-07 | A `Not specified` item names a behavior left open in one line. No statement and no acceptance condition states or assumes an outcome for it. A response that depends whole on an open decision has no FR; its block keeps `FR-?` | Open questions turned into requirements without a decision; placeholder FRs | Review | Model | Project rule |
 | FRG-08 | Each acceptance condition is a block `### AC-n · Name` with `Given`, `When`, `Then` and `Check`. `Check` is `deterministic` or `judged`. `Then` holds observable outcomes, one per bullet, without "if". No exact model wording, unless a confirmed requirement fixes it. No validation scenario is copied or named | Conditions nobody can test; tests tied to model wording; validation mixed with verification | Lint (fields, values) + Review | Model | Project rule |
-| FRG-09 | The FR holds no rule value and no quality target. It cites `[BR-xxx]` and `[NFR-xxx]`, or `[BR-?: topic]` and `[NFR-?: topic]`. Example inputs in a condition are allowed. For each FR in the version, the version check reports every marker left and every cited ID that does not exist | The same value in many files; missing values hidden inside confirmed FRs | Lint (numbers, markers) + CI (IDs resolve) | Model (no values), Version (no markers, IDs resolve) | Project rule |
+| FRG-09 | The FR holds no rule value and no quality target. It cites `[BR-xxx]` and `[NFR-xxx]`, or `[BR-?: topic]` and `[NFR-?: topic]`. Example inputs in a condition are allowed. For each FR in the version, the scope review reports every marker left and every cited ID that does not exist | The same value in many files; missing values hidden inside confirmed FRs | Lint (numbers, markers) + CI (IDs resolve) | Model (no values), Version (no markers, IDs resolve) | Project rule |
 | FRG-10 | Text follows `_STYLE.md` rules 1 to 10 in `Statement` and `Then`. It follows the intent of rule 11: no unapproved label, placement, colour, icon, position or layout; places named by zone; the swap test applied; each hit of the interface check rewritten or kept with a stated reason | Requirements that fix a design nobody chose; responses with two meanings | Lint (banned words, interface words) + Review (swap test) | Model | Project rule |
 | FRG-11 | The file name is `FR-xxx.md` with three digits, and equals the frontmatter `id`. IDs are unique. A new ID follows the highest existing or retired ID. A retired ID is listed in section 1 and never reused. IDs are not renumbered. Acceptance condition IDs are not renumbered | Two meanings for one ID; broken citations after an edit | Lint (name, format) + CI (unique, not retired) | Model | Project rule |
-| FRG-12 | The FR names no use case, step, flow or segment. It has no version field. `VERSIONS.md` lists no FR. Every acceptance condition is needed by at least one block that cites the FR | Links pointing up; a second source of scope; scope widened through an acceptance condition | Lint (no `UC-`, `USR-`, flow IDs) + Review | Model | Project rule |
-| FRG-13 | The version check lists each FR in the version that is not fully approved: a `proposed` statement or a `proposed default` condition. It also lists each `Not specified` item of those FRs | Proposed precision read as approved because a selected block cites it | CI (report) | Version | Project rule |
+| FRG-12 | The FR names no use case, step, flow or segment. It has no version field. A version scope file lists no FR. Every acceptance condition is needed by at least one block that cites the FR | Links pointing up; a second source of scope; scope widened through an acceptance condition | Lint (no `UC-`, `USR-`, flow IDs) + Review | Model | Project rule |
+| FRG-13 | The scope review lists each FR in the version that is not fully approved: a `proposed` statement or a `proposed default` condition. It also lists each `Not specified` item of those FRs | Proposed precision read as approved because a block of a flow in the version cites it | CI (report) | Version | Project rule |
 | FRG-14 | `Updated at` is the date of the last change to the file, as `dd-mm-yyyy`. Any edit sets it. Acceptance condition blocks have no date of their own | Files whose date is out of step with their text | Lint (format) + Review | Model | Project rule |
 
 The use case side of these checks is in `../../03-use-cases/_CRITERIA.md`: `Reqs` values and completeness (Requirements traceability, UCG-03), markers and IDs that resolve (UCG-06), `Reqs: none` (Requirements traceability).
@@ -165,7 +165,7 @@ IDs below are examples. They are not allocated.
 
 **FRG-05 and FRG-06: a confirmed FR with a proposed default.**
 
-> FR-000 · Status: confirmed · Source: use case flow. AC-3 has `Status: proposed default`, `Source: proposed`, `Why: makes "empty" testable; an outline with titles and no points can still be confirmed`. A selected block cites FR-000. FR-000 is not fully approved. The version check lists AC-3. After the owner decides, AC-3 loses its `Status` line and gets `Source: owner decision, 2026-10-20`.
+> FR-000 · Status: confirmed · Source: use case flow. AC-3 has `Status: proposed default`, `Source: proposed`, `Why: makes "empty" testable; an outline with titles and no points can still be confirmed`. A block of a flow that the version names cites FR-000. FR-000 is not fully approved. The scope review lists AC-3. After the owner decides, AC-3 loses its `Status` line and gets `Source: owner decision, 2026-10-20`.
 
 **FRG-08: deterministic invariant and judged quality.**
 
@@ -176,7 +176,7 @@ IDs below are examples. They are not allocated.
 
 **FRG-09: a confirmed FR with an open rule value.**
 
-> Met: Statement "The system rejects a file that breaks the attachment rules [BR-?: accepted file types, number and size of attachments]. It shows the reason on the attachment." Status: confirmed. The version check reports the marker until the rule exists. The FR is not blocked.
+> Met: Statement "The system rejects a file that breaks the attachment rules [BR-?: accepted file types, number and size of attachments]. It shows the reason on the attachment." Status: confirmed. The scope review reports the marker until the rule exists. The FR is not blocked.
 
 **FRG-10: behavior, not design.**
 

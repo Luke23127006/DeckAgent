@@ -353,7 +353,7 @@ Không cần hoãn demo để rút gọn source, đổi namespace packages, xây
 
 ### DeckAgent — yêu cầu hành vi
 
-18. [V1 scope and constraints](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/00-current-scope/VERSIONS.md)
+18. [V1 scope and constraints](SCOPE.md)
 19. [UC-001 — Create a first draft](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-001.md)
 20. [UC-002 — Edit a deck](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-002.md)
 21. [UC-003 — Send a request](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-003.md)

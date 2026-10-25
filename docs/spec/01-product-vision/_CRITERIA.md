@@ -1,6 +1,6 @@
 # Gate: Product Vision
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../00-current-scope/`, `../02-users/`, `../03-use-cases/`, `../04-requirements/`, `../05-business-rules/`.
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../02-users/`, `../03-use-cases/`, `../04-requirements/`, `../05-business-rules/`. Versions: `docs/versions/`.
 
 ## 1. What the vision is, and is not
 
@@ -23,7 +23,7 @@ The questions guide the content. They are not one section each.
 | If the content is... | Then it belongs to |
 |---|---|
 | What DeckAgent is, why it exists, its value, its principles, its lasting boundaries | Here |
-| What the current release or the thesis project covers, and in what order | `../00-current-scope/`, and the `scope` field of each use case |
+| What the current release or the thesis project covers, and in what order | `docs/versions/<version>/SCOPE.md` |
 | A capability the product offers, such as export, voice input or editing | `../03-use-cases/`. It comes here only when the owner says it is part of what DeckAgent is |
 | A need or situation of a kind of person | `../02-users/` |
 | A step, a response or a branch of one goal | `../03-use-cases/` |
@@ -102,7 +102,7 @@ A fact is written in one block only. Another block refers to it by ID. A term or
 | VG-08 | The file holds no scope, release, priority or order. It does not use the words MVP, V1, phase, roadmap or DATN. A limit of the thesis project or of a release is never written as a limit of DeckAgent | Release decisions made in the wrong folder; project limits turned into product identity | Lint (words) + Review | Draft | Project rule |
 | VG-09 | The file holds no rule or quality value (SSOT). It cites `[BR-?: topic]` or `[NFR-?: topic]` for any limit, file type or target | The same rule written differently in many places | Lint (numbers, markers) + CI (IDs resolve) | Draft | Project rule |
 | VG-10 | Links run top-down (section 1). Only `Affects` names lower spec items, and each ID exists or is retired | Links pointing up; dangling IDs | CI (references resolve) | Active | Project rule |
-| VG-11 | A change to a block names the spec files that must be checked. The author searches `../00-current-scope/`, `../02-users/`, `../03-use-cases/`, `../04-requirements/` and `../05-business-rules/` for its words. Each conflict is reported, not chosen silently | A vision that the lower specs no longer match | Review | Draft | Project rule |
+| VG-11 | A change to a block names the spec files that must be checked. The author searches `../02-users/`, `../03-use-cases/`, `../04-requirements/` and `../05-business-rules/` for its words. Each conflict is reported, not chosen silently | A vision that the lower specs no longer match | Review | Draft | Project rule |
 | VG-12 | Text follows `../_STYLE.md`: terms from its table, no banned vague verb, sentences of 20 words or fewer, one fact per bullet, evidence on its own line. Rules 5 and 7 do not apply, because there is no `System` or `When`. Rule 11 applies in this form: the file can name the ways to use the product (a terminal interface, a local web interface) and the three zones. It names no control, gesture, position, look, label or layout | Text that non-native readers misread; interface detail in a file all specs depend on | Lint (banned words, interface words) + Review | Draft | Project rule |
 | VG-13 | Every block (each `###` heading) ends with the field `Updated at`, the date of the last change to that block, as `dd-mm-yyyy`. Any edit to a block sets it to the date of that edit. The file does not record who changed it; git history does | Blocks whose date is out of step with their text | Lint (field, date format) + Review (date matches the last edit) | Draft | Project rule |
 | VG-14 | Only the owner confirms a statement. An agent writes new content only as a proposed block or an open question. Content found in a use case, a segment, a research card, a reference product or common agent practice is not confirmed by that. A proposed block names its source | Inferences and borrowed features turned into product truth | Review | Draft | Project rule |
@@ -128,7 +128,7 @@ A fact is written in one block only. Another block refers to it by ID. A term or
 (MVP|V1|phase|roadmap|release|priority|first version|later|DATN|thesis)
 ```
 
-A hit is allowed in a `Means for specs` line that says a statement fixes no scope. It is also allowed where the text names `00-current-scope/`.
+A hit is allowed in a `Means for specs` line that says a statement fixes no scope. It is also allowed where the text names `docs/versions/`.
 
 **Promotion (VG-17).**
 

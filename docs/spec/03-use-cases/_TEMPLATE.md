@@ -2,18 +2,14 @@
 id: UC-000
 title: ""             # user + verb + specific object + what distinguishes it, in the user's words (UCG-01)
 level: user-goal      # user-goal | subfunction (a step reused by several cases)
-versions: {}          # flow selection per version, as add and remove against the version before (UCG-09, _CRITERIA.md section 1).
-                      # Hypothetical shape: V1: { add: [MF, A1] }  then  V2: { remove: [A1], add: [A2] }.
-                      # MF = the whole main flow; each Ax on its own; never an Sx. Version IDs come from ../00-current-scope/.
-                      # Only the owner sets this field. {} = no version selects a flow here.
-includes: []          # use cases whose main flow this one runs as one unit. Their alternative flows follow their own versions (_CRITERIA.md section 1, Related use cases)
+includes: []          # use cases whose main flow this one runs as one unit. Their alternative flows follow the include (_CRITERIA.md section 1, Related use cases)
 extended_by: []       # use cases that add an optional behavior here, with the step, for example [UC-005 at S4]
 next: []              # use cases that normally come after this one
                       # Relations point down or forward only. Never name a segment or a hypothesis here (UCG-01, UCG-07, UCG-10).
 ---
 
-<!-- A use case models behaviors DeckAgent could perform. A flow records a behavior to consider, not a commitment.
-     Only `versions` selects flows. Evidence says where an idea came from; it selects nothing (_CRITERIA.md sections 1 and 2).
+<!-- A use case models one ideal product. A flow records a behavior the product performs; it is not a commitment of a release.
+     A version file under docs/versions/<version>/ names the flows it takes. The use case holds no `versions` field (_CRITERIA.md sections 1 and 2).
      Write in plain English: docs/spec/_STYLE.md (UCG-11).
      Write intent and response, never interface (UCG-13, _STYLE rule 11). No control, menu, gesture, position, look or label.
      Name a place only by a zone: request area, conversation, deck canvas. Before you finish, run the interface check in _STYLE.md. -->
@@ -51,14 +47,14 @@ flowchart TD
      User: what the user wants to do, as an intent ("Chooses a skill"), not an action on a control.
      System: bullets for what the user can observe: what the system tells, keeps, changes or builds. No "if", no implementation, no interface. A rule or quality target is cited by ID,
        never written as a value: [BR-xxx], [NFR-xxx]. Unwritten: [BR-?: topic] / [NFR-?: topic] (UCG-06).
-     Reqs: FR IDs for this response, or FR-? when no FR exists yet. A flow no version selects can keep FR-? (UCG-06).
+     Reqs: FR IDs for this response, or FR-? when no FR exists yet. A flow can keep FR-? (UCG-06).
        Mixed: FR IDs then FR-? (FR-001, FR-?) when some FRs exist and at least one is missing. The block is incomplete while FR-? remains.
        none: only in a step that runs part of an included use case, when that use case's block, named in System ("as UC-xxx S1 says"),
        gives the whole response. Its FRs trace there (UCG-03). A behavior reference in any other block keeps FR IDs or FR-?.
        A block that adds its own response lists FR IDs or FR-? for its own part only.
        Never write a reference to another block in Reqs. A reused response goes in System. It selects no flow and traces no FR.
        One response can have several FRs, and one FR can serve several responses. No FR ID per System bullet. No second FR for the same response.
-       Changing System on a block with real FR IDs: check those FRs in the same change. Name the versions that select the flow.
+       Changing System on a block with real FR IDs: check those FRs in the same change. Name each version file that names the flow.
      Evidence: tags from _STYLE.md on one line. Remove the field when the step makes no claim about a product (UCG-08).
      Fixed field names and order: User, System, Reqs, Evidence, Updated at. Rules for each field: _STYLE.md.
      Updated at: the date of the last change to this block, as dd-mm-yyyy, always the last field (UCG-14). Set it on every edit to the block. -->
@@ -131,7 +127,7 @@ flowchart TD
 ## Open questions
 
 <!-- Each has "?" and who will resolve it. A question that changes a flow or a result names that flow (UCG-10).
-     A flow no version selects can keep its questions. The version check reports questions on selected flows. Remove the section if empty. -->
+     A flow can keep its questions. The scope review reports questions on a flow a version file names. Remove the section if empty. -->
 
 ## Notes
 

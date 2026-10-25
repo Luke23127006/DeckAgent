@@ -268,7 +268,7 @@ Song song, cần ghi rõ ranh giới source kế thừa từ DeepSeek và source
 
 ### DeckAgent — behavior sources
 
-- [V1 Scope](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/00-current-scope/VERSIONS.md) — Local Web, Models, History, workspace, images và Windows-first.
+- [V1 Scope](SCOPE.md) — Local Web, Models, History, workspace, images và Windows-first.
 - [UC-001 — First Draft](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-001.md) — Outline, confirmation và progressive slide generation.
 - [UC-002 — Edit Slides](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-002.md) — editing scope và unchanged slides.
 - [UC-003 — Request Lifecycle](https://github.com/Luke23127006/DeckAgent/blob/research/deepseek-harness/docs/spec/03-use-cases/UC-003.md) — Chat, Stop, Status và Activity Log.

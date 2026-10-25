@@ -98,4 +98,5 @@ words to use, and for the words to avoid.
   See `docs/agents/issue-tracker.md`.
 - Update the active version's `PROGRESS.md` when a milestone, a dependency, an
   integration gate or a cross-task handoff changes. `docs/versions/README.md` says
-  which version is active.
+  which version is active. A change to what a version takes belongs in its
+  `SCOPE.md` in the same version folder.
