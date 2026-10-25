@@ -1,6 +1,6 @@
 # Spec style: plain English
 
-Applies to every file in `docs/spec/`. Research cards in `docs/research/` are raw notes and are exempt. In use cases, rules 2 to 8 apply to the response text of the interactions, rule 7 to the conditions that name them, and rule 11 to every use case, both prose and diagram labels. In user segments, hedge words such as "may" are allowed when they state real uncertainty, and the person's devices and input methods may be named, because they describe the person and not the product.
+Applies to every file in `docs/spec/`. Raw research notes under `docs/research/` are exempt. In use cases, rules 2 to 8 apply to the response text of the interactions, and rule 10 to every use case, both prose and diagram labels. In user segments, hedge words such as "may" are allowed when they state real uncertainty, and the person's devices and input methods may be named, because they describe the person and not the product.
 
 **Why:** most readers are not native English speakers. A System response becomes a functional requirement, so it must have one meaning. Plain words give both.
 
@@ -11,26 +11,15 @@ Applies to every file in `docs/spec/`. Research cards in `docs/research/` are ra
 | 1 | **One thing, one name.** Use the terms in the table below. Never swap in a synonym. | "request area" and "request zone" for the same thing | "request area" every time |
 | 2 | **Use ordinary words.** show, keep, use, start, end, earlier, next, to | display, render, retain, utilize, initiate, terminate, prior, subsequent, in order to | "The system shows the outline." |
 | 3 | **No idioms or phrasal verbs.** | "folded into the same deck", "kicks off", "falls back" | "added to the same deck", "starts", "uses the default" |
-| 4 | **No vague verbs.** Banned: handle, manage, support, process, ensure, properly, gracefully, appropriate. A use case names no interface label, so there is no exemption (rule 11) | "The system handles the failure gracefully." | "The system says the outline could not be drafted and keeps the request." |
+| 4 | **No vague verbs.** Banned: handle, manage, support, process, ensure, properly, gracefully, appropriate. A use case names no interface label, so there is no exemption (rule 10) | "The system handles the failure gracefully." | "The system says the outline could not be drafted and keeps the request." |
 | 5 | **No may, might, should, could in a System response.** Say what the system does. Use **can** only for what the user is allowed to do. | "The system may show a notice." | "The system shows a notice." |
 | 6 | **Short, active sentences.** At most 20 words. Subject first. One action per sentence or message. Citations such as `[BR-xxx]` do not count. | "A notice is shown that the work was stopped and how many slides were made." | "The system shows a notice that it stopped. The notice gives the number of slides made." |
 | 7 | **Conditions go with the branch they name.** A response has no "if". In a use case, the condition sits in the `alt`, `opt` or `loop` label, next to the flow ID it belongs to. When behavior differs by step or moment, start the response with a plain label: "At S3:", "Connection returns:". | "If the file is too large, the system rejects it." | `opt A3 · A file is over the size limit [BR-?]` — response: "Shows the reason on the file card." |
 | 8 | **One action per response. Split a crowded interaction into more messages, more `alt` branches, or another section.** | One 110-word diagram label | One message per thing the user can see |
 | 9 | **Bold sparingly.** Bold a defined term from the table, on its first use in a bullet only. At most 2 per bullet. | Bold on whole phrases | "Shows the **deck canvas**." |
-| 10 | **Evidence in the evidence list.** A use case keeps one compact list under its interactions, one line per flow, one tag per claim. Never inside a sentence, and never inside a diagram label. | "…the view stays on the first slide `[observed: …]`, and adding slides is not offered." | `- **MF:** [observed: claude-report (view stays on the first slide)]` |
-| 11 | **Intent and response, not interface.** The user side says what the user wants to do. The system side says what the system tells, keeps, changes or builds. Never name a widget, a gesture, a position, a look or a label. Name a place only by its zone (see Zones). If a UI detail carries a requirement, write the requirement. | "The user opens the + menu and chooses a skill." "Opens the dashboard as an overlay at the bottom right." "Shows a card with a Retry button." | "The user chooses a skill." "Opens the dashboard. The conversation, the request text and the attachments stay as they were." "Lets the user try again." |
+| 10 | **Intent and response, not interface.** The user side says what the user wants to do. The system side says what the system tells, keeps, changes or builds. Never name a widget, a gesture, a position, a look or a label. Name a place only by its zone (see Zones). If a UI detail carries a requirement, write the requirement. | "The user opens the + menu and chooses a skill." "Opens the dashboard as an overlay at the bottom right." "Shows a card with a Retry button." | "The user chooses a skill." "Opens the dashboard. The conversation, the request text and the attachments stay as they were." "Lets the user try again." |
 
-Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. Rule 11 keeps the spec true when the design changes.
-
-## Evidence tags
-
-Same tags as `02-users` and `03-use-cases` (U-06, UCG-08):
-
-- `[observed: <source> (<what it showed>)]` seen in a recording or product
-- `[inferred: <source>]` reasoned from observed facts
-- `[assumed]` or `[assumed: <what>]` no evidence yet
-
-In a list (context of use, knowledge, and so on), the last bullet can be one `- **Evidence:** [assumed]`. It counts for every item above that has no `Evidence` line of its own.
+Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. Rule 10 keeps the spec true when the design changes. Where a behavior came from is a research matter under `docs/research/`; a use case links it only when the link helps the reader understand the behavior.
 
 ## Zones
 
@@ -107,7 +96,7 @@ No tooling exists yet, so review does it. There are two checks.
 grep -nEi '(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)'
 ```
 
-**Interface (rule 11).** Run this on the whole use case, except the frontmatter, the `Research card` line and the flow IDs. Diagram labels count. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
+**Interface (rule 10).** Run this on the whole use case, except the frontmatter and the flow IDs. Diagram labels count. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
 
 ```
 grep -nEi '(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)'
