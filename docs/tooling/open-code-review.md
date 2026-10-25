@@ -45,6 +45,12 @@ Do not install OpenCodeReview globally. `node_modules/` stays uncommitted;
 mode uses the active coding agent as the reviewer, so no separate OCR API key or
 LLM endpoint is required.
 
+`pnpm-workspace.yaml` records the build allowances this pin needs: the pinned
+OpenCodeReview version installs its platform binary, with a checksum-validated
+download as fallback, and `node-addon-require-builtin` keeps its install hook
+disabled as upstream specifies. Keep the platform optional dependencies
+installed; do not prune them.
+
 Verify the local CLI:
 
 ```powershell

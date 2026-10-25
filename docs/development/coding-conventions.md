@@ -3,7 +3,7 @@
 These are the approved DeckAgent conventions for TypeScript in `apps/*`,
 `packages/*/*`, `scripts/`, and `tests/`. They apply to new code and to changes under
 review. Vendor packages under `vendor/` keep their upstream conventions (see
-[UPSTREAM.md](../../UPSTREAM.md)).
+[vendor/README.md](../../vendor/README.md)).
 
 Examples illustrate a rule; they are not additional rules. Where the codebase does not
 yet follow a rule, the gap is marked **Known drift** — do not copy the drift. How a

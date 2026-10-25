@@ -13,7 +13,7 @@ file gives that home in one line. Do not copy detailed rules here.
 |---|---|---|---|
 | Engineering principles | Rarely | This file, the sections below | `AGENTS.md` |
 | Engineering standards: naming, code layout, review levels | On a deliberate change | `docs/development/` | `coding-conventions.md`, `repository-structure.md`, `code-review-criteria.md` |
-| Workflows: branches, checks, tools | As the team changes | `CONTRIBUTING.md` and `docs/` | `CONTRIBUTING.md`, `local-development.md`, `docs/tooling/` |
+| Workflows: branches, checks, tools | As the team changes | `docs/` | `local-development.md`, `docs/tooling/` |
 | Implementation plans: tasks, owners, gates | Often | `docs/versions/<version>/` and GitHub Issues | `PROGRESS.md` |
 
 Detailed rules go to their home first. This file records only the rule that says where
@@ -51,7 +51,7 @@ show it to the user and continue the task.
 
 ## Verification
 
-- Run the checks that the change affects. Use the commands in `CONTRIBUTING.md`.
+- Run the checks that the change affects. Use the commands in `docs/development/local-development.md`.
 - Never delete a test, disable a test or weaken a check to make a change pass.
 - Report a failure that you found, even when it existed before your change.
 - Record what you ran, the result, and what the result does not prove.

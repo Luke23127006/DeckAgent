@@ -11,7 +11,7 @@ are in `code-review-criteria.md` CQC-006.
 | --- | --- |
 | `apps/` | Application composition and process entry points. |
 | `packages/` | Reusable DeckAgent-owned libraries, grouped by domain as `packages/<domain>/<name>`. |
-| `vendor/` | Pinned upstream code; keep upstream identities and source (see [UPSTREAM.md](../../UPSTREAM.md)). Do not edit. |
+| `vendor/` | Pinned upstream code; keep upstream identities and source (see [vendor/README.md](../../vendor/README.md)). Do not edit. |
 | `scripts/` | Repository build and maintenance scripts. |
 | `tests/` | Node test-runner suites and their fixtures in `tests/fixtures/`. |
 | `config/` | Checked-in sample/development configuration; never commit secrets. |

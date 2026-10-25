@@ -103,6 +103,5 @@ live under `.deckagent/` (gitignored): `profile.json`, `credentials/`, and
 - [Coding conventions](docs/development/coding-conventions.md) — TypeScript conventions.
 - [Repository structure](docs/development/repository-structure.md) — where code lives.
 - [Code review criteria](docs/development/code-review-criteria.md) — how changes are judged.
-- [Contributing](CONTRIBUTING.md) — proposing, scoping, reviewing, and verifying changes.
 - [Implementation plans](docs/versions/README.md) — where the plan and progress of each version live.
 - [OpenCodeReview tooling](docs/tooling/open-code-review.md) — repository-local review tooling.
