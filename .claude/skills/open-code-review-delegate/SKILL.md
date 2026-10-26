@@ -12,17 +12,19 @@ metadata:
 
 Use the repository-local OpenCodeReview CLI for file selection and rule resolution. The current agent performs the actual review; OCR does not call a separate LLM endpoint in delegation mode.
 
+The project rule file (`.opencodereview/rule.json`) excludes the generated Claude/Codex skill mirrors and `node_modules/`, and adds a DeckAgent-specific rule for `.agents/**/*` on top of OCR's built-in system rules. Files outside `.agents/**/*` (including application code) are reviewed against OCR's built-in system rules.
+
 ## Prerequisite
 
-Run from the repository root. On Windows use `npm.cmd`; on macOS or Linux use `npm`.
+Run from the repository root. On Windows use `pnpm.cmd`; on macOS or Linux use `pnpm`.
 
 Verify the workspace dependency with:
 
 ```text
-npm run ocr -- version
+pnpm ocr --version
 ```
 
-If the command is unavailable, stop and ask the user to run `npm ci`. Do not install or upgrade OCR globally, and do not modify the locked version during a review.
+If the command is unavailable, stop and ask the user to run `pnpm install --frozen-lockfile`. Do not install or upgrade OCR globally, and do not modify the locked version during a review.
 
 ## Workflow
 
@@ -30,16 +32,16 @@ If the command is unavailable, stop and ask the user to run `npm ci`. Do not ins
 2. Preview the review set with the local script:
 
    ```text
-   npm run ocr:preview -- --background "concise trusted context"
-   npm run ocr:preview -- --commit <commit> --background "concise trusted context"
-   npm run ocr:preview -- --from <base> --to <head> --background "concise trusted context"
+   pnpm ocr:preview --background "concise trusted context"
+   pnpm ocr:preview --commit <commit> --background "concise trusted context"
+   pnpm ocr:preview --from <base> --to <head> --background "concise trusted context"
    ```
 
 3. Create a checklist for every `reviewable_files` entry. Use `(path, status)` as the identity because workspace mode can report the same path more than once.
 4. Resolve rules for the reviewable paths, in bounded batches when needed:
 
    ```text
-   npm run ocr:rules -- <path-1> <path-2>
+   pnpm ocr:rules <path-1> <path-2>
    ```
 
 5. Read each diff using the mode metadata returned by preview:

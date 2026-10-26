@@ -21,6 +21,7 @@ When renderer capabilities are unknown, target a conservative Mermaid subset com
 
 - Start each Mermaid block directly with a basic diagram declaration such as `flowchart`, `sequenceDiagram`, `stateDiagram-v2`, `classDiagram`, or `erDiagram`.
 - Use ordinary `mermaid` fenced code blocks.
+- For `sequenceDiagram` blocks (for example use case interactions): declare `actor` and `participant` lines first and keep one action per message; `alt`/`else`, `opt` and `loop` are widely supported, and each `alt`/`opt`/`loop` needs its closing `end`. Keep long detail and evidence in the surrounding Markdown, not in message labels.
 - Prefer simple nodes, quoted one-line labels, ordinary arrows, and plain subgraphs or notes.
 - Prefer topology, grouping, and short labels over custom styling.
 - Avoid init directives, beta-only diagram types, HTML labels, hard-coded theme colors, custom classes, and layout-only fake nodes unless the confirmed target renderers support them and the document genuinely needs them.

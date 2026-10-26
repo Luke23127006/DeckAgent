@@ -1,6 +1,6 @@
 # Spec style: plain English
 
-Applies to every file in `docs/spec/`. Research cards in `docs/research/` are raw notes and are exempt. Rules 5 and 7 apply to the `System` and `When` fields of use cases. Rule 11 applies to every use case, whole. In user segments, hedge words such as "may" are allowed when they state real uncertainty, and the person's devices and input methods may be named, because they describe the person and not the product.
+Applies to every file in `docs/spec/`. Raw research notes under `docs/research/` are exempt. In use cases, rules 2 to 8 apply to the response text of the interactions, and rule 10 to every use case, both prose and diagram labels. In user segments, hedge words such as "may" are allowed when they state real uncertainty, and the person's devices and input methods may be named, because they describe the person and not the product.
 
 **Why:** most readers are not native English speakers. A System response becomes a functional requirement, so it must have one meaning. Plain words give both.
 
@@ -11,26 +11,15 @@ Applies to every file in `docs/spec/`. Research cards in `docs/research/` are ra
 | 1 | **One thing, one name.** Use the terms in the table below. Never swap in a synonym. | "request area" and "request zone" for the same thing | "request area" every time |
 | 2 | **Use ordinary words.** show, keep, use, start, end, earlier, next, to | display, render, retain, utilize, initiate, terminate, prior, subsequent, in order to | "The system shows the outline." |
 | 3 | **No idioms or phrasal verbs.** | "folded into the same deck", "kicks off", "falls back" | "added to the same deck", "starts", "uses the default" |
-| 4 | **No vague verbs.** Banned: handle, manage, support, process, ensure, properly, gracefully, appropriate. A use case names no interface label, so there is no exemption (rule 11) | "The system handles the failure gracefully." | "The system says the outline could not be drafted and keeps the request." |
+| 4 | **No vague verbs.** Banned: handle, manage, support, process, ensure, properly, gracefully, appropriate. A use case names no interface label, so there is no exemption (rule 10) | "The system handles the failure gracefully." | "The system says the outline could not be drafted and keeps the request." |
 | 5 | **No may, might, should, could in a System response.** Say what the system does. Use **can** only for what the user is allowed to do. | "The system may show a notice." | "The system shows a notice." |
-| 6 | **Short, active sentences.** At most 20 words. Subject first. One action per sentence. Citations such as `[BR-xxx]` do not count. | "A notice is shown that the work was stopped and how many slides were made." | "The system shows a notice that it stopped. The notice gives the number of slides made." |
-| 7 | **Conditions go in the When field.** A System response has no "if". When behavior differs by step or moment, start the bullet with a plain label: "At S3:", "Connection returns:". | "If the file is too large, the system rejects it." | When: "A file is over the size limit [BR-?]." System: "Shows the reason on the file card." |
-| 8 | **One action per bullet. At most 7 bullets per field.** More than 7 means split the step or flow. | One 110-word table cell | One bullet per thing the user can see |
+| 6 | **Short, active sentences.** At most 20 words. Subject first. One action per sentence or message. Citations such as `[BR-xxx]` do not count. | "A notice is shown that the work was stopped and how many slides were made." | "The system shows a notice that it stopped. The notice gives the number of slides made." |
+| 7 | **Conditions go with the branch they name.** A response has no "if". In a use case, an alternative's condition sits in the `alt`, `opt` or `loop` label of its own Alternative Flow diagram, next to the flow ID it belongs to. The Main Flow holds the successful path and names no alternative condition. When behavior differs by step or moment, start the response with a plain label: "At S3:", "Connection returns:". | "If the file is too large, the system rejects it." A condition on a rejected option placed inside the Main Flow "to show when it applies" | `opt A3 · A file is over the size limit [BR-?]` — response: "Shows the reason on the file card." |
+| 8 | **One action per response. Split a crowded interaction into more messages, more `alt` branches, or another section.** | One 110-word diagram label | One message per thing the user can see |
 | 9 | **Bold sparingly.** Bold a defined term from the table, on its first use in a bullet only. At most 2 per bullet. | Bold on whole phrases | "Shows the **deck canvas**." |
-| 10 | **Evidence on its own line.** One tag per claim. Never inside a sentence. | "…the view stays on the first slide `[observed: …]`, and adding slides is not offered." | `- **Evidence:** [observed: claude-report (view stays on the first slide)]` |
-| 11 | **Intent and response, not interface.** The user side says what the user wants to do. The system side says what the system tells, keeps, changes or builds. Never name a widget, a gesture, a position, a look or a label. Name a place only by its zone (see Zones). If a UI detail carries a requirement, write the requirement. | "The user opens the + menu and chooses a skill." "Opens the dashboard as an overlay at the bottom right." "Shows a card with a Retry button." | "The user chooses a skill." "Opens the dashboard. The conversation, the request text and the attachments stay as they were." "Lets the user try again." |
+| 10 | **Intent and response, not interface.** The user side says what the user wants to do. The system side says what the system tells, keeps, changes or builds. Never name a widget, a gesture, a position, a look or a label. Name a place only by its zone (see Zones). If a UI detail carries a requirement, write the requirement. | "The user opens the + menu and chooses a skill." "Opens the dashboard as an overlay at the bottom right." "Shows a card with a Retry button." | "The user chooses a skill." "Opens the dashboard. The conversation, the request text and the attachments stay as they were." "Lets the user try again." |
 
-Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. Rule 11 keeps the spec true when the design changes.
-
-## Evidence tags
-
-Same tags as `02-users` and `03-use-cases` (U-06, UCG-08):
-
-- `[observed: <source> (<what it showed>)]` seen in a recording or product
-- `[inferred: <source>]` reasoned from observed facts
-- `[assumed]` or `[assumed: <what>]` no evidence yet
-
-In a list (context of use, knowledge, and so on), the last bullet can be one `- **Evidence:** [assumed]`. It counts for every item above that has no `Evidence` line of its own.
+Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. Rule 10 keeps the spec true when the design changes. Where a behavior came from is a research matter under `docs/research/`; a use case links it only when the link helps the reader understand the behavior.
 
 ## Zones
 
@@ -66,12 +55,14 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **activity timeline** | The activities of one request in the order they happen. An executed activity is work that started. A planned activity is work the system planned but has not started, and it appears only when the system produced a plan. The conversation shows the activities with the status message of the request |
 | **activity detail** | The information the system shows about one activity when the user reads it. It can name an internal step, an argument or a result when that is safe to show |
 | **placeholder** | Text the system wrote because the user gave none |
-| **design system** | A set of design rules the user can choose for different decks, such as colours, fonts and a logo |
+| **design system** | A reusable set of brand identity rules and design constraints, such as brand colours, fonts, logos and spacing. It can be used for different decks independently of visual styles |
 | **default design system** | The design system the system uses when the user chose none |
-| **look** | How one deck is shown: its colours, fonts and arrangement on the slides. A look can use a design system |
-| **deck state** | The content and the look of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`00-current-scope/`) |
+| **visual style** | A reusable set of presentation design rules, such as layout preferences, visual density and visual treatment. It is independent of a design system |
+| **built-in visual style** | A visual style DeckAgent provides. The user can choose it or copy it, but cannot change its original definition |
+| **custom visual style** | A visual style the user creates, changes, saves, removes and reuses |
+| **deck state** | The content and design of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
 | **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
-| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. Each version sets it (`00-current-scope/VERSIONS.md`). In V1 a chat holds one deck |
+| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. A version decides that in its scope file (`docs/versions/`) |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
 | **provider configuration** | One saved connection to a model service. It is more than a key. It connects to a built-in provider or to a custom model API. It holds a provider ID, a display name and what the provider needs, such as a key. It also holds its added models |
 | **built-in provider** | A model provider that DeckAgent offers by name [BR-005]. DeckAgent knows its provider ID and its default settings |
@@ -88,22 +79,33 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **selected model** | The added model chosen for one chat. Each chat has its own. It runs a new request only while it is selectable |
 | **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
-| **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
+| **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no design instructions |
+| **workspace** | A named group of chats for one project folder. The user adds one by choosing a folder, and choosing that folder again returns the same workspace. Removing one changes no file of the user and no chat |
+| **default workspace** | The workspace the system gives for a first start, before the user chose a folder. It has no project folder and cannot be removed |
+| **project folder** | The one folder of the user that a workspace other than the default workspace stands for. The chats of that workspace can read the files in it. DeckAgent writes no file of its own work into it |
+| **ungrouped chats** | The chats that belonged to a removed workspace. The user finds them together, apart from the chats of every workspace that is set up. They belong to no workspace |
+| **file of the user** | A file or a folder the user made or put in a project folder, or gave to a request as an attachment or a reference. DeckAgent changes none of them. Material DeckAgent makes for its own work is not a file of the user |
+| **workspace data** | The work DeckAgent saves for a workspace: its chats, their conversations, outlines and decks, and the last saved state of each. DeckAgent keeps it for the chats, apart from the project folder, so it stays available when that folder does not. The agent reaches it only through what DeckAgent lets a request do |
+| **permission** | What the agent of one chat can reach on the computer, and where it must ask the user first. The files of the user in the project folder of the workspace of the chat are inside it. A chat that belongs to no workspace has no project folder in it. The data of another chat never is |
+| **reference** | A file or a folder in the project folder of the workspace of the chat that the request names as material. Naming it raises no permission by itself. It becomes part of the data of the request when a request reads it, and only while it can be read |
+| **reasoning level** | How much an added model thinks about a request, as the user chooses it for a chat. The model and its provider set which levels it has |
+| **context usage** | How much of the context of the selected model the conversation and the request in preparation use. It is an estimate unless the provider reported it |
+| **compact** | A summary the system makes of the earlier conversation, so the work stays within the context of the selected model. The whole conversation stays readable |
 
 ## How to check
 
 No tooling exists yet, so review does it. There are two checks.
 
-**Words.** Run this on the **System** and **When** fields and on **Situation and goal**. Each hit is fixed or has a stated reason.
+**Words.** Run this on the response text of a use case's interactions, on the prose of `Goal`, `Preconditions` and `Behavior constraints`, and on `Situation and goal` in users and the vision. Each hit is fixed or has a stated reason.
 
 ```
-grep -nEi '(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)'
+grep -nEi '\b(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)\b'
 ```
 
-**Interface (rule 11).** Run this on the whole use case, except the frontmatter, the generated block and the `Research card` line. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
+**Interface (rule 10).** Run this on the whole use case, except the frontmatter and the flow IDs. Diagram labels count. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
 
 ```
-grep -nEi '(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)'
+grep -nEi '\b(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)\b'
 ```
 
 Then apply the **swap test** to each sentence: picture the same product with another interface, such as touch only, voice only, or a different layout. If the sentence is still true, it passes. If it is not, it describes the interface and is rewritten.

@@ -33,8 +33,7 @@ to invent permanent boundaries.
 | Reviewing workspace changes, a commit, or a branch range | Requested review target, task context, relevant contracts and tests | [open-code-review-delegate](../../.agents/skills/open-code-review-delegate/SKILL.md) | Complete file accounting and severity-ranked findings with repository evidence |
 | Mermaid embedded in repository Markdown | Target document, authoritative content, renderer constraints | [mermaid-markdown](../../.agents/skills/mermaid-markdown/SKILL.md) | Portable, semantically accurate Mermaid in the target Markdown file |
 | Standalone Mermaid source or rendered artifact | Authoritative content, requested format and viewing context | [mermaid-diagram](../../.agents/skills/mermaid-diagram/SKILL.md) | Verified Mermaid source and requested rendered outputs |
-| Creating or rewriting a use case or user segment file in `docs/spec/` | The target file, its folder's `_TEMPLATE.md` and `_CRITERIA.md`, `docs/spec/_STYLE.md`, research cards | [spec-authoring](../../.agents/skills/spec-authoring/SKILL.md) | A spec file that follows its template, criteria and style, with every changed meaning and every added assumption reported |
-| Steps or alternative flows of a use case changed, or its `Flow at a glance` block is missing or stale | The use case file | [use-case-flowchart](../../.agents/skills/use-case-flowchart/SKILL.md) | The block between the `BEGIN generated` and `END generated` markers rewritten by fixed rules, nothing else changed |
+| Creating or rewriting a use case or user segment file in `docs/spec/`, or editing a use case's interactions or flows | The target file, its folder's `_TEMPLATE.md` and `_CRITERIA.md`, `docs/spec/_STYLE.md`, research cards | [spec-authoring](../../.agents/skills/spec-authoring/SKILL.md) | A spec file that follows its template, criteria and style in the Main Flow First format: one hand-written Main Flow sequence diagram first, each alternative in its own subsection after it, every changed meaning and every added assumption reported |
 
 No specialised workflow is needed for routine edits. Do not load all skills by
 default or invent product concepts, module rules, or architecture during setup.
@@ -54,7 +53,7 @@ The four initial engineering skills come from `mattpocock/skills`. The two
 repository-local Mermaid skills were promoted from the existing
 Claude configuration into the canonical collection. The OpenCodeReview delegation
 skill comes from `alibaba/open-code-review` and is adapted to the repository-local,
-pinned npm tooling. The supplied `ComposioHQ/awesome-claude-skills` catalog was
+pinned pnpm workspace dependency. The supplied `ComposioHQ/awesome-claude-skills` catalog was
 consulted, but no skill from that catalog was adopted. The manifest records
 reconsideration conditions for `pptx`, `research`, and `webapp-testing`. The optional
 debugging shell template needs Bash (for example Git Bash or WSL); native commands

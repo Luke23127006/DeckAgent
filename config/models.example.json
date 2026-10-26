@@ -1,0 +1,30 @@
+{
+  "connections": [
+    {
+      "id": "openai",
+      "protocol": "chat-completions",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "tokenLimitField": "max_completion_tokens"
+    },
+    {
+      "id": "deepseek",
+      "protocol": "chat-completions",
+      "baseUrl": "https://api.deepseek.com",
+      "apiKeyEnv": "DEEPSEEK_API_KEY"
+    },
+    {
+      "id": "anthropic",
+      "protocol": "anthropic-messages",
+      "baseUrl": "https://api.anthropic.com/v1",
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "maxOutputTokens": 4096
+    },
+    {
+      "id": "google",
+      "protocol": "gemini",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "apiKeyEnv": "GEMINI_API_KEY"
+    }
+  ]
+}

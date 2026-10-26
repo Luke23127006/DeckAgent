@@ -2,14 +2,46 @@
   "name": "deckagent-tooling",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "test:recovery-editing": "node --test tests/recovery-editing.test.mjs tests/web-session.test.mjs tests/web-management.test.mjs",
+    "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-workflow.test.mjs tests/outline-client.test.mjs",
+    "test:slide-pipeline": "node --test tests/deck-service.test.mjs tests/publish-slide.test.mjs tests/deck-pipeline.test.mjs tests/deck-model.test.mjs tests/deck-client.test.mjs",
     "ocr": "ocr",
     "ocr:preview": "ocr delegate preview --format json",
-    "ocr:rules": "ocr delegate rule --format json"
+    "ocr:rules": "ocr delegate rule --format json",
+    "build": "tsc -b && node scripts/build-workspace.mjs",
+    "typecheck": "tsc -b",
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "test:cordis-smoke": "node --test tests/cordis-smoke.test.mjs",
+    "start:cordis-smoke": "node apps/cordis-smoke/lib/cli.js",
+    "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
+    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs",
+    "test:session-persistence": "node --test tests/session-persistence.test.mjs",
+    "test:chat-setup": "node --test tests/chat-setup.test.mjs",
+    "chat": "node --env-file-if-exists=.env --use-system-ca apps/agent-runtime/lib/chat.js",
+    "test:tools-browser": "node --test tests/file-tools.test.mjs tests/host-api.test.mjs tests/browser-runtime.test.mjs tests/local-web.test.mjs",
+    "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js",
+    "test:browser-smoke": "node --test tests/browser-smoke.test.mjs",
+    "test:env-startup": "node --test tests/env-startup.test.mjs",
+    "test:local-web": "node --test tests/web-session.test.mjs tests/web-management.test.mjs"
   },
   "devDependencies": {
-    "@alibaba-group/open-code-review": "1.12.7"
-  }
+    "@alibaba-group/open-code-review": "1.12.7",
+    "@biomejs/biome": "^2.5.15",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.20.1",
+    "@types/semver": "^7.8.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "pnpm@11.28.5",
+  "workspaces": [
+    "vendor/*",
+    "packages/*/*",
+    "apps/*"
+  ]
 }

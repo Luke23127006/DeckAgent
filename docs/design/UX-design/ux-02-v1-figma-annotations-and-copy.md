@@ -8,7 +8,7 @@
 - Dòng **Cần thể hiện** mô tả hành vi phải kiểm tra. Dòng **Ví dụ nội dung** là **đề xuất câu chữ**, chưa được Owner duyệt. Các ví dụ viết bằng tiếng Việt để review; Product Spec chưa chốt ngôn ngữ UI.
 - Text trong `{ngoặc nhọn}` là dữ liệu của case, không phải giá trị cố định. Khi không biết một dữ liệu, UI phải dùng nhánh “không xác định được”, không điền một số hay nguyên nhân đoán trước.
 - Đặt điều kiện, phản hồi, hành động và UC/FR cạnh state frame. Gắn annotation vào vùng tương ứng trong [Foundation HTML](DeckAgent%20V1%20UX%20Foundation.html); không dùng tài liệu này để chốt vị trí, hình thức hoặc kiến trúc.
-- `R/C/D/M/H` là ID của [state inventory](ux-02-v1-state-inventory.md). Chỉ các flow trong `versions → V1 → add` của UC-001, UC-002, UC-003, UC-005, UC-006 và UC-012 được dùng.
+- `R/C/D/M/H` là ID của [state inventory](ux-02-v1-state-inventory.md). Chỉ các flow mà [V1 Scope](../../versions/v1/SCOPE.md) nhận, trong UC-001, UC-002, UC-003, UC-005, UC-006 và UC-012, được dùng.
 
 ## 2. Request area và attachment
 

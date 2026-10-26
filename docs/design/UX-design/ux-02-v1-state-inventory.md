@@ -4,7 +4,7 @@
 
 ## 1. Cách đọc inventory
 
-Nguồn xác định V1 là [V1 Scope](../../spec/00-current-scope/VERSIONS.md) và trường `versions → V1 → add` của [UC-001](../../spec/03-use-cases/UC-001.md), [UC-002](../../spec/03-use-cases/UC-002.md), [UC-003](../../spec/03-use-cases/UC-003.md), [UC-005](../../spec/03-use-cases/UC-005.md), [UC-006](../../spec/03-use-cases/UC-006.md), [UC-012](../../spec/03-use-cases/UC-012.md). Các FR tương ứng nằm trong [Functional Requirements](../../spec/04-requirements/fr/). Chỉ flow được liệt kê trong `add` mới thuộc V1.
+Nguồn xác định V1 là [V1 Scope](../../versions/v1/SCOPE.md), mục "Flow V1 nhận", và các hành vi của [UC-001](../../spec/03-use-cases/UC-001.md), [UC-002](../../spec/03-use-cases/UC-002.md), [UC-003](../../spec/03-use-cases/UC-003.md), [UC-005](../../spec/03-use-cases/UC-005.md), [UC-006](../../spec/03-use-cases/UC-006.md), [UC-012](../../spec/03-use-cases/UC-012.md). Các FR tương ứng nằm trong [Functional Requirements](../../spec/04-requirements/fr/). Chỉ flow được liệt kê ở mục đó mới thuộc V1.
 
 Một thời điểm có thể mang **nhiều trạng thái đồng thời**. Ví dụ, request đang chạy, deck có vài slide hoàn tất, request area giữ bản nháp kế tiếp và người dùng đang xem Models settings. Vì vậy inventory chia theo 5 vùng trách nhiệm: request/conversation, request area/attachment, outline/deck canvas, model/settings và chat/navigation. Khi làm Figma, có thể dùng một frame nền và annotation cho các biến thể thay vì vẽ một màn hình cho mỗi tổ hợp.
 

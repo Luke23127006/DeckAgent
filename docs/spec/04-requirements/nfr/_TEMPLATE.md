@@ -9,24 +9,19 @@ title: "<name of the quality>"   # a short name for the quality, not for a step,
      No behavior (that is an FR), no rule value (that is a BR, cited as [BR-xxx]), no engineering metric, no research threshold, no interface design, no architecture, no tool, no task, no progress, no version.
      This file names no use case, step, flow, segment, FR or other NFR. Others cite it as [NFR-xxx] (NFG-12).
      Before writing, search the statements in this folder (NFG-03).
+     An open question never becomes a target or a Not specified item. It goes to the design backlog of the ideal spec, outside docs/spec/ (NFG-06).
      Write in plain English: docs/spec/_STYLE.md (NFG-11). -->
 
 ## Requirement
 
 <!-- Quality attribute: one, for example performance, reliability, data integrity, security, privacy or accessibility.
      Statement: one to three sentences. The quality the product must have, without the target.
-     Status: confirmed (the statement traces to confirmed product behavior, such as a response of a selected use case flow, or to an explicit owner decision) | proposed (the author proposes it). No other value (NFG-05).
-     A citation in another file, a draft, a proposed item or an alternative under an open question confirms nothing (NFG-06).
-     Source: use case flow | owner decision, yyyy-mm-dd: <what was decided, in words> | proposed.
-     Why: required when Status is proposed. Optional when Status is confirmed. When no reason is needed, remove the whole line. Never leave Why empty.
+     Why: optional. A trade-off or a boundary the statement cannot show, in one short line. Remove the line when no reason is needed. Never leave it empty.
      Updated at: the date of the last change to this file, as dd-mm-yyyy (NFG-14).
-     Only an explicit owner decision turns a proposed statement into a confirmed one. A citation, a commit or an implementation confirms nothing (NFG-06). -->
+     No Status and no Source of approval. The blocks that cite the statement are its record (NFG-05). -->
 
 - **Quality attribute:** <attribute>
 - **Statement:** <the quality the product must have>
-- **Status:** confirmed
-- **Source:** use case flow
-- **Why:** <reason>
 - **Updated at:** DD-MM-YYYY
 
 ## Verification
@@ -34,20 +29,14 @@ title: "<name of the quality>"   # a short name for the quality, not for a step,
 <!-- At least one measurement. One block per measurement: "### M-n · Short name". IDs are never renumbered (NFG-12).
      Conditions: the state, the inputs and the environment, well enough to repeat. Cite rule values as [BR-xxx].
        State the boundary: product-controlled (a part of the result DeckAgent controls) or end-to-end (the whole result the user experiences, which can include provider time).
-       Name the provider-dependent conditions that can change the result. Never leave provider time out silently. Never present provider performance as a DeckAgent guarantee (NFG-08).
+       Name the provider-dependent conditions that can change the result. Never leave provider time out silently (NFG-07).
      Measure: the quantity measured, or the property checked.
      Method: how it is measured or checked, in words. No tool, no architecture.
-     Target: a value with its unit and bound, or the required property. A security, privacy or data-integrity check can be a property with no number (NFG-08).
+     Target: a value with its unit and bound, or the required property. A security, privacy or data-integrity check can be a property with no number (NFG-07).
      Met when: what counts as meeting the target, for example every run or a stated share of runs.
-     Conditions, Measure and Method must be clear enough to verify the requirement. They never read "not set". A field that cannot be completed yet states what is known, and a Not specified item names the gap. That is a documentation gap, not a pending target (NFG-08).
-     A measurement with the status and the source of the NFR has no Status line. It can add its own Source when another decision set its target.
-     A measurement that differs adds three lines after Met when:
-       - **Status:** proposed | pending
-       - **Source:** proposed (for proposed) | owner decision needed | evidence needed (for pending)
-       - **Why:** <reason and trade-off> (for proposed) | <what is missing: which decision or measurement> (for pending)
-     Pending: Target and Met when read "not set". Never a guessed number, a range or "about" (NFG-07). A target is confirmed only when a confirmed source states the target itself; a [NFR-?: topic] marker confirms none (NFG-06).
-     No target is confirmed under a proposed statement (NFG-05).
-     To confirm a target: set Target and Met when, remove the Status line, set Source to the owner decision with its date (NFG-06). -->
+     Target and Met when read "not set" while no target is decided, and the block then carries a one-line Why naming what is missing (NFG-06).
+     Never a guessed number, a range or an "about" (NFG-05).
+     Conditions, Measure and Method always state what is known; they never read "not set" (NFG-07). -->
 
 ### M-1 · <name of the measurement>
 
@@ -56,16 +45,9 @@ title: "<name of the quality>"   # a short name for the quality, not for a step,
 - **Method:** <how it is measured or checked, in words>
 - **Target:** not set
 - **Met when:** not set
-- **Status:** pending
-- **Source:** evidence needed
 - **Why:** <what is missing>
-
-## Not specified
-
-<!-- Aspects left open that are not a target, one line each, ending "Pending owner decision." A gap in a measurement definition that needs technical evidence ends "Pending technical evidence."
-     A target whose decision is open is a pending target, not an item here.
-     Do not copy the open question; it stays in the use case. No statement and no measurement assumes an outcome for these items (NFG-09). Remove this section if empty. -->
 
 ## Notes
 
-<!-- Only what belongs neither in the statement nor in a measurement, for example a split or a merge. Remove this section if empty. -->
+<!-- Only what belongs neither in the statement nor in a measurement, for example a split or a merge, or the boundary another requirement covers.
+     No decision history and no owner-decision dates (NFG-05). Remove this section if empty. -->

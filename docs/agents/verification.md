@@ -21,7 +21,7 @@ kiểm tra riêng; việc đủ file không chứng minh Agent tuân thủ rule 
 
 | Task | Bằng chứng cần đọc | Điều kiện đạt khi review tài liệu |
 | --- | --- | --- |
-| W-012 | `AGENTS.md` | Phân biệt việc được tự quyết và việc cấm; có unrelated changes, boundary/contract, architecture impact, kiểm chứng trung thực và secrets; không áp đặt kiến trúc chưa chốt |
+| W-012 | `AGENTS.md`, `docs/AGENTS.md` | Phân biệt việc được tự quyết và việc cấm; có unrelated changes, boundary/contract, architecture impact, kiểm chứng trung thực và secrets; không áp đặt kiến trúc chưa chốt; `docs/AGENTS.md` cấm chi tiết implementation plan ngoài `docs/versions/` |
 | W-013 | `.agents/skill-manifest.json`, các skill đã cài và license | Mỗi ứng viên có quyết định và lý do; phân biệt đã cài với chưa cài; bản sửa có danh sách điều chỉnh; chỉ có bốn skill được chọn trong phạm vi nghiệm thu W-013 ban đầu |
 | W-014 | `AGENTS.md`, `skill-router.md` | Phân biệt global/contextual/skill; có thứ tự đọc, trigger và quy tắc không nạp toàn bộ; chỉ thêm contextual rule khi vùng code đã ổn định |
 

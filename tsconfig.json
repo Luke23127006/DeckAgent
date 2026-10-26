@@ -1,0 +1,55 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/tools/presentation" },
+    { "path": "packages/presentation/deck" },
+    {
+      "path": "vendor/cosmokit"
+    },
+    {
+      "path": "vendor/cordis"
+    },
+    {
+      "path": "vendor/schemastery"
+    },
+    {
+      "path": "vendor/loader"
+    },
+    {
+      "path": "vendor/include"
+    },
+    {
+      "path": "vendor/group"
+    },
+    {
+      "path": "packages/testing/cordis-fixture"
+    },
+    {
+      "path": "apps/cordis-smoke"
+    },
+    {
+      "path": "packages/agent/runtime"
+    },
+    {
+      "path": "packages/llm/providers"
+    },
+    {
+      "path": "apps/agent-runtime"
+    },
+    {
+      "path": "packages/session/persistence"
+    },
+    {
+      "path": "packages/tools/filesystem"
+    },
+    {
+      "path": "packages/host/api"
+    },
+    {
+      "path": "packages/client/runtime"
+    },
+    {
+      "path": "apps/local-web"
+    }
+  ]
+}

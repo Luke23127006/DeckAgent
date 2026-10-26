@@ -1,0 +1,8 @@
+{
+  "sessionId": "task-005-demo",
+  "outlineId": "task-005-confirmed-outline",
+  "slides": [
+    { "slideId": "intro", "title": "Introduction" },
+    { "slideId": "summary", "title": "Summary" }
+  ]
+}

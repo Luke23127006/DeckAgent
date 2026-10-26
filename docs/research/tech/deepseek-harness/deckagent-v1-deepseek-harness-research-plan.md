@@ -40,15 +40,15 @@ Nghiên cứu **từ yêu cầu V1 của DeckAgent sang DeepSeek Harness**, đ�
 
 Đọc theo thứ tự:
 
-1. [`docs/spec/00-current-scope/VERSIONS.md`](https://github.com/Luke23127006/DeckAgent/blob/main/docs/spec/00-current-scope/VERSIONS.md): mục tiêu, success criteria và các ràng buộc chung của V1.
-2. [`docs/spec/03-use-cases/_CRITERIA.md`](https://github.com/Luke23127006/DeckAgent/blob/main/docs/spec/03-use-cases/_CRITERIA.md): quy tắc chọn flow theo phiên bản.
-3. Từng file `docs/spec/03-use-cases/UC-xxx.md`: đọc `versions.V1`, Main Flow (`MF`), Alternative Flows (`Ax`) được chọn, `includes` và preconditions. **Đồng thời lập danh sách flows không thuộc V1** để dùng cho nhánh Opportunity Discovery.
-4. Các FR, NFR và Business Rules **được những flow V1 trích dẫn**, cùng NFR cấp phiên bản trong `VERSIONS.md`.
+1. [`docs/versions/v1/SCOPE.md`](https://github.com/Luke23127006/DeckAgent/blob/main/docs/versions/v1/SCOPE.md): mục tiêu, success criteria, các chọn lựa sản phẩm và flow V1 nhận của V1.
+2. [`docs/spec/03-use-cases/_CRITERIA.md`](https://github.com/Luke23127006/DeckAgent/blob/main/docs/spec/03-use-cases/_CRITERIA.md): quy tắc viết use case và quy tắc của file scope version.
+3. Từng file `docs/spec/03-use-cases/UC-xxx.md`: đọc Main Flow (`MF`), Alternative Flows (`Ax`) mà scope V1 nhận, `includes` và preconditions. **Đồng thời lập danh sách flows không thuộc V1** để dùng cho nhánh Opportunity Discovery.
+4. Các FR, NFR và Business Rules **được những flow V1 trích dẫn**, cùng NFR cấp phiên bản trong `docs/versions/v1/SCOPE.md`.
 5. `docs/spec/_STYLE.md` và Product Vision khi cần giải nghĩa thuật ngữ; không dùng Vision để tự thêm scope V1.
 
-**Quy tắc bắt buộc:** `VERSIONS.md` không liệt kê các flow V1. Chỉ trường `versions` trong từng Use Case mới chọn flow. Không coi mọi `Ax` trong một UC là V1. Khi một UC `includes` UC khác, kiểm tra dependency và flow được chọn của UC đó theo `_CRITERIA.md`.
+**Quy tắc bắt buộc:** spec trong `docs/spec/` không chọn flow. Chỉ file scope của version trong `docs/versions/<version>/` mới chọn flow. Không coi mọi `Ax` trong một UC là V1. Khi một UC `includes` UC khác, kiểm tra dependency và flow được chọn của UC đó theo `_CRITERIA.md`.
 
-**Danh sách UC có chọn V1 ở thời điểm kiểm tra ban đầu:** `UC-001`, `UC-002`, `UC-003`, `UC-005`, `UC-006`, `UC-012`. Các UC còn lại trong `UC-001` đến `UC-012` hiện có `versions: {}`. Phải xác minh lại trên commit được chốt trước khi phân tích chi tiết.
+**Danh sách UC có flow trong V1:** `UC-001`, `UC-002`, `UC-003`, `UC-005`, `UC-006`, `UC-012`. Các UC còn lại trong `UC-001` đến `UC-012` chưa có flow nào thuộc một version. Phải xác minh lại trên commit được chốt trước khi phân tích chi tiết.
 
 ### 3.2. DeepSeek Harness
 
