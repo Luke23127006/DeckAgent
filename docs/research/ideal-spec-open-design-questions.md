@@ -53,11 +53,10 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Whether an export warns about content the user gave that holds a secret, such as an attached file with a password. The export keeps out the credentials DeckAgent keeps, and it changes nothing in the content the user gave (FR-080).
 - Import and restore of a session archive: the ideal product has no such behavior (the flow ID UC-016 A4 is retired). Worth research only if the owner wants a backup or a migration capability.
 
-## Deck editing, looks and history (UC-001, UC-002, UC-007, UC-008, UC-010, UC-011)
+## Deck editing, design and history (UC-001, UC-002, UC-007, UC-008, UC-010, UC-011, UC-017)
 
-- Does every first draft offer looks, or only when the user asks (UC-001 A36)?
-- Can the user choose a layout for each slide, or only one look for the deck (UC-001 A36)?
-- Can the user keep a look as a design system (UC-001 A36, UC-010)?
+- Does every first draft offer design options, or only when the user asks (UC-001 A36)?
+- Can the user choose a layout for each slide, or only a visual style for the deck (UC-001 A36)?
 - Does a pattern come only from a file, or also from the deck of an earlier chat (UC-001 Note 16)?
 - Does the question about a missing topic (UC-001 A32) also cover missing material and material that disagrees with itself (UC-001 Note 20)?
 - Does a follow-up request ever replace the whole deck with a new topic, and what does the system offer then (UC-002 Note 18)?
@@ -66,8 +65,7 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Can the user change presenter notes by hand (UC-001 A37)?
 - The user changed a slide by hand (UC-007). A later request changes that slide, or every slide. What happens to the change by hand (UC-002)?
 - Can the system tell a change by hand from a change it made, and does it say so before it changes such a slide (UC-002)?
-- When only the look changes, must the text and the figures of each slide stay the same (UC-002 A8)? What happens to content that does not fit the new look: shortened, split onto another slide, or kept with a notice?
-- Does a change of look leave a state in the deck history (UC-002 A8, UC-008)?
+- Does a change of slide design leave a state in the deck history (UC-002 A8, UC-008)?
 - When a request changes a slide, do its presenter notes change with it (UC-002 A9)?
 - Which changes a basic edit offers: text only, or also adding, deleting, duplicating and moving slides (UC-007)?
 - Can the user change the deck by hand while the system works on a request (UC-007)?
@@ -84,9 +82,9 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Can an answer to a deck question use sources outside the deck and the user's material, such as the web (UC-009)?
 - Is a question about something other than this deck part of the same use case (UC-009)?
 - What does the system compare the deck with to find gaps (UC-009 A5)?
-- What can a design system come from: rules in words, a brand guide, brand files or an earlier deck (UC-010)?
-- Which design rules can a design system hold [BR-?]. Does reading a brand guide need the model the user set up (UC-010)?
-- When the user changes a design system, do decks made with it change too (UC-010 A4)? Must every slide follow every rule (UC-010 S5)? Can the user make one the default for new decks (UC-010)?
+- What can a design system come from besides rules in words, an existing design system and a brand guide or brand files (UC-010)?
+- Which design rules can a design system hold, and which can a visual style hold [BR-?]. Does reading a brand guide need the model the user set up (UC-010, UC-017)?
+- Can the user make one design system the default for new decks (UC-010)?
 - Is a variant in the same chat as the original, or in a new chat (UC-011)? What happens to a variant that is half made when a stop or a failure ends the work (UC-011 Note 4)?
 - Does the variant use the material the user gave for the original (UC-011)? Does it have its own deck history (UC-008)? When the original changes later, does the variant change too (UC-011)?
 - How does the system tell a request for a variant from a request to change the deck (UC-002, UC-011)?
