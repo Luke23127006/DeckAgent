@@ -82,7 +82,7 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Can an answer to a deck question use sources outside the deck and the user's material, such as the web (UC-009)?
 - Is a question about something other than this deck part of the same use case (UC-009)?
 - What does the system compare the deck with to find gaps (UC-009 A5)?
-- What can a design system come from besides rules in words, an existing design system and a brand guide or brand files (UC-010)?
+- Which built-in design systems DeckAgent offers, and which of the supported brand attributes each one holds [BR-?] (UC-010).
 - Which design rules can a design system hold, and which can a visual style hold [BR-?]. Does reading a brand guide need the model the user set up (UC-010, UC-017)?
 - Can the user make one design system the default for new decks (UC-010)?
 - Is a variant in the same chat as the original, or in a new chat (UC-011)? What happens to a variant that is half made when a stop or a failure ends the work (UC-011 Note 4)?

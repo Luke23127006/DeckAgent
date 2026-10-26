@@ -55,8 +55,10 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **activity timeline** | The activities of one request in the order they happen. An executed activity is work that started. A planned activity is work the system planned but has not started, and it appears only when the system produced a plan. The conversation shows the activities with the status message of the request |
 | **activity detail** | The information the system shows about one activity when the user reads it. It can name an internal step, an argument or a result when that is safe to show |
 | **placeholder** | Text the system wrote because the user gave none |
-| **design system** | A reusable set of brand identity rules and design constraints, such as brand colours, fonts, logos and spacing. It can be used for different decks independently of visual styles |
+| **design system** | A reusable set of brand identity rules and design constraints, such as brand colours, fonts, logos and spacing. It can be used for different decks independently of visual styles. It does not set where each part of a slide sits or how large it is |
 | **default design system** | The design system the system uses when the user chose none |
+| **built-in design system** | A design system DeckAgent provides. The user can choose it or create a custom copy, but cannot change or remove its original definition |
+| **custom design system** | A design system the user creates, changes, saves, removes and reuses |
 | **visual style** | A reusable set of presentation design rules, such as layout preferences, visual density and visual treatment. It is independent of a design system |
 | **built-in visual style** | A visual style DeckAgent provides. The user can choose it or copy it, but cannot change its original definition |
 | **custom visual style** | A visual style the user creates, changes, saves, removes and reuses |
