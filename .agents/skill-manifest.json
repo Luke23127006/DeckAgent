@@ -1,4 +1,4 @@
-﻿{
+{
   "schema_version": 1,
   "scope": "Repository-owned, cross-tool agent skills; not product runtime capabilities.",
   "review_date": "2026-09-21",
@@ -203,7 +203,7 @@
       "source_path": null,
       "installed_path": ".agents/skills/spec-authoring",
       "decision": "Adjust",
-      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill. Adapted for the sequence-diagram use case format: Active interactions and Closed flows are hand-written Mermaid, nothing is generated, and Active/Closed assignment requires owner evidence.",
+      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill. Adapted for the Main Flow First use case format: one complete hand-written Main Flow sequence diagram first, each alternative in its own subsection sorted by Ax number, with divergence point and stated end; nothing is generated and no flow is labeled Active or Closed.",
       "compatibility": "Tool-neutral instructions. Edit use case diagrams through this skill and the mermaid-markdown portability defaults.",
       "dependencies": [
         "mermaid-markdown"
