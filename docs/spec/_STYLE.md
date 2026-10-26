@@ -55,10 +55,12 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **activity timeline** | The activities of one request in the order they happen. An executed activity is work that started. A planned activity is work the system planned but has not started, and it appears only when the system produced a plan. The conversation shows the activities with the status message of the request |
 | **activity detail** | The information the system shows about one activity when the user reads it. It can name an internal step, an argument or a result when that is safe to show |
 | **placeholder** | Text the system wrote because the user gave none |
-| **design system** | A set of design rules the user can choose for different decks, such as colours, fonts and a logo |
+| **design system** | A reusable set of brand identity rules and design constraints, such as brand colours, fonts, logos and spacing. It can be used for different decks independently of visual styles |
 | **default design system** | The design system the system uses when the user chose none |
-| **look** | How one deck is shown: its colours, fonts and arrangement on the slides. A look can use a design system |
-| **deck state** | The content and the look of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
+| **visual style** | A reusable set of presentation design rules, such as layout preferences, visual density and visual treatment. It is independent of a design system |
+| **built-in visual style** | A visual style DeckAgent provides. The user can choose it or copy it, but cannot change its original definition |
+| **custom visual style** | A visual style the user creates, changes, saves, removes and reuses |
+| **deck state** | The content and design of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
 | **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
 | **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. A version decides that in its scope file (`docs/versions/`) |
 | **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
@@ -77,7 +79,7 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **selected model** | The added model chosen for one chat. Each chat has its own. It runs a new request only while it is selectable |
 | **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
 | **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
-| **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no look |
+| **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no design instructions |
 | **workspace** | A named group of chats for one project folder. The user adds one by choosing a folder, and choosing that folder again returns the same workspace. Removing one changes no file of the user and no chat |
 | **default workspace** | The workspace the system gives for a first start, before the user chose a folder. It has no project folder and cannot be removed |
 | **project folder** | The one folder of the user that a workspace other than the default workspace stands for. The chats of that workspace can read the files in it. DeckAgent writes no file of its own work into it |
