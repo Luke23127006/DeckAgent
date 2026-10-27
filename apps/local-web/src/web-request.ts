@@ -19,6 +19,8 @@ interface WebRequestOptions {
   readonly request: AgentRequest
   readonly requestId: string
   readonly workspace: string
+  readonly sourceRoot?: string
+  readonly sourceIdentity?: { readonly dev: number; readonly ino: number }
   readonly store: SqliteSessionStore
   readonly presentation: DeckService
   readonly state: WebState
@@ -94,7 +96,10 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
       try { await ctx.fiber.dispose() } finally { for (const remove of removers.reverse()) remove(); files?.dispose() }
     })()
     try {
-      files = await registerFileTools(tools, { root: workspace })
+      files = await registerFileTools(tools, { root: workspace,
+        ...(options.sourceRoot ? { sourceRoot: options.sourceRoot } : {}),
+        ...(options.sourceIdentity ? { sourceIdentity: options.sourceIdentity } : {}),
+      })
       removers.push(await registerPublishSlide(tools, { root: workspace, sessionId, decks: presentation, allowedSlideIds: scope }))
       removers.push(registerReadSlide(tools, sessionId, presentation))
       removers.push(registerProposeOutline(tools, draft => stage({ kind: 'proposal', draft })))
@@ -111,7 +116,7 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
         : `${presentationInstructions(deck, confirmed ?? target, reviewing, requestId)}${deck.outlineId ? '' : `\n${clarificationInstructions}`}`
       await ctx.plugin(runtimePlugin, {
         maxSteps: Math.max(8, (editing ? 3 : 2) * scope.length + 5),
-        systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
+        systemPrompt: `You are DeckAgent. Work only within the granted workspace. Draft files belong to this request only. read_file uses scope "work" for drafts and scope "source" for read-only project files when available. Project files are never writable. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
       })
       const staticText = first && action.command === 'cancel' && candidate
         ? 'Outline cancelled. It stays in the conversation. Send a new request for a new proposal; no slides were built.'

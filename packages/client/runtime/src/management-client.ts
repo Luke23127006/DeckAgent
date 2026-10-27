@@ -5,6 +5,7 @@ import type {
   StoredRequest,
   WebSession,
   WebSettings,
+  Workspace,
 } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
 
@@ -49,6 +50,7 @@ function session(value: unknown): WebSession {
     (value.activeRequestId !== undefined && typeof value.activeRequestId !== 'string') ||
     (value.title !== undefined && typeof value.title !== 'string') ||
     (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean')
+    || (value.workspaceId !== undefined && typeof value.workspaceId !== 'string')
   )
     invalid()
   const chosen = value.selection
@@ -64,12 +66,21 @@ function session(value: unknown): WebSession {
     messageCount: value.messageCount,
     ...(typeof value.title === 'string' ? { title: value.title } : {}),
     ...(typeof value.hasSlides === 'boolean' ? { hasSlides: value.hasSlides } : {}),
+    ...(typeof value.workspaceId === 'string' ? { workspaceId: value.workspaceId } : {}),
     selectable: value.selectable,
     ...(object(chosen) && typeof chosen.provider === 'string' && typeof chosen.model === 'string'
       ? { selection: { provider: chosen.provider, model: chosen.model } }
       : {}),
     ...(typeof value.activeRequestId === 'string' ? { activeRequestId: value.activeRequestId } : {}),
   }
+}
+
+function workspace(value: unknown): Workspace {
+  if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' ||
+    (value.state !== 'available' && value.state !== 'missing') ||
+    (value.projectFolder !== undefined && typeof value.projectFolder !== 'string')) invalid()
+  return { id: value.id, name: value.name, state: value.state,
+    ...(typeof value.projectFolder === 'string' ? { projectFolder: value.projectFolder } : {}) }
 }
 
 /** Validates management responses separately from request streaming. */
@@ -79,7 +90,7 @@ export class ManagementClient {
     private readonly token: string,
   ) {}
 
-  private async request(path: string, method = 'GET', value?: unknown): Promise<unknown> {
+  private async request(path: string, method = 'GET', value?: unknown, optional = false): Promise<unknown> {
     const response = await fetch(`${this.origin}/api/${path}`, {
       method,
       credentials: 'omit',
@@ -87,6 +98,7 @@ export class ManagementClient {
       headers: { authorization: `Bearer ${this.token}`, 'content-type': 'application/json' },
       ...(value === undefined ? {} : { body: JSON.stringify(value) }),
     })
+    if (optional && response.status === 404) return undefined
     if (!response.ok) {
       const data: unknown = await response.json()
       const allowed = [
@@ -97,6 +109,14 @@ export class ManagementClient {
         'NEW_ENDPOINT_REQUIRES_KEY',
         'PROVIDER_BUSY',
         'AUTH_REQUIRED',
+        'INVALID_WORKSPACE',
+        'WORKSPACE_NOT_FOUND',
+        'WORKSPACE_BUSY',
+        'WORKSPACE_DEFAULT',
+        'WORKSPACE_FOLDER_EXISTS',
+        'WORKSPACE_FOLDER_IN_USE',
+        'WORKSPACE_FOLDER_UNAVAILABLE',
+        'WORKSPACE_STORAGE_OVERLAP',
       ]
       const code =
         object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
@@ -136,8 +156,29 @@ export class ManagementClient {
     return data.map(session)
   }
 
-  async create(selection?: { provider: string; model: string }): Promise<WebSession> {
-    return session(await this.request('sessions', 'POST', selection ? { selection } : {}))
+  async create(selection?: { provider: string; model: string }, workspaceId?: string): Promise<WebSession> {
+    return session(await this.request('sessions', 'POST', {
+      ...(selection ? { selection } : {}), ...(workspaceId ? { workspaceId } : {}),
+    }))
+  }
+
+  async workspaces(): Promise<readonly Workspace[] | undefined> {
+    const data = await this.request('workspaces', 'GET', undefined, true)
+    if (data === undefined) return undefined
+    if (!Array.isArray(data)) invalid()
+    return data.map(workspace)
+  }
+
+  async addWorkspace(projectFolder: string): Promise<Workspace> {
+    return workspace(await this.request('workspaces', 'POST', { projectFolder }))
+  }
+
+  async removeWorkspace(id: string): Promise<void> {
+    await this.request(`workspaces/${encodeURIComponent(id)}`, 'DELETE')
+  }
+
+  async repointWorkspace(id: string, projectFolder: string): Promise<Workspace> {
+    return workspace(await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { projectFolder }))
   }
 
   async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {

@@ -12,7 +12,7 @@ V1 Local Web starts, SessionStore / DeckService persistence works, and no V2 sch
 
 ## Shared contract for A/B/C (freeze before coding)
 
-**W1 — Workspace:** `{ id: string, name: string, projectFolder?: string, state: 'available'|'missing' }`; a stable `id` never derives from the folder path. Default Workspace has no project folder and is not removable. A canonical path already registered is rejected.
+**W1 — Workspace:** `{ id: string, name: string, projectFolder?: string, state: 'available'|'missing' }`; a stable `id` never derives from the folder path. Default Workspace has no project folder and is not removable. Adding an already registered canonical folder returns its existing Workspace. Repointing to another Workspace's folder is rejected.
 
 **W2 — Chat ownership:** `WebSession.workspaceId?: string`. Missing `workspaceId` means ungrouped (for example a removed Workspace), **not** the default Workspace. `createSession` accepts a valid `workspaceId` or uses the selected default.
 
@@ -21,6 +21,27 @@ V1 Local Web starts, SessionStore / DeckService persistence works, and no V2 sch
 **W4 — Migration:** explicit legacy source location + backup, staged copy/verify, idempotent marker and rollback; do not scan arbitrary disks or overwrite an existing application profile.
 
 These are **proposed V2 interfaces and semantics**, not declarations that the existing code already exports these names. At group kickoff, A records the final public names in this README and supplies small mock fixtures. B and C start immediately using those fixtures; they do not wait for A's full production implementation. Changes to this contract require an explicit cross-lane review.
+
+### Implemented candidate contracts — 27-10-2026
+
+The owner requested TASK-001 implementation. These are the actual candidate APIs; manual acceptance remains pending.
+
+- `WorkspaceRegistry` stays inside Local Web, using WebState's database. No new package boundary was created.
+- Host exports `Workspace`. Optional `WebManagement.workspaces/addWorkspace/removeWorkspace/repointWorkspace` preserve older Host implementations.
+- Authenticated routes: `GET/POST /api/workspaces`, `DELETE/PUT /api/workspaces/:id`. POST accepts `{projectFolder,name?}`; PUT accepts `{projectFolder}`. Folder paths must be absolute, readable and separate from internal storage.
+- `WebSession.workspaceId` comes from `SqliteSessionStore`. Session schema 2 migrates schema 1 to `default`; NULL means ungrouped. Removal retains a registry tombstone and detaches ownership. Startup repeats detachment after an interrupted removal.
+- `POST /api/sessions` accepts optional `workspaceId`; omission means `default`. Registered Workspaces use generated UUIDs. Default ID is `default`.
+- A Workspace change reserves request admission during validation and rejects running/waiting work in its Chats. It never stops that work.
+- Private work path is `<work-base>/<sha256(sessionId)>/<requestId>`. `write_file` and `publish_slide` share that root. `read_file({path,scope:'source'})` reads the registered folder; omitted scope reads private work only.
+- Folder device/inode identity is stored at registration and checked before source access. A detectable replacement stays unavailable until the user explicitly repoints.
+- `importLegacyProfile({source,target})` is exported by Local Web. It returns `{backup,imported}`; `LegacyImportError.code` reports safe failure. CLI exposes `--import-legacy` with required explicit `--data-dir`.
+- Folder selection uses an accessible absolute-path dialog in this candidate. A native operating-system picker is not implemented.
+
+Executable contract fixtures are [Workspace API tests](../../../../../tests/v2-workspace.test.mjs), [isolation tests](../../../../../tests/v2-workspace-isolation.test.mjs) and [legacy import tests](../../../../../tests/v2-legacy-import.test.mjs). Run `pnpm.cmd test:workspace` after build.
+
+Compatibility: schema 2 is not readable by V1 binaries. Use the untouched original or backup to return to V1. Imported shared drafts remain archived under their old paths; requests receive no shared-draft grant. Durable published slides remain readable through Deck Service.
+
+See [implementation evidence and manual steps](HANDOFF.md) before G-001 acceptance.
 
 ## Parallel subtasks
 

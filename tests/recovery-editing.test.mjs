@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtemp, rm, mkdir, readdir } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir, readdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
+import { createHash } from 'node:crypto'
 import { editingScope } from '../apps/local-web/lib/types/editing-workflow.js'
 import { RequestController } from '../packages/host/api/lib/types/request-controller.js'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
@@ -10,6 +11,16 @@ import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 import { workflowModel } from './fixtures/outline-workflow.mjs'
 import { RuntimeError } from '../packages/agent/runtime/lib/index.js'
+
+async function workspaceFiles(root) {
+  return (await readdir(root, { recursive: true, withFileTypes: true }))
+    .filter(entry => !entry.isDirectory())
+    .map(entry => join(relative(root, entry.parentPath), entry.name)).sort()
+}
+
+function requestRoot(workspace, sessionId, requestId) {
+  return join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
+}
 
 const plan = { sessionId: 'editing', outlineId: 'outline', slides: [
   { slideId: 'one', title: 'Opening' }, { slideId: 'two', title: 'Details' }, { slideId: 'three', title: 'Closing' },
@@ -43,7 +54,10 @@ for (const mode of ['stalls', 'draft-written', 'partly-published', 'provider-fai
   assert.equal(attempts, mode === 'stalls' ? 2 : 1)
   assert.equal(terminal.result.error.code, mode === 'provider-failure' ? 'PROVIDER_HTTP' : 'EDIT_INCOMPLETE')
   assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), mode === 'partly-published' ? [1, 0, 0] : [0, 0, 0])
-  assert.deepEqual(await readdir(join(dir, 'workspace')), mode === 'draft-written' || mode === 'partly-published' ? ['draft.html'] : [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), mode === 'draft-written' || mode === 'partly-published' ? [relative(join(dir, 'workspace'), join(requestRoot(join(dir, 'workspace'), 'editing', accepted.requestId), 'draft.html'))] : [])
+  if (mode === 'draft-written' || mode === 'partly-published') {
+    assert.equal(await readFile(join(requestRoot(join(dir, 'workspace'), 'editing', accepted.requestId), 'draft.html'), 'utf8'), '<h1>One draft</h1>')
+  }
   assert.deepEqual((await client.history('editing')).filter(message => message.role === 'user').map(message => message.content), ['Tiếp tục'])
 })
 
@@ -72,7 +86,7 @@ test('Stop during the one idle recovery attempt cancels without a third model at
   for await (const value of client.watch(accepted.requestId)) terminal = value
   assert.equal(terminal.status, 'cancelled')
   assert.equal(attempts, 2)
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
 })
 
 test('a natural request to build all seven confirmed slides resolves scope before writing or publishing', async t => {
@@ -130,7 +144,7 @@ test('unscoped writes cannot create drafts and cannot be reported as completed d
   for await (const value of client.watch(accepted.requestId)) terminal = value
   assert.equal(terminal.status, 'failed')
   assert.equal(terminal.result.error.code, 'SLIDE_SCOPE_DENIED')
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
   assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), [0, 0, 0])
 })
 
@@ -161,7 +175,7 @@ for (const invalid of ['unknown-id', 'published-slide', 'duplicate-id']) test(`s
   assert.equal(terminal.status, 'failed')
   assert.equal(terminal.result.error.code, 'SLIDE_SCOPE_DENIED')
   assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('editing')).slides.map(slide => slide.revision), [1, 0, 0])
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
 })
 
 test('ambiguous follow-up asks within the request and a scoped answer finishes pending slides without re-confirming', async t => {

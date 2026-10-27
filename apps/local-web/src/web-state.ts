@@ -4,6 +4,7 @@ import type { ActivityEvent, ModelSelection, TurnResult } from '@deckagent/agent
 import { HttpError, validateUserQuestion } from '@deckagent/host-api'
 import type { RequestSnapshot, StoredActivity, StoredRequest, WebSession, WebSettings } from '@deckagent/host-api'
 import type { SqliteSessionStore, SessionInfo } from '@deckagent/session-persistence'
+import { WorkspaceRegistry } from './workspace-registry.ts'
 
 export function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -27,11 +28,13 @@ export function selection(value: unknown): ModelSelection {
 /** Web-only metadata stays outside the Agent file grant and provider prompt history. */
 export class WebState {
   readonly db: DatabaseSync
+  readonly workspaces: WorkspaceRegistry
 
   constructor(
     path: string,
     private readonly sessions: SqliteSessionStore,
     private readonly settings: () => WebSettings,
+    internalRoots: readonly string[] = [],
   ) {
     this.db = new DatabaseSync(path)
     try {
@@ -68,6 +71,7 @@ export class WebState {
       if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
         throw new HttpError(500, 'SETTINGS_STORAGE')
       this.db.exec('COMMIT')
+      this.workspaces = new WorkspaceRegistry(this.db, internalRoots)
     } catch (error) {
       this.db.close()
       throw error
@@ -95,12 +99,17 @@ export class WebState {
   }
 
   async create(value: unknown): Promise<WebSession> {
-    if (!record(value) || Object.keys(value).some(key => key !== 'selection'))
+    if (!record(value) || Object.keys(value).some(key => !['selection', 'workspaceId'].includes(key)) ||
+      (value.workspaceId !== undefined && typeof value.workspaceId !== 'string'))
       throw new HttpError(400, 'INVALID_SESSION')
+    const workspaceId = typeof value.workspaceId === 'string' ? value.workspaceId : 'default'
+    if (!this.workspaces.exists(workspaceId)) throw new HttpError(404, 'WORKSPACE_NOT_FOUND')
     const chosen = value.selection === undefined ? undefined : selection(value.selection)
     if (chosen && !this.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
     const sessionId = `chat-${randomUUID()}`
     await this.sessions.open(sessionId)
+    if (!this.workspaces.exists(workspaceId)) throw new HttpError(409, 'WORKSPACE_NOT_FOUND')
+    await this.sessions.assignWorkspace(sessionId, workspaceId)
     if (chosen) await this.sessions.select(sessionId, chosen)
     return this.project((await this.sessions.getInfo(sessionId))!)
   }
@@ -110,6 +119,15 @@ export class WebState {
     if (!this.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
     if (!(await this.sessions.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
     return this.project(await this.sessions.select(id, chosen))
+  }
+
+  async reconcileWorkspaces(): Promise<void> {
+    for (const id of this.workspaces.removed()) await this.sessions.detachWorkspace(id)
+  }
+
+  async removeWorkspace(id: string): Promise<void> {
+    this.workspaces.remove(id)
+    await this.sessions.detachWorkspace(id)
   }
 
   saveActivity(sessionId: string, requestId: string, event: ActivityEvent): void {

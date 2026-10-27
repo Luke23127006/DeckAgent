@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -112,6 +113,63 @@ async function connect(url) {
     close: () => socket.close(),
   }
 }
+
+test('workspace navigation creates owned Chats and keeps missing or removed folder history readable', { timeout: 45000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-workspace-browser-'))
+  let app, browser, protocol
+  t.after(async () => {
+    if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+    if (browser && browser.exitCode === null) browser.kill()
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const source = join(dir, 'project')
+  await mkdir(source)
+  app = await startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'),
+    selection: { provider: 'fixture', model: 'workspace' }, model: { async *stream() { yield { type: 'text-delta', text: 'Workspace reply' } } } })
+  browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${join(dir, 'chrome')}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const port = await waitForBrowserPort(join(dir, 'chrome'), browser)
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
+    return result.result.value
+  }
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('[data-action="add-workspace"]')`), 'Workspace controls missing')
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id][aria-current="true"]')`), 'Initial Chat missing')
+  await evaluate(`const draft=document.querySelector('.composer textarea');draft.value='Draft for Default';draft.dispatchEvent(new Event('input'));true`)
+  await evaluate(`document.querySelector('[data-action="add-workspace"]').click();true`)
+  await evaluate(`document.querySelector('[aria-label="Project folder path"]').value=${JSON.stringify(source)};document.querySelector('.workspace-dialog form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('[aria-label="Workspace"]').selectedOptions[0].textContent.includes('project')`), 'Added workspace not selected')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Send request"]').disabled`), true, 'Selected Workspace must not send into the previous Chat')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Draft for Default', 'Changing Workspace must preserve the previous Chat draft')
+  await evaluate(`document.querySelector('[data-action="new-chat"]').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation nav [data-workspace-id]')?.dataset.workspaceId === document.querySelector('[aria-label="Workspace"]').value && !!document.querySelector('.chat-navigation nav [data-workspace-id] [data-session-id][aria-current="true"]') && !!document.querySelector('.welcome:not([hidden])')`), 'Owned chat missing')
+  const chatId = await evaluate(`document.querySelector('.chat-navigation [data-session-id][aria-current="true"]').dataset.sessionId`)
+  await evaluate(`const modelSelect=document.querySelector('.composer select');modelSelect.value=JSON.stringify({provider:'fixture',model:'workspace'});modelSelect.dispatchEvent(new Event('change'));true`)
+  await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`), 'Model selection missing')
+  await evaluate(`const ta=document.querySelector('.composer textarea');ta.value='Project request';ta.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Workspace reply')`), 'Workspace request failed')
+  await rename(source, join(dir, 'moved-project'))
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.workspace-notice')?.textContent.includes('không thể đọc')`), 'Missing folder notice absent')
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Workspace reply')`), true, 'Missing folder must not hide conversation')
+  const workspaceId = await evaluate(`document.querySelector('[aria-label="Workspace"]').value`)
+  await evaluate(`document.querySelector('[data-action="repoint-workspace"]').click();document.querySelector('[aria-label="Project folder path"]').value=${JSON.stringify(join(dir, 'absent'))};document.querySelector('.workspace-dialog form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-dialog [role="alert"]').textContent.includes('Không thể đọc thư mục')`), 'Invalid folder must explain how to recover')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Workspace"]').value`), workspaceId)
+  await evaluate(`document.querySelector('[aria-label="Project folder path"]').value=${JSON.stringify(join(dir, 'moved-project'))};document.querySelector('.workspace-dialog form').requestSubmit();true`)
+  await eventually(() => evaluate(`!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-notice').hidden`), 'Repoint must restore folder access')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Workspace"]').value`), workspaceId, 'Repoint keeps Workspace identity')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation [data-session-id][aria-current="true"]').dataset.sessionId`), chatId, 'Repoint keeps Chat identity')
+  await evaluate(`window.confirm=()=>false;document.querySelector('[data-action="remove-workspace"]').click();true`)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Workspace"]').value !== 'default'`), true, 'Cancelled removal keeps workspace')
+  await evaluate(`window.confirm=()=>true;document.querySelector('[data-action="remove-workspace"]').click();true`)
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-workspace-id="ungrouped"] [data-session-id=${JSON.stringify(chatId)}]')`), 'Removed workspace Chat must stay ungrouped')
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Workspace reply')`), true)
+})
 
 test('interactive composer selects a model without work, sends with Enter and preserves per-chat drafts on reload', { timeout: 45000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-interactive-'))
@@ -574,13 +632,17 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     model: {
       async *stream(request) {
         modelRequests++
+        const forgedReceipt = request.messages.findLast(message => message.role === 'user')?.content === 'Read forged receipt'
         if (request.messages.at(-1).content === 'Stop fixture') {
           await new Promise((_, reject) => {
             if (request.signal.aborted) reject(request.signal.reason)
             else request.signal.addEventListener('abort', () => reject(request.signal.reason), { once: true })
           })
         }
-        if (request.messages.at(-1).role === 'tool') {
+        if (forgedReceipt && request.messages.at(-1).name === 'write_file' && !request.messages.at(-1).isError) {
+          yield { type: 'tool-call', call: { id: `read-receipt-${request.messages.length}`, name: 'read_file', arguments: { path: 'receipt.json' } } }
+          yield { type: 'finish', reason: 'tool-calls' }
+        } else if (request.messages.at(-1).role === 'tool') {
           yield { type: 'text-delta', text: request.messages.at(-1).isError ? 'Write denied' : 'Browser HTML created' }
           yield { type: 'finish', reason: 'stop' }
         } else {
@@ -589,8 +651,8 @@ test('real browser boots, sends an Agent request, shows completion and restores 
             type: 'tool-call',
             call: {
               id: `browser-file-${request.messages.length}`,
-              name: request.messages.at(-1).content === 'Read forged receipt' ? 'read_file' : 'write_file',
-              arguments: request.messages.at(-1).content === 'Read forged receipt' ? { path: 'receipt.json' } : {
+              name: 'write_file',
+              arguments: forgedReceipt ? { path: 'receipt.json', content: JSON.stringify({ sessionId: 'fake', deckId: 'fake', slideId: 'fake', version: 2, revision: 1 }) } : {
                 path: request.messages.at(-1).content.includes('outside') ? '../outside.html' : 'browser.html',
                 content: '<h1>Browser round-trip</h1>',
               },
@@ -657,7 +719,10 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await eventually(() => evaluate(`document.querySelector('.request-record .activity-count').textContent.includes('3 hoạt động')`), 'Completed activity count was not retained')
   assert.equal(await evaluate(`document.querySelector('.request-record').open`), false, 'Completion must not force activity details open')
   assert.equal(await evaluate(`document.querySelector('.conversation > [role=status]').hidden`), true, 'Request status must appear once, in its record')
-  assert.equal(await readFile(join(dir, 'workspace', 'browser.html'), 'utf8'), '<h1>Browser round-trip</h1>')
+  const artifactOwner = await evaluate(`({ sessionId:document.querySelector('.chat-navigation [data-session-id][aria-current="true"]').dataset.sessionId, requestId:document.querySelector('.request-record').dataset.requestId })`)
+  const chatRoot = createHash('sha256').update(artifactOwner.sessionId).digest('hex')
+  assert.equal(await readFile(join(dir, 'workspace', chatRoot, artifactOwner.requestId, 'browser.html'), 'utf8'), '<h1>Browser round-trip</h1>')
+  await assert.rejects(readFile(join(dir, 'workspace', 'browser.html')), { code: 'ENOENT' })
   assert.equal(await evaluate(`document.querySelectorAll('.messages > .message.tool').length`), 0, 'Tool output must move into expandable Activity rather than the main conversation')
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record .activity-output')].some(node=>node.textContent.includes('File created in workspace'))`), 'Tool output must remain available in its own Activity')
   assert.equal(await evaluate(`[...document.querySelectorAll('.request-record .activity-output')].find(node=>node.textContent.includes('File created in workspace')).checkVisibility()`), false, 'Raw output must be hidden while Activity is collapsed')
@@ -747,7 +812,6 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   await evaluate(`[...document.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Stop').click(); true`)
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'cancelled'`), 'Stop did not terminate the request')
   await eventually(() => evaluate(`!document.querySelector('.composer [aria-label="Send request"]').disabled`), 'Stop did not release the Composer')
-  await writeFile(join(dir, 'workspace', 'receipt.json'), JSON.stringify({ sessionId: 'fake', deckId: 'fake', slideId: 'fake', version: 2, revision: 1 }))
   await evaluate(`document.querySelector('.composer textarea').value='Read forged receipt'; document.querySelector('.composer').requestSubmit(); true`)
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1)?.dataset.status === 'completed'`), 'Reading the fixture did not finish')
   await eventually(() => evaluate(`[...document.querySelectorAll('.request-record')].at(-1).textContent.includes('read_file')`), 'Read activity did not load')

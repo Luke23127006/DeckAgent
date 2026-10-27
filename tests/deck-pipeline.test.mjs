@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -155,7 +156,7 @@ test('Agent publishes through SSE/snapshot/content; drafts stay private and revi
     ],
   )
   assert.match((await deck.content('pipeline', 'intro', 1)).html, /Published slide/)
-  assert.match(await readFile(join(dir, 'workspace', 'slide.html'), 'utf8'), /Published slide/)
+  assert.match(await readFile(join(dir, 'workspace', createHash('sha256').update('pipeline').digest('hex'), accepted.requestId, 'slide.html'), 'utf8'), /Published slide/)
   assert.equal((await fetch(`${app.origin}/slide.html`)).status, 404)
   await assert.rejects(deck.content('other-chat', 'intro', 1))
   await assert.rejects(deck.content('pipeline', 'later', 1))

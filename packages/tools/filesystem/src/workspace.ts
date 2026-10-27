@@ -4,10 +4,24 @@ import { isAbsolute, join, relative, win32 } from 'node:path'
 
 const MAX_BYTES = 256 * 1024
 
+export interface DirectoryIdentity {
+  readonly dev: number
+  readonly ino: number
+}
+
 /** Internal shared workspace access for file and publication tools. */
-export async function createWorkspaceAccess(options: { readonly root: string }) {
+export async function createWorkspaceAccess(options: { readonly root: string; readonly identity?: DirectoryIdentity }) {
   const root = await realpath(options.root)
-  if (!(await lstat(root)).isDirectory()) throw new Error('Workspace must be a directory')
+  const original = await lstat(root)
+  if (!original.isDirectory()) throw new Error('Workspace must be a directory')
+  const identity = options.identity ?? original
+  const checkRoot = async () => {
+    if ((await realpath(options.root)) !== root) throw new Error('Workspace changed')
+    const current = await lstat(root)
+    if (!current.isDirectory() || current.dev !== identity.dev || current.ino !== identity.ino)
+      throw new Error('Workspace changed')
+  }
+  await checkRoot()
   const resolvePath = async (value: unknown) => {
     if (typeof value !== 'string' || !value || value.length > 512 || isAbsolute(value) || win32.isAbsolute(value)) {
       throw new Error('Workspace-relative path required')
@@ -28,7 +42,7 @@ export async function createWorkspaceAccess(options: { readonly root: string }) 
     ) {
       throw new Error('Unsafe workspace path')
     }
-    if ((await realpath(options.root)) !== root) throw new Error('Workspace changed')
+    await checkRoot()
     let current = root
     for (let i = 0; i < parts.length; i++) {
       current = join(current, parts[i]!)
@@ -42,7 +56,8 @@ export async function createWorkspaceAccess(options: { readonly root: string }) 
           throw new Error('Unsupported workspace entry')
         const resolved = await realpath(current)
         const inside = relative(root, resolved)
-        if (inside.startsWith('..') || isAbsolute(inside)) throw new Error('Outside workspace')
+        if (inside === '..' || inside.startsWith('../') || inside.startsWith('..\\') || isAbsolute(inside))
+          throw new Error('Outside workspace')
       } catch (error) {
         if (
           !(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT' && i === parts.length - 1)
@@ -52,19 +67,32 @@ export async function createWorkspaceAccess(options: { readonly root: string }) 
     }
     return current
   }
+  const verifyOpenFile = async (value: unknown, identity: DirectoryIdentity) => {
+    const path = await resolvePath(value)
+    const current = await lstat(path)
+    if (!current.isFile() || current.nlink !== 1 || current.dev !== identity.dev || current.ino !== identity.ino) {
+      throw new Error('Workspace file changed')
+    }
+  }
   return {
+    root,
     resolvePath,
+    verifyOpenFile,
     async read(value: unknown, signal: AbortSignal): Promise<string> {
       signal.throwIfAborted()
       const path = await resolvePath(value)
+      const expected = await lstat(path)
       const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
       try {
         const stat = await file.stat()
         if (!stat.isFile() || stat.nlink !== 1 || stat.size > MAX_BYTES) throw new Error('Unsupported file')
+        if (stat.dev !== expected.dev || stat.ino !== expected.ino) throw new Error('Workspace file changed')
+        await verifyOpenFile(value, stat)
         const bytes = Buffer.alloc(MAX_BYTES + 1)
         const { bytesRead } = await file.read(bytes, 0, bytes.length, 0)
         signal.throwIfAborted()
         if (bytesRead > MAX_BYTES) throw new Error('File too large')
+        await verifyOpenFile(value, stat)
         return bytes.subarray(0, bytesRead).toString('utf8')
       } finally {
         await file.close()

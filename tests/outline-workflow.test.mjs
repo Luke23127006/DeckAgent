@@ -1,8 +1,19 @@
 import assert from 'node:assert/strict'
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
+import { createHash } from 'node:crypto'
 import test from 'node:test'
+
+async function workspaceFiles(root) {
+  return (await readdir(root, { recursive: true, withFileTypes: true }))
+    .filter(entry => !entry.isDirectory())
+    .map(entry => join(relative(root, entry.parentPath), entry.name)).sort()
+}
+
+function requestRoot(workspace, sessionId, requestId) {
+  return join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
+}
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { HostClient, DeckClient } from '../packages/client/runtime/lib/index.js'
 
@@ -78,7 +89,7 @@ test('clarification waits without building, then an answer creates the outline i
   const idleCalls = calls
   await new Promise(resolve => setTimeout(resolve, 30))
   assert.equal(calls, idleCalls)
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
   const resumed = await client.reply(accepted.requestId, { sessionId: 'clarify', questionId: waiting.question.questionId,
     version: waiting.question.version, replyId: 'topic-answer', answer: { type: 'option', index: 0 } })
   assert.equal(resumed.requestId, accepted.requestId)
@@ -152,7 +163,7 @@ test('explicit skip can ask again for an unknown topic and waiting retains its c
     replyId: 'skip-topic', answer: { type: 'skip' } })
   const second = await question()
   assert.notEqual(second.questionId, first.questionId)
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
   const headers = { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }
   const provider = { displayName: 'Capture fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:1', models: ['later'] }
   assert.equal((await fetch(`${app.origin}/api/providers/fixture`, { method: 'PUT', headers, body: JSON.stringify(provider) })).status, 200)
@@ -205,7 +216,7 @@ test('natural review asks about ambiguity, revises without confirming, then conf
   const revised = await outlines()
   assert.notEqual(revised.currentId, first)
   assert.equal(revised.confirmedId, null)
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
   const accepted = await client.send({ sessionId: 'natural', input: 'OK?' })
   let question
   for await (const value of client.watch(accepted.requestId)) {
@@ -248,10 +259,10 @@ for (const mode of ['provider-failure', 'conflicting-decisions']) test(`staged n
   for await (const value of client.watch(accepted.requestId)) terminal = value
   assert.equal(terminal.status, 'failed')
   assert.equal((await new DeckClient(app.origin, app.token).snapshot('reject-review')).version, 0)
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
 })
 
-test('shared workspace keeps earlier drafts and gives each confirmed request separate publishable paths', async t => {
+test('private request roots keep earlier drafts and give each confirmed request separate publishable paths', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-collision-'))
   const workspace = join(dir, 'workspace')
   const app = await startLocalWeb({ workspace, dataDir: join(dir, 'data'),
@@ -273,7 +284,10 @@ test('shared workspace keeps earlier drafts and gives each confirmed request sep
     const snapshot = await deck.snapshot(sessionId)
     assert.deepEqual(snapshot.slides.map(slide => slide.status), ['published', 'published'])
     assert.match((await deck.content(sessionId, 'slide-1', 1)).html, /Why recycle/)
-    paths.push(...(await readdir(workspace)).filter(name => name.includes(accepted.requestId)))
+    const privateRoot = requestRoot(workspace, sessionId, accepted.requestId)
+    const drafts = (await workspaceFiles(privateRoot)).filter(name => name.includes(accepted.requestId))
+    assert.equal(drafts.length, 2)
+    paths.push(...drafts.map(name => join(privateRoot, name)))
   }
   assert.equal(paths.length, 4)
   assert.equal(new Set(paths).size, 4)
@@ -285,15 +299,21 @@ test('a confirmed deck can retry after a colliding write without another confirm
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-retry-'))
   const workspace = join(dir, 'workspace')
   let failFirstGeneration = true
+  let allowGeneration, collisionObserved = false
+  const generationReady = new Promise(resolve => { allowGeneration = resolve })
   const base = workflowModel()
   const options = { workspace, dataDir: join(dir, 'data'), selection: { provider: 'fixture', model: 'retry' },
     model: { async *stream(request) {
       if (failFirstGeneration && request.tools.some(tool => tool.name === 'publish_slide')) {
         if (request.messages.at(-1).role === 'user') {
+          await generationReady
           yield { type: 'tool-call', call: { id: 'older-write', name: 'write_file',
             arguments: { path: 'slide-1.html', content: '<h1>Should not overwrite</h1>' } } }
           yield { type: 'finish', reason: 'tool-calls' }
         } else {
+          assert.equal(request.messages.at(-1).name, 'write_file')
+          assert.equal(request.messages.at(-1).isError, true)
+          collisionObserved = true
           yield { type: 'text-delta', text: 'The draft write failed.' }
           yield { type: 'finish', reason: 'stop' }
         }
@@ -305,19 +325,25 @@ test('a confirmed deck can retry after a colliding write without another confirm
   let client = new HostClient(app.origin, app.token)
   await completed(client, { sessionId: 'retry', input: 'Create a presentation', presentation: true })
   const first = await client.send({ sessionId: 'retry', input: 'Confirm outline' })
+  const firstRoot = requestRoot(workspace, 'retry', first.requestId)
+  try { await writeFile(join(firstRoot, 'slide-1.html'), '<h1>Keep colliding private draft</h1>') }
+  finally { allowGeneration() }
   let failed
   for await (const value of client.watch(first.requestId)) failed = value
   assert.equal(failed.status, 'failed')
   assert.equal(failed.result.error.code, 'DECK_INCOMPLETE')
+  assert.equal(collisionObserved, true)
+  assert.equal(await readFile(join(firstRoot, 'slide-1.html'), 'utf8'), '<h1>Keep colliding private draft</h1>')
   failFirstGeneration = false
   await app.close()
   app = await startLocalWeb(options)
   client = new HostClient(app.origin, app.token)
   const retry = await completed(client, { sessionId: 'retry', input: 'Retry the unfinished slides using the new draft paths' })
   assert.notEqual(first.requestId, retry.requestId)
-  assert.equal((await readdir(workspace)).filter(name => name.includes(retry.requestId)).length, 2)
+  assert.equal((await workspaceFiles(requestRoot(workspace, 'retry', retry.requestId))).filter(name => name.includes(retry.requestId)).length, 2)
   assert.deepEqual((await new DeckClient(app.origin, app.token).snapshot('retry')).slides.map(slide => slide.status), ['published', 'published'])
   assert.equal(await readFile(join(workspace, 'slide-1.html'), 'utf8'), '<h1>Keep old draft</h1>')
+  assert.equal(await readFile(join(firstRoot, 'slide-1.html'), 'utf8'), '<h1>Keep colliding private draft</h1>')
 })
 
 test('ordinary Send request gives the model a schema-valid outline argument example', async t => {
@@ -375,7 +401,7 @@ test('a staged proposal from a failed turn is never current and model calls cann
   for (const message of denied) assert.match(message.content, /TOOL_NOT_ALLOWED/)
   const read = async () => (await fetch(`${app.origin}/api/sessions/failure/outline`, { headers: { authorization: `Bearer ${app.token}` } })).json()
   assert.deepEqual((await read()).proposals, [])
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
   fail = false
   await completed(client, { sessionId: 'failure', input: 'Try a fresh proposal' })
   assert.equal((await read()).proposals.length, 1)
@@ -414,7 +440,7 @@ test('revision races reject busy/stale confirmation and typed cancellation never
     outlineAction: { type: 'confirm', outlineId: first.outlineId, version: first.version } }), /OUTLINE_STALE/)
   await completed(client, { sessionId: 'review', input: 'Hủy dàn ý' })
   assert.equal((await read()).proposals[1].status, 'cancelled')
-  assert.deepEqual(await readdir(join(dir, 'workspace')), [])
+  assert.deepEqual(await workspaceFiles(join(dir, 'workspace')), [])
 })
 
 async function completed(client, input) {
@@ -438,7 +464,7 @@ test('two separate requests propose then confirm and progressively publish a mul
   assert.equal(state.proposals.length, 1)
   assert.equal(state.confirmedId, null)
   assert.equal((await deck.snapshot('demo')).version, 0)
-  assert.deepEqual(await readdir(options.workspace), [])
+  assert.deepEqual(await workspaceFiles(options.workspace), [])
   const current = state.proposals[0]
   assert.equal((await client.history('demo'))[current.responseIndex].role, 'assistant')
   assert.equal(current.requestId, first.requestId)

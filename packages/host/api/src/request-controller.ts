@@ -23,12 +23,14 @@ export class RequestController {
   private readonly listeners = new Set<(snapshot: RequestSnapshot) => void>()
   private closed = false
   private cleanupFailed = false
+  private workspaceChanges = 0
 
   constructor(private readonly openAgent: HostOptions['openAgent'], private readonly finishRequest?: HostOptions['finishRequest'],
     private readonly requestState?: HostOptions['requestState']) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {
     if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (this.workspaceChanges) throw new HttpError(409, 'WORKSPACE_BUSY')
     if (this.busy.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
     if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
     while (this.entries.size >= 128) {
@@ -126,6 +128,15 @@ export class RequestController {
     for (const entry of this.entries.values()) entry.abort.abort()
     await Promise.all([...this.entries.values()].map(entry => entry.work))
     if (this.cleanupFailed) throw new Error('Agent cleanup failed')
+  }
+
+  /** Reserve Chat admission while its Workspace setup changes, including async folder checks. */
+  async withIdleSessions<T>(ids: readonly string[], operation: () => Promise<T>): Promise<T> {
+    if (ids.some(id => this.busy.has(id))) throw new HttpError(409, 'WORKSPACE_BUSY')
+    this.workspaceChanges++
+    for (const id of ids) this.busy.add(id)
+    try { return await operation() }
+    finally { this.workspaceChanges--; for (const id of ids) this.busy.delete(id) }
   }
 
   private async run(entry: RequestEntry, request: AgentRequest, agent: RequestAgent): Promise<void> {

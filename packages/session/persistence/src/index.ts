@@ -7,6 +7,7 @@ import { validateMessage } from './message.ts'
 import { initialize } from './schema.ts'
 
 export interface SessionInfo {
+  readonly workspaceId?: string
   readonly sessionId: string
   readonly createdAt: string
   readonly updatedAt: string
@@ -68,6 +69,20 @@ export class SqliteSessionStore implements SessionStore {
 
   async list(): Promise<readonly SessionInfo[]> {
     return this.access(() => this.db.prepare('SELECT id FROM sessions ORDER BY updated_at DESC, id').all().map(row => this.info(String(row.id))!))
+  }
+
+  /** Application validates Workspace identity; null means explicitly ungrouped. */
+  async assignWorkspace(sessionId: string, workspaceId: string): Promise<void> {
+    this.access(() => {
+      this.requireSession(sessionId)
+      if (!/^[\w-]{1,100}$/.test(workspaceId)) throw new RuntimeError('SESSION_CONFIG', 'Invalid Workspace ID')
+      this.db.prepare('UPDATE sessions SET workspace_id = ? WHERE id = ?').run(workspaceId, sessionId)
+    })
+  }
+
+  /** Idempotent reconciliation after Workspace removal, without touching saved messages. */
+  async detachWorkspace(workspaceId: string): Promise<void> {
+    this.access(() => this.db.prepare('UPDATE sessions SET workspace_id = NULL WHERE workspace_id = ?').run(workspaceId))
   }
 
   async read(sessionId: string): Promise<readonly Message[]> {
@@ -146,6 +161,7 @@ export class SqliteSessionStore implements SessionStore {
     if (!row) return undefined
     return {
       sessionId: String(row.id), createdAt: String(row.created_at), updatedAt: String(row.updated_at), messageCount: Number(row.message_count),
+      ...(row.workspace_id === null ? {} : { workspaceId: String(row.workspace_id) }),
       ...(row.provider !== null ? { selection: { provider: String(row.provider), model: String(row.model) } } : {}),
     }
   }
