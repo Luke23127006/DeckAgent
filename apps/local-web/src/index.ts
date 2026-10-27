@@ -1,6 +1,8 @@
 import { mkdir, readFile, readdir, realpath } from 'node:fs/promises'
 import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { createHash } from 'node:crypto'
 import type { ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
 import { startHost } from '@deckagent/host-api'
@@ -13,6 +15,7 @@ import { DeckService } from '@deckagent/deck'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import { openWebRequest } from './web-request.ts'
 import { outlineStyle } from './outline-style.ts'
+export { importLegacyProfile, LegacyImportError } from './legacy-import.ts'
 
 export interface LocalWebOptions {
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -20,18 +23,21 @@ export interface LocalWebOptions {
   readonly model?: ModelAdapter
   readonly selection?: ModelSelection
   readonly connections?: readonly ModelConnection[]
-  readonly workspace: string
-  readonly dataDir: string
+  /** Private Agent work base, never a user project folder. */
+  readonly workspace?: string
+  readonly dataDir?: string
   readonly port?: number
 }
 
 /** Composition owns Host -> Agent -> tools -> storage cleanup in that order. */
 export async function startLocalWeb(options: LocalWebOptions) {
   const initial = options.selection ? { ...options.selection } : undefined
-  await mkdir(resolve(options.workspace), { recursive: true })
-  await mkdir(resolve(options.dataDir), { recursive: true })
-  const workspace = await realpath(resolve(options.workspace))
-  const dataDir = await realpath(resolve(options.dataDir))
+  const dataPath = resolve(options.dataDir ?? join(homedir(), '.deckagent'))
+  const workPath = resolve(options.workspace ?? join(dataPath, 'work'))
+  await mkdir(workPath, { recursive: true, mode: 0o700 })
+  await mkdir(dataPath, { recursive: true, mode: 0o700 })
+  const workspace = await realpath(workPath)
+  const dataDir = await realpath(dataPath)
   const dataRelative = relative(workspace, dataDir)
   const outside = dataRelative === '..' || dataRelative.startsWith(`..${sep}`) || isAbsolute(dataRelative)
   if (!outside) throw new Error('Host data must be outside the Agent workspace')
@@ -51,8 +57,9 @@ export async function startLocalWeb(options: LocalWebOptions) {
       }
       presentation.confirm(plan.sessionId, plan)
     }
-    const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot())
+    const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot(), [dataDir, workspace])
     web = state
+    await state.reconcileWorkspaces()
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
     providers = catalog
     await catalog.load(options.connections, initial)
@@ -81,13 +88,21 @@ export async function startLocalWeb(options: LocalWebOptions) {
       },
       async openAgent(sessionId, requestId, request) {
         if (!(await store.getInfo(sessionId)) && initial) await store.bind(sessionId, initial)
-        const agent = await openWebRequest({ request, requestId, workspace, store, presentation, state, catalog })
+        const info = await store.getInfo(sessionId)
+        const source = info?.workspaceId ? await state.workspaces.source(info.workspaceId) : undefined
+        const privateRoot = join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
+        await mkdir(privateRoot, { recursive: true, mode: 0o700 })
+        const agent = await openWebRequest({ request, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog })
         finalizers.set(requestId, result => agent.finish(result))
         return agent
       },
       requestState: async snapshot => state.requestState(snapshot),
       readHistory: id => store.read(id),
       management: {
+        workspaces: () => state.workspaces.list(),
+        addWorkspace: value => state.workspaces.add(value),
+        removeWorkspace: id => state.removeWorkspace(id),
+        repointWorkspace: (id, value) => state.workspaces.repoint(id, value),
         settings: async () => catalog.snapshot(),
         saveProvider: (id, value) => catalog.save(id, value),
         deleteProvider: id => catalog.remove(id),

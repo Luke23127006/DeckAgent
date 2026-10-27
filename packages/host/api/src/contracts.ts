@@ -92,6 +92,7 @@ export interface ProviderTemplate {
 }
 
 export interface WebSession {
+  readonly workspaceId?: string
   /** Derived from the first user message; absent on older Hosts. */
   readonly title?: string
   /** True only when at least one slide has a published revision. */
@@ -124,6 +125,10 @@ export interface StoredRequest {
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
+  workspaces?(): Promise<readonly Workspace[]>
+  addWorkspace?(value: unknown): Promise<Workspace>
+  removeWorkspace?(id: string): Promise<void>
+  repointWorkspace?(id: string, value: unknown): Promise<Workspace>
   settings(): Promise<WebSettings>
   saveProvider(id: string, value: unknown): Promise<void>
   deleteProvider(id: string): Promise<void>
@@ -133,4 +138,11 @@ export interface WebManagement {
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
+}
+
+export interface Workspace {
+  readonly id: string
+  readonly name: string
+  readonly projectFolder?: string
+  readonly state: 'available' | 'missing'
 }

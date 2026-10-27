@@ -1,10 +1,12 @@
 import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { parseArgs, promisify } from 'node:util'
 import { ModelProviders } from '@deckagent/model-providers'
 import { RuntimeError } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
-import { startLocalWeb } from './index.ts'
+import { startLocalWeb, importLegacyProfile, LegacyImportError } from './index.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -58,6 +60,7 @@ async function main() {
       model: { type: 'string' },
       workspace: { type: 'string' },
       'data-dir': { type: 'string' },
+      'import-legacy': { type: 'string' },
       port: { type: 'string' },
       help: { type: 'boolean' },
       'no-open': { type: 'boolean' },
@@ -66,9 +69,15 @@ async function main() {
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--confirmed-deck config/deck.confirmed.example.json] [--port 0] [--no-open]\nOpens Settings even without a model. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for TASK-005 manual testing only; it is not the TASK-006 outline workflow. Ctrl+C shuts down Host and drains active work.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <profile>] [--workspace <private-work-base>] [--import-legacy <stopped-profile>] [--confirmed-deck <fixture>] [--port 0] [--no-open]\nDefault profile: ~/.deckagent; private work defaults to <profile>/work. Project folders are registered in the browser and remain read-only. --import-legacy requires an explicit new --data-dir target and all old writers stopped; it preserves the original and a backup. Saved Web Settings take precedence over CLI provider settings. Ctrl+C drains Host. --confirmed-deck is a trusted test fixture, not outline confirmation.',
     )
     return
+  }
+  const dataDir = values['data-dir'] ?? join(homedir(), '.deckagent')
+  if (values['import-legacy']) {
+    if (!values['data-dir']) throw new Error('Legacy import requires an explicit target')
+    const imported = await importLegacyProfile({ source: values['import-legacy'], target: dataDir })
+    console.log(imported.imported ? 'Legacy profile copied and verified; original and backup preserved.' : 'Legacy profile was already imported; existing data kept.')
   }
   const provider = values.provider ?? process.env.DECKAGENT_PROVIDER
   const model = values.model ?? process.env.DECKAGENT_MODEL
@@ -97,8 +106,8 @@ async function main() {
     confirmedDecks,
     connections,
     ...(provider && model ? { selection: { provider, model } } : {}),
-    workspace: values.workspace ?? '.deckagent/workspace',
-    dataDir: values['data-dir'] ?? '.deckagent',
+    ...(values.workspace ? { workspace: values.workspace } : {}),
+    dataDir,
     port,
   })
   const stop = () => {
@@ -132,6 +141,11 @@ async function main() {
 }
 
 main().catch(error => {
+  if (error instanceof LegacyImportError) {
+    console.error(`${error.code}: Stop all old profile writers. Keep the original and backup; use a new --data-dir target. No source data was removed.`)
+    process.exitCode = 1
+    return
+  }
   if (error instanceof RuntimeError && error.code === 'PROVIDER_CREDENTIALS') {
     console.error(
       'PROVIDER_CREDENTIALS: Set a valid API key in the root .env or terminal environment, then restart Host. Terminal variables override .env, even when empty; remove an old variable to use .env. Keys must have no whitespace or invisible characters.',

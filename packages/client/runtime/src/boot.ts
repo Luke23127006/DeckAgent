@@ -1,4 +1,4 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings, Workspace } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -12,6 +12,7 @@ import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
+import { workspaceView } from './workspace-view.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -87,6 +88,8 @@ let waiting: RequestSnapshot | undefined
 let pendingReply: { key: string; value: RequestReply } | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
+let workspaces: readonly Workspace[] | undefined
+let selectedWorkspace = 'default'
 let watch: AbortController | undefined
 let generation = 0
 const sending = new Set<string>()
@@ -156,14 +159,17 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  const workspaceMismatch = workspaces !== undefined && !!current && (current.workspaceId ?? 'ungrouped') !== selectedWorkspace
   const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
   submit.hidden = !!current?.activeRequestId && !question
   for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
-  model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
+  workspaceUI.update(workspaces, selectedWorkspace, sessions, switchingBlocked() || creating)
+  model.disabled = !current || workspaceMismatch || selecting.has(current.sessionId) || opening !== undefined || creating
   submit.disabled =
     !current ||
+    workspaceMismatch ||
     creating ||
     reconnecting ||
     opening !== undefined ||
@@ -188,7 +194,11 @@ function controls() {
   messages.hidden = !welcome.hidden
   openDeck.hidden = !outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)
   fitInput()
-  if (!current?.selectable && !current?.activeRequestId) {
+  if (workspaceMismatch) {
+    status.hidden = false
+    status.dataset.kind = 'setup'
+    status.textContent = 'Chọn chat trong workspace này hoặc Chat mới để gửi yêu cầu. Bản nháp vẫn thuộc chat trước.'
+  } else if (!current?.selectable && !current?.activeRequestId) {
     status.hidden = false
     status.dataset.kind = 'setup'
     status.textContent = current?.selection
@@ -215,7 +225,27 @@ function renderChats() {
   const visible = sessions.filter(session => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides || readDraft(session.sessionId).trim())
   visible.sort((a, b) => a.sessionId === current?.sessionId ? -1 : b.sessionId === current?.sessionId ? 1 : b.updatedAt.localeCompare(a.updatedAt))
   if (!visible.length) chats.append(element('p', 'Chưa có chat trước.'))
+  const groups = new Map<string, HTMLElement>()
+  if (workspaces) {
+    for (const workspace of workspaces) {
+      if (workspace.id !== selectedWorkspace) continue
+      const group = element('section', undefined, 'workspace-group')
+      group.dataset.workspaceId = workspace.id
+      group.append(element('h3', workspace.name))
+      chats.append(group)
+      groups.set(workspace.id, group)
+    }
+    if (visible.some(session => session.workspaceId === undefined)) {
+      const group = element('section', undefined, 'workspace-group')
+      group.dataset.workspaceId = 'ungrouped'
+      group.append(element('h3', 'Ungrouped'))
+      chats.append(group)
+      groups.set('ungrouped', group)
+    }
+  }
   for (const session of visible) {
+    const group = workspaces ? groups.get(session.workspaceId ?? 'ungrouped') : chats
+    if (!group) continue
     const item = button('', () =>
       run(open(session)),
     )
@@ -230,13 +260,19 @@ function renderChats() {
     item.dataset.sessionId = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
     item.disabled = switchingBlocked()
-    chats.append(item)
+    group.append(item)
   }
+  for (const group of groups.values()) {
+    if (!group.querySelector('[data-session-id]')) group.append(element('p', 'Chưa có chat. Chọn Chat mới để bắt đầu.'))
+  }
+  workspaceUI.update(workspaces, selectedWorkspace, sessions, switchingBlocked() || creating)
 }
 async function refresh() {
-  const [nextSettings, nextSessions] = await Promise.all([management.settings(), management.sessions()])
+  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
   settings = nextSettings
   sessions = nextSessions
+  workspaces = nextWorkspaces
+  if (workspaces && selectedWorkspace !== 'ungrouped' && !workspaces.some(item => item.id === selectedWorkspace)) selectedWorkspace = 'default'
   if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
   renderModels()
   renderChats()
@@ -304,6 +340,7 @@ async function open(session: WebSession) {
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
   current = session
+  if (workspaces) selectedWorkspace = session.workspaceId ?? 'ungrouped'
   const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
   waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
   deckModel.open(session.sessionId)
@@ -329,13 +366,13 @@ async function open(session: WebSession) {
 async function newChat() {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
-  if (current && !historyPresent) { input.focus(); return }
+  if (current && !historyPresent && (!workspaces || current.workspaceId === selectedWorkspace)) { input.focus(); return }
   const selection = [...recentModels].reverse().find(item => settings.providers.some(provider =>
     provider.id === item.provider && provider.models.includes(item.model)))
   creating = true
   controls()
   try {
-    const created = await management.create(selection)
+    const created = await management.create(selection, workspaces ? selectedWorkspace === 'ungrouped' ? 'default' : selectedWorkspace : undefined)
     await refresh()
     await open(created)
   } finally { creating = false; controls() }
@@ -349,6 +386,19 @@ const newChatButton = button('+  Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
 const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
 navigationHint.hidden = true
+const workspaceUI = workspaceView(management, root, {
+  async select(id) {
+    if (switchingBlocked() || creating || !settingsUI.leave()) return
+    saveDraft()
+    selectedWorkspace = id
+    renderChats()
+    controls()
+  },
+  async changed(id) {
+    selectedWorkspace = id
+    await refresh()
+  },
+})
 const recents = button('Gần đây ⌄', () => {
   chats.hidden = !chats.hidden
   recents.setAttribute('aria-expanded', String(!chats.hidden))
@@ -364,6 +414,7 @@ developerTools.append(element('summary', 'Công cụ phát triển'), button('M�
 }))
 navigation.append(
   element('div', 'DeckAgent', 'wordmark'),
+  workspaceUI.element,
   newChatButton,
   navigationHint,
   recents,

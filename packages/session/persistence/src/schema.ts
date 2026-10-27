@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { RuntimeError } from '@deckagent/agent-runtime'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 1
+const schemaVersion = 2
 
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
@@ -13,7 +13,7 @@ export function initialize(db: DatabaseSync): void {
       db.exec(`
         CREATE TABLE sessions (
           id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-          provider TEXT, model TEXT,
+          provider TEXT, model TEXT, workspace_id TEXT DEFAULT 'default',
           CHECK ((provider IS NULL AND model IS NULL) OR (provider IS NOT NULL AND model IS NOT NULL))
         ) STRICT;
         CREATE TABLE messages (
@@ -23,6 +23,8 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
+    } else if (version === 1 && owner === applicationId) {
+      db.exec("ALTER TABLE sessions ADD COLUMN workspace_id TEXT DEFAULT 'default'; PRAGMA user_version = 2;")
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new RuntimeError('SESSION_SCHEMA', 'Unsupported Session database format. Keep the file and use a compatible version or another data directory')
     }
@@ -30,7 +32,7 @@ export function initialize(db: DatabaseSync): void {
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get()) {
       throw new RuntimeError('SESSION_CORRUPT', 'Session database failed its integrity check')
     }
-    db.prepare('SELECT id, created_at, updated_at, provider, model FROM sessions LIMIT 0').all()
+    db.prepare('SELECT id, created_at, updated_at, provider, model, workspace_id FROM sessions LIMIT 0').all()
     db.prepare('SELECT session_id, sequence, payload FROM messages LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {

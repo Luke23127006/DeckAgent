@@ -134,9 +134,10 @@ pnpm.cmd start:local-web
 
 This opens an authenticated local browser with Conversation, model selection, Settings,
 History, Activity Log and a Sample Deck tab. Settings can be opened before a model is set up.
-The Agent has workspace `read_file`/`write_file` tools.
-Default workspace is `.deckagent/workspace`; writes create new files, never overwrite.
-Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sqlite`
+The Agent has `read_file`/`write_file` tools. The default Workspace needs no project folder.
+Add another Workspace using an absolute project-folder path in the sidebar. The folder stays read-only.
+Each request writes new drafts in a private work directory; writes never overwrite existing files.
+Host data defaults to `~/.deckagent`, independent of the current directory: `sessions.sqlite` stores conversations; `web.sqlite`
 stores Web Settings, encrypted keys and activity/request records. Web key persistence
 uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change
 within a chat; active work keeps its captured model and settings until completion.
@@ -157,26 +158,50 @@ The presentation workflow once the model is ready:
 confirmed deck still has Pending slides after an error, send a request to continue
 the unfinished slides; do not confirm the same outline again.
 
-With no arguments, `pnpm.cmd start:local-web` uses these paths relative to the
-repository root:
+With no storage arguments, `pnpm.cmd start:local-web` uses these paths under the user's home:
 
 ```text
-.deckagent/
+~/.deckagent/
 ├── sessions.sqlite   # conversations
 ├── web.sqlite        # Web settings, requests and activities
 ├── decks.sqlite      # outlines, Deck metadata and published slide content/revisions
-└── workspace/        # files read/created by the Agent; shared by chats
+└── work/<chat-hash>/<request-id>/  # private Agent drafts
 ```
+
+Workspace setup lives in `web.sqlite`. Session ownership distinguishes Default Workspace from Ungrouped Chats.
+Removing a Workspace keeps its Chats and saved work. A missing project folder blocks source reads, not history or deck viewing.
+Removing or repointing a Workspace is refused while its Chats have running or waiting requests.
 
 Missing directories are created automatically; existing data is reused. To use
 separate demo data and workspace, run:
 
 ```powershell
-pnpm.cmd start:local-web --data-dir .deckagent/demo --workspace .deckagent/demo/workspace
+pnpm.cmd start:local-web --data-dir .deckagent/demo
 ```
 
 Restart with the same arguments to reopen that demo's data. API keys, databases and
 workspace files stay outside Git.
+
+`--workspace` overrides the private work base. It is not a user project folder; register project folders in the browser.
+`read_file` defaults to private work. `read_file` with `scope: "source"` reads authorized project files.
+The publisher reads only private drafts. Earlier shared drafts are not granted to new requests.
+
+### Import an earlier Local Web profile
+
+The new default does not search for or automatically import repository-relative data.
+Stop every CLI/Host writer and first test with a copy of the earlier profile.
+Choose a new target directory that does not exist:
+
+```powershell
+pnpm.cmd start:local-web --import-legacy <absolute-old-profile-copy> --data-dir <absolute-new-profile>
+```
+
+Import keeps the original and a sibling backup, verifies a staged copy, then installs it.
+An existing unrelated target is refused. Repeating a completed import keeps the current target.
+SQLite sidecars cause refusal; close or recover the earlier profile with its original application, rather than deleting sidecars.
+Saved keys remain encrypted for their original Windows user. Import does not make credentials portable to another account.
+Session schema 2 cannot be opened by earlier binaries. To return to the earlier application, use the original profile or backup.
+Source-folder files are never copied merely by registering a Workspace.
 
 To bootstrap the previous environment-based workflow, use
 `pnpm.cmd start:local-web --provider google --model <model-id>`. This reads
@@ -191,6 +216,7 @@ pnpm.cmd test:tools-browser  # File policy + API/SSE + client + SQLite integrati
 pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM and reload/reconnect
 pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
 pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
+pnpm.cmd test:workspace     # Workspace ownership, source isolation and offline import
 ```
 
 These checks use local fixtures and require no cloud keys. The contracts, manual
