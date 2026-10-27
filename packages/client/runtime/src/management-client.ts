@@ -6,6 +6,7 @@ import type {
   WebSession,
   WebSettings,
   Workspace,
+  RequestSummary,
 } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
 
@@ -49,8 +50,8 @@ function session(value: unknown): WebSession {
     typeof value.selectable !== 'boolean' ||
     (value.activeRequestId !== undefined && typeof value.activeRequestId !== 'string') ||
     (value.title !== undefined && typeof value.title !== 'string') ||
-    (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean')
-    || (value.workspaceId !== undefined && typeof value.workspaceId !== 'string')
+    (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean') ||
+    (value.workspaceId !== undefined && typeof value.workspaceId !== 'string')
   )
     invalid()
   const chosen = value.selection
@@ -67,6 +68,7 @@ function session(value: unknown): WebSession {
     ...(typeof value.title === 'string' ? { title: value.title } : {}),
     ...(typeof value.hasSlides === 'boolean' ? { hasSlides: value.hasSlides } : {}),
     ...(typeof value.workspaceId === 'string' ? { workspaceId: value.workspaceId } : {}),
+    ...(value.latestRequest === undefined ? {} : { latestRequest: requestSummary(value.latestRequest) }),
     selectable: value.selectable,
     ...(object(chosen) && typeof chosen.provider === 'string' && typeof chosen.model === 'string'
       ? { selection: { provider: chosen.provider, model: chosen.model } }
@@ -75,12 +77,48 @@ function session(value: unknown): WebSession {
   }
 }
 
+function requestSummary(value: unknown): RequestSummary {
+  if (
+    !object(value) ||
+    typeof value.requestId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.requestId) ||
+    typeof value.sequence !== 'number' ||
+    !Number.isSafeInteger(value.sequence) ||
+    value.sequence < 1 ||
+    (value.revision !== undefined &&
+      (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0)) ||
+    (value.status !== 'running' &&
+      value.status !== 'awaiting_user' &&
+      value.status !== 'completed' &&
+      value.status !== 'cancelled' &&
+      value.status !== 'failed' &&
+      value.status !== 'unknown')
+  )
+    invalid()
+  return {
+    requestId: value.requestId,
+    status: value.status,
+    sequence: value.sequence,
+    ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
+  }
+}
+
 function workspace(value: unknown): Workspace {
-  if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' ||
+  if (
+    !object(value) ||
+    typeof value.id !== 'string' ||
+    !value.id ||
+    typeof value.name !== 'string' ||
     (value.state !== 'available' && value.state !== 'missing') ||
-    (value.projectFolder !== undefined && typeof value.projectFolder !== 'string')) invalid()
-  return { id: value.id, name: value.name, state: value.state,
-    ...(typeof value.projectFolder === 'string' ? { projectFolder: value.projectFolder } : {}) }
+    (value.projectFolder !== undefined && typeof value.projectFolder !== 'string')
+  )
+    invalid()
+  return {
+    id: value.id,
+    name: value.name,
+    state: value.state,
+    ...(typeof value.projectFolder === 'string' ? { projectFolder: value.projectFolder } : {}),
+  }
 }
 
 /** Validates management responses separately from request streaming. */
@@ -157,9 +195,12 @@ export class ManagementClient {
   }
 
   async create(selection?: { provider: string; model: string }, workspaceId?: string): Promise<WebSession> {
-    return session(await this.request('sessions', 'POST', {
-      ...(selection ? { selection } : {}), ...(workspaceId ? { workspaceId } : {}),
-    }))
+    return session(
+      await this.request('sessions', 'POST', {
+        ...(selection ? { selection } : {}),
+        ...(workspaceId ? { workspaceId } : {}),
+      }),
+    )
   }
 
   async workspaces(): Promise<readonly Workspace[] | undefined> {
@@ -212,6 +253,10 @@ export class ManagementClient {
         typeof item.label !== 'string' ||
         typeof item.requestId !== 'string' ||
         typeof item.sequence !== 'number' ||
+        (item.startedAt !== undefined &&
+          (typeof item.startedAt !== 'number' || !Number.isFinite(item.startedAt) || item.startedAt < 0)) ||
+        (item.endedAt !== undefined &&
+          (typeof item.endedAt !== 'number' || !Number.isFinite(item.endedAt) || item.endedAt < 0)) ||
         (item.kind !== 'model' && item.kind !== 'tool') ||
         (item.status !== 'running' &&
           item.status !== 'completed' &&
@@ -227,6 +272,8 @@ export class ManagementClient {
         sequence: item.sequence,
         kind: item.kind,
         status: item.status,
+        ...(typeof item.startedAt === 'number' ? { startedAt: item.startedAt } : {}),
+        ...(typeof item.endedAt === 'number' ? { endedAt: item.endedAt } : {}),
       }
     })
   }
@@ -237,6 +284,8 @@ export class ManagementClient {
     return data.map((value: unknown) => {
       if (
         !object(value) ||
+        (value.revision !== undefined &&
+          (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0)) ||
         typeof value.requestId !== 'string' ||
         !object(value.selection) ||
         typeof value.selection.provider !== 'string' ||
@@ -249,13 +298,18 @@ export class ManagementClient {
           value.status !== 'unknown') ||
         (value.errorCode !== undefined &&
           (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
-        (value.noticeIndex !== undefined && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
+        (value.historyStart !== undefined &&
+          (typeof value.historyStart !== 'number' ||
+            !Number.isSafeInteger(value.historyStart) ||
+            value.historyStart < 0)) ||
+        (value.noticeIndex !== undefined &&
+          (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
       )
         invalid()
       if (value.status === 'awaiting_user' && value.question === undefined) invalid()
       return {
         requestId: value.requestId,
+        ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
         selection: { provider: value.selection.provider, model: value.selection.model },
         status: value.status,
         ...(value.question === undefined ? {} : { question: userQuestion(value.question) }),

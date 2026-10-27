@@ -4,7 +4,7 @@
 **State at creation:** PLAN DRAFT — no V2 implementation gate has passed.  
 **Authority:** [SCOPE.md](SCOPE.md) for scope, [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for dependencies, individual `tasks/` files for instructions.
 
-**Current candidate — 27-10-2026:** owner requested TASK-001 implementation. A/B/C are implemented on `feature/v2-task-001-workspace` with uncommitted changes; automated integration passes. G-001 awaits live-model manual acceptance. The remaining V2 scope/activation checkpoints are unchanged.
+**Current work — 27-10-2026:** owner confirmed the TASK-001 gates passed and requested TASK-002. G-001 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-002 A/B/C are implemented on `feature/v2-task-002-chat-lifecycle`; automated integration passes, manual G-002 remains pending. Other V2 scope/activation checkpoints are unchanged.
 
 ## CI source-file substitution fixture — 27-10-2026
 
@@ -30,8 +30,8 @@
 
 | Gate | A | B | C | Integration | Status | Evidence |
 |---|---|---|---|---|---|---|
-| G-001 Workspace | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [102 distinct passing cases and manual handoff](tasks/task-001-workspace/HANDOFF.md) |
-| G-002 Chat Lifecycle | Not started | Not started | Not started | Not started | NOT STARTED | — |
+| G-001 Workspace | PASS | PASS | PASS | PASS | PASS | Owner confirmed gates passed in conversation, 27-10-2026; [automated evidence](tasks/task-001-workspace/HANDOFF.md); exact manual SHA not supplied |
+| G-002 Chat Lifecycle | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [108/108 integration cases and manual handoff](tasks/task-002-chat-lifecycle/HANDOFF.md) |
 | G-003 Provider & Models | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-004 Permissions | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-005 Sources & Attachments | Not started | Not started | Not started | Not started | NOT STARTED | — |
@@ -172,12 +172,14 @@ These are execution checklists for the acceptance criteria in the linked group R
 
 ## Manual evidence record
 
-Add one row per subtask run and group gate run. Preserve failures when recording a retest. No manual test has been run for this documentation change.
+Add one row per subtask run and group gate run. Preserve failures when recording a retest. Attribute manual results to the actual tester.
 
 | Task / gate | Candidate / environment / data | Tester / date | Scenarios and automated results | Manual result | Safe evidence / Issue | Blocker / owner / next action |
 |---|---|---|---|---|---|---|
 | V2 planning | Documentation only | 27-10-2026 / Codex | Context review and checklist preparation | NOT VERIFIED | Local PROGRESS.md; Issue pending | Implementation and manual execution not started |
 | TASK-001 A/B/C / G-001 | `feature/v2-task-001-workspace`, base `7713d78` + uncommitted changes; Windows, Node 22.19.0, Chrome; temporary data | Codex / 27-10-2026 | Build/lint PASS; combined 101/101 PASS, 0 skipped; expanded import suite 5/5 PASS, making 102 distinct passing cases | NOT VERIFIED | [Commands, failures, limits and manual steps](tasks/task-001-workspace/HANDOFF.md); Issue pending | Task owner: live-model G-001 checklist; no user profile migrated |
+| G-001 owner acceptance | Candidate SHA and separate manual artifacts not supplied | Task owner / 27-10-2026 | Earlier automatic evidence above and CI fixture correction retained | PASS, owner-confirmed | Owner said the gates passed and requested TASK-002 | Supersedes the pending manual result above; does not close historical V1 gates |
+| TASK-002 A/B/C / G-002 | `feature/v2-task-002-chat-lifecycle`, base `c93f3e8` + uncommitted changes; Windows, Node 22.19.0, Chrome; temporary data | Codex / 27-10-2026 | Build/lint PASS; combined 108/108 PASS, 0 skipped | NOT VERIFIED | [Contracts, failure history and manual steps](tasks/task-002-chat-lifecycle/HANDOFF.md); Issue pending | Task owner: manual G-002; hosted CI not run |
 
 ## Open handoffs
 

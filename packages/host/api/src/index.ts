@@ -13,6 +13,7 @@ export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
 export type { Workspace } from './contracts.ts'
+export type { RequestSummary } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 

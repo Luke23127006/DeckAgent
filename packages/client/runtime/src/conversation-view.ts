@@ -76,6 +76,7 @@ export class ConversationView {
     const knownRequests = new Map(this.requests.map(request => [request.requestId, request]))
     for (const request of requests) {
       const previous = knownRequests.get(request.requestId)
+      if (previous?.revision !== undefined && request.revision !== undefined && previous.revision > request.revision) continue
       if (!previous || previous.status === 'running' || previous.status === 'awaiting_user' || (request.status !== 'running' && request.status !== 'awaiting_user'))
         knownRequests.set(request.requestId, request)
     }
@@ -93,6 +94,7 @@ export class ConversationView {
 
   snapshot(value: RequestSnapshot): void {
     const previous = this.live.get(value.requestId)
+    if (previous?.revision !== undefined && value.revision !== undefined && previous.revision > value.revision) return
     if (previous && previous.status !== 'running' && previous.status !== 'awaiting_user' &&
       (value.status === 'running' || value.status === 'awaiting_user')) return
     this.live.set(value.requestId, value)
@@ -138,8 +140,11 @@ export class ConversationView {
     const row = this.requestRow(id)
     const live = this.live.get(id)
     // A terminal snapshot cannot be regressed by an older polling response.
-    const state = live && live.status !== 'running' && live.status !== 'awaiting_user' ? live.status
+    const newest = live && stored && live.revision !== undefined && stored.revision !== undefined
+      ? live.revision >= stored.revision ? live.status : stored.status : undefined
+    const state = newest ?? (live && live.status !== 'running' && live.status !== 'awaiting_user' ? live.status
       : stored && stored.status !== 'running' && stored.status !== 'awaiting_user' ? stored.status : (live?.status ?? stored?.status ?? 'unknown')
+    )
     const errorCode = live?.result && live.result.status === 'failed' ? live.result.error.code : stored?.errorCode
     const records = this.activities.filter(activity => activity.requestId === id)
     const tools = this.history.filter(message => message.role === 'tool' && message.toolCallId &&
@@ -183,7 +188,9 @@ export class ConversationView {
         row.list.append(node)
       }
       const outcome = entry.status === 'unknown' ? 'Outcome unconfirmed' : entry.status
-      const text = `${entry.label} · ${outcome}`
+      const elapsed = entry.startedAt === undefined ? undefined : entry.endedAt !== undefined
+        ? Math.max(0, entry.endedAt - entry.startedAt) : entry.status === 'running' ? Math.max(0, Date.now() - entry.startedAt) : undefined
+      const text = `${entry.label} · ${outcome}${elapsed === undefined ? '' : ` · ${(elapsed / 1000).toFixed(1)}s`}`
       if (activity.summary.textContent !== text) activity.summary.textContent = text
       const tool = this.history.find(message => message.role === 'tool' && message.toolCallId &&
         `tool-${message.toolCallId}` === entry.id && message.name === entry.label)

@@ -35,6 +35,7 @@ export function workspaceView(
   let busy = false
   let blocked = false
   let available = false
+  let optionsSignature = ''
   const dialog = element('dialog', undefined, 'workspace-dialog')
   const form = element('form')
   const heading = element('h2')
@@ -178,10 +179,17 @@ export function workspaceView(
       selectedId = id
       blocked = switchingBlocked
       container.hidden = !available
-      select.replaceChildren()
-      for (const item of records)
-        select.append(new Option(`${item.name}${item.state === 'missing' ? ' · Không thể đọc thư mục' : ''}`, item.id))
-      if (sessions.some(item => item.workspaceId === undefined)) select.append(new Option('Ungrouped', 'ungrouped'))
+      const ungrouped = sessions.some(item => item.workspaceId === undefined)
+      const signature = JSON.stringify([records, ungrouped])
+      if (optionsSignature !== signature) {
+        optionsSignature = signature
+        select.replaceChildren()
+        for (const item of records)
+          select.append(
+            new Option(`${item.name}${item.state === 'missing' ? ' · Không thể đọc thư mục' : ''}`, item.id),
+          )
+        if (ungrouped) select.append(new Option('Ungrouped', 'ungrouped'))
+      }
       select.value = selectedId
       const selected = records.find(item => item.id === selectedId)
       notice.hidden = selected?.state !== 'missing'

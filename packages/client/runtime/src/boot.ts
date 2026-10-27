@@ -1,4 +1,4 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings, Workspace } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, UserQuestion, WebSession, WebSettings, Workspace } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -43,9 +43,9 @@ const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Conversation')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
-const questionUI = questionView(answer => run(replyToQuestion(answer)))
+const questionUI = questionView((answer, question) => { if (current) runForChat(current.sessionId, replyToQuestion(answer, question)) })
 const timeline = new ConversationView(messages, (type, proposal) => {
-  run(submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
+  if (current) runForChat(current.sessionId, submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
     outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
   }))
 }, () => {
@@ -67,11 +67,11 @@ submit.title = 'Gửi yêu cầu (Enter)'
 submit.type = 'submit'
 submit.disabled = true
 const createPresentation = button('Đề xuất outline', () => {
-  if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
+  if (input.reportValidity() && current) runForChat(current.sessionId, submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
 const stopRequest = button('■', () => {
-  if (current?.activeRequestId) run(client.stop(current.activeRequestId).then(() => {}))
+  if (current?.activeRequestId) runForChat(current.sessionId, client.stop(current.activeRequestId).then(() => {}))
 })
 stopRequest.className = 'stop-action'
 stopRequest.setAttribute('aria-label', 'Stop')
@@ -85,13 +85,20 @@ publishedDeck.hidden = true
 const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = false })
 let current: WebSession | undefined
 let waiting: RequestSnapshot | undefined
-let pendingReply: { key: string; value: RequestReply } | undefined
+const pendingReplies = new Map<string, { key: string; value: RequestReply }>()
+const seen = new Map<string, string>()
+const liveRequests = new Map<string, RequestSnapshot>()
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
 let workspaces: readonly Workspace[] | undefined
 let selectedWorkspace = 'default'
 let watch: AbortController | undefined
+let watchingRequest: string | undefined
 let generation = 0
+let refreshGeneration = 0
+let historyGeneration = 0
+let activitiesGeneration = 0
+let openGeneration = 0
 const sending = new Set<string>()
 const selecting = new Set<string>()
 const drafts = new Map<string, string>()
@@ -122,12 +129,70 @@ function fitInput() {
 
 function saveDraft() {
   if (!current) return
-  drafts.set(current.sessionId, input.value)
+  writeDraft(current.sessionId, input.value)
+}
+function writeDraft(id: string, text: string) {
+  drafts.set(id, text)
   try {
-    const key = `deckagent-draft:${current.sessionId}`
-    if (input.value) sessionStorage.setItem(key, input.value)
+    const key = `deckagent-draft:${id}`
+    if (text) sessionStorage.setItem(key, text)
     else sessionStorage.removeItem(key)
   } catch { /* Drafts still survive switching chats within this page. */ }
+}
+function requestSignature(session: WebSession): string {
+  const latest = session.latestRequest
+  return latest ? JSON.stringify([latest.requestId, latest.sequence, latest.revision, latest.status]) : ''
+}
+function hasUnread(session: WebSession): boolean {
+  if (!session.latestRequest || session.latestRequest.status === 'running' || session.latestRequest.status === 'awaiting_user') return false
+  let previous = seen.get(session.sessionId)
+  if (previous === undefined) {
+    try { previous = sessionStorage.getItem(`deckagent-seen:${session.sessionId}`) ?? '' } catch { previous = '' }
+    seen.set(session.sessionId, previous)
+  }
+  return previous !== requestSignature(session)
+}
+function markSeen(id: string) {
+  const session = sessions.find(item => item.sessionId === id)
+  if (!session?.latestRequest || session.latestRequest.status === 'running' || session.latestRequest.status === 'awaiting_user') return
+  const signature = requestSignature(session)
+  seen.set(id, signature)
+  try { sessionStorage.setItem(`deckagent-seen:${id}`, signature) } catch { /* Tab-local indicators remain available. */ }
+}
+function observeRequest(snapshot: RequestSnapshot): boolean {
+  const previous = liveRequests.get(snapshot.requestId)
+  const persisted = sessions.find(session => session.sessionId === snapshot.sessionId)?.latestRequest
+  const active = snapshot.status === 'running' || snapshot.status === 'awaiting_user'
+  if (persisted?.requestId === snapshot.requestId && (persisted.revision ?? 0) > (snapshot.revision ?? 0)) return false
+  if (previous && ((previous.revision ?? 0) > (snapshot.revision ?? 0) ||
+    (previous.status !== 'running' && previous.status !== 'awaiting_user' && active))) return false
+  liveRequests.set(snapshot.requestId, snapshot)
+  if (liveRequests.size > 128) {
+    const old = [...liveRequests.values()].find(item => item.status !== 'running' && item.status !== 'awaiting_user')
+    if (old) liveRequests.delete(old.requestId)
+  }
+  const update = (session: WebSession): WebSession => {
+    if (session.sessionId !== snapshot.sessionId) return session
+    const { activeRequestId, ...rest } = session
+    const latest = session.latestRequest
+    return { ...rest,
+      ...(latest?.requestId === snapshot.requestId ? { latestRequest: { ...latest, status: snapshot.status,
+        ...(snapshot.revision === undefined ? {} : { revision: snapshot.revision }) } } : {}),
+      ...(active ? { activeRequestId: snapshot.requestId } : activeRequestId && activeRequestId !== snapshot.requestId ? { activeRequestId } : {}),
+    }
+  }
+  sessions = sessions.map(update)
+  if (current) current = update(current)
+  return true
+}
+function runForChat(id: string, work: Promise<void>) {
+  run(work.catch(error => { if (current?.sessionId === id) throw error }))
+}
+function chatStateLabel(session: WebSession): string {
+  if (session.activeRequestId) return session.latestRequest?.status === 'awaiting_user' ? 'Chờ trả lời' : 'Đang làm việc'
+  if (session.sessionId === current?.sessionId || !session.latestRequest) return ''
+  const labels = { running: 'Đang làm việc', awaiting_user: 'Chờ trả lời', completed: 'Hoàn tất', cancelled: 'Đã dừng', failed: 'Thất bại', unknown: 'Chưa xác nhận kết quả' }
+  return labels[session.latestRequest.status]
 }
 function readDraft(id: string): string {
   if (drafts.has(id)) return drafts.get(id)!
@@ -189,7 +254,7 @@ function controls() {
   const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
   headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
     : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : current?.selectable ? '' : 'Chọn model để bắt đầu'
-  navigationHint.hidden = !active
+  navigationHint.hidden = true
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
   openDeck.hidden = !outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)
@@ -254,12 +319,15 @@ function renderChats() {
     const date = new Date(session.updatedAt)
     updated.textContent = Number.isNaN(date.getTime()) ? 'Updated time unavailable' : date.toLocaleString()
     const slides = session.hasSlides === undefined ? 'Slides unknown' : session.hasSlides ? 'Has slides' : 'No slides yet'
+    const stateLabel = chatStateLabel(session)
     item.append(element('strong', !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'), updated,
-      element('small', `${slides}${session.activeRequestId ? ' · Working…' : ''}`))
+      element('small', `${slides}${stateLabel ? ` · ${stateLabel}` : ''}${hasUnread(session) ? ' · Mới' : ''}`))
+    item.dataset.requestStatus = session.latestRequest?.status ?? (session.activeRequestId ? 'running' : 'idle')
+    item.dataset.unread = String(hasUnread(session))
     item.title = `${session.title ?? 'Chat mới'} · ${updated.textContent} · ${slides}\n${session.sessionId}`
     item.dataset.sessionId = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
-    item.disabled = switchingBlocked()
+    item.disabled = switchingBlocked() || creating
     group.append(item)
   }
   for (const group of groups.values()) {
@@ -268,9 +336,20 @@ function renderChats() {
   workspaceUI.update(workspaces, selectedWorkspace, sessions, switchingBlocked() || creating)
 }
 async function refresh() {
+  const expected = ++refreshGeneration
   const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
+  if (expected !== refreshGeneration || disposed) return
   settings = nextSettings
-  sessions = nextSessions
+  sessions = nextSessions.map(next => {
+    const old = sessions.find(item => item.sessionId === next.sessionId)
+    const previous = old?.latestRequest, latest = next.latestRequest
+    if (previous && latest && (previous.sequence > latest.sequence ||
+      (previous.requestId === latest.requestId && (previous.revision ?? 0) > (latest.revision ?? 0)))) {
+      const { activeRequestId: _active, ...rest } = next
+      return { ...rest, latestRequest: previous, ...(old?.activeRequestId ? { activeRequestId: old.activeRequestId } : {}) }
+    }
+    return next
+  })
   workspaces = nextWorkspaces
   if (workspaces && selectedWorkspace !== 'ungrouped' && !workspaces.some(item => item.id === selectedWorkspace)) selectedWorkspace = 'default'
   if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
@@ -278,18 +357,23 @@ async function refresh() {
   renderChats()
 }
 async function showHistory(id: string, expected: number) {
+  if (generation !== expected || current?.sessionId !== id) return
+  const load = ++historyGeneration
   const history = await client.history(id)
-  if (generation !== expected) return
+  if (generation !== expected || current?.sessionId !== id || load !== historyGeneration) return
   timeline.setHistory(history)
   describeHistory(history)
   controls()
 }
 async function showActivities(id: string, expected: number) {
+  if (generation !== expected || current?.sessionId !== id) return
+  const load = ++activitiesGeneration
   const [entries, requests] = await Promise.all([management.activities(id), management.requests(id)])
-  if (generation !== expected) return
+  if (generation !== expected || current?.sessionId !== id || load !== activitiesGeneration) return
   timeline.setRecords(requests, entries)
 }
 async function showOutlines(id: string, expected: number) {
+  if (generation !== expected || current?.sessionId !== id) return
   const next = await outlines.snapshot(id)
   if (generation !== expected || current?.sessionId !== id) return
   if (outlineState?.sessionId === id && outlineState.version > next.version) return
@@ -301,9 +385,12 @@ async function follow(id: string, sessionId: string, expected: number) {
   watch?.abort()
   const control = new AbortController()
   watch = control
+  watchingRequest = id
   try {
     for await (const snapshot of client.watch(id, control.signal)) {
-      if (generation !== expected) return
+      if (generation !== expected || current?.sessionId !== sessionId || control.signal.aborted) return
+      if (snapshot.sessionId !== sessionId) throw new Error('INVALID_RESPONSE')
+      if (!observeRequest(snapshot)) continue
       timeline.snapshot(snapshot)
       waiting = snapshot.status === 'awaiting_user' ? snapshot : undefined
       controls()
@@ -311,6 +398,7 @@ async function follow(id: string, sessionId: string, expected: number) {
       if (snapshot.status !== 'running') {
         await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
         await refresh()
+        if (generation === expected && current?.sessionId === sessionId) { markSeen(sessionId); renderChats() }
       }
     }
   } catch {
@@ -322,51 +410,60 @@ async function follow(id: string, sessionId: string, expected: number) {
         // The inline record keeps the last known outcome and offers reconnect; no work is replayed.
       }
     }
-  }
+  } finally { if (watch === control) watchingRequest = undefined }
 }
 async function open(session: WebSession) {
   const switching = current?.sessionId !== session.sessionId
-  if (switching && switchingBlocked()) return
+  if (switching && (switchingBlocked() || creating)) return
   if (switching && !settingsUI.leave()) return
   picker.close()
   // Read everything before replacing current state. A failed open leaves the old chat intact.
-  const previousGeneration = generation
-  const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
-    management.requests(session.sessionId), outlines.snapshot(session.sessionId)])
-  if (generation !== previousGeneration || (switching && switchingBlocked())) return
-  if (current) saveDraft()
-  input.value = readDraft(session.sessionId)
-  generation++
-  watch?.abort()
-  if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
-  current = session
-  if (workspaces) selectedWorkspace = session.workspaceId ?? 'ungrouped'
-  const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
-  waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
-  deckModel.open(session.sessionId)
-  remember(session.sessionId)
-  const expected = generation
-  opening = expected
-  renderModels()
-  renderChats()
-  status.hidden = true
-  if (session.activeRequestId)
-    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
+  const attempt = ++openGeneration
+  opening = attempt
   controls()
-  timeline.setHistory(loaded[0])
-  describeHistory(loaded[0])
-  timeline.setRecords(loaded[2], loaded[1])
-  outlineState = loaded[3]
-  timeline.setOutlines(loaded[3])
-  if (opening === expected) opening = undefined
-  controls()
-  if (session.activeRequestId && generation === expected)
-    run(follow(session.activeRequestId, session.sessionId, expected))
+  try {
+    const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
+      management.requests(session.sessionId), outlines.snapshot(session.sessionId), management.sessions()])
+    if (attempt !== openGeneration || disposed) return
+    session = loaded[4].find(item => item.sessionId === session.sessionId) ?? session
+    if (current) saveDraft()
+    input.value = readDraft(session.sessionId)
+    generation++
+    watch?.abort()
+    if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
+    current = session
+    if (workspaces) selectedWorkspace = session.workspaceId ?? 'ungrouped'
+    const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
+    const known = session.activeRequestId ? liveRequests.get(session.activeRequestId) : undefined
+    waiting = known && (known.revision ?? 0) >= (pending?.revision ?? 0) ? known.status === 'awaiting_user' ? known : undefined
+      : pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question,
+        ...(pending.revision === undefined ? {} : { revision: pending.revision }) } : undefined
+    deckModel.open(session.sessionId)
+    remember(session.sessionId)
+    const expected = generation
+    renderModels()
+    renderChats()
+    status.hidden = true
+    if (session.activeRequestId)
+      timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
+    controls()
+    timeline.setHistory(loaded[0])
+    describeHistory(loaded[0])
+    timeline.setRecords(loaded[2], loaded[1])
+    outlineState = loaded[3]
+    timeline.setOutlines(loaded[3])
+    markSeen(session.sessionId)
+    opening = undefined
+    renderChats()
+    controls()
+    if (session.activeRequestId && generation === expected)
+      run(follow(session.activeRequestId, session.sessionId, expected))
+  } finally { if (opening === attempt) { opening = undefined; controls() } }
 }
 async function newChat() {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
-  if (current && !historyPresent && (!workspaces || current.workspaceId === selectedWorkspace)) { input.focus(); return }
+  if (current && !historyPresent && !current.activeRequestId && !sending.has(current.sessionId) && (!workspaces || current.workspaceId === selectedWorkspace)) { input.focus(); return }
   const selection = [...recentModels].reverse().find(item => settings.providers.some(provider =>
     provider.id === item.provider && provider.models.includes(item.model)))
   creating = true
@@ -374,17 +471,18 @@ async function newChat() {
   try {
     const created = await management.create(selection, workspaces ? selectedWorkspace === 'ungrouped' ? 'default' : selectedWorkspace : undefined)
     await refresh()
+    creating = false
     await open(created)
   } finally { creating = false; controls() }
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
 const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
 function switchingBlocked(): boolean {
-  return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
+  return opening !== undefined
 }
 const newChatButton = button('+  Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
-const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
+const navigationHint = element('p', '', 'navigation-hint')
 navigationHint.hidden = true
 const workspaceUI = workspaceView(management, root, {
   async select(id) {
@@ -491,7 +589,7 @@ model.addEventListener('change', () => {
   selecting.add(id)
   model.disabled = true
   controls()
-  run(
+  runForChat(id,
     (async () => {
       try {
         const value: unknown = JSON.parse(model.value)
@@ -518,7 +616,7 @@ model.addEventListener('change', () => {
 })
 form.addEventListener('submit', event => {
   event.preventDefault()
-  run(submitRequest(input.value))
+  if (current) runForChat(current.sessionId, submitRequest(input.value))
 })
 async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
   if (submit.disabled || !current) return
@@ -535,6 +633,7 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
   }
   const id = current.sessionId,
     expected = generation
+  saveDraft()
   const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
   controls()
@@ -545,9 +644,10 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     const accepted = await client.send({ sessionId: id, input: text,
       ...(target && !extra.outlineAction ? { outlineTarget: { outlineId: target.outlineId, version: target.version } } : {}),
       ...extra })
+    observeRequest(accepted)
+    if (!extra.outlineAction && readDraft(id) === text) writeDraft(id, '')
     if (generation === expected && current) {
       if (!extra.outlineAction && input.value === text) { input.value = ''; saveDraft() }
-      current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
       status.hidden = true
       controls()
@@ -563,19 +663,23 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
   }
 }
 
-async function replyToQuestion(answer: RequestReply['answer']): Promise<void> {
+async function replyToQuestion(answer: RequestReply['answer'], origin?: UserQuestion): Promise<void> {
   if (!current || !waiting?.question || submit.disabled || waiting.sessionId !== current.sessionId) return
+  if (origin && (origin.questionId !== waiting.question.questionId || origin.version !== waiting.question.version)) return
   const id = current.sessionId, expected = generation, snapshot = waiting, question = waiting.question
   const key = JSON.stringify([id, question.questionId, question.version, answer])
-  if (pendingReply?.key !== key) pendingReply = { key, value: { sessionId: id, questionId: question.questionId,
-    version: question.version, replyId: crypto.randomUUID(), answer } }
+  if (pendingReplies.get(id)?.key !== key) pendingReplies.set(id, { key, value: { sessionId: id, questionId: question.questionId,
+    version: question.version, replyId: crypto.randomUUID(), answer } })
+  const pendingReply = pendingReplies.get(id)!
   sending.add(id)
   controls()
   try {
     const accepted = await client.reply(snapshot.requestId, pendingReply.value)
+    observeRequest(accepted)
+    pendingReplies.delete(id)
+    if (answer.type === 'text' && readDraft(id) === answer.text) writeDraft(id, '')
     if (generation !== expected) return
-    pendingReply = undefined
-    waiting = undefined
+    if (waiting?.question?.questionId === question.questionId) waiting = undefined
     timeline.snapshot(accepted)
     if (answer.type === 'text' && input.value === answer.text) { input.value = ''; saveDraft() }
     controls()
@@ -584,13 +688,25 @@ async function replyToQuestion(answer: RequestReply['answer']): Promise<void> {
   } finally { sending.delete(id); controls() }
 }
 const timer = setInterval(() => {
-  if (!current?.activeRequestId || polling || disposed) return
+  if (polling || disposed) return
   polling = true
-  const id = current.sessionId,
+  const id = current?.sessionId,
     expected = generation
   run(
-    Promise.all([showActivities(id, expected), showOutlines(id, expected)])
-      .then(() => {})
+    (async () => {
+      await refresh()
+      if (!id || generation !== expected || current?.sessionId !== id || opening !== undefined) return
+      if (current.activeRequestId || hasUnread(current)) {
+        await Promise.all([showHistory(id, expected), showActivities(id, expected), showOutlines(id, expected)])
+        if (generation !== expected || current?.sessionId !== id) return
+        if (!current.activeRequestId) waiting = undefined
+        markSeen(id)
+        renderChats()
+      }
+      if (current.activeRequestId && watchingRequest !== current.activeRequestId)
+        runForChat(id, follow(current.activeRequestId, id, expected))
+      controls()
+    })()
       .catch(() => {
         if (generation === expected && current?.activeRequestId) timeline.connectionLost(current.activeRequestId)
       })

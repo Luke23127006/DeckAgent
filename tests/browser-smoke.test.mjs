@@ -114,6 +114,128 @@ async function connect(url) {
   }
 }
 
+test('Chats and Workspaces remain navigable while work runs or awaits a reply', { timeout: 45000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-concurrent-browser-'))
+  const hold = Promise.withResolvers()
+  let app, browser, protocol
+  let calls = 0
+  t.after(async () => {
+    hold.resolve()
+    if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+    if (browser && browser.exitCode === null) browser.kill()
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const selection = { provider: 'fixture', model: 'lifecycle' }
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), selection, model: { async *stream(request) {
+    calls++
+    const last = request.messages.at(-1)
+    if (last.role === 'user' && last.content === 'X hold') {
+      await Promise.race([hold.promise, new Promise((_, reject) => request.signal.addEventListener('abort', () => reject(request.signal.reason), { once: true }))])
+      yield { type: 'text-delta', text: 'X finished in background' }
+    } else if (last.role === 'user' && (last.content === 'X question' || last.content === 'Y question')) {
+      yield { type: 'tool-call', call: { id: `ask-${request.messages.length}`, name: 'ask_clarification', arguments: {
+        question: JSON.stringify({ prompt: `Question for ${last.content[0]} only?`, options: ['Answer X'], allowSkip: true }),
+      } } }
+      yield { type: 'finish', reason: 'tool-calls' }; return
+    } else if (last.role === 'user' && last.content === 'Y finish') {
+      yield { type: 'tool-call', call: { id: `missing-${request.messages.length}`, name: 'read_file', arguments: { path: 'missing.txt' } } }
+      yield { type: 'finish', reason: 'tool-calls' }; return
+    } else yield { type: 'text-delta', text: last.name === 'ask_clarification' ? 'Question for X only?' : last.content === 'Answer X' ? 'X answer received' : 'Y completed' }
+    yield { type: 'finish', reason: 'stop' }
+  } } })
+  const api = async (path, method = 'GET', value) => {
+    const response = await fetch(app.origin + path, { method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(value === undefined ? {} : { body: JSON.stringify(value) }) })
+    assert.ok(response.ok)
+    return response.json()
+  }
+  const x = await api('/api/sessions', 'POST', { selection })
+  const y = await api('/api/sessions', 'POST', { selection })
+  const project = join(dir, 'project')
+  await mkdir(project)
+  const workspace = await api('/api/workspaces', 'POST', { projectFolder: project })
+  browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${join(dir, 'chrome')}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const port = await waitForBrowserPort(join(dir, 'chrome'), browser)
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
+    return result.result.value
+  }
+  const selected = id => evaluate(`document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(id)}]')?.getAttribute('aria-current')==='true'`)
+  const open = async id => {
+    await evaluate(`document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(id)}]').click();true`)
+    await eventually(() => selected(id), 'Chat did not open')
+  }
+  const send = async text => {
+    await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`), 'Composer not ready')
+    await evaluate(`(()=>{const input=document.querySelector('.composer textarea');input.value=${JSON.stringify(text)};input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();return true})()`)
+  }
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [aria-current=true]')`), 'Initial Chat missing')
+  await open(x.sessionId)
+  await send('X hold')
+  await eventually(() => evaluate(`!!document.querySelector('.request-record[data-status=running]')`), 'X not running')
+  const requestX = await evaluate(`document.querySelector('.request-record').dataset.requestId`)
+  assert.equal(await evaluate(`document.querySelector('[data-action=new-chat]').disabled`), false, 'New Chat must remain available during X')
+  await evaluate(`(()=>{const input=document.querySelector('.composer textarea');input.value='Draft X';input.dispatchEvent(new Event('input'));document.querySelector('[data-action=new-chat]').click();return true})()`)
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation [aria-current=true]')?.dataset.sessionId !== ${JSON.stringify(x.sessionId)}`), 'New Chat remained blocked')
+  assert.equal((await api(`/api/requests/${requestX}`)).status, 'running')
+  await open(y.sessionId)
+  await send('Y finish')
+  await eventually(() => evaluate(`!!document.querySelector('.request-record[data-status=completed]')`), 'Y did not finish independently')
+  assert.equal(await evaluate(`!!document.querySelector('.activity-detail')`), true)
+  const callsBeforeDetail = calls
+  await evaluate(`document.querySelector('.request-record').open=true;document.querySelector('.activity-detail').open=true;true`)
+  assert.equal(calls, callsBeforeDetail, 'Viewing detail starts no work')
+  assert.equal((await api(`/api/requests/${requestX}`)).status, 'running')
+  await evaluate(`(()=>{const picker=document.querySelector('[aria-label=Workspace]');picker.value=${JSON.stringify(workspace.id)};picker.dispatchEvent(new Event('change'));return true})()`)
+  await eventually(() => evaluate(`document.querySelector('[aria-label=Workspace]').value===${JSON.stringify(workspace.id)}`), 'Workspace switch blocked')
+  assert.equal((await api(`/api/requests/${requestX}`)).status, 'running')
+  await evaluate(`(()=>{const picker=document.querySelector('[aria-label=Workspace]');picker.value='default';picker.dispatchEvent(new Event('change'));return true})()`)
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(x.sessionId)}]')`), 'Default history missing')
+  hold.resolve()
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(x.sessionId)}]')?.dataset.requestStatus==='completed'`), 'Background completion not reflected')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(x.sessionId)}]').dataset.unread`), 'true')
+  await open(x.sessionId)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Draft X')
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Y completed')`), false, 'Y output leaked into X')
+  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('X finished in background')`), 'X result not restored')
+  await send('X question')
+  await eventually(() => evaluate(`!document.querySelector('.clarification-question').hidden`), 'X question missing')
+  await evaluate(`window.oldQuestionButton=document.querySelector('.clarification-question button');true`)
+  await open(y.sessionId)
+  assert.equal(await evaluate(`document.querySelector('.clarification-question').hidden`), true)
+  await send('Y question')
+  await eventually(() => evaluate(`document.querySelector('.clarification-question:not([hidden]) strong')?.textContent==='Question for Y only?'`), 'Y question missing')
+  await evaluate(`window.oldQuestionButton.click();true`)
+  assert.equal((await api(`/api/sessions/${x.sessionId}/requests`)).at(-1).status, 'awaiting_user', 'Detached reply must not answer another view')
+  assert.equal((await api(`/api/sessions/${y.sessionId}/requests`)).at(-1).status, 'awaiting_user', 'Detached X reply must not answer Y question')
+  await open(x.sessionId)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.clarification-question:not([hidden]) strong')?.textContent==='Question for X only?'`), 'Reload lost waiting question')
+  await evaluate(`document.querySelector('.clarification-question button').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('X answer received')`), 'Reply did not resume X')
+  assert.equal((await api(`/api/sessions/${y.sessionId}/history`)).some(message => message.content === 'Answer X'), false)
+  await evaluate(`(()=>{const input=document.querySelector('.composer textarea');input.value='Second draft X';input.dispatchEvent(new Event('input'));return true})()`)
+  await open(y.sessionId)
+  await evaluate(`document.querySelector('[aria-label=Stop]').click();true`)
+  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=cancelled]').length===1&&!document.querySelector('[aria-label="Send request"]').disabled`), 'Y Stop did not clear its waiting request')
+  await evaluate(`window.originalLifecycleFetch=window.fetch;window.fetch=async(...args)=>{const response=await window.originalLifecycleFetch(...args);if(String(args[0]).endsWith('/api/requests')&&args[1]?.method==='POST'&&JSON.parse(args[1].body).input==='Y delayed'){window.receiptWaiting=true;await new Promise(resolve=>window.releaseReceipt=resolve);window.receiptReturned=true}return response};true`)
+  await send('Y delayed')
+  await eventually(() => evaluate(`window.receiptWaiting===true`), 'Delayed admission receipt was not held')
+  await open(x.sessionId)
+  await evaluate(`window.releaseReceipt();window.fetch=window.originalLifecycleFetch;true`)
+  await eventually(() => evaluate(`window.receiptReturned===true`), 'Delayed receipt was not released')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Second draft X', 'Late Y receipt changed X draft')
+  assert.equal(await evaluate(`document.querySelector('.messages').textContent.includes('Y delayed')`), false, 'Late Y receipt changed X history')
+  await open(y.sessionId)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), '', 'Accepted background request must clear only its submitted draft')
+})
+
 test('workspace navigation creates owned Chats and keeps missing or removed folder history readable', { timeout: 45000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-workspace-browser-'))
   let app, browser, protocol
@@ -695,8 +817,8 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await evaluate(`document.querySelector('.request-record').getBoundingClientRect().height <= 48`), true, 'Collapsed activity should occupy a single line')
   assert.equal(await evaluate(`document.querySelector('.messages').clientHeight >= document.querySelector('.conversation').clientHeight * .5`), true, 'Chat should retain most available vertical space')
   const requestsBeforeViewing = modelRequests
-  assert.equal(await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].every(button => button.disabled)`), true, 'History must be disabled while work runs')
-  assert.equal(await evaluate(`[...document.querySelectorAll('button')].find(button => button.dataset.action === 'new-chat').disabled`), true)
+  assert.equal(await evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].every(button => !button.disabled)`), true, 'History must remain available while work runs')
+  assert.equal(await evaluate(`[...document.querySelectorAll('button')].find(button => button.dataset.action === 'new-chat').disabled`), false)
   await evaluate(`document.querySelector('.request-record > summary').click(); document.querySelector('.request-record > summary').focus(); true`)
   assert.equal(await evaluate(`document.querySelector('.request-record').open`), true)
   await delay(900)
