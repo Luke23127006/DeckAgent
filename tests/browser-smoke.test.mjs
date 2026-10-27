@@ -9,13 +9,20 @@ import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { workflowModel } from './fixtures/outline-workflow.mjs'
 import { RuntimeError } from '../packages/agent/runtime/lib/index.js'
 
-async function eventually(operation, message) {
-  for (let i = 0; i < 200; i++) {
+async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
+  for (let i = 0; i < retries; i++) {
     const value = await operation()
     if (value) return value
-    await delay(50)
+    await delay(intervalMs)
   }
   throw new Error(message)
+}
+
+async function waitForBrowserPort(profile, browser) {
+  return eventually(async () => {
+    if (browser.exitCode !== null) throw new Error(`Browser exited before startup (exit ${browser.exitCode})`)
+    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
+  }, 'Browser did not start', { retries: 600 })
 }
 
 async function browserPath() {
@@ -118,7 +125,7 @@ test('interactive composer selects a model without work, sends with Enter and pr
   })
   const profile = join(dir, 'chrome')
   browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
-  const port = await eventually(async () => { try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch {} }, 'Browser did not start')
+  const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   protocol = await connect(target.webSocketDebuggerUrl)
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
@@ -205,7 +212,7 @@ test('clarification UI waits, restores after reload and answers without sending 
     } } })
   const profile = join(dir, 'chrome')
   browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
-  const port = await eventually(async () => { try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch {} }, 'Browser did not start')
+  const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   protocol = await connect(target.webSocketDebuggerUrl)
   const evaluate = async expression => {
@@ -292,9 +299,7 @@ test('outline conversation confirms in a new request, preserves viewing state an
   })
   const profile = join(dir, 'chrome')
   browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
-  const port = await eventually(async () => {
-    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
-  }, 'Browser did not start')
+  const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   protocol = await connect(target.webSocketDebuggerUrl)
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
@@ -360,9 +365,7 @@ test('Deck Canvas renders published revisions over SSE, keeps selection and rest
   })
   const profile = join(dir, 'chrome')
   browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
-  const port = await eventually(async () => {
-    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
-  }, 'Browser did not start')
+  const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   protocol = await connect(target.webSocketDebuggerUrl)
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
@@ -556,13 +559,7 @@ test('real browser boots, sends an Agent request, shows completion and restores 
     ],
     { stdio: 'ignore', windowsHide: true },
   )
-  const port = await eventually(async () => {
-    try {
-      return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]
-    } catch {
-      return undefined
-    }
-  }, 'Browser did not start')
+  const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   protocol = await connect(target.webSocketDebuggerUrl)
   const evaluate = async expression => {

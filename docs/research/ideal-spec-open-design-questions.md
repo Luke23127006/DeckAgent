@@ -8,11 +8,7 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 
 - What display name a new workspace gets, whether the user can change it later, and whether display names must be unique [BR-?].
 - Which workspaces the product sets up by default besides the default workspace, if any [BR-?].
-- Where the chats of a removed workspace appear. Removing a workspace keeps them reachable; the default workspace is one example [BR-004 V-3 names no place].
 - Whether adding the same folder again as a workspace binds the chats it had, or starts without them.
-- What the system does when the place it uses for the workspace data of a workspace already holds content that DeckAgent did not write. The system changes none of that content (FR-071); where it keeps its own data then is open.
-- Where the workspace data of the default workspace sits, which has no folder.
-- Whether the product keeps a copy of the workspace data outside the folder of its workspace, for example a backup, so that the chats outlive the folder. The chats are kept in that folder, so a folder deleted with its data takes them with it (FR-074).
 
 ## Requests that stopped or failed early (UC-002, UC-003 Note 18, UC-006, UC-008)
 
@@ -22,28 +18,18 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 - Which causes of a failure keep the user from sending a new request (FR-019).
 - Whether a stop takes effect at once (UC-003 Note 10).
 
-## Permissions (UC-014)
-
-- Which permissions the product offers by name, and what each of them allows [BR-?].
-- What the permission of a new chat allows besides its workspace and its own data [BR-?].
-- How long a permission that lasts holds, and how the user sees and takes back every one of them.
-
 ## Keys and providers (UC-005, BR-005, BR-006)
 
 - Whether the system checks the key with the provider beyond the check at saving (UC-005 A6), and what that check covers.
 - What each built-in provider needs besides a key, and which of its default settings the user can change [BR-006]. Its base URL can change only where the provider allows it. Each answer waits for checks with the provider.
-- Which API protocols a custom model API can use [BR-005]. The answer waits for technical research.
 - How the system knows that a custom model API needs a key, and whether the user can change the API protocol of a saved custom model API [BR-006].
-- The provider ID strings of the built-in providers [BR-005].
 - Which built-in providers have default models, and their model IDs, with each release [BR-005].
 - The model settings each added model holds in practice: its display name within the provider configuration, its context window, its highest output, its kinds of input. Which providers report them, and for which models [BR-005]. Values wait for evidence from each provider and from the implementation.
 - The reasoning levels of each added model, and the API value each level uses for each provider [BR-005]. Values wait for evidence from each provider and from the implementation.
 
 ## Context and compact (UC-015)
 
-- Does compacting ask the user before later requests work with the summary, or does the user's choice to compact stand for that?
 - Does the provider report a context usage for each of its models, and which of the numbers shown are exact? This is a quality-target question for an NFR [NFR-?].
-- Whether the system offers compacting of its own when the context is nearly full.
 
 ## Session export (UC-016)
 
@@ -116,4 +102,3 @@ Maintained by hand. Resolve a question by recording the decision, then move the 
 
 - The unit and the maximum of the request length [BR-002] (UC-003).
 - The number of attachments per request, and the size of one attachment [BR-001] (BR-001).
-- Whether the attachment count and size limits count for a file a request reads as a named reference, and from which moment (BR-001).
