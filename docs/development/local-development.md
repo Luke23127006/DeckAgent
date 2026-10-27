@@ -172,6 +172,11 @@ Workspace setup lives in `web.sqlite`. Session ownership distinguishes Default W
 Removing a Workspace keeps its Chats and saved work. A missing project folder blocks source reads, not history or deck viewing.
 Removing or repointing a Workspace is refused while its Chats have running or waiting requests.
 
+You can open another Chat, start a new Chat or switch Workspace while a request runs or awaits an answer.
+Work continues in its original Chat. Each Chat keeps its own draft, selected model and pending question.
+History rows show background request outcomes and a tab-local new-result marker. Opening the Chat reads its saved work without restarting it.
+Stop affects only the request shown in the current Chat. Host restart leaves interrupted work unconfirmed and never resumes it automatically.
+
 Missing directories are created automatically; existing data is reused. To use
 separate demo data and workspace, run:
 
@@ -217,6 +222,7 @@ pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM and reload/reconne
 pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
 pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
 pnpm.cmd test:workspace     # Workspace ownership, source isolation and offline import
+pnpm.cmd test:chat-lifecycle # Concurrent requests, stale replies and interrupted Chat recovery
 ```
 
 These checks use local fixtures and require no cloud keys. The contracts, manual

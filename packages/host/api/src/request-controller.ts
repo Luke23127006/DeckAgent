@@ -40,7 +40,7 @@ export class RequestController {
     }
     this.busy.add(request.sessionId)
     const entry: RequestEntry = {
-      snapshot: { requestId: randomUUID(), sessionId: request.sessionId, status: 'running' },
+      snapshot: { requestId: randomUUID(), sessionId: request.sessionId, status: 'running', revision: 1 },
       abort: new AbortController(),
       work: Promise.resolve(),
       replies: new Map(),
@@ -98,7 +98,7 @@ export class RequestController {
     const answer = reply.answer
     const input = answer.type === 'text' ? answer.text : answer.type === 'skip' ? 'Bỏ qua câu hỏi này' : question.options[answer.index]
     if (!input || (answer.type === 'skip' && !question.allowSkip)) throw new HttpError(400, 'INVALID_REPLY')
-    entry.snapshot = { requestId: id, sessionId: reply.sessionId, status: 'running' }
+    entry.snapshot = { requestId: id, sessionId: reply.sessionId, status: 'running', revision: (entry.snapshot.revision ?? 0) + 1 }
     const receipt = structuredClone(entry.snapshot)
     entry.replies.set(reply.replyId, { payload, receipt })
     // A bounded receipt cache is sufficient: evicted question IDs can never become current again.
@@ -151,7 +151,7 @@ export class RequestController {
         steps += result.steps
         const draft = result.status === 'completed' ? agent.question?.() : undefined
         if (!draft) break
-        const next: RequestSnapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: 'awaiting_user',
+        const next: RequestSnapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: 'awaiting_user', revision: (entry.snapshot.revision ?? 0) + 1,
           question: { ...questionDraft(draft), questionId: randomUUID(), version: ++version } }
         await this.requestState?.(next)
         entry.abort.signal.throwIfAborted()
@@ -188,7 +188,7 @@ export class RequestController {
       result = { status: 'failed', text: result.text, steps: result.steps,
         error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } }
     }
-    entry.snapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: result.status, result }
+    entry.snapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: result.status, result, revision: (entry.snapshot.revision ?? 0) + 1 }
     this.busy.delete(entry.snapshot.sessionId)
     for (const listener of this.listeners) listener(structuredClone(entry.snapshot))
   }

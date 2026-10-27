@@ -46,7 +46,8 @@ export class WebState {
         !this.db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
       if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new HttpError(500, 'SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
-      if (fresh) this.db.exec(`
+      if (fresh)
+        this.db.exec(`
         CREATE TABLE providers (id TEXT PRIMARY KEY, payload TEXT NOT NULL) STRICT;
         CREATE TABLE activities (
           sequence INTEGER PRIMARY KEY, session_id TEXT NOT NULL, request_id TEXT NOT NULL,
@@ -65,7 +66,7 @@ export class WebState {
         .run()
       this.db
         .prepare(
-          "UPDATE requests SET payload=json_set(payload, '$.status', 'unknown') WHERE json_extract(payload, '$.status') IN ('running','awaiting_user')",
+          "UPDATE requests SET payload=json_set(payload, '$.status', 'unknown', '$.revision', COALESCE(json_extract(payload,'$.revision'),0)+1) WHERE json_extract(payload, '$.status') IN ('running','awaiting_user')",
         )
         .run()
       if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
@@ -89,9 +90,30 @@ export class WebState {
 
   private async project(info: SessionInfo): Promise<WebSession> {
     const history = await this.sessions.read(info.sessionId)
-    const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+    const first = history
+      .find(message => message.role === 'user')
+      ?.content.replace(/\s+/g, ' ')
+      .trim()
     const title = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
-    return { ...info, title, selectable: this.selectable(info.selection) }
+    const row = this.db
+      .prepare('SELECT sequence,payload FROM requests WHERE session_id=? ORDER BY sequence DESC LIMIT 1')
+      .get(info.sessionId)
+    const latest = row ? this.readRequest(String(row.payload)) : undefined
+    return {
+      ...info,
+      title,
+      selectable: this.selectable(info.selection),
+      ...(latest
+        ? {
+            latestRequest: {
+              requestId: latest.requestId,
+              status: latest.status,
+              sequence: Number(row!.sequence),
+              ...(latest.revision === undefined ? {} : { revision: latest.revision }),
+            },
+          }
+        : {}),
+    }
   }
 
   async list(): Promise<readonly WebSession[]> {
@@ -99,8 +121,11 @@ export class WebState {
   }
 
   async create(value: unknown): Promise<WebSession> {
-    if (!record(value) || Object.keys(value).some(key => !['selection', 'workspaceId'].includes(key)) ||
-      (value.workspaceId !== undefined && typeof value.workspaceId !== 'string'))
+    if (
+      !record(value) ||
+      Object.keys(value).some(key => !['selection', 'workspaceId'].includes(key)) ||
+      (value.workspaceId !== undefined && typeof value.workspaceId !== 'string')
+    )
       throw new HttpError(400, 'INVALID_SESSION')
     const workspaceId = typeof value.workspaceId === 'string' ? value.workspaceId : 'default'
     if (!this.workspaces.exists(workspaceId)) throw new HttpError(404, 'WORKSPACE_NOT_FOUND')
@@ -131,63 +156,90 @@ export class WebState {
   }
 
   saveActivity(sessionId: string, requestId: string, event: ActivityEvent): void {
+    const now = Date.now()
+    const timing = event.status === 'running' ? { startedAt: now } : { endedAt: now }
     this.db
       .prepare(`INSERT INTO activities(session_id, request_id, activity_id, payload) VALUES (?, ?, ?, ?)
-      ON CONFLICT(request_id, activity_id) DO UPDATE SET payload=excluded.payload`)
-      .run(sessionId, requestId, event.id, JSON.stringify(event))
+      ON CONFLICT(request_id, activity_id) DO UPDATE SET payload=json_set(excluded.payload,
+        '$.startedAt', COALESCE(json_extract(activities.payload,'$.startedAt'),json_extract(excluded.payload,'$.startedAt')))`)
+      .run(sessionId, requestId, event.id, JSON.stringify({ ...event, ...timing }))
   }
 
   startRequest(sessionId: string, requestId: string, chosen: ModelSelection, historyStart: number): void {
     this.db
       .prepare('INSERT INTO requests(id, session_id, payload) VALUES (?, ?, ?)')
-      .run(requestId, sessionId, JSON.stringify({ requestId, selection: chosen, status: 'running', historyStart }))
+      .run(
+        requestId,
+        sessionId,
+        JSON.stringify({ requestId, selection: chosen, status: 'running', historyStart, revision: 1 }),
+      )
   }
 
   finishRequest(requestId: string, result: TurnResult, noticeIndex?: number): void {
     this.db
-      .prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.errorCode', ?, '$.noticeIndex', ?) WHERE id=?")
+      .prepare(
+        "UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.errorCode', ?, '$.noticeIndex', ?, '$.revision', COALESCE(json_extract(payload,'$.revision'),0)+1) WHERE id=?",
+      )
       .run(result.status, result.status === 'completed' ? null : result.error.code, noticeIndex ?? null, requestId)
   }
 
   requestState(snapshot: RequestSnapshot): void {
-    this.db.prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?)) WHERE id=? AND session_id=?")
-      .run(snapshot.status, JSON.stringify(snapshot.question ?? null), snapshot.requestId, snapshot.sessionId)
+    this.db
+      .prepare(
+        "UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?), '$.revision', ?) WHERE id=? AND session_id=?",
+      )
+      .run(
+        snapshot.status,
+        JSON.stringify(snapshot.question ?? null),
+        snapshot.revision ?? 0,
+        snapshot.requestId,
+        snapshot.sessionId,
+      )
   }
 
   requests(id: string): readonly StoredRequest[] {
     return this.db
       .prepare('SELECT payload FROM requests WHERE session_id=? ORDER BY sequence')
       .all(id)
-      .map(row => {
-        const value: unknown = JSON.parse(String(row.payload))
-        if (
-          !record(value) ||
-          typeof value.requestId !== 'string' ||
-          !record(value.selection) ||
-          typeof value.selection.provider !== 'string' ||
-          typeof value.selection.model !== 'string' ||
-          (value.status !== 'running' &&
-            value.status !== 'awaiting_user' &&
-            value.status !== 'completed' &&
-            value.status !== 'failed' &&
-            value.status !== 'cancelled' &&
-            value.status !== 'unknown') ||
-          (value.errorCode != null && (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-          (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
-          (value.noticeIndex != null && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
-        )
-          throw new HttpError(500, 'ACTIVITY_STORAGE')
-        if (value.status === 'awaiting_user' && value.question == null) throw new HttpError(500, 'ACTIVITY_STORAGE')
-        return {
-          requestId: value.requestId,
-          selection: { provider: value.selection.provider, model: value.selection.model },
-          status: value.status,
-          ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
-          ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
-          ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
-          ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
-        }
-      })
+      .map(row => this.readRequest(String(row.payload)))
+  }
+
+  private readRequest(payload: string): StoredRequest {
+    const value: unknown = JSON.parse(payload)
+    if (
+      !record(value) ||
+      (value.revision !== undefined &&
+        (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0)) ||
+      typeof value.requestId !== 'string' ||
+      !record(value.selection) ||
+      typeof value.selection.provider !== 'string' ||
+      typeof value.selection.model !== 'string' ||
+      (value.status !== 'running' &&
+        value.status !== 'awaiting_user' &&
+        value.status !== 'completed' &&
+        value.status !== 'failed' &&
+        value.status !== 'cancelled' &&
+        value.status !== 'unknown') ||
+      (value.errorCode != null && (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
+      (value.historyStart !== undefined &&
+        (typeof value.historyStart !== 'number' ||
+          !Number.isSafeInteger(value.historyStart) ||
+          value.historyStart < 0)) ||
+      (value.noticeIndex != null &&
+        (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
+    )
+      throw new HttpError(500, 'ACTIVITY_STORAGE')
+    if (value.status === 'awaiting_user' && value.question == null) throw new HttpError(500, 'ACTIVITY_STORAGE')
+    return {
+      requestId: value.requestId,
+      ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
+      selection: { provider: value.selection.provider, model: value.selection.model },
+      status: value.status,
+      ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
+      ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
+      ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
+      ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
+    }
   }
 
   activities(id: string): readonly StoredActivity[] {
@@ -200,6 +252,10 @@ export class WebState {
           !record(event) ||
           typeof event.id !== 'string' ||
           typeof event.label !== 'string' ||
+          (event.startedAt != null &&
+            (typeof event.startedAt !== 'number' || !Number.isFinite(event.startedAt) || event.startedAt < 0)) ||
+          (event.endedAt != null &&
+            (typeof event.endedAt !== 'number' || !Number.isFinite(event.endedAt) || event.endedAt < 0)) ||
           (event.kind !== 'model' && event.kind !== 'tool') ||
           (event.status !== 'running' &&
             event.status !== 'completed' &&
@@ -215,6 +271,8 @@ export class WebState {
           status: event.status,
           requestId: String(row.request_id),
           sequence: Number(row.sequence),
+          ...(typeof event.startedAt === 'number' ? { startedAt: event.startedAt } : {}),
+          ...(typeof event.endedAt === 'number' ? { endedAt: event.endedAt } : {}),
         }
       })
   }

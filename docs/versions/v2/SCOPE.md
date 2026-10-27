@@ -1,7 +1,7 @@
 # DeckAgent V2 — Scope
 
 **Planning baseline:** `docs/versions/v2` branch, commit `a417141f92bee1a5801e63f2bcfc6948922399d0` (27-10-2026).  
-**Status:** flow-level selection remains proposed. The owner authorized TASK-001 implementation on 27-10-2026; its candidate awaits manual acceptance. Remaining groups and V2 activation are pending.
+**Status:** flow-level selection remains proposed. The owner confirmed TASK-001 gates passed and requested TASK-002 on 27-10-2026. TASK-002 awaits manual acceptance; later groups and V2 activation remain pending.
 **Source of behavior:** `docs/spec/`, which describes the ideal product and is not version-specific.
 
 ## Goal

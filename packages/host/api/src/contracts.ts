@@ -11,6 +11,8 @@ export interface AgentRequest {
 }
 
 export interface RequestSnapshot {
+  /** Monotonic per-request state revision; absent on older Hosts. */
+  readonly revision?: number
   readonly requestId: string
   readonly sessionId: string
   readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled'
@@ -92,6 +94,7 @@ export interface ProviderTemplate {
 }
 
 export interface WebSession {
+  readonly latestRequest?: RequestSummary
   readonly workspaceId?: string
   /** Derived from the first user message; absent on older Hosts. */
   readonly title?: string
@@ -107,11 +110,14 @@ export interface WebSession {
 }
 
 export interface StoredActivity extends ActivityEvent {
+  readonly startedAt?: number
+  readonly endedAt?: number
   readonly requestId: string
   readonly sequence: number
 }
 
 export interface StoredRequest {
+  readonly revision?: number
   readonly requestId: string
   readonly selection: ModelSelection
   readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled' | 'unknown'
@@ -121,6 +127,14 @@ export interface StoredRequest {
   readonly historyStart?: number
   /** Public history index of a Host-authored recovery notice, when saved. */
   readonly noticeIndex?: number
+}
+
+export interface RequestSummary {
+  readonly requestId: string
+  readonly status: StoredRequest['status']
+  /** Durable request admission order, not a success indicator. */
+  readonly sequence: number
+  readonly revision?: number
 }
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
