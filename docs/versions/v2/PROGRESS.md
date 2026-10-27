@@ -6,6 +6,14 @@
 
 **Current candidate — 27-10-2026:** owner requested TASK-001 implementation. A/B/C are implemented on `feature/v2-task-001-workspace` with uncommitted changes; automated integration passes. G-001 awaits live-model manual acceptance. The remaining V2 scope/activation checkpoints are unchanged.
 
+## CI source-file substitution fixture — 27-10-2026
+
+- Owner supplied hosted `test:workspace` results: 17/18 PASS. The failing assertion was `injected === true`, before the security-result assertions.
+- Local reproduction: run the substitution case with Windows `TEMP`/`TMP` converted to lowercase. It fails with the same `false !== true` at line 148. A temporary probe confirmed `open` was mocked, but its canonical path differed from the fixture's original path string.
+- Fix: resolve the source root with `realpath` before matching the intercepted `open`. Add a folder-alias/junction variant. Both variants still require injection, an error result, and no substituted content returned to the Agent. Runtime access checks are unchanged.
+- Verification: Node 22.19.0, pnpm 11.28.5, Windows. `pnpm.cmd test:workspace` PASS 19/19, 0 skipped, with both normal and lowercase TEMP paths; lint, targeted formatting and whitespace checks PASS. Logs: `.local-only/v2-workspace-ci-path-fix.log` and `.local-only/v2-workspace-ci-path-fix-default.log`.
+- Scope: test fixture and evidence only; no application build was required. Hosted CI rerun and live-model manual G-001 remain unverified. No Issue publication or push was performed.
+
 ## Product / architecture checkpoints
 
 | Checkpoint | State | Evidence / next action |

@@ -1,5 +1,17 @@
 import assert from 'node:assert/strict'
-import { link, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile, stat } from 'node:fs/promises'
+import {
+  link,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+  stat,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -8,15 +20,20 @@ import { syncBuiltinESMExports } from 'node:module'
 import { ToolRegistry } from '../packages/agent/runtime/lib/index.js'
 import { registerFileTools, createWorkspaceReader } from '../packages/tools/filesystem/lib/index.js'
 
-async function fixture(t) {
+async function fixture(t, sourceAlias = false) {
   const base = await mkdtemp(join(tmpdir(), 'deckagent-isolation-'))
   t.after(() => rm(base, { recursive: true, force: true }))
-  const sourceRoot = join(base, 'project')
+  let sourceRoot = join(base, 'project')
   const root = join(base, 'chat-x')
   const other = join(base, 'chat-y')
   await Promise.all([mkdir(sourceRoot), mkdir(root), mkdir(other)])
   await writeFile(join(sourceRoot, 'report.md'), 'Project report')
   await writeFile(join(other, 'private.md'), 'Private chat Y')
+  if (sourceAlias) {
+    const alias = join(base, 'project-alias')
+    await symlink(sourceRoot, alias, process.platform === 'win32' ? 'junction' : 'dir')
+    sourceRoot = alias
+  }
   const registry = new ToolRegistry()
   const registration = await registerFileTools(registry, { root, sourceRoot })
   t.after(() => registration.dispose())
@@ -130,26 +147,28 @@ test('a private work root replaced after validation cannot receive or expose con
   assert.deepEqual(await readdir(root), ['secret'])
 })
 
-test('a source file substituted between validation and open is not returned to the Agent', async t => {
-  const { sourceRoot, execute } = await fixture(t)
-  const originalOpen = fsPromises.open
-  let injected = false
-  t.mock.method(fsPromises, 'open', async (path, ...args) => {
-    if (!injected && path === join(sourceRoot, 'report.md')) {
-      injected = true
-      await rename(path, join(sourceRoot, 'original-report.md'))
-      await writeFile(path, 'Substituted private content')
-    }
-    return originalOpen(path, ...args)
-  })
-  syncBuiltinESMExports()
-  try {
-    const result = await execute('read_file', { path: 'report.md', scope: 'source' })
-    assert.equal(injected, true)
-    assert.equal(result.isError, true)
-    assert.equal(result.content.includes('Substituted private content'), false)
-  } finally {
-    t.mock.restoreAll()
+for (const sourceAlias of [false, true])
+  test(`a source file substituted between validation and open is not returned to the Agent${sourceAlias ? ' through a folder alias' : ''}`, async t => {
+    const { sourceRoot, execute } = await fixture(t, sourceAlias)
+    const target = join(await realpath(sourceRoot), 'report.md')
+    const originalOpen = fsPromises.open
+    let injected = false
+    t.mock.method(fsPromises, 'open', async (path, ...args) => {
+      if (!injected && path === target) {
+        injected = true
+        await rename(path, join(sourceRoot, 'original-report.md'))
+        await writeFile(path, 'Substituted private content')
+      }
+      return originalOpen(path, ...args)
+    })
     syncBuiltinESMExports()
-  }
-})
+    try {
+      const result = await execute('read_file', { path: 'report.md', scope: 'source' })
+      assert.equal(injected, true)
+      assert.equal(result.isError, true)
+      assert.equal(result.content.includes('Substituted private content'), false)
+    } finally {
+      t.mock.restoreAll()
+      syncBuiltinESMExports()
+    }
+  })
