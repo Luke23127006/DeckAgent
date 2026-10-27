@@ -17,21 +17,3 @@ These are unsettled product-design questions. They are **not** selected use-case
 **Open:** What happens to a source reference when a user or Agent edits the supported content, or when a deck state is restored? A source for an earlier value must not be claimed as evidence for a changed value without justification.
 
 **Review with:** Direct Editing, Agent Editing, Undo/Redo and History.
-
-## Permission reuse
-
-### Duration and scope of lasting permissions
-
-**Agreed intent:** An Agent operation outside its current permission needs approval. The user can approve once, deny, or explicitly confirm an offered permission with a stated scope.
-
-**Open:** Which reusable permission scopes does DeckAgent offer, and when does each expire?
-
-**Review with:** Permission Design.
-
-### Review and revoke prior permission
-
-**Agreed intent:** The user can see and change the permission of a chat.
-
-**Open:** What overview of prior grants is available, and how does the user revoke continuing grants across requests?
-
-**Review with:** Permission Design.
