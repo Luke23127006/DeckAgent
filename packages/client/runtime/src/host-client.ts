@@ -1,5 +1,6 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, ApprovalReply } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
+import { stepApproval } from './step-approval.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -21,9 +22,15 @@ function snapshot(value: unknown, requestId?: string, sessionId?: string): Reque
     throw new Error('INVALID_RESPONSE')
   const result = value.result
   const revision = typeof value.revision === 'number' ? { revision: value.revision } : {}
-  if (value.status !== 'awaiting_user' && value.question !== undefined) throw new Error('INVALID_RESPONSE')
+  if (value.status !== 'awaiting_user' && (value.question !== undefined || value.approval !== undefined)) throw new Error('INVALID_RESPONSE')
   if (value.status === 'awaiting_user') {
     if (result !== undefined) throw new Error('INVALID_RESPONSE')
+    if ((value.question === undefined) === (value.approval === undefined)) throw new Error('INVALID_RESPONSE')
+    if (value.approval !== undefined) {
+      const approval = stepApproval(value.approval)
+      if (approval.requestId !== value.requestId || approval.sessionId !== value.sessionId) throw new Error('INVALID_RESPONSE')
+      return { ...revision, requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', approval }
+    }
     return {
       ...revision,
       requestId: value.requestId,
@@ -98,6 +105,7 @@ export class HostClient {
         'REPLY_STALE',
         'REPLY_CONFLICT',
         'INVALID_REPLY',
+        'APPROVAL_STALE', 'INVALID_APPROVAL',
       ]
       const code =
         object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
@@ -147,6 +155,12 @@ export class HostClient {
       await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json(),
       id,
     )
+  }
+
+  async approve(id: string, reply: ApprovalReply): Promise<RequestSnapshot> {
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/approval`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
+    })).json(), id, reply.sessionId)
   }
 
   async history(id: string): Promise<readonly HistoryMessage[]> {

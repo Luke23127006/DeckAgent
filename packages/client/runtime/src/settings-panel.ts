@@ -12,6 +12,19 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   providerList.setAttribute('aria-label', 'Configured providers')
   const kind = element('select')
   const form = element('form')
+  const defaultPermission = element('select')
+  defaultPermission.append(new Option('Workspace Access', 'workspace-access'), new Option('Provided Materials Only', 'provided-materials-only'))
+  const permissionStatus = element('p')
+  permissionStatus.setAttribute('role', 'status')
+  const defaultSection = element('section', undefined, 'permission-default')
+  defaultSection.append(field('Default permission for new Chats', defaultPermission),
+    button('Lưu quyền mặc định', () => {
+      defaultPermission.disabled = true
+      client.defaultPermission(defaultPermission.value === 'provided-materials-only' ? 'provided-materials-only' : 'workspace-access')
+        .then(() => { permissionStatus.textContent = 'Đã lưu. Chỉ áp dụng cho Chat mới.' })
+        .catch(() => { permissionStatus.textContent = 'Không lưu được quyền mặc định.' })
+        .finally(() => { defaultPermission.disabled = false })
+    }), permissionStatus)
   const fields = element('fieldset')
   const id = element('input')
   id.required = true
@@ -159,6 +172,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     fill(value)
   })
   async function refresh(selectedId = '') {
+    defaultPermission.value = await client.defaultPermission()
     const settings = await client.settings()
     providers = settings.providers
     builtIns = settings.builtIns
@@ -402,7 +416,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const header = element('header', undefined, 'settings-header')
   header.append(close, title)
   const body = element('div', undefined, 'settings-body')
-  body.append(message, form)
+  body.append(message, defaultSection, form)
   dialog.append(header, body, footer)
   dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose() })
   dialog.addEventListener('keydown', event => {

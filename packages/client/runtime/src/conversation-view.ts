@@ -149,7 +149,8 @@ export class ConversationView {
     const records = this.activities.filter(activity => activity.requestId === id)
     const tools = this.history.filter(message => message.role === 'tool' && message.toolCallId &&
       records.some(entry => entry.id === `tool-${message.toolCallId}` && entry.label === message.name))
-    const feedback = requestFeedback(state, errorCode, records, tools, this.disconnected.has(id))
+    const approval = live && (!stored || (live.revision ?? 0) >= (stored.revision ?? 0)) ? !!live.approval : !!stored?.approval
+    const feedback = requestFeedback(state, errorCode, records, tools, this.disconnected.has(id), approval)
     const { label } = feedback
     if (row.feedback.textContent !== feedback.detail) row.feedback.textContent = feedback.detail
     row.notice.hidden = state === 'running' || state === 'awaiting_user' || state === 'completed'

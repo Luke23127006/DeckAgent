@@ -9,6 +9,8 @@ import type {
   RequestSummary,
 } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
+import { stepApproval } from './step-approval.ts'
+import type { ChatPermission, PermissionPreset } from '@deckagent/host-api'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -107,6 +109,7 @@ function requestSummary(value: unknown): RequestSummary {
     typeof value.sequence !== 'number' ||
     !Number.isSafeInteger(value.sequence) ||
     value.sequence < 1 ||
+    (value.waitingFor !== undefined && value.waitingFor !== 'approval' && value.waitingFor !== 'question') ||
     (value.revision !== undefined &&
       (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0)) ||
     (value.status !== 'running' &&
@@ -121,6 +124,7 @@ function requestSummary(value: unknown): RequestSummary {
     requestId: value.requestId,
     status: value.status,
     sequence: value.sequence,
+    ...(value.waitingFor === 'approval' || value.waitingFor === 'question' ? { waitingFor: value.waitingFor } : {}),
     ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
   }
 }
@@ -166,6 +170,7 @@ export class ManagementClient {
         'MODEL_NOT_SELECTABLE',
         'PROVIDER_NAME_EXISTS',
         'INVALID_MODEL_METADATA',
+        'INVALID_PERMISSION', 'GRANT_UNAVAILABLE',
         'PROTOCOL_IMMUTABLE',
         'NEW_ENDPOINT_REQUIRES_KEY',
         'PROVIDER_BUSY',
@@ -329,17 +334,47 @@ export class ManagementClient {
           (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
       )
         invalid()
-      if (value.status === 'awaiting_user' && value.question === undefined) invalid()
+      if (value.status === 'awaiting_user' && ((value.question === undefined) === (value.approval === undefined))) invalid()
+      if (value.approval !== undefined) {
+        const approval = stepApproval(value.approval)
+        if (approval.sessionId !== id || approval.requestId !== value.requestId) invalid()
+      }
       return {
         requestId: value.requestId,
         ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
         selection: { provider: value.selection.provider, model: value.selection.model },
         status: value.status,
         ...(value.question === undefined ? {} : { question: userQuestion(value.question) }),
+        ...(value.approval === undefined ? {} : { approval: stepApproval(value.approval) }),
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
         ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
         ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
       }
     })
   }
+
+  async permissions(id: string): Promise<ChatPermission> {
+    return permission(await this.request(`sessions/${encodeURIComponent(id)}/permissions`), id)
+  }
+  async savePermission(id: string, preset: PermissionPreset): Promise<ChatPermission> {
+    return permission(await this.request(`sessions/${encodeURIComponent(id)}/permissions`, 'PUT', { preset }), id)
+  }
+  async revokeGrant(id: string, grantId: string): Promise<ChatPermission> {
+    return permission(await this.request(`sessions/${encodeURIComponent(id)}/permissions/${encodeURIComponent(grantId)}`, 'DELETE'), id)
+  }
+  async defaultPermission(preset?: PermissionPreset): Promise<PermissionPreset> {
+    const data = await this.request('permission-default', preset === undefined ? 'GET' : 'PUT', preset === undefined ? undefined : { preset })
+    if (!object(data) || (data.preset !== 'workspace-access' && data.preset !== 'provided-materials-only')) invalid()
+    return data.preset
+  }
+}
+
+function permission(value: unknown, id: string): ChatPermission {
+  if (!object(value) || value.sessionId !== id || (value.preset !== 'workspace-access' && value.preset !== 'provided-materials-only') || !Array.isArray(value.grants)) invalid()
+  return { sessionId: id, preset: value.preset, grants: value.grants.map((grant: unknown) => {
+    if (!object(grant) || typeof grant.grantId !== 'string' || typeof grant.target !== 'string' || grant.action !== 'read' || grant.scope !== 'file' ||
+      typeof grant.createdAt !== 'string' || (grant.revokedAt !== undefined && typeof grant.revokedAt !== 'string')) invalid()
+    return { grantId: grant.grantId, target: grant.target, action: 'read', scope: 'file', createdAt: grant.createdAt,
+      ...(typeof grant.revokedAt === 'string' ? { revokedAt: grant.revokedAt } : {}) }
+  }) }
 }

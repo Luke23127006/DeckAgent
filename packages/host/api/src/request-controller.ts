@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { DeckError } from '@deckagent/deck'
 import type { TurnResult } from '@deckagent/agent-runtime'
-import type { AgentRequest, HostOptions, RequestAgent, RequestReply, RequestSnapshot } from './contracts.ts'
+import type { AgentRequest, HostOptions, RequestAgent, RequestReply, RequestSnapshot, ApprovalDraft, ApprovalReply, ApprovalDecision } from './contracts.ts'
 import { questionDraft } from './request-reply.ts'
 import { HttpError } from './http-error.ts'
 export { HttpError } from './http-error.ts'
@@ -13,6 +13,9 @@ interface RequestEntry {
   readonly abort: AbortController
   work: Promise<void>
   resume?: (input: string) => void
+  resumeApproval?: (decision: ApprovalDecision) => void
+  approvalBusy?: boolean
+  approvalVersion?: number
   readonly replies: Map<string, { payload: string; receipt: RequestSnapshot }>
 }
 
@@ -26,7 +29,7 @@ export class RequestController {
   private workspaceChanges = 0
 
   constructor(private readonly openAgent: HostOptions['openAgent'], private readonly finishRequest?: HostOptions['finishRequest'],
-    private readonly requestState?: HostOptions['requestState']) {}
+    private readonly requestState?: HostOptions['requestState'], private readonly approvalAnswered?: HostOptions['approvalAnswered']) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {
     if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
@@ -53,7 +56,8 @@ export class RequestController {
     })
     let agent: RequestAgent
     try {
-      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId, request)
+      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId, request,
+        (draft, signal) => this.waitApproval(entry, draft, signal))
     } catch (error) {
       this.busy.delete(request.sessionId)
       this.entries.delete(entry.snapshot.requestId)
@@ -76,6 +80,65 @@ export class RequestController {
     const entry = this.entries.get(id)
     if (!entry) throw new HttpError(404, 'REQUEST_NOT_FOUND')
     return structuredClone(entry.snapshot)
+  }
+
+  private async waitApproval(entry: RequestEntry, draft: ApprovalDraft, signal: AbortSignal): Promise<ApprovalDecision> {
+    signal.throwIfAborted()
+    if (entry.snapshot.status !== 'running') throw new HttpError(409, 'APPROVAL_STALE')
+    const approval = { ...draft, approvalId: randomUUID(), requestId: entry.snapshot.requestId,
+      sessionId: entry.snapshot.sessionId, version: (entry.approvalVersion ?? 0) + 1 }
+    entry.approvalVersion = approval.version
+    const next: RequestSnapshot = { requestId: approval.requestId, sessionId: approval.sessionId,
+      status: 'awaiting_user', revision: (entry.snapshot.revision ?? 0) + 1, approval }
+    await this.requestState?.(next)
+    signal.throwIfAborted()
+    const decision = await new Promise<ApprovalDecision>((resolve, reject) => {
+      const abort = () => { delete entry.resumeApproval; reject(new Error('Stopped')) }
+      signal.addEventListener('abort', abort, { once: true })
+      entry.resumeApproval = value => { signal.removeEventListener('abort', abort); delete entry.resumeApproval; resolve(value) }
+      entry.snapshot = next
+      for (const listener of this.listeners) listener(structuredClone(next))
+    })
+    signal.throwIfAborted()
+    return decision
+  }
+
+  async approve(id: string, value: unknown): Promise<RequestSnapshot> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new HttpError(400, 'INVALID_APPROVAL')
+    const input = value as Record<string, unknown>
+    if (Object.keys(input).some(key => !['sessionId','approvalId','version','replyId','decision'].includes(key)) ||
+      typeof input.sessionId !== 'string' || typeof input.approvalId !== 'string' ||
+      !Number.isSafeInteger(input.version) || typeof input.replyId !== 'string' || !/^[\w-]{1,100}$/.test(input.replyId) ||
+      !['deny','once','scope'].includes(String(input.decision))) throw new HttpError(400, 'INVALID_APPROVAL')
+    const reply: ApprovalReply = { sessionId: input.sessionId, approvalId: input.approvalId,
+      version: Number(input.version), replyId: input.replyId, decision: input.decision as ApprovalDecision }
+    const entry = this.entries.get(id)
+    if (!entry) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+    if (this.closed || entry.abort.signal.aborted || reply.sessionId !== entry.snapshot.sessionId) throw new HttpError(409, 'APPROVAL_STALE')
+    const payload = JSON.stringify(reply)
+    const key = `approval:${reply.replyId}`
+    const previous = entry.replies.get(key)
+    if (previous) {
+      if (previous.payload !== payload) throw new HttpError(409, 'REPLY_CONFLICT')
+      return structuredClone(previous.receipt)
+    }
+    const approval = entry.snapshot.approval
+    if (entry.approvalBusy || !entry.resumeApproval || entry.snapshot.status !== 'awaiting_user' || !approval ||
+      approval.approvalId !== reply.approvalId || approval.version !== reply.version ||
+      (reply.decision === 'scope' && !approval.continuing)) throw new HttpError(409, 'APPROVAL_STALE')
+    entry.approvalBusy = true
+    try {
+      await this.approvalAnswered?.(approval, reply.decision)
+      entry.abort.signal.throwIfAborted()
+      const next: RequestSnapshot = { requestId: id, sessionId: reply.sessionId, status: 'running', revision: (entry.snapshot.revision ?? 0) + 1 }
+      await this.requestState?.(next)
+      entry.abort.signal.throwIfAborted()
+      entry.snapshot = next
+      entry.replies.set(key, { payload, receipt: structuredClone(next) })
+      for (const listener of this.listeners) listener(structuredClone(next))
+      entry.resumeApproval(reply.decision)
+      return structuredClone(next)
+    } finally { entry.approvalBusy = false }
   }
 
   active(sessionId: string): string | undefined {

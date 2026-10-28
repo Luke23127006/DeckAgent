@@ -1,9 +1,9 @@
 import { Context } from '@deepseek-ai/cordis'
-import { RuntimeError, ToolRegistry, runtimePlugin } from '@deckagent/agent-runtime'
+import { RuntimeError, ToolRegistry, runtimePlugin, ToolFailure } from '@deckagent/agent-runtime'
 import type { AgentHandle, Message, SendOptions, TurnResult } from '@deckagent/agent-runtime'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError } from '@deckagent/host-api'
-import type { AgentRequest, QuestionDraft, RequestAgent } from '@deckagent/host-api'
+import type { AgentRequest, QuestionDraft, RequestAgent, ChatPermission, RequestApproval } from '@deckagent/host-api'
 import type { DeckService, DeckSnapshot, OutlineDraft, OutlineProposal } from '@deckagent/deck'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import { registerProposeOutline, registerPublishSlide, registerReadSlide } from '@deckagent/presentation-tools'
@@ -25,6 +25,9 @@ interface WebRequestOptions {
   readonly presentation: DeckService
   readonly state: WebState
   readonly catalog: ProviderStore
+  readonly permission: ChatPermission
+  readonly requestApproval: RequestApproval
+  readonly blockedRoots: readonly string[]
 }
 
 interface PreparedTurn {
@@ -45,6 +48,17 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
   const info = await store.getInfo(sessionId)
   if (!info?.selection || !state.selectable(info.selection)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
   const chosen = info.selection
+  const permission = structuredClone(options.permission)
+  const denied = new Set<string>()
+  const granted = new Set(permission.grants.filter(grant => !grant.revokedAt).map(grant => grant.target))
+  const authorizeRead = async (target: string, scope: 'source' | 'external', signal: AbortSignal) => {
+    if ((scope === 'source' && permission.preset === 'workspace-access') || granted.has(target)) return
+    if (denied.has(target)) throw new ToolFailure('PERMISSION_DENIED')
+    const decision = await options.requestApproval({ action: 'read', target,
+      reason: scope === 'source' ? 'Provided Materials Only does not include unnamed project files.' : 'This file is outside the request permission.', continuing: true }, signal)
+    if (decision === 'deny') { denied.add(target); throw new ToolFailure('PERMISSION_DENIED') }
+    if (decision === 'scope') granted.add(target)
+  }
   const outlineState = presentation.outlineSnapshot(sessionId)
   const action = reviewAction(request, outlineState)
   if (request.outlineTarget) presentation.currentOutline(sessionId, request.outlineTarget)
@@ -97,6 +111,7 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
     })()
     try {
       files = await registerFileTools(tools, { root: workspace,
+        authorizeRead, blockedRoots: options.blockedRoots,
         ...(options.sourceRoot ? { sourceRoot: options.sourceRoot } : {}),
         ...(options.sourceIdentity ? { sourceIdentity: options.sourceIdentity } : {}),
       })

@@ -11,9 +11,11 @@ import { requestReply } from './request-reply.ts'
 export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ModelDescriptor, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
 export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
+export { validateStepApproval } from './step-approval.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
 export type { Workspace } from './contracts.ts'
 export type { RequestSummary } from './contracts.ts'
+export type { PermissionPreset, PermissionGrant, ChatPermission, ApprovalDraft, StepApproval, ApprovalDecision, ApprovalReply, RequestApproval } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -88,7 +90,7 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState)
+  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState, options.approvalAnswered)
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -185,6 +187,16 @@ export async function startHost(options: HostOptions) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
         json(res, 200, await management.settings()); return
       }
+      if (url.pathname === '/api/permission-default' && management.defaultPermission) {
+        if (req.method === 'GET') { json(res, 200, { preset: await management.defaultPermission() }); return }
+        if (req.method === 'PUT' && management.saveDefaultPermission) { json(res, 200, { preset: await management.saveDefaultPermission(await readJson(req)) }); return }
+      }
+      const permission = /^\/api\/sessions\/([\w-]{1,100})\/permissions(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
+      if (permission && management.permissions) {
+        if (req.method === 'GET' && !permission[2]) { json(res, 200, await management.permissions(permission[1]!)); return }
+        if (req.method === 'PUT' && !permission[2] && management.savePermission) { json(res, 200, await management.savePermission(permission[1]!, await readJson(req))); return }
+        if (req.method === 'DELETE' && permission[2] && management.revokeGrant) { json(res, 200, await management.revokeGrant(permission[1]!, permission[2])); return }
+      }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
         if (req.method === 'PUT') await management.saveProvider(provider[1]!, await readJson(req))
@@ -219,6 +231,8 @@ export async function startHost(options: HostOptions) {
       return
     }
     const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)
+    const approval = /^\/api\/requests\/([\w-]+)\/approval$/.exec(url.pathname)
+    if (approval && req.method === 'POST') { json(res, 202, await controller.approve(approval[1]!, await readJson(req))); return }
     if (reply && req.method === 'POST') {
       json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req)))); return
     }

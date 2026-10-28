@@ -1,9 +1,11 @@
-import { open } from 'node:fs/promises'
+import { open, lstat, realpath } from 'node:fs/promises'
 import { isAbsolute, relative } from 'node:path'
 import type { ToolRegistry } from '@deckagent/agent-runtime'
+import { ToolFailure } from '@deckagent/agent-runtime'
 
 import { createWorkspaceAccess } from './workspace.ts'
 import type { DirectoryIdentity } from './workspace.ts'
+import { readApprovedFile } from './policy-access.ts'
 
 export type { DirectoryIdentity } from './workspace.ts'
 
@@ -14,6 +16,8 @@ export interface FileToolOptions {
   readonly sourceRoot?: string
   /** Registry identity of the folder the user selected, before this request. */
   readonly sourceIdentity?: DirectoryIdentity
+  readonly blockedRoots?: readonly string[]
+  readonly authorizeRead?: (target: string, scope: 'source' | 'external', signal: AbortSignal) => Promise<void>
 }
 
 /** Read-only public seam; shares all file-tool grant and size restrictions. */
@@ -39,7 +43,14 @@ export async function registerFileTools(registry: ToolRegistry, options: FileToo
     }
     if (overlap(access.root, source.root) || overlap(source.root, access.root))
       throw new Error('Work and source roots must be separate')
-    readSource = source.read
+    readSource = async (value, signal) => {
+      const target = await source.resolvePath(value)
+      const expected = await lstat(target)
+      await options.authorizeRead?.(await realpath(target), 'source', signal)
+      signal.throwIfAborted()
+      await source.verifyOpenFile(value, expected)
+      return source.read(value, signal)
+    }
   }
   const unregister: (() => void)[] = []
   try {
@@ -58,7 +69,8 @@ export async function registerFileTools(registry: ToolRegistry, options: FileToo
           signal.throwIfAborted()
           const content = String(args.content)
           if (Buffer.byteLength(content) > MAX_BYTES) throw new Error('File too large')
-          const path = await resolvePath(args.path)
+          let path: string
+          try { path = await resolvePath(args.path) } catch { throw new ToolFailure('PERMISSION_BOUNDARY') }
           signal.throwIfAborted()
           // Exclusive creation also rejects an existing symlink/hardlink at the leaf.
           const file = await open(path, 'wx')
@@ -77,7 +89,7 @@ export async function registerFileTools(registry: ToolRegistry, options: FileToo
       registry.register({
         name: 'read_file',
         description:
-          'Read a UTF-8 file (maximum 256 KiB). scope=work reads private drafts; scope=source reads the read-only project folder when available.',
+          'Read a UTF-8 file (maximum 256 KiB). scope=work reads private drafts; scope=source reads a project-relative file. scope=external uses an absolute local file path and may wait for explicit user approval. Private Chat data and original-file writes cannot be approved.',
         parameters: {
           type: 'object',
           properties: { path: { type: 'string' }, scope: { type: 'string' } },
@@ -85,6 +97,10 @@ export async function registerFileTools(registry: ToolRegistry, options: FileToo
           additionalProperties: false,
         },
         async execute(args, { signal }) {
+          if (args.scope === 'external') {
+            if (!options.authorizeRead || !options.blockedRoots) throw new Error('External access unavailable')
+            return readApprovedFile(args.path, signal, options.blockedRoots, (target, signal) => options.authorizeRead!(target, 'external', signal))
+          }
           if (args.scope !== undefined && args.scope !== 'work' && args.scope !== 'source')
             throw new Error('Unknown file scope')
           if (args.scope === 'source') {

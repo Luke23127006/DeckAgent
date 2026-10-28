@@ -20,7 +20,11 @@ G-003 PASS; per-Chat work/source roots and per-Chat request state exist.
 
 **P4 — Execution:** an active request waits on approval and cannot continue past the blocked step; snapshot permission remains stable for that request.
 
-These are **proposed V2 interfaces and semantics**, not declarations that the existing code already exports these names. At group kickoff, A records the final public names in this README and supplies small mock fixtures. B and C start immediately using those fixtures; they do not wait for A's full production implementation. Changes to this contract require an explicit cross-lane review.
+The candidate implements these proposed semantics through `ChatPermission`, `PermissionGrant`, `ApprovalDraft`, `StepApproval`, `ApprovalReply` and `RequestApproval` in Host API. Approval uses `awaiting_user` with an `approval` field; clarification uses `question`. Exactly one is present while waiting. The separate `POST /api/requests/:id/approval` endpoint accepts `{sessionId,approvalId,version,replyId,decision:'deny'|'once'|'scope'}` and never accepts a caller-supplied target. Pending identity is durable; accepted answers are stored before resuming. Repeating the same receipt is idempotent; conflicting/stale answers are refused.
+
+`PermissionStore` stays app-local in existing `web.sqlite`; no new package or Session schema is introduced. It adds permission, exact-file grant, default and approval-decision tables. `registerFileTools` receives a trusted `authorizeRead` callback and protected application roots. It validates the final canonical target and file identity around approval and reading. Continuing grants name one exact file, not its parent folder. The integration choice remains a [proposed Host/tool boundary](../../../../adr/0003-chat-step-approval-boundary.md).
+
+Fixtures: [permission lifecycle and request snapshots](../../../../../tests/v2-permissions.test.mjs), [negative filesystem access matrix](../../../../../tests/v2-permission-isolation.test.mjs), and [pending approval before Host termination](../../../../../tests/fixtures/permission-web.mjs). See [implementation evidence and manual acceptance](HANDOFF.md). G-004 remains unverified until manual acceptance.
 
 ## Parallel subtasks
 

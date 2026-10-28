@@ -136,6 +136,11 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:chat-lifecycle
 
+      - name: Per-Chat permissions and approval isolation
+        id: permissions
+        timeout-minutes: 2
+        run: pnpm test:permissions
+
       - name: Record verification evidence
         # TASK-007 browser coverage runs in the existing browser step above.
         # TASK-006 browser coverage runs in the existing browser step above.
@@ -163,6 +168,7 @@ jobs:
           RECOVERY_EDITING_RESULT: ${{ steps.recovery_editing.outcome }}
           WORKSPACE_STORAGE_RESULT: ${{ steps.workspace_storage.outcome }}
           CHAT_LIFECYCLE_RESULT: ${{ steps.chat_lifecycle.outcome }}
+          PERMISSIONS_RESULT: ${{ steps.permissions.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -188,6 +194,7 @@ jobs:
           - Recovery / Stop / scoped editing / history: $env:RECOVERY_EDITING_RESULT
           - Workspace ownership / source isolation / offline import: $env:WORKSPACE_STORAGE_RESULT
           - Concurrent Chats / stale replies / restart recovery: $env:CHAT_LIFECYCLE_RESULT
+          - Per-Chat permissions / approval / isolation: $env:PERMISSIONS_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in PROGRESS.md. A successful push run on
