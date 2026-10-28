@@ -67,6 +67,6 @@ If the model finishes before you switch, repeat with a longer request; that run 
 
 ## Gate and handoff
 
-G-002 stays NOT VERIFIED pending the manual checklist. The owner can supply PASS/FAIL per row and safe evidence. No real user data or model key was used by the agent. No commit, push or Issue publication was performed; Issue links remain pending authorization.
+The owner confirmed all G-002 manual gates passed on 28-10-2026 and requested TASK-003. The exact manual-run SHA and separate artifact were not supplied. No real user data or model key was used by the agent. No Issue publication was performed; Issue links remain pending authorization.
 
-TASK-003 integration remains dependent on G-002 PASS. Permissions/approval UI, attachments, web research and compaction remain in their later groups.
+TASK-003 integration may proceed after the owner-confirmed G-002 PASS. Permissions/approval UI, attachments, web research and compaction remain in their later groups.

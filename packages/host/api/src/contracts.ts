@@ -73,11 +73,23 @@ export interface HostOptions {
 export interface ProviderSettings {
   readonly id: string
   readonly displayName: string
-  readonly protocol: 'chat-completions' | 'anthropic-messages' | 'gemini'
+  readonly protocol: 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
   readonly baseUrl: string
   readonly models: readonly string[]
+  readonly modelMetadata?: readonly ModelDescriptor[]
   readonly hasKey: boolean
   readonly keyAvailable: boolean
+}
+
+/** Missing fields mean Unknown; a catalog ID alone carries no capability claim. */
+export interface ModelDescriptor {
+  readonly provider: string
+  readonly model: string
+  readonly displayName?: string
+  readonly contextWindow?: number
+  readonly maxOutputTokens?: number
+  readonly inputModalities?: readonly ('text' | 'image' | 'audio' | 'video')[]
+  readonly reasoningOptions?: readonly { readonly label: string; readonly apiValue: string }[]
 }
 
 export interface WebSettings {

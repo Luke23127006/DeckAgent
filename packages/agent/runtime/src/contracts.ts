@@ -28,6 +28,7 @@ export interface ToolSchema {
 export interface ModelSelection {
   readonly provider: string
   readonly model: string
+  readonly reasoningLevel?: string
 }
 
 /** Protocol metadata is replayed only by the matching connection and model. Never credentials. */

@@ -21,7 +21,7 @@
     "test:cordis-smoke": "node --test tests/cordis-smoke.test.mjs",
     "start:cordis-smoke": "node apps/cordis-smoke/lib/cli.js",
     "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
-    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs",
+    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs tests/v2-responses.test.mjs tests/v2-model-capabilities.test.mjs",
     "test:session-persistence": "node --test tests/session-persistence.test.mjs",
     "test:chat-setup": "node --test tests/chat-setup.test.mjs",
     "chat": "node --env-file-if-exists=.env --use-system-ca apps/agent-runtime/lib/chat.js",

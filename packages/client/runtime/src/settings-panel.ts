@@ -1,4 +1,4 @@
-import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
+import type { ModelDescriptor, ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
 import type { ManagementClient } from './management-client.ts'
 import { button, element, field } from './dom.ts'
 
@@ -21,7 +21,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   name.required = true
   name.maxLength = 100
   const protocol = element('select')
-  for (const value of ['chat-completions', 'anthropic-messages', 'gemini']) protocol.append(new Option(value, value))
+  for (const value of ['chat-completions', 'responses', 'anthropic-messages', 'gemini']) protocol.append(new Option(value, value))
   const url = element('input')
   url.type = 'url'
   url.required = true
@@ -34,6 +34,21 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const models = element('textarea')
   models.rows = 4
   models.placeholder = 'Nhập model ID, mỗi dòng một ID'
+  const metadataModel = element('select')
+  const metadataName = element('input')
+  const contextWindow = element('input')
+  contextWindow.type = 'number'; contextWindow.min = '1'; contextWindow.step = '1'
+  const maxOutput = element('input')
+  maxOutput.type = 'number'; maxOutput.min = '1'; maxOutput.step = '1'
+  const inputModalities = element('input')
+  inputModalities.placeholder = 'text, image, audio, video'
+  const reasoningOptions = element('textarea')
+  reasoningOptions.rows = 3
+  reasoningOptions.placeholder = 'Label=api_value, one per line'
+  const metadataFields = element('section', undefined, 'model-metadata')
+  metadataFields.append(element('h4', 'Model settings'), field('Model ID', metadataModel), field('Display name', metadataName),
+    field('Context window', contextWindow), field('Max output tokens', maxOutput),
+    field('Input modalities', inputModalities), field('Reasoning levels (label=API value)', reasoningOptions))
   const available = element('select')
   available.multiple = true
   available.size = 5
@@ -85,7 +100,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   let selectedKind = ''
   let wizard = false
   let step = 1
-  const snapshot = () => JSON.stringify([id.value, name.value, protocol.value, url.value, key.value, removeKey.checked, models.value, manual.value])
+  let metadataDraft: ModelDescriptor[] = []
+  const snapshot = () => JSON.stringify([id.value, name.value, protocol.value, url.value, key.value, removeKey.checked, models.value, manual.value, metadataDraft,
+    metadataName.value, contextWindow.value, maxOutput.value, inputModalities.value, reasoningOptions.value])
   const canDiscard = () => !busy && (snapshot() === baseline || confirm('Bỏ các thay đổi chưa lưu? Cấu hình đã lưu và nội dung chat vẫn được giữ.'))
   function showUnexpected() {
     message.textContent = 'Không cập nhật được cài đặt.'
@@ -104,6 +121,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     removeKey.disabled = !!template
     key.required = !!template && !value?.keyAvailable
     models.value = value?.models.join('\n') ?? ''
+    metadataDraft = [...structuredClone(value?.modelMetadata ?? [])]
+    refreshMetadataModels()
     manual.value = ''
     remove.disabled = !value
     remove.hidden = wizard || !value
@@ -207,6 +226,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
             ? 'Nhập key cho endpoint mới hoặc chọn gỡ key đã lưu.'
             : code === 'PROVIDER_NAME_EXISTS'
               ? 'Hãy chọn tên hiển thị không trùng.'
+              : code === 'INVALID_MODEL_METADATA'
+                ? 'Kiểm tra model settings: số phải dương, max output không vượt context window, modality là text/image/audio/video và reasoning dùng Label=api_value duy nhất.'
               : 'Không lưu được cài đặt. Kiểm tra các trường và quyền của Host.'
     } finally {
       busy = false
@@ -232,6 +253,13 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         .split(/\r?\n/)
         .map(value => value.trim())
         .filter(Boolean),
+      modelMetadata: metadataDraft.filter(item => models.value.split(/\r?\n/).map(value => value.trim()).includes(item.model))
+        .map(item => protocol.value === 'responses' ? item : { provider: item.provider, model: item.model,
+          ...(item.displayName ? { displayName: item.displayName } : {}),
+          ...(item.contextWindow ? { contextWindow: item.contextWindow } : {}),
+          ...(item.maxOutputTokens ? { maxOutputTokens: item.maxOutputTokens } : {}),
+          ...(item.inputModalities ? { inputModalities: item.inputModalities } : {}),
+        }),
       ...(removeKey.checked ? { key: '' } : credential ? { key: credential } : {}),
     }
     perform(async () => {
@@ -302,7 +330,45 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       chip.append(element('span', model), remove)
       modelChips.append(chip)
     }
+    refreshMetadataModels()
   }
+  function refreshMetadataModels() {
+    const selected = metadataModel.value
+    const ids = [...new Set(models.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean))]
+    metadataModel.replaceChildren(...ids.map(value => new Option(value, value)))
+    metadataModel.value = ids.includes(selected) ? selected : ids[0] ?? ''
+    metadataFields.hidden = !ids.length
+    showMetadata()
+  }
+  function showMetadata() {
+    const entry = metadataDraft.find(item => item.model === metadataModel.value)
+    metadataName.value = entry?.displayName ?? ''
+    contextWindow.value = entry?.contextWindow?.toString() ?? ''
+    maxOutput.value = entry?.maxOutputTokens?.toString() ?? ''
+    inputModalities.value = entry?.inputModalities?.join(', ') ?? ''
+    reasoningOptions.value = entry?.reasoningOptions?.map(option => `${option.label}=${option.apiValue}`).join('\n') ?? ''
+    reasoningOptions.disabled = protocol.value !== 'responses'
+    reasoningOptions.parentElement!.hidden = protocol.value !== 'responses'
+  }
+  metadataModel.addEventListener('change', showMetadata)
+  protocol.addEventListener('change', showMetadata)
+  const saveMetadataDraft = () => {
+    if (!metadataModel.value) return
+    const descriptor: ModelDescriptor = { provider: id.value, model: metadataModel.value,
+      ...(metadataName.value.trim() ? { displayName: metadataName.value.trim() } : {}),
+      ...(contextWindow.value ? { contextWindow: Number(contextWindow.value) } : {}),
+      ...(maxOutput.value ? { maxOutputTokens: Number(maxOutput.value) } : {}),
+      ...(inputModalities.value.trim() ? { inputModalities: inputModalities.value.split(',').map(value => value.trim()) as ('text' | 'image' | 'audio' | 'video')[] } : {}),
+      ...(protocol.value === 'responses' && reasoningOptions.value.trim() ? { reasoningOptions: reasoningOptions.value.split(/\r?\n/).map(line => {
+        const separator = line.indexOf('=')
+        return separator < 0 ? { label: line.trim(), apiValue: '' }
+          : { label: line.slice(0, separator).trim(), apiValue: line.slice(separator + 1).trim() }
+      }) } : {}),
+    }
+    metadataDraft = metadataDraft.filter(item => item.model !== descriptor.model)
+    if (Object.keys(descriptor).length > 2) metadataDraft.push(descriptor)
+  }
+  for (const input of [metadataName, contextWindow, maxOutput, inputModalities, reasoningOptions]) input.addEventListener('input', saveMetadataDraft)
   models.addEventListener('input', renderModels)
   addCatalog.addEventListener('click', renderModels)
   const manualRow = element('div', undefined, 'manual-model-row')
@@ -312,7 +378,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   // Catalog and manual entry share the same draft; nothing persists until Save.
   modelSection.replaceChildren(element('h3', '3 · Thêm model'),
     element('p', 'Catalog không bảo đảm quyền truy cập hoặc tương thích. Bạn có thể thêm model ID bằng tay.'),
-    modelChips, manualRow, loadCatalog, field('Model catalog', available), addCatalog, advanced)
+    modelChips, manualRow, loadCatalog, field('Model catalog', available), addCatalog, metadataFields, advanced)
   const savedProviders = element('details', undefined, 'saved-providers')
   savedProviders.append(element('summary', 'Cấu hình đã lưu'), providerList)
   const providerStep = element('section', undefined, 'provider-step')
