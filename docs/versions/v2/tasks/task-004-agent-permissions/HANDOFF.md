@@ -34,6 +34,8 @@ The first preset test failed with HTTP 404 before implementation. The new browse
 
 ## Negative access matrix
 
+The hosted browser run later exposed a fixture path comparison failure: Windows TEMP used `RUNNER~1` while the approval used canonical `runneradmin`. Lowercase TEMP reproduced the same string mismatch locally. Expected approval and grant paths now use `realpath()` without relaxing exact equality or changing runtime policy. The default-TEMP browser suite passed 8/8; browser and permission suites together passed 15/15 with lowercase TEMP. Hosted CI rerun remains pending.
+
 | Attempt | Result |
 |---|---|
 | Current private draft read/write | Allowed under existing root checks; writes never overwrite |

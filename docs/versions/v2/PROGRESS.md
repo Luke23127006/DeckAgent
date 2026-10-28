@@ -6,6 +6,13 @@
 
 **Current work — 28-10-2026:** owner confirmed all TASK-003 gates passed and requested TASK-004. G-003 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-004 automated checks pass on `feature/v2-task-004-permissions`, based on `17ad50f`; manual G-004 remains pending. Other V2 scope/activation checkpoints are unchanged.
 
+## CI permission path aliases — 28-10-2026
+
+- Hosted browser smoke failed 1/8 because its expected TEMP path used Windows short-name `RUNNER~1`, while the approval correctly displayed the canonical `runneradmin` path.
+- Reproduced locally before the fix with lowercase `TEMP`/`TMP`: the same approval-target assertion failed because canonical and original path strings differed in casing.
+- Fix: compare the displayed approval target and persisted grant/source targets with `realpath()` of the fixture files. Keep exact equality and all permission/isolation assertions; application authorization is unchanged.
+- Verification: Windows, Node 22.19.0, Chrome. Default-TEMP `pnpm.cmd test:browser-smoke` PASS 8/8. Browser plus permission lifecycle/isolation suites with lowercase TEMP PASS 15/15. Lint, targeted permission-test formatting and `git diff --check` PASS. No build was required for this test-only change. The hosted short-name environment still needs its CI rerun.
+
 ## CI source-file substitution fixture — 27-10-2026
 
 - Owner supplied hosted `test:workspace` results: 17/18 PASS. The failing assertion was `injected === true`, before the security-result assertions.

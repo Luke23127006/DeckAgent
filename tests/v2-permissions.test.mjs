@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
@@ -104,7 +104,7 @@ test('a running request retains its preset while the next request uses the chang
   await until(async () => (await api(`requests/${first.requestId}`)).status === 'completed')
   const second = await api('requests', 'POST', { sessionId: chat.sessionId, input: 'Read source again' })
   const approval = await until(async () => (await api(`requests/${second.requestId}`)).approval)
-  assert.equal(approval.target, join(source, 'notes.txt'))
+  assert.equal(approval.target, await realpath(join(source, 'notes.txt')))
   await api(`requests/${second.requestId}/stop`, 'POST')
 })
 
@@ -152,7 +152,7 @@ test('outside reads wait for a distinct versioned approval; once, denial and sta
     return value.approval && value
   })
   assert.equal(pending.question, undefined)
-  assert.equal(pending.approval.target, target)
+  assert.equal(pending.approval.target, await realpath(target))
   assert.equal(calls, 1)
   assert.equal(
     (await api(`sessions/${chat.sessionId}/history`)).data.some(message => message.content === 'Approved contents'),
@@ -256,7 +256,7 @@ test('continuing approval survives restart, belongs to one Chat and can be revok
   })
   await until(async () => (await api(`requests/${request.requestId}`)).status === 'completed')
   const grant = (await api(`sessions/${x.sessionId}/permissions`)).grants[0]
-  assert.equal(grant.target, target)
+  assert.equal(grant.target, await realpath(target))
   const other = await api('requests', 'POST', { sessionId: y.sessionId, input: 'Read' })
   await until(async () => (await api(`requests/${other.requestId}`)).approval)
   await api(`requests/${other.requestId}/stop`, 'POST')

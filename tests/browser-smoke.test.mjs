@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -161,7 +161,7 @@ test('permission approval stays with its Chat across navigation and reload, and 
   await open(x.sessionId)
   await send('Read outside file')
   await eventually(() => evaluate(`!document.querySelector('.step-approval').hidden`),'Approval missing')
-  assert.equal(await evaluate(`document.querySelector('.step-approval pre').textContent`),targetPath)
+  assert.equal(await evaluate(`document.querySelector('.step-approval pre').textContent`),await realpath(targetPath))
   await evaluate(`window.oldApproval=document.querySelector('.step-approval button');(()=>{const input=document.querySelector('.composer textarea');input.value='Unsent draft';input.dispatchEvent(new Event('input'));return true})()`)
   await open(y.sessionId)
   assert.equal(await evaluate(`document.querySelector('.step-approval').hidden`),true)
