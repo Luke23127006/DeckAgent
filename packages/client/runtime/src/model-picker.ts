@@ -69,9 +69,11 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
     }
     options.setAttribute('aria-labelledby', `model-tab-${active}`)
     options.replaceChildren()
-    for (const model of providers.find(provider => provider.id === active)?.models ?? []) {
+    const provider = providers.find(provider => provider.id === active)
+    for (const model of provider?.models ?? []) {
       const value = JSON.stringify({ provider: active, model })
-      const option = button(model, () => {
+      const metadata = provider?.modelMetadata?.find(item => item.model === model)
+      const option = button(metadata?.displayName ?? model, () => {
         if (select.disabled) return
         select.value = value
         select.dispatchEvent(new Event('change'))
@@ -81,6 +83,18 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
       option.setAttribute('aria-pressed', String(select.value === value))
       option.title = model
       options.append(option)
+      for (const level of metadata?.reasoningOptions ?? []) {
+        const levelValue = JSON.stringify({ provider: active, model, reasoningLevel: level.label })
+        const choice = button(`${metadata?.displayName ?? model} · ${level.label}`, () => {
+          if (select.disabled) return
+          select.value = levelValue
+          select.dispatchEvent(new Event('change'))
+          toggle(false)
+        })
+        choice.disabled = select.disabled
+        choice.setAttribute('aria-pressed', String(select.value === levelValue))
+        options.append(choice)
+      }
     }
     if (!options.children.length) options.append(element('p', providers.length
       ? 'Provider này chưa có model. Mở Cài đặt để thêm model ID.' : 'Chưa có provider. Bấm + để thêm cấu hình.'))
@@ -121,7 +135,9 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
       const next = JSON.stringify([providers, select.value, select.disabled])
       if (signature !== next) {
         signature = next
-        const selected = providers.find(provider => provider.models.some(model => select.value === JSON.stringify({ provider: provider.id, model })))
+        const selected = providers.find(provider => provider.models.some(model => select.value === JSON.stringify({ provider: provider.id, model }) ||
+          provider.modelMetadata?.find(item => item.model === model)?.reasoningOptions?.some(level =>
+            select.value === JSON.stringify({ provider: provider.id, model, reasoningLevel: level.label }))))
         active = selected?.id ?? active
         render()
       }

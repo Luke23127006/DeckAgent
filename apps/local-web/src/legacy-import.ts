@@ -192,7 +192,7 @@ export async function importLegacyProfile(options: LegacyImportOptions): Promise
     await mkdir(stage, { mode: 0o700 })
     await copy(backup, stage, entries)
     for (const [name, owner, versions] of [
-      ['sessions.sqlite', 0x44414754, [1, 2]],
+      ['sessions.sqlite', 0x44414754, [1, 2, 3]],
       ['web.sqlite', 0x44415742, [1, 2]],
       ['decks.sqlite', 1145128004, [1, 2]],
     ] as const) {

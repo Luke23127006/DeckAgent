@@ -13,16 +13,18 @@ export function record(value: unknown): value is Record<string, unknown> {
 export function selection(value: unknown): ModelSelection {
   if (
     !record(value) ||
-    Object.keys(value).some(key => !['provider', 'model'].includes(key)) ||
+    Object.keys(value).some(key => !['provider', 'model', 'reasoningLevel'].includes(key)) ||
     typeof value.provider !== 'string' ||
     typeof value.model !== 'string' ||
     !/^[\w.-]{1,100}$/.test(value.provider) ||
     !value.model.trim() ||
-    value.model.length > 200
+    value.model.length > 200 ||
+    (value.reasoningLevel !== undefined && (typeof value.reasoningLevel !== 'string' || !value.reasoningLevel.trim() || value.reasoningLevel.length > 100))
   ) {
     throw new HttpError(400, 'INVALID_SELECTION')
   }
-  return { provider: value.provider, model: value.model }
+  return { provider: value.provider, model: value.model,
+    ...(typeof value.reasoningLevel === 'string' ? { reasoningLevel: value.reasoningLevel } : {}) }
 }
 
 /** Web-only metadata stays outside the Agent file grant and provider prompt history. */
@@ -83,7 +85,9 @@ export class WebState {
     return (
       !!value &&
       this.settings().providers.some(
-        provider => provider.id === value.provider && provider.models.includes(value.model),
+        provider => provider.id === value.provider && provider.models.includes(value.model) &&
+          (value.reasoningLevel === undefined || provider.modelMetadata?.some(metadata => metadata.model === value.model &&
+            metadata.reasoningOptions?.some(option => option.label === value.reasoningLevel)) === true),
       )
     )
   }
@@ -150,6 +154,23 @@ export class WebState {
     for (const id of this.workspaces.removed()) await this.sessions.detachWorkspace(id)
   }
 
+  /** Keep saved Chat choices within the currently added model/effort set. */
+  async reconcileSelections(providerId: string): Promise<void> {
+    const providers = this.settings().providers
+    for (const info of await this.sessions.list()) {
+      const chosen = info.selection
+      if (!chosen || chosen.provider !== providerId) continue
+      const provider = providers.find(item => item.id === chosen.provider)
+      if (!provider?.models.includes(chosen.model)) {
+        await this.sessions.clearSelection(info.sessionId)
+        continue
+      }
+      if (chosen.reasoningLevel !== undefined && !provider.modelMetadata?.some(metadata =>
+        metadata.model === chosen.model && metadata.reasoningOptions?.some(option => option.label === chosen.reasoningLevel)))
+        await this.sessions.select(info.sessionId, { provider: chosen.provider, model: chosen.model })
+    }
+  }
+
   async removeWorkspace(id: string): Promise<void> {
     this.workspaces.remove(id)
     await this.sessions.detachWorkspace(id)
@@ -214,6 +235,7 @@ export class WebState {
       !record(value.selection) ||
       typeof value.selection.provider !== 'string' ||
       typeof value.selection.model !== 'string' ||
+      (value.selection.reasoningLevel !== undefined && typeof value.selection.reasoningLevel !== 'string') ||
       (value.status !== 'running' &&
         value.status !== 'awaiting_user' &&
         value.status !== 'completed' &&
@@ -233,7 +255,8 @@ export class WebState {
     return {
       requestId: value.requestId,
       ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
-      selection: { provider: value.selection.provider, model: value.selection.model },
+      selection: { provider: value.selection.provider, model: value.selection.model,
+        ...(typeof value.selection.reasoningLevel === 'string' ? { reasoningLevel: value.selection.reasoningLevel } : {}) },
       status: value.status,
       ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
       ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),

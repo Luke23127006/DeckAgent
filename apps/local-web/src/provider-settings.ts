@@ -3,7 +3,7 @@ import { ModelProviders, transformCredential } from '@deckagent/model-providers'
 import type { ModelConnection } from '@deckagent/model-providers'
 import type { ModelAdapter, ModelSelection } from '@deckagent/agent-runtime'
 import { HttpError } from '@deckagent/host-api'
-import type { ProviderSettings, WebSettings } from '@deckagent/host-api'
+import type { ModelDescriptor, ProviderSettings, WebSettings } from '@deckagent/host-api'
 import { record } from './web-state.ts'
 import { builtInProviders } from './built-in-providers.ts'
 
@@ -11,18 +11,19 @@ interface SavedProvider {
   readonly connection: ModelConnection
   readonly displayName: string
   readonly models: readonly string[]
+  readonly modelMetadata: readonly ModelDescriptor[]
   readonly encryptedKey?: string
 }
 
 function parseProvider(id: string, value: unknown): { saved: SavedProvider; key?: string } {
   if (
     !record(value) ||
-    Object.keys(value).some(key => !['displayName', 'protocol', 'baseUrl', 'models', 'key'].includes(key)) ||
+    Object.keys(value).some(key => !['displayName', 'protocol', 'baseUrl', 'models', 'modelMetadata', 'key'].includes(key)) ||
     !/^[\w.-]{1,100}$/.test(id) ||
     typeof value.displayName !== 'string' ||
     !value.displayName.trim() ||
     value.displayName.length > 100 ||
-    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'anthropic-messages') ||
+    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'responses' && value.protocol !== 'anthropic-messages') ||
     typeof value.baseUrl !== 'string' ||
     value.baseUrl.length > 2048 ||
     !Array.isArray(value.models) ||
@@ -50,8 +51,44 @@ function parseProvider(id: string, value: unknown): { saved: SavedProvider; key?
   })
   if (connection.protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
     throw new HttpError(400, 'INVALID_PROVIDER')
+  const rawMetadata = value.modelMetadata ?? []
+  if (!Array.isArray(rawMetadata) || rawMetadata.length > models.length) throw new HttpError(400, 'INVALID_MODEL_METADATA')
+  const seen = new Set<string>()
+  const modelMetadata: ModelDescriptor[] = rawMetadata.map((item: unknown) => {
+    if (!record(item) || Object.keys(item).some(key => !['provider', 'model', 'displayName', 'contextWindow', 'maxOutputTokens', 'inputModalities', 'reasoningOptions'].includes(key)) ||
+      item.provider !== id || typeof item.model !== 'string' || !models.includes(item.model) || seen.has(item.model) ||
+      (item.displayName !== undefined && (typeof item.displayName !== 'string' || !item.displayName.trim() || item.displayName.length > 100)) ||
+      (item.contextWindow !== undefined && (!Number.isSafeInteger(item.contextWindow) || Number(item.contextWindow) < 1 || Number(item.contextWindow) > 2_147_483_647)) ||
+      (item.maxOutputTokens !== undefined && (!Number.isSafeInteger(item.maxOutputTokens) || Number(item.maxOutputTokens) < 1 || Number(item.maxOutputTokens) > 2_147_483_647)) ||
+      (item.inputModalities !== undefined && (!Array.isArray(item.inputModalities) || new Set(item.inputModalities).size !== item.inputModalities.length || item.inputModalities.some(value => !['text', 'image', 'audio', 'video'].includes(value)))) ||
+      (item.reasoningOptions !== undefined && (!Array.isArray(item.reasoningOptions) || connection.protocol !== 'responses' || item.reasoningOptions.length > 20 || item.reasoningOptions.some(option => !record(option) || Object.keys(option).some(key => !['label', 'apiValue'].includes(key)) || typeof option.label !== 'string' || !option.label.trim() || option.label.length > 100 || typeof option.apiValue !== 'string' || !/^[a-z][a-z0-9_-]{0,50}$/.test(option.apiValue)))))
+      throw new HttpError(400, 'INVALID_MODEL_METADATA')
+    seen.add(item.model)
+    const descriptor: ModelDescriptor = { provider: id, model: item.model,
+      ...(typeof item.displayName === 'string' ? { displayName: item.displayName.trim() } : {}),
+      ...(typeof item.contextWindow === 'number' ? { contextWindow: item.contextWindow } : {}),
+      ...(typeof item.maxOutputTokens === 'number' ? { maxOutputTokens: item.maxOutputTokens } : {}),
+      ...(Array.isArray(item.inputModalities) ? { inputModalities: item.inputModalities.map((value: unknown) => {
+        if (value === 'text' || value === 'image' || value === 'audio' || value === 'video') return value
+        throw new HttpError(400, 'INVALID_MODEL_METADATA')
+      }) } : {}),
+      ...(Array.isArray(item.reasoningOptions) ? { reasoningOptions: item.reasoningOptions.map((option: unknown) => {
+        if (!record(option) || typeof option.label !== 'string' || typeof option.apiValue !== 'string')
+          throw new HttpError(400, 'INVALID_MODEL_METADATA')
+        return { label: option.label, apiValue: option.apiValue }
+      }) } : {}),
+    }
+    return descriptor
+  })
+  for (const metadata of modelMetadata) {
+    if (metadata.maxOutputTokens && metadata.contextWindow && metadata.maxOutputTokens > metadata.contextWindow)
+      throw new HttpError(400, 'INVALID_MODEL_METADATA')
+    if (metadata.reasoningOptions && (new Set(metadata.reasoningOptions.map(option => option.label)).size !== metadata.reasoningOptions.length ||
+      new Set(metadata.reasoningOptions.map(option => option.apiValue)).size !== metadata.reasoningOptions.length))
+      throw new HttpError(400, 'INVALID_MODEL_METADATA')
+  }
   return {
-    saved: { connection, displayName: value.displayName.trim(), models },
+    saved: { connection, displayName: value.displayName.trim(), models, modelMetadata },
     ...(typeof value.key === 'string' ? { key: value.key } : {}),
   }
 }
@@ -83,6 +120,7 @@ export class ProviderStore {
         protocol: data.connection.protocol,
         baseUrl: data.connection.baseUrl,
         models: data.models,
+        modelMetadata: data.modelMetadata,
       })
       const encryptedKey = typeof data.encryptedKey === 'string' ? data.encryptedKey : undefined
       const saved = { ...parsed.saved, ...(encryptedKey ? { encryptedKey } : {}) }
@@ -104,7 +142,7 @@ export class ProviderStore {
       const connection = connections.find(value => value.id === initial.provider)
       if (connection) {
         new ModelProviders([connection])
-        const saved = { connection: structuredClone(connection), displayName: connection.id, models: [initial.model] }
+        const saved = { connection: structuredClone(connection), displayName: connection.id, models: [initial.model], modelMetadata: [] }
         this.providers.set(connection.id, saved)
         const key = connection.apiKeyEnv ? process.env[connection.apiKeyEnv] : undefined
         if (key) this.keys.set(connection.id, key)
@@ -119,6 +157,7 @@ export class ProviderStore {
       protocol: value.connection.protocol,
       baseUrl: value.connection.baseUrl,
       models: [...value.models],
+      modelMetadata: structuredClone(value.modelMetadata),
       hasKey: !!value.encryptedKey || this.keys.has(value.connection.id),
       keyAvailable: this.keys.has(value.connection.id),
     }))
@@ -129,6 +168,7 @@ export class ProviderStore {
         protocol: 'chat-completions',
         baseUrl: 'http://127.0.0.1',
         models: [this.fixture.selection.model],
+        modelMetadata: [],
         hasKey: false,
         keyAvailable: false,
       })
@@ -137,8 +177,10 @@ export class ProviderStore {
 
   save(id: string, value: unknown): Promise<void> {
     return this.serialize(async () => {
-      const { saved, key } = parseProvider(id, value)
+      let { saved, key } = parseProvider(id, value)
       const previous = this.providers.get(id)
+      if (record(value) && value.modelMetadata === undefined && previous)
+        saved = { ...saved, modelMetadata: previous.modelMetadata.filter(item => saved.models.includes(item.model)) }
       if ([...this.providers].some(([other, provider]) => other !== id && provider.displayName === saved.displayName))
         throw new HttpError(409, 'PROVIDER_NAME_EXISTS')
       if (previous && previous.connection.protocol !== saved.connection.protocol)
@@ -199,9 +241,12 @@ export class ProviderStore {
       const saved = this.providers.get(chosen.provider)
       if (!saved?.models.includes(chosen.model)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
       const key = this.keys.get(chosen.provider)
+      const metadata = saved.modelMetadata.find(item => item.model === chosen.model)
       const connection = {
         ...saved.connection,
         ...(key || saved.encryptedKey || saved.connection.apiKeyEnv ? { apiKeyEnv: 'REQUEST_KEY' } : {}),
+        ...(metadata?.maxOutputTokens ? { maxOutputTokens: metadata.maxOutputTokens } : {}),
+        ...(metadata?.reasoningOptions ? { reasoningOptions: metadata.reasoningOptions } : {}),
       }
       const adapter = new ModelProviders([connection], { environment: { REQUEST_KEY: key } })
       adapter.validateSelection(chosen)

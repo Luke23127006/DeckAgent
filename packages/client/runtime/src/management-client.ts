@@ -26,7 +26,7 @@ function provider(value: unknown): ProviderSettings {
     typeof value.hasKey !== 'boolean' ||
     typeof value.keyAvailable !== 'boolean' ||
     !Array.isArray(value.models) ||
-    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'anthropic-messages')
+    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'responses' && value.protocol !== 'anthropic-messages')
   )
     invalid()
   return {
@@ -37,7 +37,27 @@ function provider(value: unknown): ProviderSettings {
     keyAvailable: value.keyAvailable,
     protocol: value.protocol,
     models: value.models.map(item => (typeof item === 'string' ? item : invalid())),
+    ...(value.modelMetadata === undefined ? {} : { modelMetadata: metadata(value.modelMetadata, value.id) }),
   }
+}
+
+function metadata(value: unknown, providerId: string): NonNullable<ProviderSettings['modelMetadata']> {
+  if (!Array.isArray(value)) invalid()
+  return value.map((item: unknown) => {
+    if (!object(item) || item.provider !== providerId || typeof item.model !== 'string' ||
+      (item.displayName !== undefined && typeof item.displayName !== 'string') ||
+      (item.contextWindow !== undefined && (!Number.isSafeInteger(item.contextWindow) || Number(item.contextWindow) < 1 || Number(item.contextWindow) > 2_147_483_647)) ||
+      (item.maxOutputTokens !== undefined && (!Number.isSafeInteger(item.maxOutputTokens) || Number(item.maxOutputTokens) < 1 || Number(item.maxOutputTokens) > 2_147_483_647)) ||
+      (item.inputModalities !== undefined && (!Array.isArray(item.inputModalities) || item.inputModalities.some(value => !['text', 'image', 'audio', 'video'].includes(value)))) ||
+      (item.reasoningOptions !== undefined && (!Array.isArray(item.reasoningOptions) || item.reasoningOptions.some(option => !object(option) || typeof option.label !== 'string' || typeof option.apiValue !== 'string')))) invalid()
+    return { provider: providerId, model: item.model,
+      ...(typeof item.displayName === 'string' ? { displayName: item.displayName } : {}),
+      ...(typeof item.contextWindow === 'number' ? { contextWindow: item.contextWindow } : {}),
+      ...(typeof item.maxOutputTokens === 'number' ? { maxOutputTokens: item.maxOutputTokens } : {}),
+      ...(Array.isArray(item.inputModalities) ? { inputModalities: item.inputModalities } : {}),
+      ...(Array.isArray(item.reasoningOptions) ? { reasoningOptions: item.reasoningOptions } : {}),
+    }
+  })
 }
 
 function session(value: unknown): WebSession {
@@ -57,7 +77,8 @@ function session(value: unknown): WebSession {
   const chosen = value.selection
   if (
     chosen !== undefined &&
-    (!object(chosen) || typeof chosen.provider !== 'string' || typeof chosen.model !== 'string')
+    (!object(chosen) || typeof chosen.provider !== 'string' || typeof chosen.model !== 'string' ||
+      (chosen.reasoningLevel !== undefined && typeof chosen.reasoningLevel !== 'string'))
   )
     invalid()
   return {
@@ -71,7 +92,8 @@ function session(value: unknown): WebSession {
     ...(value.latestRequest === undefined ? {} : { latestRequest: requestSummary(value.latestRequest) }),
     selectable: value.selectable,
     ...(object(chosen) && typeof chosen.provider === 'string' && typeof chosen.model === 'string'
-      ? { selection: { provider: chosen.provider, model: chosen.model } }
+      ? { selection: { provider: chosen.provider, model: chosen.model,
+        ...(typeof chosen.reasoningLevel === 'string' ? { reasoningLevel: chosen.reasoningLevel } : {}) } }
       : {}),
     ...(typeof value.activeRequestId === 'string' ? { activeRequestId: value.activeRequestId } : {}),
   }
@@ -143,6 +165,7 @@ export class ManagementClient {
         'INVALID_PROVIDER',
         'MODEL_NOT_SELECTABLE',
         'PROVIDER_NAME_EXISTS',
+        'INVALID_MODEL_METADATA',
         'PROTOCOL_IMMUTABLE',
         'NEW_ENDPOINT_REQUIRES_KEY',
         'PROVIDER_BUSY',
@@ -180,7 +203,7 @@ export class ManagementClient {
         typeof item.id !== 'string' ||
         typeof item.displayName !== 'string' ||
         typeof item.baseUrl !== 'string' ||
-        (item.protocol !== 'gemini' && item.protocol !== 'chat-completions' && item.protocol !== 'anthropic-messages')
+        (item.protocol !== 'gemini' && item.protocol !== 'chat-completions' && item.protocol !== 'responses' && item.protocol !== 'anthropic-messages')
       )
         invalid()
       return { id: item.id, displayName: item.displayName, baseUrl: item.baseUrl, protocol: item.protocol }
@@ -222,13 +245,13 @@ export class ManagementClient {
     return workspace(await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { projectFolder }))
   }
 
-  async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
+  async select(id: string, value: { provider: string; model: string; reasoningLevel?: string }): Promise<WebSession> {
     return session(await this.request(`sessions/${encodeURIComponent(id)}/selection`, 'PUT', value))
   }
 
   async save(
     id: string,
-    value: { displayName: string; protocol: string; baseUrl: string; models: readonly string[]; key?: string },
+    value: { displayName: string; protocol: string; baseUrl: string; models: readonly string[]; modelMetadata?: ProviderSettings['modelMetadata']; key?: string },
   ): Promise<void> {
     await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', value)
   }

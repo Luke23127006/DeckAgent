@@ -4,7 +4,7 @@
 **State at creation:** PLAN DRAFT — no V2 implementation gate has passed.  
 **Authority:** [SCOPE.md](SCOPE.md) for scope, [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for dependencies, individual `tasks/` files for instructions.
 
-**Current work — 27-10-2026:** owner confirmed the TASK-001 gates passed and requested TASK-002. G-001 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-002 A/B/C are implemented on `feature/v2-task-002-chat-lifecycle`; automated integration passes, manual G-002 remains pending. Other V2 scope/activation checkpoints are unchanged.
+**Current work — 28-10-2026:** owner confirmed all TASK-002 manual gates passed and requested TASK-003. G-002 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-003 automated checks pass on `feature/v2-task-003-provider-models`; manual G-003 remains pending. Other V2 scope/activation checkpoints are unchanged.
 
 ## CI source-file substitution fixture — 27-10-2026
 
@@ -31,8 +31,8 @@
 | Gate | A | B | C | Integration | Status | Evidence |
 |---|---|---|---|---|---|---|
 | G-001 Workspace | PASS | PASS | PASS | PASS | PASS | Owner confirmed gates passed in conversation, 27-10-2026; [automated evidence](tasks/task-001-workspace/HANDOFF.md); exact manual SHA not supplied |
-| G-002 Chat Lifecycle | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [108/108 integration cases and manual handoff](tasks/task-002-chat-lifecycle/HANDOFF.md) |
-| G-003 Provider & Models | Not started | Not started | Not started | Not started | NOT STARTED | — |
+| G-002 Chat Lifecycle | PASS | PASS | PASS | PASS | PASS | Owner confirmed all manual gates passed, 28-10-2026; [108/108 automated cases and handoff](tasks/task-002-chat-lifecycle/HANDOFF.md); exact manual SHA not supplied |
+| G-003 Provider & Models | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [Task implementation, 28 provider cases, browser and regression evidence](tasks/task-003-provider-models/HANDOFF.md); live G-003 pending |
 | G-004 Permissions | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-005 Sources & Attachments | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-006 Web Research | Not started | Not started | Not started | Not started | NOT STARTED | — |
@@ -104,12 +104,12 @@ These are execution checklists for the acceptance criteria in the linked group R
 
 [Task and acceptance criteria](tasks/task-002-chat-lifecycle/README.md). Dependency: G-001 PASS.
 
-- [ ] Start work in Chat X; switch Chat/Workspace and send in Chat Y. Return to X; its work continued and its status belongs to X.
-- [ ] Leave X awaiting clarification; switch to Y and return. Reply only to X. A stale reply cannot answer another request.
-- [ ] Keep different unsent drafts in X and Y; switching restores the correct draft.
-- [ ] Reload while X runs. Stop X and verify Y is unaffected. Restart Host during test work; interrupted work is not marked successful.
-- [ ] Expand/collapse activity details without sending work. Inspect a fixture with a failed activity and successful request; the two states remain distinct.
-- [ ] Pass the common V1 smoke.
+- [x] Start work in Chat X; switch Chat/Workspace and send in Chat Y. Return to X; its work continued and its status belongs to X.
+- [x] Leave X awaiting clarification; switch to Y and return. Reply only to X. A stale reply cannot answer another request.
+- [x] Keep different unsent drafts in X and Y; switching restores the correct draft.
+- [x] Reload while X runs. Stop X and verify Y is unaffected. Restart Host during test work; interrupted work is not marked successful.
+- [x] Expand/collapse activity details without sending work. Inspect a fixture with a failed activity and successful request; the two states remain distinct.
+- [x] Pass the common V1 smoke.
 
 ### G-003 — Providers, models and reasoning
 
@@ -180,6 +180,8 @@ Add one row per subtask run and group gate run. Preserve failures when recording
 | TASK-001 A/B/C / G-001 | `feature/v2-task-001-workspace`, base `7713d78` + uncommitted changes; Windows, Node 22.19.0, Chrome; temporary data | Codex / 27-10-2026 | Build/lint PASS; combined 101/101 PASS, 0 skipped; expanded import suite 5/5 PASS, making 102 distinct passing cases | NOT VERIFIED | [Commands, failures, limits and manual steps](tasks/task-001-workspace/HANDOFF.md); Issue pending | Task owner: live-model G-001 checklist; no user profile migrated |
 | G-001 owner acceptance | Candidate SHA and separate manual artifacts not supplied | Task owner / 27-10-2026 | Earlier automatic evidence above and CI fixture correction retained | PASS, owner-confirmed | Owner said the gates passed and requested TASK-002 | Supersedes the pending manual result above; does not close historical V1 gates |
 | TASK-002 A/B/C / G-002 | `feature/v2-task-002-chat-lifecycle`, base `c93f3e8` + uncommitted changes; Windows, Node 22.19.0, Chrome; temporary data | Codex / 27-10-2026 | Build/lint PASS; combined 108/108 PASS, 0 skipped | NOT VERIFIED | [Contracts, failure history and manual steps](tasks/task-002-chat-lifecycle/HANDOFF.md); Issue pending | Task owner: manual G-002; hosted CI not run |
+| G-002 owner acceptance | Candidate SHA and separate manual artifacts not supplied | Task owner / 28-10-2026 | Earlier automated evidence above retained | PASS, owner-confirmed | Owner said all gates passed and requested TASK-003 | Supersedes the pending manual result above; does not close historical V1 gates |
+| TASK-003 A/B/C / G-003 | `feature/v2-task-003-provider-models`, base `6611c57`; Windows, Node 22.19.0, Chrome; temporary data | Codex / 28-10-2026 | Build/typecheck/lint PASS; provider 28/28, Local Web 9/9, tools-browser 16/16, browser 7/7, agent 35/35, sessions 9/9, workspace 19/19, lifecycle 3/3, outline 19/19, slides 9/9, recovery 26/26 PASS | NOT VERIFIED | [Contracts, failures, compatibility matrix and manual steps](tasks/task-003-provider-models/HANDOFF.md); Issue pending | Task owner: live G-003 observations; hosted CI not run |
 
 ## Open handoffs
 

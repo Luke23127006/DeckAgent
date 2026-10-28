@@ -141,6 +141,10 @@ Host data defaults to `~/.deckagent`, independent of the current directory: `ses
 stores Web Settings, encrypted keys and activity/request records. Web key persistence
 uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change
 within a chat; active work keeps its captured model and settings until completion.
+Custom model APIs can use Chat Completions, OpenAI Responses, Anthropic Messages or Gemini.
+Each added model can have its own display name, context window, maximum output, input modalities and confirmed reasoning choices.
+Missing metadata stays unset. A reasoning choice appears only when it is saved for that model.
+The selected model and reasoning choice belong to the Chat; changing either during a request affects the next request.
 
 The presentation workflow once the model is ready:
 
@@ -205,7 +209,7 @@ Import keeps the original and a sibling backup, verifies a staged copy, then ins
 An existing unrelated target is refused. Repeating a completed import keeps the current target.
 SQLite sidecars cause refusal; close or recover the earlier profile with its original application, rather than deleting sidecars.
 Saved keys remain encrypted for their original Windows user. Import does not make credentials portable to another account.
-Session schema 2 cannot be opened by earlier binaries. To return to the earlier application, use the original profile or backup.
+Session schema 3 stores optional reasoning choices and cannot be opened by earlier binaries. To return to the earlier application, use the original profile or backup.
 Source-folder files are never copied merely by registering a Workspace.
 
 To bootstrap the previous environment-based workflow, use

@@ -278,7 +278,13 @@ function renderModels() {
   for (const provider of settings.providers) {
     const group = element('optgroup')
     group.label = provider.displayName
-    for (const id of provider.models) group.append(new Option(id, JSON.stringify({ provider: provider.id, model: id })))
+    for (const id of provider.models) {
+      const metadata = provider.modelMetadata?.find(item => item.model === id)
+      const label = metadata?.displayName ?? id
+      group.append(new Option(label, JSON.stringify({ provider: provider.id, model: id })))
+      for (const option of metadata?.reasoningOptions ?? [])
+        group.append(new Option(`${label} · ${option.label}`, JSON.stringify({ provider: provider.id, model: id, reasoningLevel: option.label })))
+    }
     model.append(group)
   }
   model.append(new Option('Thêm hoặc quản lý model…', '__settings'))
@@ -602,7 +608,8 @@ model.addEventListener('change', () => {
           typeof value.model !== 'string'
         )
           return
-        await management.select(id, { provider: value.provider, model: value.model })
+        await management.select(id, { provider: value.provider, model: value.model,
+          ...('reasoningLevel' in value && typeof value.reasoningLevel === 'string' ? { reasoningLevel: value.reasoningLevel } : {}) })
         rememberModel({ provider: value.provider, model: value.model })
         await refresh()
         if (current?.sessionId === id) status.hidden = true

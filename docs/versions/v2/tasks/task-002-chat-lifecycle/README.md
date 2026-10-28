@@ -38,7 +38,7 @@ Compatibility: the new fields are optional when reading older Hosts or saved rec
 
 Executable fixtures: [concurrent lifecycle tests](../../../../../tests/v2-concurrent-chat.test.mjs), the `Chats and Workspaces remain navigable` case in [browser smoke](../../../../../tests/browser-smoke.test.mjs), and response identity validation in [browser client tests](../../../../../tests/browser-runtime.test.mjs). After build, use `pnpm.cmd test:chat-lifecycle`; Chrome coverage remains in `test:browser-smoke`.
 
-See [implementation evidence and manual acceptance](HANDOFF.md). G-002 remains unverified until manual acceptance is recorded.
+See [implementation evidence and manual acceptance](HANDOFF.md). The owner confirmed G-002 passed on 28-10-2026; the exact manual-run SHA and separate artifact were not supplied.
 
 ## Parallel subtasks
 
