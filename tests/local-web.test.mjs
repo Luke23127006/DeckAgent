@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { createHash } from 'node:crypto'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 
@@ -62,17 +63,19 @@ test('Local Web wires Agent, File Tools and durable Session; denied writes leave
   const app = await startLocalWeb(options)
   apps.push(app)
   const client = new HostClient(app.origin, app.token)
+  let createdRequest
   for (const [sessionId, input, expected] of [
     ['create', 'Create HTML', 'HTML created'],
     ['deny', 'Write outside', 'Write denied'],
   ]) {
     const accepted = await client.send({ sessionId, input })
+    if (sessionId === 'create') createdRequest = accepted.requestId
     let completed
     for await (const value of client.watch(accepted.requestId)) completed = value
     assert.equal(completed.status, 'completed')
     assert.equal(completed.result.text, expected)
   }
-  assert.equal(await readFile(join(dir, 'workspace', 'slide.html'), 'utf8'), '<h1>Real file</h1>')
+  assert.equal(await readFile(join(dir, 'workspace', createHash('sha256').update('create').digest('hex'), createdRequest, 'slide.html'), 'utf8'), '<h1>Real file</h1>')
   await assert.rejects(readFile(join(dir, 'outside.html')), { code: 'ENOENT' })
   const page = await fetch(app.origin)
   assert.equal(page.status, 200)

@@ -11,12 +11,51 @@ export interface AgentRequest {
 }
 
 export interface RequestSnapshot {
+  /** Monotonic per-request state revision; absent on older Hosts. */
+  readonly revision?: number
   readonly requestId: string
   readonly sessionId: string
   readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled'
   readonly question?: UserQuestion
+  readonly approval?: StepApproval
   readonly result?: TurnResult
 }
+
+export type PermissionPreset = 'workspace-access' | 'provided-materials-only'
+export interface PermissionGrant {
+  readonly grantId: string
+  readonly target: string
+  readonly action: 'read'
+  readonly scope: 'file'
+  readonly createdAt: string
+  readonly revokedAt?: string
+}
+export interface ChatPermission {
+  readonly sessionId: string
+  readonly preset: PermissionPreset
+  readonly grants: readonly PermissionGrant[]
+}
+export interface ApprovalDraft {
+  readonly action: 'read'
+  readonly target: string
+  readonly reason: string
+  readonly continuing: boolean
+}
+export interface StepApproval extends ApprovalDraft {
+  readonly approvalId: string
+  readonly requestId: string
+  readonly sessionId: string
+  readonly version: number
+}
+export type ApprovalDecision = 'deny' | 'once' | 'scope'
+export interface ApprovalReply {
+  readonly sessionId: string
+  readonly approvalId: string
+  readonly version: number
+  readonly replyId: string
+  readonly decision: ApprovalDecision
+}
+export type RequestApproval = (draft: ApprovalDraft, signal: AbortSignal) => Promise<ApprovalDecision>
 
 export interface QuestionDraft {
   readonly prompt: string
@@ -54,7 +93,8 @@ export interface HistoryMessage {
 
 export interface HostOptions {
   /** Host owns the returned handle until the turn and disposal finish. */
-  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest) => Promise<RequestAgent>
+  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest, requestApproval: RequestApproval) => Promise<RequestAgent>
+  readonly approvalAnswered?: (approval: StepApproval, decision: ApprovalDecision) => Promise<void>
   /** Persist an active transition before it becomes visible or starts more model work. */
   readonly requestState?: (snapshot: RequestSnapshot) => Promise<void>
   /** Runs after handle disposal and before terminal snapshot/Session lock release. */
@@ -71,11 +111,23 @@ export interface HostOptions {
 export interface ProviderSettings {
   readonly id: string
   readonly displayName: string
-  readonly protocol: 'chat-completions' | 'anthropic-messages' | 'gemini'
+  readonly protocol: 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
   readonly baseUrl: string
   readonly models: readonly string[]
+  readonly modelMetadata?: readonly ModelDescriptor[]
   readonly hasKey: boolean
   readonly keyAvailable: boolean
+}
+
+/** Missing fields mean Unknown; a catalog ID alone carries no capability claim. */
+export interface ModelDescriptor {
+  readonly provider: string
+  readonly model: string
+  readonly displayName?: string
+  readonly contextWindow?: number
+  readonly maxOutputTokens?: number
+  readonly inputModalities?: readonly ('text' | 'image' | 'audio' | 'video')[]
+  readonly reasoningOptions?: readonly { readonly label: string; readonly apiValue: string }[]
 }
 
 export interface WebSettings {
@@ -92,6 +144,8 @@ export interface ProviderTemplate {
 }
 
 export interface WebSession {
+  readonly latestRequest?: RequestSummary
+  readonly workspaceId?: string
   /** Derived from the first user message; absent on older Hosts. */
   readonly title?: string
   /** True only when at least one slide has a published revision. */
@@ -106,15 +160,19 @@ export interface WebSession {
 }
 
 export interface StoredActivity extends ActivityEvent {
+  readonly startedAt?: number
+  readonly endedAt?: number
   readonly requestId: string
   readonly sequence: number
 }
 
 export interface StoredRequest {
+  readonly revision?: number
   readonly requestId: string
   readonly selection: ModelSelection
   readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled' | 'unknown'
   readonly question?: UserQuestion
+  readonly approval?: StepApproval
   readonly errorCode?: string
   /** Index before this turn in the public (non-system) history. Absent on older records. */
   readonly historyStart?: number
@@ -122,8 +180,26 @@ export interface StoredRequest {
   readonly noticeIndex?: number
 }
 
+export interface RequestSummary {
+  readonly waitingFor?: 'approval' | 'question'
+  readonly requestId: string
+  readonly status: StoredRequest['status']
+  /** Durable request admission order, not a success indicator. */
+  readonly sequence: number
+  readonly revision?: number
+}
+
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
+  permissions?(id: string): Promise<ChatPermission>
+  savePermission?(id: string, value: unknown): Promise<ChatPermission>
+  revokeGrant?(id: string, grantId: string): Promise<ChatPermission>
+  defaultPermission?(): Promise<PermissionPreset>
+  saveDefaultPermission?(value: unknown): Promise<PermissionPreset>
+  workspaces?(): Promise<readonly Workspace[]>
+  addWorkspace?(value: unknown): Promise<Workspace>
+  removeWorkspace?(id: string): Promise<void>
+  repointWorkspace?(id: string, value: unknown): Promise<Workspace>
   settings(): Promise<WebSettings>
   saveProvider(id: string, value: unknown): Promise<void>
   deleteProvider(id: string): Promise<void>
@@ -133,4 +209,11 @@ export interface WebManagement {
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
+}
+
+export interface Workspace {
+  readonly id: string
+  readonly name: string
+  readonly projectFolder?: string
+  readonly state: 'available' | 'missing'
 }

@@ -8,10 +8,14 @@ import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
 import { requestReply } from './request-reply.ts'
 
-export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ModelDescriptor, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
 export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
+export { validateStepApproval } from './step-approval.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
+export type { Workspace } from './contracts.ts'
+export type { RequestSummary } from './contracts.ts'
+export type { PermissionPreset, PermissionGrant, ChatPermission, ApprovalDraft, StepApproval, ApprovalDecision, ApprovalReply, RequestApproval } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -86,7 +90,7 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState)
+  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState, options.approvalAnswered)
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -145,8 +149,53 @@ export async function startHost(options: HostOptions) {
     }
     const management = options.management
     if (management) {
+      if (url.pathname === '/api/workspaces') {
+        if (req.method === 'GET' && management.workspaces) {
+          json(res, 200, await management.workspaces()); return
+        }
+        if (req.method === 'POST' && management.addWorkspace) {
+          json(res, 201, await management.addWorkspace(await readJson(req))); return
+        }
+      }
+      const workspace = /^\/api\/workspaces\/([\w-]{1,100})$/.exec(url.pathname)
+      if (workspace && (req.method === 'DELETE' || req.method === 'PUT')) {
+        // Check the controller as well as durable records: opening an Agent can still be pending.
+        const sessions = await management.sessions()
+        if (sessions.some(session => session.workspaceId === workspace[1] && controller.active(session.sessionId)))
+          throw new HttpError(409, 'WORKSPACE_BUSY')
+        if (req.method === 'DELETE' && management.removeWorkspace) {
+          const remove = management.removeWorkspace.bind(management)
+          await controller.withIdleSessions(sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
+            async () => {
+              if ((await management.sessions()).some(session => session.workspaceId === workspace[1] && controller.active(session.sessionId)))
+                throw new HttpError(409, 'WORKSPACE_BUSY')
+              return remove(workspace[1]!)
+            })
+          json(res, 200, { removed: true }); return
+        }
+        if (req.method === 'PUT' && management.repointWorkspace) {
+          const value = await readJson(req)
+          const repoint = management.repointWorkspace.bind(management)
+          json(res, 200, await controller.withIdleSessions(sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
+            async () => {
+              if ((await management.sessions()).some(session => session.workspaceId === workspace[1] && controller.active(session.sessionId)))
+                throw new HttpError(409, 'WORKSPACE_BUSY')
+              return repoint(workspace[1]!, value)
+            })); return
+        }
+      }
       if (url.pathname === '/api/settings' && req.method === 'GET') {
         json(res, 200, await management.settings()); return
+      }
+      if (url.pathname === '/api/permission-default' && management.defaultPermission) {
+        if (req.method === 'GET') { json(res, 200, { preset: await management.defaultPermission() }); return }
+        if (req.method === 'PUT' && management.saveDefaultPermission) { json(res, 200, { preset: await management.saveDefaultPermission(await readJson(req)) }); return }
+      }
+      const permission = /^\/api\/sessions\/([\w-]{1,100})\/permissions(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
+      if (permission && management.permissions) {
+        if (req.method === 'GET' && !permission[2]) { json(res, 200, await management.permissions(permission[1]!)); return }
+        if (req.method === 'PUT' && !permission[2] && management.savePermission) { json(res, 200, await management.savePermission(permission[1]!, await readJson(req))); return }
+        if (req.method === 'DELETE' && permission[2] && management.revokeGrant) { json(res, 200, await management.revokeGrant(permission[1]!, permission[2])); return }
       }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
@@ -182,6 +231,8 @@ export async function startHost(options: HostOptions) {
       return
     }
     const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)
+    const approval = /^\/api\/requests\/([\w-]+)\/approval$/.exec(url.pathname)
+    if (approval && req.method === 'POST') { json(res, 202, await controller.approve(approval[1]!, await readJson(req))); return }
     if (reply && req.method === 'POST') {
       json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req)))); return
     }

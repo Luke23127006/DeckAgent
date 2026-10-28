@@ -1,18 +1,22 @@
 import { mkdir, readFile, readdir, realpath } from 'node:fs/promises'
 import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { createHash } from 'node:crypto'
 import type { ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
-import { startHost } from '@deckagent/host-api'
+import { startHost, HttpError } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle } from './ui-assets.ts'
+import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle, permissionStyle } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
+import { PermissionStore } from './permission-store.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { DeckService } from '@deckagent/deck'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import { openWebRequest } from './web-request.ts'
 import { outlineStyle } from './outline-style.ts'
+export { importLegacyProfile, LegacyImportError } from './legacy-import.ts'
 
 export interface LocalWebOptions {
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -20,18 +24,21 @@ export interface LocalWebOptions {
   readonly model?: ModelAdapter
   readonly selection?: ModelSelection
   readonly connections?: readonly ModelConnection[]
-  readonly workspace: string
-  readonly dataDir: string
+  /** Private Agent work base, never a user project folder. */
+  readonly workspace?: string
+  readonly dataDir?: string
   readonly port?: number
 }
 
 /** Composition owns Host -> Agent -> tools -> storage cleanup in that order. */
 export async function startLocalWeb(options: LocalWebOptions) {
   const initial = options.selection ? { ...options.selection } : undefined
-  await mkdir(resolve(options.workspace), { recursive: true })
-  await mkdir(resolve(options.dataDir), { recursive: true })
-  const workspace = await realpath(resolve(options.workspace))
-  const dataDir = await realpath(resolve(options.dataDir))
+  const dataPath = resolve(options.dataDir ?? join(homedir(), '.deckagent'))
+  const workPath = resolve(options.workspace ?? join(dataPath, 'work'))
+  await mkdir(workPath, { recursive: true, mode: 0o700 })
+  await mkdir(dataPath, { recursive: true, mode: 0o700 })
+  const workspace = await realpath(workPath)
+  const dataDir = await realpath(dataPath)
   const dataRelative = relative(workspace, dataDir)
   const outside = dataRelative === '..' || dataRelative.startsWith(`..${sep}`) || isAbsolute(dataRelative)
   if (!outside) throw new Error('Host data must be outside the Agent workspace')
@@ -51,15 +58,18 @@ export async function startLocalWeb(options: LocalWebOptions) {
       }
       presentation.confirm(plan.sessionId, plan)
     }
-    const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot())
+    const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot(), [dataDir, workspace])
     web = state
+    const permissions = new PermissionStore(state.db)
+    const requireChat = async (id: string) => { if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND') }
+    await state.reconcileWorkspaces()
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
     providers = catalog
     await catalog.load(options.connections, initial)
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + permissionStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -79,22 +89,37 @@ export async function startLocalWeb(options: LocalWebOptions) {
         const finalize = finalizers.get(requestId)
         try { await finalize?.(result) } finally { finalizers.delete(requestId) }
       },
-      async openAgent(sessionId, requestId, request) {
-        if (!(await store.getInfo(sessionId)) && initial) await store.bind(sessionId, initial)
-        const agent = await openWebRequest({ request, requestId, workspace, store, presentation, state, catalog })
+      async openAgent(sessionId, requestId, request, requestApproval) {
+        if (!(await store.getInfo(sessionId)) && initial) { await store.bind(sessionId, initial); permissions.create(sessionId) }
+        const info = await store.getInfo(sessionId)
+        const source = info?.workspaceId ? await state.workspaces.source(info.workspaceId) : undefined
+        const privateRoot = join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
+        await mkdir(privateRoot, { recursive: true, mode: 0o700 })
+        const agent = await openWebRequest({ request, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog,
+          permission: permissions.get(sessionId), requestApproval, blockedRoots: [dataDir, workspace] })
         finalizers.set(requestId, result => agent.finish(result))
         return agent
       },
       requestState: async snapshot => state.requestState(snapshot),
+      approvalAnswered: async (approval, decision) => permissions.answer(approval, decision),
       readHistory: id => store.read(id),
       management: {
+        permissions: async id => { await requireChat(id); return permissions.get(id) },
+        savePermission: async (id, value) => { await requireChat(id); return permissions.save(id, value) },
+        revokeGrant: async (id, grantId) => { await requireChat(id); return permissions.revoke(id, grantId) },
+        defaultPermission: async () => permissions.defaultPreset(),
+        saveDefaultPermission: async value => permissions.setDefault(value),
+        workspaces: () => state.workspaces.list(),
+        addWorkspace: value => state.workspaces.add(value),
+        removeWorkspace: id => state.removeWorkspace(id),
+        repointWorkspace: (id, value) => state.workspaces.repoint(id, value),
         settings: async () => catalog.snapshot(),
-        saveProvider: (id, value) => catalog.save(id, value),
-        deleteProvider: id => catalog.remove(id),
+        saveProvider: async (id, value) => { await catalog.save(id, value); await state.reconcileSelections(id) },
+        deleteProvider: async id => { await catalog.remove(id); await state.reconcileSelections(id) },
         catalog: id => catalog.catalog(id),
         sessions: async () => (await state.list()).map(session => ({ ...session,
           hasSlides: presentation.snapshot(session.sessionId).slides.some(slide => slide.revision > 0),
-        })), createSession: value => state.create(value),
+        })), createSession: async value => { const session = await state.create(value); permissions.create(session.sessionId); return session },
         selectModel: (id, value) => state.select(id, value),
         activities: async id => state.activities(id),
         requests: async id => state.requests(id),

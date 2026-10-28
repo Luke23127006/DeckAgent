@@ -1,29 +1,47 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, ApprovalReply } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
+import { stepApproval } from './step-approval.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
-function snapshot(value: unknown): RequestSnapshot {
+function snapshot(value: unknown, requestId?: string, sessionId?: string): RequestSnapshot {
   if (
     !object(value) ||
+    (value.revision !== undefined &&
+      (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0)) ||
     typeof value.requestId !== 'string' ||
     !/^[\w-]+$/.test(value.requestId) ||
     typeof value.sessionId !== 'string' ||
+    (requestId !== undefined && value.requestId !== requestId) ||
+    (sessionId !== undefined && value.sessionId !== sessionId) ||
     !/^[\w-]{1,100}$/.test(value.sessionId) ||
     !['running', 'awaiting_user', 'completed', 'failed', 'cancelled'].includes(String(value.status))
   )
     throw new Error('INVALID_RESPONSE')
   const result = value.result
-  if (value.status !== 'awaiting_user' && value.question !== undefined) throw new Error('INVALID_RESPONSE')
+  const revision = typeof value.revision === 'number' ? { revision: value.revision } : {}
+  if (value.status !== 'awaiting_user' && (value.question !== undefined || value.approval !== undefined)) throw new Error('INVALID_RESPONSE')
   if (value.status === 'awaiting_user') {
     if (result !== undefined) throw new Error('INVALID_RESPONSE')
-    return { requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', question: userQuestion(value.question) }
+    if ((value.question === undefined) === (value.approval === undefined)) throw new Error('INVALID_RESPONSE')
+    if (value.approval !== undefined) {
+      const approval = stepApproval(value.approval)
+      if (approval.requestId !== value.requestId || approval.sessionId !== value.sessionId) throw new Error('INVALID_RESPONSE')
+      return { ...revision, requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', approval }
+    }
+    return {
+      ...revision,
+      requestId: value.requestId,
+      sessionId: value.sessionId,
+      status: 'awaiting_user',
+      question: userQuestion(value.question),
+    }
   }
   if (value.status === 'running') {
     if (result !== undefined) throw new Error('INVALID_RESPONSE')
-    return { requestId: value.requestId, sessionId: value.sessionId, status: 'running' }
+    return { ...revision, requestId: value.requestId, sessionId: value.sessionId, status: 'running' }
   }
   if (
     !object(result) ||
@@ -34,7 +52,7 @@ function snapshot(value: unknown): RequestSnapshot {
     result.steps < 0
   )
     throw new Error('INVALID_RESPONSE')
-  const base = { requestId: value.requestId, sessionId: value.sessionId }
+  const base = { ...revision, requestId: value.requestId, sessionId: value.sessionId }
   if (result.status === 'completed')
     return { ...base, status: 'completed', result: { status: 'completed', text: result.text, steps: result.steps } }
   if (
@@ -73,9 +91,28 @@ export class HostClient {
     })
     if (!response.ok) {
       const data: unknown = await response.json()
-      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT', 'REPLY_STALE', 'REPLY_CONFLICT', 'INVALID_REPLY']
-      const code = object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
-        ? data.error.code : response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'
+      const allowed = [
+        'AUTH_REQUIRED',
+        'SESSION_BUSY',
+        'MODEL_NOT_SELECTABLE',
+        'PROVIDER_CREDENTIALS',
+        'SESSION_UNAVAILABLE',
+        'REQUEST_NOT_FOUND',
+        'OUTLINE_STALE',
+        'OUTLINE_ALREADY_CONFIRMED',
+        'OUTLINE_READ_ONLY',
+        'OUTLINE_LIMIT',
+        'REPLY_STALE',
+        'REPLY_CONFLICT',
+        'INVALID_REPLY',
+        'APPROVAL_STALE', 'INVALID_APPROVAL',
+      ]
+      const code =
+        object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
+          ? data.error.code
+          : response.status === 401
+            ? 'AUTH_REQUIRED'
+            : 'HOST_REQUEST_FAILED'
       throw new Error(code)
     }
     return response
@@ -90,21 +127,40 @@ export class HostClient {
           body: JSON.stringify(request),
         })
       ).json(),
+      undefined,
+      request.sessionId,
     )
   }
 
   async snapshot(id: string): Promise<RequestSnapshot> {
-    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json(), id)
   }
 
   async reply(id: string, reply: RequestReply): Promise<RequestSnapshot> {
-    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/reply`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
-    })).json())
+    return snapshot(
+      await (
+        await this.request(`/api/requests/${encodeURIComponent(id)}/reply`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(reply),
+        })
+      ).json(),
+      id,
+      reply.sessionId,
+    )
   }
 
   async stop(id: string): Promise<RequestSnapshot> {
-    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json())
+    return snapshot(
+      await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json(),
+      id,
+    )
+  }
+
+  async approve(id: string, reply: ApprovalReply): Promise<RequestSnapshot> {
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/approval`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
+    })).json(), id, reply.sessionId)
   }
 
   async history(id: string): Promise<readonly HistoryMessage[]> {
@@ -115,15 +171,25 @@ export class HostClient {
         !object(message) ||
         (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'tool') ||
         typeof message.content !== 'string' ||
-        (message.toolCallId !== undefined && (message.role !== 'tool' || typeof message.toolCallId !== 'string' || !message.toolCallId || message.toolCallId.length > 2000)) ||
-        (message.name !== undefined && (message.role !== 'tool' || typeof message.name !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(message.name))) ||
+        (message.toolCallId !== undefined &&
+          (message.role !== 'tool' ||
+            typeof message.toolCallId !== 'string' ||
+            !message.toolCallId ||
+            message.toolCallId.length > 2000)) ||
+        (message.name !== undefined &&
+          (message.role !== 'tool' ||
+            typeof message.name !== 'string' ||
+            !/^[A-Za-z0-9_-]{1,64}$/.test(message.name))) ||
         (message.isError !== undefined && (message.role !== 'tool' || typeof message.isError !== 'boolean'))
       )
         throw new Error('INVALID_RESPONSE')
-      return { role: message.role, content: message.content,
+      return {
+        role: message.role,
+        content: message.content,
         ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
         ...(typeof message.name === 'string' ? { name: message.name } : {}),
-        ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}) }
+        ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}),
+      }
     })
   }
 
@@ -151,7 +217,7 @@ export class HostClient {
               .filter(line => line.startsWith('data: '))
               .map(line => line.slice(6))
               .join('\n')
-            const value = snapshot(JSON.parse(data))
+            const value = snapshot(JSON.parse(data), id)
             if (value.requestId !== id) throw new Error('INVALID_RESPONSE')
             yield value
             if (value.status !== 'running' && value.status !== 'awaiting_user') return

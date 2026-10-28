@@ -20,7 +20,9 @@ G-002 PASS. Keep saved V1 provider configuration and model selection functional.
 
 **M4 — Capture:** create an immutable request-time selection + provider connection + validated model metadata/effort snapshot; later UI edits affect only next request.
 
-These are **proposed V2 interfaces and semantics**, not declarations that the existing code already exports these names. At group kickoff, A records the final public names in this README and supplies small mock fixtures. B and C start immediately using those fixtures; they do not wait for A's full production implementation. Changes to this contract require an explicit cross-lane review.
+The implementation keeps these proposed semantics through the public `ModelSelection`, `ModelDescriptor`, `ProviderSettings.modelMetadata` and `ModelConnection.protocol` interfaces. `reasoningLevel` names a saved choice; its `apiValue` is sent only by a Responses connection. `ProviderStore.capture` freezes that connection for the request, including its key, endpoint, maximum output and selected model's reasoning mapping. Session schema 3 stores optional `reasoningLevel`; schema 1 and 2 records migrate without filling a missing choice. The mocked request/response, migration and rejection fixtures are [v2-responses.test.mjs](../../../../tests/v2-responses.test.mjs) and [v2-model-capabilities.test.mjs](../../../../tests/v2-model-capabilities.test.mjs). Other providers have no invented reasoning mapping.
+
+See [implementation evidence and manual acceptance](HANDOFF.md). The owner confirmed all G-003 gates passed on 28-10-2026 and requested TASK-004; the exact manual-run SHA and separate artifact were not supplied.
 
 ## Parallel subtasks
 

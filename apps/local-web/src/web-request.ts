@@ -1,9 +1,9 @@
 import { Context } from '@deepseek-ai/cordis'
-import { RuntimeError, ToolRegistry, runtimePlugin } from '@deckagent/agent-runtime'
+import { RuntimeError, ToolRegistry, runtimePlugin, ToolFailure } from '@deckagent/agent-runtime'
 import type { AgentHandle, Message, SendOptions, TurnResult } from '@deckagent/agent-runtime'
 import { registerFileTools } from '@deckagent/file-tools'
 import { HttpError } from '@deckagent/host-api'
-import type { AgentRequest, QuestionDraft, RequestAgent } from '@deckagent/host-api'
+import type { AgentRequest, QuestionDraft, RequestAgent, ChatPermission, RequestApproval } from '@deckagent/host-api'
 import type { DeckService, DeckSnapshot, OutlineDraft, OutlineProposal } from '@deckagent/deck'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import { registerProposeOutline, registerPublishSlide, registerReadSlide } from '@deckagent/presentation-tools'
@@ -19,10 +19,15 @@ interface WebRequestOptions {
   readonly request: AgentRequest
   readonly requestId: string
   readonly workspace: string
+  readonly sourceRoot?: string
+  readonly sourceIdentity?: { readonly dev: number; readonly ino: number }
   readonly store: SqliteSessionStore
   readonly presentation: DeckService
   readonly state: WebState
   readonly catalog: ProviderStore
+  readonly permission: ChatPermission
+  readonly requestApproval: RequestApproval
+  readonly blockedRoots: readonly string[]
 }
 
 interface PreparedTurn {
@@ -43,6 +48,17 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
   const info = await store.getInfo(sessionId)
   if (!info?.selection || !state.selectable(info.selection)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
   const chosen = info.selection
+  const permission = structuredClone(options.permission)
+  const denied = new Set<string>()
+  const granted = new Set(permission.grants.filter(grant => !grant.revokedAt).map(grant => grant.target))
+  const authorizeRead = async (target: string, scope: 'source' | 'external', signal: AbortSignal) => {
+    if ((scope === 'source' && permission.preset === 'workspace-access') || granted.has(target)) return
+    if (denied.has(target)) throw new ToolFailure('PERMISSION_DENIED')
+    const decision = await options.requestApproval({ action: 'read', target,
+      reason: scope === 'source' ? 'Provided Materials Only does not include unnamed project files.' : 'This file is outside the request permission.', continuing: true }, signal)
+    if (decision === 'deny') { denied.add(target); throw new ToolFailure('PERMISSION_DENIED') }
+    if (decision === 'scope') granted.add(target)
+  }
   const outlineState = presentation.outlineSnapshot(sessionId)
   const action = reviewAction(request, outlineState)
   if (request.outlineTarget) presentation.currentOutline(sessionId, request.outlineTarget)
@@ -94,7 +110,11 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
       try { await ctx.fiber.dispose() } finally { for (const remove of removers.reverse()) remove(); files?.dispose() }
     })()
     try {
-      files = await registerFileTools(tools, { root: workspace })
+      files = await registerFileTools(tools, { root: workspace,
+        authorizeRead, blockedRoots: options.blockedRoots,
+        ...(options.sourceRoot ? { sourceRoot: options.sourceRoot } : {}),
+        ...(options.sourceIdentity ? { sourceIdentity: options.sourceIdentity } : {}),
+      })
       removers.push(await registerPublishSlide(tools, { root: workspace, sessionId, decks: presentation, allowedSlideIds: scope }))
       removers.push(registerReadSlide(tools, sessionId, presentation))
       removers.push(registerProposeOutline(tools, draft => stage({ kind: 'proposal', draft })))
@@ -111,7 +131,7 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
         : `${presentationInstructions(deck, confirmed ?? target, reviewing, requestId)}${deck.outlineId ? '' : `\n${clarificationInstructions}`}`
       await ctx.plugin(runtimePlugin, {
         maxSteps: Math.max(8, (editing ? 3 : 2) * scope.length + 5),
-        systemPrompt: `You are DeckAgent. Work only within the granted workspace. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
+        systemPrompt: `You are DeckAgent. Work only within the granted workspace. Draft files belong to this request only. read_file uses scope "work" for drafts and scope "source" for read-only project files when available. Project files are never writable. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
       })
       const staticText = first && action.command === 'cancel' && candidate
         ? 'Outline cancelled. It stays in the conversation. Send a new request for a new proposal; no slides were built.'

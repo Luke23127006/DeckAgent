@@ -33,6 +33,22 @@ test('waiting snapshots require a valid question and an SSE stream continues thr
   await assert.rejects(client.snapshot('waiting'), /INVALID_RESPONSE/)
 })
 
+test('request responses reject another Chat or request identity and invalid state revisions', async t => {
+  let payload = { requestId: 'request-x', sessionId: 'chat-y', status: 'running', revision: 1 }
+  const server = createServer((_req, res) => res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(payload)))
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) }))
+  const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture')
+  await assert.rejects(client.send({ sessionId: 'chat-x', input: 'For X' }), /INVALID_RESPONSE/)
+  await assert.rejects(client.reply('request-x', { sessionId: 'chat-x', questionId: 'q', version: 1, replyId: 'r', answer: { type: 'skip' } }), /INVALID_RESPONSE/)
+  payload = { ...payload, requestId: 'wrong-request' }
+  await assert.rejects(client.snapshot('request-x'), /INVALID_RESPONSE/)
+  await assert.rejects(client.stop('request-x'), /INVALID_RESPONSE/)
+  payload = { requestId: 'request-x', sessionId: 'chat-x', status: 'running', revision: -1 }
+  await assert.rejects(client.snapshot('request-x'), /INVALID_RESPONSE/)
+})
+
 test('history exposes tool identity for Activity without exposing internal fields or arguments', async t => {
   const host = await startHost({
     openAgent: async () => { throw new Error('No work should start') },

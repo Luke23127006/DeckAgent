@@ -1,5 +1,7 @@
 /** Only fixed, repository-authored diagnostics cross the tool exception boundary. */
 export const TOOL_RECOVERY_TEXT = {
+  PERMISSION_DENIED: 'The user refused this file read. The file was not read. Do not ask for or retry the same refused access in this request. Continue using allowed material and explain any remaining limitation.',
+  PERMISSION_BOUNDARY: 'This target is private application or Chat data, or an unsafe linked path. It cannot be accessed by this request and no approval can grant access. Use material explicitly provided to this Chat instead.',
   SLIDE_UNSAFE_HTML: 'Slide HTML was rejected. Do not use meta (including charset or viewport), script, iframe, frame, frameset, object, embed, base, link, form, a or area tags; no src/href/action/formaction/srcdoc or event-handler attributes. Create a new draft path with corrected static HTML/CSS and publish that new path. Do not repeat the rejected draft.',
   SLIDE_SCOPE_DENIED: 'This slide is outside the Host-authorized request scope. Do not publish it or broaden the scope.',
   SLIDE_REVISION_CONFLICT: 'The slide revision or publication receipt changed. Read the current slide before another attempt; do not repeat conflicting publication arguments.',

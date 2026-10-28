@@ -7,6 +7,7 @@ import { validateMessage } from './message.ts'
 import { initialize } from './schema.ts'
 
 export interface SessionInfo {
+  readonly workspaceId?: string
   readonly sessionId: string
   readonly createdAt: string
   readonly updatedAt: string
@@ -47,7 +48,8 @@ export class SqliteSessionStore implements SessionStore {
       if (current.selection && (current.selection.provider !== selection.provider || current.selection.model !== selection.model)) {
         throw new RuntimeError('SESSION_CONFLICT', 'Session uses a different provider or model. Choose another session ID')
       }
-      this.db.prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?').run(selection.provider, selection.model, sessionId)
+      this.db.prepare('UPDATE sessions SET provider = ?, model = ?, reasoning_level = ? WHERE id = ?')
+        .run(selection.provider, selection.model, selection.reasoningLevel ?? null, sessionId)
       return this.info(sessionId)!
     }))
   }
@@ -61,13 +63,37 @@ export class SqliteSessionStore implements SessionStore {
     return this.access(() => this.transaction(() => {
       this.requireSession(sessionId)
       if (!selection.provider.trim() || !selection.model.trim()) throw new RuntimeError('SESSION_CONFIG', 'Provider and model are required')
-      this.db.prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?').run(selection.provider, selection.model, sessionId)
+      this.db.prepare('UPDATE sessions SET provider = ?, model = ?, reasoning_level = ? WHERE id = ?')
+        .run(selection.provider, selection.model, selection.reasoningLevel ?? null, sessionId)
+      return this.info(sessionId)!
+    }))
+  }
+
+  /** Removed provider/model choices leave the Chat unselected without changing its messages. */
+  async clearSelection(sessionId: string): Promise<SessionInfo> {
+    return this.access(() => this.transaction(() => {
+      this.requireSession(sessionId)
+      this.db.prepare('UPDATE sessions SET provider = NULL, model = NULL, reasoning_level = NULL WHERE id = ?').run(sessionId)
       return this.info(sessionId)!
     }))
   }
 
   async list(): Promise<readonly SessionInfo[]> {
     return this.access(() => this.db.prepare('SELECT id FROM sessions ORDER BY updated_at DESC, id').all().map(row => this.info(String(row.id))!))
+  }
+
+  /** Application validates Workspace identity; null means explicitly ungrouped. */
+  async assignWorkspace(sessionId: string, workspaceId: string): Promise<void> {
+    this.access(() => {
+      this.requireSession(sessionId)
+      if (!/^[\w-]{1,100}$/.test(workspaceId)) throw new RuntimeError('SESSION_CONFIG', 'Invalid Workspace ID')
+      this.db.prepare('UPDATE sessions SET workspace_id = ? WHERE id = ?').run(workspaceId, sessionId)
+    })
+  }
+
+  /** Idempotent reconciliation after Workspace removal, without touching saved messages. */
+  async detachWorkspace(workspaceId: string): Promise<void> {
+    this.access(() => this.db.prepare('UPDATE sessions SET workspace_id = NULL WHERE workspace_id = ?').run(workspaceId))
   }
 
   async read(sessionId: string): Promise<readonly Message[]> {
@@ -146,7 +172,9 @@ export class SqliteSessionStore implements SessionStore {
     if (!row) return undefined
     return {
       sessionId: String(row.id), createdAt: String(row.created_at), updatedAt: String(row.updated_at), messageCount: Number(row.message_count),
-      ...(row.provider !== null ? { selection: { provider: String(row.provider), model: String(row.model) } } : {}),
+      ...(row.workspace_id === null ? {} : { workspaceId: String(row.workspace_id) }),
+      ...(row.provider !== null ? { selection: { provider: String(row.provider), model: String(row.model),
+        ...(row.reasoning_level === null ? {} : { reasoningLevel: String(row.reasoning_level) }) } } : {}),
     }
   }
 }

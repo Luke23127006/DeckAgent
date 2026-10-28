@@ -5,6 +5,9 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "test:permissions": "node --test tests/v2-permissions.test.mjs tests/v2-permission-isolation.test.mjs",
+    "test:chat-lifecycle": "node --test tests/v2-concurrent-chat.test.mjs",
+    "test:workspace": "node --test tests/v2-workspace.test.mjs tests/v2-workspace-isolation.test.mjs tests/v2-legacy-import.test.mjs",
     "test:recovery-editing": "node --test tests/recovery-editing.test.mjs tests/web-session.test.mjs tests/web-management.test.mjs",
     "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-workflow.test.mjs tests/outline-client.test.mjs",
     "test:slide-pipeline": "node --test tests/deck-service.test.mjs tests/publish-slide.test.mjs tests/deck-pipeline.test.mjs tests/deck-model.test.mjs tests/deck-client.test.mjs",
@@ -19,7 +22,7 @@
     "test:cordis-smoke": "node --test tests/cordis-smoke.test.mjs",
     "start:cordis-smoke": "node apps/cordis-smoke/lib/cli.js",
     "test:agent-runtime": "node --test tests/agent-runtime.test.mjs",
-    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs",
+    "test:model-providers": "node --test tests/model-providers.test.mjs tests/model-catalog.test.mjs tests/provider-switch.test.mjs tests/v2-responses.test.mjs tests/v2-model-capabilities.test.mjs",
     "test:session-persistence": "node --test tests/session-persistence.test.mjs",
     "test:chat-setup": "node --test tests/chat-setup.test.mjs",
     "chat": "node --env-file-if-exists=.env --use-system-ca apps/agent-runtime/lib/chat.js",

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { DeckError } from '@deckagent/deck'
 import type { TurnResult } from '@deckagent/agent-runtime'
-import type { AgentRequest, HostOptions, RequestAgent, RequestReply, RequestSnapshot } from './contracts.ts'
+import type { AgentRequest, HostOptions, RequestAgent, RequestReply, RequestSnapshot, ApprovalDraft, ApprovalReply, ApprovalDecision } from './contracts.ts'
 import { questionDraft } from './request-reply.ts'
 import { HttpError } from './http-error.ts'
 export { HttpError } from './http-error.ts'
@@ -13,6 +13,9 @@ interface RequestEntry {
   readonly abort: AbortController
   work: Promise<void>
   resume?: (input: string) => void
+  resumeApproval?: (decision: ApprovalDecision) => void
+  approvalBusy?: boolean
+  approvalVersion?: number
   readonly replies: Map<string, { payload: string; receipt: RequestSnapshot }>
 }
 
@@ -23,12 +26,14 @@ export class RequestController {
   private readonly listeners = new Set<(snapshot: RequestSnapshot) => void>()
   private closed = false
   private cleanupFailed = false
+  private workspaceChanges = 0
 
   constructor(private readonly openAgent: HostOptions['openAgent'], private readonly finishRequest?: HostOptions['finishRequest'],
-    private readonly requestState?: HostOptions['requestState']) {}
+    private readonly requestState?: HostOptions['requestState'], private readonly approvalAnswered?: HostOptions['approvalAnswered']) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {
     if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (this.workspaceChanges) throw new HttpError(409, 'WORKSPACE_BUSY')
     if (this.busy.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
     if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
     while (this.entries.size >= 128) {
@@ -38,7 +43,7 @@ export class RequestController {
     }
     this.busy.add(request.sessionId)
     const entry: RequestEntry = {
-      snapshot: { requestId: randomUUID(), sessionId: request.sessionId, status: 'running' },
+      snapshot: { requestId: randomUUID(), sessionId: request.sessionId, status: 'running', revision: 1 },
       abort: new AbortController(),
       work: Promise.resolve(),
       replies: new Map(),
@@ -51,7 +56,8 @@ export class RequestController {
     })
     let agent: RequestAgent
     try {
-      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId, request)
+      agent = await this.openAgent(request.sessionId, entry.snapshot.requestId, request,
+        (draft, signal) => this.waitApproval(entry, draft, signal))
     } catch (error) {
       this.busy.delete(request.sessionId)
       this.entries.delete(entry.snapshot.requestId)
@@ -76,6 +82,65 @@ export class RequestController {
     return structuredClone(entry.snapshot)
   }
 
+  private async waitApproval(entry: RequestEntry, draft: ApprovalDraft, signal: AbortSignal): Promise<ApprovalDecision> {
+    signal.throwIfAborted()
+    if (entry.snapshot.status !== 'running') throw new HttpError(409, 'APPROVAL_STALE')
+    const approval = { ...draft, approvalId: randomUUID(), requestId: entry.snapshot.requestId,
+      sessionId: entry.snapshot.sessionId, version: (entry.approvalVersion ?? 0) + 1 }
+    entry.approvalVersion = approval.version
+    const next: RequestSnapshot = { requestId: approval.requestId, sessionId: approval.sessionId,
+      status: 'awaiting_user', revision: (entry.snapshot.revision ?? 0) + 1, approval }
+    await this.requestState?.(next)
+    signal.throwIfAborted()
+    const decision = await new Promise<ApprovalDecision>((resolve, reject) => {
+      const abort = () => { delete entry.resumeApproval; reject(new Error('Stopped')) }
+      signal.addEventListener('abort', abort, { once: true })
+      entry.resumeApproval = value => { signal.removeEventListener('abort', abort); delete entry.resumeApproval; resolve(value) }
+      entry.snapshot = next
+      for (const listener of this.listeners) listener(structuredClone(next))
+    })
+    signal.throwIfAborted()
+    return decision
+  }
+
+  async approve(id: string, value: unknown): Promise<RequestSnapshot> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new HttpError(400, 'INVALID_APPROVAL')
+    const input = value as Record<string, unknown>
+    if (Object.keys(input).some(key => !['sessionId','approvalId','version','replyId','decision'].includes(key)) ||
+      typeof input.sessionId !== 'string' || typeof input.approvalId !== 'string' ||
+      !Number.isSafeInteger(input.version) || typeof input.replyId !== 'string' || !/^[\w-]{1,100}$/.test(input.replyId) ||
+      !['deny','once','scope'].includes(String(input.decision))) throw new HttpError(400, 'INVALID_APPROVAL')
+    const reply: ApprovalReply = { sessionId: input.sessionId, approvalId: input.approvalId,
+      version: Number(input.version), replyId: input.replyId, decision: input.decision as ApprovalDecision }
+    const entry = this.entries.get(id)
+    if (!entry) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+    if (this.closed || entry.abort.signal.aborted || reply.sessionId !== entry.snapshot.sessionId) throw new HttpError(409, 'APPROVAL_STALE')
+    const payload = JSON.stringify(reply)
+    const key = `approval:${reply.replyId}`
+    const previous = entry.replies.get(key)
+    if (previous) {
+      if (previous.payload !== payload) throw new HttpError(409, 'REPLY_CONFLICT')
+      return structuredClone(previous.receipt)
+    }
+    const approval = entry.snapshot.approval
+    if (entry.approvalBusy || !entry.resumeApproval || entry.snapshot.status !== 'awaiting_user' || !approval ||
+      approval.approvalId !== reply.approvalId || approval.version !== reply.version ||
+      (reply.decision === 'scope' && !approval.continuing)) throw new HttpError(409, 'APPROVAL_STALE')
+    entry.approvalBusy = true
+    try {
+      await this.approvalAnswered?.(approval, reply.decision)
+      entry.abort.signal.throwIfAborted()
+      const next: RequestSnapshot = { requestId: id, sessionId: reply.sessionId, status: 'running', revision: (entry.snapshot.revision ?? 0) + 1 }
+      await this.requestState?.(next)
+      entry.abort.signal.throwIfAborted()
+      entry.snapshot = next
+      entry.replies.set(key, { payload, receipt: structuredClone(next) })
+      for (const listener of this.listeners) listener(structuredClone(next))
+      entry.resumeApproval(reply.decision)
+      return structuredClone(next)
+    } finally { entry.approvalBusy = false }
+  }
+
   active(sessionId: string): string | undefined {
     return [...this.entries.values()].find(entry => entry.snapshot.sessionId === sessionId && active(entry.snapshot))?.snapshot.requestId
   }
@@ -96,7 +161,7 @@ export class RequestController {
     const answer = reply.answer
     const input = answer.type === 'text' ? answer.text : answer.type === 'skip' ? 'Bỏ qua câu hỏi này' : question.options[answer.index]
     if (!input || (answer.type === 'skip' && !question.allowSkip)) throw new HttpError(400, 'INVALID_REPLY')
-    entry.snapshot = { requestId: id, sessionId: reply.sessionId, status: 'running' }
+    entry.snapshot = { requestId: id, sessionId: reply.sessionId, status: 'running', revision: (entry.snapshot.revision ?? 0) + 1 }
     const receipt = structuredClone(entry.snapshot)
     entry.replies.set(reply.replyId, { payload, receipt })
     // A bounded receipt cache is sufficient: evicted question IDs can never become current again.
@@ -128,6 +193,15 @@ export class RequestController {
     if (this.cleanupFailed) throw new Error('Agent cleanup failed')
   }
 
+  /** Reserve Chat admission while its Workspace setup changes, including async folder checks. */
+  async withIdleSessions<T>(ids: readonly string[], operation: () => Promise<T>): Promise<T> {
+    if (ids.some(id => this.busy.has(id))) throw new HttpError(409, 'WORKSPACE_BUSY')
+    this.workspaceChanges++
+    for (const id of ids) this.busy.add(id)
+    try { return await operation() }
+    finally { this.workspaceChanges--; for (const id of ids) this.busy.delete(id) }
+  }
+
   private async run(entry: RequestEntry, request: AgentRequest, agent: RequestAgent): Promise<void> {
     let result: TurnResult
     let steps = 0
@@ -140,7 +214,7 @@ export class RequestController {
         steps += result.steps
         const draft = result.status === 'completed' ? agent.question?.() : undefined
         if (!draft) break
-        const next: RequestSnapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: 'awaiting_user',
+        const next: RequestSnapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: 'awaiting_user', revision: (entry.snapshot.revision ?? 0) + 1,
           question: { ...questionDraft(draft), questionId: randomUUID(), version: ++version } }
         await this.requestState?.(next)
         entry.abort.signal.throwIfAborted()
@@ -177,7 +251,7 @@ export class RequestController {
       result = { status: 'failed', text: result.text, steps: result.steps,
         error: { code: 'REQUEST_FINALIZATION_FAILED', message: 'Request state could not be saved' } }
     }
-    entry.snapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: result.status, result }
+    entry.snapshot = { requestId: entry.snapshot.requestId, sessionId: request.sessionId, status: result.status, result, revision: (entry.snapshot.revision ?? 0) + 1 }
     this.busy.delete(entry.snapshot.sessionId)
     for (const listener of this.listeners) listener(structuredClone(entry.snapshot))
   }

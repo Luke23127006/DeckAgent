@@ -22,6 +22,24 @@ G-001 PASS and stable `workspaceId`/`sessionId` ownership. Do not change deck-ge
 
 These are **proposed V2 interfaces and semantics**, not declarations that the existing code already exports these names. At group kickoff, A records the final public names in this README and supplies small mock fixtures. B and C start immediately using those fixtures; they do not wait for A's full production implementation. Changes to this contract require an explicit cross-lane review.
 
+### Implemented candidate contracts — 27-10-2026
+
+The owner requested this group after confirming G-001 passed. These additive interfaces implement the planned lifecycle contract inside existing packages.
+
+- Host exports `RequestSummary`: `{requestId,status,sequence,revision?}`. `WebSession.latestRequest?` reports the latest durable request, including completed, failed, cancelled and unknown outcomes. `sequence` is its database admission order.
+- `RequestSnapshot.revision?` and `StoredRequest.revision?` increase for running, awaiting, reply and terminal transitions. Restart increments the persisted revision when active work becomes unknown. This revision is separate from the question's own version.
+- `StoredActivity.startedAt?/endedAt?` are recorded epoch milliseconds. The client shows elapsed time only when the needed timestamps exist. Interrupted legacy activities receive no invented finish time.
+- Existing management/history/activity endpoints and request/SSE routes remain. There is still at most one active request per Chat; different Chats run independently. Disconnecting a view never calls Stop.
+- Client loading generations reject obsolete history/activity results. Request revisions reject older state snapshots. Late send/reply receipts update only the originating Chat's draft and state.
+- Each question option carries the rendered question ID/version. An option retained from another view cannot answer the current Chat's question.
+- Background state refresh updates Chat indicators. Terminal results not yet viewed carry a tab-local unread marker, saved in sessionStorage. This marker is not synchronized across browsers.
+
+Compatibility: the new fields are optional when reading older Hosts or saved records. No database table/schema version, package boundary or model selection format changed. Existing producers, client validators and integration tests were updated together. Older clients can ignore the added fields; they retain their previous navigation behavior.
+
+Executable fixtures: [concurrent lifecycle tests](../../../../../tests/v2-concurrent-chat.test.mjs), the `Chats and Workspaces remain navigable` case in [browser smoke](../../../../../tests/browser-smoke.test.mjs), and response identity validation in [browser client tests](../../../../../tests/browser-runtime.test.mjs). After build, use `pnpm.cmd test:chat-lifecycle`; Chrome coverage remains in `test:browser-smoke`.
+
+See [implementation evidence and manual acceptance](HANDOFF.md). The owner confirmed G-002 passed on 28-10-2026; the exact manual-run SHA and separate artifact were not supplied.
+
 ## Parallel subtasks
 
 | Subtask | Primary owner | Deliverable |

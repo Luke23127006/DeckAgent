@@ -3,13 +3,14 @@ import type { Message, ModelAdapter, ModelEvent, ModelRequest, ModelSelection } 
 import { chatBody, chatEvents } from './chat-completions.ts'
 import { anthropicBody, anthropicEvents } from './anthropic-messages.ts'
 import { geminiBody, geminiEvents } from './gemini.ts'
+import { responsesBody, responsesEvents } from './responses.ts'
 import { events } from './wire.ts'
 import { listModels } from './model-catalog.ts'
 export { transformCredential } from './credential-protection.ts'
 
 export interface ModelConnection {
   readonly id: string
-  readonly protocol: 'chat-completions' | 'anthropic-messages' | 'gemini'
+  readonly protocol: 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
   /** API root, e.g. https://api.openai.com/v1; endpoint suffix is added by adapter. */
   readonly baseUrl: string
   /** Name of an environment variable, never the key itself. Omit for a no-auth endpoint. */
@@ -19,6 +20,8 @@ export interface ModelConnection {
   /** Chat Completions endpoints differ in which token limit field they accept. */
   readonly tokenLimitField?: 'max_tokens' | 'max_completion_tokens'
   readonly temperature?: number
+  /** Request-local confirmed choices for the selected model; never guessed from provider ID. */
+  readonly reasoningOptions?: readonly { readonly label: string; readonly apiValue: string }[]
 }
 
 function invalidConfig(): never {
@@ -58,8 +61,11 @@ export class ModelProviders implements ModelAdapter {
     if (!Array.isArray(connections) || !connections.length) invalidConfig()
     for (const connection of connections) {
       if (!connection || typeof connection.id !== 'string' || !/^[\w.-]+$/.test(connection.id) || this.connections.has(connection.id)
-        || !['chat-completions', 'anthropic-messages', 'gemini'].includes(connection.protocol) || typeof connection.baseUrl !== 'string') invalidConfig()
-      if (Object.keys(connection).some(key => !['id', 'protocol', 'baseUrl', 'apiKeyEnv', 'timeoutMs', 'maxOutputTokens', 'tokenLimitField', 'temperature'].includes(key))) invalidConfig()
+        || !['chat-completions', 'responses', 'anthropic-messages', 'gemini'].includes(connection.protocol) || typeof connection.baseUrl !== 'string') invalidConfig()
+      if (Object.keys(connection).some(key => !['id', 'protocol', 'baseUrl', 'apiKeyEnv', 'timeoutMs', 'maxOutputTokens', 'tokenLimitField', 'temperature', 'reasoningOptions'].includes(key))) invalidConfig()
+      if (connection.reasoningOptions !== undefined && (connection.protocol !== 'responses' || !Array.isArray(connection.reasoningOptions)
+        || connection.reasoningOptions.some((option: { label: string; apiValue: string }) => !option || typeof option.label !== 'string' || !option.label.trim()
+          || typeof option.apiValue !== 'string' || !/^[a-z][a-z0-9_-]{0,50}$/.test(option.apiValue)))) invalidConfig()
       if (connection.tokenLimitField !== undefined && (connection.protocol !== 'chat-completions' || !['max_tokens', 'max_completion_tokens'].includes(connection.tokenLimitField))) invalidConfig()
       let url: URL
       try { url = new URL(connection.baseUrl) } catch { invalidConfig() }
@@ -99,6 +105,9 @@ export class ModelProviders implements ModelAdapter {
     if (connection.protocol === 'gemini' && !/^[A-Za-z0-9._-]+$/.test(selection.model)) {
       throw new RuntimeError('PROVIDER_CONFIG', 'Gemini selection.model must be a model ID without models/ prefix')
     }
+    if (selection.reasoningLevel !== undefined && !connection.reasoningOptions?.some(option => option.label === selection.reasoningLevel)) {
+      throw new RuntimeError('PROVIDER_CONFIG', 'Selected reasoning level is unavailable for this model')
+    }
     return { connection, credential }
   }
 
@@ -112,10 +121,15 @@ export class ModelProviders implements ModelAdapter {
       signal.throwIfAborted()
       const anthropic = connection.protocol === 'anthropic-messages'
       const gemini = connection.protocol === 'gemini'
+      const responses = connection.protocol === 'responses'
       const portable = { ...request, messages: portableHistory(request, gemini) }
-      const payload = gemini ? geminiBody(portable) : anthropic ? anthropicBody(portable) : chatBody(portable)
+      const payload = gemini ? geminiBody(portable) : anthropic ? anthropicBody(portable) : responses ? responsesBody(portable) : chatBody(portable)
       if (anthropic) payload.max_tokens = connection.maxOutputTokens ?? 4096
+      else if (responses && connection.maxOutputTokens !== undefined) payload.max_output_tokens = connection.maxOutputTokens
       else if (!gemini && connection.maxOutputTokens !== undefined) payload[connection.tokenLimitField ?? 'max_tokens'] = connection.maxOutputTokens
+      if (responses && request.selection.reasoningLevel) payload.reasoning = {
+        effort: connection.reasoningOptions!.find(option => option.label === request.selection.reasoningLevel)!.apiValue,
+      }
       if (gemini) {
         if (connection.maxOutputTokens !== undefined || connection.temperature !== undefined) payload.generationConfig = {
           ...(connection.maxOutputTokens !== undefined ? { maxOutputTokens: connection.maxOutputTokens } : {}),
@@ -123,7 +137,7 @@ export class ModelProviders implements ModelAdapter {
         }
       } else if (connection.temperature !== undefined) payload.temperature = connection.temperature
       const endpoint = gemini ? `models/${encodeURIComponent(request.selection.model)}:streamGenerateContent?alt=sse`
-        : anthropic ? 'messages' : 'chat/completions'
+        : anthropic ? 'messages' : responses ? 'responses' : 'chat/completions'
       response = await fetch(`${connection.baseUrl.replace(/\/+$/, '')}/${endpoint}`, {
         method: 'POST', headers: {
           'content-type': 'application/json', ...(anthropic ? { 'anthropic-version': '2023-06-01' } : {}),
@@ -137,7 +151,7 @@ export class ModelProviders implements ModelAdapter {
         throw new RuntimeError(code, `Model API request failed (HTTP ${response.status})`)
       }
       phase = 'stream'
-      yield* (gemini ? geminiEvents(events(response)) : anthropic ? anthropicEvents(events(response)) : chatEvents(events(response)))
+      yield* (gemini ? geminiEvents(events(response)) : anthropic ? anthropicEvents(events(response)) : responses ? responsesEvents(events(response)) : chatEvents(events(response)))
     } catch (error) {
       if (request.signal.aborted) throw new RuntimeError('ABORTED', 'Model request cancelled')
       if (timeout.aborted) throw new RuntimeError('PROVIDER_TIMEOUT', 'Model API request timed out')
