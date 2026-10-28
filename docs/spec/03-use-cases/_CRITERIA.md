@@ -59,6 +59,7 @@ Retired flow IDs:
 - UC-001 A21, retirement date not recorded. It stopped the work while the outline was drafted. UC-003 A31 gives the same response at that step, through `includes`. It merged into UC-003 A31.
 - UC-003 A1, retirement date not recorded. It typed or pasted the request text. Writing the request text is the main flow (S1). It merged into S1.
 - UC-003 A20, retirement date not recorded. It attached a file that the selected model could not read. A file the system does not accept is rejected when it is added (A8). It merged into no flow.
+- UC-004 A2, retired on 28-10-2026. It let the user choose whether presenter notes go into an editable or a fixed file. The editable and fixed kinds no longer exist. A source export keeps the notes that are part of the native source, and a static export holds no separate notes. It merged into no flow.
 
 ### Version scope
 

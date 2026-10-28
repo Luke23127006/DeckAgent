@@ -62,6 +62,11 @@ Use these words for these things. Add a row when a new term is needed. Do not ad
 | **visual style** | A reusable set of presentation design rules, such as layout preferences, visual density and visual treatment. It is independent of a design system |
 | **built-in visual style** | A visual style DeckAgent provides. The user can choose it or copy it, but cannot change its original definition |
 | **custom visual style** | A visual style the user creates, changes, saves, removes and reuses |
+| **generation format** | The kind of native source in which the system builds one deck, such as HTML or Marp. One deck has one generation format. It is not the file format of an export |
+| **available generation format** | A generation format the system can build now, with the tools, permissions and integrations it has in the current context |
+| **selected generation format** | The available generation format that the user chose for one deck. Reading about a format, or choosing it as the candidate, does not confirm it. Only a confirmation of the user does |
+| **source export** | An export that gives the current native source of the deck, with what it needs to be used outside DeckAgent. It converts nothing |
+| **static export** | An export that gives the finished slides as fixed pages or images of what the deck canvas shows. It holds no live interaction and no native source |
 | **deck state** | The content and design of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
 | **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
 | **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. A version decides that in its scope file (`docs/versions/`) |
