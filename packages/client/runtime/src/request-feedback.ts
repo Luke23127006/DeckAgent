@@ -41,7 +41,7 @@ export function failureFeedback(code?: string) {
 }
 
 export function requestFeedback(state: StoredRequest['status'], errorCode: string | undefined,
-  records: readonly StoredActivity[], tools: readonly HistoryMessage[], disconnected: boolean) {
+  records: readonly StoredActivity[], tools: readonly HistoryMessage[], disconnected: boolean, approval = false) {
   const saved = new Set<string>()
   for (const tool of tools) {
     if (tool.name !== 'publish_slide' || tool.isError !== false) continue
@@ -57,8 +57,9 @@ export function requestFeedback(state: StoredRequest['status'], errorCode: strin
   let label: string
   let detail = savedText ? `${savedText}. ` : ''
   if (state === 'awaiting_user') {
-    label = 'Đang chờ bạn trả lời'
-    detail += 'Chọn gợi ý hoặc nhập câu trả lời. Hệ thống không làm việc trong lúc chờ; bạn có thể dừng yêu cầu.'
+    label = approval ? 'Đang chờ bạn cho phép' : 'Đang chờ bạn trả lời'
+    detail += approval ? 'Chưa đọc file đang xin phép. Chọn cho phép hoặc từ chối; bạn cũng có thể dừng yêu cầu.'
+      : 'Chọn gợi ý hoặc nhập câu trả lời. Hệ thống không làm việc trong lúc chờ; bạn có thể dừng yêu cầu.'
   } else if (state === 'running') {
     const current = records.findLast(entry => entry.status === 'running')
     const phases: Readonly<Record<string, string>> = { propose_outline: 'Đang chuẩn bị outline', publish_slide: 'Đang lưu slide',

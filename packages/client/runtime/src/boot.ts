@@ -13,10 +13,13 @@ import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
 import { workspaceView } from './workspace-view.ts'
+import { approvalView } from './approval-view.ts'
+import { permissionPicker } from './permission-picker.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
 const management = new ManagementClient(location.origin, token)
+const permissionUI = permissionPicker(management)
 const outlines = new OutlineClient(location.origin, token)
 let outlineState: OutlineSnapshot | undefined
 const root = document.querySelector<HTMLElement>('#app')!
@@ -44,6 +47,19 @@ messages.setAttribute('aria-label', 'Conversation')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
 const questionUI = questionView((answer, question) => { if (current) runForChat(current.sessionId, replyToQuestion(answer, question)) })
+const approvalReplies = new Map<string, string>()
+const approvalUI = approvalView(async (approval, decision) => {
+  if (current?.sessionId !== approval.sessionId || waiting?.approval?.approvalId !== approval.approvalId ||
+    waiting.approval.version !== approval.version) throw new Error('APPROVAL_STALE')
+  const key = JSON.stringify([approval.sessionId, approval.approvalId, approval.version, decision])
+  if (!approvalReplies.has(key)) approvalReplies.set(key, crypto.randomUUID())
+  if (approvalReplies.size > 128) approvalReplies.delete(approvalReplies.keys().next().value!)
+  const accepted = await client.approve(approval.requestId, { sessionId: approval.sessionId, approvalId: approval.approvalId,
+    version: approval.version, replyId: approvalReplies.get(key)!, decision })
+  if (current?.sessionId === approval.sessionId && observeRequest(accepted)) {
+    waiting = undefined; timeline.snapshot(accepted); controls(); await permissionUI.refresh()
+  }
+})
 const timeline = new ConversationView(messages, (type, proposal) => {
   if (current) runForChat(current.sessionId, submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
     outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
@@ -175,9 +191,11 @@ function observeRequest(snapshot: RequestSnapshot): boolean {
     if (session.sessionId !== snapshot.sessionId) return session
     const { activeRequestId, ...rest } = session
     const latest = session.latestRequest
+    const summary = latest ? { requestId: latest.requestId, sequence: latest.sequence,
+      status: snapshot.status, ...(snapshot.revision === undefined ? {} : { revision: snapshot.revision }),
+      ...(snapshot.approval ? { waitingFor: 'approval' as const } : snapshot.question ? { waitingFor: 'question' as const } : {}) } : undefined
     return { ...rest,
-      ...(latest?.requestId === snapshot.requestId ? { latestRequest: { ...latest, status: snapshot.status,
-        ...(snapshot.revision === undefined ? {} : { revision: snapshot.revision }) } } : {}),
+      ...(latest?.requestId === snapshot.requestId && summary ? { latestRequest: summary } : {}),
       ...(active ? { activeRequestId: snapshot.requestId } : activeRequestId && activeRequestId !== snapshot.requestId ? { activeRequestId } : {}),
     }
   }
@@ -189,6 +207,7 @@ function runForChat(id: string, work: Promise<void>) {
   run(work.catch(error => { if (current?.sessionId === id) throw error }))
 }
 function chatStateLabel(session: WebSession): string {
+  if (session.activeRequestId && session.latestRequest?.waitingFor === 'approval') return 'Chờ phê duyệt'
   if (session.activeRequestId) return session.latestRequest?.status === 'awaiting_user' ? 'Chờ trả lời' : 'Đang làm việc'
   if (session.sessionId === current?.sessionId || !session.latestRequest) return ''
   const labels = { running: 'Đang làm việc', awaiting_user: 'Chờ trả lời', completed: 'Hoàn tất', cancelled: 'Đã dừng', failed: 'Thất bại', unknown: 'Chưa xác nhận kết quả' }
@@ -247,12 +266,14 @@ function controls() {
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
   timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
   questionUI.update(question, submit.disabled)
+  approvalUI.update(waiting?.sessionId === current?.sessionId ? waiting?.approval : undefined)
+  permissionUI.update(current?.sessionId)
   input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
   picker.update(settings, !!current?.activeRequestId)
   title.textContent = chatTitle
   title.title = chatTitle
   const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
-  headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
+  headerState.textContent = waiting?.approval ? 'Đang chờ bạn cho phép' : question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
     : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : current?.selectable ? '' : 'Chọn model để bắt đầu'
   navigationHint.hidden = true
   welcome.hidden = historyPresent || active || !current || opening !== undefined
@@ -361,6 +382,7 @@ async function refresh() {
   if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
   renderModels()
   renderChats()
+  void permissionUI.refresh()
 }
 async function showHistory(id: string, expected: number) {
   if (generation !== expected || current?.sessionId !== id) return
@@ -442,7 +464,8 @@ async function open(session: WebSession) {
     const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
     const known = session.activeRequestId ? liveRequests.get(session.activeRequestId) : undefined
     waiting = known && (known.revision ?? 0) >= (pending?.revision ?? 0) ? known.status === 'awaiting_user' ? known : undefined
-      : pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question,
+      : pending && (pending.question || pending.approval) ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user',
+        ...(pending.question ? { question: pending.question } : {}), ...(pending.approval ? { approval: pending.approval } : {}),
         ...(pending.revision === undefined ? {} : { revision: pending.revision }) } : undefined
     deckModel.open(session.sessionId)
     remember(session.sessionId)
@@ -567,7 +590,7 @@ attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ tr�
 composerControls.append(attachment)
 moreActions.append(createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
-primaryAction.append(picker.node, submit, stopRequest)
+primaryAction.append(picker.node, permissionUI.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
 form.append(input, composerActions)
 input.addEventListener('input', () => { saveDraft(); controls() })
@@ -578,7 +601,7 @@ input.addEventListener('keydown', event => {
   }
 })
 const dock = element('div', undefined, 'composer-dock')
-dock.append(questionUI.node, outlineDock, form)
+dock.append(questionUI.node, approvalUI.node, outlineDock, form)
 conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.

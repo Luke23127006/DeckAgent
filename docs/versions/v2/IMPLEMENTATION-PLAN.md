@@ -2,7 +2,7 @@
 
 **Baseline branch:** `docs/versions/v2` · **Reference commit:** `a417141f92bee1a5801e63f2bcfc6948922399d0` · **Date:** 27-10-2026.  
 **Scope authority:** [SCOPE.md](SCOPE.md). This plan selects no product behavior on its own.  
-**Status:** owner confirmed G-001 and G-002 passed and requested TASK-003 on 28-10-2026. TASK-003 is implemented and awaits manual acceptance; later groups and V2 activation remain pending. See [PROGRESS.md](PROGRESS.md).
+**Status:** owner confirmed G-001 through G-003 passed and requested TASK-004 on 28-10-2026. TASK-004 is implemented and awaits manual acceptance; later groups and V2 activation remain pending. See [PROGRESS.md](PROGRESS.md).
 
 ## 1. Value chain
 

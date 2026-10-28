@@ -4,7 +4,14 @@
 **State at creation:** PLAN DRAFT — no V2 implementation gate has passed.  
 **Authority:** [SCOPE.md](SCOPE.md) for scope, [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for dependencies, individual `tasks/` files for instructions.
 
-**Current work — 28-10-2026:** owner confirmed all TASK-002 manual gates passed and requested TASK-003. G-002 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-003 automated checks pass on `feature/v2-task-003-provider-models`; manual G-003 remains pending. Other V2 scope/activation checkpoints are unchanged.
+**Current work — 28-10-2026:** owner confirmed all TASK-003 gates passed and requested TASK-004. G-003 PASS is attributed to that confirmation and the recorded automated evidence; no exact manual-run SHA or separate artifact was supplied. TASK-004 automated checks pass on `feature/v2-task-004-permissions`, based on `17ad50f`; manual G-004 remains pending. Other V2 scope/activation checkpoints are unchanged.
+
+## CI permission path aliases — 28-10-2026
+
+- Hosted browser smoke failed 1/8 because its expected TEMP path used Windows short-name `RUNNER~1`, while the approval correctly displayed the canonical `runneradmin` path.
+- Reproduced locally before the fix with lowercase `TEMP`/`TMP`: the same approval-target assertion failed because canonical and original path strings differed in casing.
+- Fix: compare the displayed approval target and persisted grant/source targets with `realpath()` of the fixture files. Keep exact equality and all permission/isolation assertions; application authorization is unchanged.
+- Verification: Windows, Node 22.19.0, Chrome. Default-TEMP `pnpm.cmd test:browser-smoke` PASS 8/8. Browser plus permission lifecycle/isolation suites with lowercase TEMP PASS 15/15. Lint, targeted permission-test formatting and `git diff --check` PASS. No build was required for this test-only change. The hosted short-name environment still needs its CI rerun.
 
 ## CI source-file substitution fixture — 27-10-2026
 
@@ -32,8 +39,8 @@
 |---|---|---|---|---|---|---|
 | G-001 Workspace | PASS | PASS | PASS | PASS | PASS | Owner confirmed gates passed in conversation, 27-10-2026; [automated evidence](tasks/task-001-workspace/HANDOFF.md); exact manual SHA not supplied |
 | G-002 Chat Lifecycle | PASS | PASS | PASS | PASS | PASS | Owner confirmed all manual gates passed, 28-10-2026; [108/108 automated cases and handoff](tasks/task-002-chat-lifecycle/HANDOFF.md); exact manual SHA not supplied |
-| G-003 Provider & Models | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [Task implementation, 28 provider cases, browser and regression evidence](tasks/task-003-provider-models/HANDOFF.md); live G-003 pending |
-| G-004 Permissions | Not started | Not started | Not started | Not started | NOT STARTED | — |
+| G-003 Provider & Models | PASS | PASS | PASS | PASS | PASS | Owner confirmed all gates passed, 28-10-2026; [automated evidence](tasks/task-003-provider-models/HANDOFF.md); exact manual SHA not supplied |
+| G-004 Permissions | AWAITING MANUAL | AWAITING MANUAL | AWAITING MANUAL | Automated PASS | NOT VERIFIED | [Permission lifecycle, browser, isolation and regression evidence](tasks/task-004-agent-permissions/HANDOFF.md); live G-004 pending |
 | G-005 Sources & Attachments | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-006 Web Research | Not started | Not started | Not started | Not started | NOT STARTED | — |
 | G-007 Context & Integration | Not started | Not started | Not started | Not started | NOT STARTED | — |
@@ -115,12 +122,12 @@ These are execution checklists for the acceptance criteria in the linked group R
 
 [Task and acceptance criteria](tasks/task-003-provider-models/README.md). Dependency: G-002 PASS.
 
-- [ ] Reopen saved V1 provider configurations after restart. Test valid configuration changes and an invalid connection without exposing keys.
-- [ ] Select models in different Chats. Only known reasoning choices appear; unknown metadata remains unknown.
-- [ ] Start a request, then change the model/reasoning settings. Verify the running request keeps its captured selection and the next request uses the change.
-- [ ] Manually run the Responses tool-call compatibility fixture. Record fixture evidence separately from any live provider call.
-- [ ] Keep restore-default-model acceptance held while approved release model IDs are absent. Record the provider/protocol combinations actually tested.
-- [ ] Pass the common V1 smoke with a usable live model; unavailable combinations remain NOT VERIFIED.
+- [x] Reopen saved V1 provider configurations after restart. Test valid configuration changes and an invalid connection without exposing keys.
+- [x] Select models in different Chats. Only known reasoning choices appear; unknown metadata remains unknown.
+- [x] Start a request, then change the model/reasoning settings. Verify the running request keeps its captured selection and the next request uses the change.
+- [x] Manually run the Responses tool-call compatibility fixture. Record fixture evidence separately from any live provider call.
+- [x] Keep restore-default-model acceptance held while approved release model IDs are absent. Record the provider/protocol combinations actually tested.
+- [x] Pass the common V1 smoke with a usable live model; unavailable combinations remain NOT VERIFIED.
 
 ### G-004 — Permissions and approvals
 
@@ -182,6 +189,8 @@ Add one row per subtask run and group gate run. Preserve failures when recording
 | TASK-002 A/B/C / G-002 | `feature/v2-task-002-chat-lifecycle`, base `c93f3e8` + uncommitted changes; Windows, Node 22.19.0, Chrome; temporary data | Codex / 27-10-2026 | Build/lint PASS; combined 108/108 PASS, 0 skipped | NOT VERIFIED | [Contracts, failure history and manual steps](tasks/task-002-chat-lifecycle/HANDOFF.md); Issue pending | Task owner: manual G-002; hosted CI not run |
 | G-002 owner acceptance | Candidate SHA and separate manual artifacts not supplied | Task owner / 28-10-2026 | Earlier automated evidence above retained | PASS, owner-confirmed | Owner said all gates passed and requested TASK-003 | Supersedes the pending manual result above; does not close historical V1 gates |
 | TASK-003 A/B/C / G-003 | `feature/v2-task-003-provider-models`, base `6611c57`; Windows, Node 22.19.0, Chrome; temporary data | Codex / 28-10-2026 | Build/typecheck/lint PASS; provider 28/28, Local Web 9/9, tools-browser 16/16, browser 7/7, agent 35/35, sessions 9/9, workspace 19/19, lifecycle 3/3, outline 19/19, slides 9/9, recovery 26/26 PASS | NOT VERIFIED | [Contracts, failures, compatibility matrix and manual steps](tasks/task-003-provider-models/HANDOFF.md); Issue pending | Task owner: live G-003 observations; hosted CI not run |
+| G-003 owner acceptance | Exact manual-run SHA and separate artifact not supplied | Task owner / 28-10-2026 | Earlier automatic evidence retained | PASS, owner-confirmed | Owner said all Task 3 gates passed and requested TASK-004 | Supersedes the pending manual result above; release defaults remain held |
+| TASK-004 A/B/C / G-004 | `feature/v2-task-004-permissions`, base `17ad50f`; Windows, Node 22.19.0, Chrome; temporary profiles | Codex / 28-10-2026 | Build/lint PASS; permissions 7/7, browser 8/8, tools-browser 16/16, runtime 35/35, Local Web 9/9, slides 9/9, outline 19/19, Workspace 19/19, lifecycle 3/3 PASS | NOT VERIFIED | [Contracts, negative matrix, failures and manual steps](tasks/task-004-agent-permissions/HANDOFF.md); Issue pending | Task owner: manual G-004; hosted CI not run |
 
 ## Open handoffs
 

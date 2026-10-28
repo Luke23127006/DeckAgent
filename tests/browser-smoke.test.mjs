@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -113,6 +113,77 @@ async function connect(url) {
     close: () => socket.close(),
   }
 }
+
+test('permission approval stays with its Chat across navigation and reload, and continuing grants can be revoked', { timeout: 45000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-permission-browser-'))
+  const targetPath = join(dir, 'outside.txt')
+  await writeFile(targetPath, 'Approved browser fixture')
+  let app, browser, protocol
+  t.after(async () => {
+    if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+    if (browser && browser.exitCode === null) browser.kill()
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const selection = { provider: 'fixture', model: 'permissions' }
+  app = await startLocalWeb({ dataDir: join(dir,'data'), selection, model: { async *stream(request) {
+    if (request.messages.at(-1).role === 'user') {
+      yield { type: 'tool-call', call: { id: `read-${request.messages.length}`, name: 'read_file', arguments: { path: targetPath, scope: 'external' } } }
+      yield { type: 'finish', reason: 'tool-calls' }
+    } else { yield { type: 'text-delta', text: 'Permission step finished' }; yield { type: 'finish', reason: 'stop' } }
+  } } })
+  const api = async (path, method='GET', value) => {
+    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type':'application/json' },
+      ...(value === undefined ? {} : { body: JSON.stringify(value) }) })
+    assert.ok(response.ok)
+    return response.json()
+  }
+  const x = await api('sessions','POST',{selection}), y = await api('sessions','POST',{selection})
+  browser = spawn(await browserPath(), ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check','--disable-background-networking','--remote-debugging-port=0',`--user-data-dir=${join(dir,'chrome')}`,'about:blank'], {stdio:'ignore',windowsHide:true})
+  const port = await waitForBrowserPort(join(dir,'chrome'),browser)
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  const evaluate = async expression => {
+    const result = await protocol.call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true})
+    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
+    return result.result.value
+  }
+  const open = async id => {
+    await evaluate(`document.querySelector('.chat-navigation [data-session-id=${JSON.stringify(id)}]').click();true`)
+    await eventually(() => evaluate(`document.querySelector('.chat-navigation [aria-current=true]')?.dataset.sessionId===${JSON.stringify(id)}`),'Chat did not open')
+  }
+  const send = async text => {
+    await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`),'Composer unavailable')
+    await evaluate(`(()=>{const input=document.querySelector('.composer textarea');input.value=${JSON.stringify(text)};input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();return true})()`)
+  }
+  await protocol.call('Page.navigate',{url:`${app.origin}/#token=${app.token}`})
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [aria-current=true]')`),'Initial Chat missing')
+  await open(x.sessionId)
+  await send('Read outside file')
+  await eventually(() => evaluate(`!document.querySelector('.step-approval').hidden`),'Approval missing')
+  assert.equal(await evaluate(`document.querySelector('.step-approval pre').textContent`),await realpath(targetPath))
+  await evaluate(`window.oldApproval=document.querySelector('.step-approval button');(()=>{const input=document.querySelector('.composer textarea');input.value='Unsent draft';input.dispatchEvent(new Event('input'));return true})()`)
+  await open(y.sessionId)
+  assert.equal(await evaluate(`document.querySelector('.step-approval').hidden`),true)
+  await evaluate(`window.oldApproval.click();true`)
+  assert.equal((await api(`sessions/${x.sessionId}/requests`))[0].status,'awaiting_user')
+  await open(x.sessionId)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.step-approval')?.hidden===false`),'Reload lost approval')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`),'Unsent draft')
+  await evaluate(`document.querySelector('.step-approval button').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.step-approval').hidden && !document.querySelector('[aria-label="Send request"]').disabled`),'Denial did not resume request')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`),'Unsent draft')
+  await send('Read again')
+  await eventually(() => evaluate(`!document.querySelector('.step-approval').hidden`),'Second approval missing')
+  await evaluate(`[...document.querySelectorAll('.step-approval button')].find(button=>button.textContent.includes('trong Chat')).click();true`)
+  await eventually(() => evaluate(`document.querySelector('.step-approval').hidden && !!document.querySelector('.permission-picker button')`),'Continuing grant missing')
+  await evaluate(`document.querySelector('.permission-picker').open=true;document.querySelector('.permission-picker button').click();true`)
+  await eventually(async () => (await api(`sessions/${x.sessionId}/permissions`)).grants[0]?.revokedAt,'Grant not revoked')
+  await evaluate(`(()=>{const select=document.querySelector('[aria-label="Chat permission"]');select.value='provided-materials-only';select.dispatchEvent(new Event('change'));return true})()`)
+  await eventually(async () => (await api(`sessions/${x.sessionId}/permissions`)).preset==='provided-materials-only','Preset not saved')
+  assert.equal((await api(`sessions/${y.sessionId}/permissions`)).preset,'workspace-access')
+})
 
 test('Chats and Workspaces remain navigable while work runs or awaits a reply', { timeout: 45000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-concurrent-browser-'))

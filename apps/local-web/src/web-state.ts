@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import type { ActivityEvent, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
-import { HttpError, validateUserQuestion } from '@deckagent/host-api'
+import { HttpError, validateUserQuestion, validateStepApproval } from '@deckagent/host-api'
 import type { RequestSnapshot, StoredActivity, StoredRequest, WebSession, WebSettings } from '@deckagent/host-api'
 import type { SqliteSessionStore, SessionInfo } from '@deckagent/session-persistence'
 import { WorkspaceRegistry } from './workspace-registry.ts'
@@ -112,6 +112,7 @@ export class WebState {
             latestRequest: {
               requestId: latest.requestId,
               status: latest.status,
+              ...(latest.status === 'awaiting_user' ? { waitingFor: latest.approval ? 'approval' as const : 'question' as const } : {}),
               sequence: Number(row!.sequence),
               ...(latest.revision === undefined ? {} : { revision: latest.revision }),
             },
@@ -207,11 +208,12 @@ export class WebState {
   requestState(snapshot: RequestSnapshot): void {
     this.db
       .prepare(
-        "UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?), '$.revision', ?) WHERE id=? AND session_id=?",
+        "UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?), '$.approval', json(?), '$.revision', ?) WHERE id=? AND session_id=?",
       )
       .run(
         snapshot.status,
         JSON.stringify(snapshot.question ?? null),
+        JSON.stringify(snapshot.approval ?? null),
         snapshot.revision ?? 0,
         snapshot.requestId,
         snapshot.sessionId,
@@ -251,7 +253,7 @@ export class WebState {
         (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
     )
       throw new HttpError(500, 'ACTIVITY_STORAGE')
-    if (value.status === 'awaiting_user' && value.question == null) throw new HttpError(500, 'ACTIVITY_STORAGE')
+    if (value.status === 'awaiting_user' && ((value.question == null) === (value.approval == null))) throw new HttpError(500, 'ACTIVITY_STORAGE')
     return {
       requestId: value.requestId,
       ...(typeof value.revision === 'number' ? { revision: value.revision } : {}),
@@ -259,6 +261,7 @@ export class WebState {
         ...(typeof value.selection.reasoningLevel === 'string' ? { reasoningLevel: value.selection.reasoningLevel } : {}) },
       status: value.status,
       ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
+      ...(value.approval == null ? {} : { approval: validateStepApproval(value.approval) }),
       ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
       ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
       ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),

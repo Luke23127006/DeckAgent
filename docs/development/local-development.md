@@ -181,6 +181,13 @@ Work continues in its original Chat. Each Chat keeps its own draft, selected mod
 History rows show background request outcomes and a tab-local new-result marker. Opening the Chat reads its saved work without restarting it.
 Stop affects only the request shown in the current Chat. Host restart leaves interrupted work unconfirmed and never resumes it automatically.
 
+The Composer shows the Chat's permission: Workspace Access or Provided Materials Only.
+Workspace Access includes read-only project files; Provided Materials Only limits reads to the material supplied to that Chat.
+An outside-file read waits for a separate approval showing the exact file. Choose Deny, Allow once, or allow that exact file in this Chat until revoked.
+Review and revoke continuing scopes in the Chat permission details. Changes to presets and existing grants apply to later requests.
+Settings can save a default permission for new Chats. Existing Chats keep their saved preset.
+Approvals never allow access to another Chat's internal data or writes to original project files.
+
 Missing directories are created automatically; existing data is reused. To use
 separate demo data and workspace, run:
 
@@ -227,6 +234,7 @@ pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web sta
 pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
 pnpm.cmd test:workspace     # Workspace ownership, source isolation and offline import
 pnpm.cmd test:chat-lifecycle # Concurrent requests, stale replies and interrupted Chat recovery
+pnpm.cmd test:permissions   # Presets, versioned approvals, continuing scopes and file isolation
 ```
 
 These checks use local fixtures and require no cloud keys. The contracts, manual
