@@ -1,6 +1,7 @@
 # TASK-001-C — Port isolation and MCP tests
 
-Owner: lane C; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane C. Status: PASS for automated CLI/model isolation and MCP qualification.
+Group acceptance remains separate; see [HANDOFF.md](HANDOFF.md).
 Group: [Port and qualify the OpenCode adapter](README.md). Entry dependency: Recorded dev/POC baseline; production seam proposal reviewed.
 
 ## Deliverable
@@ -9,9 +10,12 @@ Promote repeatable spike capture/assertions into test-owned fixtures. Cover actu
 
 ## File ownership
 
-tests/opencode-agent.test.mjs; tests/opencode-integration.test.mjs; proposed tests/opencode-tool-isolation.test.mjs.
+tests/opencode-agent.test.mjs; tests/opencode-integration.test.mjs;
+tests/opencode-tool-isolation.test.mjs; tests/opencode-process.test.mjs;
+tests/fixtures/opencode-phase-tools.mjs. Adapter fixes were made by the same integrator in lane A.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+These paths now exist. Tests capture provider-bound declarations from the real pinned CLI.
+Live-model MCP error/recovery and cancellation are separate from provider fixtures.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

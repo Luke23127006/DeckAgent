@@ -6,6 +6,7 @@ import { HttpError } from '@deckagent/host-api'
 import type { ModelDescriptor, ProviderSettings, WebSettings } from '@deckagent/host-api'
 import { record } from './web-state.ts'
 import { builtInProviders } from './built-in-providers.ts'
+import type { OpenCodeProvider } from './opencode/agent.ts'
 
 interface SavedProvider {
   readonly connection: ModelConnection
@@ -264,6 +265,21 @@ export class ProviderStore {
         else this.active.delete(chosen.provider)
       },
     }
+  }
+
+  captureOpenCode(chosen: ModelSelection): ReturnType<ProviderStore['capture']> & { provider: OpenCodeProvider } {
+    const saved = this.providers.get(chosen.provider)
+    if (!saved?.models.includes(chosen.model)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
+    const connection = saved.connection
+    // The POC supports only the Gemini path actually verified by the spike.
+    // Reject settings whose semantics have not been mapped, rather than ignore them.
+    if (connection.protocol !== 'gemini' || chosen.reasoningLevel || connection.maxOutputTokens || connection.temperature !== undefined ||
+      connection.timeoutMs || connection.tokenLimitField || connection.reasoningOptions?.length ||
+      saved.modelMetadata.some(item => item.model === chosen.model && (item.maxOutputTokens || item.reasoningOptions?.length)))
+      throw new HttpError(409, 'OPENCODE_UNSUPPORTED_PROVIDER')
+    const key = this.keys.get(chosen.provider)
+    if (!key) throw new HttpError(409, 'PROVIDER_CREDENTIALS')
+    return { ...this.capture(chosen), provider: { baseUrl: connection.baseUrl, model: chosen.model, key } }
   }
 
   async catalog(id: string): Promise<readonly string[]> {

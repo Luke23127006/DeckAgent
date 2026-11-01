@@ -22,6 +22,21 @@ source changes, run `pnpm.cmd build` and restart the Host.
 Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. On other shells, use
 `pnpm` in place of `pnpm.cmd`.
 
+## Try OpenCode
+
+With the qualified OpenCode binary available locally and `GEMINI_API_KEY` set in
+the root `.env`, run:
+
+```powershell
+pnpm.cmd start:opencode          # Build, open the browser, keep previous test data
+pnpm.cmd start:opencode --fresh  # Start with a new test profile; keep the old one
+pnpm.cmd start:opencode --check  # Check local prerequisites without starting the app
+```
+
+The launcher selects supported Node and uses a separate test profile. **Ctrl+C**
+stops the Host; run the same command again to reopen saved work.
+See [OpenCode setup](docs/development/opencode.md) for binary requirements.
+
 ## Documentation
 
 - [Product vision](docs/spec/01-product-vision/VISION.md) — the intended product

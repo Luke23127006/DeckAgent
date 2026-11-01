@@ -14,8 +14,11 @@ import type { SlideScopeDecision } from './editing-workflow.ts'
 import { presentationInstructions, reviewAction } from './outline-workflow.ts'
 import { clarificationInstructions, registerOutlineInteraction } from './outline-interaction.ts'
 import type { OutlineDecision } from './outline-interaction.ts'
+import { OpenCodeAgentHandle } from './opencode/agent.ts'
+import type { OpenCodeOptions } from './opencode/agent.ts'
 
 interface WebRequestOptions {
+  readonly openCode?: OpenCodeOptions & { readonly root: string }
   readonly request: AgentRequest
   readonly requestId: string
   readonly workspace: string
@@ -65,8 +68,8 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
   const candidate = action.command && action.target ? presentation.currentOutline(sessionId, action.target) : undefined
   if (request.outlineAction && !candidate) throw new HttpError(409, 'OUTLINE_STALE')
   const firstConfirm = action.command === 'confirm' ? candidate : undefined
-  let captured: ReturnType<ProviderStore['capture']>
-  try { captured = catalog.capture(chosen) }
+  let captured: ReturnType<ProviderStore['capture']> | ReturnType<ProviderStore['captureOpenCode']>
+  try { captured = options.openCode ? catalog.captureOpenCode(chosen) : catalog.capture(chosen) }
   catch (error) {
     if (error instanceof RuntimeError && error.code === 'PROVIDER_CREDENTIALS') throw new HttpError(409, 'PROVIDER_CREDENTIALS')
     throw error
@@ -102,12 +105,13 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
     const resolving = editing && !scope.length
     const resolveAllowed = resolving && !editingScopeBlocked(input)
     const ctx = new Context()
+    let handle: AgentHandle | undefined
     const tools = new ToolRegistry()
     let files: Awaited<ReturnType<typeof registerFileTools>> | undefined
     const removers: (() => void)[] = []
     let closing: Promise<void> | undefined
     const close = () => closing ??= (async () => {
-      try { await ctx.fiber.dispose() } finally { for (const remove of removers.reverse()) remove(); files?.dispose() }
+      try { await handle?.dispose(); await ctx.fiber.dispose() } finally { for (const remove of removers.reverse()) remove(); files?.dispose() }
     })()
     try {
       files = await registerFileTools(tools, { root: workspace,
@@ -129,10 +133,15 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
       const instructions = resolving ? `${scopeInstructions}\nHost-confirmed slide plan: ${JSON.stringify(deck)}\nConfirmed content plan: ${JSON.stringify(confirmed ?? null)}` : editing
         ? `${editingInstructions(deck, scope, requestId)}\nConfirmed plan: ${JSON.stringify(confirmed ?? null)}\n${scope.length ? '' : 'No edits are authorized. Ask the user to name slide numbers, quote an exact slide title, say all slides, or continue unfinished slides. Change nothing.'}`
         : `${presentationInstructions(deck, confirmed ?? target, reviewing, requestId)}${deck.outlineId ? '' : `\n${clarificationInstructions}`}`
-      await ctx.plugin(runtimePlugin, {
+      const runtimeOptions = {
         maxSteps: Math.max(8, (editing ? 3 : 2) * scope.length + 5),
         systemPrompt: `You are DeckAgent. Work only within the granted workspace. Draft files belong to this request only. read_file uses scope "work" for drafts and scope "source" for read-only project files when available. Project files are never writable. Write drafts as new files; do not overwrite existing files. Slide HTML must omit all meta tags, including charset and viewport. Use static HTML/CSS only. If publish_slide rejects HTML, follow its diagnostic: write a corrected draft at a new path and publish that path, never repeat the rejected file unchanged. A scope rejection is not a request for manual Host permission: no such approval flow exists. Explain the saved result and ask for a clearly scoped new request instead. ${instructions}`,
-      })
+      }
+      if (!options.openCode) await ctx.plugin(runtimePlugin, runtimeOptions)
+      const allowed = deck.outlineId
+        ? resolving ? ['read_file', 'read_slide', 'ask_clarification', ...(resolveAllowed ? ['resolve_slide_scope'] : [])]
+          : [...files.names, 'read_slide', 'publish_slide']
+        : [...(reviewing ? ['read_file'] : files.names), 'propose_outline', 'ask_clarification', ...(target ? ['review_outline'] : [])]
       const staticText = first && action.command === 'cancel' && candidate
         ? 'Outline cancelled. It stays in the conversation. Send a new request for a new proposal; no slides were built.'
         : first && action.command && !candidate
@@ -144,10 +153,11 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
           await store.append(sessionId, [{ role: 'user', content: text }, { role: 'assistant', content: staticText }])
           return { status: 'completed', text: staticText, steps: 0 }
         } }
-        : await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: deck.outlineId
-          ? resolving ? ['read_file', 'read_slide', 'ask_clarification', ...(resolveAllowed ? ['resolve_slide_scope'] : [])]
-            : [...files.names, 'read_slide', 'publish_slide']
-          : [...(reviewing ? ['read_file'] : files.names), 'propose_outline', 'ask_clarification', ...(target ? ['review_outline'] : [])] })
+        : options.openCode && 'provider' in captured
+          ? await OpenCodeAgentHandle.open({ ...options.openCode, ...runtimeOptions, sessionId, requestId,
+            sessions: store, tools, allowed, provider: captured.provider })
+          : await ctx.agentRuntime.createAgent({ sessionId, selection: chosen, tools: allowed })
+      handle = agent
       return { agent, deck, scope, editing, generating: !!confirming, close }
     } catch (error) { await close(); throw error }
   }

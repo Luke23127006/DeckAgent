@@ -1,6 +1,7 @@
 # TASK-001-B — Verify client contract
 
-Owner: lane B; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane B. Status: PASS / COMPLETE.
+Client fixtures and automated browser checks passed; the owner confirmed manual smoke PASS on 2 November 2026.
 Group: [Port and qualify the OpenCode adapter](README.md). Entry dependency: Recorded dev/POC baseline; production seam proposal reviewed.
 
 ## Deliverable
@@ -9,9 +10,12 @@ Trace current Host snapshots and activity events to existing views. Verify state
 
 ## File ownership
 
-proposed tests/opencode-client-contract.test.mjs; client acceptance checklist.
+tests/opencode-client-contract.test.mjs; tests/opencode-browser.test.mjs;
+the client checklist in HANDOFF.md. No client source or UI was changed.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+These paths now exist. Browser tests use the real pinned CLI with a provider fixture.
+Separate live-model tests use the real Host and clients. Owner-confirmed smoke acceptance closes this lane.
+Browser version, exact manual candidate SHA and itemized manual results were not supplied.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

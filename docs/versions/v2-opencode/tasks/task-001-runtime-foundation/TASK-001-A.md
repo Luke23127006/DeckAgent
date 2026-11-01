@@ -1,6 +1,7 @@
 # TASK-001-A — Port opt-in adapter
 
-Owner: lane A; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane A and integrator. Status: PASS for the bounded opt-in port and automated lane checks.
+Group acceptance remains separate; see [HANDOFF.md](HANDOFF.md).
 Group: [Port and qualify the OpenCode adapter](README.md). Entry dependency: Recorded dev/POC baseline; production seam proposal reviewed.
 
 ## Deliverable
@@ -9,9 +10,12 @@ Selectively port 092b799 code/tests, without its historical documentation edits.
 
 ## File ownership
 
-apps/local-web/src/opencode/{agent,mcp-bridge,process}.ts; apps/local-web/src/{web-request,index,cli}.ts; root/app manifests and lockfile.
+apps/local-web/src/opencode/{agent,mcp-bridge,process,config}.ts;
+apps/local-web/src/{web-request,index,cli,provider-settings}.ts;
+root/app manifests and lockfile; scripts/test-opencode.mjs; docs/development/opencode.md.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+These paths now exist. Placement follows the app-local POC and existing public contracts.
+This port does not approve a new package boundary or permanent production runtime design.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

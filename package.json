@@ -5,6 +5,10 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "start:opencode": "node scripts/start-opencode.mjs",
+    "test:opencode": "node --test tests/opencode-agent.test.mjs tests/opencode-process.test.mjs tests/opencode-client-contract.test.mjs tests/opencode-tool-isolation.test.mjs",
+    "test:opencode:cli": "node scripts/test-opencode.mjs cli",
+    "test:opencode:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs live",
     "test:permissions": "node --test tests/v2-permissions.test.mjs tests/v2-permission-isolation.test.mjs",
     "test:chat-lifecycle": "node --test tests/v2-concurrent-chat.test.mjs",
     "test:workspace": "node --test tests/v2-workspace.test.mjs tests/v2-workspace-isolation.test.mjs tests/v2-legacy-import.test.mjs",

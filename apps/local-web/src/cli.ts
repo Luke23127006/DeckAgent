@@ -64,10 +64,12 @@ async function main() {
       port: { type: 'string' },
       help: { type: 'boolean' },
       'no-open': { type: 'boolean' },
+      'opencode-executable': { type: 'string' },
       'confirmed-deck': { type: 'string' },
     },
   })
   if (values.help) {
+    console.log('Experimental OpenCode POC: --opencode-executable <absolute path to pinned Windows 1.19.5 binary>; Gemini only. Use a separate --data-dir.')
     console.log(
       'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <profile>] [--workspace <private-work-base>] [--import-legacy <stopped-profile>] [--confirmed-deck <fixture>] [--port 0] [--no-open]\nDefault profile: ~/.deckagent; private work defaults to <profile>/work. Project folders are registered in the browser and remain read-only. --import-legacy requires an explicit new --data-dir target and all old writers stopped; it preserves the original and a backup. Saved Web Settings take precedence over CLI provider settings. Ctrl+C drains Host. --confirmed-deck is a trusted test fixture, not outline confirmation.',
     )
@@ -103,6 +105,7 @@ async function main() {
     }) }]
   }
   const app = await startLocalWeb({
+    ...(values['opencode-executable'] ? { openCode: { executable: values['opencode-executable'] } } : {}),
     confirmedDecks,
     connections,
     ...(provider && model ? { selection: { provider, model } } : {}),

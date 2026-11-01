@@ -5,7 +5,7 @@
 | Replace custom inference loop and Cordis with OpenCode | Team decision supplied by owner, 2 November 2026 | A carries out staged replacement; no second agent loop |
 | Thesis proposal controls product scope | Owner instruction and approved PDF | Product owner resolves ambiguities; old version exclusions are historical |
 | App data remains separate from project folders | Accepted ADR 0001 | Preserve workspace/source/private-runtime boundaries |
-| CLI adapter with request-local MCP, retaining Host and DeckService | POC verified; proposed production design | A records production ADR before extending shared contracts |
+| CLI adapter with request-local MCP, retaining Host and DeckService | POC verified; bounded opt-in port authorized by owner and implemented; permanent production design remains proposed | Public contracts stay unchanged; A records production ADR before extending shared contracts |
 | Fresh OpenCode session per send; DeckAgent owns durable history | POC behavior; proposed production default | TASK-002 proves continuity, cost, context limits and crash semantics; native resume is not required |
 | Existing public AgentHandle/ToolRegistry contracts remain initially | Proposed smallest migration seam | Do not move packages just to rename runtime; TASK-009 resolves residual imports and package exports |
 | Four existing provider protocols retain behavior | Compatibility requirement, not yet verified through OpenCode | TASK-002 records each protocol and supported option; no silent option loss or model substitution |
@@ -19,7 +19,8 @@
 ADR 0003 (Host step approval) is still marked proposed despite implementation.
 Keep the implemented semantics; do not turn this plan into retrospective ADR approval.
 Future accepted cross-component decisions belong in `docs/adr/`, with owners and compatibility consequences.
-Those files are outside this documentation-only change. An unresolved choice blocks its affected implementation, not independent preparation.
+Those files were outside the original documentation-only change. The opt-in port keeps existing public interfaces.
+An unresolved production choice blocks its affected implementation, not independent preparation.
 
 ## Target execution path
 

@@ -16,9 +16,12 @@ import { DeckService } from '@deckagent/deck'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import { openWebRequest } from './web-request.ts'
 import { outlineStyle } from './outline-style.ts'
+import type { OpenCodeOptions } from './opencode/agent.ts'
 export { importLegacyProfile, LegacyImportError } from './legacy-import.ts'
 
 export interface LocalWebOptions {
+  /** Experimental opt-in; custom runtime remains the default. */
+  readonly openCode?: OpenCodeOptions
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
   readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly model?: ModelAdapter
@@ -96,6 +99,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
         const privateRoot = join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
         await mkdir(privateRoot, { recursive: true, mode: 0o700 })
         const agent = await openWebRequest({ request, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog,
+          ...(options.openCode ? { openCode: { ...options.openCode, root: join(dataDir, 'opencode') } } : {}),
           permission: permissions.get(sessionId), requestApproval, blockedRoots: [dataDir, workspace] })
         finalizers.set(requestId, result => agent.finish(result))
         return agent

@@ -1,7 +1,11 @@
 # TASK-001 — Port and qualify the OpenCode adapter
 
-Integrator: A. Owners: A Platform/Host, B Client/UX, C Tools/Adapters/QA. Named assignees pending.
-Entry dependency: **Recorded dev/POC baseline; production seam proposal reviewed**. Gate: **G-001**. Work status: NOT STARTED.
+Integrator: Codex (A/B/C implementation). Acceptance owner: repository owner, confirmed in this conversation.
+Entry dependency: **Recorded dev/POC baseline; production seam proposal reviewed**. Gate: **G-001**.
+Work status: PASS / COMPLETE. A, B and C are complete; G-001 PASS.
+The owner confirmed the manual smoke test passed and requested closure on 2 November 2026.
+This closes the bounded opt-in gate; existing scope-guard limitations and broader migration checks remain recorded.
+See [the handoff](HANDOFF.md) and [sanitized evidence](evidence.json).
 
 ## Contract handshake
 
