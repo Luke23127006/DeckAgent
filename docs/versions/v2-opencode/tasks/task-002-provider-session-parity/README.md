@@ -1,7 +1,11 @@
 # TASK-002 — Restore provider and session compatibility
 
-Integrator: A. Owners: A Platform/Host, B Client/UX, C Tools/Adapters/QA. Named assignees pending.
-Entry dependency: **G-001**. Gate: **G-002**. Work status: NOT STARTED.
+Integrator and implementation owner: Codex (A/B/C). Manual smoke acceptance: owner-confirmed PASS on 2 November 2026.
+Entry dependency: **G-001 PASS**. Gate: **G-002 NOT VERIFIED**.
+Work status: BLOCKED for final acceptance. Implementation and automated wire/session checks are complete;
+Gemini manual smoke is owner-confirmed PASS. Live qualification for three other protocol families and extended effort/model-switch acceptance remain outstanding.
+See [compatibility](COMPATIBILITY.md), [handoff](HANDOFF.md) and [evidence](evidence.json).
+Use [the manual acceptance cases](MANUAL-ACCEPTANCE.md) for the remaining owner checks.
 
 ## Contract handshake
 

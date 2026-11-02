@@ -2,6 +2,7 @@
 
 Planning snapshot: 2 November 2026. TASK-001 opt-in implementation and automated qualification are complete.
 Owner-confirmed manual smoke PASS closes TASK-001 A/B/C and G-001 on 2 November 2026.
+TASK-002 implementation and automated coverage are in place; Gemini manual smoke is owner-confirmed PASS. G-002 remains NOT VERIFIED pending remaining protocol and extended acceptance.
 Candidate baseline: dev `be0d649e74b13f4bc4508ef6659ce67e35c1c205`.
 POC source: `poc/opencode-integration` at `092b799`.
 Authority: [scope](SCOPE.md), [task mapping](BASELINE-AUDIT.md), [dependencies](IMPLEMENTATION-PLAN.md).
@@ -39,7 +40,7 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 | Group | A | B | C | Integration acceptance |
 |---|---|---|---|---|
 | [001 — Port and qualify the OpenCode adapter](tasks/task-001-runtime-foundation/README.md) | PASS | PASS | PASS | G-001 PASS; COMPLETE, owner-confirmed smoke |
-| [002 — Restore provider and session compatibility](tasks/task-002-provider-session-parity/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-002 NOT VERIFIED |
+| [002 — Restore provider and session compatibility](tasks/task-002-provider-session-parity/README.md) | PASS | Gemini smoke PASS; extended pending | BLOCKED: live credentials | G-002 NOT VERIFIED; code/wire and Gemini smoke complete |
 | [003 — Accept inherited V1/V2 behavior on OpenCode](tasks/task-003-baseline-acceptance/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-003 NOT VERIFIED |
 | [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-004 NOT VERIFIED |
 | [005 — Complete bounded context and manual compaction](tasks/task-005-context/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-005 NOT VERIFIED |
@@ -51,7 +52,7 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 
 ## Next actionable task
 
-Start **TASK-002 — Restore provider and session compatibility**. G-001 is closed after owner-confirmed smoke PASS.
+Complete **TASK-002 live and manual acceptance**. G-001 stays owner-confirmed PASS.
 Use the contracts, qualification records and known limitations in
 [the handoff](tasks/task-001-runtime-foundation/HANDOFF.md).
 Codex completed the A/B/C implementation on branch `feat/v2-opencode`, based on `4511be5` and POC `092b799`.
@@ -60,7 +61,11 @@ Supported Node 22.19.0 qualification passed: 16 distinct CLI cases, 3 live-model
 173 affected legacy tests and 8 existing browser smoke cases. Later fixes passed 16 CLI cases and a Vietnamese live-model retest.
 The owner confirmed manual smoke PASS; browser version, exact manual SHA and itemized results were not supplied.
 The [sanitized evidence](tasks/task-001-runtime-foundation/evidence.json) includes candidate source hashes and limits.
-TASK-002 is unblocked by G-001. Full inherited baseline acceptance still follows TASK-002 and belongs to TASK-003.
+TASK-002 now maps all four protocol families with explicit fail-closed option limits and controlled portable history.
+See its [compatibility matrix](tasks/task-002-provider-session-parity/COMPATIBILITY.md) for wire/live distinctions and known gaps.
+Set local credential/model pairs for standard Chat Completions, Responses and Anthropic, then run `test:opencode:parity:live`.
+Do not send keys in chat. Owner manual acceptance must also cover Settings/effort, clear rejection, drafts and active selection.
+Full TASK-003 integration is still gated by G-002; independent fixture preparation can continue.
 
 ## Decisions and blockers
 
@@ -108,3 +113,22 @@ TASK-001 A/B/C and G-001 are now PASS / COMPLETE, based on that confirmation plu
 No additional per-step manual results, browser version or exact manual SHA were supplied; none are inferred.
 The scope-guard limitation, old saved Activity records, fresh-install gap and broader compatibility checks remain recorded.
 Closure does not switch the default backend or approve full production migration. Next task: TASK-002.
+
+TASK-002 evidence update (2 November 2026): implementation is in place; G-002 remains NOT VERIFIED.
+Final CLI parity: 24 PASS; default parity: 9 PASS / 15 SKIP; post-encoding Gemini: 1 PASS / 4 SKIP.
+A real CLI canary exposed file/env substitution before tool filtering; JSON literal encoding fixes this path.
+The owner confirmed only Gemini credentials are available. Other protocol live tests and Settings/effort manual acceptance remain pending.
+See Task 002 handoff and evidence for source hashes and earlier regression results.
+
+TASK-002 follow-up: current-candidate targeted browser checks PASS 2/2, including rejected-draft/model reload and Settings validation.
+A concrete manual acceptance checklist is now in the task folder. G-002 remains NOT VERIFIED with the same live-credential and owner-acceptance blockers.
+
+TASK-002 manual incident: Gemini HTTP 503 and a subsequent whole-turn deadline blocked context smoke.
+Fixed deadline classification from OPENCODE_FAILED to PROVIDER_TIMEOUT, with safe timedOut evidence.
+Real-CLI deadline/API regressions 2 PASS; process checks 3 PASS; build and direct lint PASS.
+Provider recovery is not proven. G-002 remains NOT VERIFIED.
+
+Owner update (2 November 2026): Task 002 Gemini smoke PASS, confirmed before the owner commits.
+The previous Gemini manual-smoke blocker is resolved by this report; incident evidence remains historical.
+Three remaining live protocol families and extended effort/model-switch acceptance are still unverified.
+G-002 remains NOT VERIFIED. No exact manual SHA, browser version or itemized outcomes were supplied.

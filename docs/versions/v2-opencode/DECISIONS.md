@@ -8,7 +8,7 @@
 | CLI adapter with request-local MCP, retaining Host and DeckService | POC verified; bounded opt-in port authorized by owner and implemented; permanent production design remains proposed | Public contracts stay unchanged; A records production ADR before extending shared contracts |
 | Fresh OpenCode session per send; DeckAgent owns durable history | POC behavior; proposed production default | TASK-002 proves continuity, cost, context limits and crash semantics; native resume is not required |
 | Existing public AgentHandle/ToolRegistry contracts remain initially | Proposed smallest migration seam | Do not move packages just to rename runtime; TASK-009 resolves residual imports and package exports |
-| Four existing provider protocols retain behavior | Compatibility requirement, not yet verified through OpenCode | TASK-002 records each protocol and supported option; no silent option loss or model substitution |
+| Four existing provider protocols retain behavior | Task 002 wire mappings implemented; native Gemini live-qualified; other live cases pending | Explicit option limits and known signature incompatibility are in the task compatibility matrix; no silent option loss or model substitution |
 | Windows x64 1.19.5 is the reproduction pin | POC fact, not final release platform/version selection | TASK-001 reproduces it; TASK-009 decides installation, update, license and OS matrix |
 | Deny native tools, expose phase-specific MCP tools only | POC verified at application level | Model-visible allowlist plus Host execution checks; never label it an OS sandbox |
 | Direct editor representation and save contract | Proposal pending | TASK-006 A/B/C decide minimal editable structure and legacy HTML compatibility before implementation |

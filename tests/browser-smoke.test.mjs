@@ -10,6 +10,46 @@ import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { workflowModel } from './fixtures/outline-workflow.mjs'
 import { RuntimeError } from '../packages/agent/runtime/lib/index.js'
 
+test('OpenCode compatibility rejection keeps the composer draft and explains model settings', { timeout: 45000 }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'deckagent-opencode-compat-browser-'))
+  let browser, protocol
+  const app = await startLocalWeb({ dataDir: join(root, 'data'), workspace: join(root, 'work'),
+    openCode: { executable: join(root, 'never-start.exe') }, selection: { provider: 'fixture', model: 'custom' },
+    connections: [{ id: 'fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:1', tokenLimitField: 'max_completion_tokens' }] })
+  t.after(async () => {
+    if (protocol) { await protocol.call('Browser.close').catch(() => {}); protocol.close() }
+    if (browser && browser.exitCode === null) browser.kill()
+    await app.close()
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const profile = join(root, 'browser')
+  browser = spawn(await browserPath(), ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check','--disable-background-networking','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'], { windowsHide: true, stdio: 'ignore' })
+  const port = await waitForBrowserPort(profile, browser)
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  protocol = await connect(target.webSocketDebuggerUrl)
+  const evaluate = async expression => {
+    const value = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+    if (value.exceptionDetails) throw new Error('Browser evaluation failed')
+    return value.result.value
+  }
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`document.querySelector('.composer select')?.options.length>1 && !document.querySelector('.composer select').disabled`), 'Model picker unavailable')
+  await evaluate(`document.querySelector('.composer select').selectedIndex=1;document.querySelector('.composer select').dispatchEvent(new Event('change'));true`)
+  await eventually(() => evaluate(`!document.querySelector('[aria-label="Send request"]').disabled`), 'Selection not saved')
+  await evaluate(`document.querySelector('.composer textarea').value='KEEP_COMPATIBILITY_DRAFT';document.querySelector('.composer textarea').dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('.conversation > [role=status]')?.title.includes('OPENCODE_UNSUPPORTED_OPTION')`), 'Actionable compatibility error missing')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'KEEP_COMPATIBILITY_DRAFT')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Send request"]').disabled`), false)
+  assert.equal(await evaluate(`document.querySelector('.conversation > [role=status]').textContent.includes('Cài đặt model')`), true)
+  const history = await fetch(`${app.origin}/api/sessions`, { headers: { authorization: `Bearer ${app.token}` } }).then(response => response.json())
+  assert.ok(history.every(chat => chat.messageCount === 0))
+  const selectedModel = await evaluate(`document.querySelector('.composer select').value`)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'KEEP_COMPATIBILITY_DRAFT'`), 'Reload lost the rejected request draft')
+  assert.equal(await evaluate(`document.querySelector('.composer select').value`), selectedModel, 'Reload must preserve the selected model after rejection')
+  assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 0, 'Reload must not start or replay rejected work')
+})
+
 async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
   for (let i = 0; i < retries; i++) {
     const value = await operation()

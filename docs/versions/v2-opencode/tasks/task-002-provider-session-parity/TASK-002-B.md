@@ -1,6 +1,9 @@
 # TASK-002-B — Provider compatibility interaction
 
-Owner: lane B; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane B. Status: GEMINI MANUAL SMOKE PASS; extended acceptance pending.
+Implementation and automated client/browser cases PASS. The owner confirmed the Gemini smoke test PASS on 2 November 2026.
+No itemized case results, browser version or exact manual candidate SHA were supplied.
+Extended effort/model-switch and remaining protocol acceptance are not inferred.
 Group: [Restore provider and session compatibility](README.md). Entry dependency: G-001.
 
 ## Deliverable
@@ -9,9 +12,10 @@ Retain settings and effort UI. Explain unsupported choices; never silently subst
 
 ## File ownership
 
-packages/client/runtime/src/model-picker.ts and management views; proposed tests/opencode-provider-ui.test.mjs.
+packages/client/runtime/src/{host-client,request-feedback}.ts; tests/opencode-provider-ui.test.mjs;
+the added compatibility case in tests/browser-smoke.test.mjs. Model picker and Settings/effort views were retained.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+The test path now exists. The client now preserves stable compatibility codes and explains how to change settings.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

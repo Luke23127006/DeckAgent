@@ -7,7 +7,7 @@ import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 
-test('OpenCode rejects unsupported providers at admission without silently using the legacy model', async t => {
+test('OpenCode rejects unmappable options at admission without silently using the legacy model', async t => {
   const root = await mkdtemp(join(tmpdir(), 'deckagent-opencode-admission-'))
   let legacyCalls = 0
   const app = await startLocalWeb({
@@ -15,7 +15,14 @@ test('OpenCode rejects unsupported providers at admission without silently using
     workspace: join(root, 'work'),
     openCode: { executable: join(root, 'does-not-exist.exe') },
     selection: { provider: 'fixture', model: 'test' },
-    connections: [{ id: 'fixture', protocol: 'chat-completions', baseUrl: 'https://invalid.example/v1' }],
+    connections: [
+      {
+        id: 'fixture',
+        protocol: 'chat-completions',
+        baseUrl: 'https://invalid.example/v1',
+        tokenLimitField: 'max_completion_tokens',
+      },
+    ],
     model: {
       async *stream() {
         legacyCalls++
@@ -28,8 +35,11 @@ test('OpenCode rejects unsupported providers at admission without silently using
     await rm(root, { recursive: true, force: true })
   })
   const client = new HostClient(app.origin, app.token)
-  // Existing clients deliberately collapse unknown admission codes to this safe error.
-  await assert.rejects(client.send({ sessionId: 'unsupported', input: 'Do not fall back' }), /HOST_REQUEST_FAILED/)
+  // Chat Completions is mapped now; its unmappable token-field option remains fail-closed.
+  await assert.rejects(
+    client.send({ sessionId: 'unsupported', input: 'Do not fall back' }),
+    /OPENCODE_UNSUPPORTED_OPTION/,
+  )
   const response = await fetch(`${app.origin}/api/requests`, {
     method: 'POST',
     headers: {
@@ -39,7 +49,7 @@ test('OpenCode rejects unsupported providers at admission without silently using
     body: JSON.stringify({ sessionId: 'unsupported', input: 'Do not fall back' }),
   })
   assert.equal(response.status, 409)
-  assert.equal((await response.json()).error.code, 'OPENCODE_UNSUPPORTED_PROVIDER')
+  assert.equal((await response.json()).error.code, 'OPENCODE_UNSUPPORTED_OPTION')
   assert.equal(legacyCalls, 0)
   assert.deepEqual(await client.history('unsupported'), [])
 })

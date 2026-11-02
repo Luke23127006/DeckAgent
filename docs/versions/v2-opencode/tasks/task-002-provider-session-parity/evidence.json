@@ -1,0 +1,398 @@
+{
+  "task": "TASK-002",
+  "updated": "2026-11-02",
+  "baseline": "12faae91ee4f996b19a4529b561825008f17563f",
+  "candidate": "Uncommitted source files hashed below",
+  "status": {
+    "implementation": "Implemented within documented compatibility matrix",
+    "A": "PASS automated",
+    "B": "GEMINI_MANUAL_SMOKE_PASS; extended acceptance pending",
+    "C": "BLOCKED remaining live credentials",
+    "G002": "NOT_VERIFIED"
+  },
+  "ownerConstraint": "Only Gemini credentials currently available; report remaining families as blockers.",
+  "protocols": {
+    "gemini": {
+      "wire": "PASS actual CLI with provider fixture",
+      "live": {
+        "status": "PASS",
+        "protocol": "gemini",
+        "model": "gemini-3.1-flash-lite",
+        "checks": {
+          "legacyContextMarker": "PASS",
+          "mcpArgumentsAndResult": "PASS",
+          "originalHistoryPreserved": "PASS",
+          "oneNewUserInput": "PASS"
+        },
+        "elapsedMs": 8743,
+        "turnStatus": "completed",
+        "toolCalls": 1,
+        "usage": [
+          {
+            "inputTokens": 2202,
+            "outputTokens": 22
+          },
+          {
+            "inputTokens": 2253,
+            "outputTokens": 24
+          }
+        ],
+        "monetaryCost": null,
+        "costNote": "Observed CLI token counts only; no pricing estimate or claim that custom-provider cost is zero."
+      }
+    },
+    "chatCompletions": {
+      "wire": "PASS actual CLI with provider fixture",
+      "live": "NOT_VERIFIED missing standard credential/model pair"
+    },
+    "responses": {
+      "wire": "PASS actual CLI with provider fixture",
+      "live": "NOT_VERIFIED missing credential/model pair"
+    },
+    "anthropic": {
+      "wire": "PASS actual CLI with provider fixture",
+      "live": "NOT_VERIFIED missing credential/model pair"
+    },
+    "googleGemini3Chat": {
+      "live": "FAIL tool continuation loses thought_signature in pinned compatible SDK",
+      "action": "Known endpoint/model now rejected before inference. Native Gemini must be selected explicitly."
+    }
+  },
+  "checks": [
+    {
+      "name": "parity-complete-final",
+      "file": ".local-only/opencode-task002-parity-complete-final.log",
+      "sha256": "bb34ab596dd9dfa4a612ac7ce1ab0c2b85de12f6baac12ad3311909e6e45c268",
+      "summary": [
+        "# tests 24",
+        "# pass 24",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 52226.1048"
+      ],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "parity-default-complete",
+      "file": ".local-only/opencode-task002-parity-default-complete.log",
+      "sha256": "446d953dd2407dcaa0f3565f1485396f3cd9fc9a81ab4fa64f5c1cf62a91d0fc",
+      "summary": [
+        "# tests 24",
+        "# pass 9",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 15",
+        "# duration_ms 1021.8504"
+      ],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "literal-model-canary",
+      "file": ".local-only/opencode-task002-literal-model-canary.log",
+      "sha256": "ab61df293bee7f59b620c37fd4e13af9ff887a65acb4ce590a4eefa6e391ffb1",
+      "summary": [
+        "# tests 1",
+        "# pass 1",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 3800.3597"
+      ],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "parity-live-encoded",
+      "file": ".local-only/opencode-task002-parity-live-encoded.log",
+      "sha256": "8543cc815c1b64b59373144cf70588f0524f9eceef06a4a2acd9acea92f6ec0c",
+      "summary": [
+        "# tests 5",
+        "# pass 1",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 4",
+        "# duration_ms 9621.7664"
+      ],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "foundation-cli",
+      "file": ".local-only/opencode-task002-foundation-cli.log",
+      "sha256": "ca1aefe6a70cec3a66be58b7aa0f5f2a3d0361e163fc225c26546525bf07328b",
+      "summary": [
+        "# tests 16",
+        "# pass 16",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 34133.6963"
+      ],
+      "note": "Earlier run; later settings and config encoding have separate targeted checks."
+    },
+    {
+      "name": "regression",
+      "file": ".local-only/opencode-task002-regression.log",
+      "sha256": "eb4b049ac3295d30eb251fef0900908cf508f7024de03d40447dc2e7d3244441",
+      "summary": [
+        "# tests 171",
+        "# pass 171",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 7328.8026"
+      ],
+      "note": "Earlier run; later settings and config encoding have separate targeted checks."
+    },
+    {
+      "name": "browser",
+      "file": ".local-only/opencode-task002-browser.log",
+      "sha256": "29d933dc42eb66ab5716cc7c8db24b913c546e6283ed2f84ead39f12a619a56c",
+      "summary": [
+        "# tests 9",
+        "# pass 9",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 18363.0034"
+      ],
+      "note": "Earlier run; later settings and config encoding have separate targeted checks."
+    },
+    {
+      "name": "presentation-live",
+      "file": ".local-only/opencode-task002-presentation-live.log",
+      "sha256": "ff75da2bde731e76b45bfc5cc58c19a63f5f931d9035f416ed77d36daf27b051",
+      "summary": [
+        "# tests 3",
+        "# pass 3",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 118697.7844"
+      ],
+      "note": "Earlier run; later settings and config encoding have separate targeted checks."
+    },
+    {
+      "name": "settings-retest-final",
+      "file": ".local-only/opencode-task002-settings-retest-final.log",
+      "sha256": "e2850427c7467e19be0cb1cf2b0b0d6acd6d35738a81f5bbec7068b9dcb46329",
+      "summary": [
+        "# tests 13",
+        "# pass 12",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 1",
+        "# duration_ms 3738.6964"
+      ],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "build-final",
+      "file": ".local-only/opencode-task002-build-final.log",
+      "sha256": "3369b0c157998bd0b50aaa49d90d4daed2a82921483c9d30938841b483bc6c7e",
+      "summary": [],
+      "note": "Skipped cases do not qualify runtime behavior."
+    },
+    {
+      "name": "browser-followup",
+      "file": ".local-only/opencode-task002-browser-followup.log",
+      "sha256": "36c4e829bf0d2f7f9118bddc8afd7eff78235a06fcf8b5000bba0e3160405f20",
+      "summary": [
+        "# tests 2",
+        "# pass 2",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# duration_ms 3564.6795"
+      ],
+      "note": "Current candidate: rejected-work draft/selection survive reload without replay; Settings invalid-save draft and composer behavior. Real browser, fixture provider; not owner manual acceptance."
+    },
+    {
+      "name": "deadline-red",
+      "file": ".local-only/opencode-task002-deadline-red.log",
+      "sha256": "41f72fac60442260493229b11a7e4000d4e898a3813010b4673a4fdd65cf19ea",
+      "summary": [
+        "# tests 1",
+        "# pass 0",
+        "# fail 1",
+        "# cancelled 0",
+        "# skipped 0"
+      ],
+      "note": "Expected pre-fix regression failure."
+    },
+    {
+      "name": "deadline-green",
+      "file": ".local-only/opencode-task002-deadline-green.log",
+      "sha256": "e7ff4c5faeb9bf901129502e9ec143b2c7671d88bfd7bf99f9302eb7e00281a0",
+      "summary": [
+        "# tests 2",
+        "# pass 2",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0"
+      ],
+      "note": "Real process/CLI regression; fixtures, not cloud availability."
+    },
+    {
+      "name": "timeout-process",
+      "file": ".local-only/opencode-task002-timeout-process.log",
+      "sha256": "31731b492803c68914dd00ddc2916f1f714ffe0e78c9b71ba8fbba39f62b5b32",
+      "summary": [
+        "# tests 3",
+        "# pass 3",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0"
+      ],
+      "note": "Real process/CLI regression; fixtures, not cloud availability."
+    }
+  ],
+  "security": {
+    "configurationInterpolation": "Real CLI canary exposed pre-tool file/env substitution. JSON Unicode literal encoding now passes file/key/model canaries.",
+    "isolation": "Application-level isolation, not OS sandbox"
+  },
+  "limitations": [
+    "Gemini smoke owner-confirmed PASS; extended effort/model-switch and remaining protocol acceptance pending.",
+    "Fixtures and skipped tests do not qualify three remaining live protocol families.",
+    "4,000,000-byte history guard is not a token-window estimate.",
+    "Dollar cost unknown; usage is observed CLI samples only.",
+    "Native omitted output defaults differ from legacy; unsupported options fail closed.",
+    "Full fresh install not qualified.",
+    "No default backend switch, schema or dependency pin change, commit, push or Issue publication."
+  ],
+  "sourceFiles": [
+    {
+      "file": "apps/local-web/src/opencode/agent.ts",
+      "sha256": "db5f0c9daf042536ea9f215b13258677f804e2639b32093a55578e663269a887"
+    },
+    {
+      "file": "apps/local-web/src/opencode/config.ts",
+      "sha256": "69f4a9a2e50d5c2bd9809ab58d52f76298314facb9080c1184df0ee38881ed17"
+    },
+    {
+      "file": "apps/local-web/src/opencode/provider.ts",
+      "sha256": "c3f46a80954ea07869bf12a77efcfbec0bd91907ac55ddd841bba3f2a21228ee"
+    },
+    {
+      "file": "apps/local-web/src/opencode/history.ts",
+      "sha256": "b64a79ffcf61cd623c9953fa9609332b5ef95fb84e4630e8d62d748df493b625"
+    },
+    {
+      "file": "apps/local-web/src/provider-settings.ts",
+      "sha256": "0313e8f633e6d294ad57fd6c0c3234623b51d91eebff1cc8bf6826287d04773e"
+    },
+    {
+      "file": "apps/local-web/src/provider-generation-options.ts",
+      "sha256": "ddb6da6f218415b1c874fc69cf1119ba1c61a3e7f875476101037f482185a2e7"
+    },
+    {
+      "file": "packages/client/runtime/src/host-client.ts",
+      "sha256": "d9973eca16b06f89fbc3ac22a7fc02f27c236dff300ec8a82a375d4c95aba0b1"
+    },
+    {
+      "file": "packages/client/runtime/src/request-feedback.ts",
+      "sha256": "a422dcb06132f4b6bf2c2160ded1757bc4e8302f73e73740761376738410d9bc"
+    },
+    {
+      "file": "package.json",
+      "sha256": "2a1830f0cdb23b73f0ca1fa6b6830e629711053d57e0729c5afc4b35157a1641"
+    },
+    {
+      "file": "scripts/test-opencode.mjs",
+      "sha256": "d3bc577d66c2e73f7e3345f0fec789ff9a9b1a2b10d73f8910bab1d9040b99df"
+    },
+    {
+      "file": "tests/browser-smoke.test.mjs",
+      "sha256": "af20b55428e0962ff4ba5bfa2ae373b42f95558adda556ff769063c5b03eb6e5"
+    },
+    {
+      "file": "tests/opencode-client-contract.test.mjs",
+      "sha256": "2d465af0db58cc7444859bc0c85038869d68a5c53e1a81098871a7a6c377191c"
+    },
+    {
+      "file": "tests/opencode-provider-parity.test.mjs",
+      "sha256": "deedd4f915a2edd1f9fcbfc07a05defad423698f43d8930f9ee341a800580340"
+    },
+    {
+      "file": "tests/opencode-session-parity.test.mjs",
+      "sha256": "5f27e5ab5fa429d6efc62f6b9db810910b884312f9a57be2e4b987e76c4e4acd"
+    },
+    {
+      "file": "tests/opencode-provider-ui.test.mjs",
+      "sha256": "5c24f90383c1269d818c0c03b145efa449c919345e3c8c4ae8fd548679c23701"
+    },
+    {
+      "file": "tests/opencode-parity-live.test.mjs",
+      "sha256": "27e50a75f937587d1a726b9ccaacf17f74b73014a246924d16d8df883cf5721d"
+    },
+    {
+      "file": "tests/fixtures/opencode-wire.mjs",
+      "sha256": "7edb8d0d9f532525ad4846a55fa28ebc2c8a5f8c802c7d3565c0fc144a45eb1b"
+    },
+    {
+      "file": "tests/fixtures/opencode-crash.mjs",
+      "sha256": "13f73dd52042764ec408cbd937b26045f82fa7c62de2b8f41f92d65db61bf50c"
+    }
+  ],
+  "manualIncident": {
+    "status": "Historical failures; subsequent Gemini smoke owner-confirmed PASS",
+    "providerFailure": {
+      "execution": "47991600-f518-4598-bc6b-20669d8e9830",
+      "httpStatus": 503,
+      "steps": 0
+    },
+    "deadlineFailure": {
+      "execution": "3d266a6c-53b5-4bbb-b4cc-7870255c3d72",
+      "aborted": true,
+      "stage": "model",
+      "steps": 0,
+      "exitCode": 1,
+      "elapsedAfterPreflightMs": 178669,
+      "originalCode": "OPENCODE_FAILED"
+    },
+    "finding": "Whole-turn deadline was incorrectly classified as generic runtime failure. Timeout flag now emits PROVIDER_TIMEOUT and safe failure metadata. No claim of restored Gemini availability."
+  },
+  "directProviderProbe": {
+    "model": "gemini-3.1-flash-lite",
+    "credentialSource": "environment/root .env; value not recorded",
+    "maxOutputTokens": 32,
+    "automaticRetries": 0,
+    "results": [
+      {
+        "attempt": 1,
+        "httpStatus": 503,
+        "apiStatus": "UNAVAILABLE",
+        "reasons": [],
+        "hasText": false,
+        "elapsedMs": 1729
+      },
+      {
+        "attempt": 2,
+        "httpStatus": 503,
+        "apiStatus": "UNAVAILABLE",
+        "reasons": [],
+        "hasText": false,
+        "elapsedMs": 2557
+      },
+      {
+        "attempt": 3,
+        "httpStatus": 503,
+        "apiStatus": "UNAVAILABLE",
+        "reasons": [],
+        "hasText": false,
+        "elapsedMs": 1154
+      }
+    ],
+    "interpretation": "Three direct REST inference calls returned HTTP 503 UNAVAILABLE without OpenCode. Failure is independently reproducible on the provider path. Does not prove all key/project restrictions absent or validate the credentials loaded by an already-running Host.",
+    "source": "https://ai.google.dev/gemini-api/docs/troubleshooting"
+  },
+  "ownerManualSmoke": {
+    "status": "PASS",
+    "date": "2026-11-02",
+    "source": "Owner confirmation in chat",
+    "scope": "Seven-case Gemini smoke checklist supplied in chat",
+    "itemizedResults": null,
+    "browserVersion": null,
+    "exactCandidateSha": null,
+    "limitations": "Does not qualify effort/model switching or the three missing live protocol families."
+  }
+}

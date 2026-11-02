@@ -1,6 +1,7 @@
 # TASK-002-A — Provider capture and history contract
 
-Owner: lane A; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane A and integrator. Status: PASS for implementation and automated lane checks.
+Group G-002 remains NOT VERIFIED; this does not claim full release/provider acceptance.
 Group: [Restore provider and session compatibility](README.md). Entry dependency: G-001.
 
 ## Deliverable
@@ -9,9 +10,11 @@ Extend Gemini-only capture through validated mappings. Specify history projectio
 
 ## File ownership
 
-apps/local-web/src/provider-settings.ts; apps/local-web/src/opencode/agent.ts; packages/agent/runtime/src/contracts.ts; packages/session/persistence/src/index.ts.
+apps/local-web/src/provider-settings.ts; apps/local-web/src/provider-generation-options.ts;
+apps/local-web/src/opencode/{agent,provider,history,config}.ts; root scripts and runtime guide.
+Public agent/session contracts and persistence schema were retained without changes.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+Placement is the existing app-local adapter seam. No package boundary or schema change was needed.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

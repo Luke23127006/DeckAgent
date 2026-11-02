@@ -1,6 +1,8 @@
 # TASK-002-C — Protocol and long-history qualification
 
-Owner: lane C; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane C. Status: BLOCKED for remaining live qualification.
+Four-family wire/MCP fixtures and history tests PASS; native Gemini live PASS.
+Standard Chat Completions, Responses and Anthropic live cases lack credential/model pairs.
 Group: [Restore provider and session compatibility](README.md). Entry dependency: G-001.
 
 ## Deliverable
@@ -9,9 +11,12 @@ Map Chat Completions, Responses, Anthropic Messages and Gemini to pinned CLI beh
 
 ## File ownership
 
-packages/llm/providers/src/ provider utilities; proposed tests/opencode-provider-parity.test.mjs and tests/opencode-session-parity.test.mjs.
+tests/opencode-provider-parity.test.mjs; tests/opencode-session-parity.test.mjs;
+tests/opencode-parity-live.test.mjs; tests/fixtures/opencode-{wire,crash}.mjs.
+Existing public ModelProviders validation/catalog/DPAPI utilities were reused; no provider package changes were needed.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+These files now exist. Fixtures are not live evidence. Google Gemini 3 via Chat compatibility is now rejected
+before work after the pinned SDK failed to preserve tool thought signatures.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 
