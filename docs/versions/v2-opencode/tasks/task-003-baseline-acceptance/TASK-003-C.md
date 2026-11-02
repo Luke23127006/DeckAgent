@@ -1,6 +1,6 @@
 # TASK-003-C — Security and parity regression matrix
 
-Owner: lane C; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane C. Status: IN PROGRESS; automated security and Gemini permission subset PASS, full acceptance pending.
 Group: [Accept inherited V1/V2 behavior on OpenCode](README.md). Entry dependency: G-001 and G-002.
 
 ## Deliverable
@@ -11,7 +11,11 @@ Extend fixtures for cross-session tokens/roots, substitution races and revision 
 
 tests/v2-*.test.mjs; tests/recovery-editing.test.mjs; tests/outline-workflow.test.mjs; tests/publish-slide.test.mjs; tests/opencode-integration.test.mjs.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+Existing test paths were inspected and kept unchanged. This change owns
+`tests/opencode-baseline.test.mjs`, `tests/opencode-baseline-security.test.mjs` and
+`tests/opencode-baseline-live.test.mjs`.
+The existing public Host/client interfaces and request-local MCP bridge are the test seams.
+No new runtime framework, dependency, schema or business rule is introduced.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

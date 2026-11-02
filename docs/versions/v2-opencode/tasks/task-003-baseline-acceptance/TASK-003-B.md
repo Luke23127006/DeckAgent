@@ -1,6 +1,6 @@
 # TASK-003-B — Inherited browser/manual acceptance
 
-Owner: lane B; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane B. Status: owner-confirmed Gemini smoke PASS; extended manual acceptance pending.
 Group: [Accept inherited V1/V2 behavior on OpenCode](README.md). Entry dependency: G-001 and G-002.
 
 ## Deliverable
@@ -11,7 +11,10 @@ Reuse existing views. Execute inherited manual checklists and record tester/cand
 
 packages/client/runtime/src/ only for demonstrated regressions; tests/browser-smoke.test.mjs.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+The existing client views and browser test paths were inspected and kept unchanged.
+This change adds [a manual acceptance checklist](MANUAL-ACCEPTANCE.md).
+OpenCode browser automation covers completion, Stop and reload without replay.
+The inherited browser suite covers its existing fixture backend; it is not full OpenCode browser qualification.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

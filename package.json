@@ -9,6 +9,8 @@
     "test:opencode": "node --test tests/opencode-agent.test.mjs tests/opencode-process.test.mjs tests/opencode-client-contract.test.mjs tests/opencode-tool-isolation.test.mjs",
     "test:opencode:cli": "node scripts/test-opencode.mjs cli",
     "test:opencode:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs live",
+    "test:opencode:baseline": "node scripts/test-opencode.mjs baseline",
+    "test:opencode:baseline:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs baseline-live",
     "test:opencode:parity": "node --test tests/opencode-provider-parity.test.mjs tests/opencode-session-parity.test.mjs tests/opencode-provider-ui.test.mjs",
     "test:opencode:parity:cli": "node scripts/test-opencode.mjs parity",
     "test:opencode:parity:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs parity-live",

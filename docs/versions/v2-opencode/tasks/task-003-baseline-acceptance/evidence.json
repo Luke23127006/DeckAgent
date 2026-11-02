@@ -1,0 +1,466 @@
+{
+  "task": "V2 OpenCode TASK-003",
+  "date": "2026-11-02",
+  "tester": "Codex",
+  "candidate": {
+    "baseSha": "7796d3e8cdd506061f1b46cdaa69270486518793",
+    "dirty": true,
+    "sourceFingerprints": [
+      {
+        "path": "package.json",
+        "sha256": "469818fab159f925077858b5e677c9f9aa4912d180406b7763100e21dfc50ec7"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "69e303445bdbbc081a4d4d26de0f3e1a59a1dde8434d6436bdf4b39ae99b04bb"
+      },
+      {
+        "path": "tests/opencode-baseline.test.mjs",
+        "sha256": "f82d281d26533a37c72b9af8f30c852994e1cd6d901ef0326b6e005171118900"
+      },
+      {
+        "path": "tests/opencode-baseline-security.test.mjs",
+        "sha256": "2379a32cb547d80ce12e100a8997092b6d91c1d2dcf15768b8124f5beb7fd73d"
+      },
+      {
+        "path": "tests/opencode-baseline-live.test.mjs",
+        "sha256": "75407ee3496864d74b205a2760168bb477de124347a29e8977b34158b798078a"
+      },
+      {
+        "path": "tests/opencode-browser.test.mjs",
+        "sha256": "db7d690b039978e3df13b2ab5c7f8907501038125106b5c81dc5854a76c03b50"
+      },
+      {
+        "path": "tests/opencode-integration.test.mjs",
+        "sha256": "c1eda644916c929fd8b83ab31ea8d3b627c9b6494b6ad9a11105e33cd09fb84d"
+      },
+      {
+        "path": "tests/browser-smoke.test.mjs",
+        "sha256": "af20b55428e0962ff4ba5bfa2ae373b42f95558adda556ff769063c5b03eb6e5"
+      },
+      {
+        "path": "apps/local-web/src/opencode/agent.ts",
+        "sha256": "db5f0c9daf042536ea9f215b13258677f804e2639b32093a55578e663269a887"
+      },
+      {
+        "path": "apps/local-web/src/opencode/config.ts",
+        "sha256": "69f4a9a2e50d5c2bd9809ab58d52f76298314facb9080c1184df0ee38881ed17"
+      },
+      {
+        "path": "apps/local-web/src/opencode/mcp-bridge.ts",
+        "sha256": "698534f6ec936bdb887aa03a90489e6d9e28d60653cce8e89ff46e4d6003dc5f"
+      },
+      {
+        "path": "apps/local-web/src/web-request.ts",
+        "sha256": "b237a56969f52dafc6b4ae187c1514afb309cb138133649565b515be09426069"
+      },
+      {
+        "path": "packages/host/api/src/request-controller.ts",
+        "sha256": "20e371a4130387bf3d6bc938512f82fc1fd75461e904e3ab2c895f3dc4b881f8"
+      },
+      {
+        "path": "packages/presentation/deck/src/index.ts",
+        "sha256": "7c9e81768175a390b64633c672e99aba9ac1e642881df1f2c105299a28c890ce"
+      }
+    ]
+  },
+  "status": {
+    "A": "IN PROGRESS",
+    "B": "Gemini smoke PASS; extended manual acceptance pending",
+    "C": "IN PROGRESS",
+    "G001": "PASS (inherited owner acceptance)",
+    "G002": "NOT VERIFIED",
+    "G003": "NOT VERIFIED"
+  },
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v22.19.0",
+    "pnpm": "11.28.5",
+    "chrome": "156.0.8078.80",
+    "openCode": {
+      "version": "1.19.5",
+      "executable": ".local-only/opencode-spike/tooling/node_modules/opencode-windows-x64/bin/opencode.exe",
+      "sha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa"
+    },
+    "liveModel": "gemini-3.1-flash-lite",
+    "protocol": "gemini",
+    "credentialSource": "environment / optional .env; value never recorded"
+  },
+  "changes": {
+    "productionSourceChanged": false,
+    "schemaChanged": false,
+    "dependencyChanged": false,
+    "legacyDefaultRetained": true,
+    "commitOrPush": false,
+    "externalPublication": false
+  },
+  "checks": [
+    {
+      "name": "baseline-qualified",
+      "verdict": "PASS",
+      "command": "node scripts/test-opencode.mjs baseline",
+      "scope": "Real pinned CLI/Host/MCP/browser; scripted loopback provider. Run before two added security cases.",
+      "log": ".local-only/opencode-task003-baseline-qualified.log",
+      "logSha256": "711e4c2cbeb617772991876cff3e4374c9ad0222b1e33443a1a96f8d55a10635",
+      "summary": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "subtests": [
+        "MCP Stop rejects queued/new work and close waits for the active tool to drain",
+        "failed call persistence prevents MCP side effects and hides storage exception details",
+        "OpenCode Host approvals: once, deny, continuing grant, cross-chat isolation, revoke and Stop",
+        "OpenCode Host workflow preserves confirmation, scoped revisions and restart without replay",
+        "OpenCode concurrent chats keep admission, Stop and histories separate",
+        "OpenCode browser shows completion, Stop and reload without replay (provider fixture)"
+      ]
+    },
+    {
+      "name": "security-final",
+      "verdict": "PASS",
+      "command": "node --test tests/opencode-baseline-security.test.mjs",
+      "scope": "Four real bridge cases; two overlap baseline-qualified.",
+      "log": ".local-only/opencode-task003-security-final.log",
+      "logSha256": "a8667de92a5bca8aacbbe47dd99211ac1ef7a7db2b5a7520c9ee2da4191c9942",
+      "summary": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "subtests": [
+        "MCP Stop rejects queued/new work and close waits for the active tool to drain",
+        "MCP file access rejects sibling Chat roots, aliases, hardlinks and source writes before approval",
+        "MCP refuses a target replaced while read approval is pending",
+        "failed call persistence prevents MCP side effects and hides storage exception details"
+      ]
+    },
+    {
+      "name": "inherited",
+      "verdict": "PASS",
+      "command": "node --test tests/v2-permissions.test.mjs tests/v2-permission-isolation.test.mjs tests/v2-concurrent-chat.test.mjs tests/v2-workspace.test.mjs tests/v2-workspace-isolation.test.mjs tests/v2-legacy-import.test.mjs tests/recovery-editing.test.mjs tests/outline-workflow.test.mjs tests/publish-slide.test.mjs tests/web-session.test.mjs tests/web-management.test.mjs",
+      "scope": "Existing backend fixtures, not OpenCode model evidence.",
+      "log": ".local-only/opencode-task003-inherited.log",
+      "logSha256": "f8deeccd63c157e0405ff00cadc0556be28c59887a38a1875491723e21b69732",
+      "summary": {
+        "tests": 72,
+        "pass": 72,
+        "fail": 0,
+        "skipped": 0
+      },
+      "subtests": [
+        "a stalled generation retries once with a clean Host task and keeps the original conversation",
+        "clarification waits without building, then an answer creates the outline in the same request",
+        "generation receives an explicit committed Host phase after a natural confirmation",
+        "explicit skip can ask again for an unknown topic and waiting retains its captured model after selection changes",
+        "natural review asks about ambiguity, revises without confirming, then confirms through Host with no duplicated user message",
+        "staged natural confirmation cannot commit after provider-failure",
+        "staged natural confirmation cannot commit after conflicting-decisions",
+        "private request roots keep earlier drafts and give each confirmed request separate publishable paths",
+        "a confirmed deck can retry after a colliding write without another confirmation or overwriting the old draft",
+        "ordinary Send request gives the model a schema-valid outline argument example",
+        "a staged proposal from a failed turn is never current and model calls cannot build or publish before confirmation",
+        "revision races reject busy/stale confirmation and typed cancellation never builds slides",
+        "two separate requests propose then confirm and progressively publish a multi-slide deck",
+        "failed model admission leaves the outline unconfirmed; a later explicit typed confirmation uses the saved current proposal",
+        "a premature model closing message cannot mark an unpublished draft as completed",
+        "a rejected meta charset draft returns actionable safe feedback and can publish a new corrected draft",
+        "publish_slide reads a safe draft and binds the Host Session; unsafe paths never reach publisher",
+        "idle recovery is bounded and never replays stalls",
+        "idle recovery is bounded and never replays draft-written",
+        "idle recovery is bounded and never replays partly-published",
+        "idle recovery is bounded and never replays provider-failure",
+        "Stop during the one idle recovery attempt cancels without a third model attempt",
+        "a natural request to build all seven confirmed slides resolves scope before writing or publishing",
+        "unscoped writes cannot create drafts and cannot be reported as completed despite model success prose",
+        "scope resolution rejects unknown-id without granting writes",
+        "scope resolution rejects published-slide without granting writes",
+        "scope resolution rejects duplicate-id without granting writes",
+        "ambiguous follow-up asks within the request and a scoped answer finishes pending slides without re-confirming",
+        "scope resolves explicit references and denies ambiguous, mismatched and excluded targets",
+        "Stop is idempotent and retains the lock through disposal and finalization",
+        "Agent reads current HTML, publishes only authorized slide, preserves other revisions and restarts without replay",
+        "interrupted editing (stop) keeps committed revisions and hides unfinished drafts",
+        "interrupted editing (failure) keeps committed revisions and hides unfinished drafts",
+        "a model claiming an edit is finished without publishing cannot complete the edit request",
+        "two Chats run independently and management preserves their latest request outcomes",
+        "waiting Chat replies and late Stop remain bound to the original request and question revision",
+        "Host restart marks running and waiting Chats unknown without replay or losing request identity",
+        "explicit legacy import preserves saved work, backup and original bytes, and is idempotent",
+        "legacy import refuses overlapping paths and existing target data without changing them",
+        "legacy import rejects active SQLite sidecars and linked source material before installation",
+        "failed integrity validation preserves the original and backup without installing a partial profile",
+        "an imported Local Web profile reopens providers, activities and saved deck work together",
+        "approval cannot authorize sibling Chat data, links, traversal or original-file writes",
+        "a file replaced while approval waits is not read under the old approval",
+        "a Chat has a durable permission preset without changing its conversation",
+        "a running request retains its preset while the next request uses the changed preset",
+        "outside reads wait for a distinct versioned approval; once, denial and stale replies cannot expand access",
+        "continuing approval survives restart, belongs to one Chat and can be revoked",
+        "Host restart keeps an interrupted approval unconfirmed and never executes or approves it",
+        "a Chat reads project sources but writes and publishes only through its private work root",
+        "private Chat roots cannot discover or read sibling Chat files through either scope",
+        "moving and replacing a source folder revokes old access without substituting a same-name file",
+        "a Workspace registry identity rejects a folder replaced before a request starts",
+        "removing a source grant leaves private drafts readable without granting the old folder",
+        "overlapping project/work roots and source symlink escapes are rejected",
+        "a private work root replaced after validation cannot receive or expose content",
+        "a source file substituted between validation and open is not returned to the Agent",
+        "a source file substituted between validation and open is not returned to the Agent through a folder alias",
+        "Workspace ownership survives restart and removal preserves ungrouped Chat history",
+        "V1 schema migration retains IDs, selection and messages and persists explicit ungrouped ownership",
+        "a failed V1 schema upgrade rolls back without replacing the original database",
+        "Workspace registration rejects internal storage and replacement folders stay unavailable until explicitly repointed",
+        "project reads and slide publication share private request roots and busy Workspace changes are rejected",
+        "a killed Host turns a waiting request into unknown without replay and rejects old reply controls",
+        "History summaries derive titles and timestamps from saved sessions without starting work",
+        "empty Web opens Settings without a model and can create an empty chat without sending work",
+        "deleting an environment-bootstrapped provider persists across restart with the same startup options",
+        "reopening Web after a killed Host preserves unconfirmed activity without replaying work",
+        "settings persist encrypted keys; changing selection/key during a request affects only later requests",
+        "Web model selection changes independently of conversation and survives restart; CLI bind still guards mismatches",
+        "activities report real tool failure separately from a successful request",
+        "cancelling a tool with an unconfirmed side effect reports an unknown activity outcome"
+      ]
+    },
+    {
+      "name": "browser-inherited",
+      "verdict": "PASS",
+      "command": "node --test tests/browser-smoke.test.mjs",
+      "scope": "Existing browser fixtures, not full OpenCode browser parity.",
+      "log": ".local-only/opencode-task003-browser-inherited.log",
+      "logSha256": "922022602fc7942ed7be87ecad9b985a82b68085ba3d6019e740e7868361ab7a",
+      "summary": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "subtests": [
+        "OpenCode compatibility rejection keeps the composer draft and explains model settings",
+        "permission approval stays with its Chat across navigation and reload, and continuing grants can be revoked",
+        "Chats and Workspaces remain navigable while work runs or awaits a reply",
+        "workspace navigation creates owned Chats and keeps missing or removed folder history readable",
+        "interactive composer selects a model without work, sends with Enter and preserves per-chat drafts on reload",
+        "clarification UI waits, restores after reload and answers without sending the unsent draft",
+        "outline conversation confirms in a new request, preserves viewing state and progressively opens the deck",
+        "Deck Canvas renders published revisions over SSE, keeps selection and restores content after Host restart",
+        "real browser boots, sends an Agent request, shows completion and restores history after reload"
+      ]
+    },
+    {
+      "name": "permissions-live",
+      "verdict": "FAIL",
+      "command": "node --env-file-if-exists=.env scripts/test-opencode.mjs baseline-live",
+      "scope": "Once and deny observed; model completed without calling tool before grant scenario in same Chat.",
+      "log": ".local-only/opencode-task003-permissions-live.log",
+      "logSha256": "03b27355c5ad51d59d86a3ad8bfacdaaca88c730aab00866bc0687f1666f7297",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "subtests": [
+        "live Gemini OpenCode permission decisions: once, deny, grant, isolation, revoke and Stop"
+      ]
+    },
+    {
+      "name": "permissions-live-retest",
+      "verdict": "FAIL",
+      "command": "node --env-file-if-exists=.env scripts/test-opencode.mjs baseline-live",
+      "scope": "Independent Chats reached once, deny, grant and post-restart read. Fixture expected immediate cancellation instead of awaiting terminal.",
+      "log": ".local-only/opencode-task003-permissions-live-retest.log",
+      "logSha256": "d3c83698b302d3db377ceb03a30e53aea2806b36157d4b9e01debe8dc80a3aa5",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "subtests": [
+        "live Gemini OpenCode permission decisions: once, deny, grant, isolation, revoke and Stop"
+      ]
+    },
+    {
+      "name": "permissions-live-final",
+      "verdict": "PASS",
+      "command": "node --env-file-if-exists=.env scripts/test-opencode.mjs baseline-live",
+      "scope": "Gemini actual inference/MCP. Once, deny, grant, restart grant, cross-chat isolation, revoke and Stop. Correct asynchronous terminal wait.",
+      "log": ".local-only/opencode-task003-permissions-live-final.log",
+      "logSha256": "d699c9d743b70a07d7ff27322a6c154beafca3f0a0e624c73161ff88a3d8dbeb",
+      "summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "subtests": [
+        "live Gemini OpenCode permission decisions: once, deny, grant, isolation, revoke and Stop"
+      ]
+    },
+    {
+      "name": "presentation-live",
+      "verdict": "FAIL",
+      "command": "DECKAGENT_OPENCODE_POC=1 node --env-file-if-exists=.env --test --test-name-pattern=\"real OpenCode: outline\" tests/opencode-integration.test.mjs",
+      "scope": "First outline turn failed OPENCODE_FAILED; downstream cases not reached. Cause unresolved.",
+      "log": ".local-only/opencode-task003-presentation-live.log",
+      "logSha256": "1cd56ef91fc617b568e66823e1ae7e68039ad3668f45141f796e06a43d624e7a",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "subtests": [
+        "real OpenCode: outline confirmation, two slides, scoped edit, Stop, chat isolation and restart"
+      ]
+    },
+    {
+      "name": "baseline-expanded",
+      "verdict": "FAIL",
+      "command": "DECKAGENT_OPENCODE_CLI_TESTS=1 node --test tests/opencode-baseline.test.mjs",
+      "scope": "Invalid version-zero fixture expectation; later corrected without production changes.",
+      "log": ".local-only/opencode-task003-baseline-expanded.log",
+      "logSha256": "18ff6d53e43b9efabdba93a75d037cd3d2176fd20e7c313253c35c774b2ddc73",
+      "summary": {
+        "tests": 3,
+        "pass": 2,
+        "fail": 1,
+        "skipped": 0
+      },
+      "subtests": [
+        "OpenCode Host approvals: once, deny, continuing grant, cross-chat isolation, revoke and Stop",
+        "OpenCode Host workflow preserves confirmation, scoped revisions and restart without replay",
+        "OpenCode concurrent chats keep admission, Stop and histories separate"
+      ]
+    },
+    {
+      "name": "baseline-final",
+      "verdict": "FAIL",
+      "command": "DECKAGENT_OPENCODE_CLI_TESTS=1 node --test tests/opencode-baseline.test.mjs tests/opencode-baseline-security.test.mjs",
+      "scope": "Already-confirmed outline rejection expected wrong code; later corrected with separate stale-before-confirm check.",
+      "log": ".local-only/opencode-task003-baseline-final.log",
+      "logSha256": "b3b4816dc0315e100f68895b805f057827327976dd183d2dfb1caa7f049711aa",
+      "summary": {
+        "tests": 5,
+        "pass": 4,
+        "fail": 1,
+        "skipped": 0
+      },
+      "subtests": [
+        "MCP Stop rejects queued/new work and close waits for the active tool to drain",
+        "failed call persistence prevents MCP side effects and hides storage exception details",
+        "OpenCode Host approvals: once, deny, continuing grant, cross-chat isolation, revoke and Stop",
+        "OpenCode Host workflow preserves confirmation, scoped revisions and restart without replay",
+        "OpenCode concurrent chats keep admission, Stop and histories separate"
+      ]
+    },
+    {
+      "name": "security",
+      "verdict": "FAIL",
+      "command": "node --test tests/opencode-baseline-security.test.mjs",
+      "scope": "Initial fixtures assumed response delivery after close and used an unclosed registry schema; corrected.",
+      "log": ".local-only/opencode-task003-security.log",
+      "logSha256": "2965b238624d0df86be07c156596d73ec39f4ddba4957a13a8173b583abebf81",
+      "summary": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "skipped": 0
+      },
+      "subtests": [
+        "MCP Stop rejects queued/new work and close waits for the active tool to drain",
+        "failed call persistence prevents MCP side effects and hides storage exception details"
+      ]
+    }
+  ],
+  "distinctBaselineCases": {
+    "total": 8,
+    "hostCli": 3,
+    "mcpBridge": 4,
+    "openCodeBrowser": 1,
+    "note": "6-case command followed by 4-case security run; two overlap. Do not count ten distinct cases."
+  },
+  "additionalChecks": [
+    {
+      "name": "typecheck",
+      "verdict": "PASS",
+      "command": "node node_modules/typescript/bin/tsc -b",
+      "exitCode": 0
+    },
+    {
+      "name": "build",
+      "verdict": "PASS",
+      "command": "node scripts/build-workspace.mjs",
+      "exitCode": 0,
+      "log": ".local-only/opencode-task003-build-direct.log"
+    },
+    {
+      "name": "lint",
+      "verdict": "PASS",
+      "command": "node node_modules/@biomejs/biome/bin/biome lint",
+      "exitCode": 0,
+      "files": 151
+    },
+    {
+      "name": "format",
+      "verdict": "PASS",
+      "command": "node node_modules/@biomejs/biome/bin/biome format tests/opencode-baseline.test.mjs tests/opencode-baseline-security.test.mjs tests/opencode-baseline-live.test.mjs scripts/test-opencode.mjs",
+      "exitCode": 0
+    }
+  ],
+  "livePresentationIncident": {
+    "verdict": "FAIL",
+    "requestId": "10c8ae69-d346-4403-945a-5e49545cc48f",
+    "executionId": "488902b1-bd13-457f-8d6c-8417d4893269",
+    "errorCode": "OPENCODE_FAILED",
+    "exitCode": 1,
+    "steps": 1,
+    "stage": "model",
+    "aborted": false,
+    "timedOut": false,
+    "providerStatus": null,
+    "elapsedMs": 150255,
+    "cause": "UNRESOLVED; not evidence of a bad key or permission bypass"
+  },
+  "ownerManualSmoke": {
+    "verdict": "PASS",
+    "date": "2026-11-02",
+    "source": "Owner confirmation in chat: all supplied Task 003 smoke cases passed before commit",
+    "cases": [
+      "Outline before confirmation",
+      "Confirm and publish exactly two slides",
+      "Edit slide two only",
+      "Chat isolation",
+      "Stop",
+      "Reload and restart without replay"
+    ],
+    "itemizedResults": null,
+    "exactCandidateSha": null,
+    "browserVersion": null,
+    "selectedModelId": null,
+    "apiHtmlRevisionComparisons": null,
+    "limitations": "Owner-reported six-case smoke only; does not prove the broader manual matrix, killed-Host/publication-boundary checks, G002 completion or root-cause resolution of the earlier automated presentation failure. No new automated run is inferred."
+  },
+  "preservation": {
+    "profiles": "Fresh test-owned mkdtemp profiles only; original user profiles unchanged",
+    "files": "Canary/source and sibling contents asserted unchanged; non-target slide HTML/revision asserted equal",
+    "nativePermission": "Unchanged application allowlisting; no OS sandbox claim",
+    "observations": "500ms after stopped approvals/concurrent request, combined with enforced bridge revoke/abort/drain assertions"
+  },
+  "limitations": [
+    "G002 missing other live protocols and extended effort/selection acceptance.",
+    "Owner confirmed six-case smoke PASS; extended manual acceptance and exact candidate/browser/model details remain pending.",
+    "Earlier automated live presentation failed before outline; later owner manual smoke PASS does not erase that failed attempt or prove its cause fixed.",
+    "Combined killed OpenCode-backed Host recovery and exact Stop/publication boundary not yet qualified.",
+    "Queued bridge request may be rejected on HTTP admission or serial execution; queue entry not instrumented.",
+    "Call-save failure prevents execution; result-save failure after commit cannot undo side effects.",
+    "Only pinned Windows CLI qualified. No production-default migration.",
+    "Conservative inherited Vietnamese editing-scope refusal unchanged.",
+    "Initial sandbox spawn EPERM and PowerShell build NativeCommandError were environment failures; direct permitted commands passed."
+  ]
+}

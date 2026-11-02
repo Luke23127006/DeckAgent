@@ -3,6 +3,8 @@
 Planning snapshot: 2 November 2026. TASK-001 opt-in implementation and automated qualification are complete.
 Owner-confirmed manual smoke PASS closes TASK-001 A/B/C and G-001 on 2 November 2026.
 TASK-002 implementation and automated coverage are in place; Gemini manual smoke is owner-confirmed PASS. G-002 remains NOT VERIFIED pending remaining protocol and extended acceptance.
+TASK-003 independent baseline regression work is in progress on `7796d3e`; no production code changed.
+Automated fixture/browser checks and owner-confirmed six-case smoke pass. The earlier automated presentation failure remains recorded; full G-003 remains NOT VERIFIED.
 Candidate baseline: dev `be0d649e74b13f4bc4508ef6659ce67e35c1c205`.
 POC source: `poc/opencode-integration` at `092b799`.
 Authority: [scope](SCOPE.md), [task mapping](BASELINE-AUDIT.md), [dependencies](IMPLEMENTATION-PLAN.md).
@@ -41,7 +43,7 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 |---|---|---|---|---|
 | [001 — Port and qualify the OpenCode adapter](tasks/task-001-runtime-foundation/README.md) | PASS | PASS | PASS | G-001 PASS; COMPLETE, owner-confirmed smoke |
 | [002 — Restore provider and session compatibility](tasks/task-002-provider-session-parity/README.md) | PASS | Gemini smoke PASS; extended pending | BLOCKED: live credentials | G-002 NOT VERIFIED; code/wire and Gemini smoke complete |
-| [003 — Accept inherited V1/V2 behavior on OpenCode](tasks/task-003-baseline-acceptance/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-003 NOT VERIFIED |
+| [003 — Accept inherited V1/V2 behavior on OpenCode](tasks/task-003-baseline-acceptance/README.md) | IN PROGRESS; automated subset PASS | Gemini smoke PASS; extended pending | IN PROGRESS; automated subset PASS | G-003 NOT VERIFIED; G-002 still pending |
 | [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-004 NOT VERIFIED |
 | [005 — Complete bounded context and manual compaction](tasks/task-005-context/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-005 NOT VERIFIED |
 | [006 — Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-006 NOT VERIFIED |
@@ -52,7 +54,9 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 
 ## Next actionable task
 
-Complete **TASK-002 live and manual acceptance**. G-001 stays owner-confirmed PASS.
+Finish **TASK-002 remaining live/extended acceptance** and **TASK-003 bounded acceptance**, as requested by the owner.
+G-001 stays owner-confirmed PASS. Task 003 independent preparation does not waive G-002.
+Use the [Task 003 handoff](tasks/task-003-baseline-acceptance/HANDOFF.md), evidence and manual checklist for current work.
 Use the contracts, qualification records and known limitations in
 [the handoff](tasks/task-001-runtime-foundation/HANDOFF.md).
 Codex completed the A/B/C implementation on branch `feat/v2-opencode`, based on `4511be5` and POC `092b799`.
@@ -132,3 +136,21 @@ Owner update (2 November 2026): Task 002 Gemini smoke PASS, confirmed before the
 The previous Gemini manual-smoke blocker is resolved by this report; incident evidence remains historical.
 Three remaining live protocol families and extended effort/model-switch acceptance are still unverified.
 G-002 remains NOT VERIFIED. No exact manual SHA, browser version or itemized outcomes were supplied.
+
+TASK-003 update (2 November 2026): independent regression preparation runs on committed Task 002 baseline `7796d3e`.
+No production code, default runtime, schema or business rule changed. New CLI/Host/MCP/browser checks are repeatable through
+`test:opencode:baseline`; `test:opencode:baseline:live` separately requires Gemini credentials.
+Baseline command: 6 PASS; expanded MCP suite: 4 PASS with two overlapping cases; eight distinct baseline cases total.
+Inherited regression selection: 72 PASS; inherited browser: 9 PASS. Build/typecheck/lint/changed-file format pass.
+Final Gemini permission run: PASS for once/deny/grant/restart/isolation/revoke/Stop; earlier failed attempts remain in evidence.
+Separate live presentation run: FAIL with OPENCODE_FAILED on the first outline turn; cause unresolved, no provider status or deadline.
+Owner manual acceptance, combined killed-Host recovery and exact Stop/publication boundary checks remain outstanding.
+A IN PROGRESS, B AWAITING MANUAL, C IN PROGRESS. G-003 NOT VERIFIED; G-002 is still a prerequisite.
+See the Task 003 handoff/evidence for source fingerprints, environment, fixture corrections and limitations.
+
+Owner smoke update (2 November 2026): all six supplied Task 003 smoke cases PASS, confirmed before commit.
+Outline/confirmation/two slides, scoped edit, Chat isolation, Stop and reload/restart are accepted within that report.
+This resolves the six-case manual smoke requirement; it does not erase the earlier automated presentation failure.
+Exact manual SHA, browser/model details, itemized results and API HTML/revision evidence were not supplied.
+Extended manual/interruption checks and G-002 remain pending; G-003 stays NOT VERIFIED.
+The bounded Task 003 smoke/test change is ready for owner commit. No automatic commit or push occurred.
