@@ -1,0 +1,908 @@
+{
+  "task": "V2 OpenCode TASK-004",
+  "checkpointDate": "2026-11-03",
+  "ownerDecisionDate": "2026-11-02",
+  "tester": "Codex",
+  "candidate": {
+    "baseSha": "36335d9c6177f62869ade9dceafcd5913d97d68d",
+    "dirty": true,
+    "sourceFingerprints": [
+      {
+        "path": "package.json",
+        "sha256": "177343496b99ae11daa5e3d1c740ef130a586e030764e5d097cc64d11bb2262d"
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "sha256": "7c5d1327bac1d208385a859ba853f22bb98c187495e1acd79aa1e56a37e6cd12"
+      },
+      {
+        "path": "apps/local-web/package.json",
+        "sha256": "9c59f67c7af1c8d486cf44580dc98121f5a674c7b393497f329cd780fb9fbbee"
+      },
+      {
+        "path": "apps/local-web/src/index.ts",
+        "sha256": "37a4031b961b3470bf6662ded07b58a06e8d93801141fb92771014640f6c9979"
+      },
+      {
+        "path": "apps/local-web/src/cli.ts",
+        "sha256": "e649bae7ff4fe5de4d8cf0ad174f31f6443ce89edcb0965ecfaf3b2e00b0425c"
+      },
+      {
+        "path": "apps/local-web/src/web-request.ts",
+        "sha256": "dc9f3fa09a3db564e8cff648055f2513beaa3b28310a1ab11e74317c07b25411"
+      },
+      {
+        "path": "apps/local-web/src/opencode/agent.ts",
+        "sha256": "0f5fe21f67c985789cc54bd09a30d579f79b0f132ca3021efb59b69524ef7826"
+      },
+      {
+        "path": "apps/local-web/src/opencode/provider.ts",
+        "sha256": "1c8b75d04a7dc6a030a4d6aafa0a16546a6dd74fd828881327f11efb0d2f14df"
+      },
+      {
+        "path": "apps/local-web/src/materials/store.ts",
+        "sha256": "05bf13c2db4a3bda816a794b25864039d982b7915bb146623a50cdd1a6a8e634"
+      },
+      {
+        "path": "apps/local-web/src/materials/parser.ts",
+        "sha256": "1f0ed1b5670742f7885ac10436d59809d4d84a47d491aed6046572cdfa54b675"
+      },
+      {
+        "path": "apps/local-web/src/materials/parser-worker.ts",
+        "sha256": "0d31302e86e60aa5a892488e4c709bfde3dd3474f70b5944c9e9decb12866a1c"
+      },
+      {
+        "path": "packages/host/api/src/contracts.ts",
+        "sha256": "efa1d7276abf4cdb8cb937412328a71f764c364ed82e75e302d65197e144c48a"
+      },
+      {
+        "path": "packages/host/api/src/index.ts",
+        "sha256": "b504716dd8a1b80c155721b8e9b008a26325e38876744049277836d214a6acbe"
+      },
+      {
+        "path": "packages/tools/filesystem/src/index.ts",
+        "sha256": "deef0b93a2c51d00a8de578fc06041cce977cab33398924c90f9fe046dc3cb85"
+      },
+      {
+        "path": "packages/tools/filesystem/src/policy-access.ts",
+        "sha256": "c35657a1ff71e3b059dd00c164daa208906f3d0857fcf7dbe736a43d8a708343"
+      },
+      {
+        "path": "packages/agent/runtime/src/tool-failure.ts",
+        "sha256": "b0ffb68f3771b8a3ce64cdf0c5299cbe6b55e04b2a3dd35b13dbba563c8285ad"
+      },
+      {
+        "path": "packages/client/runtime/src/boot.ts",
+        "sha256": "b25454a64d9eb83eb59cec641c4bc524ea6a01b7b185050d22000b5cc77a403d"
+      },
+      {
+        "path": "packages/client/runtime/src/materials-view.ts",
+        "sha256": "c93a4ee227bbe7ecfb59f7cdbf04ad7b21763a352a73d9342dae93b96f2c19cb"
+      },
+      {
+        "path": "packages/client/runtime/src/host-client.ts",
+        "sha256": "a83b0a321a99c1b43dedd9303d3968c1b2a1f51344cc4b0081e5cc1402ba0fb8"
+      },
+      {
+        "path": "packages/client/runtime/src/request-feedback.ts",
+        "sha256": "2a884f36023587c140fe9e573fde26a1e4cd8b000c03aba281d7cc2c676f3239"
+      },
+      {
+        "path": "scripts/build-workspace.mjs",
+        "sha256": "80a11a50c3a203ecba183f7b243ff0554b118faee6e6ec7f303f7bcd6861eaa7"
+      },
+      {
+        "path": "scripts/start-opencode.mjs",
+        "sha256": "5431b2efb4985735eb2ba3b209f5e9e4fd804e2a58acbde74c3b566e1cf16b46"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "9abaece03825d9432e5ccd24a16c7102b0c947d246a3255bf3ce02fb46e214e2"
+      },
+      {
+        "path": "scripts/benchmark-materials.mjs",
+        "sha256": "880e294f3403ce7253b0ac1da5a77799fb986563076bba050240fb7ddb0de2c1"
+      },
+      {
+        "path": "tests/materials.test.mjs",
+        "sha256": "b3ff8562aa6bf8e900b605083fa218ffde66f57b62647ce2195a9517a6882c26"
+      },
+      {
+        "path": "tests/materials-ingestion.test.mjs",
+        "sha256": "43723ae6b64ce8b34a96accafe9cfda9d6bca8ec8f46fa448d266d5d8f314cc7"
+      },
+      {
+        "path": "tests/materials-security.test.mjs",
+        "sha256": "22cfad8b5c2ed30f6522100594d5faa2ec93912ab97c7c83a7bac4f1dadd9cf4"
+      },
+      {
+        "path": "tests/materials-browser.test.mjs",
+        "sha256": "d95e58e8288040d6cf3997216afa81fc1d7967fa0683f03ddd639e3a1411a2a4"
+      },
+      {
+        "path": "tests/materials-opencode.test.mjs",
+        "sha256": "1eeff67fdd5f8c712ee31e95f3fe769d07a7ab218b5c5143cc052083dbfa579b"
+      },
+      {
+        "path": "tests/materials-live.test.mjs",
+        "sha256": "f349a8a1bc9ec00aa870aaf04f688a405f72e1247c06295e295c0a24c149e369"
+      },
+      {
+        "path": "tests/materials-images-live.test.mjs",
+        "sha256": "30060f786f68d6e7e4a55dc401012a66097c488e3b8d72fe0f9e5de906903ba2"
+      },
+      {
+        "path": "tests/fixtures/material-documents.mjs",
+        "sha256": "b453ae12e5c80932f543181dded7b543525686e2f4a145812c5c6abb68f46146"
+      },
+      {
+        "path": "tests/fixtures/material-browser.mjs",
+        "sha256": "7bc790f250d3aa7697720a73901c220df152e84057ade78a417f7d01f542498b"
+      },
+      {
+        "path": "tests/fixtures/material-protected.pdf",
+        "sha256": "5245ed072f0283cf38962b4a05d6fee3b7af242c2e28d0833714a6532158cee4"
+      }
+    ]
+  },
+  "status": {
+    "implementation": "IMPLEMENTED OPT-IN",
+    "A": "Automated subset PASS; acceptance pending",
+    "B": "Browser PASS; owner manual pending",
+    "C": "Fixture/wire/vision PASS; latest source-generation live FAIL",
+    "G003": "NOT VERIFIED (inherited prerequisite)",
+    "G004": "NOT VERIFIED",
+    "ownerManual": "Owner-confirmed cases 1-4 PASS; case 5 reference lookup rejected, retest pending"
+  },
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v22.19.0",
+    "pnpm": "11.28.5",
+    "openCodeVersion": "1.19.5",
+    "openCodeSha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa",
+    "model": "gemini-3.1-flash-lite",
+    "protocol": "gemini",
+    "credentialSource": "environment / optional .env; no values logged"
+  },
+  "decisions": {
+    "storage": "Owner-approved A: separate materials.sqlite and blobs",
+    "existingDatabaseSchemasChanged": false,
+    "runtimeDefaultChanged": false,
+    "productLimitsApproved": false,
+    "intake": "Disabled without explicit trial bounds",
+    "imageRoute": "Host-selected PNG/JPEG bytes via CLI --file; native Gemini plus declared image capability only"
+  },
+  "dependencies": [
+    {
+      "name": "pdfjs-dist",
+      "version": "6.4.299",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "fflate",
+      "version": "0.8.3",
+      "license": "MIT"
+    },
+    {
+      "name": "fast-xml-parser",
+      "version": "5.11.2",
+      "license": "MIT"
+    },
+    {
+      "name": "pngjs",
+      "version": "7.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "jpeg-js",
+      "version": "0.4.4",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "@types/pngjs",
+      "version": "6.0.5",
+      "license": "MIT",
+      "developmentOnly": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "acceptance-final",
+      "verdict": "PASS",
+      "scope": "24 material storage/parser/security/browser cases on final bounded implementation",
+      "log": ".local-only/task004-acceptance-final.log",
+      "sha256": "7f1dee80f0d86be30be0727d2845aa824acc81e4bce7b6ca0a0ca486a439d242",
+      "summary": {
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "browser retains ready/rejected material drafts on reload and sends an attachment-only request",
+        "known-content extraction: notes.txt",
+        "known-content extraction: notes.md",
+        "known-content extraction: notes.pdf",
+        "known-content extraction: notes.docx",
+        "known-content extraction: notes.pptx",
+        "known-content extraction: red.png",
+        "known-content extraction: red.jpeg",
+        "invalid formats, binary text, forged images and XML entities are rejected",
+        "text resource limit and pre-aborted parsing are explicit; valid empty text remains usable",
+        "archive expansion is bounded before oversized content is accepted",
+        "truncated ZIP directory and changed central CRC cannot become ready documents",
+        "active parser cancellation settles after worker termination without accepting content",
+        "password-protected PDF is explicit and a valid blank PDF reports no usable text",
+        "rejected, oversized, foreign, duplicate and excess material IDs cannot start work",
+        "named reference uses current approval; replacing its file is rejected at the read boundary",
+        "repointed workspace cannot substitute a same-name file for a captured reference",
+        "enabling the separate store preserves old Chat history; a foreign material schema fails without rewriting it",
+        "folder references list names only under Workspace Access and create no folder approval grant",
+        "root replacement during approval is refused even when the original file inode is moved into it",
+        "read_material rejects an unsubmitted draft ID even when it belongs to the same Chat",
+        "failed blob creation leaves an explicitly rejected material, not a ready or stuck preparation",
+        "attachment count applies to new material; a previously sent ID does not consume it again",
+        "material upload is Chat-owned, durable, usable without text and immutable after send"
+      ]
+    },
+    {
+      "name": "regression",
+      "verdict": "PASS WITH SKIPS",
+      "scope": "Inherited selection: skipped provider/CLI cases are not qualification",
+      "log": ".local-only/task004-regression.log",
+      "sha256": "565c03f4a518f5a39f6f17f33b29b1f805201b7bec35c200fb29dacc5a967bf8",
+      "summary": {
+        "tests": 130,
+        "pass": 116,
+        "fail": 0,
+        "skipped": 14
+      },
+      "cases": [
+        "a Host working context excludes earlier dialogue but keeps current tool pairs and durable history",
+        "an Agent sends the system prompt and user history to a model and saves the response",
+        "Cordis injects the runtime dependencies and unload drains live model work",
+        "the real tool registry executes a call and the next model request receives the paired result",
+        "a cancelled stream keeps delivered text in history and accepts a later turn",
+        "dispatch rejects wrong input type and sends the failure back to the model",
+        "dispatch rejects missing required input and sends the failure back to the model",
+        "dispatch rejects extra input field and sends the failure back to the model",
+        "dispatch rejects tool outside Agent allowlist and sends the failure back to the model",
+        "tool exceptions become paired error results rather than breaking the model history",
+        "a tool that throws Error never leaks its code or message",
+        "a tool that throws RuntimeError never leaks its code or message",
+        "a tool that throws RuntimeError never leaks its code or message",
+        "registry failure maps non-authored code \"UNKNOWN_TOOL_CODE\" to TOOL_FAILED",
+        "registry failure maps non-authored code \"constructor\" to TOOL_FAILED",
+        "registry failure maps non-authored code \"__proto__\" to TOOL_FAILED",
+        "registry failure maps non-authored code \"toString\" to TOOL_FAILED",
+        "ToolFailure exposes fixed recovery text only and rejects unknown codes",
+        "a step limit stops a repeating model after settling every requested tool call",
+        "a model failure closes the active turn and a new request can run",
+        "a raw model exception never forwards its message into the turn result or history",
+        "a model RuntimeError keeps its stable code but never forwards its message",
+        "a model RuntimeError with a non-conforming code collapses to TURN_FAILED",
+        "a model RuntimeError carrying a private code collapses to TURN_FAILED and never leaks its value",
+        "malformed model output fails the turn: missing finish",
+        "malformed model output fails the turn: mismatched finish",
+        "malformed model output fails the turn: event after finish",
+        "malformed model output fails the turn: duplicate call ids",
+        "registration refuses schema keywords that dispatch does not validate",
+        "one session rejects overlapping turns and duplicate live handles",
+        "Agent tool access is isolated and releasing a handle preserves unmodifiable session snapshots",
+        "cancelling an active tool settles all call IDs and never starts the remaining tools",
+        "application boot rejects a missing ModelAdapter",
+        "Runtime disposal waits for an opening Session before the app can close storage",
+        "Runtime disposal drains other Agents even if one storage write rejects",
+        "an allowed Agent can write and read an HTML draft inside its workspace",
+        "paths outside the grant, Windows aliases and existing files cannot be written",
+        "junctions, hard links, size limits and cancellation respect the workspace policy",
+        "a question keeps one request active; replies are bound, idempotent and Stop drains waiting work",
+        "HTTP request completes and SSE reconnect returns its final snapshot and history",
+        "unauthenticated and cross-origin callers cannot submit requests; malformed input has no side effect",
+        "failed admission and storage errors are safe, and cleanup drains a pending open",
+        "disconnect keeps work running, duplicates are rejected, and Host shutdown drains active work",
+        "Host data cannot be placed inside the Agent grant, including names beginning with two dots",
+        "Local Web wires Agent, File Tools and durable Session; denied writes leave no file",
+        "whole-turn deadline reports timeout rather than an unexplained runtime failure",
+        "literal config encoding preserves data after JSON decoding without exposing interpolation tokens",
+        "config-shaped prompt data cannot read a file or interpolate a credential before tool permissions",
+        "CLI provider timeout aborts the API request without accepting late output",
+        "provider errors and overflow preserve history without publishing raw response bodies",
+        "pinned CLI chat-completions MCP argument/error/result round trip (provider fixture)",
+        "pinned CLI responses MCP argument/error/result round trip (provider fixture)",
+        "pinned CLI anthropic-messages MCP argument/error/result round trip (provider fixture)",
+        "pinned CLI gemini MCP argument/error/result round trip (provider fixture)",
+        "unmappable options reject instead of silently losing explicit settings",
+        "known Gemini 3 Chat-compatible signature loss rejects before a tool execution can start",
+        "pinned CLI maps chat-completions model, root, options and tools",
+        "pinned CLI maps responses model, root, options and tools",
+        "pinned CLI maps responses reasoning model, root, options and tools",
+        "pinned CLI maps anthropic-messages model, root, options and tools",
+        "pinned CLI maps gemini model, root, options and tools",
+        "active Host request keeps captured model while settings and the next Chat selection change",
+        "client keeps the actionable compatibility code from Host admission",
+        "capture maps the chosen provider/options once and keeps unknown metadata unset",
+        "saving and reopening a legacy connection cannot silently remove an unsupported token-field choice",
+        "a stalled generation retries once with a clean Host task and keeps the original conversation",
+        "clarification waits without building, then an answer creates the outline in the same request",
+        "generation receives an explicit committed Host phase after a natural confirmation",
+        "explicit skip can ask again for an unknown topic and waiting retains its captured model after selection changes",
+        "natural review asks about ambiguity, revises without confirming, then confirms through Host with no duplicated user message",
+        "staged natural confirmation cannot commit after provider-failure",
+        "staged natural confirmation cannot commit after conflicting-decisions",
+        "private request roots keep earlier drafts and give each confirmed request separate publishable paths",
+        "a confirmed deck can retry after a colliding write without another confirmation or overwriting the old draft",
+        "ordinary Send request gives the model a schema-valid outline argument example",
+        "a staged proposal from a failed turn is never current and model calls cannot build or publish before confirmation",
+        "revision races reject busy/stale confirmation and typed cancellation never builds slides",
+        "two separate requests propose then confirm and progressively publish a multi-slide deck",
+        "failed model admission leaves the outline unconfirmed; a later explicit typed confirmation uses the saved current proposal",
+        "a premature model closing message cannot mark an unpublished draft as completed",
+        "idle recovery is bounded and never replays stalls",
+        "idle recovery is bounded and never replays draft-written",
+        "idle recovery is bounded and never replays partly-published",
+        "idle recovery is bounded and never replays provider-failure",
+        "Stop during the one idle recovery attempt cancels without a third model attempt",
+        "a natural request to build all seven confirmed slides resolves scope before writing or publishing",
+        "unscoped writes cannot create drafts and cannot be reported as completed despite model success prose",
+        "scope resolution rejects unknown-id without granting writes",
+        "scope resolution rejects published-slide without granting writes",
+        "scope resolution rejects duplicate-id without granting writes",
+        "ambiguous follow-up asks within the request and a scoped answer finishes pending slides without re-confirming",
+        "scope resolves explicit references and denies ambiguous, mismatched and excluded targets",
+        "Stop is idempotent and retains the lock through disposal and finalization",
+        "Agent reads current HTML, publishes only authorized slide, preserves other revisions and restarts without replay",
+        "interrupted editing (stop) keeps committed revisions and hides unfinished drafts",
+        "interrupted editing (failure) keeps committed revisions and hides unfinished drafts",
+        "a model claiming an edit is finished without publishing cannot complete the edit request",
+        "two Chats run independently and management preserves their latest request outcomes",
+        "waiting Chat replies and late Stop remain bound to the original request and question revision",
+        "Host restart marks running and waiting Chats unknown without replay or losing request identity",
+        "approval cannot authorize sibling Chat data, links, traversal or original-file writes",
+        "a file replaced while approval waits is not read under the old approval",
+        "a Chat has a durable permission preset without changing its conversation",
+        "a running request retains its preset while the next request uses the changed preset",
+        "outside reads wait for a distinct versioned approval; once, denial and stale replies cannot expand access",
+        "continuing approval survives restart, belongs to one Chat and can be revoked",
+        "Host restart keeps an interrupted approval unconfirmed and never executes or approves it",
+        "a Chat reads project sources but writes and publishes only through its private work root",
+        "private Chat roots cannot discover or read sibling Chat files through either scope",
+        "moving and replacing a source folder revokes old access without substituting a same-name file",
+        "a Workspace registry identity rejects a folder replaced before a request starts",
+        "removing a source grant leaves private drafts readable without granting the old folder",
+        "overlapping project/work roots and source symlink escapes are rejected",
+        "a private work root replaced after validation cannot receive or expose content",
+        "a source file substituted between validation and open is not returned to the Agent",
+        "a source file substituted between validation and open is not returned to the Agent through a folder alias",
+        "Workspace ownership survives restart and removal preserves ungrouped Chat history",
+        "V1 schema migration retains IDs, selection and messages and persists explicit ungrouped ownership",
+        "a failed V1 schema upgrade rolls back without replacing the original database",
+        "Workspace registration rejects internal storage and replacement folders stay unavailable until explicitly repointed",
+        "project reads and slide publication share private request roots and busy Workspace changes are rejected",
+        "a killed Host turns a waiting request into unknown without replay and rejects old reply controls",
+        "History summaries derive titles and timestamps from saved sessions without starting work",
+        "empty Web opens Settings without a model and can create an empty chat without sending work",
+        "deleting an environment-bootstrapped provider persists across restart with the same startup options",
+        "reopening Web after a killed Host preserves unconfirmed activity without replaying work",
+        "settings persist encrypted keys; changing selection/key during a request affects only later requests",
+        "Web model selection changes independently of conversation and survives restart; CLI bind still guards mismatches",
+        "activities report real tool failure separately from a successful request",
+        "cancelling a tool with an unconfirmed side effect reports an unknown activity outcome"
+      ]
+    },
+    {
+      "name": "browser-regression",
+      "verdict": "PASS",
+      "scope": "Existing browser suite before final draft/count refinements",
+      "log": ".local-only/task004-browser-regression.log",
+      "sha256": "948b5746f9c336021bf49101c3a49a894b6bdb57e9ce34d6e2e964e17adde336",
+      "summary": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "OpenCode compatibility rejection keeps the composer draft and explains model settings",
+        "permission approval stays with its Chat across navigation and reload, and continuing grants can be revoked",
+        "Chats and Workspaces remain navigable while work runs or awaits a reply",
+        "workspace navigation creates owned Chats and keeps missing or removed folder history readable",
+        "interactive composer selects a model without work, sends with Enter and preserves per-chat drafts on reload",
+        "clarification UI waits, restores after reload and answers without sending the unsent draft",
+        "outline conversation confirms in a new request, preserves viewing state and progressively opens the deck",
+        "Deck Canvas renders published revisions over SSE, keeps selection and restores content after Host restart",
+        "real browser boots, sends an Agent request, shows completion and restores history after reload"
+      ]
+    },
+    {
+      "name": "cli-regression",
+      "verdict": "PASS",
+      "scope": "CLI/MCP/process baseline before final draft/count refinements",
+      "log": ".local-only/task004-cli-regression.log",
+      "sha256": "ead46c0172267f62dc6c4f300301d3b6066cbcbaf7b1973d64c3bba73b574a56",
+      "summary": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "pinned OpenCode sends only Host-selected PNG/JPEG bytes and retains the MCP-only tool list",
+        "revoking MCP admission during activity persistence prevents a tool from starting",
+        "MCP never forwards private persistence or activity exception messages",
+        "OpenCode refuses an unpinned executable before recording conversation or starting tools",
+        "request MCP bridge enforces token, allowlist, registry validation and revocation",
+        "MCP Stop drains an active tool and rejects new work without crossing session boundaries",
+        "MCP file tools preserve read approval and cannot write outside private draft scope",
+        "OpenCode Host approvals: once, deny, continuing grant, cross-chat isolation, revoke and Stop",
+        "OpenCode Host workflow preserves confirmation, scoped revisions and restart without replay",
+        "OpenCode concurrent chats keep admission, Stop and histories separate",
+        "JSON process accepts split lines and rejects malformed, truncated and oversized streams",
+        "process start and parser failures never expose child stderr or raw JSON",
+        "Stop awaits Windows process-tree termination, including a child process"
+      ]
+    },
+    {
+      "name": "browser-final-followup",
+      "verdict": "PASS",
+      "scope": "Final targeted legacy Composer/admission consumer checks",
+      "log": ".local-only/task004-browser-final-followup.log",
+      "sha256": "f95586dd4de2974711ef5f1971999bba58b5bef6fd3129746af3a99c76829340",
+      "summary": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "OpenCode compatibility rejection keeps the composer draft and explains model settings",
+        "interactive composer selects a model without work, sends with Enter and preserves per-chat drafts on reload"
+      ]
+    },
+    {
+      "name": "contract-final-followup",
+      "verdict": "PASS",
+      "scope": "Final file/permission/Host contract checks",
+      "log": ".local-only/task004-contract-final-followup.log",
+      "sha256": "b6bdb14defe0d1de5121f070f1e1ea69ca3d9019718b2e6eda7c1bb2c981c899",
+      "summary": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "an allowed Agent can write and read an HTML draft inside its workspace",
+        "paths outside the grant, Windows aliases and existing files cannot be written",
+        "junctions, hard links, size limits and cancellation respect the workspace policy",
+        "a question keeps one request active; replies are bound, idempotent and Stop drains waiting work",
+        "HTTP request completes and SSE reconnect returns its final snapshot and history",
+        "unauthenticated and cross-origin callers cannot submit requests; malformed input has no side effect",
+        "failed admission and storage errors are safe, and cleanup drains a pending open",
+        "disconnect keeps work running, duplicates are rejected, and Host shutdown drains active work",
+        "approval cannot authorize sibling Chat data, links, traversal or original-file writes",
+        "a file replaced while approval waits is not read under the old approval",
+        "a Chat has a durable permission preset without changing its conversation",
+        "a running request retains its preset while the next request uses the changed preset",
+        "outside reads wait for a distinct versioned approval; once, denial and stale replies cannot expand access",
+        "continuing approval survives restart, belongs to one Chat and can be revoked",
+        "Host restart keeps an interrupted approval unconfirmed and never executes or approves it"
+      ]
+    },
+    {
+      "name": "images-wire-final",
+      "verdict": "PASS",
+      "scope": "Actual pinned CLI, loopback provider, exact PNG/JPEG hashes and MCP-only declarations",
+      "log": ".local-only/task004-images-wire-final.log",
+      "sha256": "ed9c8f05aaba373607e29d434684c48bd075528711b8e6d192aca6a753439cfe",
+      "summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "pinned OpenCode sends only Host-selected PNG/JPEG bytes and retains the MCP-only tool list"
+      ]
+    },
+    {
+      "name": "live",
+      "verdict": "PASS (EARLIER RUN)",
+      "scope": "Vietnamese/English sources to slides plus vision; source identifier was included in this earlier prompt",
+      "log": ".local-only/task004-live.log",
+      "sha256": "46abc67b1e57a20bfd04d9cdd48901b78837e9d697ca52395a1ea970a16cbb0e",
+      "summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "live Gemini reads supplied facts into Vietnamese/English outlines and published slides"
+      ]
+    },
+    {
+      "name": "live-final",
+      "verdict": "FAIL",
+      "scope": "Stricter source identifier absent from prompt: source read/outline passed, Vietnamese confirmed generation returned OPENCODE_FAILED; later cases not reached",
+      "log": ".local-only/task004-live-final.log",
+      "sha256": "872df4d750fea93ccbf793dec3daf9ea21e2891f02d6924f08c741fa9c9cf94f",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "cases": [
+        "live Gemini reads supplied facts into Vietnamese/English outlines and published slides"
+      ]
+    },
+    {
+      "name": "images-live-final",
+      "verdict": "PASS",
+      "scope": "Independent live native-Gemini PNG/JPEG interpretation with neutral filenames",
+      "log": ".local-only/task004-images-live-final.log",
+      "sha256": "ffce228db980353f293f4ab6e6e1575b65feee15ce8a687e0c4edf5b6623933f",
+      "summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "cases": [
+        "live Gemini interprets PNG/JPEG through the declared image-capable Host path"
+      ]
+    },
+    {
+      "name": "red",
+      "verdict": "FAIL (EXPECTED RED)",
+      "scope": "Before implementation: attachment API missing",
+      "log": ".local-only/task004-red.log",
+      "sha256": "3914356820085fa6db5feafc1477648a749b41ef3e16eef261073271bf08c8a5",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "cases": [
+        "material upload is Chat-owned, durable, usable without text and immutable after send"
+      ]
+    },
+    {
+      "name": "zip-red",
+      "verdict": "FAIL (EXPECTED RED)",
+      "scope": "Truncated ZIP accepted before directory/CRC checks",
+      "log": ".local-only/task004-zip-red.log",
+      "sha256": "3e681d23845db15c9297c5b0df572411e8f4ebde0990722ab27601a154d81a42",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "cases": [
+        "truncated ZIP directory and changed central CRC cannot become ready documents"
+      ]
+    },
+    {
+      "name": "root-race-red",
+      "verdict": "FAIL (EXPECTED RED)",
+      "scope": "Deep source root substitution before actual root identity check",
+      "log": ".local-only/task004-root-race-red.log",
+      "sha256": "d014c4063535b4ce3677b413fae37da1a0c8ca85f4b65a28c074ba5f9d507f37",
+      "summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "skipped": 0
+      },
+      "cases": [
+        "root replacement during approval is refused even when the original file inode is moved into it"
+      ]
+    },
+    {
+      "name": "durable-draft-red",
+      "verdict": "FAIL (EXPECTED RED)",
+      "scope": "Before final fix: draft lost without tab cache and old attachment IDs counted as new",
+      "log": ".local-only/task004-durable-draft-red.log",
+      "sha256": "ad588f44336f203984b9072a100f599224fa002d8dfcbbfb27e6a7cb6956c615",
+      "summary": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "skipped": 0
+      },
+      "cases": [
+        "browser retains ready/rejected material drafts on reload and sends an attachment-only request",
+        "attachment count applies to new material; a previously sent ID does not consume it again"
+      ]
+    }
+  ],
+  "resourceMeasurement": {
+    "log": ".local-only/task004-resource-final.json",
+    "sha256": "6b3b9bc1d3aec4673652defb857ade44eeef5fd1deb13e435c8a069aa125f1c8",
+    "cases": [
+      {
+        "label": "minimal-notes.txt",
+        "bytes": 36,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 283,
+        "peakRssBytes": 97705984
+      },
+      {
+        "label": "minimal-notes.md",
+        "bytes": 35,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 229,
+        "peakRssBytes": 97701888
+      },
+      {
+        "label": "minimal-notes.pdf",
+        "bytes": 613,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 475,
+        "peakRssBytes": 135774208
+      },
+      {
+        "label": "minimal-notes.docx",
+        "bytes": 516,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 159,
+        "peakRssBytes": 119246848
+      },
+      {
+        "label": "minimal-notes.pptx",
+        "bytes": 1020,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 187,
+        "peakRssBytes": 120442880
+      },
+      {
+        "label": "minimal-red.png",
+        "bytes": 76,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 155,
+        "peakRssBytes": 118235136
+      },
+      {
+        "label": "minimal-red.jpeg",
+        "bytes": 616,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 139,
+        "peakRssBytes": 118272000
+      },
+      {
+        "label": "text-65536",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 159,
+        "peakRssBytes": 120000512
+      },
+      {
+        "label": "text-1048576",
+        "bytes": 1048576,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 189,
+        "peakRssBytes": 128274432
+      },
+      {
+        "label": "text-20971520",
+        "bytes": 20971520,
+        "status": "rejected",
+        "reason": "MATERIAL_TEXT_LIMIT",
+        "elapsedMs": 203,
+        "peakRssBytes": 229838848
+      },
+      {
+        "label": "ten-files-1",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 151,
+        "peakRssBytes": 120741888
+      },
+      {
+        "label": "ten-files-2",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 161,
+        "peakRssBytes": 119525376
+      },
+      {
+        "label": "ten-files-3",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 169,
+        "peakRssBytes": 119738368
+      },
+      {
+        "label": "ten-files-4",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 189,
+        "peakRssBytes": 121143296
+      },
+      {
+        "label": "ten-files-5",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 197,
+        "peakRssBytes": 121544704
+      },
+      {
+        "label": "ten-files-6",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 177,
+        "peakRssBytes": 120754176
+      },
+      {
+        "label": "ten-files-7",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 190,
+        "peakRssBytes": 122519552
+      },
+      {
+        "label": "ten-files-8",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 198,
+        "peakRssBytes": 121331712
+      },
+      {
+        "label": "ten-files-9",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 166,
+        "peakRssBytes": 123424768
+      },
+      {
+        "label": "ten-files-10",
+        "bytes": 65536,
+        "status": "ready",
+        "reason": null,
+        "elapsedMs": 161,
+        "peakRssBytes": 122220544
+      }
+    ],
+    "tenNewFilesAccepted": true,
+    "verdict": "SYNTHETIC MEASUREMENTS ONLY; no product-default approval",
+    "limitations": [
+      "Synthetic/minimal fixtures, not a representative production corpus.",
+      "RSS samples include this Node process and its workers, not a hard memory or OS sandbox guarantee.",
+      "20 MiB text is rejected by the separate 1 MiB extracted-text safety bound.",
+      "No cloud/model/context cost measurement.",
+      "No release default is chosen from these results."
+    ]
+  },
+  "verification": {
+    "typecheckBuild": "PASS at recorded direct-Node checkpoints",
+    "lint": "PASS at recorded checkpoint",
+    "diffCheck": "PASS",
+    "newTestsRerunDuringOwnerStatusQuestion": false
+  },
+  "remaining": [
+    "Latest generation error OPENCODE_FAILED remains unresolved; no bad-key or provider-outage cause inferred.",
+    "Owner manual acceptance and G003 prerequisite.",
+    "Representative corpus and product count/size approval; synthetic benchmarks do not establish them.",
+    "Exact Stop during material-backed publication and full prompt-injection robustness not established.",
+    "Parser old-generation setting is not a hard process-memory cap or OS sandbox.",
+    "Scanned PDF OCR, visual layout fidelity and reference-image interpretation are unavailable explicitly.",
+    "Orphan/discarded bytes are retained; garbage collection and cross-tab interrupted-upload receipt reconciliation are not implemented.",
+    "Live observations preceded final small draft/count and failed-upload refinements; no full-final-candidate live PASS is claimed."
+  ],
+  "preservation": {
+    "fixturesOnly": true,
+    "originalUserProfilesModified": false,
+    "oldHistoryAndForeignSchemaTests": "PASS",
+    "committedOrPushed": false,
+    "externalPublication": false
+  },
+  "ownerManualSmoke": {
+    "date": "2026-11-03",
+    "source": "owner report in chat",
+    "cases": {
+      "sourceToSlides": "PASS",
+      "attachmentOnly": "PASS",
+      "rejectedFileDraft": "PASS",
+      "chatIsolation": "PASS",
+      "referencePermission": "PASS",
+      "imageManual": "PASS; tested image format not supplied",
+      "restartStopManual": "NOT VERIFIED"
+    },
+    "exactManualSha": null,
+    "browser": null,
+    "model": null,
+    "limitation": "Aggregate owner report; no itemized artifacts. Does not erase automated live failure or pass the full gate.",
+    "referencePermissionConfirmation": {
+      "date": "2026-11-03",
+      "source": "Owner confirmed case 5 PASS in chat after matching-path fix",
+      "artifacts": "No additional manual artifacts supplied"
+    },
+    "imageConfirmation": {
+      "date": "2026-11-03",
+      "source": "Owner confirmed that the attached image was read successfully in the requested manual smoke case",
+      "format": null,
+      "limitation": "Does not separately confirm both PNG and JPEG; no additional artifacts supplied"
+    }
+  },
+  "referenceFeedbackFollowup": {
+    "date": "2026-11-03",
+    "reproduced": "Unavailable reference displayed generic corruption wording before content was read",
+    "fix": "Specific project-folder/path guidance; no permission relaxation",
+    "result": "Targeted real browser RED then GREEN; existing reference is ready without inference",
+    "logs": [
+      {
+        "log": ".local-only/task004-reference-feedback-red.log",
+        "sha256": "a018a61c257eea92136f4c44e5d3f852c3709afa781ef2a5cb777336691531fd"
+      },
+      {
+        "log": ".local-only/task004-reference-feedback-green.log",
+        "sha256": "9a60a2e04e49ac19f5a8d22e8bfb91901ec67b1cb5da6551377207bec131978f"
+      }
+    ],
+    "manualCause": "Actual user workspace/file path still unknown; example folder absent. No file contents inspected."
+  },
+  "referenceProfileFollowup": {
+    "date": "2026-11-03",
+    "findings": [
+      "Default manual profile has no source workspace; earlier fresh profile holds it.",
+      "Actual file exists directly under registered root; repeated source prefix does not exist."
+    ],
+    "dataAccess": "Read-only profile/workspace metadata and file existence/name/size only; no source contents read or user profile mutations",
+    "changes": [
+      "Explicit launcher --data-dir; --fresh conflict rejected.",
+      "Specific missing project-folder API/client guidance; no permission relaxation."
+    ],
+    "verification": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "redLog": ".local-only/task004-workspace-reference-red.log",
+      "greenLog": ".local-only/task004-workspace-reference-green.log",
+      "greenLogSha256": "513f235f4a890af34ad4e714b1dac166b0ecb825fbf6dbbf81471d45b3b8811f",
+      "launcherCheck": "PASS; prior fresh profile selected without Host/model start"
+    },
+    "manualRetest": "PASS; owner-confirmed reference/permission case 5 after follow-up fixes; full gate unchanged"
+  },
+  "referencePathFollowup": {
+    "date": "2026-11-03",
+    "cause": "Valid file materialId plus matching optional path rejected before approval",
+    "change": "Accept validated matching path only; stored reference remains authoritative; tool guidance clarified",
+    "verification": {
+      "pass": 1,
+      "fail": 0,
+      "provider": "Local Gemini wire fixture; pinned OpenCode CLI and actual Host/MCP",
+      "redLog": ".local-only/task004-reference-path-red.log",
+      "greenLog": ".local-only/task004-reference-path-green.log",
+      "greenLogSha256": "ebcf3a1ee799227ae1d60d7d0b0e2e40c8679c0429798588b7cc0d6bd19df8d0",
+      "assertions": [
+        "Deny prevents file contents",
+        "Allow-once reads selected reference",
+        "Different path cannot widen reference"
+      ],
+      "build": "TypeScript and workspace bundle PASS"
+    },
+    "manualRetest": "PASS; owner-confirmed case 5 on 2026-11-03; G004 remains NOT VERIFIED"
+  }
+}

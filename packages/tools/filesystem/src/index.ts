@@ -6,6 +6,7 @@ import { ToolFailure } from '@deckagent/agent-runtime'
 import { createWorkspaceAccess } from './workspace.ts'
 import type { DirectoryIdentity } from './workspace.ts'
 import { readApprovedFile } from './policy-access.ts'
+export { readApprovedBytes } from './policy-access.ts'
 
 export type { DirectoryIdentity } from './workspace.ts'
 

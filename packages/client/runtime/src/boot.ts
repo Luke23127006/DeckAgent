@@ -15,11 +15,13 @@ import { questionView } from './question-view.ts'
 import { workspaceView } from './workspace-view.ts'
 import { approvalView } from './approval-view.ts'
 import { permissionPicker } from './permission-picker.ts'
+import { materialsView } from './materials-view.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
 const management = new ManagementClient(location.origin, token)
 const permissionUI = permissionPicker(management)
+const materialUI = materialsView(location.origin, token, () => controls())
 const outlines = new OutlineClient(location.origin, token)
 let outlineState: OutlineSnapshot | undefined
 const root = document.querySelector<HTMLElement>('#app')!
@@ -83,7 +85,7 @@ submit.title = 'Gửi yêu cầu (Enter)'
 submit.type = 'submit'
 submit.disabled = true
 const createPresentation = button('Đề xuất outline', () => {
-  if (input.reportValidity() && current) runForChat(current.sessionId, submitRequest(input.value, { presentation: true }))
+  if (current && (input.value.trim() || materialUI.has(current.sessionId))) runForChat(current.sessionId, submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
 const stopRequest = button('■', () => {
@@ -260,9 +262,10 @@ function controls() {
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
     (!!current.activeRequestId && !question) ||
-    (!current.selectable && !question)
+    (!current.selectable && !question) ||
+    (!!current && !question && materialUI.blocked(current.sessionId))
   createPresentation.disabled = submit.disabled
-  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > 16000))
+  submit.setAttribute('aria-disabled', String(submit.disabled || (!input.value.trim() && (!current || !materialUI.has(current.sessionId))) || input.value.length > 16000))
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
   timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
   questionUI.update(question, submit.disabled)
@@ -460,6 +463,8 @@ async function open(session: WebSession) {
     watch?.abort()
     if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
     current = session
+    await materialUI.open(session.sessionId)
+    if (attempt !== openGeneration || disposed) return
     if (workspaces) selectedWorkspace = session.workspaceId ?? 'ungrouped'
     const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
     const known = session.activeRequestId ? liveRequests.get(session.activeRequestId) : undefined
@@ -582,22 +587,21 @@ reconnect.id = 'reconnect'
 moreActions.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
-const attachment = button('+', () => {})
-attachment.disabled = true
+const attachment = materialUI.action
 attachment.className = 'attachment-action'
-attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
-attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
+attachment.title = 'Đính kèm tài liệu'
+attachment.setAttribute('aria-label', 'Đính kèm tài liệu')
 composerControls.append(attachment)
 moreActions.append(createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, permissionUI.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
-form.append(input, composerActions)
+form.append(input, materialUI.node, composerActions)
 input.addEventListener('input', () => { saveDraft(); controls() })
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
-    if (!submit.disabled && input.value.trim()) form.requestSubmit()
+    if (!submit.disabled && (input.value.trim() || !!current && materialUI.has(current.sessionId))) form.requestSubmit()
   }
 })
 const dock = element('div', undefined, 'composer-dock')
@@ -650,7 +654,7 @@ form.addEventListener('submit', event => {
 })
 async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
   if (submit.disabled || !current) return
-  if (!text.trim()) return
+  if (!text.trim() && !materialUI.has(current.sessionId)) return
   if (text.length > 16000) {
     status.hidden = false
     status.dataset.kind = 'error'
@@ -663,6 +667,7 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
   }
   const id = current.sessionId,
     expected = generation
+  const materialSelection = extra.outlineAction ? { attachmentIds: [], referenceIds: [] } : materialUI.selection(id)
   saveDraft()
   const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
@@ -672,9 +677,12 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
   status.dataset.kind = 'sending'
   try {
     const accepted = await client.send({ sessionId: id, input: text,
+      ...(materialSelection.attachmentIds.length ? { attachmentIds: materialSelection.attachmentIds } : {}),
+      ...(materialSelection.referenceIds.length ? { referenceIds: materialSelection.referenceIds } : {}),
       ...(target && !extra.outlineAction ? { outlineTarget: { outlineId: target.outlineId, version: target.version } } : {}),
       ...extra })
     observeRequest(accepted)
+    if (!extra.outlineAction) materialUI.sent(id, materialSelection)
     if (!extra.outlineAction && readDraft(id) === text) writeDraft(id, '')
     if (generation === expected && current) {
       if (!extra.outlineAction && input.value === text) { input.value = ''; saveDraft() }
@@ -686,6 +694,7 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     if (generation === expected) run(follow(accepted.requestId, id, expected))
   } catch (error) {
     try { await showOutlines(id, expected) } catch { /* Keep the last saved outline if reconnect also fails. */ }
+    if (generation === expected && current?.sessionId === id) await materialUI.open(id)
     throw error
   } finally {
     sending.delete(id)

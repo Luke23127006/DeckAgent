@@ -17,9 +17,13 @@ import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import { openWebRequest } from './web-request.ts'
 import { outlineStyle } from './outline-style.ts'
 import type { OpenCodeOptions } from './opencode/agent.ts'
+import { MaterialStore } from './materials/store.ts'
+import type { MaterialLimits } from '@deckagent/host-api'
 export { importLegacyProfile, LegacyImportError } from './legacy-import.ts'
 
 export interface LocalWebOptions {
+  /** Explicit trial bounds, not product defaults. Intake stays disabled when absent. */
+  readonly materials?: MaterialLimits
   /** Experimental opt-in; custom runtime remains the default. */
   readonly openCode?: OpenCodeOptions
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -49,6 +53,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
   let web: WebState | undefined
   let providers: ProviderStore | undefined
   let decks: DeckService | undefined
+  let materials: MaterialStore | undefined
   try {
     sessions = new SqliteSessionStore(join(dataDir, 'sessions.sqlite'))
     const store = sessions
@@ -64,6 +69,8 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const state: WebState = new WebState(join(dataDir, 'web.sqlite'), store, () => catalog.snapshot(), [dataDir, workspace])
     web = state
     const permissions = new PermissionStore(state.db)
+    if (options.materials) materials = await MaterialStore.create(dataDir, options.materials)
+    const materialStore = materials
     const requireChat = async (id: string) => { if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND') }
     await state.reconcileWorkspaces()
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
@@ -84,6 +91,21 @@ export async function startLocalWeb(options: LocalWebOptions) {
     }
     const finalizers = new Map<string, (result: TurnResult) => Promise<void>>()
     const host = await startHost({
+      materials: {
+        async list(id) {
+          await requireChat(id)
+          const info = await store.getInfo(id), source = info?.workspaceId ? await state.workspaces.source(info.workspaceId) : undefined
+          const items = await Promise.all((materialStore?.list(id) ?? []).map(async item => {
+            if (item.kind !== 'reference' || !materialStore) return item
+            try { await materialStore.validateReference(id, item.materialId, source); return item }
+            catch { return { ...item, status: 'rejected' as const, reason: 'MATERIAL_REFERENCE_UNAVAILABLE' } }
+          }))
+          return { enabled: !!materialStore, ...(materialStore ? { limits: materialStore.limits } : {}), items }
+        },
+        async upload(id, name, bytes, signal) { await requireChat(id); if (!materialStore) throw new HttpError(409, 'MATERIALS_DISABLED'); return materialStore.upload(id, name, bytes, signal) },
+        async remove(id, materialId) { await requireChat(id); if (!materialStore) throw new HttpError(409, 'MATERIALS_DISABLED'); materialStore.remove(id, materialId) },
+        async reference(id, value) { await requireChat(id); if (!materialStore) throw new HttpError(409, 'MATERIALS_DISABLED'); const info = await store.getInfo(id); const source = info?.workspaceId ? await state.workspaces.source(info.workspaceId) : undefined; return materialStore.reference(id, value, source) },
+      },
       decks: presentation,
       outlines: presentation,
       assets,
@@ -95,12 +117,25 @@ export async function startLocalWeb(options: LocalWebOptions) {
       async openAgent(sessionId, requestId, request, requestApproval) {
         if (!(await store.getInfo(sessionId)) && initial) { await store.bind(sessionId, initial); permissions.create(sessionId) }
         const info = await store.getInfo(sessionId)
+        const materialSnapshot = materialStore?.capture(request, requestId, false) ?? []
+        if (request.attachmentIds?.length && !materialStore) throw new HttpError(409, 'MATERIALS_DISABLED')
+        const hasImages = materialSnapshot.some(info => info.mediaType.startsWith('image/'))
+        const provider = catalog.snapshot().providers.find(provider => provider.id === info?.selection?.provider)
+        const imageInput = !!provider?.modelMetadata?.find(model => model.model === info?.selection?.model)?.inputModalities?.includes('image')
+        if (hasImages && (!options.openCode || !imageInput || provider?.protocol !== 'gemini')) throw new HttpError(409, 'MATERIAL_IMAGE_INPUT_UNVERIFIED')
+        const images = hasImages && materialStore ? await materialStore.imageBytes(sessionId, materialSnapshot) : []
         const source = info?.workspaceId ? await state.workspaces.source(info.workspaceId) : undefined
+        for (const id of request.referenceIds ?? []) await materialStore?.validateReference(sessionId, id, source)
         const privateRoot = join(workspace, createHash('sha256').update(sessionId).digest('hex'), requestId)
         await mkdir(privateRoot, { recursive: true, mode: 0o700 })
-        const agent = await openWebRequest({ request, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog,
+        const newIds = new Set([...(request.attachmentIds ?? []), ...(request.referenceIds ?? [])])
+        const names = materialSnapshot.filter(info => newIds.has(info.materialId)).map(info => info.originalName)
+        const materialRequest = names.length ? { ...request, input: request.input.trim() ? `${request.input}\n[Tài liệu: ${JSON.stringify(names)}]` : names.join(', ') } : request
+        const agent = await openWebRequest({ request: materialRequest, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog,
+          ...(materialStore && materialSnapshot.length ? { materials: { snapshot: materialSnapshot, images, read: (id, signal, authorize, path, allowFolderListing) => materialStore.read(sessionId, requestId, id, signal, { source, blockedRoots: [dataDir, workspace], authorize, ...(path ? { path } : {}), ...(allowFolderListing ? { allowFolderListing: true } : {}) }) } } : {}),
           ...(options.openCode ? { openCode: { ...options.openCode, root: join(dataDir, 'opencode') } } : {}),
           permission: permissions.get(sessionId), requestApproval, blockedRoots: [dataDir, workspace] })
+        try { materialStore?.capture(request, requestId) } catch (error) { await agent.dispose(); throw error }
         finalizers.set(requestId, result => agent.finish(result))
         return agent
       },
@@ -141,7 +176,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
             try {
               await catalog.close()
             } finally {
-              try { presentation.close() } finally { try { state.close() } finally { store.close() } }
+              try { presentation.close() } finally { try { await materialStore?.close(); state.close() } finally { store.close() } }
             }
           }
         })()
@@ -152,7 +187,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     try {
       await providers?.close()
     } finally {
-      try { decks?.close() } finally { try { web?.close() } finally { sessions?.close() } }
+      try { decks?.close() } finally { try { await materials?.close(); web?.close() } finally { sessions?.close() } }
     }
     throw error
   }

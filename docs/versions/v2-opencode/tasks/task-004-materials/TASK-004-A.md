@@ -1,6 +1,6 @@
 # TASK-004-A — Material storage and request API
 
-Owner: lane A; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane A. Status: implemented opt-in; automated subset PASS; integration acceptance pending.
 Group: [Complete source-to-presentation input](README.md). Entry dependency: G-003.
 
 ## Deliverable
@@ -11,7 +11,9 @@ Reuse old V2 TASK-005-A design as a proposal. Implement scoped upload/reference 
 
 apps/local-web/src/; packages/host/api/src/; packages/session/persistence/src/ where necessary.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+Actual placement: app-local `materials/store.ts`; optional public Host contracts/routes;
+Local Web composition and explicit CLI bounds. No new package or existing database schema change.
+The owner approved separate-store option A; ADR 0004 records that decision.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

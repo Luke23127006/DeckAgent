@@ -16,6 +16,7 @@ export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './
 export type { Workspace } from './contracts.ts'
 export type { RequestSummary } from './contracts.ts'
 export type { PermissionPreset, PermissionGrant, ChatPermission, ApprovalDraft, StepApproval, ApprovalDecision, ApprovalReply, RequestApproval } from './contracts.ts'
+export type { MaterialInfo, MaterialLimits, MaterialOperations } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -60,14 +61,25 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
     !idPattern.test(value.sessionId) ||
     !('input' in value) ||
     typeof value.input !== 'string' ||
-    !value.input.trim() ||
+    (!value.input.trim() && !(['attachmentIds','referenceIds'].some(key => key in value && Array.isArray(Reflect.get(value, key)) && Reflect.get(value, key).length))) ||
     value.input.length > 16000 ||
-    Object.keys(value).some(key => !['sessionId', 'input', 'presentation', 'outlineTarget', 'outlineAction'].includes(key))
+    Object.keys(value).some(key => !['sessionId', 'input', 'attachmentIds', 'referenceIds', 'presentation', 'outlineTarget', 'outlineAction'].includes(key))
   )
     throw new HttpError(400, 'INVALID_REQUEST')
   if ('presentation' in value && value.presentation !== true) throw new HttpError(400, 'INVALID_REQUEST')
+  const attachmentIds: string[] = []
+  const referenceIds: string[] = []
+  if ('attachmentIds' in value) {
+    if (!Array.isArray(value.attachmentIds) || value.attachmentIds.length > 100) throw new HttpError(400, 'INVALID_REQUEST')
+    for (const id of value.attachmentIds) { if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST'); attachmentIds.push(id) }
+  }
+  if ('referenceIds' in value) {
+    if (!Array.isArray(value.referenceIds) || value.referenceIds.length > 100) throw new HttpError(400, 'INVALID_REQUEST')
+    for (const id of value.referenceIds) { if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST'); referenceIds.push(id) }
+  }
   const request: AgentRequest = { sessionId: value.sessionId, input: value.input,
-    ...('presentation' in value ? { presentation: true as const } : {}) }
+    ...('presentation' in value ? { presentation: true as const } : {}),
+    ...(attachmentIds.length ? { attachmentIds } : {}), ...(referenceIds.length ? { referenceIds } : {}) }
   let target: OutlineTarget | undefined
   if ('outlineTarget' in value) {
     const reference = value.outlineTarget
@@ -142,6 +154,28 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const materialRoute = /^\/api\/sessions\/([\w-]{1,100})\/(materials|attachments|references)(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
+    if (materialRoute && options.materials) {
+      const sessionId = materialRoute[1]!
+      if (req.method === 'POST' && materialRoute[2] === 'references' && !materialRoute[3] && options.materials.reference) { json(res, 201, await options.materials.reference(sessionId, await readJson(req))); return }
+      if (req.method === 'GET' && materialRoute[2] === 'materials' && !materialRoute[3]) { json(res, 200, await options.materials.list(sessionId)); return }
+      if (req.method === 'POST' && materialRoute[2] === 'attachments' && !materialRoute[3]) {
+        if (req.headers['content-type'] !== 'application/octet-stream' || typeof req.headers['x-file-name'] !== 'string') throw new HttpError(415, 'MATERIAL_UPLOAD_REQUIRED')
+        let name: string
+        try { name = decodeURIComponent(req.headers['x-file-name']) } catch { throw new HttpError(400, 'MATERIAL_INVALID_NAME') }
+        const abort = new AbortController()
+        const disconnected = () => abort.abort()
+        const signal = AbortSignal.any([abort.signal, AbortSignal.timeout(30000)])
+        const interrupt = () => req.destroy()
+        req.once('aborted', disconnected)
+        res.once('close', disconnected)
+        signal.addEventListener('abort', interrupt, { once: true })
+        try { json(res, 201, await options.materials.upload(sessionId, name, req, signal)) }
+        finally { req.off('aborted', disconnected); res.off('close', disconnected); signal.removeEventListener('abort', interrupt) }
+        return
+      }
+      if (req.method === 'DELETE' && ['attachments','references'].includes(materialRoute[2]!) && materialRoute[3]) { await options.materials.remove(sessionId, materialRoute[3]); json(res, 200, { removed: true }); return }
+    }
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {
@@ -227,7 +261,9 @@ export async function startHost(options: HostOptions) {
       }
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
-      json(res, 202, await controller.submit(await body(req)))
+      const request = await body(req)
+      if ((request.attachmentIds?.length || request.referenceIds?.length) && !options.materials) throw new HttpError(409, 'MATERIALS_DISABLED')
+      json(res, 202, await controller.submit(request))
       return
     }
     const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)

@@ -15,6 +15,7 @@ export interface OpenCodeProvider {
   readonly tokenLimitField?: ModelConnection['tokenLimitField']
   readonly reasoningEffort?: string
   readonly contextWindow?: number
+  readonly imageInput?: boolean
 }
 
 const packages = {
@@ -58,6 +59,7 @@ export function captureProvider(
     ...(connection.tokenLimitField !== undefined ? { tokenLimitField: connection.tokenLimitField } : {}),
     ...(reasoningEffort ? { reasoningEffort } : {}),
     ...(metadata?.contextWindow !== undefined ? { contextWindow: metadata.contextWindow } : {}),
+    ...(metadata?.inputModalities?.includes('image') ? { imageInput: true } : {}),
   }
   providerConfiguration(snapshot)
   return snapshot
@@ -148,6 +150,9 @@ export function providerConfiguration(provider: OpenCodeProvider) {
             id: provider.model,
             name: provider.model,
             tool_call: true,
+            ...(provider.imageInput
+              ? { attachment: true, modalities: { input: ['text', 'image'], output: ['text'] } }
+              : {}),
             temperature: provider.temperature !== undefined,
             reasoning: false,
             limit: {

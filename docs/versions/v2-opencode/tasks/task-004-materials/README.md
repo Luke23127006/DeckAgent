@@ -1,7 +1,15 @@
 # TASK-004 — Complete source-to-presentation input
 
 Integrator: A. Owners: A Platform/Host, B Client/UX, C Tools/Adapters/QA. Named assignees pending.
-Entry dependency: **G-003**. Gate: **G-004**. Work status: NOT STARTED.
+Entry dependency: **G-003**. Gate: **G-004**. Work status: IMPLEMENTED OPT-IN; acceptance pending.
+
+Kickoff on committed Task 003 baseline `36335d9`; working tree was clean.
+G-003 remains NOT VERIFIED; independent preparation does not close the entry gate.
+Read the [contract proposal](CONTRACT-PROPOSAL.md) and [initial parser review](PARSER-REVIEW.md).
+The owner selected separate-store option A on 2 November 2026. Storage, upload/reference APIs,
+request snapshots, worker parsers, MCP projection and Composer interaction are now implemented.
+Existing databases and runtime default stay unchanged. Intake requires explicit trial bounds;
+no product defaults are invented. See [manual acceptance](MANUAL-ACCEPTANCE.md) and [handoff](HANDOFF.md).
 
 ## Contract handshake
 
@@ -31,3 +39,7 @@ Apply [common verification](../README.md). This gate does not rewrite historical
 
 Record final contracts, fixtures, files, compatibility and retest owners in [HANDOFF.md](HANDOFF.md).
 Downstream tasks follow the [master plan](../../IMPLEMENTATION-PLAN.md). Independent preparation can continue while a gate is blocked.
+
+Manual checkpoint (3 November 2026): owner-confirmed smoke cases 1?5 PASS, including reference/permission after the matching-path fix. Other manual cases and gate prerequisites remain unverified; G-004 is not closed.
+
+Owner confirmed the image-reading manual smoke PASS on 3 November 2026. The tested format was not supplied, so separate PNG and JPEG manual PASS is not claimed. Restart and Stop manual checks remain unconfirmed; G-004 and its prerequisites remain unchanged. No automated tests were rerun for this status update.

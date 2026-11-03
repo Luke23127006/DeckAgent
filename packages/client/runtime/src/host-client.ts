@@ -22,13 +22,15 @@ function snapshot(value: unknown, requestId?: string, sessionId?: string): Reque
     throw new Error('INVALID_RESPONSE')
   const result = value.result
   const revision = typeof value.revision === 'number' ? { revision: value.revision } : {}
-  if (value.status !== 'awaiting_user' && (value.question !== undefined || value.approval !== undefined)) throw new Error('INVALID_RESPONSE')
+  if (value.status !== 'awaiting_user' && (value.question !== undefined || value.approval !== undefined))
+    throw new Error('INVALID_RESPONSE')
   if (value.status === 'awaiting_user') {
     if (result !== undefined) throw new Error('INVALID_RESPONSE')
     if ((value.question === undefined) === (value.approval === undefined)) throw new Error('INVALID_RESPONSE')
     if (value.approval !== undefined) {
       const approval = stepApproval(value.approval)
-      if (approval.requestId !== value.requestId || approval.sessionId !== value.sessionId) throw new Error('INVALID_RESPONSE')
+      if (approval.requestId !== value.requestId || approval.sessionId !== value.sessionId)
+        throw new Error('INVALID_RESPONSE')
       return { ...revision, requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', approval }
     }
     return {
@@ -98,6 +100,12 @@ export class HostClient {
         'PROVIDER_CREDENTIALS',
         'OPENCODE_UNSUPPORTED_OPTION',
         'OPENCODE_UNSUPPORTED_PROVIDER',
+        'MATERIAL_NOT_FOUND',
+        'MATERIAL_NOT_READY',
+        'MATERIAL_COUNT_LIMIT',
+        'MATERIALS_DISABLED',
+        'MATERIAL_REFERENCE_UNAVAILABLE',
+        'MATERIAL_IMAGE_INPUT_UNVERIFIED',
         'SESSION_UNAVAILABLE',
         'REQUEST_NOT_FOUND',
         'OUTLINE_STALE',
@@ -107,7 +115,8 @@ export class HostClient {
         'REPLY_STALE',
         'REPLY_CONFLICT',
         'INVALID_REPLY',
-        'APPROVAL_STALE', 'INVALID_APPROVAL',
+        'APPROVAL_STALE',
+        'INVALID_APPROVAL',
       ]
       const code =
         object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
@@ -160,9 +169,17 @@ export class HostClient {
   }
 
   async approve(id: string, reply: ApprovalReply): Promise<RequestSnapshot> {
-    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/approval`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
-    })).json(), id, reply.sessionId)
+    return snapshot(
+      await (
+        await this.request(`/api/requests/${encodeURIComponent(id)}/approval`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(reply),
+        })
+      ).json(),
+      id,
+      reply.sessionId,
+    )
   }
 
   async history(id: string): Promise<readonly HistoryMessage[]> {

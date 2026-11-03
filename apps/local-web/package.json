@@ -4,15 +4,23 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@deckagent/deck": "workspace:*",
-    "@deckagent/presentation-tools": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
     "@deckagent/agent-runtime": "workspace:*",
+    "@deckagent/browser-runtime": "workspace:*",
+    "@deckagent/deck": "workspace:*",
     "@deckagent/file-tools": "workspace:*",
     "@deckagent/host-api": "workspace:*",
-    "@deckagent/browser-runtime": "workspace:*",
     "@deckagent/model-providers": "workspace:*",
+    "@deckagent/presentation-tools": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
-    "@modelcontextprotocol/sdk": "1.26.0"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "fast-xml-parser": "5.11.2",
+    "fflate": "0.8.3",
+    "jpeg-js": "0.4.4",
+    "pdfjs-dist": "6.4.299",
+    "pngjs": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/pngjs": "6.0.5"
   }
 }

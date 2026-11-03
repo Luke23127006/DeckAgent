@@ -12,12 +12,17 @@ async function main() {
     options: {
       check: { type: 'boolean' },
       fresh: { type: 'boolean' },
+      'data-dir': { type: 'string' },
       help: { type: 'boolean' },
       model: { type: 'string' },
+      'material-max-bytes': { type: 'string' },
+      'material-max-count': { type: 'string' },
     },
   })
   if (values.help) {
-    console.log('pnpm.cmd start:opencode [--check] [--fresh] [--model <Gemini model>]')
+    console.log(
+      'pnpm.cmd start:opencode [--check] [--fresh | --data-dir <profile>] [--model <Gemini model>] [--material-max-bytes <trial bound> --material-max-count <trial bound>]',
+    )
     console.log(
       'Builds and opens OpenCode Local Web. Reuses the manual-test profile; --fresh creates another without deleting old data. --check only checks local prerequisites.',
     )
@@ -52,7 +57,11 @@ async function main() {
     )
   const compiler = join(root, 'node_modules/typescript/bin/tsc')
   if (!existsSync(compiler)) throw new Error('Dependencies missing. Run pnpm.cmd install --frozen-lockfile first.')
-  const profile = join(root, '.local-only', `opencode-manual-g001${values.fresh ? `-${randomUUID()}` : ''}`)
+  if (values.fresh && values['data-dir'])
+    throw new Error('Choose --fresh or --data-dir, not both. No profile was changed.')
+  const profile = values['data-dir']
+    ? resolve(root, values['data-dir'])
+    : join(root, '.local-only', `opencode-manual-g001${values.fresh ? `-${randomUUID()}` : ''}`)
   console.log(`Node: ${node}\nOpenCode: ${executable}\nTest profile: ${profile}`)
   console.log(
     'The adapter verifies the runtime pin before inference. Credentials load from root .env or saved Web settings.',
@@ -83,6 +92,8 @@ async function main() {
       profile,
       '--opencode-executable',
       executable,
+      ...(values['material-max-bytes'] ? ['--material-max-bytes', values['material-max-bytes']] : []),
+      ...(values['material-max-count'] ? ['--material-max-count', values['material-max-count']] : []),
     ],
     { cwd: root, env, stdio: 'inherit', windowsHide: true },
   )

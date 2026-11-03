@@ -23,6 +23,7 @@ export interface OpenCodeOptions {
   readonly executable: string
 }
 interface Options extends OpenCodeOptions {
+  images?: readonly { readonly bytes: Uint8Array; readonly mediaType: 'image/png' | 'image/jpeg' }[]
   requestId?: string
   sessionId: string
   root: string
@@ -40,6 +41,11 @@ export class OpenCodeAgentHandle implements AgentHandle {
   private abort: AbortController | undefined
   private constructor(private readonly options: Options) {}
   static async open(options: Options): Promise<OpenCodeAgentHandle> {
+    if (options.images?.length && (!options.provider.imageInput || options.provider.protocol !== 'gemini'))
+      throw new RuntimeError(
+        'MATERIAL_IMAGE_INPUT_UNVERIFIED',
+        'Image input requires a declared image-capable native Gemini model in this qualified path.',
+      )
     if (
       process.platform !== 'win32' ||
       !isAbsolute(options.executable) ||
@@ -55,6 +61,7 @@ export class OpenCodeAgentHandle implements AgentHandle {
       ...options,
       allowed: [...options.allowed],
       provider: structuredClone(options.provider),
+      ...(options.images ? { images: structuredClone(options.images) } : {}),
     })
   }
   get sessionId() {
@@ -123,6 +130,13 @@ export class OpenCodeAgentHandle implements AgentHandle {
     try {
       combined.throwIfAborted()
       await mkdir(root, { recursive: true })
+      const imagePaths: string[] = []
+      for (const [index, image] of (o.images ?? []).entries()) {
+        combined.throwIfAborted()
+        const path = join(root, `material-${index}.${image.mediaType === 'image/png' ? 'png' : 'jpg'}`)
+        await writeFile(path, image.bytes, { flag: 'wx', mode: 0o600 })
+        imagePaths.push(path)
+      }
       const env = await isolatedEnvironment(root, o.provider.key ?? '')
       bridge = await openToolBridge({
         tools: o.tools,
@@ -211,6 +225,7 @@ export class OpenCodeAgentHandle implements AgentHandle {
           'json',
           '--model',
           native.selector,
+          ...imagePaths.flatMap(path => ['--file', path]),
         ],
         {
           cwd: root,

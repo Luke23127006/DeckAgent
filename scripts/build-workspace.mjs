@@ -36,7 +36,7 @@ const extraEntries = {
   '@deckagent/cordis-smoke': ['lib/types/cli.js'],
   '@deckagent/agent-runtime-cli': ['lib/types/chat.js'],
   '@deckagent/browser-runtime': ['lib/types/boot.js'],
-  '@deckagent/local-web': ['lib/types/cli.js'],
+  '@deckagent/local-web': ['lib/types/cli.js', 'lib/types/materials/parser-worker.js'],
 };
 
 const packages = discoverWorkspacePackages()
@@ -56,5 +56,8 @@ for (const pkg of packages) {
   }
   if (pkg.name === '@deckagent/browser-runtime') config.platform = 'browser';
   if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name]);
+  if (pkg.name === '@deckagent/local-web') config.entry = {
+    index: 'lib/types/index.js', cli: 'lib/types/cli.js', 'parser-worker': 'lib/types/materials/parser-worker.js',
+  };
   await build(config);
 }

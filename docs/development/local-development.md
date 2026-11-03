@@ -202,6 +202,42 @@ workspace files stay outside Git.
 `read_file` defaults to private work. `read_file` with `scope: "source"` reads authorized project files.
 The publisher reads only private drafts. Earlier shared drafts are not granted to new requests.
 
+### Material input in a separate profile
+
+Material intake is opt-in and requires explicit trial bounds; no release defaults are selected.
+For a small manual test:
+
+```powershell
+pnpm.cmd start:opencode --fresh --material-max-bytes 1048576 --material-max-count 3
+```
+
+The equivalent Local Web CLI flags work with either backend. Uploaded text/document extraction
+uses the current ToolRegistry; PNG/JPEG model input currently requires OpenCode, native Gemini,
+and a selected model whose saved input modalities include `image`. No other model or backend is chosen automatically.
+Use the Composer attachment action or a workspace-relative file/folder reference. Prepared/rejected files block sending.
+Ready material can be sent without request text. Referencing a file does not upload it or add permission.
+
+The profile adds `materials.sqlite` and `materials/` without changing existing session/Web/deck schemas.
+Sent material is request-scoped and stays available in its Chat after restart. Another Chat and unsent draft IDs are not granted.
+Draft removal unlinks unsent metadata; copied bytes are retained until a garbage-collection policy is selected.
+Parser warnings describe text-only or unavailable content; scanned PDFs have no OCR route in this implementation.
+Folder names can be listed under Workspace Access. Provided Materials Only requires an exact file and the current file approval.
+
+The flags are bounded to at most 20 MiB/file and ten new attachments/request for this opt-in implementation.
+References use an independent read bound. Extraction has separate limits and can reject a file below its upload-size bound.
+Parser work runs in a cancellable worker; its JS heap setting is not an OS sandbox or a hard process-memory cap.
+Restart with `--data-dir "<previous Test profile path>"` and the same bounds to retain intake and the selected profile.
+Omitting `--fresh` alone selects the launcher's default profile, not the last generated fresh profile.
+`--fresh` and `--data-dir` cannot be combined.
+
+```powershell
+pnpm.cmd test:materials          # ingestion, storage, references and negative cases; no cloud key
+pnpm.cmd test:materials:browser  # real browser and disposable profile
+pnpm.cmd test:materials:cli      # pinned OpenCode with a loopback provider
+pnpm.cmd test:materials:live     # actual Gemini; environment or optional .env key
+node scripts/benchmark-materials.mjs --output .local-only/material-measurements.json
+```
+
 ### Import an earlier Local Web profile
 
 The new default does not search for or automatically import repository-relative data.

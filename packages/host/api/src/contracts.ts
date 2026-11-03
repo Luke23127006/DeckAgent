@@ -4,6 +4,8 @@ import type { DeckReader, OutlineReader, OutlineTarget } from '@deckagent/deck'
 export interface AgentRequest {
   readonly sessionId: string
   readonly input: string
+  readonly attachmentIds?: readonly string[]
+  readonly referenceIds?: readonly string[]
   /** Explicit presentation entry preserves generic chat/file requests. */
   readonly presentation?: true
   readonly outlineTarget?: OutlineTarget
@@ -92,6 +94,7 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly materials?: MaterialOperations
   /** Host owns the returned handle until the turn and disposal finish. */
   readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest, requestApproval: RequestApproval) => Promise<RequestAgent>
   readonly approvalAnswered?: (approval: StepApproval, decision: ApprovalDecision) => Promise<void>
@@ -216,4 +219,27 @@ export interface Workspace {
   readonly name: string
   readonly projectFolder?: string
   readonly state: 'available' | 'missing'
+}
+
+export interface MaterialLimits {
+  readonly maxFileBytes: number
+  readonly maxAttachments: number
+}
+export interface MaterialInfo {
+  readonly sent?: boolean
+  readonly materialId: string
+  readonly sessionId: string
+  readonly originalName: string
+  readonly kind: 'attachment' | 'reference'
+  readonly mediaType: string
+  readonly sizeBytes: number
+  readonly status: 'preparing' | 'ready' | 'rejected'
+  readonly warnings: readonly string[]
+  readonly reason?: string
+}
+export interface MaterialOperations {
+  reference?(sessionId: string, value: unknown): Promise<MaterialInfo>
+  list(sessionId: string): Promise<{ readonly enabled: boolean; readonly limits?: MaterialLimits; readonly items: readonly MaterialInfo[] }>
+  upload(sessionId: string, name: string, bytes: AsyncIterable<Uint8Array>, signal: AbortSignal): Promise<MaterialInfo>
+  remove(sessionId: string, materialId: string): Promise<void>
 }

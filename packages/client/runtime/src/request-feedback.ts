@@ -1,6 +1,12 @@
 import type { HistoryMessage, StoredActivity, StoredRequest } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  MATERIAL_NOT_FOUND: ['Không tìm thấy tài liệu của Chat', 'Gỡ tài liệu không còn khả dụng và chọn lại trong Chat này.'],
+  MATERIAL_NOT_READY: ['Tài liệu chưa sẵn sàng', 'Chờ chuẩn bị xong hoặc gỡ tệp bị từ chối trước khi gửi.'],
+  MATERIAL_COUNT_LIMIT: ['Quá nhiều tệp trong yêu cầu', 'Gỡ bớt các tệp mới rồi gửi lại. Tham chiếu không tính vào số tệp đính kèm.'],
+  MATERIALS_DISABLED: ['Tài liệu chưa được bật trong phiên này', 'Giữ bản nháp và kiểm tra cấu hình Host trước khi gửi lại.'],
+  MATERIAL_REFERENCE_UNAVAILABLE: ['Tham chiếu không còn khả dụng', 'Kiểm tra project folder rồi gỡ và chọn lại tham chiếu. Không tự đọc file khác cùng tên.'],
+  MATERIAL_IMAGE_INPUT_UNVERIFIED: ['Model hiện tại chưa dùng được ảnh trong luồng này', 'Chọn OpenCode với protocol Gemini và model đã khai báo nhận ảnh, hoặc gỡ ảnh trước khi gửi.'],
   REQUEST_FAILED: ['Yêu cầu chưa hoàn tất', 'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.'],
   TURN_FAILED: ['Yêu cầu chưa hoàn tất', 'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.'],
   MODEL_PROTOCOL: ['Không sử dụng được phản hồi model', 'Kiểm tra phần đã lưu trước khi gửi yêu cầu khác.'],

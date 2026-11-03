@@ -66,6 +66,8 @@ async function main() {
       'no-open': { type: 'boolean' },
       'opencode-executable': { type: 'string' },
       'confirmed-deck': { type: 'string' },
+      'material-max-bytes': { type: 'string' },
+      'material-max-count': { type: 'string' },
     },
   })
   if (values.help) {
@@ -105,6 +107,9 @@ async function main() {
     }) }]
   }
   const app = await startLocalWeb({
+    ...(values['material-max-bytes'] || values['material-max-count'] ? { materials: {
+      maxFileBytes: Number(values['material-max-bytes']), maxAttachments: Number(values['material-max-count']),
+    } } : {}),
     ...(values['opencode-executable'] ? { openCode: { executable: values['opencode-executable'] } } : {}),
     confirmedDecks,
     connections,

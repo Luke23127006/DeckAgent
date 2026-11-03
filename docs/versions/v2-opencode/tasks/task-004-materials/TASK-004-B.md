@@ -1,6 +1,6 @@
 # TASK-004-B — Attachment and reference interaction
 
-Owner: lane B; named assignee pending. Status: NOT STARTED.
+Owner: Codex, lane B. Status: implemented; browser subset PASS; owner manual acceptance pending.
 Group: [Complete source-to-presentation input](README.md). Entry dependency: G-003.
 
 ## Deliverable
@@ -11,7 +11,8 @@ Complete the disabled attachment path with ready/rejected/extracting states and 
 
 packages/client/runtime/src/; proposed tests/materials-browser.test.mjs.
 
-Proposed paths do not exist yet. Confirm module placement before implementation.
+Actual placement: `materials-view.ts`, existing Composer/Host client/error feedback,
+and `tests/materials-browser.test.mjs`. No new client framework.
 A owns shared application wiring, Host/domain contracts, storage, manifests and lockfile. B owns client views. C owns tool/provider adapters and test fixtures unless explicitly assigned otherwise at kickoff.
 One editor per file: changes needed in another lane's files go to that owner. Record the exact exception-free list before implementation.
 

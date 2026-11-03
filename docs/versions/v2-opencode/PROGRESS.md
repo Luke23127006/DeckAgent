@@ -44,7 +44,7 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 | [001 — Port and qualify the OpenCode adapter](tasks/task-001-runtime-foundation/README.md) | PASS | PASS | PASS | G-001 PASS; COMPLETE, owner-confirmed smoke |
 | [002 — Restore provider and session compatibility](tasks/task-002-provider-session-parity/README.md) | PASS | Gemini smoke PASS; extended pending | BLOCKED: live credentials | G-002 NOT VERIFIED; code/wire and Gemini smoke complete |
 | [003 — Accept inherited V1/V2 behavior on OpenCode](tasks/task-003-baseline-acceptance/README.md) | IN PROGRESS; automated subset PASS | Gemini smoke PASS; extended pending | IN PROGRESS; automated subset PASS | G-003 NOT VERIFIED; G-002 still pending |
-| [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-004 NOT VERIFIED |
+| [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | Implemented opt-in; automated subset PASS | Browser PASS; manual pending | Fixtures/vision PASS; latest source-generation live FAIL | G-004 NOT VERIFIED; G-003 and acceptance pending |
 | [005 — Complete bounded context and manual compaction](tasks/task-005-context/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-005 NOT VERIFIED |
 | [006 — Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-006 NOT VERIFIED |
 | [007 — Deliver images and usable export](tasks/task-007-images-export/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-007 NOT VERIFIED |
@@ -154,3 +154,36 @@ This resolves the six-case manual smoke requirement; it does not erase the earli
 Exact manual SHA, browser/model details, itemized results and API HTML/revision evidence were not supplied.
 Extended manual/interruption checks and G-002 remain pending; G-003 stays NOT VERIFIED.
 The bounded Task 003 smoke/test change is ready for owner commit. No automatic commit or push occurred.
+
+TASK-004 kickoff (2 November 2026): Task 003 is committed at `36335d9`; working tree was clean.
+Prepared ADR 0004, material contract/file-ownership proposal and initial parser/license/fixture review.
+No production code or dependencies changed. Owner agreement is required before shared storage/API implementation,
+as explicitly required by Task 004-A. Attachment limits remain unset; historical 10/request and 20 MiB/file are benchmark candidates only.
+Pinned CLI --file existence is confirmed, but image delivery, isolation and live vision remain unverified.
+G-003 and G-004 stay NOT VERIFIED. Next action: owner contract decision, then isolated qualification and implementation.
+
+TASK-004 checkpoint (3 November 2026): owner selected separate-store option A; bounded implementation is in place.
+Added storage/API/snapshots, source references, seven-format worker parsers, MCP read_material, image input and Composer interaction.
+Latest material acceptance: 24 PASS. Inherited regression: 116 PASS / 14 SKIP; inherited browser: 9 PASS;
+CLI/MCP/process subset: 13 PASS; final targeted contract/browser checks recorded in evidence.
+Image wire and independent Gemini vision PASS. The stricter source live run read the unhinted source fact into an outline,
+then failed confirmed generation with OPENCODE_FAILED. Cause unresolved; earlier broad live PASS remains historical.
+Source and image live cases are now separate. No automatic retry, product default limit, old database schema change or runtime-default switch.
+Intake requires explicit trial bounds. Manual acceptance, representative corpus/limit selection and G-003 remain outstanding.
+G-004 stays NOT VERIFIED; Task 004 is not accepted as complete. See its handoff, evidence and manual checklist.
+
+Task 004 owner manual update (3 November 2026): smoke cases 1–4 PASS, including source-to-slides.
+Case 5 showed a rejected reference before approval. Fixed the misleading client corruption message for unavailable references;
+targeted browser RED/GREEN passes without changing permissions. Actual workspace/file-path confirmation and retest remain pending.
+The earlier failed automated generation run stays recorded. G-004 remains NOT VERIFIED.
+# Material reference follow-up (2026-11-03)
+
+Manual case 5 exposed rejection of a valid file reference when the model also
+supplied its matching relative path. The reader and tool guidance are corrected.
+A targeted pinned-CLI/Host/MCP regression passes for deny, allow-once and rejection
+of another path. The provider is a local fixture; manual retry remains pending.
+G004 remains NOT VERIFIED. Earlier owner-confirmed cases 1–4 remain PASS.
+
+Owner confirmed manual reference/permission case 5 PASS on 3 November 2026 after the matching-path fix. Smoke cases 1?5 are now owner-confirmed PASS. Remaining manual coverage and gate prerequisites are unchanged; G-004 remains NOT VERIFIED.
+
+Owner confirmed the image-reading manual smoke PASS on 3 November 2026. The tested format was not supplied, so separate PNG and JPEG manual PASS is not claimed. Restart and Stop manual checks remain unconfirmed; G-004 and its prerequisites remain unchanged. No automated tests were rerun for this status update.
