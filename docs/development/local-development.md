@@ -317,3 +317,19 @@ HTTP servers; they do not need real credentials or cloud access.
 During chat turns the CLI prints only the stable error code with a fixed message (most
 provider errors show `Turn failed`). Detailed provider messages — transport phase/code
 and HTTP status — appear only during the first-run setup connection check.
+
+## Manual context compaction
+
+In the opt-in OpenCode Web app, Context below the Composer shows an estimate or
+Unknown. Open its details to see the byte-based estimate and missing contributions.
+The 85 percent warning only suggests Compact. It never starts a model call.
+
+Select Compact while the Chat is idle. Later requests use a summary; full history
+and the unsent draft remain. Stop cancels the compact request. A failed or stopped
+request keeps the previous checkpoint. Restart with the same explicit `--data-dir`
+to keep checkpoints. The legacy backend does not use them.
+
+Run `pnpm.cmd test:context` for local storage/accounting checks and
+`pnpm.cmd test:context:cli` for pinned-CLI/browser fixtures. The separate
+`pnpm.cmd test:context:live` command uses Gemini credentials from the environment
+or optional `.env`; it incurs provider usage and includes the full deck scenario.

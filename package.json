@@ -5,6 +5,9 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "test:context": "node --test tests/context.test.mjs",
+    "test:context:cli": "node scripts/test-opencode.mjs context",
+    "test:context:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs context-live",
     "start:opencode": "node scripts/start-opencode.mjs",
     "test:opencode": "node --test tests/opencode-agent.test.mjs tests/opencode-process.test.mjs tests/opencode-client-contract.test.mjs tests/opencode-tool-isolation.test.mjs",
     "test:opencode:cli": "node scripts/test-opencode.mjs cli",

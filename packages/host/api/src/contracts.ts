@@ -2,6 +2,8 @@ import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } 
 import type { DeckReader, OutlineReader, OutlineTarget } from '@deckagent/deck'
 
 export interface AgentRequest {
+  /** Host-only admission from the explicit compact route; never inferred from text. */
+  readonly contextAction?: 'compact'
   readonly sessionId: string
   readonly input: string
   readonly attachmentIds?: readonly string[]
@@ -94,6 +96,7 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly context?: { usage(sessionId: string, draft: unknown): Promise<ContextUsage> }
   readonly materials?: MaterialOperations
   /** Host owns the returned handle until the turn and disposal finish. */
   readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest, requestApproval: RequestApproval) => Promise<RequestAgent>
@@ -109,6 +112,20 @@ export interface HostOptions {
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
   readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
+}
+
+export interface ContextUsage {
+  readonly sessionId: string
+  readonly selection?: ModelSelection
+  readonly source: 'estimate' | 'unknown'
+  readonly usedTokens?: number
+  readonly contextWindow?: number
+  readonly percentage?: number
+  readonly suggestCompact: boolean
+  readonly canCompact: boolean
+  readonly breakdown: Readonly<Record<string, number>>
+  readonly unknown: readonly string[]
+  readonly checkpoint?: { readonly revision: number; readonly coveredMessages: number; readonly createdAt: string }
 }
 
 export interface ProviderSettings {

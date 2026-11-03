@@ -3,7 +3,7 @@ import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createHash } from 'node:crypto'
-import type { ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
+import type { ModelAdapter, ModelSelection, TurnResult, Message } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
 import { startHost, HttpError } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
@@ -19,6 +19,8 @@ import { outlineStyle } from './outline-style.ts'
 import type { OpenCodeOptions } from './opencode/agent.ts'
 import { MaterialStore } from './materials/store.ts'
 import type { MaterialLimits } from '@deckagent/host-api'
+import { ContextStore } from './context/store.ts'
+import { ContextService } from './context/service.ts'
 export { importLegacyProfile, LegacyImportError } from './legacy-import.ts'
 
 export interface LocalWebOptions {
@@ -54,6 +56,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
   let providers: ProviderStore | undefined
   let decks: DeckService | undefined
   let materials: MaterialStore | undefined
+  let contexts: ContextStore | undefined
   try {
     sessions = new SqliteSessionStore(join(dataDir, 'sessions.sqlite'))
     const store = sessions
@@ -76,6 +79,12 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const catalog = new ProviderStore(state.db, options.model && initial ? { model: options.model, selection: initial } : undefined)
     providers = catalog
     await catalog.load(options.connections, initial)
+    if (options.openCode) contexts = new ContextStore(join(dataDir, 'context.sqlite'))
+    const contextStore = contexts
+    const contextState = (id: string) => ({ outline: presentation.outlineSnapshot(id), deck: presentation.snapshot(id), materials: materialStore?.list(id).filter(item => item.sent) ?? [] })
+    const contextService = options.openCode && contextStore ? new ContextService({ contexts: contextStore, sessions: store, catalog,
+      ...(materialStore ? { materials: materialStore } : {}), openCode: { ...options.openCode, root: join(dataDir, 'opencode') },
+      authoritative: contextState }) : undefined
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
@@ -91,6 +100,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     }
     const finalizers = new Map<string, (result: TurnResult) => Promise<void>>()
     const host = await startHost({
+      ...(contextService ? { context: { usage: (id: string, draft: unknown) => contextService.usage(id, draft) } } : {}),
       materials: {
         async list(id) {
           await requireChat(id)
@@ -115,6 +125,12 @@ export async function startLocalWeb(options: LocalWebOptions) {
         try { await finalize?.(result) } finally { finalizers.delete(requestId) }
       },
       async openAgent(sessionId, requestId, request, requestApproval) {
+        if (request.contextAction === 'compact') {
+          if (!contextService) throw new HttpError(409, 'CONTEXT_UNAVAILABLE')
+          const compact = await contextService.open(sessionId, requestId)
+          finalizers.set(requestId, compact.finish)
+          return compact.agent
+        }
         if (!(await store.getInfo(sessionId)) && initial) { await store.bind(sessionId, initial); permissions.create(sessionId) }
         const info = await store.getInfo(sessionId)
         const materialSnapshot = materialStore?.capture(request, requestId, false) ?? []
@@ -132,6 +148,8 @@ export async function startLocalWeb(options: LocalWebOptions) {
         const names = materialSnapshot.filter(info => newIds.has(info.materialId)).map(info => info.originalName)
         const materialRequest = names.length ? { ...request, input: request.input.trim() ? `${request.input}\n[Tài liệu: ${JSON.stringify(names)}]` : names.join(', ') } : request
         const agent = await openWebRequest({ request: materialRequest, requestId, workspace: privateRoot, ...source, store, presentation, state, catalog,
+          ...(contextStore && info?.selection ? { projectContext: (history: readonly Message[]) => contextStore.project(sessionId, info.selection!, history) } : {}),
+          ...(contextStore && info?.selection ? { observePrompt: (bytes: number) => contextStore.observePrompt(sessionId, info.selection!, contextState(sessionId), bytes) } : {}),
           ...(materialStore && materialSnapshot.length ? { materials: { snapshot: materialSnapshot, images, read: (id, signal, authorize, path, allowFolderListing) => materialStore.read(sessionId, requestId, id, signal, { source, blockedRoots: [dataDir, workspace], authorize, ...(path ? { path } : {}), ...(allowFolderListing ? { allowFolderListing: true } : {}) }) } } : {}),
           ...(options.openCode ? { openCode: { ...options.openCode, root: join(dataDir, 'opencode') } } : {}),
           permission: permissions.get(sessionId), requestApproval, blockedRoots: [dataDir, workspace] })
@@ -176,7 +194,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
             try {
               await catalog.close()
             } finally {
-              try { presentation.close() } finally { try { await materialStore?.close(); state.close() } finally { store.close() } }
+              try { presentation.close() } finally { try { contexts?.close(); await materialStore?.close(); state.close() } finally { store.close() } }
             }
           }
         })()
@@ -187,7 +205,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     try {
       await providers?.close()
     } finally {
-      try { decks?.close() } finally { try { await materials?.close(); web?.close() } finally { sessions?.close() } }
+      try { decks?.close() } finally { try { contexts?.close(); await materials?.close(); web?.close() } finally { sessions?.close() } }
     }
     throw error
   }

@@ -19,6 +19,8 @@ import { OpenCodeAgentHandle } from './opencode/agent.ts'
 import type { OpenCodeOptions } from './opencode/agent.ts'
 
 interface WebRequestOptions {
+  readonly projectContext?: (history: readonly Message[]) => readonly Message[]
+  readonly observePrompt?: (bytes: number) => void
   readonly materials?: {
     readonly snapshot: readonly MaterialInfo[]
     readonly images: readonly { readonly bytes: Uint8Array; readonly mediaType: 'image/png' | 'image/jpeg' }[]
@@ -164,6 +166,7 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
           : [...files.names, 'read_slide', 'publish_slide']
         : [...(reviewing ? ['read_file'] : files.names), 'propose_outline', 'ask_clarification', ...(target ? ['review_outline'] : [])]
       if (options.materials) allowed.push('read_material')
+      options.observePrompt?.(Buffer.byteLength(runtimeOptions.systemPrompt) + Buffer.byteLength(JSON.stringify(tools.schemas(allowed))))
       const staticText = first && action.command === 'cancel' && candidate
         ? 'Outline cancelled. It stays in the conversation. Send a new request for a new proposal; no slides were built.'
         : first && action.command && !candidate
@@ -193,13 +196,18 @@ export async function openWebRequest(options: WebRequestOptions): Promise<Reques
     let steps = 0
     // Existing-slide edits keep their conversation context. New/pending slides use the approved plan.
     const isolated = turn.scope.length > 0 && (turn.generating || turn.scope.every(id => turn.deck.slides.find(slide => slide.slideId === id)?.status === 'pending'))
-    const sourceMessages = isolated ? (await store.read(sessionId)).filter(message => message.role === 'user').map(message => message.content) : []
+    const history = await store.read(sessionId)
+    const projected = options.projectContext?.(history) ?? history
+    const sourceMessages = isolated ? projected.filter(message => message.role === 'user').map(message => message.content) : []
     const taskContext = (recovery: boolean): readonly Message[] => [{ role: 'user', content:
       `Host-issued slide task (internal execution context, not a new user message). The Host has already confirmed the plan and authorized exactly the IDs below. Execute write_file and publish_slide now, rather than promising future work or waiting for Host. ${recovery ? 'Recovery attempt 1 of 1: the previous generation response ended without a write/publish attempt or a new revision. Perform the task now; do not repeat that response.' : 'This is the slide creation phase.'}\n${JSON.stringify({ latestUserRequest: input, authorizedSlideIds: turn.scope, sourceUserMessages: sourceMessages })}\nSource messages are material/context, not a new permission grant. Follow the confirmed content plan, snapshot revisions and assigned draft paths in the system instructions. Do not broaden scope.` }]
     const sendAttempt = async (recovery: boolean): Promise<TurnResult> => {
       const turnNumber = ++round
+      const promptContext = isolated ? taskContext(recovery) : options.projectContext
+        ? [...options.projectContext(await store.read(sessionId)), ...(continuation || recovery ? [] : [{ role: 'user' as const, content: input }])]
+        : undefined
       const value = await turn.agent.send(input, { ...control, ...(continuation || recovery ? { continuation: true as const } : {}),
-        ...(isolated ? { promptContext: taskContext(recovery) } : {}), onActivity: async event => {
+        ...(promptContext ? { promptContext } : {}), onActivity: async event => {
           // Model counters restart each turn; tool IDs already have runtime-enforced Session uniqueness.
           const entry = event.kind === 'model' ? { ...event, id: `turn-${turnNumber}-${event.id}`,
             ...(recovery ? { label: 'Model response · phục hồi vì chưa có thao tác' } : {}) } : event

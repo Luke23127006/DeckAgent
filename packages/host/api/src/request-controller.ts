@@ -246,6 +246,8 @@ export class RequestController {
       }
     }
     try {
+      if (entry.abort.signal.aborted && result.status === 'completed')
+        result = { status: 'cancelled', text: result.text, steps: result.steps, error: { code: 'ABORTED', message: 'Request stopped' } }
       await this.finishRequest?.(request, entry.snapshot.requestId, result)
     } catch {
       result = { status: 'failed', text: result.text, steps: result.steps,

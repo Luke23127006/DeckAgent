@@ -16,12 +16,19 @@ import { workspaceView } from './workspace-view.ts'
 import { approvalView } from './approval-view.ts'
 import { permissionPicker } from './permission-picker.ts'
 import { materialsView } from './materials-view.ts'
+import { contextMeter } from './context-meter.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
 const management = new ManagementClient(location.origin, token)
 const permissionUI = permissionPicker(management)
 const materialUI = materialsView(location.origin, token, () => controls())
+const contextUI = contextMeter(location.origin, token, client, async snapshot => {
+  const id = snapshot.sessionId, expected = generation
+  observeRequest(snapshot)
+  controls()
+  await follow(snapshot.requestId, id, expected)
+})
 const outlines = new OutlineClient(location.origin, token)
 let outlineState: OutlineSnapshot | undefined
 const root = document.querySelector<HTMLElement>('#app')!
@@ -245,6 +252,7 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  contextUI.update(current, input.value, current ? materialUI.selection(current.sessionId) : { attachmentIds: [], referenceIds: [] }, !!current?.activeRequestId || !!current && sending.has(current.sessionId))
   const workspaceMismatch = workspaces !== undefined && !!current && (current.workspaceId ?? 'ungrouped') !== selectedWorkspace
   const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
@@ -596,7 +604,7 @@ moreActions.append(createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, permissionUI.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
-form.append(input, materialUI.node, composerActions)
+form.append(input, materialUI.node, composerActions, contextUI.node)
 input.addEventListener('input', () => { saveDraft(); controls() })
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {

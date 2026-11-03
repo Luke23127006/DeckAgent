@@ -1,0 +1,218 @@
+{
+  "task": "V2 OpenCode TASK-005",
+  "checkpointDate": "2026-11-04",
+  "ownerDecision": {
+    "date": "2026-11-03",
+    "choice": "A: separate context.sqlite",
+    "adr": "docs/adr/0005-manual-context-checkpoints.md"
+  },
+  "candidate": {
+    "baseSha": "019a027677efd442b34158796f6abbcb3a79a94a",
+    "dirty": true,
+    "sourceFingerprints": [
+      {
+        "path": "apps/local-web/src/index.ts",
+        "sha256": "c38838844312fb66c7a4358f6dd6adbcd8a0a254351db048f0980ed90a20a93a"
+      },
+      {
+        "path": "apps/local-web/src/materials/store.ts",
+        "sha256": "0b54da19f6ba50d20b55c514eab0573b38a80bd9861992f375cd38662c72ff2b"
+      },
+      {
+        "path": "apps/local-web/src/web-request.ts",
+        "sha256": "c96d8541f103eac590917092a4f40f79d936b22addc6a79b146a2bee4926143d"
+      },
+      {
+        "path": "package.json",
+        "sha256": "16458bfb690eb3a4950ad52362b8f28ec36a74ac80b551f2ec345f3628cc27b1"
+      },
+      {
+        "path": "packages/client/runtime/src/boot.ts",
+        "sha256": "cf47cb46a2aaf4b06a7077c4adb188510cebc7e32375afd86908a2cc0a5df985"
+      },
+      {
+        "path": "packages/host/api/src/contracts.ts",
+        "sha256": "f23e07a7e768325c74a52808eb6c197f5d377f57801d4e70968f760fdfb96ce6"
+      },
+      {
+        "path": "packages/host/api/src/index.ts",
+        "sha256": "041f68d203708871844ec6e915418656bbe31f6caba341829a840db76b8bb71d"
+      },
+      {
+        "path": "packages/host/api/src/request-controller.ts",
+        "sha256": "4c844860c93ba181d1b8fd0c7330a5b14b6311c1b8e8095ab98a440c512dc1d2"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "7c71759d5dd4e00ed7edaf984e570edc21588258d52348276c68903e2b40c35c"
+      },
+      {
+        "path": "apps/local-web/src/context/service.ts",
+        "sha256": "fb11cccaca772eb53f017061fe2d43d50029cd2fd9cea78630d40f77bfb66c5b"
+      },
+      {
+        "path": "apps/local-web/src/context/store.ts",
+        "sha256": "1f7d742a02b65131f1c321d0e2626a74a18d882988c2797963c67ff10cd3476c"
+      },
+      {
+        "path": "packages/client/runtime/src/context-meter.ts",
+        "sha256": "a7d7976bba9026acffed940d505fbc63b3e3b6fb0dab724da542cbfd953ec2b5"
+      },
+      {
+        "path": "tests/context-browser.test.mjs",
+        "sha256": "595b63b26e8661d9f7b41f27dbdaa9bfb0c763edf85e445befc78312fd0423ef"
+      },
+      {
+        "path": "tests/context-live.test.mjs",
+        "sha256": "0128a9e5e38d2f17ed700d1de13d660e147eb60d10affdd803d840bfadf70951"
+      },
+      {
+        "path": "tests/context.test.mjs",
+        "sha256": "d632ffcdc269615c0451963928f52d82893c0c6aa22b576bd88227ee5bd6ffc7"
+      },
+      {
+        "path": "tests/opencode-context.test.mjs",
+        "sha256": "875254fde27a2b3bf3000e2265ef4483a797f87d48ed5a94a26452f52ea0f9d3"
+      }
+    ]
+  },
+  "environment": {
+    "os": "Windows x64",
+    "node": "22.19.0",
+    "pnpm": "11.28.5",
+    "browser": "Chrome 156.0.8078.80",
+    "cli": "OpenCode 1.19.5 Windows x64",
+    "cliSha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa",
+    "live": {
+      "model": "gemini-3.1-flash-lite",
+      "protocol": "gemini"
+    },
+    "tester": "Codex",
+    "profiles": "Disposable synthetic profiles only"
+  },
+  "functionalStatus": "IMPLEMENTED OPT-IN; BASIC MANUAL SMOKE PASS; EXTENDED ACCEPTANCE PENDING",
+  "integrationVerdict": "G-005 NOT VERIFIED",
+  "entryGates": {
+    "G002": "NOT VERIFIED",
+    "G004": "NOT VERIFIED"
+  },
+  "verification": {
+    "typecheck": "PASS",
+    "bundle": "PASS",
+    "lint": "PASS: 172 files",
+    "format": "PASS: eight explicit new/owned source/test files; inherited formatting drift not rewritten",
+    "diffCheck": "PASS"
+  },
+  "tests": [
+    {
+      "id": "affected-regression",
+      "verdict": "PASS",
+      "testCount": 62,
+      "log": ".local-only/task005-regression.log",
+      "sha256": "f1a1abff9a45bdda2b9b115e8c0c34ac75b3311c2ddfe43f0f786ec4f31982df"
+    },
+    {
+      "id": "final-context",
+      "verdict": "PASS",
+      "testCount": 4,
+      "log": ".local-only/task005-context-final.log",
+      "sha256": "9c3ef7ef72d88407e8c0f87535c820c885bd8ac1bf8f302b3905d09087bd7758"
+    },
+    {
+      "id": "cli-browser-subset",
+      "verdict": "PASS",
+      "testCount": 2,
+      "log": ".local-only/task005-final-cli-browser.log",
+      "sha256": "7d3b4e401e19e7e9b99ec1e12910de6943ce18e5805485680b96716683fd317c"
+    },
+    {
+      "id": "final-browser-success-and-failure",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task005-browser-final.log",
+      "sha256": "a20a66ae0d94850c01877586d8049e9a50211032bafe1ab3985da9b08704340e"
+    },
+    {
+      "id": "final-host-admission-cancellation",
+      "verdict": "PASS",
+      "testCount": 9,
+      "log": ".local-only/task005-final-host.log",
+      "sha256": "8131229125513d9ef2806912223ea97af4f759d6c8c29d33ed004ad408bef520"
+    },
+    {
+      "id": "existing-confirmation-generation-scoped-edit-restart",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task005-presentation-regression.log",
+      "sha256": "70d526294ecaf43cb864c56a451057236bc06ade77f2e6d1e82cc93c1ed4fec6"
+    },
+    {
+      "id": "controlled-fidelity-live",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task005-fidelity-live.log",
+      "sha256": "8c1646731ef01da623acb9482821f15c159bff4b3c9b8807e73be6800a211a56"
+    },
+    {
+      "id": "full-source-deck-live",
+      "verdict": "FAIL",
+      "testCount": 1,
+      "log": ".local-only/task005-live.log",
+      "sha256": "6fd322957dc39ef1a57fc8aee58f55f5a3e55d94d14884ff60e1f0a34e6d59cf"
+    }
+  ],
+  "countsNote": "Groups overlap. Do not sum them as unique tests.",
+  "liveDistinction": {
+    "controlledFidelity": "Actual Gemini summary and later answer preserve source code, pickup day and slide restriction; source history is controlled synthetic data.",
+    "fullScenario": "FAIL OPENCODE_FAILED at initial source-to-outline request, before Compact. Deck/compact/edit stages not reached; key/transport cause unconfirmed."
+  },
+  "manual": {
+    "verdict": "PARTIAL PASS",
+    "guide": "MANUAL-ACCEPTANCE.md",
+    "ownerConfirmation": {
+      "date": "2026-11-04",
+      "source": "Owner confirmed the supplied quick Compact smoke PASS in chat",
+      "scenario": "Remember four facts; preserve unsent draft and readable history through manual Compact; answer the same facts in the next request",
+      "artifacts": "Aggregate owner confirmation; no additional per-step artifacts",
+      "exactCandidate": null,
+      "browser": null,
+      "model": null
+    },
+    "cases": {
+      "basicCompactAndContinue": "PASS; owner-confirmed",
+      "stop": "NOT VERIFIED by owner",
+      "restartAndSelectionIsolation": "NOT VERIFIED by owner",
+      "sourceBackedDeckEditAfterCompact": "NOT VERIFIED by owner"
+    }
+  },
+  "compatibility": {
+    "existingDatabaseSchemasChanged": false,
+    "legacyDefaultUnchanged": true,
+    "checkpointStore": "context.sqlite; application_id 0x44414358; schema 1",
+    "oldHost": "Optional context capability hidden on 404",
+    "wrongChatOrSelection": "Full history used; no cross-Chat checkpoint reuse",
+    "newRuntimeLoop": false,
+    "dependenciesAdded": []
+  },
+  "failuresAndRetests": [
+    "Sandbox Node test/git subprocess EPERM required approved execution or direct read-only Git invocation; initial environment failure is not behavioral RED.",
+    "SQLite teardown order, a fixture outline route and browser startup navigation race were corrected; final targeted checks PASS.",
+    "Full live FAIL is preserved separately from the focused live PASS."
+  ],
+  "limitations": [
+    "Usage is a labeled UTF-8 bytes/4 heuristic with matching last-prepared system/tool bytes; not a tokenizer or provider-reported occupancy. Provider formatting can differ.",
+    "Unknown image/reference costs or missing prompt observation suppress total percentage. Missing capacity suppresses percentage.",
+    "Summary must reduce projected input and fit 64 KiB. Existing 4 MB transport guard remains; no unbounded chunk compaction.",
+    "Not an exhaustive provider, language, long-document, prompt-injection or OS sandbox proof.",
+    "Checkpoint metadata survives restart. Compact request state is in memory; no durable queue or replay.",
+    "Full source-backed confirmed-deck continuity, extended owner manual acceptance and entry gates remain outstanding. Basic Compact smoke is owner-confirmed PASS."
+  ],
+  "preservation": {
+    "originalUserProfilesModified": false,
+    "runtimeDefaultChanged": false,
+    "committed": false,
+    "pushed": false,
+    "publishedIssue": false
+  },
+  "details": "HANDOFF.md"
+}

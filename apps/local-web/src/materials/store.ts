@@ -75,6 +75,19 @@ export class MaterialStore {
     if (!row) throw new HttpError(404, 'MATERIAL_NOT_FOUND')
     return JSON.parse(String(row.info))
   }
+  /** Cached attachment text only. Measurement never reads a source reference. */
+  draftContext(sessionId: string, ids: readonly string[]): { readonly bytes: number; readonly unknown: readonly string[] } {
+    let bytes = 0
+    const unknown: string[] = []
+    for (const id of new Set(ids)) {
+      const info = this.get(sessionId, id)
+      if (info.kind === 'reference' || info.mediaType.startsWith('image/') || info.status !== 'ready') { unknown.push(info.kind === 'reference' ? 'reference-content' : 'image-or-unready-material'); continue }
+      const row = this.db.prepare('SELECT extraction FROM materials WHERE id=? AND session_id=?').get(id, sessionId)
+      if (row?.extraction) bytes += Buffer.byteLength(String(row.extraction))
+      else unknown.push('unavailable-extraction')
+    }
+    return { bytes, unknown }
+  }
   upload(
     sessionId: string,
     name: string,

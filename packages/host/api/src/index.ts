@@ -17,6 +17,7 @@ export type { Workspace } from './contracts.ts'
 export type { RequestSummary } from './contracts.ts'
 export type { PermissionPreset, PermissionGrant, ChatPermission, ApprovalDraft, StepApproval, ApprovalDecision, ApprovalReply, RequestApproval } from './contracts.ts'
 export type { MaterialInfo, MaterialLimits, MaterialOperations } from './contracts.ts'
+export type { ContextUsage } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 
@@ -259,6 +260,16 @@ export async function startHost(options: HostOptions) {
       if (resource?.[2] === 'requests' && req.method === 'GET') {
         json(res, 200, await management.requests(resource[1]!)); return
       }
+    }
+    const context = /^\/api\/sessions\/([\w-]{1,100})\/(context|compact)$/.exec(url.pathname)
+    if (context && options.context && req.method === 'POST') {
+      const value = await readJson(req)
+      if (context[2] === 'context') json(res, 200, await options.context.usage(context[1]!, value))
+      else {
+        if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length) throw new HttpError(400, 'INVALID_REQUEST')
+        json(res, 202, await controller.submit({ sessionId: context[1]!, input: '', contextAction: 'compact' }))
+      }
+      return
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       const request = await body(req)
