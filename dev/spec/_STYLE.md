@@ -80,9 +80,14 @@ empty; each project declares its own terms and adds to them as it learns.
 | **current outline** | The outline proposal in the latest outline response of the conversation |
 | **confirmed outline** | The current outline after the user confirms it. It does not change |
 | **deck** | The slides of a chat |
+| **follow-up request** | A request in a chat that has a confirmed outline or a deck with slides |
 | **generation format** | The kind of source the deck is built in, such as HTML or Markdown. One deck has one |
-| **design system** | A saved set of design rules for slides, such as colours, fonts and layouts. Built-in or made by the user |
-| **closing message** | The response that ends a first draft and tells what was made |
+| **deck source** | The working files of the deck in its generation format. The system and the user change the same files |
+| **design system** | A saved set of design rules for the look of slides: colours, fonts, spacing and the rules for using them. Built-in or made by the user. It holds no layout |
+| **theme** | A design system written in the terms of one generation format, as named values the deck source refers to. Only the system writes it |
+| **template** | The prebuilt layouts of one generation format that the system builds slides from |
+| **marked part** | A part of a slide that the user points to as the target of a request |
+| **closing message** | The response that ends the work on slides of a request and tells what was made or changed |
 | **placeholder** | Text that stands in for a fact no source gives |
 | _(add a row)_ | _(describe the meaning, do not name a widget or position)_ |
 

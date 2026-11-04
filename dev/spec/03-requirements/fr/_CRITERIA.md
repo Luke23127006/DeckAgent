@@ -45,9 +45,15 @@ Removed FR IDs:
 - FR-006, 04-11-2026, merged into FR-003.
 - FR-020, 04-11-2026, dropped: a question the system asks ends its request, and the reply is a new request (FR-014).
 - FR-026, 04-11-2026, merged into FR-025.
+- FR-030, 04-11-2026, merged into FR-031.
+- FR-032, 04-11-2026, dropped: a question ends its request, and the reply "every slide" is a clear follow-up request (FR-027).
+- FR-033, 04-11-2026, dropped: the reply "new slides only" is a clear follow-up request (FR-027).
+- FR-034, 04-11-2026, dropped: no instruction is kept aside for slides built later.
+- FR-035, 04-11-2026, merged into FR-031.
 - FR-047, 04-11-2026, merged into FR-019.
 - FR-056, 04-11-2026, merged into FR-046.
 - FR-086, 04-11-2026, merged into FR-067.
+- FR-108, 04-11-2026, merged into FR-107.
 - FR-114, 04-11-2026, merged into FR-113.
 - FR-115, 04-11-2026, merged into FR-113.
 

@@ -2,10 +2,16 @@
 id: DEC-002
 title: "The model writes the content; code applies the design system"
 date: 04-11-2026
-status: decided
+status: superseded
+superseded_by: DEC-005
 research: "none; owner ruling in the UC-001 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-022, FR-091, FR-093, BR-003, NFR-009"
 ---
+
+> Superseded on 04-11-2026 by [DEC-005](DEC-005-model-writes-source-within-template.md)
+> in the UC-002 spec review: option A gave no way to make a free design change in a
+> follow-up request, lost changes by hand, and needed a full renderer per generation
+> format. Kept as a record; do not apply it.
 
 ## Question
 
