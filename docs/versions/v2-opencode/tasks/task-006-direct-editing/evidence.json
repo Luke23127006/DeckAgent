@@ -1,0 +1,298 @@
+{
+  "task": "V2 OpenCode TASK-006",
+  "checkpointDate": "2026-11-04",
+  "ownerDecision": {
+    "date": "2026-11-04",
+    "choice": "A: controlled HTML patches",
+    "source": "Owner reply in chat",
+    "adr": "docs/adr/0006-controlled-slide-html-patches.md"
+  },
+  "candidate": {
+    "baseSha": "114dfd641702beda58b7352ab759bf4522473e74",
+    "dirty": true,
+    "initialWorkingTree": "clean; Task 005 committed",
+    "sourceFingerprints": [
+      {
+        "path": "apps/local-web/src/editing-workflow.ts",
+        "sha256": "2f9297fa284642b4cb6d3736ea757afc8291fabf5c3502d446fa3633e4f30dda"
+      },
+      {
+        "path": "apps/local-web/src/index.ts",
+        "sha256": "5688d004001be4c6591d0d21602e8b0a48a45d4d9bdb9e07f302a73bbf5260d2"
+      },
+      {
+        "path": "apps/local-web/src/web-request.ts",
+        "sha256": "7f8d383022612054d86a1fcb2d21a7824e862c56d6e1fa396a97541cdd88d713"
+      },
+      {
+        "path": "package.json",
+        "sha256": "367252f63ac713ef16edac537f55c6de0691b7a2c7f0ba2e2f9da033d8361251"
+      },
+      {
+        "path": "packages/agent/runtime/src/tool-failure.ts",
+        "sha256": "33fbdc8a25ddc3de112882a5c5bd98b4b2eec02a59ec18c1d534370babc32da8"
+      },
+      {
+        "path": "packages/client/runtime/src/deck-canvas.ts",
+        "sha256": "f176e67c7484de99dfa000b834b05215d53dfa3ef4a18db5182c8ec00bb4a060"
+      },
+      {
+        "path": "packages/client/runtime/src/deck-client.ts",
+        "sha256": "770b63cc98e3b91f226ab422521d039ab08e2517a4bbd9e32a8433f2ab14807d"
+      },
+      {
+        "path": "packages/host/api/src/contracts.ts",
+        "sha256": "b41532ac0a03b8a615d9fe64e0056f87faab25fca8114be5d8da6339de297f56"
+      },
+      {
+        "path": "packages/host/api/src/index.ts",
+        "sha256": "f8f10aa3157b8e41e3c7e730c9b5a41259f575f886e4e7f62834816a58678973"
+      },
+      {
+        "path": "packages/host/api/src/request-controller.ts",
+        "sha256": "66397aa8e9ec3b888e1856fbcc0f5990502966afa6830d607bdb73916b4a72cf"
+      },
+      {
+        "path": "packages/presentation/deck/package.json",
+        "sha256": "fcfc690730ed062a57825e26545d11f30326444467202d544626057a4405086f"
+      },
+      {
+        "path": "packages/presentation/deck/src/contracts.ts",
+        "sha256": "763ee99c1347d4c1f0ec9b97b35b43350b7803126851a9b6090c2d4c119ff797"
+      },
+      {
+        "path": "packages/presentation/deck/src/index.ts",
+        "sha256": "fbff3c7c1604e85e065e546b66db8f411c1273b1cb9cc8b901e1bdbaf8ead221"
+      },
+      {
+        "path": "packages/tools/presentation/src/index.ts",
+        "sha256": "65d1037e167bfab4c1f041c02633be2302843f2a2ad6bbebcf87e4082f215a4b"
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "sha256": "8f08637a2d417f54ee636f11c3eb14feb6d74ed36a9498f0878b11e1e4b06291"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "910317ef4b7380e805b22c463e8471345d0cec0a5dfd2e3ee95ce9c10eb98ea9"
+      },
+      {
+        "path": "tests/fixtures/material-browser.mjs",
+        "sha256": "05ae58a33a2f86b08fb0437811fc390cf3682ab6e698a2676e3918218a6a2b3d"
+      },
+      {
+        "path": "packages/client/runtime/src/slide-editor.ts",
+        "sha256": "ca75a0b26a11a64b4f2e726f52c6731ac9045228b7fe12288eb636e2741cf1b5"
+      },
+      {
+        "path": "packages/presentation/deck/src/slide-edit.ts",
+        "sha256": "8689fab4a318b9ab86450ac3af74e9f35cd837e3de669c7d93b2db1be662bf5a"
+      },
+      {
+        "path": "packages/tools/presentation/src/patch-slide.ts",
+        "sha256": "1fc51bf49afd295b72987cad4f212ae3cfc7ae36f2a83d36cd9ada1e49076302"
+      },
+      {
+        "path": "tests/direct-editing-browser.test.mjs",
+        "sha256": "1b913983bcc497b7b35333d5ad9b74f7554bd192a7d067006a702e74dca174ba"
+      },
+      {
+        "path": "tests/direct-editing-live.test.mjs",
+        "sha256": "387c7e6c04ab9d270999fcfcddfc27b2d1a7af61d5206d398c260aaf979bed08"
+      },
+      {
+        "path": "tests/direct-editing-opencode.test.mjs",
+        "sha256": "435a72627b96fccf58ed70f55faa86aac8f412abf3ad26854fe70b52da4caecd"
+      },
+      {
+        "path": "tests/direct-editing.test.mjs",
+        "sha256": "623b4d27bca1a73f8b558fd5be665bf6665bff247b902d046ac21346f5193867"
+      }
+    ]
+  },
+  "environment": {
+    "os": "Windows x64",
+    "node": "22.19.0",
+    "pnpm": "11.28.5",
+    "browser": "Chrome 156.0.8078.80",
+    "cli": "OpenCode 1.19.5 Windows x64",
+    "cliSha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa",
+    "live": {
+      "model": "gemini-3.1-flash-lite",
+      "protocol": "gemini"
+    },
+    "tester": "Codex",
+    "profiles": "Disposable synthetic profiles only"
+  },
+  "functionalStatus": "IMPLEMENTED; OWNER BASIC MANUAL SMOKE PASS",
+  "integrationVerdict": "G-006 NOT VERIFIED",
+  "entryGate": "G-003 NOT VERIFIED; implementation requested by owner without resetting historical acceptance",
+  "tests": [
+    {
+      "id": "first-interface-red",
+      "verdict": "FAIL_EXPECTED",
+      "testCount": 1,
+      "log": ".local-only/task006-patch-red.log",
+      "sha256": "8c1d2d1bbccb3aa220dcfa7f8554cf99473ed9692bbed4a46256778c5fd2ab34"
+    },
+    {
+      "id": "first-patch-slice",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task006-patch-green.log",
+      "sha256": "020999a79a57c8b347c659048d1e25c1ebd211061c38b2148f4d7eb0200c56ac"
+    },
+    {
+      "id": "domain-host",
+      "verdict": "PASS",
+      "testCount": 3,
+      "log": ".local-only/task006-domain-host.log",
+      "sha256": "9b93f4b44c1e5ccd3a611e16dd43e68f51df4bb5cc9f869a12c202ce5f3b4f95"
+    },
+    {
+      "id": "affected-regression",
+      "verdict": "PASS",
+      "testCount": 53,
+      "log": ".local-only/task006-regression.log",
+      "sha256": "888fb1b33be2a6da14db45bb89276a138efe2c854583a3b0bb849deb34820ba1"
+    },
+    {
+      "id": "browser-and-material-regression",
+      "verdict": "PASS",
+      "testCount": 3,
+      "log": ".local-only/task006-browser-final.log",
+      "sha256": "5cd03f5edc186b77dc96640aea999fd5914170e1563b937710f885d2b4b2430e"
+    },
+    {
+      "id": "final-domain-browser",
+      "verdict": "PASS",
+      "testCount": 4,
+      "log": ".local-only/task006-final-domain-browser.log",
+      "sha256": "2c751eb9eacce72295f834896d393b0a4af117bb339b6b394982118c2c0c9c7c"
+    },
+    {
+      "id": "final-cli-command",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task006-final-cli.log",
+      "sha256": "451152d31d736b2ef8e6bbc2e2149940365f62093561e8308630bcaf9d8cae57"
+    },
+    {
+      "id": "existing-html-workflow-cli",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task006-baseline-cli.log",
+      "sha256": "ab86e415637689f1d070e001d8174a33aed5fd8aef7a721410cbce7c6b262149"
+    },
+    {
+      "id": "initial-gemini-live",
+      "verdict": "FAIL",
+      "testCount": 1,
+      "log": ".local-only/task006-live.log",
+      "sha256": "01f9bbaa3dc902d5d3164814e3f95663b35c85941446a1a11606040c2d2b82af"
+    },
+    {
+      "id": "gemini-live-followup",
+      "verdict": "PASS",
+      "testCount": 1,
+      "log": ".local-only/task006-live-followup.log",
+      "sha256": "42f5ddde9d0204cb4b75c0b2a26c16f4ad4b47f5902f0a6469242299c4a12b4b"
+    }
+  ],
+  "countsNote": "Suites and follow-ups overlap; counts are not additive unique tests.",
+  "verification": {
+    "typecheck": "PASS",
+    "bundle": "PASS",
+    "lint": "PASS: 179 files",
+    "format": "PASS: eleven explicit new/owned source/test files; old formatting drift not rewritten",
+    "diffCheck": "PASS",
+    "buildLog": ".local-only/task006-final-build.log",
+    "bundleLog": ".local-only/task006-final-bundle.log",
+    "lintLog": ".local-only/task006-lint-final.log"
+  },
+  "preservationEvidence": {
+    "patch": "Exact byte preservation outside text/selected-style ranges; immutable base hash/revision and idempotent receipt tested.",
+    "browser": "Actual opaque-frame computed heading font-size 28px and center alignment; Vietnamese text visible; conflict retains unsaved draft; zero CSS resource canary fetches.",
+    "mcp": "Real pinned CLI calls read_slide and patch_slide, rejects wrong slide scope and stale base, preserves other nodes and slide-one revision.",
+    "live": "Actual Gemini direct -> MCP patch -> direct -> restart. Final slide-two HTML equals independently expected text replacement; slide-one HTML/revision unchanged. Follow-up used one successful patch.",
+    "fixtureScope": "Confirmed deck/initial HTML are trusted synthetic fixtures, not a live outline-generation test.",
+    "screenshot": {
+      "path": ".local-only/task006-editor-preview.png",
+      "sha256": "6b54de25cd5cb481bac151ff4dd8a778811ab1075ab42dbb79fa168b0fc6e0d9"
+    }
+  },
+  "failuresAndRetests": [
+    "First observable RED: DeckService.editableSlide missing, before implementation.",
+    "Browser fixture originally inspected the parent frame tree; Chrome opaque srcdoc frames are separate targets. Test-only target sessions fixed inspection without security changes.",
+    "Initial live FAIL expected revision 3 but observed 4. Original extra revision cause was not captured. No provider/key cause inferred.",
+    "Revised live test permits multiple contract-valid patch commits, requires all new revisions to have patch receipts, exact final byte preservation and no write_file/publish_slide for this scenario. Same-ID idempotency remains separately tested. Follow-up PASS is not a deletion of initial FAIL.",
+    "A fixture syntax error and lint global escape-name shadowing were corrected before final checks."
+  ],
+  "manual": {
+    "verdict": "BASIC SMOKE PASS",
+    "guide": "MANUAL-ACCEPTANCE.md",
+    "ownerConfirmation": {
+      "date": "2026-11-04",
+      "source": "Owner confirmed the supplied three-step smoke PASS in chat",
+      "scope": [
+        "Direct text/layout preview and explicit save on slide 2",
+        "Reload retains DIRECT_6 and saved layout",
+        "AI read_slide/patch_slide changes DIRECT_6 to AI_6 while preserving visible layout and slide 1"
+      ],
+      "limitation": "Aggregate confirmation; no per-step artifacts or manual HTML/revision comparison supplied"
+    },
+    "cases": {
+      "directEditSave": "PASS; owner-confirmed",
+      "reload": "PASS; owner-confirmed",
+      "aiPatchAfterDirectEdit": "PASS; owner-confirmed",
+      "conflictAndBusyManual": "NOT VERIFIED by owner; automated coverage remains recorded"
+    },
+    "exactCandidate": null,
+    "browser": null,
+    "model": null
+  },
+  "dependencyReview": {
+    "added": [
+      {
+        "name": "parse5",
+        "version": "8.0.0",
+        "license": "MIT",
+        "location": "@deckagent/deck server dependency",
+        "installHook": false
+      },
+      {
+        "name": "entities",
+        "version": "6.0.1",
+        "license": "BSD-2-Clause",
+        "location": "parse5 transitive dependency"
+      }
+    ],
+    "source": "Installed pinned package metadata plus official parse5 source-location API documentation",
+    "policyExceptionsAdded": false,
+    "existingWarning": "24 deprecated review-tool subdependencies unchanged"
+  },
+  "compatibility": {
+    "existingDatabaseSchemasChanged": false,
+    "canonicalFormat": "Existing immutable HTML revisions",
+    "runtimeDefaultChanged": false,
+    "directEditor": "Available with either backend; OpenCode still opt-in",
+    "legacy": "Viewable without automatic conversion; only safe plain-text leaves editable",
+    "frameworkAdded": false,
+    "originalProjectFilesWritten": false
+  },
+  "limitations": [
+    "Basic owner manual smoke PASS. Extended manual conflict/busy checks and G-003 prerequisite remain pending; G-006 is not closed.",
+    "Only bounded plain-text leaf nodes and four approved layout fields; no free drag/drop, rich-text conversion, undo, design-system editor or collaboration.",
+    "Selected style attribute can be requoted/escaped; original declarations remain and new overrides append. Existing CSS flow can limit visual effects, and repeated edits grow style within current size bound.",
+    "Unsaved editor drafts are page-memory only; conflicts preserve them, full reload does not. Saved revisions persist.",
+    "Byte preservation inside a slide is guaranteed on patch path. Retained whole-HTML generative publication has its earlier semantic-preservation limits.",
+    "No exhaustive model/provider/renderer/prompt-injection matrix or OS sandbox claim."
+  ],
+  "preservation": {
+    "originalUserProfilesModified": false,
+    "committed": false,
+    "pushed": false,
+    "issuePublished": false
+  },
+  "details": "HANDOFF.md"
+}

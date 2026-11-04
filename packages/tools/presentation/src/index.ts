@@ -2,6 +2,8 @@ import { ToolFailure } from '@deckagent/agent-runtime'
 import type { ToolRegistry } from '@deckagent/agent-runtime'
 import { createWorkspaceReader } from '@deckagent/file-tools'
 import type { DeckPublisher, DeckReader } from '@deckagent/deck'
+import type { DeckEditor } from '@deckagent/deck'
+export { registerPatchSlide } from './patch-slide.ts'
 import { DeckError } from '@deckagent/deck'
 export { registerProposeOutline } from './propose-outline.ts'
 
@@ -69,7 +71,7 @@ export async function registerPublishSlide(
 }
 
 /** Published content comes from durable Deck storage, never a mutable workspace draft. */
-export function registerReadSlide(registry: ToolRegistry, sessionId: string, decks: DeckReader): () => void {
+export function registerReadSlide(registry: ToolRegistry, sessionId: string, decks: DeckReader, editor?: DeckEditor): () => void {
   return registry.register({
     name: 'read_slide',
     description: 'Read the current published HTML revision of a slide in this chat.',
@@ -78,7 +80,7 @@ export function registerReadSlide(registry: ToolRegistry, sessionId: string, dec
       signal.throwIfAborted()
       const slide = decks.snapshot(sessionId).slides.find(item => item.slideId === args.slideId)
       if (!slide || slide.status !== 'published') throw new Error('No published slide')
-      return JSON.stringify(decks.content(sessionId, slide.slideId, slide.revision))
+      return JSON.stringify({...decks.content(sessionId, slide.slideId, slide.revision),...(editor?{editor:editor.editableSlide(sessionId,slide.slideId)}:{})})
     },
   })
 }

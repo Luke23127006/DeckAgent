@@ -333,3 +333,18 @@ Run `pnpm.cmd test:context` for local storage/accounting checks and
 `pnpm.cmd test:context:cli` for pinned-CLI/browser fixtures. The separate
 `pnpm.cmd test:context:live` command uses Gemini credentials from the environment
 or optional `.env`; it incurs provider usage and includes the full deck scenario.
+
+## Direct slide editing
+
+Open a published slide in Deck canvas and select **Sửa trực tiếp** below its slide
+list. Choose a plain-text block, edit text or layout, then check the draft preview.
+Only **Lưu slide** creates a revision. Blank layout fields keep current styles.
+Unsupported HTML stays viewable and is not converted automatically.
+
+Save is refused during running/awaiting Chat work or after a conflicting revision.
+The editor keeps the draft. Explicitly discard it to load a new base. Unsaved
+editor drafts last only for the current page; saved revisions survive restart.
+
+Use `pnpm.cmd test:direct-editing`, `test:direct-editing:browser` and
+`test:direct-editing:cli` for synthetic tests. `test:direct-editing:live` uses
+Gemini credentials from the environment/optional `.env` and incurs provider usage.

@@ -1,4 +1,5 @@
 import type { DeckChange, DeckSnapshot, SlideContent } from '@deckagent/deck'
+import type { EditableSlide, SlideEdit, PublishedSlide } from '@deckagent/deck'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -25,6 +26,98 @@ export class DeckClient {
     private readonly origin: string,
     private readonly token: string,
   ) {}
+  private async editing(sessionId: string, slideId: string, action: string, input?: SlideEdit): Promise<unknown> {
+    if (!id(sessionId) || !id(slideId)) invalid()
+    const response = await fetch(`${this.origin}/api/sessions/${sessionId}/deck/slides/${slideId}/${action}`, {
+      method: input ? 'POST' : 'GET',
+      headers: { authorization: `Bearer ${this.token}`, ...(input ? { 'content-type': 'application/json' } : {}) },
+      ...(input ? { body: JSON.stringify(input) } : {}),
+      credentials: 'omit',
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    })
+    const value: unknown = await response.json()
+    if (!response.ok) {
+      const code = object(value) && object(value.error) && typeof value.error.code === 'string' ? value.error.code : ''
+      throw new Error(
+        [
+          'DECK_CONFLICT',
+          'DECK_PUBLICATION_CONFLICT',
+          'DECK_EDIT_UNSUPPORTED',
+          'DECK_INVALID_EDIT',
+          'DECK_UNSAFE_HTML',
+          'SESSION_BUSY',
+          'AUTH_REQUIRED',
+          'NOT_FOUND',
+        ].includes(code)
+          ? code
+          : 'DECK_EDIT_FAILED',
+      )
+    }
+    return value
+  }
+  async editableSlide(sessionId: string, slideId: string): Promise<EditableSlide> {
+    const value = await this.editing(sessionId, slideId, 'editor')
+    if (
+      !object(value) ||
+      value.sessionId !== sessionId ||
+      value.slideId !== slideId ||
+      !integer(value.revision) ||
+      !value.revision ||
+      typeof value.html !== 'string' ||
+      value.html.length > 262144 ||
+      !id(value.outlineId) ||
+      typeof value.baseHash !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(value.baseHash) ||
+      !Array.isArray(value.nodes) ||
+      value.nodes.length > 1000 ||
+      (value.reason !== undefined && value.reason !== 'DECK_EDIT_UNSUPPORTED')
+    )
+      invalid()
+    const nodes = value.nodes.map((node: unknown) => {
+      if (
+        !object(node) ||
+        typeof node.nodeId !== 'string' ||
+        !/^n-\d{1,7}$/.test(node.nodeId) ||
+        typeof node.tag !== 'string' ||
+        node.tag.length > 20 ||
+        typeof node.text !== 'string' ||
+        node.text.length > 262144 ||
+        typeof node.layoutEditable !== 'boolean'
+      )
+        invalid()
+      return { nodeId: node.nodeId, tag: node.tag, text: node.text, layoutEditable: node.layoutEditable }
+    })
+    return {
+      sessionId,
+      slideId,
+      revision: value.revision,
+      html: value.html,
+      outlineId: value.outlineId,
+      baseHash: value.baseHash,
+      nodes,
+      ...(value.reason ? { reason: value.reason } : {}),
+    }
+  }
+  async previewSlideEdit(sessionId: string, input: SlideEdit): Promise<string> {
+    const value = await this.editing(sessionId, input.slideId, 'preview', input)
+    if (
+      !object(value) ||
+      value.sessionId !== sessionId ||
+      value.slideId !== input.slideId ||
+      value.revision !== input.expectedRevision ||
+      typeof value.html !== 'string' ||
+      value.html.length > 262144
+    )
+      invalid()
+    return value.html
+  }
+  async editSlide(sessionId: string, input: SlideEdit): Promise<PublishedSlide> {
+    const value = await this.editing(sessionId, input.slideId, 'edit', input),
+      base = change(value, sessionId)
+    if (!object(value) || value.slideId !== input.slideId || value.revision !== input.expectedRevision + 1) invalid()
+    return { ...base, slideId: input.slideId, revision: input.expectedRevision + 1 }
+  }
 
   private async request(sessionId: string, suffix: string, signal?: AbortSignal): Promise<Response> {
     if (!id(sessionId)) invalid()

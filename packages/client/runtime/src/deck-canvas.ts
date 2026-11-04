@@ -2,6 +2,7 @@ import type { DeckClient } from './deck-client.ts'
 import { DeckModel } from './deck-model.ts'
 import { button, element } from './dom.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
+import { slideEditor } from './slide-editor.ts'
 
 /** Published content never joins the application DOM. Empty sandbox => opaque origin.
  * srcdoc inherits Host CSP; its leading CSP further disallows every network source.
@@ -44,7 +45,9 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   let rendered = '',
     lastSession = '',
     appeared = false
+  const editor = slideEditor(client, () => model.refresh())
   const model = new DeckModel(client, value => {
+    editor.update(value)
     if (!value.snapshot) {
       rendered = ''
       frame.removeAttribute('srcdoc')
@@ -159,8 +162,8 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     }
   })
   const footer = element('footer', undefined, 'deck-footer')
-  footer.append(element('p', 'Chỉ xem. Để sửa slide, hãy gửi yêu cầu trong chat.'), state)
-  panel.append(heading, stage, controls, slides, footer)
+  footer.append(element('p', 'Sửa trực tiếp văn bản/bố cục hoặc gửi yêu cầu trong chat.'), state)
+  panel.append(heading, stage, controls, slides, editor.node, footer)
   container.append(panel)
   return model
 }

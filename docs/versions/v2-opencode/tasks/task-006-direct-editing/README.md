@@ -1,7 +1,21 @@
 # TASK-006 — Add direct editing with controlled revisions
 
 Integrator: A. Owners: A Platform/Host, B Client/UX, C Tools/Adapters/QA. Named assignees pending.
-Entry dependency: **G-003**. Gate: **G-006**. Work status: NOT STARTED.
+Entry dependency: **G-003**. Gate: **G-006**. Work status: IMPLEMENTED; OWNER BASIC SMOKE PASS.
+
+Implementation checkpoint: 4 November 2026, `114dfd6` plus local changes.
+The owner selected controlled HTML patches (option A). See accepted
+[HTML patch decision](../../../../adr/0006-controlled-slide-html-patches.md),
+[delivered contract](CONTRACT.md), [handoff](HANDOFF.md),
+[manual smoke](MANUAL-ACCEPTANCE.md) and [evidence](evidence.json).
+G-003 remains NOT VERIFIED; implementing the requested feature does not waive it.
+
+The direct editor is available with either backend. OpenCode stays opt-in.
+HTML remains canonical; no existing database schema changes. Text, font size,
+alignment and top/left margins use revision-bound patches through DeckService.
+The canvas keeps its opaque iframe sandbox. Legacy unsupported HTML remains
+viewable without automatic conversion. Undo, collaboration and free drag/drop
+remain outside the agreed editor scope.
 
 ## Contract handshake
 
@@ -31,3 +45,5 @@ Apply [common verification](../README.md). This gate does not rewrite historical
 
 Record final contracts, fixtures, files, compatibility and retest owners in [HANDOFF.md](HANDOFF.md).
 Downstream tasks follow the [master plan](../../IMPLEMENTATION-PLAN.md). Independent preparation can continue while a gate is blocked.
+
+Owner acceptance checkpoint (4 November 2026): the supplied three-step basic manual smoke is PASS: direct text/layout editing and save, reload, then AI patching of slide two while preserving visible layout and slide one. This supersedes the earlier pending basic-smoke status. It is aggregate owner confirmation without separate manual HTML/revision artifacts or exact candidate/browser/model. Optional conflict/busy manual checks and G-003 remain pending; G-006 stays NOT VERIFIED. Earlier live failures and automated retests remain recorded. No production code changed or tests reran for this status update.

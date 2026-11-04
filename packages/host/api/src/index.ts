@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { DeckError } from '@deckagent/deck'
+import { DeckError, parseSlideEdit } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
 import type { OutlineTarget } from '@deckagent/deck'
@@ -20,19 +20,24 @@ export type { MaterialInfo, MaterialLimits, MaterialOperations } from './contrac
 export type { ContextUsage } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
+const editStatuses: Readonly<Record<string, number>> = {
+  DECK_INVALID_EDIT: 400, DECK_EDIT_UNSUPPORTED: 422, DECK_CONFLICT: 409,
+  DECK_PUBLICATION_CONFLICT: 409, DECK_OUTLINE_MISMATCH: 409,
+  DECK_SLIDE_NOT_FOUND: 404, DECK_UNSAFE_HTML: 422,
+}
 
 function json(res: ServerResponse, status: number, value: unknown) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(value))
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
+async function readJson(req: IncomingMessage, maxBytes = 20 * 1024): Promise<unknown> {
   if (req.headers['content-type']?.split(';')[0] !== 'application/json') throw new HttpError(415, 'JSON_REQUIRED')
   let bytes = 0
   const chunks: Buffer[] = []
   for await (const chunk of req) {
     bytes += chunk.length
-    if (bytes > 20 * 1024) throw new HttpError(413, 'REQUEST_TOO_LARGE')
+    if (bytes > maxBytes) throw new HttpError(413, 'REQUEST_TOO_LARGE')
     chunks.push(chunk)
   }
   let value: unknown
@@ -123,8 +128,9 @@ export async function startHost(options: HostOptions) {
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
       const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
-      json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
+      const editStatus = deck ? editStatuses[error.code] : undefined
+      json(res, known ? error.status : editStatus ?? (outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500), {
+        error: { code: known ? error.code : editStatus || outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
       })
     })
   })
@@ -155,6 +161,18 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const slideEdit = /^\/api\/sessions\/([\w-]{1,100})\/deck\/slides\/([\w-]{1,100})\/(editor|preview|edit)$/.exec(url.pathname)
+    if (slideEdit && options.slideEditor) {
+      const [, sessionId, slideId, action] = slideEdit
+      if (action === 'editor' && req.method === 'GET') { json(res, 200, options.slideEditor.editableSlide(sessionId!, slideId!)); return }
+      if (req.method === 'POST' && (action === 'preview' || action === 'edit')) {
+        const input = parseSlideEdit(await readJson(req, 256 * 1024))
+        if (input.slideId !== slideId) throw new HttpError(400, 'INVALID_REQUEST')
+        const value = action === 'preview' ? options.slideEditor.previewSlideEdit(sessionId!, input)
+          : controller.withIdleSession(sessionId!, () => options.slideEditor!.editSlide(sessionId!, input))
+        json(res, 200, value); return
+      }
+    }
     const materialRoute = /^\/api\/sessions\/([\w-]{1,100})\/(materials|attachments|references)(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
     if (materialRoute && options.materials) {
       const sessionId = materialRoute[1]!

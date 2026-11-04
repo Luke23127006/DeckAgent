@@ -100,6 +100,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
     }
     const finalizers = new Map<string, (result: TurnResult) => Promise<void>>()
     const host = await startHost({
+      slideEditor: presentation,
       ...(contextService ? { context: { usage: (id: string, draft: unknown) => contextService.usage(id, draft) } } : {}),
       materials: {
         async list(id) {

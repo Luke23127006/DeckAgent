@@ -1,5 +1,7 @@
 /** Only fixed, repository-authored diagnostics cross the tool exception boundary. */
 export const TOOL_RECOVERY_TEXT = {
+  SLIDE_EDIT_INVALID: 'The structured slide edit is invalid. Read the current slide editor metadata; use its exact baseHash, nodeId and expectedRevision, plain text and supported numeric/layout fields only. No edit was saved.',
+  SLIDE_EDIT_UNSUPPORTED: 'This HTML block cannot be patched safely. Preserve the saved slide. Select another supported plain-text block or explain the limitation; never silently convert it.',
   MATERIAL_UNAVAILABLE: 'This material is unavailable or changed since it was selected. No replacement content was read. Ask the user to select it again; never infer its contents or bypass the Host permission boundary.',
   MATERIAL_READ_LIMIT: 'The material exceeds an extraction resource limit or cannot be read safely. Explain the limitation and ask for a smaller readable source. Do not claim full extraction.',
   PERMISSION_DENIED: 'The user refused this file read. The file was not read. Do not ask for or retry the same refused access in this request. Continue using allowed material and explain any remaining limitation.',

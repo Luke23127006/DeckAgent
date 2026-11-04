@@ -193,6 +193,14 @@ export class RequestController {
     if (this.cleanupFailed) throw new Error('Agent cleanup failed')
   }
 
+  /** Synchronous direct saves share Chat admission without blocking other Chats. */
+  withIdleSession<T>(id: string, operation: () => T): T {
+    if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (this.workspaceChanges || this.busy.has(id)) throw new HttpError(409, 'SESSION_BUSY')
+    this.busy.add(id)
+    try { return operation() } finally { this.busy.delete(id) }
+  }
+
   /** Reserve Chat admission while its Workspace setup changes, including async folder checks. */
   async withIdleSessions<T>(ids: readonly string[], operation: () => Promise<T>): Promise<T> {
     if (ids.some(id => this.busy.has(id))) throw new HttpError(409, 'WORKSPACE_BUSY')

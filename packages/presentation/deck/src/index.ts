@@ -16,6 +16,10 @@ import type {
 import { validateSlideHtml } from './html-policy.ts'
 import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
+import { editableNodes, parseSlideEdit, patchSlideHtml, slideHash } from './slide-edit.ts'
+import type { DeckEditor, EditableSlide, SlideEdit } from './contracts.ts'
+export { parseSlideEdit } from './slide-edit.ts'
+export type { DeckEditor, EditableSlide, SlideEdit, SlideEditOperation } from './contracts.ts'
 import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
 
 export { DeckError } from './contracts.ts'
@@ -36,7 +40,7 @@ export type {
 /** One authoritative deck per Session. Own close() after Host/Agent teardown.
  * All methods are synchronous so a committed state and its notice have one order.
  */
-export class DeckService implements DeckReader, DeckPublisher {
+export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
   private readonly db: DatabaseSync
   private readonly outlines: OutlineStorage
   private closed = false
@@ -244,6 +248,29 @@ export class DeckService implements DeckReader, DeckPublisher {
       if (!row) throw new DeckError('DECK_CONTENT_NOT_FOUND')
       return { sessionId, slideId, revision, html: String(row.html) }
     })
+  }
+  editableSlide(sessionId: string, slideId: string): EditableSlide {
+    const snapshot = this.snapshot(sessionId), slide = snapshot.slides.find(slide=>slide.slideId===slideId)
+    if (!snapshot.outlineId || !slide?.revision) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+    const content = this.content(sessionId,slideId,slide.revision), nodes = editableNodes(content.html)
+    return {...content,outlineId:snapshot.outlineId,baseHash:slideHash(content.html),nodes,...(!nodes.length?{reason:'DECK_EDIT_UNSUPPORTED' as const}:{})}
+  }
+  previewSlideEdit(sessionId: string, input: SlideEdit): SlideContent {
+    const value = parseSlideEdit(input)
+    const snapshot = this.snapshot(sessionId)
+    if (snapshot.outlineId !== value.outlineId) throw new DeckError('DECK_OUTLINE_MISMATCH')
+    if (snapshot.slides.find(slide=>slide.slideId===value.slideId)?.revision !== value.expectedRevision) throw new DeckError('DECK_CONFLICT')
+    return this.patchContent(sessionId,value)
+  }
+  editSlide(sessionId: string, input: SlideEdit, signal?: AbortSignal): PublishedSlide {
+    signal?.throwIfAborted()
+    const value = parseSlideEdit(input), patched = this.patchContent(sessionId,value)
+    return this.publish(sessionId,{...value,publicationId:value.editId,html:patched.html},signal)
+  }
+  private patchContent(sessionId: string, input: SlideEdit): SlideContent {
+    const content = this.content(sessionId,input.slideId,input.expectedRevision)
+    if (slideHash(content.html) !== input.baseHash) throw new DeckError('DECK_CONFLICT')
+    return {...content,html:patchSlideHtml(content.html,input.operations)}
   }
 
   subscribe(sessionId: string, listener: (change: DeckChange) => void): () => void {

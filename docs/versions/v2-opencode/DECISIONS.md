@@ -11,7 +11,7 @@
 | Four existing provider protocols retain behavior | Task 002 wire mappings implemented; native Gemini live-qualified; other live cases pending | Explicit option limits and known signature incompatibility are in the task compatibility matrix; no silent option loss or model substitution |
 | Windows x64 1.19.5 is the reproduction pin | POC fact, not final release platform/version selection | TASK-001 reproduces it; TASK-009 decides installation, update, license and OS matrix |
 | Deny native tools, expose phase-specific MCP tools only | POC verified at application level | Model-visible allowlist plus Host execution checks; never label it an OS sandbox |
-| Direct editor representation and save contract | Proposal pending | TASK-006 A/B/C decide minimal editable structure and legacy HTML compatibility before implementation |
+| Direct editor representation and save contract | Owner accepted controlled HTML patches on 4 November 2026; ADR 0006 | Existing HTML/revisions remain canonical; bounded text/layout patches through DeckService, no automatic legacy conversion |
 | Image route and export format | Product/technical selection pending | TASK-007 owner selects one sufficient image route and export format, then verifies fidelity |
 | External Skills host and packaging format | Proposal pending | TASK-008 selects at least one compatible host outside the DeckAgent UI |
 | General public research | Deferred from this version | No forced dependency on old V2 TASK-006; ADR 0002 remains proposed |

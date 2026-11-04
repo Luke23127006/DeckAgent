@@ -77,18 +77,18 @@ export async function materialBrowser(t, root, url) {
     if (!item) return
     pending.delete(value.id)
     clearTimeout(item.timeout)
-    if (value.error) item.reject(new Error('Browser protocol error'))
+    if (value.error) item.reject(new Error(`Browser protocol error: ${item.method} (${value.error.code})`))
     else item.resolve(value.result)
   })
-  const call = (method, params = {}) =>
+  const call = (method, params = {}, sessionId) =>
     new Promise((resolve, reject) => {
       const id = ++sequence,
         timeout = setTimeout(() => {
           pending.delete(id)
           reject(new Error('Browser command timeout'))
         }, 10000)
-      pending.set(id, { resolve, reject, timeout })
-      socket.send(JSON.stringify({ id, method, params }))
+      pending.set(id, { resolve, reject, timeout, method })
+      socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }))
     })
   const evaluate = async expression => {
     const value = await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })

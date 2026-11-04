@@ -5,6 +5,10 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "test:direct-editing": "node --test tests/direct-editing.test.mjs",
+    "test:direct-editing:browser": "node --test tests/direct-editing-browser.test.mjs",
+    "test:direct-editing:cli": "node scripts/test-opencode.mjs direct-editing",
+    "test:direct-editing:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs direct-editing-live",
     "test:context": "node --test tests/context.test.mjs",
     "test:context:cli": "node scripts/test-opencode.mjs context",
     "test:context:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs context-live",

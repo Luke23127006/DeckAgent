@@ -46,13 +46,21 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 | [003 — Accept inherited V1/V2 behavior on OpenCode](tasks/task-003-baseline-acceptance/README.md) | IN PROGRESS; automated subset PASS | Gemini smoke PASS; extended pending | IN PROGRESS; automated subset PASS | G-003 NOT VERIFIED; G-002 still pending |
 | [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | Implemented opt-in; automated subset PASS | Browser PASS; manual pending | Fixtures/vision PASS; latest source-generation live FAIL | G-004 NOT VERIFIED; G-003 and acceptance pending |
 | [005 - Complete bounded context and manual compaction](tasks/task-005-context/README.md) | Implemented opt-in; checkpoint/accounting PASS | Browser and basic owner smoke PASS; extended pending | CLI subset and focused live PASS; full live FAIL before Compact | G-005 NOT VERIFIED; entry gates and full acceptance pending |
-| [006 — Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-006 NOT VERIFIED |
+| [006 - Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | Implemented; revision/patch checks PASS | Browser and owner basic smoke PASS | Pinned CLI and focused Gemini live PASS | G-006 NOT VERIFIED; extended acceptance and G-003 pending |
 | [007 — Deliver images and usable export](tasks/task-007-images-export/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-007 NOT VERIFIED |
 | [008 — Package reusable presentation Agent Skills](tasks/task-008-presentation-skills/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-008 NOT VERIFIED |
 | [009 — Switch default and retire legacy dependencies](tasks/task-009-runtime-retirement/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-009 NOT VERIFIED |
 | [010 — Evaluate and hand over the thesis product](tasks/task-010-thesis-acceptance/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-010 NOT VERIFIED |
 
 ## Next actionable task
+
+Current checkpoint: **TASK-006 implementation and owner basic direct-edit smoke PASS**.
+Use the [direct-edit handoff](tasks/task-006-direct-editing/HANDOFF.md) and
+[manual smoke](tasks/task-006-direct-editing/MANUAL-ACCEPTANCE.md) for accepted scope.
+Remaining task groups can proceed as directed by the owner; extended gate gaps
+stay recorded for later integration acceptance.
+
+Earlier checkpoint:
 
 Current owner-directed work: **TASK-005 manual acceptance and full live qualification**.
 Use the [context handoff](tasks/task-005-context/HANDOFF.md) and
@@ -205,3 +213,12 @@ live failed OPENCODE_FAILED at its initial outline request, before Compact.
 Owner smoke, full live acceptance and entry gates remain pending. G-005 NOT VERIFIED.
 
 Owner checkpoint (4 November 2026): the quick manual Compact/continue smoke is PASS. The owner confirmed retention of the supplied four-fact context, unsent draft, readable history and checkpoint indication for that scenario. No separate artifacts or exact manual candidate/browser/model were supplied. Stop, restart/model isolation and source-backed deck editing are not covered by this quick confirmation. The earlier full live failure and pending entry gates remain recorded; G-005 stays NOT VERIFIED. No code changes or automated reruns were needed for this update.
+
+TASK-006 checkpoint (4 November 2026): owner approved HTML patches. Direct editor,
+revision-aware preview/save and scoped MCP patch_slide are implemented. Regression
+53/53 and browser 3/3 PASS; pinned CLI and actual Gemini direct/AI/direct persistence
+subset PASS. Initial live single-revision expectation FAIL is retained in handoff.
+HTML/storage schemas and runtime default are unchanged. G-006 NOT VERIFIED pending
+owner manual acceptance and G-003; Task 005 acceptance records remain unchanged.
+
+Owner acceptance checkpoint (4 November 2026): the supplied three-step basic manual smoke is PASS: direct text/layout editing and save, reload, then AI patching of slide two while preserving visible layout and slide one. This supersedes the earlier pending basic-smoke status. It is aggregate owner confirmation without separate manual HTML/revision artifacts or exact candidate/browser/model. Optional conflict/busy manual checks and G-003 remain pending; G-006 stays NOT VERIFIED. Earlier live failures and automated retests remain recorded. No production code changed or tests reran for this status update.

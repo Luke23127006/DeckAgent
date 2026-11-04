@@ -1,5 +1,5 @@
 import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
-import type { DeckReader, OutlineReader, OutlineTarget } from '@deckagent/deck'
+import type { DeckReader, DeckEditor, OutlineReader, OutlineTarget } from '@deckagent/deck'
 
 export interface AgentRequest {
   /** Host-only admission from the explicit compact route; never inferred from text. */
@@ -96,6 +96,7 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly slideEditor?: DeckEditor
   readonly context?: { usage(sessionId: string, draft: unknown): Promise<ContextUsage> }
   readonly materials?: MaterialOperations
   /** Host owns the returned handle until the turn and disposal finish. */

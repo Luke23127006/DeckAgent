@@ -59,6 +59,41 @@ export interface DeckPublisher {
   publish(sessionId: string, input: PublishSlide, signal?: AbortSignal): PublishedSlide
 }
 
+export interface SlideEditOperation {
+  readonly nodeId: string
+  readonly text?: string
+  readonly layout?: {
+    readonly fontSize?: number
+    readonly textAlign?: 'left' | 'center' | 'right'
+    readonly marginTop?: number
+    readonly marginLeft?: number
+  }
+}
+export interface SlideEdit {
+  readonly outlineId: string
+  readonly slideId: string
+  readonly expectedRevision: number
+  readonly baseHash: string
+  readonly editId: string
+  readonly operations: readonly SlideEditOperation[]
+}
+export interface EditableSlide extends SlideContent {
+  readonly outlineId: string
+  readonly baseHash: string
+  readonly nodes: readonly {
+    readonly nodeId: string
+    readonly tag: string
+    readonly text: string
+    readonly layoutEditable: boolean
+  }[]
+  readonly reason?: 'DECK_EDIT_UNSUPPORTED'
+}
+export interface DeckEditor {
+  editableSlide(sessionId: string, slideId: string): EditableSlide
+  previewSlideEdit(sessionId: string, input: SlideEdit): SlideContent
+  editSlide(sessionId: string, input: SlideEdit, signal?: AbortSignal): PublishedSlide
+}
+
 export interface OutlineDraft {
   readonly overview: string
   readonly slides: readonly { readonly title: string; readonly content: string }[]
