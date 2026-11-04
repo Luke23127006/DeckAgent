@@ -43,7 +43,11 @@ Removed FR IDs:
 
 - FR-004, 04-11-2026, dropped: an outline is not cancelled; an unconfirmed outline stays and is revised.
 - FR-006, 04-11-2026, merged into FR-003.
+- FR-020, 04-11-2026, dropped: a question the system asks ends its request, and the reply is a new request (FR-014).
 - FR-026, 04-11-2026, merged into FR-025.
+- FR-047, 04-11-2026, merged into FR-019.
+- FR-056, 04-11-2026, merged into FR-046.
+- FR-086, 04-11-2026, merged into FR-067.
 - FR-114, 04-11-2026, merged into FR-113.
 - FR-115, 04-11-2026, merged into FR-113.
 

@@ -59,7 +59,14 @@ empty; each project declares its own terms and adds to them as it learns.
 | **chat** | One line of work with the system. It holds one conversation and at most one deck |
 | **conversation** | Region. Holds the requests of a chat and the responses of the system, in order |
 | **deck canvas** | Region. Holds the slides of the deck of a chat |
+| **interface** | The part of DeckAgent the user sees and uses. Reloading or closing it does not stop DeckAgent |
 | **request** | One message the user sends, with its material, and the work the system does for it until that work ends |
+| **active request** | A request whose work has not ended. A chat has at most one |
+| **draft** | The request text and attachments a user prepared in a chat and has not sent yet |
+| **attachment** | A file the user adds to the draft. It is being prepared, ready, or rejected with a reason |
+| **status message** | The response that says, while a request is active, what the system is doing and how long it has worked |
+| **activity** | One thing the system did or does for a request, such as reading a file or building a slide, with its state |
+| **selected model** | The model of a chat that runs its next request |
 | **material** | What the user gives for a deck: request text, attached files and named references |
 | **interview** | The questions the system asks before the first outline, about the topics the request does not answer |
 | **suggested answer** | An answer the system offers for the user to choose instead of typing one |
