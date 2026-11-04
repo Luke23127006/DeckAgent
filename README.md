@@ -31,7 +31,8 @@ A model alone can write slide markup. DeckAgent adds the harness around the mode
   DeckAgent has no model account of its own.
 - **Runs on your computer.** No hosted service, no DeckAgent account.
 - **Your work stays local.** Chats, decks and files stay on your machine. Content leaves
-  it only in requests to the provider of the model you selected.
+  it only in requests to the provider of the model you selected, or to another service
+  you set up yourself, such as a search or image service.
 
 ## Run the legacy app
 

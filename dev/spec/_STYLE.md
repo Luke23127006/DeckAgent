@@ -56,6 +56,27 @@ empty; each project declares its own terms and adds to them as it learns.
 | Term | Meaning |
 |---|---|
 | **account** | The user's identity for access and for keeping their own data |
+| **chat** | One line of work with the system. It holds one conversation and at most one deck |
+| **conversation** | Region. Holds the requests of a chat and the responses of the system, in order |
+| **deck canvas** | Region. Holds the slides of the deck of a chat |
+| **request** | One message the user sends, with its material, and the work the system does for it until that work ends |
+| **material** | What the user gives for a deck: request text, attached files and named references |
+| **interview** | The questions the system asks before the first outline, about the topics the request does not answer |
+| **suggested answer** | An answer the system offers for the user to choose instead of typing one |
+| **suggested revision** | A change to the current outline that the system offers for the user to choose instead of typing one |
+| **source** | Where the content of a deck comes from: the user's material, the model's general knowledge, or public research |
+| **outside service** | A service other than the provider of the selected model, such as a search or image service, that the user set up with their own account or key |
+| **public research** | A search for public information through an outside service |
+| **brief** | What the first outline is drafted from: the interview answers, the assumption for each skipped question, the sources, the generation format and the design system |
+| **presenter notes** | Text for the presenter that belongs to one slide and is not shown to the audience |
+| **outline** | The plan of a deck: the planned slides and the planned content of each one |
+| **current outline** | The outline proposal in the latest outline response of the conversation |
+| **confirmed outline** | The current outline after the user confirms it. It does not change |
+| **deck** | The slides of a chat |
+| **generation format** | The kind of source the deck is built in, such as HTML or Markdown. One deck has one |
+| **design system** | A saved set of design rules for slides, such as colours, fonts and layouts. Built-in or made by the user |
+| **closing message** | The response that ends a first draft and tells what was made |
+| **placeholder** | Text that stands in for a fact no source gives |
 | _(add a row)_ | _(describe the meaning, do not name a widget or position)_ |
 
 ## How to check

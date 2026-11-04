@@ -85,4 +85,4 @@ sequenceDiagram
 
 ## Notes
 
-<!-- Why this case does not duplicate another; a design choice as an ADR proposal. Omit if empty. -->
+<!-- Why this case does not duplicate another; a design choice as one line that links its proposal in dev/decisions/. Omit if empty. -->

@@ -28,3 +28,8 @@ __pycache__/
 /packages/*/*/lib/
 /apps/*/lib/
 *.tsbuildinfo
+
+# Temporary output of Mermaid CLI checks
+/.mmd
+/*.mmd
+debug.log

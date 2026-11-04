@@ -39,7 +39,13 @@ request is running". A rule with a value goes to `../../04-business-rules/`.
 - An ID is dropped only when the behavior leaves the behavior model or is merged into another FR. A dropped ID is recorded below with the date and, after a merge, the FR it merged into.
 - Acceptance criterion IDs are `AC-1`, `AC-2` within one FR, not renumbered.
 
-Removed FR IDs: none.
+Removed FR IDs:
+
+- FR-004, 04-11-2026, dropped: an outline is not cancelled; an unconfirmed outline stays and is revised.
+- FR-006, 04-11-2026, merged into FR-003.
+- FR-026, 04-11-2026, merged into FR-025.
+- FR-114, 04-11-2026, merged into FR-113.
+- FR-115, 04-11-2026, merged into FR-113.
 
 ### Links
 

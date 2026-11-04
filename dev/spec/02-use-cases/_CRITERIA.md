@@ -34,7 +34,7 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 ### Use case IDs
 
 - One ID (`UC-xxx`) names a use case file. A flow ID (`Sx`, `Ax`) names a block in the file.
-- The namespace is `dev/spec/`. IDs of the previous repository's spec (AGENTS.md "Project") do not belong to it until they are migrated here.
+- The namespace is `dev/spec/`. IDs of the previous spec in `dev/legacy/spec/` (AGENTS.md "Legacy source") do not belong to it until they are migrated here.
 - An ID never moves to a different goal or is reused, even after a file is deleted.
 - A new ID takes the number after the highest ID in the folder and in the removed-ID list. Gaps stay as they are.
 - IDs are not renumbered.
@@ -42,8 +42,9 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 Removed use case IDs: none.
 
 Layer: in the target spec (`dev/spec/`) each alternative keeps At, Ends, When and FR, with
-System in one line; Notes and detailed responses live in the version spec (WORKFLOW.md
-"Spec layers").
+System in one line. Detailed responses live in the version spec (WORKFLOW.md "Spec
+layers"). Notes stay short: a design choice is one line that links its proposal in
+`dev/decisions/`, never the reasoning itself.
 
 ## 2. Evidence tags
 
