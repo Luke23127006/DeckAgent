@@ -36,4 +36,4 @@ Templates for every build file are in `dev/templates/`.
 | Version | Status | Milestone |
 |---|---|---|
 | v1, v2 | Legacy releases, no version spec in this format. Plans in `dev/legacy/versions/` | — |
-| v3 | First workflow version. Not started | — |
+| v3 | First workflow version. Not started. Order of work with the legacy code: [v3/legacy-sync.md](v3/legacy-sync.md) | — |
