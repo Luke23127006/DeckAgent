@@ -38,6 +38,7 @@
       "local_adaptations": [
         "Add project precedence note.",
         "Require explicit proposed/accepted ADR status; acceptance needs a recorded team decision.",
+        "Store ADRs as dev/decisions/DEC-NNN-slug.md instead of docs/adr/NNNN-slug.md.",
         "Include upstream MIT license."
       ],
       "status": "installed"
@@ -193,7 +194,23 @@
         "Remove unsupported compatibility frontmatter and retain compatibility guidance in the skill body.",
         "Require pnpm install --frozen-lockfile when the local binary is missing; the skill may not install or upgrade packages during review.",
         "Use delegation mode only, so OCR does not require a separate LLM configuration.",
-        "Apply DeckAgent-specific review filters and rules from .opencodereview/rule.json."
+        "Apply project-specific review filters and rules from .opencodereview/rule.json."
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "use-case-sequence",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/use-case-sequence",
+      "decision": "Create",
+      "reason": "Keep the generated sequenceDiagram of each use case in step with its Steps table and Alternative flow blocks, by fixed parsing rules instead of free drawing. Authored in this repository because no external skill reads this template.",
+      "compatibility": "Tool-neutral instructions. spec-authoring calls it as its last step; agents find it through the skill routing table in AGENTS.md.",
+      "dependencies": [
+        "Optional Mermaid CLI (npx) for a syntax check."
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
       ],
       "status": "installed"
     },
@@ -202,11 +219,103 @@
       "source_repository": "repository-local",
       "source_path": null,
       "installed_path": ".agents/skills/spec-authoring",
-      "decision": "Adjust",
-      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill. Adapted for the Main Flow First use case format: one complete hand-written Main Flow sequence diagram first, each alternative in its own subsection sorted by Ax number, with divergence point and stated end; nothing is generated and no flow is labeled Active or Closed.",
-      "compatibility": "Tool-neutral instructions. Edit use case diagrams through this skill and the mermaid-markdown portability defaults.",
+      "decision": "Create",
+      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and dev/spec/_STYLE.md without copying those rules into the skill.",
+      "compatibility": "Tool-neutral instructions. Calls use-case-sequence as its last step for use cases.",
       "dependencies": [
-        "mermaid-markdown"
+        "use-case-sequence"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "commit",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/commit",
+      "decision": "Create",
+      "reason": "Self-contained commit workflow: stages and commits with a conventional message, without pushing.",
+      "compatibility": "Uses Bash(git:*) for git operations.",
+      "dependencies": [
+        "Git >= 2.41"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "commit-push",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/commit-push",
+      "decision": "Create",
+      "reason": "Self-contained commit-and-push workflow. Stages, commits with conventional message, updates changelog, and pushes to remote.",
+      "compatibility": "Uses Bash(git:*) for git operations.",
+      "dependencies": [
+        "Git >= 2.41"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "research-questions",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/research-questions",
+      "decision": "Create",
+      "reason": "Generate research checklists from use cases during Phase 1 of the build workflow. Reads UC, FRs, NFRs, BRs and produces questions grouped by requirement with options and tradeoffs for technical choices.",
+      "compatibility": "Tool-neutral instructions.",
+      "dependencies": [],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "testing-plan",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/testing-plan",
+      "decision": "Create",
+      "reason": "Generate testing plans from FRs/ACs and decisions during Phase 2 of the build workflow. Maps every acceptance criterion to a test type and phase.",
+      "compatibility": "Tool-neutral instructions.",
+      "dependencies": [],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "ticket-writer",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/ticket-writer",
+      "decision": "Create",
+      "reason": "Create GitHub Issues from plan documents using issue templates. Sets labels, milestones, and blocked-by references. Ensures flash-model-friendly ticket format.",
+      "compatibility": "Requires GitHub CLI (gh) for issue creation.",
+      "dependencies": [
+        "GitHub CLI (gh) authenticated"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "flow-tracker-update",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/flow-tracker-update",
+      "decision": "Create",
+      "reason": "Update the flow tracker issue for a UC based on current ticket statuses. Provides single-glance progress visibility across all phases.",
+      "compatibility": "Requires GitHub CLI (gh) for issue reading and editing.",
+      "dependencies": [
+        "GitHub CLI (gh) authenticated"
       ],
       "reviewed_resources": [
         "SKILL.md"
@@ -230,10 +339,10 @@
     },
     {
       "name": "research",
-      "decision": "Adjust",
-      "condition": "Adopt for a concrete technical question needing durable cited findings.",
+      "decision": "Superseded",
+      "condition": "Superseded by research-questions skill which integrates with the build workflow.",
       "status": "not_installed",
-      "reason": "No concrete research workflow requiring this additional skill has been identified for the initial setup."
+      "reason": "The research-questions skill covers this need within the Phase 1 workflow, generating questions from use cases rather than generic research."
     },
     {
       "name": "webapp-testing",

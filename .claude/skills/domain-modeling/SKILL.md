@@ -5,7 +5,7 @@ description: Build and sharpen a project's domain model. Use when discussing cod
 
 # Domain Modeling
 
-## DeckAgent compatibility
+## Project compatibility
 
 Apply this workflow within the task scope and root `AGENTS.md`. Recorded project decisions and terminology take precedence over examples here. The system architecture is not finalized: present cross-component design choices to the task owner and label unresolved choices as proposals. This skill grants no permission to publish, change shared environments, or remove unrelated work.
 
@@ -35,13 +35,13 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 ├── src/
 │   ├── ordering/
 │   │   ├── CONTEXT.md
-│   │   └── docs/adr/                 ← context-specific decisions
+│   │   └── dev/decisions/                 ← context-specific decisions
 │   └── billing/
 │       ├── CONTEXT.md
-│       └── docs/adr/
+│       └── dev/decisions/
 ```
 
-Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
+Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `dev/decisions/` exists, create it when the first ADR is needed.
 
 ## During the session
 

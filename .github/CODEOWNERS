@@ -1,0 +1,10 @@
+# Paths that need the PO's approval (WORKFLOW.md "Enforcement").
+# Takes effect once branch protection on main requires review from code owners.
+
+/dev/spec/                 @BuhDuy256
+/dev/versions/*/spec/      @BuhDuy256
+/tests/acceptance/         @BuhDuy256
+/tests/eval/               @BuhDuy256
+/.github/                  @BuhDuy256
+/WORKFLOW.md               @BuhDuy256
+/AGENTS.md                 @BuhDuy256

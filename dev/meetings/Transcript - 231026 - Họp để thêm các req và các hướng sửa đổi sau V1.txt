@@ -1,0 +1,784 @@
+0:02
+Thầy có thấy màn hình em share chưa thầy?
+0:04
+>> Rồi tắt cái đó. Ừ. nh
+0:48
+Thì ở đây sau khi mà em kêu nó tạo cái bản trình bày thì nó sẽ trước khi mà nó
+0:53
+tạo ra slide thiệt á thì bọn em đang để là nó sẽ tạo ra một cái outline để mình
+0:59
+có thể review trước. Thì khi mà mình xác nhận cái outline này
+1:05
+và mình muốn nó bắt đầu tạo slide thì bắt đầu nó sẽ gọi những cái tool mà
+1:11
+bọn em đang làm. Oh shit.
+1:43
+Sao nó lỗi gì ta? để kêu nó tạo lại.
+1:51
+B Dạ xong rồi á h bọn em mới làm tới đây
+3:47
+thôi Ừm. Làm à tới đây
+3:57
+thì à hiện tại ở đây là cái format mình nhận được là cái gì?
+4:03
+>> Dạ là mấy cái file này á là HTML á thầy.
+4:07
+>> Ừ HTML
+4:08
+>> là em mới tạo HTML thôi. Cũng cũng
+4:14
+tụi em chưa nào export á thầy? cũng chưa làm export luôn á. Thầy
+4:19
+>> không phải chuyện export hay không ha. Mà mấy đứa quay quay lại cái kết quả đi.
+4:26
+Dạ. Quay lại cái phần hồi nãy đi.
+4:29
+>> Quay lại UI đi bảo
+4:30
+>> ừ quay lại cái UI đi.
+4:32
+>> Thì á thì á ờ UI như này á thì mình gọi là
+4:40
+tạm thôi ha. à gọi là có cái chỗ để ra yêu cầu rồi à
+4:46
+nhận thông tin thôi. Đó nhưng mà á à trước khi á mà mình đi đến cái bước là
+4:54
+ra cái outline nè thì á
+4:57
+>> dạ
+4:57
+>> là mình còn phải có nhiều cái bước khác nữa chứ nó không đơn giản á là mình nhảy
+5:04
+vô cái mình cho nó chạy nó tạo HTML liền đó. À th lấy ví dụ ha.
+5:14
+Cái slide này như nãy mấy đứa demo á thì
+5:18
+>> nó nó nó chạy nó tạo cái de này dựa trên câu hỏi là phim AI đúng không? Hồi nãy
+5:22
+là ví dụ phim AI đúng không?
+5:24
+>> Hay là đổi lại là à trình tạo bản trình bày về con hổ. Đó thì đó là một cái yêu
+5:30
+cầu mà gần như trong thực tế là nó sẽ chẳng có bao giờ nó nó diễn ra như vậy
+5:35
+cả. không có ai chạy vô kêu tạo bản trình bày về con hổ hết trơn á. Đó
+5:41
+>> ha. Đó. Thế cho nên á là là à mình phải suy nghĩ nó nó nó thực tế chút xíu.
+5:49
+À đâu đâu đó là nó sẽ phải cái app của mình á là chắc chắn nó phải có một cái
+5:55
+bước gọi là cái bước phỏng vấn người dùng. Đó nó sẽ là có bước bước phỏng vấn
+5:59
+người dùng. Thì cái bước phỏng vấn người dùng này á mình làm theo cái hình thức
+6:03
+nào ha? Lấy ví dụ như ở bên clock design á là nó
+6:09
+đưa ra cho chúng ta mấy cái tùy chọn kiểu như cái trình wier trước khi mình
+6:14
+đến cái bước bắt đầu tạo đó bắt đầu đẩy outline này kia đó ta có một cái trình
+6:18
+thuật sỉ để đẩy lên đó thì nó sẽ có cũng nhiều câu hỏi lắm lấy ví dụ như là nó sẽ
+6:23
+phải hỏi mình là mình muốn à trình bày con hổ về cái khía cạnh nào của con hổ
+6:29
+>> chứ nhảy vô cái bay ra nó tạo ra cái bảng bảy like li ủa tại sao nó biết mình
+6:34
+cần bảy like Mình mới biết mình muốn trình bày bao lâu đâ mà bắt đầu nó làm
+6:37
+bảy live đúng không?
+6:38
+>> Dạ. Đó thì như vậy á chưa có thông tin rõ ràng á thì cái
+6:44
+Asian SL của mình nó chưa nên bắt đầu vận hành nó phải à đúng rồi nó phải làm
+6:51
+làm rõ được cái ý định nè đó có thể người dùng người ta sẽ không có rõ cái ý
+6:55
+định của họ luôn
+6:56
+>> thì cái Asian của mình nó nên nó nên làm cái điều đó
+7:00
+>> nó nên cảm thấy là ok tôi chưa có thu thập đủ thông tin vậy tôi sẽ phải hỏi nè
+7:03
+thí dụ còn hỏi cái gì á thì mấy đứa sẽ à đi brainstorm hay là mình đi ngó cái a
+7:10
+app này app kia để mình đưa ra được cái một cái bộ những cái thứ mà mình cần thu
+7:15
+thập. Thì những cái thứ mà mình gọi là mình dễ thấy á thì nó có thể hỏi về là
+7:19
+trình bày cho ai. Cái này trình bày cho ai. Thí dụ mà trình bày cho sinh viên
+7:25
+hay là hay trình bày cho học sinh cấp một thì nó khác với lại bài trình trình
+7:29
+bày cho những cái nhà bảo tồn à đắc vật đúng không?
+7:33
+>> Dạ.
+7:33
+>> Đó. Dạ. Đúng.
+7:34
+>> Nó khác nhau đó. Rồi thời gian trình bày là trong bao lâu? Rồi cái mục tiêu của
+7:39
+cái bài trình bày này là muốn cái gì đúng không ạ?
+7:42
+>> Thì những cái thông tin đó đó là cái AON của mình á là nó nên dí nó hỏi người
+7:48
+dùng để người dùng người ta có thể lúc mà người ta ra cái lệnh á người ta chưa
+7:52
+suy nghĩ đến nhưng mà khi mình hỏi á thì họ bắt đầu họ suy nghĩ đến và họ cung
+7:56
+cấp đủ thông tin hơn ha. Đấy. Rồi có thể là trong quá trình mà mình đưa ra câu
+8:02
+hỏi đó thì mình sẽ đưa ra kèm cái câu gợi ý này. Tụi em xài mấy cái con AI
+8:07
+agent khác trong cái nhiệm vụ, trong bài học, trong lớp học này kia của mình thì
+8:11
+tụi em cũng biết rồi đúng không ạ? Nó không bao giờ nó hỏi mà nó bắt người ta
+8:13
+chữ trả lời hết mà nó hỏi và nó đưa ra những cái lựa chọn khả dĩ đó. Người ta
+8:19
+chọn thôi đúng không? Đấy, người ta chọn thôi. Đó, thì như vậy là chúng ta
+8:26
+thiếu hiện tại ha trên cái bảng này á thì mình thấy là nó thiếu cái khâu đó.
+8:32
+Đó, rồi. Ok. Thì sau khi mà mình nó đủ thông tin rồi thì nó lên một cái bảng
+8:37
+outline ha.
+8:39
+>> Dạ.
+8:39
+>> Nhưng mà ở đây á trước khi đến cái bản outline á thì nó còn một cái một cái chỗ
+8:43
+nữa đó là nó lấy cái nguồn thông tin từ chỗ nào?
+8:48
+lấy cái nguồn thông tin để cái làm cái bài con hổ này từ chỗ nào? Nó từ cái
+8:52
+kiến thức của nó. Tức là bản thân mình mình cũng biết là
+8:56
+là à các cái model mà mình dùng thì nó có một cái bộ tri thức riêng đúng không?
+9:00
+Nó có những cái dữ kiện mà nó dùng để được tren cho nên nó sẽ có cái tri thức
+9:04
+riêng và có thể nó có hoặc là nó không có cái thông tin mà chúng ta đang muốn
+9:07
+làm cái slide ha. Thì như vậy thì ở cái bước này là mình sau khi mình phỏng vấn
+9:14
+xong thì cái bước kế tiếp á là cái nguồn lấy ở đâu?
+9:17
+Nè, cái nguồn lấy từ kho chi thức của mẫu độ hay là cái nguồn nó sẽ như search
+9:22
+Google đó và hay là cái nguồn nó lấy từ những
+9:27
+cái document mà người dùng người ta cung cấp vô hoặc là từ một cái đoạn text mà
+9:30
+người dùng người ta cung cấp vô đúng không ạ? Thì nó sẽ phải tập trung vô cái
+9:35
+chỗ đó. Và đối với cái việc mà mình build agent á, mình build ra cái ứng
+9:40
+dụng mà làm slide sử dụng mô hình trí tuệ nhân tạo á thì nếu như nó rơi vào
+9:45
+tình huống là mình phải đi mình search ở trên web vậy thì cái agent của mình nó
+9:51
+sẽ search web bằng cách nào đúng không? Nó phải có cái tool tương ứng chứ.
+9:56
+>> Dạ.
+9:57
+>> Đó. Rồi nếu như là người dùng đưa vô một cái file PDF á nói về con sư tử vừa mới
+10:03
+chết ở sở thú ngày hôm qua đó rồi yêu cầu tạo một cái bài trình bày về con hổ
+10:08
+thì như vậy là là cái A của mình nó có đọc cái file đó được hay không
+10:13
+>> đó đúng không ạ? Như vậy chúng ta thấy ở đây á là nó sẽ có một loạt các cái một
+10:19
+loạt các cái thứ mà mà cái app của chúng ta nó sẽ phải xử lý để nó bốc tách được
+10:24
+cái thông tin nó đổ vô thêm cho cái context.
+10:28
+Hiểu chưa? Đó chứ nó không có đơn giản là ok mình kêu nó tạo cái bài trình bày
+10:33
+nhưng mà mình không có đẩy cái suột gì vô hết. Đó thì thì nó cũng chưa chưa có
+10:38
+đạt ha. Hoặc là nếu như mình xác định là người dùng người ta không có cái suột,
+10:42
+người dùng người ta muốn à tận dụng cái cái cái tri thức của cái dữ liệu có sẵn
+10:49
+của cái model á thì người dùng phải thực hiện một cái bước xác nhận. Đó. Đó là
+10:55
+phải hỏi là bạn có đưa cái gì vô hết á thì tôi làm cái vậy được hay không đúng
+10:59
+không? Dạ.
+10:59
+>> Rồi.
+11:00
+>> Dạ.
+11:01
+>> Thì đó là cái bước mình xác định cái nguồn ha. Nguồn nào vào rồi
+11:08
+ngôn ngữ tiếng Việt hay tiếng Anh đúng không? Đó thì nó rơi vào nó là cái nằm
+11:12
+bước phỏng vấn đó. Rồi rồi duyệt outline đưa outline ra cho duyệt. Rồi ok gọi là
+11:18
+tạm được đi ha.
+11:19
+>> Dạ vâng. Rồi sau đó cái nó chạy. Thì ở đây tụi em đang chọn cái cách là rất là
+11:25
+à cơ bản ở thời gian gần đây. Đó là nó ghi thẳng ra cái file HTML đó. Thế thì
+11:31
+đó HTML là một giải pháp. HTML là một giải pháp để tạo ra slide ha. Bây giờ nó
+11:38
+có giải pháp khác không?
+11:42
+>> Là hiện tại tạo ra các ph hay không? Ví dụ như là map hay là review
+11:48
+>> đó thì nếu như cái agent của chúng ta nó có hỗ trợ vậy thì ngay chỗ đó nó phải
+11:54
+hỏi đúng không ạ? Nó phải hỏi
+11:57
+>> và cái chỗ này á là nó còn ảnh hưởng đến cái khâu
+12:00
+>> edit ở phía sau nữa. Tại vì nếu đây là file HTML thì chắc chắn là không edit
+12:05
+được đúng không? người nhìn vô một đống file nó lẫn lộn HTML, CSS tó cả gia
+12:12
+trong đó nữa. Người dùng người ta chắc chắn sẽ bó tay. Như vậy thì edit cái
+12:17
+file này bằng cách nào ha? Phải cung cấp cái cơ chế edit đó bằng cách là vẽ lên
+12:23
+trên trực tiếp những gì mình đang đang thấy đây. Nó sẽ có canvas để mình vẽ lên
+12:27
+đó. Rồi mình cho edit thì mình đẩy thêm thông tin nó vào trong cái khung chat
+12:31
+>> để nó chạy và nó tiếp tục nó nó điều chỉnh ha. Còn nếu như nó là cái file map
+12:36
+là tức là cái file m down đó thì bây giờ á là mở cái file m down đó bằng cái tool
+12:41
+edit nào đó trên máy người ta lấy ví dụ như VS Code phải có một cái nút nào đó
+12:44
+để mình dẫn qua đó mở lên á rồi người ta người ta chỉnh sửa trên đó ha. Rồi
+12:52
+>> người ta làm slide thì chúng ta biết là chúng ta không thể nào là làm cái slide
+12:57
+theo kiểu là mỗi một lần làm slide là một cái một cái style khác nhau được.
+13:02
+Đúng chưa?
+13:02
+>> Dạ. À cái style nó phải thống nhất không thể nào là lần này là làm ra cái
+13:09
+mẫu màu nâu nâu này tôi rất là ưng ý. Bữa sau làm ra không cách nào làm ra
+13:12
+được cái mẫu nâu nâu này nữa. Giữ lại cái chuyện đó như thế nào đúng không?
+13:17
+>> Dạ.
+13:18
+>> À một người dùng vô thì người ta mới đầu vô người ta chưa có gì hết người ta tạo
+13:21
+ra một cái style nó rất là ngẫu nhiên. Nhưng mà sau khi ra được cái ngẫu nhiên
+13:25
+rồi người ta ưng và người ta muốn giữ lại cái này để lần sau làm những cái
+13:28
+những cái slide khác người ta cũng muốn như thế thì chúng ta sẽ phải lưu giữ
+13:32
+được cá nhân hóa được cái thông tin đó. Đó và chúng ta sẽ chúng ta cũng sẽ không
+13:38
+thể nào mà mỗi một lần á mà mình chạy mình làm slide á là nó đều phải đi nó
+13:43
+xin lại cái mã CS của đống này hết. Tại xin một lần là đủ rồi. Mình có rồi. Lần
+13:47
+sau mình chỉ lấy mình nạp vô thôi chứ bắt gì mình mới đi sinh lại đúng không?
+13:52
+Đó. Rồi bản thân trên cái slide của chúng ta nó còn thiếu cái gì? Nó không
+13:56
+có hình ảnh nè, không có icon nè. Các em tưởng tượng nếu như bình thường các em
+14:00
+làm slide để trình bày các em đâu có chơi chữ không như vậy đúng không? Sơ
+14:05
+đồ. Sơ đồ nếu có ví dụ con hổ hình con hổ đâu
+14:11
+đúng không? Biểu tượng đầu hổ rồi này kia ngầu ngầu đâu
+14:15
+>> đó. Mấy cái đó lấy ở chỗ nào? Mình kiếm một cái model nào đó mà nó hỗ trợ
+14:20
+generate ảnh á rồi mình bỏ vô rồi mình tận dụng. Còn ví dụ không có đó thì mình
+14:25
+cho mình nó đi nó search trên web nó dùng Google image search hoặc là dan
+14:29
+search gì đó nó tìm hình con hổ về nó tìm cách nó nó nhét vô đó. À thì đó là
+14:36
+đó. Rồi cái slide này là cái slide để trình bày. Như vậy là cái phong chữ đồ
+14:40
+này kia nó phải to. Nó phải to 28 25 pixel này kia vân vân chứ nó không thể
+14:47
+nào là một cái bảng mà giống như một cái một cái file mà mình ngồi ngay trước màn
+14:50
+hình mình thấy rất là rõ ràng nhưng mà mình chiếu lên là mình cũng thấy này học
+14:53
+ở trên trên lớp làm mấy cái bài trình bày trên lớp môn web n cao thì thầy cũng
+14:59
+có dặn rồi đúng không? Đó cái deck của mình mình làm mình ngồi trên máy mình
+15:03
+thấy rõ lắm vậy đó nhưng mà mình chiếu lên á thì chưa chắc ở những cái chỗ xa
+15:07
+người ta sẽ thấy được. Đó thì đó cũng là một cái điểm mà mình phải lưu ý. Rồi tất
+15:12
+cả những cái ký hiệu, những cái biểu tượng nào đó mà nó thể hiện cái đặc tính
+15:17
+gọi là slot thì mình phải gỡ ra lấy ví dụ như cái dấu nghe tên con hổ kìa. Như
+15:22
+cái dấu gạch dài thòn nó kìa. Nhìn riết phát ngán luôn. Ừ. Có gỡ ra được không?
+15:26
+Rồi cái dấu mũi tên nhỏ xíu ở dưới kìa. Cái chỗ đó đó nguyên một cái đường dài
+15:30
+đó. Tại sao không vẽ XVG? Tại sao không vẽ mấy cái XVG chỉ qua mà lại vẽ thành
+15:35
+cái kiểu đó? Đó thì như vậy á nó như vậy để để mấy đứa mấy đứa hình dung được á
+15:41
+là đó là mình sẽ phải tin chỉnh và mình sẽ phải đặt ra nhiều cái vô trong cái
+15:47
+cái Aent của mình lắm ha. Nên mình sẽ phải gắn thêm vô. Thì cái mục tiêu của
+15:53
+mình á là mình cố gắng mình support được nhiều nhiều thứ ha. Mình chọn HTML thì
+16:01
+nó là một cái giải pháp tốt đấy. Nhưng mà nó không phải là cái giải pháp duy
+16:04
+nhất ha. Cái AN của mình nó sẽ cho người ta chọn nhiều cái các em ha. Đó cho
+16:09
+người ta chọn nhiều cái. Thí dụ như bản thân của của thầy đi, thầy không thích
+16:13
+HTML. Nếu mà thầy phải làm HTML thì nó phải là những cái file mà nó cần tương
+16:17
+tác. Tức là chiếu lên rồi bấm chọt chọt chạy chạy giống như mấy cái slide mà
+16:22
+thầy hay dạ hay chạy ở trên lớp cho mình coi. Đó. Thì nếu như nó chạy chạy từng
+16:26
+bước từng bước như vậy đó. Đó rồi mình bấm qua chỗ này mình coi thông tin này
+16:30
+bấm chỗ kia coi thông tin kia thì nó mới đáng là HTML chứ còn à nếu như mà mình
+16:35
+chỉ đơn giản là cái slide bình thường mà chứa thông tin tỉnh chuyển qua chuyển
+16:38
+lại animation thì thầy thích làm mập hơn nha. Tại vì thầy vô thầy sửa cái file M
+16:47
+down nó phải text thầy sửa nó nhanh hơn. Nếu mà thầy cần edit á thầy sửa nhanh
+16:50
+hơn. Còn và cái phần style tức là cái phần màu sắc này kia nó được tách bạch
+16:54
+ra khỏi cái cái file text đó. Thì đó là cái cái sở thích và ở đây chúng ta làm
+17:01
+app Slidex Asian thì chúng ta support mọi
+17:05
+thứ nè. Chúng ta không thể nào đưa cái sở thích của mình vô chúng ta ép người
+17:09
+dùng cái cái đó được ha. Mà chúng ta sẽ phải support mọi thứ. Chúng ta sẽ
+17:15
+support mọi mọi thứ mà chúng ta biết đó mà chúng ta có thể tìm thấy. Đó. Rồi à
+17:20
+người dùng á thì chúng ta cho người ta có quyền người ta lựa chọn mấy cái điều
+17:23
+đó ha. Đấy thì thì đó là cái cái cái kỳ vọng của thầy ở trong cái đề tài này ha.
+17:31
+Còn cái hướng HTML thì chắc chắn là có rồi. Bởi vì ok bây giờ ai cũng tạo HTML,
+17:36
+mình cũng phải tạo HTML thôi ha. Đó chứ mình không tạo thì người ừ mình sẽ bỏ đi
+17:42
+một cái một cái mãng mà mà nó gọi là đang hot trend và người ta dùng rất là
+17:47
+nhiều đó ha. À ok. Thì đó là một vài cái góp ý. Em
+17:53
+biết tụi co tụi tụi em có cái điểm nào chưa rõ không?
+17:59
+>> Ờ dạ thầy ơi cho em hỏi một xíu là cái nãy thầy nói là mình sẽ support nhiều
+18:04
+cái loại output format là cho chọn HTML hay là map này kia thì tụi em hiện tại
+18:11
+đang code là nó sẽ tạo ra một cái ờ time temporary folder một cái folder tạm
+18:17
+>> và chứa cái HTML trong đó để xử lý. Ừ.
+18:20
+>> Nhưng mà ngoài ra thì ban đầu tụi em thiết kế cái
+18:25
+scope cái USAS thì nó sẽ có thêm cái chức năng là export nữa. Thì nếu như mà
+18:31
+mình cho user người ta chọn cái output format trong cái temporary folder đó
+18:37
+trước khi mà người ta ờ tạo slide thì mình có cần làm cái feature export đó
+18:43
+không thầy? Cái feature export đó thì nó sẽ liên
+18:49
+quan đến câu chuyện á là mình export ra được tới cái thứ gì. Thấy
+18:56
+ví dụ như là tụi em export ra được một cái cái kết quả này của tụi em là tụi em
+19:01
+export ra được bảy tấm hình export thành một cái file PDF
+19:07
+đó. Nhưng mà tụi em lại rất là khó để export ra thành một cái file review.
+19:14
+Tức là cái file review.js á tức là nó là một cái format, một format để làm slide
+19:21
+m down á ha. Đó. Ừ thì tại vì nếu mà mình đang tự file HTML mà mình gọi là
+19:27
+mình đi mình export ra một cái một cái cách khác hoàn toàn luôn á thì coi như
+19:31
+là đây mình đang đi genererate lại rồi. Nó đâu còn là ý nghĩa của export nữa
+19:35
+được không ạ? Đó thì cái chuyện đó nó nên được chọn ngay từ đầu. Nó nên được
+19:40
+người dùng xác định ngay từ đầu để mà người ta chọn là à đợt này tôi không cần
+19:43
+làm HTML tương tác mà tôi muốn làm hẳn cái review luôn. Đó để cho nó ngay từ
+19:49
+đầu nó generate ra cái mã review luôn và sau đó chúng ta sẽ chỉnh sửa trên cái
+19:52
+review đó tương tự cho slide dep là m
+20:00
+>> vậy thì nếu như người ta có nhu cầu liên quan tới việc ờ sử dụng lại cái slide đó
+20:04
+trên một format khác thì sao thầy? thì dĩ nhiên là nó sẽ phải có những cái
+20:09
+đánh đổi rồi đúng không? Chúng ta đâu thể
+20:13
+chúng ta đâu có mình xác định rõ ràng luôn là bây giờ à
+20:18
+nếu như anh đã chọn review rồi á thì anh sẽ không thể nào chuyển qua thành cái
+20:25
+HTML được. Đó, nếu muốn qua HTML thì xem như là làm lại từ đầu hiểu không? Đó,
+20:31
+làm lại từ đầu. Tôi chỉ đơn giản là tôi bọt cái cái mã nguồn của cái file kết
+20:35
+quả. à slide dep qua thành cái mã nguồn được viết bằng HTML vậy thôi. Đó thì anh
+20:44
+sẽ được gì và anh mất gì app chúng ta sẽ thông báo rõ ràng những cái chuyện đó.
+20:51
+Rồi ví dụ như
+20:53
+>> ừ em nói đi.
+20:55
+>> Dạ có thêm một cái cây nữa là bây giờ lỡ như trong cái ờ ví dụ như người ta
+21:00
+upload một cái document lên nhưng mà cái model bằng một cách nào đó nó quét ra
+21:04
+được cái thông tin sai của người dùng thì lúc đó kiểu mình sẽ hỏi lại cái đó
+21:07
+hả thầy.
+21:08
+>> Ừ tôi sẽ hỏi lại thôi. Đó là là là ờ trong
+21:14
+cái tài liệu này tôi thấy có một cái chỗ nó hơi lạ đó. Bạn có xác nhận là bạn sẽ
+21:19
+làm với a cái tài liệu này hay không? Hay là cần tôi điều chỉnh lại? Hỏi thôi.
+21:26
+Cái đó mình có chủ động thiết kế để nó làm được những thứ đó luôn không thầy?
+21:30
+Hay là hay là cứ cứ nó phát hiện xong nó tự báo thôi? Có nghĩa là mình chủ động
+21:34
+trong cái AL mình thiết kế là xử lý luôn bước đó luôn.
+21:38
+ch thiết kế thậc ra giờ giờ cái chỗ là là cần phải xác định được là trong tài
+21:43
+liệu đó có điểm gì đó mà nó bị mâu thuẫn à hay là nó sai lệch hay không thì cái
+21:48
+đó model mới biết chứ sao là cái agent của mình biết được
+21:52
+>> dạ
+21:52
+>> đúng không agent của mình lúc đó nó chỉ nó chỉ dừng ở chỗ là nó có hiện ra một
+21:57
+cái thông báo và nó đứng nó chờ hay là hay là nó quyết định nó bỏ qua luôn mà
+22:02
+nó lấy cái đó nó làm nguồn luôn hay không
+22:05
+thôi chứ sao Sao mà nó biết được cái đó là đúng hay sai?
+22:13
+Giờ lú là vừa thua rồi nó mới chỉ có mod biết thôi chứ.
+22:19
+>> Dạ. Vậy là xong vụ này tụi em nói tới vụ địa
+22:23
+cương được không thầy?
+22:24
+>> À địa cương thì có gì đâu nói. Bữa hôm hôm qua có trăm lên hỏi thầy rồi mà.
+22:31
+>> Dạ. Dạ từ từ để
+22:35
+>> cứ
+22:39
+>> rồi em nói đi hay là tụi em gửi thầy bản document bản Google Doc của đó xong thầy
+22:45
+vào có gì thầy comment được không thầy
+22:48
+>> comment giúp thì đề cương thì cứ làm xong rồi gửi lên đi thầy vô thầy coi coi
+22:53
+ổn chưa. Ổn rồi thì thầy xác nhận ổn rồi nộp còn chưa ổn chỗ nào đó thì sửa lại
+22:58
+thôi.
+23:00
+>> Dạ.
+23:00
+>> Ừ. Trong quá trình làm tới cái bảng hiện
+23:09
+tại nè, tụi em đã có tham khảo các cái phương pháp làm slide khác chưa? Hay là
+23:15
+chỉ nhảy vô là làm HTML như vậy liền?
+23:19
+>> Dạ, mới tham cả HTML thôi thầy. Tụi em đừng tìm hiểu thêm.
+23:24
+>> Dạ.
+23:25
+>> Marb slide.Dd
+23:29
+ha. Slide nè, mạp nè, review JS nè. Đó là
+23:37
+xem thêm. Rồi riêng về cái HTML không á thì coi thêm là bây giờ thay vì xất HTML
+23:44
+xuất react được không? Search từ khóa là B slide. B là là T chop á. Bolt slide
+23:52
+>> ha. Rồi à B chữ B nó viết cách ra đó.
+24:05
+Đó B SL nó có cái rebo trên cái th á nó có cái reboy trên kub á. Bắt lại đó.
+24:12
+Ừ. Đó. Bone slide ha. Rồi à cái này nó sẽ tạo ra React
+24:24
+rồi để coi còn cái gì nữa không. Bữa không có một cái của
+24:34
+có cái thầy thấy nó cũng ổn lắm. Từ từ thầy thầy thầy tìm lại cái
+24:47
+dòng này thìầy làm video không à cho nên là là cái slide nó lạc đi đâu
+25:04
+à. Brun and slide. Run and slide. Đây để thầy nhấn vô trong
+25:17
+đây. Br slide coi thêm cái này. Đó. Ừ. Đó cái đó đó cái đầu tiên đó của Gia Vă
+25:25
+Du đó. Đó thì đó là một vài các cái các cái bộ ha mà mình
+25:33
+có thể mình bốc bốc tắt được những cái thông tin ở trong đó mà mình gắn vô cho
+25:40
+cái agent của mình. Có nghĩa là nếu như mà người dùng người ta chọn giải pháp là
+25:46
+làm slide HTML hay là làm slide React ha thì á là mình sẽ phải mình có những cái
+25:54
+bộ những cái cách làm như thế này nè. Đó những cái style những cái style những
+25:58
+cái time này nè. Đó mình lấy mình nạp vô cho người ta đó ha. Rồi có những cái
+26:04
+cách bố trí rồi này kia. Đó mình mình đi mình trích lọc những cái những cái điểm
+26:09
+hay của các cái reb story này á mình nạp vô cho cái con agent cái de slide agent
+26:14
+của mình đó chứ không phải là mình giao hết cho
+26:18
+model nó muốn xin cái HTML gì là nó xin ha. Tại vì mình mà càng trong cái trong
+26:25
+một cái app agent của mình á mà cái thành phần á mà mình gọi là cái thành
+26:28
+phần mà tất định á thành phần determinist á detistic á thì cái thành
+26:33
+phần đó mà nó càng nhiều á thì cái app của mình á nó càng tiết kiệm ha. Nó chỉ
+26:38
+gọi về lm ở những chỗ cần thiết thôi. Ví dụ như là phát sinh nội dung, phỏng vấn
+26:43
+người dùng nó mới gọi thôi. Chứ còn những cái khâu khác ví dụ như là sinh ra
+26:48
+sinh ra màu sắc layout thì nó không nên lần nào cũng sinh đúng không ạ? Nó nên
+26:56
+là ở cái dạng là tôi có sẵn rồi và sau khi nó có một cái nội dung á thì tôi sẽ
+27:02
+app vào. Tôi sẽ app cụm nó vào để nó ra được một cái bộ slide. Và dĩ nhiên á là
+27:07
+cái thứ mà mình chuẩn bị sẵn á nó do mình chuẩn bị sẵn mà cho nên là nó không
+27:12
+thể nào á là nó ở cái dạng là nó quá ít được. Nó phải nhiều nó phải nhiều ha. Nó
+27:18
+phải đa dạng đó và nó chẳng những nó đa dạng mà nó lại còn phải phức tạp nữa các
+27:23
+em. Tức là nó phải có những cái animation tới nóc luôn. Mình thiết lập
+27:27
+sẵn những cái animation luôn. Đó à nó giữ dần vô ha. Đó thì lúc đó đó thì cái
+27:34
+slide của mình á nó mới tạo ra được cái độ wow. À mình làm mình làm xong á mình
+27:39
+cũng thích xài luôn đó chứ nó giống như cái mà à cái mấy đứa mà mà vừa mới đạt
+27:44
+tới á thì thì cái đó hiện tại mình cũng chả cần ha. Mình mình mở dipsit handit
+27:50
+vô. Ví dụ tụi em có thầy thấy tụi em dùng dipsit 4.1 mình mở dipsit h vô cái
+27:55
+mình gõ cái prom tạo tôi cái slide nó cũng ra y vậy rồi đúng không ạ? Thì mình
+27:59
+làm cái UI này lên thì nó cũng có tác dụng gì nữa đâu. Hiểu không? Đó mình
+28:04
+phải làm cho nó khác biệt ra ha. Đó
+28:11
+hiểu ý thầy không? Đó mình mình mình biết được cái mục tiêu mà mình phải
+28:14
+hướng đến không?
+28:16
+>> Dạ
+28:16
+>> dạ t em hiểu rồi thầy.
+28:18
+>> Ừ đó à mình phải làm sao để để cho ừ à người dùng người ta dùng cái app do cho
+28:26
+do cho do cho tụi em tạo ra đó. thì cái kết quả nó phải là out perform cái
+28:30
+chuyện người ta người ta dùng cái cái những cái con agent khác à những cái con
+28:36
+coding agent để mà làm slide ha thì nó phải outform ví dụ đơn giản thôi là nó
+28:42
+tạo hình được đó đó nó ráng chạy được khá khá đi xong rồi mới tính đến chuyện
+28:46
+tạo hình đó generate hình vô ví dụ như người dùng người ta không có không có
+28:51
+cái phần tạo hình thì thôi nhưng mà nếu như người ta có phần tạo hình chẳng hạn
+28:54
+như người ta có cái account của codex hatiravity
+29:01
+mình bỏ vô mình tạo hình tạo hình luôn mình rá vô slide luôn đó là nó khác rồi
+29:05
+khác biệt rồi hiểu không? Dạ.
+29:09
+>> Ừ. Đó. Ừ. Như vậy á thì bây giờ cứ cải thiện từ từ ha. Cải thiện từ từ. Mỗi lần
+29:17
+chạy mẫu chạy demo đó thì chạy mấy cái đoạn ngắn ngắn thôi ha. Để cho nó đỡ tốn
+29:22
+token, đỡ tốn thời gian đó. Nhưng mà dạ
+29:26
+>> mình kỳ vọng là ví dụ như mình nói là tôi soạn cái slide trình bày để đủ cho
+29:29
+tôi dạy một cái bộ một cái buổi dạy từ 7:30 sáng cho tới 11:30 thì lúc đó chúng
+29:35
+ta sẽ hiểu là cái de đó nó phải rất dài chứ nó không thể nào là một cái outline
+29:39
+7 slide hoặc 10 slide được. Đó rồi sau đó chúng ta mới tính đến
+29:47
+chuyện là trên cái slide đó nó có tương tác được hay không ha.
+29:52
+đó tương tác được thì nó giống như mấy cái mấy cái slide mà mấy bữa nay thầy
+29:57
+hay dùng trên lớp ha. Đó mình có cái bấm qua bấm lại được
+30:03
+HTML thôi nhưng mà cái dạng khác nó có tương tác được hay không hay là nếu như
+30:06
+nó là một cái đoạn mã nguồn thì nó có nó có hiện lên từng dòng từng dòng mã nguồn
+30:11
+hay không. Đó đó cái kiểu đó ha. Còn nếu là HTML thì mình cho tương
+30:18
+tác bằng cái gì ha? Ví dụ mình cho nó tự tương tác hoặc là mình lấy cái thư viện
+30:21
+GSAP ha GSAB đó. Đó mình gắn vô thì nó sẽ ra là như thế nào đó. Thì thì là lúc
+30:29
+này thì nó vẫn là model nó làm thôi. Vẫn là model nó nó ra làm thôi. Nhưng mà nó
+30:34
+phải làm tới nơi tới chốn chứ nó không thể nào là nó làm ở những cái animation
+30:39
+này kia đơn giản được ha. Đó. Rồi. Ok chưa?
+30:51
+Dạ.
+30:52
+>> Ừ. Ok. Th mấy đứa làm tiếp ha. Đó. Thảo luận với nhau rồi làm có bị ngãn cái chỗ
+30:59
+nào đó thì nhắn trên Telegram cho thầy ha. Thì thầy cũng nắm hết rồi. Rồi rồi
+31:03
+mình đưa ra cái a quyết sách cho nó phù hợp haen. Đó thì cũng không phải là
+31:09
+không hẳn là cái gì thầy yêu cầu á thì mình cũng a cần làm hết đâu. Có thể có
+31:14
+những cái mà à thầy nhìn nó chưa có được rõ lắm ha. Thì có thể nó có chút sai
+31:20
+lệch thì lúc tụi em trong quá trình làm tụi em thấy nó bị vướng thì tụi em hỏi
+31:24
+lại thầy ha.
+31:26
+>> Dạ.
+31:27
+>> Ừ. Ok. Chứ cũng không phải là cố gắng là là làm 100% những điều thầy nói. Nhưng
+31:32
+mà 95 96% thì có đó.
+31:35
+>> Dạ.
+31:36
+>> Dạ.
+31:36
+>> Ừ. Rồi ok. Còn cái đề cương thì cứ xong cái thì hữu lên ha.
+31:42
+>> Dạ. Giờ gửi Telegram luôn á thầy.
+31:44
+>> Ừ cứ gửi Telegram thôi. Rồi thầy sửa. Còn sau khi mình xong được cái đề cương
+31:49
+bản final thầy duyệ đó thì lúc đó tụi em làm đúng theo thủ tục của qua người em
+31:52
+tin ha.
+31:53
+>> Dạ. đó kêu ngày mấy gửi mail gì đó để chờ xác nhận rồi này kia thì mình cứ làm
+31:57
+đúng quy trình của mấy cái đó.
+31:59
+>> Dạ. Dạ.
+32:00
+>> À dạ thầy cho em hỏi một xíu nữa là cái vụ mà multi platform thầy mình có cần
+32:05
+làm đó không thầy?
+32:06
+>> Multi platform
+32:08
+>> ấy là tụi em muốn ấy là có cần phải làm thêm mấy cái ờ thay vì một cái UI như
+32:14
+hiện tại thì thay mấy cái terminal hay là gì đó làm nh thầy?
+32:18
+>> Ờ có đó à phải có đó. Tức là tức là sau khi mà tụi em định hình được cái cái cái
+32:25
+de cái slide cái slide agent của tụi em rồi đó thì đến một lúc tụi em sẽ có một
+32:31
+cái suy nghĩ là bây giờ người người dùng á người ta không muốn
+32:37
+lên slide agent của người ta dùng mà người ta muốn dùng ở dưới clock code của
+32:42
+người ta người ta dùng được không ha. Nếu như câu trả lời của mình là được đó
+32:47
+thì nó sẽ dẫn đến câu chuyện á là mình phải bốc tấp được những cái quy trình,
+32:51
+những cái đoạn mã xử lý mà Datom Mystic mà mình đã
+32:56
+gắn ở trên cái app này giao cho clock để mà nó có thể gọi ra nó chạy được. Đó thì
+33:03
+lúc đó nó nó sẽ dẫn đến cái câu chuyện là chúng ta sẽ phải tạo ra một cái bộ
+33:08
+skill, một cái bộ MCP để mà giao cho lock code nó chạy được. Nó cũng hườm
+33:12
+hườm giống giống với lại cái một cái người dùng mà người ta leo leo lao lên
+33:15
+cái ST agent người ta thử sử xử sử dụng ha. Anyway nó là câu chuyện nằm ở phía
+33:20
+sau khi em đã à của cái hình nó ổn rồi đó thì đó lúc
+33:29
+đó nó sẽ dễ thôi.
+33:33
+>> Dạ.
+33:34
+>> Ừ thì chắc xong rồi đó hàng
+33:40
+>> open design đó. Nếu bạn nào mình thì sao? Nó có một cái app riêng
+33:47
+dạ
+33:47
+>> vô dùng ki vô dùng hoặc là code gì đó nó tự detect ra đó rồi dùng
+33:55
+thích dùng cái đó đó thì là nó để in cái bộ skill với mc
+34:01
+block code hay cho antibity gì đó rồi vô mấy em
+34:05
+giống nhau dĩ nhiên không giống 100% mà nó giống khoảng 90
+34:10
+đó chúng ta Làm chúng ta làm software chúng
+34:15
+ta được bên thầy tín hiệu yếu hay sao á. Nó bị
+34:26
+rèn
+34:28
+>> đâ hả? Chắc bị rúng rồi. Bị rớt đi râu rồi.
+34:39
+Rồi nghe nghe nghe được chưa? Được rồi.
+34:43
+Hơi rèn xíu mà. Thôi còn cái câu hỏi gì nữa không? Bắt gì nữa không? Chắc không
+34:47
+thầy.
+34:50
+>> Ừ. Ok. Vậy thôi ha. Vậ ta ngạ. Ừ. Dạ. C vậ em chờ thầy.
+34:57
+>> Ok. B

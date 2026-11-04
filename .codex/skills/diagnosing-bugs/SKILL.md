@@ -5,7 +5,7 @@ description: Diagnosis loop for hard bugs and performance regressions. Use when 
 
 # Diagnosing Bugs
 
-## DeckAgent compatibility
+## Project compatibility
 
 Apply this workflow within the task scope and root `AGENTS.md`. Recorded project decisions and terminology take precedence over examples here. The system architecture is not finalized: present cross-component design choices to the task owner and label unresolved choices as proposals. This skill grants no permission to publish, change shared environments, or remove unrelated work.
 

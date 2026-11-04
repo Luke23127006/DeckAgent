@@ -1,8 +1,8 @@
 # ADR Format
 
-ADRs live in `docs/adr/` and use sequential numbering: `0001-slug.md`, `0002-slug.md`, etc.
+ADRs live in `dev/decisions/` and use the project numbering and template: `DEC-NNN-slug.md` from `dev/decisions/_TEMPLATE.md` (AGENTS.md is authoritative).
 
-Create the `docs/adr/` directory lazily: only when the first ADR is needed.
+Create the `dev/decisions/` directory lazily: only when the first ADR is needed.
 
 ## Template
 
@@ -18,13 +18,13 @@ That's it. An ADR can be a single paragraph. The value is in recording *that* a 
 
 Only include these when they add genuine value. Most ADRs won't need them.
 
-- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`): required in DeckAgent. Use `proposed` until the team explicitly accepts the decision; record acceptance only when supported by a recorded decision.
+- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`): required in this project. Use `proposed` until the team explicitly accepts the decision; record acceptance only when supported by a recorded decision.
 - **Considered Options**: only when the rejected alternatives are worth remembering
 - **Consequences**: only when non-obvious downstream effects need to be called out
 
 ## Numbering
 
-Scan `docs/adr/` for the highest existing number and increment by one.
+Scan `dev/decisions/` for the highest existing DEC number and increment by one.
 
 ## When to offer an ADR
 

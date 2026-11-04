@@ -1,5 +1,7 @@
 # Private local state
 /.deckagent/
+# PO's private working folder
+/po/
 **/.env
 **/.env.*
 !/.env.example

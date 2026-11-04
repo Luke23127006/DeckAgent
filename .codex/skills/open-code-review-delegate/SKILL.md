@@ -12,7 +12,7 @@ metadata:
 
 Use the repository-local OpenCodeReview CLI for file selection and rule resolution. The current agent performs the actual review; OCR does not call a separate LLM endpoint in delegation mode.
 
-The project rule file (`.opencodereview/rule.json`) excludes the generated Claude/Codex skill mirrors and `node_modules/`, and adds a DeckAgent-specific rule for `.agents/**/*` on top of OCR's built-in system rules. Files outside `.agents/**/*` (including application code) are reviewed against OCR's built-in system rules.
+The project rule file (`.opencodereview/rule.json`) excludes the generated Claude/Codex skill mirrors and `node_modules/`, and adds a project-specific rule for `.agents/**/*` on top of OCR's built-in system rules. Files outside `.agents/**/*` (including application code) are reviewed against OCR's built-in system rules.
 
 ## Prerequisite
 
