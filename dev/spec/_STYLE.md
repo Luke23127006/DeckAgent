@@ -67,6 +67,16 @@ empty; each project declares its own terms and adds to them as it learns.
 | **status message** | The response that says, while a request is active, what the system is doing and how long it has worked |
 | **activity** | One thing the system did or does for a request, such as reading a file or building a slide, with its state |
 | **selected model** | The model of a chat that runs its next request |
+| **provider** | A model service that runs models for DeckAgent through the user's own account |
+| **provider configuration** | One saved connection to a provider: its provider ID, what the provider needs such as a key, and its added models |
+| **provider ID** | The name that tells which provider a provider configuration connects to. It never changes after saving |
+| **built-in provider** | A provider DeckAgent knows in advance, with a fixed provider ID |
+| **custom model API** | A provider the user describes with a provider ID, a base URL and an API protocol |
+| **key** | The secret of the user's own account that a provider or an outside service asks for |
+| **model catalog** | The list of models a provider reports. It adds no model by itself |
+| **added model** | A model the user added to a provider configuration |
+| **selectable model** | An added model of a saved provider configuration, which a chat is allowed to select |
+| **reasoning level** | How much the selected model reasons for a request, among the levels that model has |
 | **material** | What the user gives for a deck: request text, attached files and named references |
 | **interview** | The questions the system asks before the first outline, about the topics the request does not answer |
 | **suggested answer** | An answer the system offers for the user to choose instead of typing one |

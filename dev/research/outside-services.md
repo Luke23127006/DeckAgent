@@ -71,6 +71,50 @@ product was run; source code was not read.
 
 9. Limits of this check.
    - Only the README, quick start, architecture and `.env.example` of open-design were
-     read; its Settings docs and source were not.
+     read; its Settings docs and source were not. Item 10 adds a second read on
+     05-11-2026.
    - The DeepSeek Harness config catalog was read word for word only in part.
    - Image licences and attribution are documented by neither product.
+
+10. How does open-design set up a model provider and its key? Checked on 05-11-2026 for
+    the UC-005 review, from `README.md`, `QUICKSTART.md`, `docs/headless-byok.md`,
+    `docs/modes.md`, `docs/agent-adapters.md` and `docs/install-guide.md` on `main` (no
+    commit hash visible). No product was run; source code was not read.
+    - Observation: the docs folder has no page for the Settings or "Models & providers"
+      form. The in-app setup flow is not documented.
+    - Observation: two ways to run a model. Local CLI: "The daemon scans your PATH" for
+      coding-agent CLIs (Claude Code, Codex, OpenCode, ...), and each CLI uses its own login
+      ("The daemon does not run login flows"). BYOK: the user gives a provider
+      (`QUICKSTART.md`: "BYOK runtimes configured in Settings").
+    - Observation: BYOK fields in the REST API are `protocol`, `apiKey`, `baseUrl`,
+      `model`, and `apiVersion` for Azure. Protocols: anthropic, openai, azure, google,
+      ollama, senseaudio, aihubmix. "Use openai for a custom OpenAI-compatible gateway."
+      No name field. Presets in `README.md`: OpenAI, Atlas Cloud, Anthropic, Azure OpenAI,
+      Google Gemini, Ollama, LM Studio, vLLM, any OpenAI-compatible endpoint.
+    - Observation: no key check at save is documented. In the REST API a wrong key shows
+      only when a run fails: "A successful 202 response does not validate those upstream
+      facts", then "upstream 401/403/404".
+    - Observation: the BYOK model is "an explicit provider model ID"; a model list from a
+      BYOK provider is not documented. CLI runtimes list models live, for example
+      `opencode models`. The Settings picker takes a custom model ID.
+    - Observation: model and reasoning choices are stored per agent; some runtimes offer
+      thinking levels "off, minimal, low, medium, high, xhigh". "Switching agents affects
+      only later runs."
+    - Observation: images ("gpt-image-2, ImageRouter, custom API"), video and audio are
+      listed; how their keys are set up is not documented. Web search is not documented.
+    - Observation: where a BYOK key is kept, and whether it is shown again, is not
+      documented. `OD_API_TOKEN` (access to open-design) and `BYOK_API_KEY` (access to the
+      provider) are separate.
+    - Observation: `docs/agent-adapters.md` says the BYOK path runs the OpenCode CLI
+      (`byok-opencode`); `README.md` still describes a direct BYOK proxy.
+    - Inference: open-design itself uses OpenCode for BYOK, so OpenCode likely owns the
+      provider call and its model list there. Not checked.
+    - => DeckAgent UC-005 matches open-design on: the user's own key, a custom compatible
+      endpoint, the user choosing the image service, a model ID typed by hand, and a model
+      change that applies only to later runs.
+    - => DeckAgent differs, by owner ruling or by choice: it always checks the key before
+      saving (05-11-2026), offers fewer built-in providers (a local model service goes
+      through a custom model API), gets a model catalog from the provider, and sets up web
+      search as an outside service.
+    - Proposal: the runtime research of the first build that touches models checks how
+      OpenCode keeps keys and lists models, since open-design already relies on it.

@@ -52,6 +52,11 @@ Removed FR IDs:
 - FR-035, 04-11-2026, merged into FR-031.
 - FR-047, 04-11-2026, merged into FR-019.
 - FR-056, 04-11-2026, merged into FR-046.
+- FR-057, 05-11-2026, merged into FR-041 (display-name rules dropped).
+- FR-061, 05-11-2026, merged into FR-041.
+- FR-062, 05-11-2026, dropped: no restore of default models; reconsidered if runtime research finds no model catalog.
+- FR-064, 05-11-2026, merged into FR-063.
+- FR-081, 05-11-2026, dropped: no editing of model settings by hand; reconsidered if runtime research finds no model catalog.
 - FR-086, 04-11-2026, merged into FR-067.
 - FR-108, 04-11-2026, merged into FR-107.
 - FR-114, 04-11-2026, merged into FR-113.
