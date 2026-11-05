@@ -2,8 +2,7 @@
 id: DEC-005
 title: "The model writes the deck source within a template; code makes the theme and checks"
 date: 04-11-2026
-status: revisiting
-revisited_by: DEC-007
+status: decided
 research: "dev/research/open-design-design-systems.md; owner ruling in the UC-002 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-022, FR-092, FR-093, FR-107, FR-131, BR-003, NFR-009; replaces DEC-002"
 ---
@@ -83,3 +82,8 @@ open-design:
   and checks it uses.
 - Open with the review of legacy UC-007: whether the check also applies to a change by
   hand, such as a colour outside the theme.
+- Amended on 05-11-2026 by [DEC-007](DEC-007-how-a-design-system-bounds-the-deck.md): setting C2
+  is replaced by DEC-007 option 1B (a layout of the template that code finds fitting, or a
+  new one when none fits); setting C3 widens (the theme of a deck also changes when the
+  user adds a colour or a font to it); C1 no longer counts a colour or a font the user chose
+  as a fault. Option C stays.

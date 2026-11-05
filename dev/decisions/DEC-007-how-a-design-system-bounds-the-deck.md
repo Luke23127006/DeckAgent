@@ -2,7 +2,7 @@
 id: DEC-007
 title: "How the template and the design system bound the model, and a colour or font the user asks for"
 date: 05-11-2026
-status: open
+status: decided
 research: "dev/research/open-design-design-systems.md items 3, 5 and 7; owner ruling after the UC-010 check, 05-11-2026"
 affects: "FR-022, FR-092, FR-093, FR-107, UC-002 A8, A19 and A21, glossary (template, theme), DEC-005 setting C2"
 ---
@@ -47,16 +47,64 @@ Only what the model chooses by itself must come from the theme.
 
 ## Choice
 
-<!-- Left to the PO. -->
+Option 1B and option 2C:
+
+- 1B: each layout of a template states the kinds of content it serves and how much it
+  holds. Code picks the layouts that fit the planned content of a slide; the model chooses
+  among them and fills the slots. Only when none fits does the model make a new layout,
+  within the theme and checked like every slide. A request is allowed to ask for another
+  layout of a slide.
+- 2C: for a colour or a font the theme of the deck does not hold, the system makes the
+  rest of the change, then asks at the end whether to use it only where the request names
+  it or to add it to the theme of the deck, with both as suggested answers. Choosing an
+  answer sends it as a new request. A colour or a font the user chose is never a fault of
+  the check (FR-092).
+- A colour or a font added this way goes into the theme of the deck only; the design system
+  stays as it was (it changes in UC-010). It is kept when the deck changes its design
+  system (FR-093).
 
 ## Why
 
-<!-- Left to the PO. -->
+PO rulings of 05-11-2026, in the discussion after the UC-010 check:
+
+- Setting C2 of DEC-005 limited the model to the layouts of the template, but no check
+  enforces it. DeckAgent has no ecosystem of templates like open-design, so few templates
+  would make every deck narrow, with no guarantee in return.
+- A goal of the project is a result close between a weak and a strong model; the user
+  brings their own model (BYOK). Starting from a template keeps a floor of quality for any
+  model, and letting code pick the layouts that fit moves the hardest design choice out of
+  the model. 1C would put the whole design on the model and widen that gap.
+- A new layout when none fits keeps the freedom the model needs, as open-design does: its
+  rule "don't write slides from scratch" is guidance to the agent, with no check after the
+  write.
+- The colour or font of a slide is the user's choice. Refusing it (UC-002 A19) was too
+  strict, and a later change by hand (legacy UC-007) would be hard to manage under a rule
+  that counts the user's choice as a fault. The model's own choices stay inside the theme,
+  so the deck keeps its design system.
+- The system asks as other agent systems do: a question with suggested answers ends the
+  request, and the chosen answer is a new request (FR-014, FR-031).
+- Written by the agent at the PO's request on 05-11-2026, from the PO's rulings 1B and 2C
+  and the follow-up rulings in the same discussion.
 
 ## Rejected options and why
 
-<!-- Left to the PO. -->
+- 1A: the most even look, but it limits the model to few layouts with no check behind the
+  limit.
+- 1C: the most freedom, but the whole design depends on the model, which widens the gap
+  between a weak and a strong model; not measured.
+- 2A: applies the colour at once but decides for the user whether it joins the theme.
+- 2B: every colour used once grows the theme of the deck.
 
 ## Consequences
 
-<!-- Left to the PO. -->
+- DEC-005 setting C2 no longer holds; it is replaced by 1B. Setting C3 widens: the theme
+  of a deck also changes when the user adds a colour or a font to it.
+- FR-022, FR-092, FR-093 and FR-107, UC-002 A8, A19 and A21, and the glossary terms
+  "template" and "theme" are written from this decision.
+- How a layout states its kinds of content and its capacity, and whether the outline
+  records the kind of content of each slide, are set in Phase 1 research or the Phase 3
+  plan of the first build.
+- The Phase 1 spike of DEC-005 also counts the slides for which no layout fits, and
+  compares a weak and a strong model.
+- The review of legacy UC-007 applies the same rule to a change by hand: the user's choice
+  is never a fault.
