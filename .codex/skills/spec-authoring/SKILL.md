@@ -15,7 +15,7 @@ The **rules live in three files**. **Read them before writing**; **do not restat
 
 There is **one spec**, `dev/mvp/spec/` (dev/mvp/WORKFLOW.md "Spec rules"). **Every change needs the PO's approval**.
 
-- A **use case** keeps its **Steps table and its alternatives** with a **one-line `When`** each; an **FR or NFR** keeps its **Statement only**; a **BR** keeps its **rule and values**.
+- A **use case** keeps its **interaction diagram**, its **Steps table** and its **alternatives** with a **one-line `When`** each; an **FR or NFR** keeps its **Statement only**; a **BR** keeps its **rule and values**.
 - **No acceptance criteria and no measures**: those are written in the **testing plan of a build** (skill `testing-plan`).
 - A **new behavior claims its ID here** **before a build uses it**.
 
@@ -45,13 +45,13 @@ A use case **explores behavior the product could have**. A flow taken from a res
 - **Split a long sentence** into **one action per sentence**.
 - Check that **each term in the text is in the glossary**; each field is **at most 7 lines**.
 - Check that **evidence tags are on their own line**.
-- Check the **Markdown form** (`_STYLE.md` rule 9, AGENTS.md "Writing Markdown"): each paragraph or list item **on one line**, **no hard wrap**; each sentence **bolds its keywords**, **never a whole sentence**.
+- Check the **Markdown form** (`_STYLE.md` rule 9, AGENTS.md "Writing Markdown"): each paragraph or list item **on one line**, **no hard wrap**; each sentence **bolds its keywords**, **never a whole sentence**. The **interaction diagram has no bold**: Mermaid shows `**` as is.
 - Check that the file **holds no history** (`_STYLE.md` rule 12): no change log, no "merged from", no ruling date. **What changed goes in the report and the commit message**.
-- Use case: **run the interface check** in `_STYLE.md` (rule 11, UCG-09) over the **whole file** except the frontmatter and the generated block. **Rewrite each hit as intent or response**, then **apply the swap test** to every User, When, and System sentence.
+- Use case: **run the interface check** in `_STYLE.md` (rule 11, UCG-09) over the **whole file** except the frontmatter. **Rewrite each hit as intent or response**, then **apply the swap test** to every User, When, and System sentence.
 
-## Use case: end with the diagram
+## Use case: check the diagram and the table
 
-**After the last edit to a use case**, **run [use-case-sequence](../use-case-sequence/SKILL.md)** on the file. **Do not hand-edit the generated block**.
+**After the last edit to a use case**, check that the **interaction diagram** and the **Steps table** hold the **same step IDs in the same order** (UCG-03), that **each line starts with its `[Sx]`**, that the **init line matches the template**, and that **no line holds `;` or `**`**. If `npx` is available, **check the syntax with the Mermaid CLI**; **say whether it ran**.
 
 ## Report
 

@@ -5,33 +5,33 @@ title: ""
 
 <!-- A use case models product behavior for one user goal reached in a single sitting (UCG-01).
      Write per dev/mvp/spec/_STYLE.md. Write intent and response, not interface (rule 11, UCG-09).
-     The interaction diagram is a view generated from the Steps table and Alternative flows; do not hand-edit it (MG-02). -->
+     The interaction diagram holds the text of each step; the Steps table maps each step to its FRs (UCG-03). -->
 
 ## Interaction diagram
 
-<!-- Generated from the Steps table and Alternative flows. Do not edit between the markers. -->
+<!-- The source of each step's text. Per step S1, S2, ... in order: one U->>S line, then one Note over U,S line, each starting with the step ID.
+     U->>S: the user's intent ("Pick a story"), not an action on a control.
+     Note over U,S: what the system does that the user observes; no "if", no settings, no interface. Cite values with [BR-xxx]/[NFR-xxx]; not written yet: [BR-?: topic].
+     No ";" (it breaks the diagram) and no "**" (Mermaid shows it as is). Keep the init line unchanged (MG-05). -->
 
-<!-- BEGIN generated: use-case-sequence -->
 ```mermaid
+%%{init: {"fontFamily": "inherit", "sequence": {"wrap": true, "actorMargin": 350, "messageFontSize": 14, "noteFontSize": 14, "actorFontSize": 14, "noteAlign": "left"}}}%%
 sequenceDiagram
   participant U as User
   participant S as System
-  U->>S: user intent [S1]
-  S-->>U: system response [S1]
+  U->>S: [S1] user intent
+  Note over U,S: [S1] system response
 ```
-<!-- END generated: use-case-sequence -->
 
 ## Steps
 
-<!-- This table is the source of truth; the diagram above is generated from it. One row per step S1, S2, ... in order.
-     User: intent ("Pick a story"), not an action on a control.
-     System: what the user observes; no "if", no settings, no interface. Cite values with [BR-xxx]/[NFR-xxx]; not written yet: [BR-?: topic].
-     FR: the functional requirement ID for this response, or FR-? when there is no FR yet. A response can have several FRs. Leave blank when the step needs no FR of its own.
+<!-- One row per step of the diagram: same IDs, same order.
+     FR: the functional requirement ID for the system response, or FR-? when there is no FR yet. A response can have several FRs. Leave blank when the step needs no FR of its own.
      Evidence: a tag from _STYLE.md, only when the step claims something about the product. Leave blank if not. -->
 
-| Step | User | System | FR | Evidence |
-|---|---|---|---|---|
-| S1 |  |  | FR-? |  |
+| Step | FR | Evidence |
+|---|---|---|
+| S1 | FR-? |  |
 
 ## Alternative flows
 

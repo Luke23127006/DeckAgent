@@ -1,6 +1,6 @@
 # Spec writing rules
 
-Applies to **every file** in `dev/mvp/spec/`. Rules 5 and 7 apply to the **`System` and `When` fields** of a use case. Rule 11 applies to the **whole use case**. Rule 12 applies to **every file**.
+Applies to **every file** in `dev/mvp/spec/`. Rules 5 and 7 apply to the **`System` and `When` fields** of a use case; the **System text of a step** is its `Note over U,S` line in the interaction diagram. Rule 11 applies to the **whole use case**. Rule 12 applies to **every file**.
 
 **Why:** each sentence must have **one meaning**, so **one system response becomes one testable requirement**. **Everyday words do both**.
 
@@ -114,7 +114,7 @@ There is **no tool yet**, so **review does this**. There are **two groups of che
 handle|manage|support|ensure|process|carry out|appropriate|properly|smoothly|can|could|should|might|may
 ```
 
-**Interface (rule 11).** Run on the **whole use case**, except the frontmatter, the generated block, and the `Research link` line. Each hit is **rewritten as intent or response**. A hit that is **not interface language** (e.g. "right" in "right-to-left text") gets a **recorded reason**.
+**Interface (rule 11).** Run on the **whole use case**, except the frontmatter and the `Research link` line. Each hit is **rewritten as intent or response**. A hit that is **not interface language** (e.g. "right" in "right-to-left text") gets a **recorded reason**.
 
 ```
 button|click|tap|swipe|scroll|menu|dropdown|dialog|popup|tab|sidebar|toolbar|card|chip|icon|toggle|checkbox|screen|page|corner|above|below|left|right|label|input field

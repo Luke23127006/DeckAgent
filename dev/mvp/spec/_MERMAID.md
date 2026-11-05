@@ -1,6 +1,6 @@
 # Gate: Mermaid
 
-Applies to **every Mermaid diagram** embedded in `dev/mvp/spec/` (the use case sequence diagram and any other flowchart or state diagram). A diagram is a **view**: the **source of truth is the text blocks**. **Never hand-edit a diagram** to make it "match".
+Applies to **every Mermaid diagram** embedded in `dev/mvp/spec/` (the use case sequence diagram and any other flowchart or state diagram). A diagram is a **view**: the **source of truth is the text blocks**. **Never hand-edit a diagram** to make it "match". **One exception**: the **use case interaction diagram is the source** of each step's text (`02-use-cases/_CRITERIA.md` UCG-03), and it draws the **main flow only**; MG-02, MG-03, MG-06 and MG-09 **do not apply to it**.
 
 "Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review currently does both Lint and CI**.
 
@@ -10,7 +10,7 @@ Applies to **every Mermaid diagram** embedded in `dev/mvp/spec/` (the use case s
 | MG-02 | The diagram is a view. The source block is the truth. Change the source, then regenerate the diagram — do not edit the diagram to match the source | Two sources drifting apart | CI |
 | MG-03 | Each participant/node/message maps 1-to-1 to a source element. Nothing extra, nothing missing, nothing duplicated | The diagram ceasing to be a faithful view | CI |
 | MG-04 | Labels are short, single-meaning, and follow the language policy (`_STYLE.md`); IDs stay in English | A label two readers read two ways | Review |
-| MG-05 | No hardcoded colors, theme, class, HTML, or style. Readable on both light and dark backgrounds | A diagram that only looks right on one theme | Lint |
+| MG-05 | No hardcoded colors, theme, class, HTML, or style. An `init` line may set **layout and text only**: wrap, margins, font size, font family `inherit`, alignment. Readable on both light and dark backgrounds | A diagram that only looks right on one theme | Lint |
 | MG-06 | Branches use the right Mermaid structure (`alt`/`opt`/`loop`), not "flattened" in a way that loses meaning. A branch that does not express cleanly (e.g. "back to S2") is noted under the diagram | A branch lost when drawn | Review |
 | MG-07 | Arrow direction is correct (user → system is a request, system → user is a response). Each participant is declared exactly once | Wrong direction misreading the interaction | Review |
 | MG-08 | The diagram answers the main question at a glance. Secondary detail stays in prose | The diagram becoming a wall of text | Review |

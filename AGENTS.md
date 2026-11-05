@@ -83,7 +83,6 @@ Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a lig
 | Task | Skill |
 |---|---|
 | Write or rewrite a spec file | `spec-authoring` |
-| Generate UC sequence diagram | `use-case-sequence` |
 | Generate research questions for a build | `research-questions` |
 | Generate a testing plan (tiers, test types) | `testing-plan` |
 | Create GitHub Issues from a plan | `ticket-writer` |

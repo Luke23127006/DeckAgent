@@ -199,31 +199,15 @@
       "status": "installed"
     },
     {
-      "name": "use-case-sequence",
-      "source_repository": "repository-local",
-      "source_path": null,
-      "installed_path": ".agents/skills/use-case-sequence",
-      "decision": "Create",
-      "reason": "Keep the generated sequenceDiagram of each use case in step with its Steps table and Alternative flow blocks, by fixed parsing rules instead of free drawing. Authored in this repository because no external skill reads this template.",
-      "compatibility": "Tool-neutral instructions. spec-authoring calls it as its last step; agents find it through the skill routing table in AGENTS.md.",
-      "dependencies": [
-        "Optional Mermaid CLI (npx) for a syntax check."
-      ],
-      "reviewed_resources": [
-        "SKILL.md"
-      ],
-      "status": "installed"
-    },
-    {
       "name": "spec-authoring",
       "source_repository": "repository-local",
       "source_path": null,
       "installed_path": ".agents/skills/spec-authoring",
       "decision": "Create",
       "reason": "Write or rewrite use case and user segment files from the folder template, criteria and dev/mvp/spec/_STYLE.md without copying those rules into the skill.",
-      "compatibility": "Tool-neutral instructions. Calls use-case-sequence as its last step for use cases.",
+      "compatibility": "Tool-neutral instructions. Checks that a use case's interaction diagram and Steps table hold the same steps.",
       "dependencies": [
-        "use-case-sequence"
+        "Optional Mermaid CLI (npx) for a syntax check."
       ],
       "reviewed_resources": [
         "SKILL.md"

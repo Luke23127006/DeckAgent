@@ -28,7 +28,7 @@ All notable changes to this project are recorded here.
 - Phase 0 is MVP planning (build order, milestone `mvp`, walking skeleton); version close became MVP close, followed by a review of the workflow. A review of the workflow follows the first build.
 - "Legacy source" became "Reference code": the legacy code and the OpenCode code on `feat/v2-opencode` are read at a pinned commit; the MVP code is written new, so port tickets and the `legacy:port` label are gone.
 - The research of Claude Slide Design, Napkin AI and OpenDesign (EthanGuo2022) moved from `dev/legacy/` to `dev/mvp/research/evidence/`.
-- Each message of a **use case interaction diagram** now **ends with its step ID** (`[S1]`), so the diagram **maps to the Steps table at a glance**; skill `use-case-sequence` also **strips `**`** from the labels.
+- The **use case interaction diagram is now the source** of each step's text: a **`U->>S` line** for the user and a **`Note over U,S` box** for the system, each **starting with its step ID** (`[S1]`), with a **wider, left-aligned layout**. The **Steps table keeps only Step, FR and Evidence**. The skill `use-case-sequence` that generated the diagram is **removed**; `spec-authoring` **checks that the diagram and the table hold the same steps**.
 
 - The previous docs moved from `docs/` to `dev/legacy/` unchanged; `docs/AGENTS.md` became `dev/legacy/docs-rules.md`.
 - `AGENTS.md`, `CLAUDE.md` and `README.md` replaced by the workflow versions. The README keeps the instructions to run the legacy app.
