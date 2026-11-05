@@ -1,26 +1,21 @@
 # Gate: Non-functional requirement
 
-Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../02-use-cases/`,
-`../fr/`, `../../01-product-vision/`. Rule values: `../../04-business-rules/`.
+Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../02-use-cases/`, `../fr/`, `../../01-product-vision/`. Rule values: `../../04-business-rules/`.
 
 ## 1. What an NFR is, and is not
 
-**An NFR is a product-level quality constraint.** It says how fast, reliable, secure,
-private, accurate, or accessible the product must be, under a stated condition. It is
-verified by a measure against a target, or by a check of a required property.
+**An NFR is a product-level quality constraint.** It says **how fast, reliable, secure, private, accurate, or accessible** the product must be, **under a stated condition**. It is **verified by a measure against a target**, or by a **check of a required property**.
 
 ### When to write an NFR
 
-A measurable quantity does not need an NFR on its own. Write one only when all four hold:
+A **measurable quantity does not need an NFR** on its own. **Write one only when all four hold**:
 
-1. A product commitment needs that quality, or a stated product risk justifies it.
-2. The quality is measurable or checkable.
-3. It adds an independent product-level quality constraint; it does not just repeat an FR's behavior or acceptance criterion.
-4. The target changes product quality for the user. The user need not see it: security, privacy, and reliability constraints protect the user without being visible.
+1. A **product commitment needs that quality**, or a **stated product risk justifies it**.
+2. The quality is **measurable or checkable**.
+3. It adds an **independent product-level quality constraint**; it **does not just repeat an FR's behavior** or acceptance criterion.
+4. The target **changes product quality for the user**. The user **need not see it**: security, privacy, and reliability constraints **protect the user without being visible**.
 
-A quantity that fails the first test stays in an FR, the UI, or engineering work.
-Behavior with security meaning (like not showing a key) is an FR. A model-output quality
-target is an NFR only when you make it a product commitment.
+A quantity that **fails the first test** **stays in an FR, the UI, or engineering work**. **Behavior with security meaning** (like not showing a key) **is an FR**. A **model-output quality target** is an NFR **only when you make it a product commitment**.
 
 ### Where content belongs
 
@@ -36,46 +31,37 @@ target is an NFR only when you make it a product commitment.
 
 ### Granularity and measures
 
-- **One NFR** covers one quality attribute for one cohesive part of the product.
-- **Several measures** can share one NFR when they check the same quality under different conditions.
-- **Split** an NFR that bundles several quality attributes, or a product part that changes for unrelated reasons.
-- **No duplicate.** Before writing, search the folder for existing statements.
+- **One NFR** covers **one quality attribute** for **one cohesive part** of the product.
+- **Several measures** can share one NFR when they **check the same quality under different conditions**.
+- **Split** an NFR that **bundles several quality attributes**, or a product part that **changes for unrelated reasons**.
+- **No duplicate.** Before writing, **search the folder** for existing statements.
 
-Measures are written in the testing plan of the build that takes the NFR
-(`dev/mvp/WORKFLOW.md` "Spec rules"), not in the NFR file. Each measure is a `### M-n · name` block with Condition, Measure, How to measure, Target,
-Passes when. `Condition`, `Measure`, `How to measure` must be clear enough to verify;
-`Target` and `Passes when` may be `not set` while pending. Do not guess a number, a
-range, or "about" (NFG-04).
+**Measures are written in the testing plan** of the build that takes the NFR (`dev/mvp/WORKFLOW.md` "Spec rules"), **not in the NFR file**. Each measure is a `### M-n · name` block with **Condition, Measure, How to measure, Target, Passes when**. `Condition`, `Measure`, `How to measure` must be **clear enough to verify**; `Target` and `Passes when` **may be `not set`** while pending. **Do not guess a number**, a range, or "about" (NFG-04).
 
 ### IDs and files
 
-- One NFR per file: `NFR-xxx.md`. `xxx` is three digits. The `id` equals the file name.
-- A new ID is the next free ID below; a number below it with no file is not used. An ID does not change when the title or target changes, is not reused, and is not renumbered.
-- An ID is dropped only when the requirement leaves the behavior model or is merged into another NFR. Its file is deleted; its number is not used again.
-- A requirement left for later is parked in `../../05-backlog/`, not dropped.
-- Measure IDs are `M-1`, `M-2` within one NFR, not renumbered.
+- **One NFR per file**: `NFR-xxx.md`. `xxx` is **three digits**. The `id` **equals the file name**.
+- A **new ID is the next free ID** below; a number below it with no file is **not used**. An ID **does not change** when the title or target changes, is **not reused**, and is **not renumbered**.
+- An ID is **dropped only** when the requirement **leaves the behavior model** or is **merged into another NFR**. Its **file is deleted**; its **number is not used again**.
+- A requirement **left for later is parked** in `../../05-backlog/`, **not dropped**.
+- **Measure IDs** are `M-1`, `M-2` **within one NFR**, **not renumbered**.
 
-Next free NFR ID: NFR-016.
+**Next free NFR ID: NFR-016**.
 
 ### Links
 
-Links are top-down only. A use case (System or When), an FR, or the vision cites an NFR
-with `[NFR-xxx]`.
+**Links are top-down only**. A use case (System or When), an FR, or the vision **cites an NFR** with `[NFR-xxx]`.
 
-- An NFR does not name a use case, step, branch, FR, or another NFR. It may cite a BR in a Condition.
-- To find what cites an NFR, search for its ID in the spec files.
+- An NFR **does not name a use case**, step, branch, FR, or another NFR. It **may cite a BR in a Condition**.
+- To **find what cites an NFR**, **search for its ID** in the spec files.
 
 ### One source of truth
 
-A target lives in exactly one NFR. A use case, FR, or vision never states it or
-interprets it into a number; they cite the ID. The marker `[NFR-?: topic]` is replaced by
-`[NFR-xxx]` only when the NFR fully covers the marker's meaning; on partial coverage the
-marker stays and the missing part is reported.
+A **target lives in exactly one NFR**. A use case, FR, or vision **never states it** or **interprets it into a number**; they **cite the ID**. The marker `[NFR-?: topic]` is **replaced by `[NFR-xxx]` only when the NFR fully covers** the marker's meaning; on **partial coverage the marker stays** and the **missing part is reported**.
 
 ## 2. Criteria
 
-"Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment,
-*CI* = cross-check. There is no tool yet, so review does both Lint and CI.
+"Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review does both Lint and CI**.
 
 | ID | Criterion | Prevents | Check |
 |---|---|---|---|
@@ -93,16 +79,11 @@ marker stays and the missing part is reported.
 
 **NFG-05: a product-controlled measure.**
 
-> NFR-000 · Quality attribute: performance · Statement: the user sees the system start
-> listening right after picking a chapter.
-> M-1 · Condition: the chapter already has audio on the device, network stable. Boundary:
-> product-controlled — measure only up to the system starting playback, not the provider
-> time to generate new audio.
-> Measure: time from picking a chapter to audio starting. How to measure: repeat picking
-> the same chapter.
+> NFR-000 · Quality attribute: performance · Statement: the user sees the system start listening right after picking a chapter.
+> M-1 · Condition: the chapter already has audio on the device, network stable. Boundary: product-controlled — measure only up to the system starting playback, not the provider time to generate new audio.
+> Measure: time from picking a chapter to audio starting. How to measure: repeat picking the same chapter.
 
 **NFG-02: not every quantity is an NFR.**
 
-> Fail: an NFR fixing the system's runtime memory use. No product commitment or risk needs
-> it.
+> Fail: an NFR fixing the system's runtime memory use. No product commitment or risk needs it.
 > Pass: no NFR. The team tracks it as engineering work, outside the spec.

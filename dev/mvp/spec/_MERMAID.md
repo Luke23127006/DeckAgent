@@ -1,11 +1,8 @@
 # Gate: Mermaid
 
-Applies to every Mermaid diagram embedded in `dev/mvp/spec/` (the use case sequence
-diagram and any other flowchart or state diagram). A diagram is a **view**: the source
-of truth is the text blocks. Never hand-edit a diagram to make it "match".
+Applies to **every Mermaid diagram** embedded in `dev/mvp/spec/` (the use case sequence diagram and any other flowchart or state diagram). A diagram is a **view**: the **source of truth is the text blocks**. **Never hand-edit a diagram** to make it "match".
 
-"Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment,
-*CI* = cross-check. There is no tool yet, so review currently does both Lint and CI.
+"Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review currently does both Lint and CI**.
 
 | ID | Criterion | Prevents | Check |
 |---|---|---|---|
@@ -24,11 +21,8 @@ of truth is the text blocks. Never hand-edit a diagram to make it "match".
 
 **MG-03 and MG-06: faithful diagram with branches.**
 
-> Fail: a sequence diagram draws only the main flow and drops the "lost connection"
-> branch because it is `Returns to S2`.
-> Pass: the main flow is drawn linearly; under the diagram is
-> `*Not drawn (back-to-step branch): A3.*`, and block `A3` still keeps its full
-> `At/Ends/When/System`.
+> Fail: a sequence diagram draws only the main flow and drops the "lost connection" branch because it is `Returns to S2`.
+> Pass: the main flow is drawn linearly; under the diagram is `*Not drawn (back-to-step branch): A3.*`, and block `A3` still keeps its full `At/Ends/When/System`.
 
 **MG-04: single-meaning label, not interface.**
 

@@ -1,18 +1,12 @@
 # Gate: Use case
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children:
-`../03-requirements/fr/`, `../03-requirements/nfr/`, `../04-business-rules/`.
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../03-requirements/fr/`, `../03-requirements/nfr/`, `../04-business-rules/`.
 
 ## 1. What a use case is, and is not
 
-**A use case models product behavior for one user goal reached in a single sitting.** It
-says what the user does and how the product responds observably. Each system response is
-a candidate functional requirement. Each alternative flow is a candidate error/edge
-requirement. Each rule or quality target a step depends on is cited here and defined
-elsewhere.
+**A use case models product behavior for one user goal reached in a single sitting.** It says **what the user does** and **how the product responds observably**. **Each system response** is a **candidate functional requirement**. **Each alternative flow** is a **candidate error/edge requirement**. Each **rule or quality target** a step depends on is **cited here and defined elsewhere**.
 
-**A flow records behavior to consider, not a commitment to build it.** A use case
-explores broadly. Evidence says where an idea came from; it does not choose anything.
+**A flow records behavior to consider, not a commitment to build it.** A use case **explores broadly**. **Evidence says where an idea came from**; it **does not choose anything**.
 
 ### Where content belongs
 
@@ -27,41 +21,32 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 
 ### Link direction: top-down only
 
-- The vision (`../01-product-vision/`) is the parent. It does not list use cases; to find the parent, read the vision.
-- A use case cites requirement, NFR, and rule IDs. Requirements, NFRs, and rules never cite a use case, step, or branch.
-- A use case links the research items that support it. A research item does not name a use case.
+- The **vision** (`../01-product-vision/`) is the **parent**. It **does not list use cases**; to find the parent, **read the vision**.
+- A use case **cites requirement, NFR, and rule IDs**. Requirements, NFRs, and rules **never cite a use case**, step, or branch.
+- A use case **links the research items** that support it. A **research item does not name a use case**.
 
 ### Use case IDs
 
-- One ID (`UC-xxx`) names a use case file. A flow ID (`Sx`, `Ax`) names a block in the file.
+- **One ID** (`UC-xxx`) **names a use case file**. A **flow ID** (`Sx`, `Ax`) **names a block** in the file.
 - The namespace is `dev/mvp/spec/`.
-- An ID never moves to a different goal or is reused, even after a file is deleted.
-- A new ID is the next free ID below. A number below it with no file, in this folder or in `../05-backlog/`, is not used.
-- A use case or a flow left for later is parked in `../05-backlog/`, not removed. A parked flow keeps its ID free in its use case, and the use case names it in a Note line only.
-- IDs are not renumbered.
+- An ID **never moves to a different goal** or is **reused**, even after a file is deleted.
+- A **new ID is the next free ID** below. A number below it with no file, in this folder or in `../05-backlog/`, is **not used**.
+- A use case or a flow **left for later is parked** in `../05-backlog/`, **not removed**. A **parked flow keeps its ID free** in its use case, and the use case **names it in a Note line only**.
+- IDs are **not renumbered**.
 
-Next free use case ID: UC-020.
+**Next free use case ID: UC-020**.
 
-Layer: in the spec (`dev/mvp/spec/`) each alternative keeps At, Ends, When and FR, with
-System in one line. Detailed responses live in the acceptance criteria of the testing
-plan of a build (dev/mvp/WORKFLOW.md "Spec rules"). Notes stay short: a design choice is one line that links its proposal in
-`dev/mvp/decisions/`, never the reasoning itself.
+**Layer**: in the spec (`dev/mvp/spec/`) each alternative keeps **At, Ends, When and FR**, with **System in one line**. **Detailed responses** live in the **acceptance criteria of the testing plan** of a build (dev/mvp/WORKFLOW.md "Spec rules"). **Notes stay short**: a **design choice is one line** that **links its proposal** in `dev/mvp/decisions/`, **never the reasoning itself**.
 
 ## 2. Evidence tags
 
-A claim about product behavior uses a tag from `../_STYLE.md` (`[observed: <source>]`,
-`[inferred: <source>]`, `[assumed]`). For product coverage, the source is a research item
-or transcript under `dev/mvp/research/`. A flow nobody has recorded is `unverified` and its
-steps keep `[assumed]`.
+A **claim about product behavior uses a tag** from `../_STYLE.md` (`[observed: <source>]`, `[inferred: <source>]`, `[assumed]`). For product coverage, the **source is a research item or transcript** under `dev/mvp/research/`. A **flow nobody has recorded** is `unverified` and its steps **keep `[assumed]`**.
 
-Evidence says where a flow or response came from. It is not a decision to build it. A
-research item showing behavior in another product does not bring that behavior into
-scope.
+**Evidence says where a flow or response came from**. It is **not a decision to build it**. A research item showing behavior in another product **does not bring that behavior into scope**.
 
 ## 3. Criteria
 
-"Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment,
-*CI* = cross-check. There is no tool yet, so review does both Lint and CI.
+"Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review does both Lint and CI**.
 
 | ID | Criterion | Prevents | Check |
 |---|---|---|---|
@@ -86,11 +71,9 @@ scope.
 **UCG-04: detectable branch.**
 
 > Fail: "A1: there is an error. The system shows the error."
-> Pass: "A1 (at S3): connection lost while fetching content. The system keeps the link
-> the user entered and reports it could not fetch."
+> Pass: "A1 (at S3): connection lost while fetching content. The system keeps the link the user entered and reports it could not fetch."
 
 **UCG-09: intent and response, not interface.**
 
 > Fail: "The user clicks the Play button in the bottom corner."
-> Pass: "The user requests playback. The system plays audio from the saved progress
-> position."
+> Pass: "The user requests playback. The system plays audio from the saved progress position."

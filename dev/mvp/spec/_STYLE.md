@@ -1,10 +1,8 @@
 # Spec writing rules
 
-Applies to every file in `dev/mvp/spec/`. Rules 5 and 7 apply to the `System` and `When`
-fields of a use case. Rule 11 applies to the whole use case. Rule 12 applies to every file.
+Applies to **every file** in `dev/mvp/spec/`. Rules 5 and 7 apply to the **`System` and `When` fields** of a use case. Rule 11 applies to the **whole use case**. Rule 12 applies to **every file**.
 
-**Why:** each sentence must have one meaning, so one system response becomes one
-testable requirement. Everyday words do both.
+**Why:** each sentence must have **one meaning**, so **one system response becomes one testable requirement**. **Everyday words do both**.
 
 ## Rules
 
@@ -18,41 +16,30 @@ testable requirement. Everyday words do both.
 | 6 | **Short, active sentences.** One action per sentence. A `[BR-xxx]` citation does not count. | "A message is shown that the job has stopped and how many chapters are done." | "The system shows a message that it has stopped. The message states how many chapters were done." |
 | 7 | **Conditions go in the When field.** A system response has no "if". When behavior differs by step, open with a label: "At S3:", "On reconnect:". | "If the link is invalid, the system rejects it." | When: "The link does not match a source [BR-?]." System: "State the reason." |
 | 8 | **One action per line. At most 7 lines per field.** | One cell of 110 words | One line per thing the user can observe |
-| 9 | **Minimal bold.** Bold one glossary word on its first use in a line. At most 2 per line. | Bold a whole phrase | "Play **audio**." |
+| 9 | **Bold the keywords.** In each sentence, bold the few words or short phrases that carry its meaning, about one per clause (AGENTS.md "Writing Markdown"). Reading only the bold gives the meaning. Never bold a whole sentence. | "**The system keeps the draft when the user leaves the chat.**" or no bold at all | "The system **keeps the draft** when the user **leaves the chat**." |
 | 10 | **Evidence on its own line.** One tag per claim. Never mid-sentence. | "…the screen stays on the first chapter `[observed: …]`, and does not offer the next chapter." | `- **Evidence:** [observed: claude-report (screen stays on first chapter)]` |
 | 11 | **Intent and response, not interface.** The user side says what the user wants. The system side says what the system reports, keeps, changes, or creates. Never name a widget, gesture, position, style, or label. Name a place only by region (see Regions). If an interface detail carries a requirement, write the requirement. | "The user opens the menu and picks a story." "Open the listening view in the bottom corner." "Show a card with a replay button." | "The user picks a story." "Open the listening view. The saved progress and the current audio stay unchanged." "Let the user replay." |
 | 12 | **Current state only, no history.** A file says what is true now. No change log, no "changed vs", "merged from", "rewritten from", "retired", no ruling date and no who decided. No `updated` date. A `Why` gives the reason, not the meeting. History lives in git and `CHANGELOG.md`; a design choice with its options lives in `dev/mvp/decisions/`. | "Legacy FR-020 is dropped. The owner ruled on 04-11-2026 that a reply is a new request." | "A question ends its request; the reply is a new request." |
 
-Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it readable. Rule 11
-keeps the spec correct when the design changes. Rule 12 keeps it cheap to maintain.
+Rules 4 to 7 keep a response **testable**. Rules 1 to 3 and 6 keep it **readable**. Rule 11 keeps the spec **correct when the design changes**. Rule 12 keeps it **cheap to maintain**.
 
 ## Evidence tags
 
-One tag per claim. Keys stay in English so they are greppable; the source content is
-written in prose:
+**One tag per claim**. **Keys stay in English** so they are **greppable**; the **source content is written in prose**:
 
 - `[observed: <source> (<what it shows>)]` — seen in a transcript or product
 - `[inferred: <source>]` — inferred from observed facts
 - `[assumed]` or `[assumed: <what>]` — no evidence yet
 
-In a list (usage context, knowledge, …), the last line can be a single
-`- **Evidence:** [assumed]`. It counts for every item above it without its own Evidence
-line.
+In a list (usage context, knowledge, …), the **last line can be a single** `- **Evidence:** [assumed]`. It **counts for every item above it** without its own Evidence line.
 
 ## Regions
 
-A region is a place that holds one kind of information. It is defined by what it holds,
-never by where it is or what it looks like. The list is closed; each product declares
-its own regions in the glossary. The project has no settled regions yet.
-A use case may say something is shown, kept, or changed in a region. It must not say how
-a region is laid out or navigated to. To add a region, add a row to the glossary and say
-what it holds.
+A **region** is a **place that holds one kind of information**. It is **defined by what it holds**, **never by where it is or what it looks like**. The **list is closed**; each product **declares its own regions in the glossary**. The project has **no settled regions yet**. A use case may say something is **shown, kept, or changed in a region**. It **must not say how a region is laid out** or navigated to. To **add a region**, **add a row to the glossary** and **say what it holds**.
 
 ## Glossary
 
-Use these words for these things. Add a row when a new word is needed. Do not add a
-synonym. A word never names a widget, gesture, position, or style. This table starts
-empty; each project declares its own terms and adds to them as it learns.
+**Use these words for these things**. **Add a row** when a new word is needed. **Do not add a synonym**. A word **never names a widget, gesture, position, or style**. This table **starts empty**; each project **declares its own terms** and adds to them as it learns.
 
 | Term | Meaning |
 |---|---|
@@ -119,24 +106,18 @@ empty; each project declares its own terms and adds to them as it learns.
 
 ## How to check
 
-There is no tool yet, so review does this. There are two groups of checks.
+There is **no tool yet**, so **review does this**. There are **two groups of checks**.
 
-**Wording.** Run on the `System` and `When` fields, and on `Situation and goal`. Each
-hit is fixed or given a recorded reason.
+**Wording.** Run on the `System` and `When` fields, and on `Situation and goal`. Each hit is **fixed or given a recorded reason**.
 
 ```
 handle|manage|support|ensure|process|carry out|appropriate|properly|smoothly|can|could|should|might|may
 ```
 
-**Interface (rule 11).** Run on the whole use case, except the frontmatter, the
-generated block, and the `Research link` line. Each hit is rewritten as intent or
-response. A hit that is not interface language (e.g. "right" in "right-to-left text")
-gets a recorded reason.
+**Interface (rule 11).** Run on the **whole use case**, except the frontmatter, the generated block, and the `Research link` line. Each hit is **rewritten as intent or response**. A hit that is **not interface language** (e.g. "right" in "right-to-left text") gets a **recorded reason**.
 
 ```
 button|click|tap|swipe|scroll|menu|dropdown|dialog|popup|tab|sidebar|toolbar|card|chip|icon|toggle|checkbox|screen|page|corner|above|below|left|right|label|input field
 ```
 
-Then apply the **swap test** to each sentence: imagine the same product with a different
-interface, e.g. touch-only or voice-only. If the sentence is still true, it passes. If
-not, it describes the interface and is rewritten.
+Then apply the **swap test** to each sentence: imagine the **same product with a different interface**, e.g. touch-only or voice-only. If the sentence is **still true, it passes**. If not, it **describes the interface** and is **rewritten**.

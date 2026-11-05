@@ -1,14 +1,10 @@
 # Gate: Backlog
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Kinds it holds: use cases
-(`../02-use-cases/`), flows of a use case, FRs and NFRs (`../03-requirements/`) and
-business rules (`../04-business-rules/`).
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Kinds it holds: use cases (`../02-use-cases/`), flows of a use case, FRs and NFRs (`../03-requirements/`) and business rules (`../04-business-rules/`).
 
 ## 1. What a backlog item is, and is not
 
-**A backlog item is a behavior of the spec that the PO left for later.** It is not in the
-spec, and it is not dropped. It records what the behavior is, why it waits, and
-what is already known about it, so a later look does not start again.
+**A backlog item is a behavior of the spec that the PO left for later.** It is **not in the spec**, and it is **not dropped**. It records **what the behavior is**, **why it waits**, and **what is already known** about it, so a **later look does not start again**.
 
 | State | Where | Meaning |
 |---|---|---|
@@ -25,26 +21,18 @@ what is already known about it, so a later look does not start again.
 
 ### Rules
 
-- **No build takes a backlog item.** To build it, the PO promotes it to the spec first
-  (dev/mvp/WORKFLOW.md "Spec rules", rule 3).
-- **The spec never cites a backlog item.** A spec file names it only in a Note line,
-  in words, with the ID last: "Going back to an earlier state is in the backlog (UC-008)."
-- **A parked use case takes its own requirements with it.** An FR, NFR or BR that only
-  this use case would cite is described inside the same item, not in a file of its own.
-  A requirement that a spec block cites stays in the spec.
-- **A parked flow belongs to one use case.** The use case keeps the flow ID free; its
-  `Notes` names the parked flow.
+- **No build takes a backlog item.** To build it, the **PO promotes it to the spec first** (dev/mvp/WORKFLOW.md "Spec rules", rule 3).
+- **The spec never cites a backlog item.** A spec file **names it only in a Note line**, **in words, with the ID last**: "Going back to an earlier state is in the backlog (UC-008)."
+- **A parked use case takes its own requirements with it.** An FR, NFR or BR that **only this use case would cite** is **described inside the same item**, not in a file of its own. A requirement that **a spec block cites stays in the spec**.
+- **A parked flow belongs to one use case.** The use case **keeps the flow ID free**; its `Notes` **names the parked flow**.
 
 ### IDs and files
 
-- An item keeps the spec ID of its kind: `UC-xxx`, `FR-xxx`, `NFR-xxx` or `BR-xxx`. A flow
-  is `UC-xxx-Ay`. The file name is the ID: `UC-008.md`, `FR-062.md`, `UC-005-A18.md`.
-- The frontmatter `id` equals the file name.
-- A new item takes the next free ID of its kind, named in the `_CRITERIA.md` of that kind.
-- **Promote:** move the item to the folder of its kind, rewrite it per that `_TEMPLATE.md`,
-  keep the ID, and update the citing blocks in the same change. The backlog file is
-  deleted. A flow returns to its use case under the same flow ID.
-- **Drop:** delete the backlog file. Its ID is not used again.
+- An item **keeps the spec ID of its kind**: `UC-xxx`, `FR-xxx`, `NFR-xxx` or `BR-xxx`. A flow is `UC-xxx-Ay`. The **file name is the ID**: `UC-008.md`, `FR-062.md`, `UC-005-A18.md`.
+- The frontmatter `id` **equals the file name**.
+- A **new item takes the next free ID of its kind**, named in the `_CRITERIA.md` of that kind.
+- **Promote:** **move the item to the folder of its kind**, **rewrite it per that `_TEMPLATE.md`**, **keep the ID**, and **update the citing blocks in the same change**. The **backlog file is deleted**. A **flow returns to its use case** under the same flow ID.
+- **Drop:** **delete the backlog file**. Its **ID is not used again**.
 
 ## 2. Criteria
 

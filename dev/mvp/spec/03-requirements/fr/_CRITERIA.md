@@ -1,14 +1,10 @@
 # Gate: Functional requirement
 
-Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../02-use-cases/`
-(the FR column). Rule values: `../../04-business-rules/`. Quality targets: `../nfr/`.
+Template: `_TEMPLATE.md`. Style: `../../_STYLE.md`. Cited by: `../../02-use-cases/` (the FR column). Rule values: `../../04-business-rules/`. Quality targets: `../nfr/`.
 
 ## 1. What an FR is, and is not
 
-**An FR is a testable statement of a system behavior under a stated condition.** It says
-what the system shows, keeps, changes, creates, or rejects. A use case response says what
-the user observes in a journey; an FR adds the precision a test needs: which input, which
-result, which edge case, what stays unchanged.
+**An FR is a testable statement of a system behavior under a stated condition.** It says what the system **shows, keeps, changes, creates, or rejects**. A **use case response** says **what the user observes in a journey**; an **FR adds the precision a test needs**: which input, which result, which edge case, what stays unchanged.
 
 | If the content is... | Then it belongs |
 |---|---|
@@ -19,42 +15,39 @@ result, which edge case, what stays unchanged.
 | How the system achieves a behavior (model, queue, storage, API) | ADR or architecture work |
 | What to build, or how far it is built/tested | Not in the spec. An FR has no progress, priority, or version |
 
-A rule with no value stays in the FR, e.g. "the user cannot start a new session while a
-request is running". A rule with a value goes to `../../04-business-rules/`.
+A **rule with no value stays in the FR**, e.g. "the user cannot start a new session while a request is running". A **rule with a value goes to** `../../04-business-rules/`.
 
 ### Granularity and reuse
 
-- **One FR** has one cohesive purpose; its results belong together and change for the same reason.
-- **Split** an FR when: results can fail independently under meaningfully different conditions; another block needs only part of it; it bundles unrelated responsibilities.
-- **Reuse** an FR when another block needs the same behavior: the same kind of condition, the same expected result.
-- **Same words is not same behavior.** Reuse only when the meaning is the same.
-- **No duplicate FRs.** Before writing, search the folder for existing statements.
-- **Precision.** An FR may mention the core behavior; an acceptance criterion, written in the testing plan of a build (`dev/mvp/WORKFLOW.md` "Spec rules"), adds at least one of: an observable result, a relevant input condition, an edge case, a guarantee that holds, error behavior. An FR that only repeats the use case is not written.
+- **One FR** has **one cohesive purpose**; its results **belong together** and **change for the same reason**.
+- **Split** an FR when: results can **fail independently** under meaningfully different conditions; **another block needs only part of it**; it **bundles unrelated responsibilities**.
+- **Reuse** an FR when another block needs the **same behavior**: the **same kind of condition**, the **same expected result**.
+- **Same words is not same behavior.** **Reuse only when the meaning is the same**.
+- **No duplicate FRs.** Before writing, **search the folder** for existing statements.
+- **Precision.** An FR may mention the **core behavior**; an **acceptance criterion**, written in the **testing plan of a build** (`dev/mvp/WORKFLOW.md` "Spec rules"), **adds at least one of**: an observable result, a relevant input condition, an edge case, a guarantee that holds, error behavior. An FR that **only repeats the use case is not written**.
 
 ### IDs and files
 
-- One FR per file: `FR-xxx.md`. `xxx` is three digits. The frontmatter `id` equals the file name.
-- A new ID is the next free ID below. A number below it with no file, in this folder or in `../../05-backlog/`, is not used.
-- An ID does not change when the title or wording changes, and is not reused.
-- An ID is dropped only when the behavior leaves the behavior model or is merged into another FR. Its file is deleted; its number is not used again.
-- A behavior left for later is parked in `../../05-backlog/`, not dropped.
-- Acceptance criterion IDs are `AC-1`, `AC-2` within one FR, not renumbered. A later build that takes the same FR continues its numbering.
+- **One FR per file**: `FR-xxx.md`. `xxx` is **three digits**. The frontmatter `id` **equals the file name**.
+- A **new ID is the next free ID** below. A number below it with no file, in this folder or in `../../05-backlog/`, is **not used**.
+- An ID **does not change** when the title or wording changes, and is **not reused**.
+- An ID is **dropped only** when the behavior **leaves the behavior model** or is **merged into another FR**. Its **file is deleted**; its **number is not used again**.
+- A behavior **left for later is parked** in `../../05-backlog/`, **not dropped**.
+- **Acceptance criterion IDs** are `AC-1`, `AC-2` **within one FR**, **not renumbered**. A **later build** that takes the same FR **continues its numbering**.
 
-Next free FR ID: FR-141.
+**Next free FR ID: FR-141**.
 
 ### Links
 
-Links are top-down only. A use case cites the FR in the FR column of its Steps table. One
-FR can serve several blocks; one block can cite several FRs.
+**Links are top-down only**. A **use case cites the FR** in the **FR column of its Steps table**. **One FR can serve several blocks**; **one block can cite several FRs**.
 
-- An FR does not name a use case, step, or branch.
-- To find the blocks that use an FR, search for its ID in `../../02-use-cases/`.
-- An FR changes with the blocks it serves. A meaning change to an FR is checked against every block that cites it, in the same change.
+- An FR **does not name a use case**, step, or branch.
+- To **find the blocks that use an FR**, **search for its ID** in `../../02-use-cases/`.
+- An FR **changes with the blocks it serves**. A **meaning change** to an FR is **checked against every block that cites it**, **in the same change**.
 
 ## 2. Criteria
 
-"Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment,
-*CI* = cross-check. There is no tool yet, so review does both Lint and CI.
+"Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review does both Lint and CI**.
 
 | ID | Criterion | Prevents | Check |
 |---|---|---|---|
@@ -73,10 +66,8 @@ FR can serve several blocks; one block can cite several FRs.
 
 **FRG-02: reuse for the same behavior.**
 
-> Fail: one FR "keep progress after stopping" for the first listen, and a second FR with
-> the same meaning for a later listen.
-> Pass: one FR "when interrupted, the saved progress is kept and not overwritten by
-> unfinished progress". Every block that can be stopped cites it.
+> Fail: one FR "keep progress after stopping" for the first listen, and a second FR with the same meaning for a later listen.
+> Pass: one FR "when interrupted, the saved progress is kept and not overwritten by unfinished progress". Every block that can be stopped cites it.
 
 **FRG-09: behavior, not design.**
 

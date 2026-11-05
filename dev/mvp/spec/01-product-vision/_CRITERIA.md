@@ -1,20 +1,14 @@
 # Gate: Product vision
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../02-use-cases/`,
-`../03-requirements/`, `../04-business-rules/`.
+Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../02-use-cases/`, `../03-requirements/`, `../04-business-rules/`.
 
 ## 1. What the vision is, and is not
 
-**The vision defines what the product is, before any other spec file describes what it
-does.** It answers five questions: (1) What is the product? (2) What problem does it
-solve? (3) What main value does it give? (4) What principles guide choices? (5) What
-boundaries belong to the product's nature?
+**The vision defines what the product is, before any other spec file describes what it does.** It answers **five questions**: (1) What is the product? (2) What problem does it solve? (3) What main value does it give? (4) What principles guide choices? (5) What boundaries belong to the product's nature?
 
-**The vision is not a decision log, a feature list, or scope.** It keeps only what stays
-true when scope, interface, or architecture changes (VG-01).
+**The vision is not a decision log, a feature list, or scope.** It keeps **only what stays true** when **scope, interface, or architecture changes** (VG-01).
 
-**The vision does not grow by inference.** Only you confirm a statement. Everything else
-is a proposal or an open question (VG-13). A gap is written as a gap (VG-14).
+**The vision does not grow by inference.** **Only you confirm a statement**. Everything else is a **proposal or an open question** (VG-13). A **gap is written as a gap** (VG-14).
 
 ### Where content belongs
 
@@ -33,35 +27,30 @@ is a proposal or an open question (VG-13). A gap is written as a gap (VG-14).
 
 ### A boundary is not a scope limit
 
-A boundary says what the product is NOT, by its nature. It holds in every release. A
-scope limit says what a release leaves out. Only the former belongs here.
+A **boundary** says what the product **is NOT, by its nature**. It **holds in every release**. A **scope limit** says what a **release leaves out**. **Only the former belongs here**.
 
-> Scope limit (not here): "V1 is web-only."
-> Boundary (here): "The product does not generate story content; it only reads existing
-> content."
+> Scope limit (not here): "V1 is web-only." Boundary (here): "The product does not generate story content; it only reads existing content."
 
-Test: given infinite time, is the statement still true? If not, it is a scope limit.
+**Test**: given **infinite time**, is the statement **still true**? If not, it is a **scope limit**.
 
 ### Confirmed, proposed, open
 
-Each statement has one of two statuses.
+Each statement has **one of two statuses**.
 
 | Status | Meaning | Lower spec may rely on it |
 |---|---|---|
 | `confirmed` | You have said it | Yes |
 | `proposed` | AI suggests it, you have not decided | No |
 
-An open question is a third state: not enough is known to decide.
+An **open question** is a **third state**: **not enough is known to decide**.
 
 ### Link direction: top-down only
 
-The vision is the top of the chain. A lower spec file never names a vision block. To
-check a file against the vision, read the vision.
+The vision is the **top of the chain**. A **lower spec file never names a vision block**. To check a file against the vision, **read the vision**.
 
 ### One source of truth
 
-A fact is written in exactly one block. Other blocks point to it by ID. A term or region
-that `../_STYLE.md` defines is used here, not redefined (VG-06).
+A fact is written in **exactly one block**. Other blocks **point to it by ID**. A term or region that `../_STYLE.md` defines is **used here, not redefined** (VG-06).
 
 ## 2. Sections, blocks, and IDs
 
@@ -74,16 +63,15 @@ that `../_STYLE.md` defines is used here, not redefined (VG-06).
 | Open questions | Any gap | `Q-x` | Question, Affects |
 | Next free IDs | One line per kind | none | `I-x`, `W-x`, `P-x`, `B-x`, `Q-x` |
 
-- `Status` is `confirmed` or `proposed`. Always present.
-- `Source` appears only when `proposed` — says who proposed it and what it was inferred from.
-- `Why` gives the reason, or drop the line. Do not invent a reason.
-- `Spec implications` appears only on a `confirmed` block, and only what follows directly from the statement.
-- IDs are never renumbered or reused. A removed block is deleted; its ID is not used again (VG-05).
+- `Status` is `confirmed` or `proposed`. **Always present**.
+- `Source` appears **only when `proposed`** — says **who proposed it** and **what it was inferred from**.
+- `Why` **gives the reason**, or **drop the line**. **Do not invent a reason**.
+- `Spec implications` appears **only on a `confirmed` block**, and **only what follows directly** from the statement.
+- IDs are **never renumbered or reused**. A **removed block is deleted**; its **ID is not used again** (VG-05).
 
 ## 3. Criteria
 
-"Check" is the intended layer: *Lint* = machine-checkable, *Review* = human judgment,
-*CI* = cross-check. There is no tool yet, so review does both Lint and CI.
+"Check" is the **intended layer**: *Lint* = machine-checkable, *Review* = human judgment, *CI* = cross-check. There is **no tool yet**, so **review does both Lint and CI**.
 
 | ID | Criterion | Prevents | Check |
 |---|---|---|---|
@@ -106,14 +94,10 @@ that `../_STYLE.md` defines is used here, not redefined (VG-06).
 
 **VG-01: nature, not feature.**
 
-> Fail: "The product reads a story chapter into audio." That is a capability; it belongs
-> in a use case.
-> Pass: "The product is a personal novel-listening app, hosted on the Internet, with
-> accounts."
+> Fail: "The product reads a story chapter into audio." That is a capability; it belongs in a use case.
+> Pass: "The product is a personal novel-listening app, hosted on the Internet, with accounts."
 
 **VG-03: boundary, not V1 limit.**
 
-> Fail: "Boundary: no auto-advance to the next chapter." V1 chose not to do it; that is
-> scope.
-> Pass: "Boundary: the product does not generate or own story content; it reads content
-> from a source."
+> Fail: "Boundary: no auto-advance to the next chapter." V1 chose not to do it; that is scope.
+> Pass: "Boundary: the product does not generate or own story content; it reads content from a source."

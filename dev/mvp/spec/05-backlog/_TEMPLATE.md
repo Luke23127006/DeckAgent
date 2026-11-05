@@ -10,8 +10,7 @@ title: ""
 
 ## What it is
 
-<!-- The behavior in plain words: what the user wants and what the system does. A parked use case
-     also lists here the requirements only it would cite. -->
+<!-- The behavior in plain words: what the user wants and what the system does. A parked use case also lists here the requirements only it would cite. -->
 
 ## Belongs to
 

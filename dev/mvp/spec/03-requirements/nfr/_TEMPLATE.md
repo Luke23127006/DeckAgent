@@ -20,8 +20,7 @@ title: ""
 - **Status:** confirmed
 - **Why:**
 
-<!-- No measures here: they are written in the testing plan of the build that takes this
-     NFR (dev/mvp/WORKFLOW.md "Spec rules"). -->
+<!-- No measures here: they are written in the testing plan of the build that takes this NFR (dev/mvp/WORKFLOW.md "Spec rules"). -->
 
 ## Undecided
 
