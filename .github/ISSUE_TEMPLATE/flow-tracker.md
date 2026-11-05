@@ -7,13 +7,13 @@ labels: flow-tracker
 
 ## Scope
 
-- **Version:** vN (milestone)
+- **Milestone:** mvp
 - **Use case:** UC-XXX
 - **Steps:** (e.g. S1-S2, or "all")
 - **Alternatives:** (e.g. A1, A3, or "all")
 - **FRs in scope:** FR-NNN, FR-NNN
 - **NFRs in scope:** NFR-NNN
-- **Build folder:** dev/versions/vN/builds/UC-XXX-short-label/
+- **Build folder:** dev/mvp/builds/UC-XXX-short-label/
 
 ## Phase 1: Research
 <!-- Gate: all research tickets closed; every matrix row has a tier; no orphan RQ -->
@@ -53,6 +53,6 @@ _Post-impl test tickets added alongside the implementation tickets._
 - [ ] Manual checks done by the PO
 
 ### Verified per AC
-<!-- One line per AC, taken from dev/versions/vN/builds/UC-XXX/traceability-matrix.md -->
+<!-- One line per AC, taken from dev/mvp/builds/UC-XXX/traceability-matrix.md -->
 
 _AC list added from the traceability matrix when Phase 6 is reached._

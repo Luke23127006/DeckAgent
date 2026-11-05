@@ -35,13 +35,13 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 ├── src/
 │   ├── ordering/
 │   │   ├── CONTEXT.md
-│   │   └── dev/decisions/                 ← context-specific decisions
+│   │   └── dev/mvp/decisions/                 ← context-specific decisions
 │   └── billing/
 │       ├── CONTEXT.md
-│       └── dev/decisions/
+│       └── dev/mvp/decisions/
 ```
 
-Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `dev/decisions/` exists, create it when the first ADR is needed.
+Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `dev/mvp/decisions/` exists, create it when the first ADR is needed.
 
 ## During the session
 

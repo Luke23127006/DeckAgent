@@ -20,6 +20,12 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- The spec, research, decisions, templates and workflow moved into `dev/mvp/`: the current spec is the MVP spec, with no target/version layers. `dev/mvp/README.md` holds the MVP status. `WORKFLOW.md` moved to `dev/mvp/WORKFLOW.md`.
+- Acceptance criteria and NFR measures are written per build in its testing plan, after research, not in the spec. The FR and NFR templates lost those sections; the testing-plan template gained them.
+- Phase 0 is MVP planning (build order, milestone `mvp`, walking skeleton); version close became MVP close, followed by a review of the workflow. A review of the workflow follows the first build.
+- "Legacy source" became "Reference code": the legacy code and the OpenCode code on `feat/v2-opencode` are read at a pinned commit; the MVP code is written new, so port tickets and the `legacy:port` label are gone.
+- The research of Claude Slide Design, Napkin AI and OpenDesign (EthanGuo2022) moved from `dev/legacy/` to `dev/mvp/research/evidence/`.
+
 - The previous docs moved from `docs/` to `dev/legacy/` unchanged; `docs/AGENTS.md` became `dev/legacy/docs-rules.md`.
 - `AGENTS.md`, `CLAUDE.md` and `README.md` replaced by the workflow versions. The README keeps the instructions to run the legacy app.
 - The skills in `.agents/skills/` replaced by the workflow set (15 skills). The skill manifest now names `use-case-sequence` and lists `commit`.
@@ -27,5 +33,6 @@ All notable changes to this project are recorded here.
 
 ### Removed
 
+- `dev/versions/`, the version spec layer and the `CHANGES.md` template.
 - Legacy documents with no use left: the previous spec (read it on the `docs/spec` branch at `71ff143`), the old agent rules, the docs rules and alignment plan, the duplicate HTML of the OpenDesign report, and the `docs/design/` UX prototype with its CI step (its test file stays with the legacy code). The OpenCodeReview guide moved to `dev/development/`.
 - Legacy UC-011, UC-014 and UC-017 are retired in the target spec; `dev/spec/02-use-cases/_CRITERIA.md` says where each behavior went.

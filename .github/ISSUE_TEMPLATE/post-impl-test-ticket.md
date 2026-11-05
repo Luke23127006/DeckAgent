@@ -7,9 +7,9 @@ labels: phase:post-impl
 
 ## Context
 
-**Version:** vN (milestone)
+**Milestone:** mvp
 **Use case:** UC-XXX
-**Testing plan:** dev/versions/vN/builds/UC-XXX-label/testing-plan.md
+**Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md
 **Flow tracker:** #N
 
 ## Test type

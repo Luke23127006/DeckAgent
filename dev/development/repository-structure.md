@@ -1,6 +1,6 @@
 > **Status: proposal** — This layout depends on stack and architecture decisions not yet
 > made. The directory table below will be updated after the relevant decisions are
-> recorded in `dev/decisions/`.
+> recorded in `dev/mvp/decisions/`.
 
 # Repository structure
 
@@ -29,7 +29,7 @@ project and record the actual directories here.
 | `dev/legacy/` | Read-only documents from before the workflow, including the previous spec. |
 
 **Legacy code.** Today `apps/`, `packages/`, `vendor/`, `scripts/` and the test files
-directly in `tests/` hold the legacy code (AGENTS.md "Legacy source"). Where the code of
+directly in `tests/` hold the legacy code (AGENTS.md "Reference code"). Where the code of
 a workflow version lives is a Phase 3 decision; until it is recorded, do not add new
 code next to the legacy code.
 

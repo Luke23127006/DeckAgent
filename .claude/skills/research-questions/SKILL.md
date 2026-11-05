@@ -9,15 +9,18 @@ Generate the research checklist for a use case build.
 
 ## Input
 
-The PO names a UC or a build scope (e.g., "UC-001"). Use the active version from
-`dev/versions/README.md`. Read these files:
+The PO names a UC or a build scope (e.g., "UC-001"). Read these files:
 
-1. The version spec UC file: `dev/versions/vN/spec/02-use-cases/UC-XXX.md`
-2. Every in-scope FR in `dev/versions/vN/spec/` referenced in the UC's step table and
-   alternative flows.
+1. The use case file: `dev/mvp/spec/02-use-cases/UC-XXX.md`
+2. Every in-scope FR in `dev/mvp/spec/03-requirements/fr/` referenced in the UC's step
+   table and alternative flows.
 3. Every NFR and BR referenced by those FRs or by the UC.
-4. Existing research in `dev/research/` — to avoid asking already-answered questions.
-5. Existing decisions in `dev/decisions/` — to avoid asking already-decided questions.
+4. Existing research in `dev/mvp/research/` — to avoid asking already-answered questions.
+5. Existing decisions in `dev/mvp/decisions/` — to avoid asking already-decided questions.
+6. `dev/mvp/research/open-questions.md` — carry over each open question in scope.
+7. Reference code at a pinned commit, when it implements in-scope behavior
+   (dev/mvp/WORKFLOW.md "Reference code"): fill the checklist's drift inventory, one line
+   per in-scope FR, `match` / `differ` / `missing`. Leave the PO ruling empty.
 
 ## Process
 
@@ -58,8 +61,8 @@ Walk through the flow model step by step. At each node, ask:
 
 6. **Runtime questions.** When a flow node runs through the runtime (OpenCode:
    sessions, tool calls, model calls, streaming, permissions), ask how the runtime
-   handles it and where DeckAgent hooks in — unless `dev/research/` already answers it.
-   This research is mandatory for builds that touch the runtime (WORKFLOW.md "Phase 1").
+   handles it and where DeckAgent hooks in — unless `dev/mvp/research/` already answers it.
+   This research is mandatory for builds that touch the runtime (dev/mvp/WORKFLOW.md "Phase 1").
 7. **LLM boundary questions.** When it is unclear whether a node should call the model
    or use prebuilt, deterministic parts (themes, layouts, animations, renderers), ask
    it as a decision question. The default is deterministic code.
@@ -69,8 +72,8 @@ Walk through the flow model step by step. At each node, ask:
 
 ## Output
 
-Create `dev/versions/vN/builds/UC-XXX-label/research-checklist.md` from the template at
-`dev/templates/research-checklist.md`.
+Create `dev/mvp/builds/UC-XXX-label/research-checklist.md` from the template at
+`dev/mvp/templates/research-checklist.md`.
 
 The checklist has two main sections:
 
@@ -103,27 +106,27 @@ The diagram is the first thing the reader sees — before the question itself.
 
 Create deliverable files for each question:
 - **Research answer:** add a section `## UC-XXX/RQ-N: Title` to the matching topic
-  file in `dev/research/`. Research files are **topic-based containers** — one file
+  file in `dev/mvp/research/`. Research files are **topic-based containers** — one file
   per topic, questions from multiple UCs accumulate in the same file.
-- **Decision record:** create `dev/decisions/DEC-NNN-topic.md` from the template at
-  `dev/decisions/_TEMPLATE.md`, with the **options table pre-filled only**. Leave
+- **Decision record:** create `dev/mvp/decisions/DEC-NNN-topic.md` from the template at
+  `dev/mvp/decisions/_TEMPLATE.md`, with the **options table pre-filled only**. Leave
   `Choice` and `Why` empty — the PO writes those after researching (see
-  WORKFLOW.md "Roles").
+  dev/mvp/WORKFLOW.md "Roles").
 
 Include a **deliverable map** table in the checklist linking each RQ to its file.
 
-Also seed the traceability matrix at `dev/versions/vN/builds/UC-XXX-label/traceability-matrix.md` from
-`dev/templates/traceability-matrix.md` — one row per in-scope FR/AC and NFR, with the
-Tier column seeded from each AC's `Check` field (`deterministic` → ci, `evaluation` →
-eval) — so the spine exists from the start of the build.
+Also seed the traceability matrix at `dev/mvp/builds/UC-XXX-label/traceability-matrix.md` from
+`dev/mvp/templates/traceability-matrix.md` — one row per in-scope FR and NFR, Tier empty
+(acceptance criteria and tiers come in Phase 2) — so the spine exists from the start of
+the build.
 
-Follow WORKFLOW.md "Document rules": front-load the checklist's `## At a glance` block,
+Follow dev/mvp/WORKFLOW.md "Document rules": front-load the checklist's `## At a glance` block,
 keep the template's section order, and reference matrix rows rather than restating
 requirement text.
 
 ## Linking convention
 
-All cross-references must be clickable Markdown links (see WORKFLOW.md "Linking
+All cross-references must be clickable Markdown links (see dev/mvp/WORKFLOW.md "Linking
 convention"). At the start, derive the repo base URL:
 
 ```bash
@@ -134,16 +137,16 @@ git remote get-url origin
 Apply to every output:
 
 - **Research checklist:** Ticket column uses `[#N]({base}/issues/N)`, Deliverable map
-  File column uses `[dev/research/topic.md]({base}/blob/main/dev/research/topic.md)`.
-- **Research files** (`dev/research/`): `**Ticket:** [#N]({base}/issues/N)` and
+  File column uses `[dev/mvp/research/topic.md]({base}/blob/main/dev/mvp/research/topic.md)`.
+- **Research files** (`dev/mvp/research/`): `**Ticket:** [#N]({base}/issues/N)` and
   `**Blocked by:** [#N]({base}/issues/N)`.
-- **Decision files** (`dev/decisions/`): `ticket [#N]({base}/issues/N)`.
+- **Decision files** (`dev/mvp/decisions/`): `ticket [#N]({base}/issues/N)`.
 
 ## Rules
 
 - The agent supplies questions and options tables only. It does **not** answer the
   research questions and does **not** fill the `Choice` or `Why` of a decision
-  record — the PO does that (see WORKFLOW.md "Roles"). This is the one
+  record — the PO does that (see dev/mvp/WORKFLOW.md "Roles"). This is the one
   phase where the human keeps the thinking.
 - Do not generate questions about product requirements — those are settled in the spec.
 - Do not generate questions answerable by reading the spec — read it first.
@@ -152,4 +155,4 @@ Apply to every output:
   the architecture, the test strategy, or the ticket structure.
 - If a question spans multiple FRs, list it once under the most relevant FR and
   cross-reference.
-- Existing answered questions in `dev/research/` are referenced, not duplicated.
+- Existing answered questions in `dev/mvp/research/` are referenced, not duplicated.

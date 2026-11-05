@@ -1,16 +1,16 @@
 ---
 name: Light build
-about: A bug fix or a small change to an existing FR (WORKFLOW.md "Build sizes").
+about: A bug fix or a small change to an existing FR (dev/mvp/WORKFLOW.md "Build sizes").
 title: "Light: "
 labels: build:light
 ---
 
 ## Context
 
-**Version:** vN (milestone)
-**FR / AC:** FR-NNN / AC-N (existing or new; text in `dev/versions/vN/spec/`)
+**Milestone:** mvp
+**FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue)
 **Tier:** ci / eval / manual
-**Matrix row:** dev/versions/vN/builds/_light/traceability-matrix.md
+**Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
 
 ## Problem
 

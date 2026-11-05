@@ -1,8 +1,8 @@
 # ADR Format
 
-ADRs live in `dev/decisions/` and use the project numbering and template: `DEC-NNN-slug.md` from `dev/decisions/_TEMPLATE.md` (AGENTS.md is authoritative).
+ADRs live in `dev/mvp/decisions/` and use the project numbering and template: `DEC-NNN-slug.md` from `dev/mvp/decisions/_TEMPLATE.md` (AGENTS.md is authoritative).
 
-Create the `dev/decisions/` directory lazily: only when the first ADR is needed.
+Create the `dev/mvp/decisions/` directory lazily: only when the first ADR is needed.
 
 ## Template
 
@@ -24,7 +24,7 @@ Only include these when they add genuine value. Most ADRs won't need them.
 
 ## Numbering
 
-Scan `dev/decisions/` for the highest existing DEC number and increment by one.
+Scan `dev/mvp/decisions/` for the highest existing DEC number and increment by one.
 
 ## When to offer an ADR
 

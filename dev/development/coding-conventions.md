@@ -1,7 +1,7 @@
 > **Status: proposal** — These conventions assume TypeScript and a workspace layout
-> that depend on stack choices not yet decided (see `dev/research/stack-and-deployment.md`
+> that depend on stack choices not yet decided (see `dev/mvp/research/stack-and-deployment.md`
 > Q-035). Treat as guidance, not constraint, until the relevant decisions are recorded
-> in `dev/decisions/`.
+> in `dev/mvp/decisions/`.
 
 # Coding conventions
 

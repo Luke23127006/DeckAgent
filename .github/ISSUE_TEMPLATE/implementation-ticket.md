@@ -10,11 +10,11 @@ labels: phase:impl, flash-ready
 <!-- What already exists that the implementer needs to know.
      Include file paths and brief descriptions. Not "see the codebase". -->
 
-**Version:** vN (milestone)
+**Milestone:** mvp
 **Use case:** UC-XXX
 **FR / AC:** FR-NNN / AC-N
-**Decisions:** DEC-NNN (link to dev/decisions/)
-**Plan step:** Step N of dev/versions/vN/builds/UC-XXX-label/implementation-plan.md
+**Decisions:** DEC-NNN (link to dev/mvp/decisions/)
+**Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md
 **Test author:** @handle — must not be the assignee (separation rule)
 **Flow tracker:** #N
 
@@ -31,6 +31,13 @@ labels: phase:impl, flash-ready
 <!-- List files the implementer needs to read or depend on. -->
 
 - `path/to/file.ts` — what it contains
+
+### Reference code
+
+<!-- Only when the plan step names one (dev/mvp/WORKFLOW.md "Reference code"). Read it to
+     understand; write new code against the tests. Omit if empty. -->
+
+- `feat/v2-opencode` @ `{commit}`: `path/to/file.ts` — what to learn from it
 
 ## Task
 
@@ -63,6 +70,7 @@ npm test -- --grep "FR-NNN"
 - Do not call the model where the LLM boundary above says none.
 - Do not add dependencies not listed here.
 - Do not refactor existing code.
+- Do not copy reference code wholesale; do not modify the legacy code.
 
 ## Acceptance
 

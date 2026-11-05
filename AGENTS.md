@@ -8,21 +8,22 @@ the OpenCode runtime; the main product reference is
 
 - Public docs (for outside readers): `docs/`.
 - Internal docs (for the dev team): `dev/`.
-- Target spec: `dev/spec/`. Active version and its spec: `dev/versions/README.md`.
+- MVP: `dev/mvp/` holds the spec, research, decisions, templates and builds. Status:
+  `dev/mvp/README.md`.
 
-## Legacy source
+## Reference code
 
-The repository holds code and documents written before this workflow. They are research
-input, not product. See WORKFLOW.md "Legacy source".
+Code outside the workflow is reference, not product. The MVP code is written new. See
+dev/mvp/WORKFLOW.md "Reference code".
 
 - **Legacy code:** `apps/`, `packages/`, `vendor/`, `scripts/` and the tests directly in
-  `tests/` (not its subfolders). It still builds and runs; see
-  `dev/legacy/development/local-development.md`. Code enters a workflow build only
-  through a port ticket.
-- **Legacy documents:** `dev/legacy/` (read-only) keeps only what the legacy code needs
-  and research input not yet merged. The previous spec is read on the `docs/spec`
-  branch at commit `71ff143`. Its IDs belong to `dev/spec/` only once migrated there.
-- Do not edit legacy documents. A behavior worth keeping goes into `dev/spec/` first.
+  `tests/` (not its subfolders). It predates the workflow and does not run on OpenCode.
+  How to run it: `dev/legacy/development/local-development.md`.
+- **OpenCode reference:** branch `feat/v2-opencode`, read at a pinned commit.
+- **Legacy documents:** `dev/legacy/` (read-only) keeps what the legacy code needs and
+  research input not yet merged. The previous spec is read on the `docs/spec` branch at
+  commit `71ff143`. Its IDs belong to `dev/mvp/spec/` only once migrated there.
+- Do not edit legacy documents. A behavior worth keeping goes into `dev/mvp/spec/` first.
 
 ## Engineering principles
 
@@ -33,7 +34,7 @@ input, not product. See WORKFLOW.md "Legacy source".
 - Keep internal boundaries where the task needs them. Do not change module boundaries as
   part of unrelated work; propose them (Phase 3 is where the PO decides them).
 - Name a design choice that other components depend on as a proposal until a decision
-  record in `dev/decisions/` approves it.
+  record in `dev/mvp/decisions/` approves it.
 - Update the producers, consumers, tests and documentation of a shared contract
   together, and say what breaks for each.
 - Use the public interface of a module. Do not reach into its internals.
@@ -67,22 +68,21 @@ task.
 
 ## Build workflow
 
-All work follows `WORKFLOW.md`:
+All work follows `dev/mvp/WORKFLOW.md`:
 
-- **Phase 0 — Version planning** (once per version): version spec, `CHANGES.md`,
-  milestone, walking skeleton (it may be deferred; see WORKFLOW.md "Legacy source").
-- **Phases 1–6** (once per build): research → testing plan and test stubs →
-  implementation plan → tickets → execution → verification.
-- **Version close**: freeze the version spec.
+- **Phase 0 — MVP planning** (once): build order, milestone `mvp`, walking skeleton (it
+  may be deferred).
+- **Phases 1–6** (once per build): research → testing plan (acceptance criteria) and
+  test stubs → implementation plan → tickets → execution → verification.
+- **MVP close**: freeze the spec, review the workflow, move to work driven by issues.
 
-A build belongs to the active version. Determine its scope first (full UC, steps,
-alternatives, FRs, or a light build), then start Phase 1. "Continue" + a build name:
-read its flow tracker issue first.
+Determine a build's scope first (full UC, steps, alternatives, FRs, or a light build),
+then start Phase 1. "Continue" + a build name: read its flow tracker issue first.
 
 ## Roles
 
 - **PO** (the product owner, the only one): spec, research decisions, testing plan,
-  implementation plan, test approval, every verdict. See WORKFLOW.md "Roles".
+  implementation plan, test approval, every verdict. See dev/mvp/WORKFLOW.md "Roles".
 - **Developers**: pull tickets; write tests and code. Never edit a spec or a locked
   test; never implement an FR whose tests they wrote.
 - **Agent** (you): draft, propose and do the legwork. Never answer a research question,
@@ -113,25 +113,25 @@ read its flow tracker issue first.
   Gemini, DeepSeek, GLM or any other), no "Generated with ..." line. This holds for every
   agent and every skill, even when a template shows such a line.
 
-- **One milestone per version:** `vN`. Every ticket of the version belongs to it.
+- **One milestone:** `mvp`. Every ticket of the MVP belongs to it.
 - **Labels:** `uc:XXX`, `phase:research`, `phase:test-stubs`, `phase:impl-plan`,
-  `phase:impl`, `phase:post-impl`, `legacy:port`, `tier:ci`, `tier:eval`,
-  `build:light`, `flow-tracker`, `flash-ready`.
+  `phase:impl`, `phase:post-impl`, `tier:ci`, `tier:eval`, `build:light`,
+  `flow-tracker`, `flash-ready`.
 - **Dependencies:** write `Blocked by #N, #N` in the issue body.
 - **Flow tracker:** one per build, created at Phase 1 start. Links to all its tickets.
-- **Protected paths** (CODEOWNERS, PO approval): `dev/spec/`, `dev/versions/*/spec/`,
-  `tests/acceptance/`, `tests/eval/`, `.github/`.
+- **Protected paths** (CODEOWNERS, PO approval): `dev/mvp/spec/`, `tests/acceptance/`,
+  `tests/eval/`, `.github/`.
 
 ## Ticket rules
 
 Tickets must be executable by a flash model (DeepSeek V4.1 Flash, GLM 5.3 Flash) or by a
-developer who does not check their own work. The full list is WORKFLOW.md "Ticket
+developer who does not check their own work. The full list is dev/mvp/WORKFLOW.md "Ticket
 rules": one concern, exact file paths, input/output contract, test command, `Do NOT`
 section, `Blocked by`, context section, at most 3 files, test author named.
 
 ## Decision authority
 
-These lists say _who decides_. WORKFLOW.md "Roles" says _who does the work_.
+These lists say _who decides_. dev/mvp/WORKFLOW.md "Roles" says _who does the work_.
 
 ### Agent decides (no confirmation needed)
 
@@ -145,8 +145,8 @@ These lists say _who decides_. WORKFLOW.md "Roles" says _who does the work_.
 - Technology choices (runtime, framework, library, provider)
 - Architecture boundaries (module splits, package structure) and the LLM boundary
 - Scope changes (adding or removing requirements)
-- Closing a phase gate or a version
-- Any change to `dev/spec/` or `dev/versions/*/spec/`
+- Closing a phase gate or the MVP
+- Any change to `dev/mvp/spec/`
 - Approving a test
 
 ## Key paths
@@ -155,16 +155,17 @@ These lists say _who decides_. WORKFLOW.md "Roles" says _who does the work_.
 |---|---|
 | Public docs | `docs/` |
 | As-built architecture (module map, LLM boundary map) | `docs/architecture/` |
-| Target spec | `dev/spec/` |
-| Versions (active version, version specs, builds) | `dev/versions/` |
-| Build artifacts | `dev/versions/vN/builds/UC-XXX-label/` |
-| Research | `dev/research/` (read `dev/research/_STYLE.md` before writing) |
-| Decisions | `dev/decisions/` |
+| MVP status (build order, walking skeleton) | `dev/mvp/README.md` |
+| Spec | `dev/mvp/spec/` |
+| Build artifacts | `dev/mvp/builds/UC-XXX-label/` |
+| Open questions | `dev/mvp/research/open-questions.md` |
+| Research | `dev/mvp/research/` (read `dev/mvp/research/_STYLE.md` before writing) |
+| Decisions | `dev/mvp/decisions/` |
 | Coding conventions | `dev/development/` |
 | Meeting notes | `dev/meetings/` |
-| Plan and as-built templates | `dev/templates/` |
+| Plan and as-built templates | `dev/mvp/templates/` |
 | Issue and PR templates | `.github/` |
-| Legacy documents (read-only) | `dev/legacy/`; previous spec at `docs/spec` @ `71ff143` (see "Legacy source") |
-| Legacy code and how to run it | `apps/`, `packages/`, `vendor/`, `scripts/`; `dev/legacy/development/local-development.md` |
+| Legacy documents (read-only) | `dev/legacy/`; previous spec at `docs/spec` @ `71ff143` (see "Reference code") |
+| Reference code | Legacy: `apps/`, `packages/`, `vendor/`, `scripts/` (run: `dev/legacy/development/local-development.md`); OpenCode: branch `feat/v2-opencode` |
 | Skills | `.agents/skills/` (mirrors: run `python .agents/scripts/sync_skill_mirrors.py`) |
-| Workflow reference | `WORKFLOW.md` |
+| Workflow reference | `dev/mvp/WORKFLOW.md` |

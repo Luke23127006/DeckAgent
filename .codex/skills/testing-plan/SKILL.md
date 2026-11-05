@@ -1,28 +1,47 @@
 ---
 name: testing-plan
-description: Generate a testing plan from FRs, ACs, and decisions. Assigns every acceptance criterion a tier (ci, eval, manual) and a test type and phase. Identifies security, resilience, performance, and E2E test needs. Used at the start of Phase 2.
+description: Generate a testing plan from FRs, NFRs and decisions. Drafts the acceptance criteria of each in-scope FR and the measures of each in-scope NFR, assigns each a tier (ci, eval, manual), a test type and a phase. Identifies security, resilience, performance, and E2E test needs. Used at the start of Phase 2.
 ---
 
 # Testing plan
 
-Draft the testing plan for a build. The PO owns and approves it; developers write the
-tests from it; the PO approves each test before it is locked (WORKFLOW.md "Phase 2").
+Draft the testing plan for a build. The PO owns and approves it, including its acceptance
+criteria; developers write the tests from it; the PO approves each test before it is
+locked (dev/mvp/WORKFLOW.md "Phase 2").
 
 ## Input
 
-1. The version spec UC file: `dev/versions/vN/spec/02-use-cases/UC-XXX.md`
-2. Every in-scope FR in `dev/versions/vN/spec/` — especially their ACs and `Check` tags.
-3. Every in-scope NFR.
-4. Decisions from Phase 1: `dev/decisions/DEC-*.md`
-5. The research checklist and the matrix: `dev/versions/vN/builds/UC-XXX-label/`
+1. The use case file: `dev/mvp/spec/02-use-cases/UC-XXX.md`
+2. Every in-scope FR and NFR in `dev/mvp/spec/03-requirements/`, and the BRs they cite.
+3. Decisions from Phase 1: `dev/mvp/decisions/DEC-*.md`
+4. The research checklist and the matrix: `dev/mvp/builds/UC-XXX-label/`
+5. `dev/mvp/spec/03-requirements/fr/_CRITERIA.md` and `nfr/_CRITERIA.md`: the rules a
+   criterion and a measure meet.
+6. Optional idea source: the legacy acceptance criteria of the same FR on the `docs/spec`
+   branch at `71ff143`. They are not approved; the current statement wins.
 
-Read the version spec, never the target spec: only the version spec has ACs.
+The spec holds statements only. The acceptance criteria and measures are written here
+(dev/mvp/WORKFLOW.md "Spec rules").
 
 ## Process
 
+### Step 0 — Draft the acceptance criteria and measures
+
+For each in-scope FR, write `AC-n` blocks in the plan's "Acceptance criteria" section:
+Given, When, Then, Check. Each adds precision beyond the use case response (FRG-03): an
+observable result, an input condition, an edge case, an invariant or error behavior. Use
+the research answers and decisions of Phase 1. For an FR that an earlier build already
+took, continue its AC numbering.
+
+For each in-scope NFR, write `M-n` blocks in the "Measures" section. A target the PO has
+not set reads `not set`; never guess a number.
+
+Do not add behavior the statement lacks. If a criterion needs one, flag it: the PO adds
+it to the spec first.
+
 ### Step 1 — Assign a tier to each AC
 
-Start from the matrix's Tier column (seeded in Phase 1 from `Check`):
+Default from each criterion's `Check` field:
 
 - `deterministic` → **ci**: an automated test; the model is replaced by a recorded
   fixture or a mock. Name the fixture.
@@ -71,26 +90,28 @@ the AC without reading anything else.
 
 ## Output
 
-Create `dev/versions/vN/builds/UC-XXX-label/testing-plan.md` from
-`dev/templates/testing-plan.md`.
+Create `dev/mvp/builds/UC-XXX-label/testing-plan.md` from
+`dev/mvp/templates/testing-plan.md`.
 
 For each acceptance and security test, fill the **DEC column** with the decision that
 shaped it (if any), so a changed decision points to the tests to revisit.
 
-Then update `traceability-matrix.md`: the Tier column, and each test on its row's Test
+Then update `traceability-matrix.md`: split each FR row into one row per AC and each NFR
+row into one row per measure, fill the Tier column, and put each test on its row's Test
 column.
 
-Follow WORKFLOW.md "Document rules": front-load `## At a glance`, keep the template's
+Follow dev/mvp/WORKFLOW.md "Document rules": front-load `## At a glance`, keep the template's
 section order, reference each AC by id and matrix row — do not copy requirement text.
 
 ## Rules
 
 - Every in-scope AC appears in the plan with exactly one tier. No AC is skipped.
-- **No orphan (WORKFLOW.md "Traceability"):** every in-scope FR/AC and NFR has at least
+- **No orphan (dev/mvp/WORKFLOW.md "Traceability"):** every in-scope FR/AC and NFR has at least
   one test, and every in-scope DEC is consumed by at least one test or implementation
   step. Flag gaps.
 - Every UC alternative with a failure condition gets a resilience test.
-- Do not invent test scenarios beyond what the version spec defines.
+- Do not invent test scenarios beyond what the spec statements and the approved criteria
+  define.
 - No ci-tier test calls a real model.
 - Pre-implementation ci tests must run red — failing on a real assertion, not a syntax
   error.

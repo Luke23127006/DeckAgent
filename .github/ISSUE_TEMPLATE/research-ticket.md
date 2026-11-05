@@ -7,7 +7,7 @@ labels: phase:research
 
 ## Context
 
-**Version:** vN (milestone)
+**Milestone:** mvp
 **Use case:** UC-XXX
 **Related FR/NFR:** FR-NNN / NFR-NNN
 **Flow step:** S?.? — {step name}
@@ -67,12 +67,12 @@ sequenceDiagram
 <!-- What closing this ticket produces. Use a clickable link so the reviewer
      can open the file directly. Format:
 
-     **Decision record:** [dev/decisions/DEC-NNN-topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/decisions/DEC-NNN-topic.md)
+     **Decision record:** [dev/mvp/decisions/DEC-NNN-topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/mvp/decisions/DEC-NNN-topic.md)
 
-     **Research answer:** [dev/research/topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/research/topic.md), section RQ-N
+     **Research answer:** [dev/mvp/research/topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/mvp/research/topic.md), section RQ-N
 
      The PO writes the answer and the decision's Choice / Why. The agent supplies the
-     options table only (WORKFLOW.md "Roles"). -->
+     options table only (dev/mvp/WORKFLOW.md "Roles"). -->
 
 ## Acceptance
 

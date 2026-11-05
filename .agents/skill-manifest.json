@@ -38,7 +38,7 @@
       "local_adaptations": [
         "Add project precedence note.",
         "Require explicit proposed/accepted ADR status; acceptance needs a recorded team decision.",
-        "Store ADRs as dev/decisions/DEC-NNN-slug.md instead of docs/adr/NNNN-slug.md.",
+        "Store ADRs as dev/mvp/decisions/DEC-NNN-slug.md instead of docs/adr/NNNN-slug.md.",
         "Include upstream MIT license."
       ],
       "status": "installed"
@@ -220,7 +220,7 @@
       "source_path": null,
       "installed_path": ".agents/skills/spec-authoring",
       "decision": "Create",
-      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and dev/spec/_STYLE.md without copying those rules into the skill.",
+      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and dev/mvp/spec/_STYLE.md without copying those rules into the skill.",
       "compatibility": "Tool-neutral instructions. Calls use-case-sequence as its last step for use cases.",
       "dependencies": [
         "use-case-sequence"

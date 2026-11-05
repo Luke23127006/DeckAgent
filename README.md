@@ -9,8 +9,9 @@ DeckAgent is developed by a team of five students from HCMUS (the University of 
 Ho Chi Minh City), Vietnam.
 
 > **Status:** DeckAgent is moving to the [OpenCode](https://github.com/sst/opencode)
-> runtime under a new build workflow ([WORKFLOW.md](WORKFLOW.md)). The app that runs
-> today is the legacy version; its code is the input for the first workflow version.
+> runtime. The MVP is built new under a build workflow
+> ([dev/mvp/WORKFLOW.md](dev/mvp/WORKFLOW.md)). The app that runs today is the legacy
+> version; its code is kept as reference only.
 
 ## What makes it different
 
@@ -62,8 +63,8 @@ Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. On other shells, u
 
 - [AGENTS.md](AGENTS.md) — the index for contributors and coding agents: rules, roles
   and where everything lives.
-- [WORKFLOW.md](WORKFLOW.md) — how a version is planned and how each feature goes from
-  spec to verified code.
+- [dev/mvp/WORKFLOW.md](dev/mvp/WORKFLOW.md) — how the MVP is planned and how each feature
+  goes from spec to verified code.
 
 DeckAgent is inspired by [open-design](https://github.com/nexu-io/open-design), its main
 product reference.

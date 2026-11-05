@@ -7,15 +7,15 @@ labels: phase:test-stubs
 
 ## Context
 
-**Version:** vN (milestone)
+**Milestone:** mvp
 **Use case:** UC-XXX
-**FR / AC:** FR-NNN / AC-N (text in `dev/versions/vN/spec/`)
+**FR / AC:** FR-NNN / AC-N (criterion text in the build's `testing-plan.md`)
 **Tier:** ci / eval <!-- also set the label tier:ci or tier:eval -->
-**Testing plan:** dev/versions/vN/builds/UC-XXX-label/testing-plan.md (row AC-N)
+**Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md (row AC-N)
 **Flow tracker:** #N
 
 > The author of this ticket's test must not implement FR-NNN (separation rule,
-> WORKFLOW.md "Phase 4"). The PO approves the test before it merges; once merged it is
+> dev/mvp/WORKFLOW.md "Phase 4"). The PO approves the test before it merges; once merged it is
 > locked.
 
 ## Test type

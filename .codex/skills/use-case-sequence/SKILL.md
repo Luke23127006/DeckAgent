@@ -1,6 +1,6 @@
 ---
 name: use-case-sequence
-description: Generate or update the Mermaid interaction diagram (sequenceDiagram) of a use case file in dev/spec/02-use-cases/ from its Steps table and Alternative flow blocks. Use after changing the steps table, an alternative, or an At/Ends field, and when the generated block is missing or stale. Not for other diagrams; use mermaid-markdown for those.
+description: Generate or update the Mermaid interaction diagram (sequenceDiagram) of a use case file in dev/mvp/spec/02-use-cases/ from its Steps table and Alternative flow blocks. Use after changing the steps table, an alternative, or an At/Ends field, and when the generated block is missing or stale. Not for other diagrams; use mermaid-markdown for those.
 ---
 
 # Use case sequence diagram

@@ -1,6 +1,6 @@
 ---
 name: spec-authoring
-description: Write or rewrite a use case file (dev/spec/02-use-cases) so it follows the folder's template, criteria, and style. Use when creating a spec file, converting an old file to the new template, or fixing style errors. Not for deciding scope or inventing product behavior.
+description: Write or rewrite a use case file (dev/mvp/spec/02-use-cases) so it follows the folder's template, criteria, and style. Use when creating a spec file, converting an old file to the new template, or fixing style errors. Not for deciding scope or inventing product behavior.
 ---
 
 # Spec authoring
@@ -8,30 +8,26 @@ description: Write or rewrite a use case file (dev/spec/02-use-cases) so it foll
 The rules live in three files. Read them before writing; do not restate them in the spec
 or in this skill.
 
-- `dev/spec/<folder>/_TEMPLATE.md`: the fixed structure and field names.
-- `dev/spec/<folder>/_CRITERIA.md`: the criteria the file must meet.
-- `dev/spec/_STYLE.md`: the writing rules, evidence tags, glossary, and interface check
+- `dev/mvp/spec/<folder>/_TEMPLATE.md`: the fixed structure and field names.
+- `dev/mvp/spec/<folder>/_CRITERIA.md`: the criteria the file must meet.
+- `dev/mvp/spec/_STYLE.md`: the writing rules, evidence tags, glossary, and interface check
   (rule 11).
 
-## Which layer
+## What the spec holds
 
-There are two spec layers (WORKFLOW.md "Spec layers"). Ask which one if the task does not
-say. Every change to either layer needs the PO's approval.
+There is one spec, `dev/mvp/spec/` (dev/mvp/WORKFLOW.md "Spec rules"). Every change needs
+the PO's approval.
 
-- **Target spec** `dev/spec/`: thin. A use case keeps its Steps table and its
-  alternatives with a one-line `When` each; an FR, BR or NFR keeps its Statement only,
-  with no acceptance criteria. A new behavior claims its ID here first.
-- **Version spec** `dev/versions/vN/spec/`: the full template, with acceptance criteria.
-  Same IDs as the target. It may narrow the target (drop steps, alternatives, ACs); it
-  never adds a behavior the target lacks. If it would, add the one-line entry to the
-  target first and say so in the report. A closed version's spec is never edited.
-
-Both layers use the templates, criteria and style in `dev/spec/`.
+- A use case keeps its Steps table and its alternatives with a one-line `When` each; an
+  FR or NFR keeps its Statement only; a BR keeps its rule and values.
+- No acceptance criteria and no measures: those are written in the testing plan of a
+  build (skill `testing-plan`).
+- A new behavior claims its ID here before a build uses it.
 
 ## Content sources
 
 Write only what comes from the user, from the file being rewritten, or from a research
-item in `dev/research/`. If a step needs behavior from no source, mark it `[assumed]`
+item in `dev/mvp/research/`. If a step needs behavior from no source, mark it `[assumed]`
 and say so in the report. Do not invent.
 
 A use case explores behavior the product could have. A flow taken from a research item or
