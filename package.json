@@ -50,7 +50,11 @@
     "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js",
     "test:browser-smoke": "node --test tests/browser-smoke.test.mjs",
     "test:env-startup": "node --test tests/env-startup.test.mjs",
-    "test:local-web": "node --test tests/web-session.test.mjs tests/web-management.test.mjs"
+    "test:local-web": "node --test tests/web-session.test.mjs tests/web-management.test.mjs",
+    "test:images-export": "node --test tests/images-export.test.mjs tests/image-network.test.mjs tests/images-export-host.test.mjs",
+    "test:images-export:browser": "node --test tests/images-export-browser.test.mjs tests/images-export-pdf.test.mjs",
+    "test:images-export:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs images-export-live",
+    "test:images-export:cli": "node scripts/test-opencode.mjs images-export"
   },
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",

@@ -242,12 +242,24 @@ async function parse(name: string, bytes: Uint8Array): Promise<Extraction> {
   if (extension === '.png') {
     if (data.length < 24 || data.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') fail()
     if (data.readUInt32BE(16) * data.readUInt32BE(20) > 16000000) fail('MATERIAL_IMAGE_LIMIT')
-    PNG.sync.read(data, { checkCRC: true })
-    return { mediaType: 'image/png', text: '', image: true, warnings: [] }
+    const decoded = PNG.sync.read(data, { checkCRC: true })
+    return {
+      mediaType: 'image/png',
+      text: '',
+      image: true,
+      imageSize: { width: decoded.width, height: decoded.height },
+      warnings: [],
+    }
   }
   if (extension === '.jpg' || extension === '.jpeg') {
-    jpeg.decode(data, { maxResolutionInMP: 16, maxMemoryUsageInMB: 96, tolerantDecoding: false })
-    return { mediaType: 'image/jpeg', text: '', image: true, warnings: [] }
+    const decoded = jpeg.decode(data, { maxResolutionInMP: 16, maxMemoryUsageInMB: 96, tolerantDecoding: false })
+    return {
+      mediaType: 'image/jpeg',
+      text: '',
+      image: true,
+      imageSize: { width: decoded.width, height: decoded.height },
+      warnings: [],
+    }
   }
   fail('MATERIAL_UNSUPPORTED_TYPE')
 }

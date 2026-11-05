@@ -4,6 +4,7 @@ import { createWorkspaceReader } from '@deckagent/file-tools'
 import type { DeckPublisher, DeckReader } from '@deckagent/deck'
 import type { DeckEditor } from '@deckagent/deck'
 export { registerPatchSlide } from './patch-slide.ts'
+export { registerImageAssets, registerInsertImage } from './insert-image.ts'
 import { DeckError } from '@deckagent/deck'
 export { registerProposeOutline } from './propose-outline.ts'
 
@@ -35,7 +36,8 @@ export async function registerPublishSlide(
       required: ['outlineId', 'slideId', 'path', 'expectedRevision', 'publicationId'],
     },
     async execute(args, { signal }) {
-      if (options.allowedSlideIds && !options.allowedSlideIds.includes(String(args.slideId))) throw new ToolFailure('SLIDE_SCOPE_DENIED')
+      if (options.allowedSlideIds && !options.allowedSlideIds.includes(String(args.slideId)))
+        throw new ToolFailure('SLIDE_SCOPE_DENIED')
       const html = await read(args.path, signal)
       signal.throwIfAborted()
       // Registry validates primitive types; service validates identity, revision and HTML.
@@ -46,23 +48,34 @@ export async function registerPublishSlide(
         typeof args.expectedRevision !== 'number'
       )
         throw new Error('Invalid publication')
-      try { return JSON.stringify(
-        options.decks.publish(
-          options.sessionId,
-          {
-            outlineId: args.outlineId,
-            slideId: args.slideId,
-            publicationId: args.publicationId,
-            expectedRevision: args.expectedRevision,
-            html,
-          },
-          signal,
-        ),
-      ) } catch (error) {
+      try {
+        return JSON.stringify(
+          options.decks.publish(
+            options.sessionId,
+            {
+              outlineId: args.outlineId,
+              slideId: args.slideId,
+              publicationId: args.publicationId,
+              expectedRevision: args.expectedRevision,
+              html,
+            },
+            signal,
+          ),
+        )
+      } catch (error) {
         if (error instanceof DeckError) {
           if (error.code === 'DECK_UNSAFE_HTML') throw new ToolFailure('SLIDE_UNSAFE_HTML')
-          if (['DECK_CONFLICT', 'DECK_PUBLICATION_CONFLICT'].includes(error.code)) throw new ToolFailure('SLIDE_REVISION_CONFLICT')
-          if (['DECK_NOT_CONFIRMED', 'DECK_OUTLINE_MISMATCH', 'DECK_SLIDE_NOT_FOUND', 'DECK_INVALID_PUBLICATION'].includes(error.code)) throw new ToolFailure('SLIDE_IDENTITY_INVALID')
+          if (['DECK_CONFLICT', 'DECK_PUBLICATION_CONFLICT'].includes(error.code))
+            throw new ToolFailure('SLIDE_REVISION_CONFLICT')
+          if (
+            [
+              'DECK_NOT_CONFIRMED',
+              'DECK_OUTLINE_MISMATCH',
+              'DECK_SLIDE_NOT_FOUND',
+              'DECK_INVALID_PUBLICATION',
+            ].includes(error.code)
+          )
+            throw new ToolFailure('SLIDE_IDENTITY_INVALID')
         }
         throw error
       }
@@ -71,16 +84,29 @@ export async function registerPublishSlide(
 }
 
 /** Published content comes from durable Deck storage, never a mutable workspace draft. */
-export function registerReadSlide(registry: ToolRegistry, sessionId: string, decks: DeckReader, editor?: DeckEditor): () => void {
+export function registerReadSlide(
+  registry: ToolRegistry,
+  sessionId: string,
+  decks: DeckReader,
+  editor?: DeckEditor,
+): () => void {
   return registry.register({
     name: 'read_slide',
     description: 'Read the current published HTML revision of a slide in this chat.',
-    parameters: { type: 'object', additionalProperties: false, properties: { slideId: { type: 'string' } }, required: ['slideId'] },
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: { slideId: { type: 'string' } },
+      required: ['slideId'],
+    },
     async execute(args, { signal }) {
       signal.throwIfAborted()
       const slide = decks.snapshot(sessionId).slides.find(item => item.slideId === args.slideId)
       if (!slide || slide.status !== 'published') throw new Error('No published slide')
-      return JSON.stringify({...decks.content(sessionId, slide.slideId, slide.revision),...(editor?{editor:editor.editableSlide(sessionId,slide.slideId)}:{})})
+      return JSON.stringify({
+        ...decks.content(sessionId, slide.slideId, slide.revision),
+        ...(editor ? { editor: editor.editableSlide(sessionId, slide.slideId) } : {}),
+      })
     },
   })
 }

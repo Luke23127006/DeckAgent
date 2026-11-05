@@ -1,29 +1,59 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { DeckError, parseSlideEdit } from '@deckagent/deck'
+import { DeckError, parseSlideEdit, parseImageInsert } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
 import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
 import { requestReply } from './request-reply.ts'
 
-export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ModelDescriptor, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export type {
+  AgentRequest,
+  HistoryMessage,
+  HostOptions,
+  RequestSnapshot,
+  ModelDescriptor,
+  ProviderSettings,
+  ProviderTemplate,
+  WebSettings,
+  WebSession,
+  StoredActivity,
+  StoredRequest,
+  WebManagement,
+} from './contracts.ts'
 export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
 export { validateStepApproval } from './step-approval.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
 export type { Workspace } from './contracts.ts'
 export type { RequestSummary } from './contracts.ts'
-export type { PermissionPreset, PermissionGrant, ChatPermission, ApprovalDraft, StepApproval, ApprovalDecision, ApprovalReply, RequestApproval } from './contracts.ts'
+export type {
+  PermissionPreset,
+  PermissionGrant,
+  ChatPermission,
+  ApprovalDraft,
+  StepApproval,
+  ApprovalDecision,
+  ApprovalReply,
+  RequestApproval,
+} from './contracts.ts'
 export type { MaterialInfo, MaterialLimits, MaterialOperations } from './contracts.ts'
 export type { ContextUsage } from './contracts.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 const editStatuses: Readonly<Record<string, number>> = {
-  DECK_INVALID_EDIT: 400, DECK_EDIT_UNSUPPORTED: 422, DECK_CONFLICT: 409,
-  DECK_PUBLICATION_CONFLICT: 409, DECK_OUTLINE_MISMATCH: 409,
-  DECK_SLIDE_NOT_FOUND: 404, DECK_UNSAFE_HTML: 422,
+  DECK_INVALID_EDIT: 400,
+  DECK_EDIT_UNSUPPORTED: 422,
+  DECK_CONFLICT: 409,
+  DECK_PUBLICATION_CONFLICT: 409,
+  DECK_OUTLINE_MISMATCH: 409,
+  DECK_SLIDE_NOT_FOUND: 404,
+  DECK_UNSAFE_HTML: 422,
+  DECK_EXPORT_INCOMPLETE: 409,
+  DECK_ASSET_UNAVAILABLE: 409,
+  DECK_IMAGE_REFERENCE: 422,
+  DECK_IMAGE_LIMIT: 413,
 }
 
 function json(res: ServerResponse, status: number, value: unknown) {
@@ -50,9 +80,19 @@ async function readJson(req: IncomingMessage, maxBytes = 20 * 1024): Promise<unk
 }
 
 function outlineTarget(value: unknown): OutlineTarget {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || !('outlineId' in value) || typeof value.outlineId !== 'string' ||
-    !idPattern.test(value.outlineId) || !('version' in value) || typeof value.version !== 'number' ||
-    !Number.isSafeInteger(value.version) || value.version < 1) throw new HttpError(400, 'INVALID_REQUEST')
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    !('outlineId' in value) ||
+    typeof value.outlineId !== 'string' ||
+    !idPattern.test(value.outlineId) ||
+    !('version' in value) ||
+    typeof value.version !== 'number' ||
+    !Number.isSafeInteger(value.version) ||
+    value.version < 1
+  )
+    throw new HttpError(400, 'INVALID_REQUEST')
   return { outlineId: value.outlineId, version: value.version }
 }
 
@@ -67,38 +107,74 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
     !idPattern.test(value.sessionId) ||
     !('input' in value) ||
     typeof value.input !== 'string' ||
-    (!value.input.trim() && !(['attachmentIds','referenceIds'].some(key => key in value && Array.isArray(Reflect.get(value, key)) && Reflect.get(value, key).length))) ||
+    (!value.input.trim() &&
+      !['attachmentIds', 'referenceIds'].some(
+        key => key in value && Array.isArray(Reflect.get(value, key)) && Reflect.get(value, key).length,
+      )) ||
     value.input.length > 16000 ||
-    Object.keys(value).some(key => !['sessionId', 'input', 'attachmentIds', 'referenceIds', 'presentation', 'outlineTarget', 'outlineAction'].includes(key))
+    Object.keys(value).some(
+      key =>
+        ![
+          'sessionId',
+          'input',
+          'attachmentIds',
+          'referenceIds',
+          'presentation',
+          'outlineTarget',
+          'outlineAction',
+        ].includes(key),
+    )
   )
     throw new HttpError(400, 'INVALID_REQUEST')
   if ('presentation' in value && value.presentation !== true) throw new HttpError(400, 'INVALID_REQUEST')
   const attachmentIds: string[] = []
   const referenceIds: string[] = []
   if ('attachmentIds' in value) {
-    if (!Array.isArray(value.attachmentIds) || value.attachmentIds.length > 100) throw new HttpError(400, 'INVALID_REQUEST')
-    for (const id of value.attachmentIds) { if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST'); attachmentIds.push(id) }
+    if (!Array.isArray(value.attachmentIds) || value.attachmentIds.length > 100)
+      throw new HttpError(400, 'INVALID_REQUEST')
+    for (const id of value.attachmentIds) {
+      if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST')
+      attachmentIds.push(id)
+    }
   }
   if ('referenceIds' in value) {
-    if (!Array.isArray(value.referenceIds) || value.referenceIds.length > 100) throw new HttpError(400, 'INVALID_REQUEST')
-    for (const id of value.referenceIds) { if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST'); referenceIds.push(id) }
+    if (!Array.isArray(value.referenceIds) || value.referenceIds.length > 100)
+      throw new HttpError(400, 'INVALID_REQUEST')
+    for (const id of value.referenceIds) {
+      if (typeof id !== 'string' || !idPattern.test(id)) throw new HttpError(400, 'INVALID_REQUEST')
+      referenceIds.push(id)
+    }
   }
-  const request: AgentRequest = { sessionId: value.sessionId, input: value.input,
+  const request: AgentRequest = {
+    sessionId: value.sessionId,
+    input: value.input,
     ...('presentation' in value ? { presentation: true as const } : {}),
-    ...(attachmentIds.length ? { attachmentIds } : {}), ...(referenceIds.length ? { referenceIds } : {}) }
+    ...(attachmentIds.length ? { attachmentIds } : {}),
+    ...(referenceIds.length ? { referenceIds } : {}),
+  }
   let target: OutlineTarget | undefined
   if ('outlineTarget' in value) {
     const reference = value.outlineTarget
-    if (!reference || typeof reference !== 'object' || Array.isArray(reference) ||
-      Object.keys(reference).some(key => !['outlineId', 'version'].includes(key)))
+    if (
+      !reference ||
+      typeof reference !== 'object' ||
+      Array.isArray(reference) ||
+      Object.keys(reference).some(key => !['outlineId', 'version'].includes(key))
+    )
       throw new HttpError(400, 'INVALID_REQUEST')
     target = outlineTarget(reference)
   }
   if ('outlineAction' in value) {
     const action = value.outlineAction
     const ref = outlineTarget(action)
-    if (!action || typeof action !== 'object' || !('type' in action) || (action.type !== 'confirm' && action.type !== 'cancel') ||
-      Object.keys(action).some(key => !['type', 'outlineId', 'version'].includes(key))) throw new HttpError(400, 'INVALID_REQUEST')
+    if (
+      !action ||
+      typeof action !== 'object' ||
+      !('type' in action) ||
+      (action.type !== 'confirm' && action.type !== 'cancel') ||
+      Object.keys(action).some(key => !['type', 'outlineId', 'version'].includes(key))
+    )
+      throw new HttpError(400, 'INVALID_REQUEST')
     return { ...request, ...(target ? { outlineTarget: target } : {}), outlineAction: { ...ref, type: action.type } }
   }
   return { ...request, ...(target ? { outlineTarget: target } : {}) }
@@ -108,7 +184,12 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState, options.approvalAnswered)
+  const controller = new RequestController(
+    options.openAgent,
+    options.finishRequest,
+    options.requestState,
+    options.approvalAnswered,
+  )
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -118,7 +199,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -127,11 +208,26 @@ export async function startHost(options: HostOptions) {
       }
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
-      const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
+      const outline =
+        deck &&
+        ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
       const editStatus = deck ? editStatuses[error.code] : undefined
-      json(res, known ? error.status : editStatus ?? (outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500), {
-        error: { code: known ? error.code : editStatus || outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
-      })
+      json(
+        res,
+        known
+          ? error.status
+          : (editStatus ?? (outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500)),
+        {
+          error: {
+            code: known
+              ? error.code
+              : editStatus || outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
+                ? error.code
+                : 'HOST_ERROR',
+            message: 'Request could not be completed',
+          },
+        },
+      )
     })
   })
   server.requestTimeout = 10000
@@ -154,34 +250,143 @@ export async function startHost(options: HostOptions) {
       const asset =
         options.assets && Object.hasOwn(options.assets, url.pathname) ? options.assets[url.pathname] : undefined
       if (req.method !== 'GET' || !asset) throw new HttpError(404, 'NOT_FOUND')
-      if (asset.sandboxed) res.setHeader('content-security-policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
+      if (asset.sandboxed)
+        res.setHeader(
+          'content-security-policy',
+          "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+        )
       res.writeHead(200, { 'content-type': asset.contentType })
       res.end(asset.body)
       return
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
-    const slideEdit = /^\/api\/sessions\/([\w-]{1,100})\/deck\/slides\/([\w-]{1,100})\/(editor|preview|edit)$/.exec(url.pathname)
+    const imageRoute = /^\/api\/sessions\/([\w-]{1,100})\/(image-assets|export-pdf)$/.exec(url.pathname)
+    if (imageRoute) {
+      const id = imageRoute[1]!
+      if (imageRoute[2] === 'image-assets' && options.imageAssets) {
+        if (req.method === 'GET') {
+          json(res, 200, await options.imageAssets.list(id))
+          return
+        }
+        if (req.method === 'POST') {
+          const value = await readJson(req),
+            abort = new AbortController(),
+            stop = () => abort.abort()
+          res.once('close', stop)
+          req.once('aborted', stop)
+          try {
+            json(res, 201, await options.imageAssets.import(id, value, abort.signal))
+          } finally {
+            res.off('close', stop)
+            req.off('aborted', stop)
+          }
+          return
+        }
+      }
+      if (imageRoute[2] === 'export-pdf' && options.exportPdf && req.method === 'POST') {
+        const body = await readJson(req)
+        if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length)
+          throw new HttpError(400, 'INVALID_REQUEST')
+        const abort = new AbortController(),
+          stop = () => abort.abort()
+        res.once('close', stop)
+        req.once('aborted', stop)
+        try {
+          const artifact = await options.exportPdf(id, abort.signal)
+          abort.signal.throwIfAborted()
+          res.writeHead(200, {
+            'content-type': 'application/pdf',
+            'content-length': artifact.bytes.byteLength,
+            'content-disposition': `attachment; filename="deck-${id}-v${artifact.version}.pdf"`,
+            'x-deck-version': String(artifact.version),
+          })
+          res.end(artifact.bytes)
+        } finally {
+          res.off('close', stop)
+          req.off('aborted', stop)
+        }
+        return
+      }
+    }
+    const insertImage = /^\/api\/sessions\/([\w-]{1,100})\/deck\/slides\/([\w-]{1,100})\/images$/.exec(url.pathname)
+    if (insertImage && options.imageAssets && req.method === 'POST') {
+      const value = parseImageInsert(await readJson(req))
+      if (value.slideId !== insertImage[2]) throw new HttpError(400, 'INVALID_REQUEST')
+      json(
+        res,
+        200,
+        controller.withIdleSession(insertImage[1]!, () => options.imageAssets!.insert(insertImage[1]!, value)),
+      )
+      return
+    }
+    const rendered =
+      /^\/api\/sessions\/([\w-]{1,100})\/deck\/slides\/([\w-]{1,100})\/revisions\/([1-9][0-9]{0,9})$/.exec(url.pathname)
+    if (rendered && options.decks && options.renderSlideHtml && req.method === 'GET') {
+      const content = options.decks.content(rendered[1]!, rendered[2]!, Number(rendered[3]))
+      const displayHtml = await options.renderSlideHtml(rendered[1]!, content.html)
+      json(res, 200, { ...content, ...(displayHtml !== content.html ? { displayHtml } : {}) })
+      return
+    }
+    const slideEdit = /^\/api\/sessions\/([\w-]{1,100})\/deck\/slides\/([\w-]{1,100})\/(editor|preview|edit)$/.exec(
+      url.pathname,
+    )
     if (slideEdit && options.slideEditor) {
       const [, sessionId, slideId, action] = slideEdit
-      if (action === 'editor' && req.method === 'GET') { json(res, 200, options.slideEditor.editableSlide(sessionId!, slideId!)); return }
+      if (action === 'editor' && req.method === 'GET') {
+        const content = options.slideEditor.editableSlide(sessionId!, slideId!)
+        json(res, 200, {
+          ...content,
+          ...(options.renderSlideHtml ? { displayHtml: await options.renderSlideHtml(sessionId!, content.html) } : {}),
+        })
+        return
+      }
       if (req.method === 'POST' && (action === 'preview' || action === 'edit')) {
         const input = parseSlideEdit(await readJson(req, 256 * 1024))
         if (input.slideId !== slideId) throw new HttpError(400, 'INVALID_REQUEST')
-        const value = action === 'preview' ? options.slideEditor.previewSlideEdit(sessionId!, input)
-          : controller.withIdleSession(sessionId!, () => options.slideEditor!.editSlide(sessionId!, input))
-        json(res, 200, value); return
+        const value =
+          action === 'preview'
+            ? options.slideEditor.previewSlideEdit(sessionId!, input)
+            : controller.withIdleSession(sessionId!, () => options.slideEditor!.editSlide(sessionId!, input))
+        json(
+          res,
+          200,
+          action === 'preview' && 'html' in value && options.renderSlideHtml
+            ? { ...value, displayHtml: await options.renderSlideHtml(sessionId!, value.html) }
+            : value,
+        )
+        return
       }
     }
-    const materialRoute = /^\/api\/sessions\/([\w-]{1,100})\/(materials|attachments|references)(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
+    const materialRoute =
+      /^\/api\/sessions\/([\w-]{1,100})\/(materials|attachments|references)(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
     if (materialRoute && options.materials) {
       const sessionId = materialRoute[1]!
-      if (req.method === 'POST' && materialRoute[2] === 'references' && !materialRoute[3] && options.materials.reference) { json(res, 201, await options.materials.reference(sessionId, await readJson(req))); return }
-      if (req.method === 'GET' && materialRoute[2] === 'materials' && !materialRoute[3]) { json(res, 200, await options.materials.list(sessionId)); return }
+      if (
+        req.method === 'POST' &&
+        materialRoute[2] === 'references' &&
+        !materialRoute[3] &&
+        options.materials.reference
+      ) {
+        json(res, 201, await options.materials.reference(sessionId, await readJson(req)))
+        return
+      }
+      if (req.method === 'GET' && materialRoute[2] === 'materials' && !materialRoute[3]) {
+        json(res, 200, await options.materials.list(sessionId))
+        return
+      }
       if (req.method === 'POST' && materialRoute[2] === 'attachments' && !materialRoute[3]) {
-        if (req.headers['content-type'] !== 'application/octet-stream' || typeof req.headers['x-file-name'] !== 'string') throw new HttpError(415, 'MATERIAL_UPLOAD_REQUIRED')
+        if (
+          req.headers['content-type'] !== 'application/octet-stream' ||
+          typeof req.headers['x-file-name'] !== 'string'
+        )
+          throw new HttpError(415, 'MATERIAL_UPLOAD_REQUIRED')
         let name: string
-        try { name = decodeURIComponent(req.headers['x-file-name']) } catch { throw new HttpError(400, 'MATERIAL_INVALID_NAME') }
+        try {
+          name = decodeURIComponent(req.headers['x-file-name'])
+        } catch {
+          throw new HttpError(400, 'MATERIAL_INVALID_NAME')
+        }
         const abort = new AbortController()
         const disconnected = () => abort.abort()
         const signal = AbortSignal.any([abort.signal, AbortSignal.timeout(30000)])
@@ -189,25 +394,37 @@ export async function startHost(options: HostOptions) {
         req.once('aborted', disconnected)
         res.once('close', disconnected)
         signal.addEventListener('abort', interrupt, { once: true })
-        try { json(res, 201, await options.materials.upload(sessionId, name, req, signal)) }
-        finally { req.off('aborted', disconnected); res.off('close', disconnected); signal.removeEventListener('abort', interrupt) }
+        try {
+          json(res, 201, await options.materials.upload(sessionId, name, req, signal))
+        } finally {
+          req.off('aborted', disconnected)
+          res.off('close', disconnected)
+          signal.removeEventListener('abort', interrupt)
+        }
         return
       }
-      if (req.method === 'DELETE' && ['attachments','references'].includes(materialRoute[2]!) && materialRoute[3]) { await options.materials.remove(sessionId, materialRoute[3]); json(res, 200, { removed: true }); return }
+      if (req.method === 'DELETE' && ['attachments', 'references'].includes(materialRoute[2]!) && materialRoute[3]) {
+        await options.materials.remove(sessionId, materialRoute[3])
+        json(res, 200, { removed: true })
+        return
+      }
     }
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {
-      json(res, 200, options.outlines.outlineSnapshot(outline[1]!)); return
+      json(res, 200, options.outlines.outlineSnapshot(outline[1]!))
+      return
     }
     const management = options.management
     if (management) {
       if (url.pathname === '/api/workspaces') {
         if (req.method === 'GET' && management.workspaces) {
-          json(res, 200, await management.workspaces()); return
+          json(res, 200, await management.workspaces())
+          return
         }
         if (req.method === 'POST' && management.addWorkspace) {
-          json(res, 201, await management.addWorkspace(await readJson(req))); return
+          json(res, 201, await management.addWorkspace(await readJson(req)))
+          return
         }
       }
       const workspace = /^\/api\/workspaces\/([\w-]{1,100})$/.exec(url.pathname)
@@ -218,65 +435,114 @@ export async function startHost(options: HostOptions) {
           throw new HttpError(409, 'WORKSPACE_BUSY')
         if (req.method === 'DELETE' && management.removeWorkspace) {
           const remove = management.removeWorkspace.bind(management)
-          await controller.withIdleSessions(sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
+          await controller.withIdleSessions(
+            sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
             async () => {
-              if ((await management.sessions()).some(session => session.workspaceId === workspace[1] && controller.active(session.sessionId)))
+              if (
+                (await management.sessions()).some(
+                  session => session.workspaceId === workspace[1] && controller.active(session.sessionId),
+                )
+              )
                 throw new HttpError(409, 'WORKSPACE_BUSY')
               return remove(workspace[1]!)
-            })
-          json(res, 200, { removed: true }); return
+            },
+          )
+          json(res, 200, { removed: true })
+          return
         }
         if (req.method === 'PUT' && management.repointWorkspace) {
           const value = await readJson(req)
           const repoint = management.repointWorkspace.bind(management)
-          json(res, 200, await controller.withIdleSessions(sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
-            async () => {
-              if ((await management.sessions()).some(session => session.workspaceId === workspace[1] && controller.active(session.sessionId)))
-                throw new HttpError(409, 'WORKSPACE_BUSY')
-              return repoint(workspace[1]!, value)
-            })); return
+          json(
+            res,
+            200,
+            await controller.withIdleSessions(
+              sessions.filter(session => session.workspaceId === workspace[1]).map(session => session.sessionId),
+              async () => {
+                if (
+                  (await management.sessions()).some(
+                    session => session.workspaceId === workspace[1] && controller.active(session.sessionId),
+                  )
+                )
+                  throw new HttpError(409, 'WORKSPACE_BUSY')
+                return repoint(workspace[1]!, value)
+              },
+            ),
+          )
+          return
         }
       }
       if (url.pathname === '/api/settings' && req.method === 'GET') {
-        json(res, 200, await management.settings()); return
+        json(res, 200, await management.settings())
+        return
       }
       if (url.pathname === '/api/permission-default' && management.defaultPermission) {
-        if (req.method === 'GET') { json(res, 200, { preset: await management.defaultPermission() }); return }
-        if (req.method === 'PUT' && management.saveDefaultPermission) { json(res, 200, { preset: await management.saveDefaultPermission(await readJson(req)) }); return }
+        if (req.method === 'GET') {
+          json(res, 200, { preset: await management.defaultPermission() })
+          return
+        }
+        if (req.method === 'PUT' && management.saveDefaultPermission) {
+          json(res, 200, { preset: await management.saveDefaultPermission(await readJson(req)) })
+          return
+        }
       }
       const permission = /^\/api\/sessions\/([\w-]{1,100})\/permissions(?:\/([\w-]{1,100}))?$/.exec(url.pathname)
       if (permission && management.permissions) {
-        if (req.method === 'GET' && !permission[2]) { json(res, 200, await management.permissions(permission[1]!)); return }
-        if (req.method === 'PUT' && !permission[2] && management.savePermission) { json(res, 200, await management.savePermission(permission[1]!, await readJson(req))); return }
-        if (req.method === 'DELETE' && permission[2] && management.revokeGrant) { json(res, 200, await management.revokeGrant(permission[1]!, permission[2])); return }
+        if (req.method === 'GET' && !permission[2]) {
+          json(res, 200, await management.permissions(permission[1]!))
+          return
+        }
+        if (req.method === 'PUT' && !permission[2] && management.savePermission) {
+          json(res, 200, await management.savePermission(permission[1]!, await readJson(req)))
+          return
+        }
+        if (req.method === 'DELETE' && permission[2] && management.revokeGrant) {
+          json(res, 200, await management.revokeGrant(permission[1]!, permission[2]))
+          return
+        }
       }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
         if (req.method === 'PUT') await management.saveProvider(provider[1]!, await readJson(req))
         else await management.deleteProvider(provider[1]!)
-        json(res, 200, { saved: true }); return
+        json(res, 200, { saved: true })
+        return
       }
       const catalog = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(url.pathname)
-      if (catalog && req.method === 'GET') { json(res, 200, await management.catalog(catalog[1]!)); return }
+      if (catalog && req.method === 'GET') {
+        json(res, 200, await management.catalog(catalog[1]!))
+        return
+      }
       if (url.pathname === '/api/sessions') {
         if (req.method === 'GET') {
           const sessions = await management.sessions()
-          json(res, 200, sessions.map(session => {
-            const activeRequestId = controller.active(session.sessionId)
-            return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
-          })); return
+          json(
+            res,
+            200,
+            sessions.map(session => {
+              const activeRequestId = controller.active(session.sessionId)
+              return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
+            }),
+          )
+          return
         }
-        if (req.method === 'POST') { json(res, 201, await management.createSession(await readJson(req))); return }
+        if (req.method === 'POST') {
+          json(res, 201, await management.createSession(await readJson(req)))
+          return
+        }
       }
       const resource = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(url.pathname)
       if (resource?.[2] === 'selection' && req.method === 'PUT') {
-        json(res, 200, await management.selectModel(resource[1]!, await readJson(req))); return
+        json(res, 200, await management.selectModel(resource[1]!, await readJson(req)))
+        return
       }
       if (resource?.[2] === 'activities' && req.method === 'GET') {
-        json(res, 200, await management.activities(resource[1]!)); return
+        json(res, 200, await management.activities(resource[1]!))
+        return
       }
       if (resource?.[2] === 'requests' && req.method === 'GET') {
-        json(res, 200, await management.requests(resource[1]!)); return
+        json(res, 200, await management.requests(resource[1]!))
+        return
       }
     }
     const context = /^\/api\/sessions\/([\w-]{1,100})\/(context|compact)$/.exec(url.pathname)
@@ -284,22 +550,28 @@ export async function startHost(options: HostOptions) {
       const value = await readJson(req)
       if (context[2] === 'context') json(res, 200, await options.context.usage(context[1]!, value))
       else {
-        if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length) throw new HttpError(400, 'INVALID_REQUEST')
+        if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length)
+          throw new HttpError(400, 'INVALID_REQUEST')
         json(res, 202, await controller.submit({ sessionId: context[1]!, input: '', contextAction: 'compact' }))
       }
       return
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       const request = await body(req)
-      if ((request.attachmentIds?.length || request.referenceIds?.length) && !options.materials) throw new HttpError(409, 'MATERIALS_DISABLED')
+      if ((request.attachmentIds?.length || request.referenceIds?.length) && !options.materials)
+        throw new HttpError(409, 'MATERIALS_DISABLED')
       json(res, 202, await controller.submit(request))
       return
     }
     const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)
     const approval = /^\/api\/requests\/([\w-]+)\/approval$/.exec(url.pathname)
-    if (approval && req.method === 'POST') { json(res, 202, await controller.approve(approval[1]!, await readJson(req))); return }
+    if (approval && req.method === 'POST') {
+      json(res, 202, await controller.approve(approval[1]!, await readJson(req)))
+      return
+    }
     if (reply && req.method === 'POST') {
-      json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req)))); return
+      json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req))))
+      return
     }
     const stop = /^\/api\/requests\/([\w-]+)\/stop$/.exec(url.pathname)
     if (stop && req.method === 'POST') {
@@ -339,8 +611,15 @@ export async function startHost(options: HostOptions) {
       json(
         res,
         200,
-        messages.filter(message => message.role !== 'system').map(message => ({ role: message.role, content: message.content,
-          ...(message.role === 'tool' ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true } : {}) })),
+        messages
+          .filter(message => message.role !== 'system')
+          .map(message => ({
+            role: message.role,
+            content: message.content,
+            ...(message.role === 'tool'
+              ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true }
+              : {}),
+          })),
       )
       return
     }

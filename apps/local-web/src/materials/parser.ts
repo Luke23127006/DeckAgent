@@ -5,6 +5,7 @@ export interface Extraction {
   readonly text: string
   readonly warnings: readonly string[]
   readonly image?: boolean
+  readonly imageSize?: { readonly width: number; readonly height: number }
 }
 
 /** Workers bound JS heap and execution time; this is not an OS sandbox. */

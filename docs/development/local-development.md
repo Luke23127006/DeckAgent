@@ -334,6 +334,32 @@ Run `pnpm.cmd test:context` for local storage/accounting checks and
 `pnpm.cmd test:context:live` command uses Gemini credentials from the environment
 or optional `.env`; it incurs provider usage and includes the full deck scenario.
 
+## Internet images and PDF export
+
+Open **Ảnh và xuất PDF** below the deck controls. Import a public HTTPS PNG/JPEG URL,
+select a published slide, then insert the saved image. The panel shows the source URL.
+Images belong to the current Chat. The model can use imported images through presentation tools;
+it cannot fetch arbitrary image URLs. Private addresses, credentials and unsafe redirects are rejected.
+
+**Xuất PDF** downloads the committed deck, including saved direct edits and images.
+Unsaved editor drafts are excluded. Export does not call a model or rewrite the slides.
+Chrome/Edge must be installed. DECKAGENT_EXPORT_BROWSER can select an installed Chromium executable.
+No browser is downloaded and the browser sandbox stays enabled. Slides export at 1280 by 720 CSS pixels.
+A slide spanning multiple PDF pages fails with an overflow message; reduce its content and try again.
+
+Cancel stops an import/export. A save that committed before cancellation remains saved.
+Restart with the same profile to keep assets.sqlite and image-assets alongside the existing deck data.
+
+```powershell
+pnpm.cmd test:images-export
+pnpm.cmd test:images-export:browser
+pnpm.cmd test:images-export:cli
+pnpm.cmd test:images-export:live
+```
+
+Only the live command calls a provider and public image server. It requires GEMINI_API_KEY from the environment/optional .env.
+The browser checks need Chrome/Edge. The CLI checks use the existing pinned OpenCode executable and a local provider fixture.
+
 ## Direct slide editing
 
 Open a published slide in Deck canvas and select **Sửa trực tiếp** below its slide

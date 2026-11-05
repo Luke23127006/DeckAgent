@@ -1,0 +1,514 @@
+{
+  "task": "V2 OpenCode TASK-007",
+  "checkpointDate": "2026-11-05",
+  "ownerDecision": {
+    "date": "2026-11-04",
+    "imageRoute": "Internet images, explicit user HTTPS import",
+    "minimumExport": "PDF",
+    "authority": "Owner replies in chat",
+    "adr": "docs/adr/0007-internet-image-assets-and-pdf-export.md"
+  },
+  "candidate": {
+    "baseSha": "38892faf3cade4bef172b4f1c0fc3bddc5417724",
+    "branch": "feat/v2-opencode",
+    "dirty": true,
+    "initialWorkingTree": "clean; Task 006 committed",
+    "sourceFingerprints": [
+      {
+        "path": "apps/local-web/package.json",
+        "sha256": "ba006022fbe9654d3a4e3e25c9ea40785b4179fd2ade159911a6e5273b689000"
+      },
+      {
+        "path": "apps/local-web/src/editing-workflow.ts",
+        "sha256": "3f25aae6cc8d7f5493be3a834bbf0f7b37ec16927ffd237ae8ec0e2c9042f34f"
+      },
+      {
+        "path": "apps/local-web/src/export-pdf.ts",
+        "sha256": "41aa280c848eb692032ff1a1558192d03891b522c0742c903b40f061ebbadf31"
+      },
+      {
+        "path": "apps/local-web/src/image-assets/network.ts",
+        "sha256": "e1bffdeba2c639af1bfdaff3612b380eaeb70e5f46213792d6defed7c0412d83"
+      },
+      {
+        "path": "apps/local-web/src/image-assets/store.ts",
+        "sha256": "fa3642451510d1fef9b532603ed6dd320128232ea00837794c94f0ed9168c61d"
+      },
+      {
+        "path": "apps/local-web/src/index.ts",
+        "sha256": "030850c4207e3557e82ea84e0303075219b4a5427bc0ebf6b73345571a01b331"
+      },
+      {
+        "path": "apps/local-web/src/materials/parser.ts",
+        "sha256": "ead41bd3199bca3a42950194dce385bf4c2904742c3ebf01e71541be84b79cc4"
+      },
+      {
+        "path": "apps/local-web/src/materials/parser-worker.ts",
+        "sha256": "8f04a6c7a1baba5f7dbdc3430f23db6802507c2c787c8d611418422e82b2c255"
+      },
+      {
+        "path": "apps/local-web/src/outline-workflow.ts",
+        "sha256": "82e971437e5e994c6d4a8b76e9425823b86e1cb88a72479d8a3dd700527e35c0"
+      },
+      {
+        "path": "apps/local-web/src/web-request.ts",
+        "sha256": "a8e494884905796620f928c0476a16aee075eb9d47d19402bbb41f7c534191c9"
+      },
+      {
+        "path": "package.json",
+        "sha256": "5492f9829eead3732ee7eb0fe36f3ed093b37e1cf48638e06fde0dd52278680e"
+      },
+      {
+        "path": "packages/agent/runtime/src/tool-failure.ts",
+        "sha256": "3fb97b00e98d57754b7c1a6833165d8dc50693c8127dbd3177468a95ad192e07"
+      },
+      {
+        "path": "packages/client/runtime/src/deck-canvas.ts",
+        "sha256": "2b375c4f1af58fa4154e9449f6def436fecbae65f3dcab6fd2e557c7afde82cb"
+      },
+      {
+        "path": "packages/client/runtime/src/deck-client.ts",
+        "sha256": "ecd2a75e2bab3b2cc6aa27ef3636ffeeedb10057fa1d3caab52218fae4bf53cd"
+      },
+      {
+        "path": "packages/client/runtime/src/deck-model.ts",
+        "sha256": "edb327872017b72c5800bbb6dc8a5d9c0be3f75af4f029860819d1914e511e15"
+      },
+      {
+        "path": "packages/client/runtime/src/image-export.ts",
+        "sha256": "68a2242e0f660dd48fa927e0aee04ab774b2cca6a6f6c08f0e133ac77e514d6e"
+      },
+      {
+        "path": "packages/client/runtime/src/slide-editor.ts",
+        "sha256": "d7a964941508ed07be89668f17b9b1a9886e0b8713a0af896ca73c9ee573f415"
+      },
+      {
+        "path": "packages/host/api/src/contracts.ts",
+        "sha256": "4705c7737cb06bef1a12cfe619f54879ba01595f6018a6e3840891f606f4e760"
+      },
+      {
+        "path": "packages/host/api/src/index.ts",
+        "sha256": "96e1d8901a391cade0c504b14a2f0f35de481923c475d7ad42e18b4a0e58d13b"
+      },
+      {
+        "path": "packages/presentation/deck/src/contracts.ts",
+        "sha256": "a8629ce039ff340fff6019dcacf7aa7800b399e67f991a9efbf644539f2600d3"
+      },
+      {
+        "path": "packages/presentation/deck/src/image-assets.ts",
+        "sha256": "acd0f7a5b4c52ee1389a1016158b347d7526debf00cf23c6ef20848717ef917f"
+      },
+      {
+        "path": "packages/presentation/deck/src/index.ts",
+        "sha256": "8d2ffa83b43bd57fc27091b67b45b42781ed5baebd2a1f3e7ebf6f3ae46aae60"
+      },
+      {
+        "path": "packages/tools/presentation/src/index.ts",
+        "sha256": "0e57c380b2164e190c51b386927774073a91909b277ff5899798a87de9009953"
+      },
+      {
+        "path": "packages/tools/presentation/src/insert-image.ts",
+        "sha256": "27f3894d5eddf4aca5db9690fe4b627502cd424ea14eadef2968f78b63d4263b"
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "sha256": "2b15b041aaf50cf4128b768b9c12d1d3fc4215252c4c26dce231439ef2c26abc"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "63c3391a00649a95c1e26b552cddd6157f516cda94f31edb8a0211bccce2ea0d"
+      },
+      {
+        "path": "tests/context.test.mjs",
+        "sha256": "ee5b456bfe8c20d87a55f5d487c07b452314e4fa178bad01dc246ae512f5300f"
+      },
+      {
+        "path": "tests/image-network.test.mjs",
+        "sha256": "5564f2506c6307d0d2c8e8e40a13034bc709290ae254d664076ab1c02001f28c"
+      },
+      {
+        "path": "tests/images-export.test.mjs",
+        "sha256": "bf13000b29aad67a28e82bd7d8ff270c6c6350d9ee29eedc6c450a83e0a26afa"
+      },
+      {
+        "path": "tests/images-export-browser.test.mjs",
+        "sha256": "f474759be91b0bd7c024d0bc390ca27aa493a737cff7e73b4835826c9355ca9d"
+      },
+      {
+        "path": "tests/images-export-host.test.mjs",
+        "sha256": "98d62cbb6a43efd682303e5042455ba510a9beb7fdccea23d810dc350ad29a7f"
+      },
+      {
+        "path": "tests/images-export-live.test.mjs",
+        "sha256": "885914c9d615f2bd0baf2cf294583949f462caa91fdae6c656f549e6cda6913f"
+      },
+      {
+        "path": "tests/images-export-opencode.test.mjs",
+        "sha256": "b55f71027d855d6ee932f35b2903740b4d49be45bf61c402418b2221c088e6ca"
+      },
+      {
+        "path": "tests/images-export-pdf.test.mjs",
+        "sha256": "fe98ce070d3df6bed4288054fcb7d8853a7fccb65c100b263425d5a683b9b7a1"
+      }
+    ],
+    "changedFiles": [
+      "apps/local-web/package.json",
+      "apps/local-web/src/editing-workflow.ts",
+      "apps/local-web/src/export-pdf.ts",
+      "apps/local-web/src/image-assets/network.ts",
+      "apps/local-web/src/image-assets/store.ts",
+      "apps/local-web/src/index.ts",
+      "apps/local-web/src/materials/parser.ts",
+      "apps/local-web/src/materials/parser-worker.ts",
+      "apps/local-web/src/outline-workflow.ts",
+      "apps/local-web/src/web-request.ts",
+      "docs/adr/0007-internet-image-assets-and-pdf-export.md",
+      "docs/development/local-development.md",
+      "docs/versions/v2-opencode/DECISIONS.md",
+      "docs/versions/v2-opencode/PROGRESS.md",
+      "docs/versions/v2-opencode/SCOPE.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/CONTRACT.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/HANDOFF.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/MANUAL-ACCEPTANCE.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/README.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/TASK-007-A.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/TASK-007-B.md",
+      "docs/versions/v2-opencode/tasks/task-007-images-export/TASK-007-C.md",
+      "package.json",
+      "packages/agent/runtime/src/tool-failure.ts",
+      "packages/client/runtime/src/deck-canvas.ts",
+      "packages/client/runtime/src/deck-client.ts",
+      "packages/client/runtime/src/deck-model.ts",
+      "packages/client/runtime/src/image-export.ts",
+      "packages/client/runtime/src/slide-editor.ts",
+      "packages/host/api/src/contracts.ts",
+      "packages/host/api/src/index.ts",
+      "packages/presentation/deck/src/contracts.ts",
+      "packages/presentation/deck/src/image-assets.ts",
+      "packages/presentation/deck/src/index.ts",
+      "packages/tools/presentation/src/index.ts",
+      "packages/tools/presentation/src/insert-image.ts",
+      "pnpm-lock.yaml",
+      "scripts/test-opencode.mjs",
+      "tests/context.test.mjs",
+      "tests/image-network.test.mjs",
+      "tests/images-export.test.mjs",
+      "tests/images-export-browser.test.mjs",
+      "tests/images-export-host.test.mjs",
+      "tests/images-export-live.test.mjs",
+      "tests/images-export-opencode.test.mjs",
+      "tests/images-export-pdf.test.mjs"
+    ]
+  },
+  "environment": {
+    "architecture": "AMD64",
+    "pnpm": "11.28.5",
+    "node": "v22.19.0",
+    "chrome": "156.0.8078.80",
+    "cli": "1.19.5",
+    "utc": "2026-11-04T17:22:04.8446910Z",
+    "os": "Microsoft Windows NT 10.0.26300.0"
+  },
+  "model": {
+    "model": "gemini-3.1-flash-lite",
+    "provider": "google",
+    "protocol": "gemini",
+    "credentialConfigured": true
+  },
+  "openCodeBinary": {
+    "path": ".local-only/opencode-spike/tooling/node_modules/opencode-windows-x64/bin/opencode.exe",
+    "version": "1.19.5",
+    "sha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa"
+  },
+  "status": {
+    "functionalImplementation": "IMPLEMENTED",
+    "A": "IMPLEMENTED; owner basic smoke PASS; automated PASS",
+    "B": "IMPLEMENTED; owner basic smoke PASS; browser PASS",
+    "C": "IMPLEMENTED; owner basic smoke PASS; focused CLI/live PASS",
+    "G007": "NOT VERIFIED",
+    "ownerManual": "BASIC SMOKE PASS; extended acceptance NOT VERIFIED",
+    "dependencies": "G-003 and G-006 remain NOT VERIFIED; owner authorized independent delivery",
+    "defaultRuntime": "unchanged; OpenCode opt-in"
+  },
+  "checks": [
+    {
+      "name": "typecheck/build/lint/changed-source format",
+      "status": "PASS",
+      "commands": [
+        "pnpm.cmd build",
+        "pnpm.cmd lint",
+        "pnpm.cmd format:check <31 changed source/test files>"
+      ],
+      "execution": "Supported local Node 22.19.0; tsc -b then scripts/build-workspace.mjs; Biome through same Node"
+    },
+    {
+      "name": "focused image/network/Host/browser/PDF",
+      "status": "PASS",
+      "commands": [
+        "pnpm.cmd test:images-export",
+        "pnpm.cmd test:images-export:browser"
+      ],
+      "evidence": "task007-focused.log and task007-host-ui.log; final batch includes all eight image cases"
+    },
+    {
+      "name": "affected regression",
+      "status": "90 PASS, 1 batch teardown FAIL; isolated retest PASS",
+      "distinctCases": 91,
+      "batch": {
+        "passed": 90,
+        "failed": 1
+      },
+      "retest": {
+        "passed": 1,
+        "failed": 0
+      },
+      "files": [
+        "tests/images-export.test.mjs",
+        "tests/image-network.test.mjs",
+        "tests/images-export-host.test.mjs",
+        "tests/images-export-browser.test.mjs",
+        "tests/images-export-pdf.test.mjs",
+        "tests/context.test.mjs",
+        "tests/materials.test.mjs",
+        "tests/materials-ingestion.test.mjs",
+        "tests/materials-security.test.mjs",
+        "tests/direct-editing.test.mjs",
+        "tests/direct-editing-browser.test.mjs",
+        "tests/deck-service.test.mjs",
+        "tests/publish-slide.test.mjs",
+        "tests/deck-pipeline.test.mjs",
+        "tests/deck-model.test.mjs",
+        "tests/deck-client.test.mjs",
+        "tests/host-api.test.mjs",
+        "tests/local-web.test.mjs",
+        "tests/outline-state.test.mjs",
+        "tests/outline-workflow.test.mjs",
+        "tests/outline-client.test.mjs",
+        "tests/v2-permissions.test.mjs",
+        "tests/v2-permission-isolation.test.mjs",
+        "tests/web-session.test.mjs",
+        "tests/web-management.test.mjs"
+      ],
+      "command": "node --test <files listed above>",
+      "retestCommand": "node --test tests/direct-editing-browser.test.mjs",
+      "failure": "Existing editor browser teardown EBUSY: temporary Chrome Cookies file locked. No assertions or tests weakened."
+    },
+    {
+      "name": "pinned OpenCode CLI",
+      "status": "PASS",
+      "passed": 1,
+      "command": "node scripts/test-opencode.mjs images-export",
+      "scope": "Real CLI/local deterministic provider; captured tools only deckagent_ names; scope/ownership/stale revision denied, duplicate insertion deduplicated"
+    },
+    {
+      "name": "real Internet + Gemini MCP + PDF + restart",
+      "status": "PASS",
+      "passed": 1,
+      "command": "DECKAGENT_IMAGES_EXPORT_LIVE=1 node --env-file-if-exists=.env --test tests/images-export-live.test.mjs",
+      "repeatCommand": "pnpm.cmd test:images-export:live",
+      "scope": "Production DNS/address-pinned HTTPS, real Gemini read_slide/list_image_assets/insert_image, direct edit, PDF and restart",
+      "note": "Live run preceded final formatting and client-only Chat-switch guard. Agent/network/domain/export behavior unchanged. Added PDF-reader assertions were run separately against the same artifact; no redundant model call."
+    },
+    {
+      "name": "independent PDF reader and raster review",
+      "status": "PASS",
+      "viewer": "pdfjs-dist 6.4.299 with existing optional native canvas",
+      "scope": "Fixture and live PDFs: two ordered pages, Vietnamese direct edit, existing text, image operators; independently drawn PNGs viewed",
+      "evidence": "task007-live-independent.log and artifacts"
+    },
+    {
+      "name": "cancellation",
+      "status": "PASS within observed bounds",
+      "scope": "Abort after actual renderer launch; close/drain completed without deck changes. Host synthetic exporter separately receives HTTP disconnect abort before bytes. No OS descendant-PID audit."
+    },
+    {
+      "name": "owner manual and complete integration",
+      "status": "NOT VERIFIED",
+      "guide": "docs/versions/v2-opencode/tasks/task-007-images-export/MANUAL-ACCEPTANCE.md"
+    },
+    {
+      "name": "owner six-case basic smoke",
+      "status": "PASS",
+      "date": "2026-11-05",
+      "evidence": "Owner aggregate confirmation in chat; full gate not closed"
+    }
+  ],
+  "failuresRetained": [
+    {
+      "case": "initial live prompt",
+      "result": "TIMEOUT",
+      "cause": "Existing scope guard blocks standalone insert; clarification waited",
+      "retest": "Supported prompt PASS; no permission/business-rule change"
+    },
+    {
+      "case": "initial deterministic CLI fixture",
+      "result": "PROVIDER_HTTP",
+      "cause": "Fixture demanded image tool while blocked prompt admitted only clarification/scope tools",
+      "retest": "Supported prompt PASS"
+    },
+    {
+      "case": "early PDF/browser fixtures",
+      "result": "FAIL before correction",
+      "cause": "Windows file-URL import, PDF.js loading-task cleanup and unknown-Chat error expectation corrected",
+      "retest": "Focused/browser checks PASS"
+    },
+    {
+      "case": "final regression",
+      "result": "90 PASS, 1 teardown FAIL",
+      "cause": "Existing Chrome fixture temporary Cookies lock",
+      "retest": "Isolated editor browser PASS"
+    }
+  ],
+  "limits": [
+    "Only Windows x64, installed Chrome and native Gemini live-qualified",
+    "Seeded deck plan; no requalification of outline/source generation or earlier gates",
+    "No arbitrary URL tool, search, AI generation, PPTX or image positioning editor",
+    "Application controls/Chromium sandbox are not a general OS sandbox",
+    "Installed fonts can substitute; recorded sample fidelity is not universal",
+    "Late DNS may finish after abort but cannot start HTTP",
+    "No exhaustive OS process-tree audit, crash or memory-pressure campaign",
+    "Ready unused assets retained; no automatic garbage collection",
+    "Existing edit-scope word guard remains",
+    "No Issue publication, commit or push"
+  ],
+  "logs": [
+    {
+      "path": ".local-only/task007-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-only/task007-bundle.log",
+      "sha256": "8083faf6a80de55b41a3f656a87b309fcb56d9c29669c02d9297aa26f2982d82"
+    },
+    {
+      "path": ".local-only/task007-lint.log",
+      "sha256": "0717351b5f165489f862ffb752fa5da7e72fe52c7869521e3937f8a500011fc0"
+    },
+    {
+      "path": ".local-only/task007-format-check.log",
+      "sha256": "84e194061f88a9402bebc8a81e248634a3aba7079b1e2dde84f51acf4e520d42"
+    },
+    {
+      "path": ".local-only/task007-regression.log",
+      "sha256": "39a07d2f9037935046da441a913b813ec8496e7f494c51c86be677c0d2bf2906",
+      "tests": 53,
+      "pass": 53,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-focused.log",
+      "sha256": "e07ac29cf964c2e26d868c74d30ae8969daf519890c90ec17fc34e2950b7c8aa",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-host-ui.log",
+      "sha256": "571405dd886b9922be419cf6f7f93187987f5ee41ecfa11bfeb64f2c33cae452",
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-final-regression.log",
+      "sha256": "a3522d6aaa2c8700d92326d557e9864592b765f5858099b9ff22bfbd355e8f19",
+      "tests": 91,
+      "pass": 90,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-editor-cleanup-retest.log",
+      "sha256": "c06dc30715bcfb955d7190e820fbe794e1b125f89a1a2061b6364ea46d377fe5",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-final-cli.log",
+      "sha256": "32e0106ec4801ccf1492dad7c02eee3fc04e1770151c1a445dff5b744a177939",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-live-initial-timeout.log",
+      "sha256": "84721776d5666613f6bc4dd891f40c8ffe62aaf1814556761fb2898352880c9f",
+      "tests": 1,
+      "pass": 0,
+      "fail": 0,
+      "cancelled": 1,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-cli-initial-failure.log",
+      "sha256": "10f07ad36cbffc60a801d38be64800024c861217e6641ccab3010be1edfd331c",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-live-retest.log",
+      "sha256": "a8b2956629a795a0c4bf58c9d723cc2c2f236f5a3f0c38353b59e9483e8f791b",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task007-live-independent.log",
+      "sha256": "a076c38cad1b4733e0ff7a2149d79046b16629f6b2b5bfe7a6bff2967233ae88"
+    },
+    {
+      "path": ".local-only/task007-dependencies.log",
+      "sha256": "18aed0a4116824796747276865b35ef7b1b55a574ecbc1e2a46ae90b3aaf30dc"
+    },
+    {
+      "path": ".local-only/task007-docs.log",
+      "sha256": "2092951a57dc6e0702dca831bfe59d1f004ec9de167e340d873e2e951811a5bf"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".local-only/task007-fixture-export.pdf",
+      "sha256": "45613a217daade7ca1428d99e48e1762c1da12b1b141f97eb2ba906eb90a2e99"
+    },
+    {
+      "path": ".local-only/task007-browser-export.pdf",
+      "sha256": "b1410d36f196dcfbc1ef2a85d09a283dea20219d5764e613800ec269983d57ff"
+    },
+    {
+      "path": ".local-only/task007-independent-view.png",
+      "sha256": "e074d7efb9495cee284d5a35447ffeb5fc21d1bd76a8c14a248d0030dc4ad645"
+    },
+    {
+      "path": ".local-only/task007-live-export.pdf",
+      "sha256": "f3f42889b233ddcf703a2429f1c1c79357c1eac6a84609856966bc71f9aec860"
+    },
+    {
+      "path": ".local-only/task007-live-independent.png",
+      "sha256": "c3663000b4faaf9e61549c37de861d0f3daa94ed00694c46047fd58fac4dc9d9"
+    }
+  ],
+  "ownerSmoke": {
+    "date": "2026-11-05",
+    "status": "PASS",
+    "source": "Owner reply in chat: da pass, cap nhat status",
+    "scope": "Six-case basic smoke from preceding instructions: two slides, URL import, selected-slide insertion, direct edit and PDF, reload persistence, private URL denial",
+    "limitations": "Aggregate confirmation; no exact manual SHA/browser/model or itemized artifacts supplied. Extended checks not inferred."
+  }
+}

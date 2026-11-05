@@ -11,7 +11,7 @@ interface Draft {
   preview?: string
 }
 const previewHtml = (html: string) =>
-  `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">${html}`
+  `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">${html}`
 
 /** Original slide HTML is confined to the opaque preview, never to the editor DOM. */
 export function slideEditor(client: DeckClient, saved: () => Promise<void>) {
@@ -124,7 +124,7 @@ export function slideEditor(client: DeckClient, saved: () => Promise<void>) {
         choose.append(option)
       }
       choose.value = d.selected
-      frame.srcdoc = previewHtml(d.preview ?? d.document.html)
+      frame.srcdoc = previewHtml(d.preview ?? d.document.displayHtml ?? d.document.html)
       notice.textContent =
         d.document.revision !== c.revision
           ? 'Slide đã có bản mới. Bản nháp giữ nguyên; tải bản mới trước khi sửa tiếp.'
@@ -148,7 +148,7 @@ export function slideEditor(client: DeckClient, saved: () => Promise<void>) {
         choose.append(option)
       }
       choose.value = d.selected
-      frame.srcdoc = previewHtml(document.html)
+      frame.srcdoc = previewHtml(document.displayHtml ?? document.html)
       notice.textContent = document.nodes.length
         ? `Đang sửa từ bản ${document.revision}. Chưa lưu thay đổi.`
         : 'HTML này vẫn xem được nhưng không có khối văn bản có thể sửa an toàn. Không tự chuyển đổi.'
@@ -196,7 +196,7 @@ export function slideEditor(client: DeckClient, saved: () => Promise<void>) {
     const c = current,
       attempt = ++epoch
     if (!d.operations.size) {
-      frame.srcdoc = previewHtml(d.document.html)
+      frame.srcdoc = previewHtml(d.document.displayHtml ?? d.document.html)
       return
     }
     const input = command(d)

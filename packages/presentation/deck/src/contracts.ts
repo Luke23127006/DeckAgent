@@ -46,6 +46,36 @@ export interface SlideContent {
   readonly slideId: string
   readonly revision: number
   readonly html: string
+  /** Host-only rendering projection; never persisted as canonical HTML. */
+  readonly displayHtml?: string
+}
+export interface FrozenDeck {
+  readonly sessionId: string
+  readonly outlineId: string
+  readonly version: number
+  readonly slides: readonly (SlideContent & { readonly title: string; readonly order: number })[]
+}
+export interface ImageAsset {
+  readonly assetId: string
+  readonly sessionId: string
+  readonly mediaType: 'image/png' | 'image/jpeg'
+  readonly sizeBytes: number
+  readonly width: number
+  readonly height: number
+  readonly sha256: string
+  readonly sourceUrl: string
+  readonly finalUrl: string
+}
+export interface InsertSlideImage {
+  readonly outlineId: string
+  readonly slideId: string
+  readonly expectedRevision: number
+  readonly assetId: string
+  readonly publicationId: string
+  readonly alt: string
+}
+export interface DeckImageEditor {
+  insertImage(sessionId: string, input: InsertSlideImage, signal?: AbortSignal): PublishedSlide
 }
 
 export interface DeckReader {

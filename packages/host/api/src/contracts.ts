@@ -1,5 +1,6 @@
 import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import type { DeckReader, DeckEditor, OutlineReader, OutlineTarget } from '@deckagent/deck'
+import type { ImageAsset, InsertSlideImage, PublishedSlide } from '@deckagent/deck'
 
 export interface AgentRequest {
   /** Host-only admission from the explicit compact route; never inferred from text. */
@@ -77,7 +78,10 @@ export interface RequestReply {
   readonly questionId: string
   readonly version: number
   readonly replyId: string
-  readonly answer: { readonly type: 'text'; readonly text: string } | { readonly type: 'option'; readonly index: number } | { readonly type: 'skip' }
+  readonly answer:
+    | { readonly type: 'text'; readonly text: string }
+    | { readonly type: 'option'; readonly index: number }
+    | { readonly type: 'skip' }
 }
 
 /** Application wrapper releases each model turn before exposing a pending question. */
@@ -96,11 +100,26 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly imageAssets?: {
+    list(sessionId: string): Promise<{ readonly enabled: boolean; readonly items: readonly ImageAsset[] }>
+    import(sessionId: string, value: unknown, signal: AbortSignal): Promise<ImageAsset>
+    insert(sessionId: string, input: InsertSlideImage): PublishedSlide
+  }
+  readonly renderSlideHtml?: (sessionId: string, html: string) => Promise<string>
+  readonly exportPdf?: (
+    sessionId: string,
+    signal: AbortSignal,
+  ) => Promise<{ readonly bytes: Uint8Array; readonly version: number }>
   readonly slideEditor?: DeckEditor
   readonly context?: { usage(sessionId: string, draft: unknown): Promise<ContextUsage> }
   readonly materials?: MaterialOperations
   /** Host owns the returned handle until the turn and disposal finish. */
-  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest, requestApproval: RequestApproval) => Promise<RequestAgent>
+  readonly openAgent: (
+    sessionId: string,
+    requestId: string,
+    request: AgentRequest,
+    requestApproval: RequestApproval,
+  ) => Promise<RequestAgent>
   readonly approvalAnswered?: (approval: StepApproval, decision: ApprovalDecision) => Promise<void>
   /** Persist an active transition before it becomes visible or starts more model work. */
   readonly requestState?: (snapshot: RequestSnapshot) => Promise<void>
@@ -112,7 +131,9 @@ export interface HostOptions {
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
-  readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
+  readonly assets?: Readonly<
+    Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
+  >
 }
 
 export interface ContextUsage {
@@ -257,7 +278,9 @@ export interface MaterialInfo {
 }
 export interface MaterialOperations {
   reference?(sessionId: string, value: unknown): Promise<MaterialInfo>
-  list(sessionId: string): Promise<{ readonly enabled: boolean; readonly limits?: MaterialLimits; readonly items: readonly MaterialInfo[] }>
+  list(
+    sessionId: string,
+  ): Promise<{ readonly enabled: boolean; readonly limits?: MaterialLimits; readonly items: readonly MaterialInfo[] }>
   upload(sessionId: string, name: string, bytes: AsyncIterable<Uint8Array>, signal: AbortSignal): Promise<MaterialInfo>
   remove(sessionId: string, materialId: string): Promise<void>
 }

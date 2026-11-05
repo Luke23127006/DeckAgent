@@ -106,7 +106,7 @@ test('usage includes draft and cached material, labels unknowns, suggests at 85 
     headers: { authorization: `Bearer ${app.token}` },
   })
   const outline = await outlineResponse.json()
-  contexts.observePrompt(id, selection, { outline, deck, materials: [] }, 400)
+  contexts.observePrompt(id, selection, { outline, deck, materials: [], imageAssets: [] }, 400)
   contexts.close()
   const measured = (await api(`sessions/${id}/context`, { input: 'UNSENT_DRAFT' })).value
   assert.equal(measured.source, 'estimate')

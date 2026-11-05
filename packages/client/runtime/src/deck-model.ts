@@ -5,6 +5,7 @@ export interface DeckViewState {
   readonly snapshot?: DeckSnapshot
   readonly selectedId?: string
   readonly html?: string
+  readonly displayHtml?: string
   readonly connection: 'connecting' | 'live' | 'reconnecting' | 'error'
 }
 
@@ -56,6 +57,7 @@ export class DeckModel {
       snapshot,
       ...(selectedId ? { selectedId } : {}),
       ...(html !== undefined ? { html } : {}),
+      ...(html !== undefined && this.current.displayHtml ? { displayHtml: this.current.displayHtml } : {}),
       connection: this.current.connection,
     })
     await this.readSelected(sessionId, signal)
@@ -95,7 +97,11 @@ export class DeckModel {
       AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     )
     if (signal.aborted || this.sessionId !== sessionId || load !== this.load) return
-    this.set({ ...this.current, html: content.html })
+    this.set({
+      ...this.current,
+      html: content.html,
+      ...(content.displayHtml ? { displayHtml: content.displayHtml } : {}),
+    })
   }
 
   private async follow(sessionId: string, signal: AbortSignal): Promise<void> {

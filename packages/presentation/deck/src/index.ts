@@ -18,6 +18,12 @@ import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
 import { editableNodes, parseSlideEdit, patchSlideHtml, slideHash } from './slide-edit.ts'
 import type { DeckEditor, EditableSlide, SlideEdit } from './contracts.ts'
+import type { FrozenDeck } from './contracts.ts'
+import type { InsertSlideImage, DeckImageEditor } from './contracts.ts'
+import { slideAssetIds, appendSlideImage, parseImageInsert } from './image-assets.ts'
+export { slideAssetIds, renderSlideAssets, parseImageInsert } from './image-assets.ts'
+export type { ImageAsset, InsertSlideImage, DeckImageEditor } from './contracts.ts'
+export type { FrozenDeck } from './contracts.ts'
 export { parseSlideEdit } from './slide-edit.ts'
 export type { DeckEditor, EditableSlide, SlideEdit, SlideEditOperation } from './contracts.ts'
 import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
@@ -40,13 +46,16 @@ export type {
 /** One authoritative deck per Session. Own close() after Host/Agent teardown.
  * All methods are synchronous so a committed state and its notice have one order.
  */
-export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
+export class DeckService implements DeckReader, DeckPublisher, DeckEditor, DeckImageEditor {
   private readonly db: DatabaseSync
   private readonly outlines: OutlineStorage
   private closed = false
   private readonly listeners = new Map<string, Set<(change: DeckChange) => void>>()
 
-  constructor(path: string) {
+  constructor(
+    path: string,
+    private readonly imageOptions: { readonly assetExists?: (sessionId: string, assetId: string) => boolean } = {},
+  ) {
     let db: DatabaseSync | undefined
     try {
       if (!path.trim() || path === ':memory:') throw new DeckError('DECK_CONFIG')
@@ -83,20 +92,35 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
   }
 
   outlineSnapshot(sessionId: string): OutlineSnapshot {
-    return this.access(() => { this.id(sessionId); return this.outlines.snapshot(sessionId) })
+    return this.access(() => {
+      this.id(sessionId)
+      return this.outlines.snapshot(sessionId)
+    })
   }
 
   beginOutline(sessionId: string): void {
-    this.access(() => { this.id(sessionId); this.outlines.begin(sessionId) })
+    this.access(() => {
+      this.id(sessionId)
+      this.outlines.begin(sessionId)
+    })
   }
 
   /** Called by Host only after a successful completed response, never by a model tool. */
-  proposeOutline(sessionId: string, input: { readonly requestId: string; readonly responseIndex: number; readonly draft: OutlineDraft }): OutlineProposal {
-    return this.access(() => { this.id(sessionId); return this.transaction(() => this.outlines.propose(sessionId, input)) })
+  proposeOutline(
+    sessionId: string,
+    input: { readonly requestId: string; readonly responseIndex: number; readonly draft: OutlineDraft },
+  ): OutlineProposal {
+    return this.access(() => {
+      this.id(sessionId)
+      return this.transaction(() => this.outlines.propose(sessionId, input))
+    })
   }
 
   currentOutline(sessionId: string, target: OutlineTarget): OutlineProposal {
-    return this.access(() => { this.id(sessionId); return this.outlines.current(sessionId, target) })
+    return this.access(() => {
+      this.id(sessionId)
+      return this.outlines.current(sessionId, target)
+    })
   }
 
   confirmOutline(sessionId: string, target: OutlineTarget): void {
@@ -112,12 +136,17 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
   }
 
   cancelOutline(sessionId: string, target: OutlineTarget): void {
-    this.access(() => { this.id(sessionId); this.transaction(() => this.outlines.cancel(sessionId, target)) })
+    this.access(() => {
+      this.id(sessionId)
+      this.transaction(() => this.outlines.cancel(sessionId, target))
+    })
   }
 
   private insertPlan(sessionId: string, plan: ConfirmedDeckPlan): boolean {
-    const normalized = JSON.stringify({ outlineId: plan.outlineId,
-      slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })) })
+    const normalized = JSON.stringify({
+      outlineId: plan.outlineId,
+      slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })),
+    })
     const existing = this.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
     if (existing) {
       if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
@@ -125,7 +154,9 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
     }
     this.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
     const insert = this.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
-    plan.slides.forEach((s, i) => { insert.run(sessionId, s.slideId, s.title, i) })
+    plan.slides.forEach((s, i) => {
+      insert.run(sessionId, s.slideId, s.title, i)
+    })
     return true
   }
 
@@ -173,6 +204,8 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
       )
         throw new DeckError('DECK_INVALID_PUBLICATION')
       validateSlideHtml(input.html)
+      for (const asset of slideAssetIds(input.html))
+        if (!this.imageOptions.assetExists?.(sessionId, asset)) throw new DeckError('DECK_ASSET_UNAVAILABLE')
       const fingerprint = createHash('sha256')
         .update(JSON.stringify([input.outlineId, input.slideId, input.expectedRevision, input.html]))
         .digest('hex')
@@ -250,27 +283,43 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
     })
   }
   editableSlide(sessionId: string, slideId: string): EditableSlide {
-    const snapshot = this.snapshot(sessionId), slide = snapshot.slides.find(slide=>slide.slideId===slideId)
+    const snapshot = this.snapshot(sessionId),
+      slide = snapshot.slides.find(slide => slide.slideId === slideId)
     if (!snapshot.outlineId || !slide?.revision) throw new DeckError('DECK_CONTENT_NOT_FOUND')
-    const content = this.content(sessionId,slideId,slide.revision), nodes = editableNodes(content.html)
-    return {...content,outlineId:snapshot.outlineId,baseHash:slideHash(content.html),nodes,...(!nodes.length?{reason:'DECK_EDIT_UNSUPPORTED' as const}:{})}
+    const content = this.content(sessionId, slideId, slide.revision),
+      nodes = editableNodes(content.html)
+    return {
+      ...content,
+      outlineId: snapshot.outlineId,
+      baseHash: slideHash(content.html),
+      nodes,
+      ...(!nodes.length ? { reason: 'DECK_EDIT_UNSUPPORTED' as const } : {}),
+    }
   }
   previewSlideEdit(sessionId: string, input: SlideEdit): SlideContent {
     const value = parseSlideEdit(input)
     const snapshot = this.snapshot(sessionId)
     if (snapshot.outlineId !== value.outlineId) throw new DeckError('DECK_OUTLINE_MISMATCH')
-    if (snapshot.slides.find(slide=>slide.slideId===value.slideId)?.revision !== value.expectedRevision) throw new DeckError('DECK_CONFLICT')
-    return this.patchContent(sessionId,value)
+    if (snapshot.slides.find(slide => slide.slideId === value.slideId)?.revision !== value.expectedRevision)
+      throw new DeckError('DECK_CONFLICT')
+    return this.patchContent(sessionId, value)
   }
   editSlide(sessionId: string, input: SlideEdit, signal?: AbortSignal): PublishedSlide {
     signal?.throwIfAborted()
-    const value = parseSlideEdit(input), patched = this.patchContent(sessionId,value)
-    return this.publish(sessionId,{...value,publicationId:value.editId,html:patched.html},signal)
+    const value = parseSlideEdit(input),
+      patched = this.patchContent(sessionId, value)
+    return this.publish(sessionId, { ...value, publicationId: value.editId, html: patched.html }, signal)
   }
   private patchContent(sessionId: string, input: SlideEdit): SlideContent {
-    const content = this.content(sessionId,input.slideId,input.expectedRevision)
+    const content = this.content(sessionId, input.slideId, input.expectedRevision)
     if (slideHash(content.html) !== input.baseHash) throw new DeckError('DECK_CONFLICT')
-    return {...content,html:patchSlideHtml(content.html,input.operations)}
+    return { ...content, html: patchSlideHtml(content.html, input.operations) }
+  }
+  insertImage(sessionId: string, input: InsertSlideImage, signal?: AbortSignal): PublishedSlide {
+    signal?.throwIfAborted()
+    const value = parseImageInsert(input),
+      content = this.content(sessionId, value.slideId, value.expectedRevision)
+    return this.publish(sessionId, { ...value, html: appendSlideImage(content.html, value) }, signal)
   }
 
   subscribe(sessionId: string, listener: (change: DeckChange) => void): () => void {
@@ -285,6 +334,41 @@ export class DeckService implements DeckReader, DeckPublisher, DeckEditor {
       return () => {
         set.delete(listener)
         if (!set.size) this.listeners.delete(sessionId)
+      }
+    })
+  }
+  /** One read transaction captures metadata and immutable content, never live pointers. */
+  freeze(sessionId: string): FrozenDeck {
+    return this.access(() => {
+      this.id(sessionId)
+      this.db.exec('BEGIN')
+      try {
+        const deck = this.db.prepare('SELECT outline_id,version FROM decks WHERE session_id=?').get(sessionId)
+        const rows = this.db
+          .prepare(
+            'SELECT s.slide_id,s.title,s.position,s.revision,r.html FROM slides s LEFT JOIN revisions r ON r.session_id=s.session_id AND r.slide_id=s.slide_id AND r.revision=s.revision WHERE s.session_id=? ORDER BY s.position',
+          )
+          .all(sessionId)
+        if (!deck || !rows.length || rows.some(row => !row.revision || typeof row.html !== 'string'))
+          throw new DeckError('DECK_EXPORT_INCOMPLETE')
+        const value: FrozenDeck = {
+          sessionId,
+          outlineId: String(deck.outline_id),
+          version: Number(deck.version),
+          slides: rows.map(row => ({
+            sessionId,
+            slideId: String(row.slide_id),
+            title: String(row.title),
+            order: Number(row.position),
+            revision: Number(row.revision),
+            html: String(row.html),
+          })),
+        }
+        this.db.exec('COMMIT')
+        return value
+      } catch (error) {
+        this.db.exec('ROLLBACK')
+        throw error
       }
     })
   }

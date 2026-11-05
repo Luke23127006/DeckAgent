@@ -1,5 +1,6 @@
 import type { DeckChange, DeckSnapshot, SlideContent } from '@deckagent/deck'
 import type { EditableSlide, SlideEdit, PublishedSlide } from '@deckagent/deck'
+import type { ImageAsset, InsertSlideImage } from '@deckagent/deck'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -12,6 +13,11 @@ function integer(value: unknown): value is number {
 }
 function invalid(): never {
   throw new Error('INVALID_DECK_RESPONSE')
+}
+function displayProjection(value: Record<string, unknown>): { readonly displayHtml?: string } {
+  if (value.displayHtml === undefined) return {}
+  if (typeof value.displayHtml !== 'string' || value.displayHtml.length > 30 * 1024 * 1024) invalid()
+  return { displayHtml: value.displayHtml }
 }
 
 function change(value: unknown, sessionId: string): DeckChange {
@@ -26,6 +32,76 @@ export class DeckClient {
     private readonly origin: string,
     private readonly token: string,
   ) {}
+  private async imageRequest(
+    sessionId: string,
+    action: string,
+    method = 'GET',
+    input?: unknown,
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    if (!id(sessionId)) invalid()
+    const response = await fetch(`${this.origin}/api/sessions/${sessionId}/${action}`, {
+      method,
+      headers: {
+        authorization: `Bearer ${this.token}`,
+        ...(input !== undefined ? { 'content-type': 'application/json' } : {}),
+      },
+      ...(input !== undefined ? { body: JSON.stringify(input) } : {}),
+      signal: signal ?? AbortSignal.timeout(20000),
+      credentials: 'omit',
+      redirect: 'error',
+    })
+    if (!response.ok) {
+      let code = 'IMAGE_REQUEST_FAILED'
+      try {
+        const value: unknown = await response.json()
+        if (
+          object(value) &&
+          object(value.error) &&
+          typeof value.error.code === 'string' &&
+          /^(?:IMAGE_|EXPORT_|DECK_|SESSION_BUSY|NOT_FOUND)[A-Z_]*$/.test(value.error.code)
+        )
+          code = value.error.code
+      } catch {
+        /* Static fallback. */
+      }
+      throw new Error(code)
+    }
+    return response
+  }
+  async imageAssets(sessionId: string): Promise<{ enabled: boolean; items: readonly ImageAsset[] }> {
+    const value: unknown = await (await this.imageRequest(sessionId, 'image-assets')).json()
+    if (!object(value) || typeof value.enabled !== 'boolean' || !Array.isArray(value.items) || value.items.length > 20)
+      invalid()
+    return { enabled: value.enabled, items: value.items.map(item => imageAsset(item, sessionId)) }
+  }
+  async importImage(sessionId: string, url: string, signal: AbortSignal): Promise<ImageAsset> {
+    return imageAsset(
+      await (await this.imageRequest(sessionId, 'image-assets', 'POST', { url }, signal)).json(),
+      sessionId,
+    )
+  }
+  async insertImage(sessionId: string, input: InsertSlideImage): Promise<PublishedSlide> {
+    const value: unknown = await (
+        await this.imageRequest(sessionId, `deck/slides/${input.slideId}/images`, 'POST', input)
+      ).json(),
+      base = change(value, sessionId)
+    if (!object(value) || value.slideId !== input.slideId || value.revision !== input.expectedRevision + 1) invalid()
+    return { ...base, slideId: input.slideId, revision: input.expectedRevision + 1 }
+  }
+  async exportPdf(sessionId: string, signal: AbortSignal): Promise<{ blob: Blob; version: number }> {
+    const response = await this.imageRequest(sessionId, 'export-pdf', 'POST', {}, signal),
+      version = Number(response.headers.get('x-deck-version'))
+    if (
+      !response.headers.get('content-type')?.startsWith('application/pdf') ||
+      !Number.isSafeInteger(version) ||
+      version < 1
+    )
+      invalid()
+    const blob = await response.blob()
+    if (!blob.size || blob.size > 50 * 1024 * 1024) invalid()
+    return { blob, version }
+  }
   private async editing(sessionId: string, slideId: string, action: string, input?: SlideEdit): Promise<unknown> {
     if (!id(sessionId) || !id(slideId)) invalid()
     const response = await fetch(`${this.origin}/api/sessions/${sessionId}/deck/slides/${slideId}/${action}`, {
@@ -93,6 +169,7 @@ export class DeckClient {
       slideId,
       revision: value.revision,
       html: value.html,
+      ...displayProjection(value),
       outlineId: value.outlineId,
       baseHash: value.baseHash,
       nodes,
@@ -110,7 +187,7 @@ export class DeckClient {
       value.html.length > 262144
     )
       invalid()
-    return value.html
+    return displayProjection(value).displayHtml ?? value.html
   }
   async editSlide(sessionId: string, input: SlideEdit): Promise<PublishedSlide> {
     const value = await this.editing(sessionId, input.slideId, 'edit', input),
@@ -183,7 +260,7 @@ export class DeckClient {
       value.html.length > 262144
     )
       invalid()
-    return { sessionId, slideId, revision, html: value.html }
+    return { sessionId, slideId, revision, html: value.html, ...displayProjection(value) }
   }
 
   /** A connection always starts with a current-version notice, including an empty deck. */
@@ -219,5 +296,40 @@ export class DeckClient {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
+  }
+}
+function imageAsset(value: unknown, sessionId: string): ImageAsset {
+  if (
+    !object(value) ||
+    typeof value.assetId !== 'string' ||
+    !/^[a-f0-9-]{36}$/.test(value.assetId) ||
+    value.sessionId !== sessionId ||
+    !['image/png', 'image/jpeg'].includes(String(value.mediaType)) ||
+    typeof value.sizeBytes !== 'number' ||
+    !integer(value.sizeBytes) ||
+    value.sizeBytes < 1 ||
+    value.sizeBytes > 5242880 ||
+    typeof value.width !== 'number' ||
+    !integer(value.width) ||
+    typeof value.height !== 'number' ||
+    !integer(value.height) ||
+    typeof value.sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(value.sha256) ||
+    typeof value.sourceUrl !== 'string' ||
+    typeof value.finalUrl !== 'string' ||
+    !value.sourceUrl.startsWith('https://') ||
+    !value.finalUrl.startsWith('https://')
+  )
+    invalid()
+  return {
+    assetId: value.assetId,
+    sessionId,
+    mediaType: value.mediaType === 'image/png' ? 'image/png' : 'image/jpeg',
+    sizeBytes: value.sizeBytes,
+    width: value.width,
+    height: value.height,
+    sha256: value.sha256,
+    sourceUrl: value.sourceUrl,
+    finalUrl: value.finalUrl,
   }
 }

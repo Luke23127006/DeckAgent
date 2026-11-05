@@ -40,6 +40,11 @@ Changes required by new direct editing, materials or export need explicit contra
 V2 context projection/manual compaction remains selected as bounded completion work.
 General-purpose public web search/fetch and a separate research settings product are deferred: they are not a prerequisite for materials, editing, Skills or export.
 A narrow network adapter can be selected for images in TASK-007. Its authorization and privacy checks remain mandatory.
+
+The owner selected Internet images and PDF for TASK-007 on 4 November 2026.
+Users import public HTTPS PNG/JPEG URLs. The agent uses verified Chat-owned asset IDs.
+Export captures committed revisions without model regeneration. PPTX and AI image generation are not selected.
+See [the accepted image/PDF decision](../../adr/0007-internet-image-assets-and-pdf-export.md).
 Default model IDs and attachment limits are not invented here. Existing unresolved product values remain unresolved.
 
 ## Exclusions and decisions still needed

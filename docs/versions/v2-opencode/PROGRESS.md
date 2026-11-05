@@ -47,12 +47,27 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 | [004 — Complete source-to-presentation input](tasks/task-004-materials/README.md) | Implemented opt-in; automated subset PASS | Browser PASS; manual pending | Fixtures/vision PASS; latest source-generation live FAIL | G-004 NOT VERIFIED; G-003 and acceptance pending |
 | [005 - Complete bounded context and manual compaction](tasks/task-005-context/README.md) | Implemented opt-in; checkpoint/accounting PASS | Browser and basic owner smoke PASS; extended pending | CLI subset and focused live PASS; full live FAIL before Compact | G-005 NOT VERIFIED; entry gates and full acceptance pending |
 | [006 - Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | Implemented; revision/patch checks PASS | Browser and owner basic smoke PASS | Pinned CLI and focused Gemini live PASS | G-006 NOT VERIFIED; extended acceptance and G-003 pending |
-| [007 — Deliver images and usable export](tasks/task-007-images-export/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-007 NOT VERIFIED |
+| [007 - Deliver images and usable export](tasks/task-007-images-export/README.md) | Implemented; snapshot/storage/export checks PASS | Browser and owner six-case basic smoke PASS | Pinned CLI and Internet/Gemini live PASS | G-007 NOT VERIFIED; G-003/G-006 and extended acceptance pending |
 | [008 — Package reusable presentation Agent Skills](tasks/task-008-presentation-skills/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-008 NOT VERIFIED |
 | [009 — Switch default and retire legacy dependencies](tasks/task-009-runtime-retirement/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-009 NOT VERIFIED |
 | [010 — Evaluate and hand over the thesis product](tasks/task-010-thesis-acceptance/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-010 NOT VERIFIED |
 
 ## Next actionable task
+
+Owner update, 5 November 2026: **TASK-007 basic smoke PASS**, covering the six supplied cases.
+Implementation and focused automated/live checks are complete. Full G-007 remains NOT VERIFIED
+until earlier gates and extended acceptance close. See the image/PDF handoff for evidence limits.
+Next independent delivery group: TASK-008; select its external Skills host before implementation.
+
+Earlier checkpoint:
+
+Current checkpoint: **TASK-007 implementation and focused automated/live checks PASS**, 5 November 2026.
+Owner selected Internet images and PDF. Run the [image/PDF manual checklist](tasks/task-007-images-export/MANUAL-ACCEPTANCE.md)
+and record itemized results against the uncommitted candidate. [Handoff and limits](tasks/task-007-images-export/HANDOFF.md)
+keep initial prompt failures, independent PDF evidence and earlier gate gaps explicit.
+G-003/G-006/G-007 remain NOT VERIFIED; no default-runtime switch occurred.
+
+Earlier checkpoint:
 
 Current checkpoint: **TASK-006 implementation and owner basic direct-edit smoke PASS**.
 Use the [direct-edit handoff](tasks/task-006-direct-editing/HANDOFF.md) and
@@ -92,7 +107,7 @@ Full TASK-003 integration is still gated by G-002; independent fixture preparati
 - Team runtime direction is decided. Production seam, distribution/OS coverage and package changes still need the decisions listed in [DECISIONS.md](DECISIONS.md).
 - Four-protocol/options compatibility is an implementation gap, not a reason to erase completed provider work.
 - Full live permission acceptance remains outstanding. Do not close it from POC denial tests alone.
-- Export format, direct-editor operations, image route and external Skills host need bounded decisions in their owning tasks.
+- Direct-editor operations and Internet-image/PDF choices are recorded in ADR 0006/0007. External Skills host remains undecided.
 - Attachment product limits and release default model IDs remain unresolved; no arbitrary defaults are approved here.
 - Central active-version list remains V1. Activating the version pointer is outside this bounded opt-in implementation.
 - PDF and POC evidence are local-only; team access must be established without publishing private material.

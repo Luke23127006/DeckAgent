@@ -3,6 +3,7 @@ import { DeckModel } from './deck-model.ts'
 import { button, element } from './dom.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
 import { slideEditor } from './slide-editor.ts'
+import { imageExport } from './image-export.ts'
 
 /** Published content never joins the application DOM. Empty sandbox => opaque origin.
  * srcdoc inherits Host CSP; its leading CSP further disallows every network source.
@@ -46,8 +47,10 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     lastSession = '',
     appeared = false
   const editor = slideEditor(client, () => model.refresh())
+  const imagePanel = imageExport(client, () => model.refresh())
   const model = new DeckModel(client, value => {
     editor.update(value)
+    imagePanel.update(value)
     if (!value.snapshot) {
       rendered = ''
       frame.removeAttribute('srcdoc')
@@ -82,10 +85,11 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     title.textContent = 'Deck canvas'
     const published = snapshot.slides.filter(slide => slide.status === 'published').length
     progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
-    for (const [id, item] of slideButtons) if (!snapshot.slides.some(slide => slide.slideId === id)) {
-      item.remove()
-      slideButtons.delete(id)
-    }
+    for (const [id, item] of slideButtons)
+      if (!snapshot.slides.some(slide => slide.slideId === id)) {
+        item.remove()
+        slideButtons.delete(id)
+      }
     for (const [index, slide] of snapshot.slides.entries()) {
       let item = slideButtons.get(slide.slideId)
       if (!item) {
@@ -114,16 +118,18 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       ? `Slide ${selected.order + 1}/${snapshot.slides.length} · ${selected.status === 'pending' ? 'Chưa tạo xong' : `Bản ${selected.revision}`}`
       : 'Chat này chưa có deck đã xác nhận'
     placeholder.hidden = value.html !== undefined
-    placeholder.textContent = selected?.status === 'pending'
-      ? 'Slide này chưa được tạo xong. Nội dung hoàn tất sẽ hiện ở đây sau khi được lưu.'
-      : value.connection === 'error' ? 'Không tải được bản slide đã lưu. Hãy kết nối lại.'
-        : 'Đang tải bản slide đã lưu…'
+    placeholder.textContent =
+      selected?.status === 'pending'
+        ? 'Slide này chưa được tạo xong. Nội dung hoàn tất sẽ hiện ở đây sau khi được lưu.'
+        : value.connection === 'error'
+          ? 'Không tải được bản slide đã lưu. Hãy kết nối lại.'
+          : 'Đang tải bản slide đã lưu…'
     const key = value.html === undefined ? '' : `${snapshot.sessionId}/${selected?.slideId}/${selected?.revision}`
     if (key !== rendered) {
       rendered = key
       frame.hidden = !key
       if (key)
-        frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">${value.html}`
+        frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">${value.displayHtml ?? value.html}`
       else frame.removeAttribute('srcdoc')
     }
   })
@@ -163,7 +169,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   })
   const footer = element('footer', undefined, 'deck-footer')
   footer.append(element('p', 'Sửa trực tiếp văn bản/bố cục hoặc gửi yêu cầu trong chat.'), state)
-  panel.append(heading, stage, controls, slides, editor.node, footer)
+  panel.append(heading, stage, controls, slides, editor.node, imagePanel.node, footer)
   container.append(panel)
   return model
 }
