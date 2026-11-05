@@ -99,8 +99,13 @@ empty; each project declares its own terms and adds to them as it learns.
 | **follow-up request** | A request in a chat that has a confirmed outline or a deck with slides |
 | **generation format** | The kind of source the deck is built in, such as HTML or Markdown. One deck has one |
 | **deck source** | The working files of the deck in its generation format. The system and the user change the same files |
-| **design system** | A saved set of design rules for the look of slides: colours, fonts, spacing and the rules for using them. Built-in or made by the user. It holds no layout |
-| **theme** | A design system written in the terms of one generation format, as named values the deck source refers to. Only the system writes it |
+| **design system** | A saved set of design rules for the look of slides: its theme values, rules in words for using them, and brand files such as a logo. A built-in design system or a custom design system. It holds no layout |
+| **built-in design system** | A design system that comes with DeckAgent. The system never changes or removes it |
+| **custom design system** | A design system the user saved. The user is allowed to change and remove it |
+| **theme value** | A named value of a design system, such as a colour, a font or a spacing |
+| **brand file** | A file that gives the look of a brand, such as a brand guide, a logo, a font file or a design system package of another product |
+| **sample slide** | A slide made with a proposed design system to show it. It belongs to no deck |
+| **theme** | A design system written in the terms of one generation format: its theme values as named values the deck source refers to. Only the system writes it |
 | **template** | The prebuilt layouts of one generation format that the system builds slides from |
 | **marked part** | A part of a slide that the user points to as the target of a request |
 | **closing message** | The response that ends the work on slides of a request and tells what was made or changed |

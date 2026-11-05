@@ -78,7 +78,25 @@ was not read.
    - Proposal: a design change in a follow-up request patches only the slides in its
      scope, with colours and fonts from the theme.
 
-7. Limits of this check.
+7. How does a user make, change or remove a design system? (checked 05-11-2026 for the
+   review of legacy UC-010, from `docs/design-systems.md` and `design-systems/README.md`)
+   - Observation: "The product exposes local-folder, GitHub, and shadcn import flows in
+     both the UI and the `od design-systems import-*` CLI." Importers "write the package
+     contract rather than a standalone `DESIGN.md`."
+   - Observation: optional `assets/` ("optional static assets") and `fonts/` ("optional
+     webfonts"), declared in the manifest fields `assetsDir` and `fonts`.
+   - Observation: repository guards check "required A1, A2, and B-slot tokens, default
+     parity, fixture synchronization, and unknown-token allowlists"; `DESIGN.md` needs
+     "at least seven substantive H2 sections".
+   - Observation: after a package changes, "refresh the Design System surface"; a user
+     `metadata.json` overrides title, category and surface.
+   - Not found: making a design system from words, a brand guide or a website; making one
+     from a deck; removing one; changing a bundled one in the product; a default design
+     system; Required or Preferred rules; a check of an imported package at import time.
+   - => A design system is imported as files, not made with the agent. It holds named
+     values, rules in words, and optional fonts and assets.
+
+8. Limits of this check.
    - The guizang-ppt reference files (`layouts.md`, `themes.md`) and `template.html` were
      not read.
    - The payload of a comment or selection in the preview is not documented in the pages
