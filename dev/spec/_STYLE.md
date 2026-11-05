@@ -57,6 +57,8 @@ empty; each project declares its own terms and adds to them as it learns.
 |---|---|
 | **account** | The user's identity for access and for keeping their own data |
 | **chat** | One line of work with the system. It holds one conversation and at most one deck |
+| **current chat** | The chat the user works in now |
+| **earlier chat** | A chat the system keeps as earlier work, other than the current chat, that the user is allowed to open again |
 | **conversation** | Region. Holds the requests of a chat and the responses of the system, in order |
 | **deck canvas** | Region. Holds the slides of the deck of a chat |
 | **interface** | The part of DeckAgent the user sees and uses. Reloading or closing it does not stop DeckAgent |

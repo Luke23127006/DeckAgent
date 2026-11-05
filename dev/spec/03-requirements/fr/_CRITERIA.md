@@ -51,6 +51,9 @@ Removed FR IDs:
 - FR-034, 04-11-2026, dropped: no instruction is kept aside for slides built later.
 - FR-035, 04-11-2026, merged into FR-031.
 - FR-047, 04-11-2026, merged into FR-019.
+- FR-051, 05-11-2026, merged into FR-049.
+- FR-052, 05-11-2026, merged into FR-019.
+- FR-054, 05-11-2026, merged into FR-068.
 - FR-056, 04-11-2026, merged into FR-046.
 - FR-057, 05-11-2026, merged into FR-041 (display-name rules dropped).
 - FR-061, 05-11-2026, merged into FR-041.
