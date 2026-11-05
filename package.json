@@ -54,7 +54,11 @@
     "test:images-export": "node --test tests/images-export.test.mjs tests/image-network.test.mjs tests/images-export-host.test.mjs",
     "test:images-export:browser": "node --test tests/images-export-browser.test.mjs tests/images-export-pdf.test.mjs",
     "test:images-export:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs images-export-live",
-    "test:images-export:cli": "node scripts/test-opencode.mjs images-export"
+    "test:images-export:cli": "node scripts/test-opencode.mjs images-export",
+    "presentation:tools": "node apps/local-web/lib/external-cli.js",
+    "presentation:skill": "node --env-file-if-exists=.env apps/local-web/lib/external-host.js",
+    "test:presentation-skills": "node --test tests/presentation-skills-integration.test.mjs",
+    "test:presentation-skills:live": "node --env-file-if-exists=.env scripts/test-opencode.mjs skills-live"
   },
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",

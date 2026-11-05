@@ -18,10 +18,11 @@ if (
     'direct-editing-live',
     'images-export-live',
     'images-export',
+    'skills-live',
   ].includes(mode)
 )
   throw new Error(
-    'Choose cli, live, parity, parity-live, baseline, baseline-live, materials, materials-live, context, context-live, direct-editing, direct-editing-live images-export or images-export-live',
+    'Choose cli, live, parity, parity-live, baseline, baseline-live, materials, materials-live, context, context-live, direct-editing, direct-editing-live, images-export, images-export-live or skills-live',
   )
 if (mode === 'images-export-live' && !process.env.GEMINI_API_KEY)
   throw new Error('GEMINI_API_KEY required; images/export live remains NOT VERIFIED')
@@ -43,48 +44,52 @@ if (
   )
 )
   throw new Error('No live credential/model pair is configured; parity remains NOT VERIFIED.')
+if (mode === 'skills-live' && !process.env.GEMINI_API_KEY)
+  throw new Error('GEMINI_API_KEY required; external Skills live remains NOT VERIFIED')
 const files =
-  mode === 'images-export'
-    ? ['tests/images-export-opencode.test.mjs']
-    : mode === 'images-export-live'
-      ? ['tests/images-export-live.test.mjs']
-      : mode === 'direct-editing-live'
-        ? ['tests/direct-editing-live.test.mjs']
-        : mode === 'direct-editing'
-          ? ['tests/direct-editing-opencode.test.mjs']
-          : mode === 'context-live'
-            ? ['tests/context-live.test.mjs']
-            : mode === 'context'
-              ? ['tests/opencode-context.test.mjs', 'tests/context-browser.test.mjs']
-              : mode === 'materials-live'
-                ? ['tests/materials-live.test.mjs', 'tests/materials-images-live.test.mjs']
-                : mode === 'materials'
-                  ? ['tests/materials-opencode.test.mjs']
-                  : mode === 'baseline-live'
-                    ? ['tests/opencode-baseline-live.test.mjs']
-                    : mode === 'baseline'
-                      ? [
-                          'tests/opencode-baseline.test.mjs',
-                          'tests/opencode-baseline-security.test.mjs',
-                          'tests/opencode-browser.test.mjs',
-                        ]
-                      : mode === 'parity-live'
-                        ? ['tests/opencode-parity-live.test.mjs']
-                        : mode === 'parity'
-                          ? [
-                              'tests/opencode-provider-parity.test.mjs',
-                              'tests/opencode-session-parity.test.mjs',
-                              'tests/opencode-provider-ui.test.mjs',
-                            ]
-                          : mode === 'live'
-                            ? ['tests/opencode-integration.test.mjs']
-                            : [
-                                'tests/opencode-agent.test.mjs',
-                                'tests/opencode-process.test.mjs',
-                                'tests/opencode-client-contract.test.mjs',
-                                'tests/opencode-tool-isolation.test.mjs',
-                                'tests/opencode-browser.test.mjs',
+  mode === 'skills-live'
+    ? ['tests/presentation-skills-live.test.mjs']
+    : mode === 'images-export'
+      ? ['tests/images-export-opencode.test.mjs']
+      : mode === 'images-export-live'
+        ? ['tests/images-export-live.test.mjs']
+        : mode === 'direct-editing-live'
+          ? ['tests/direct-editing-live.test.mjs']
+          : mode === 'direct-editing'
+            ? ['tests/direct-editing-opencode.test.mjs']
+            : mode === 'context-live'
+              ? ['tests/context-live.test.mjs']
+              : mode === 'context'
+                ? ['tests/opencode-context.test.mjs', 'tests/context-browser.test.mjs']
+                : mode === 'materials-live'
+                  ? ['tests/materials-live.test.mjs', 'tests/materials-images-live.test.mjs']
+                  : mode === 'materials'
+                    ? ['tests/materials-opencode.test.mjs']
+                    : mode === 'baseline-live'
+                      ? ['tests/opencode-baseline-live.test.mjs']
+                      : mode === 'baseline'
+                        ? [
+                            'tests/opencode-baseline.test.mjs',
+                            'tests/opencode-baseline-security.test.mjs',
+                            'tests/opencode-browser.test.mjs',
+                          ]
+                        : mode === 'parity-live'
+                          ? ['tests/opencode-parity-live.test.mjs']
+                          : mode === 'parity'
+                            ? [
+                                'tests/opencode-provider-parity.test.mjs',
+                                'tests/opencode-session-parity.test.mjs',
+                                'tests/opencode-provider-ui.test.mjs',
                               ]
+                            : mode === 'live'
+                              ? ['tests/opencode-integration.test.mjs']
+                              : [
+                                  'tests/opencode-agent.test.mjs',
+                                  'tests/opencode-process.test.mjs',
+                                  'tests/opencode-client-contract.test.mjs',
+                                  'tests/opencode-tool-isolation.test.mjs',
+                                  'tests/opencode-browser.test.mjs',
+                                ]
 const child = spawn(
   process.execPath,
   ['--test', ...(mode === 'materials-live' ? ['--test-concurrency=1'] : []), ...files],
@@ -93,21 +98,23 @@ const child = spawn(
     windowsHide: true,
     env: {
       ...process.env,
-      [mode === 'images-export-live'
-        ? 'DECKAGENT_IMAGES_EXPORT_LIVE'
-        : mode === 'direct-editing-live'
-          ? 'DECKAGENT_DIRECT_EDIT_LIVE'
-          : mode === 'context-live'
-            ? 'DECKAGENT_CONTEXT_LIVE'
-            : mode === 'materials-live'
-              ? 'DECKAGENT_MATERIALS_LIVE'
-              : mode === 'baseline-live'
-                ? 'DECKAGENT_OPENCODE_BASELINE_LIVE'
-                : mode === 'parity-live'
-                  ? 'DECKAGENT_OPENCODE_PARITY_LIVE'
-                  : mode === 'live'
-                    ? 'DECKAGENT_OPENCODE_POC'
-                    : 'DECKAGENT_OPENCODE_CLI_TESTS']: '1',
+      [mode === 'skills-live'
+        ? 'DECKAGENT_SKILLS_LIVE'
+        : mode === 'images-export-live'
+          ? 'DECKAGENT_IMAGES_EXPORT_LIVE'
+          : mode === 'direct-editing-live'
+            ? 'DECKAGENT_DIRECT_EDIT_LIVE'
+            : mode === 'context-live'
+              ? 'DECKAGENT_CONTEXT_LIVE'
+              : mode === 'materials-live'
+                ? 'DECKAGENT_MATERIALS_LIVE'
+                : mode === 'baseline-live'
+                  ? 'DECKAGENT_OPENCODE_BASELINE_LIVE'
+                  : mode === 'parity-live'
+                    ? 'DECKAGENT_OPENCODE_PARITY_LIVE'
+                    : mode === 'live'
+                      ? 'DECKAGENT_OPENCODE_POC'
+                      : 'DECKAGENT_OPENCODE_CLI_TESTS']: '1',
     },
   },
 )

@@ -13,7 +13,7 @@
 | Deny native tools, expose phase-specific MCP tools only | POC verified at application level | Model-visible allowlist plus Host execution checks; never label it an OS sandbox |
 | Direct editor representation and save contract | Owner accepted controlled HTML patches on 4 November 2026; ADR 0006 | Existing HTML/revisions remain canonical; bounded text/layout patches through DeckService, no automatic legacy conversion |
 | Image route and export format | Owner selected Internet images and PDF on 4 November 2026; ADR 0007 | User-only public HTTPS imports, Chat-owned asset IDs and frozen committed-revision PDF; owner manual acceptance pending |
-| External Skills host and packaging format | Proposal pending | TASK-008 selects at least one compatible host outside the DeckAgent UI |
+| External Skills host and packaging format | Owner selected standalone OpenCode CLI; ADR 0008 | Product SKILL.md plus app-local stdio MCP; operator-only confirmation and explicit Chat/slide grants. Full acceptance pending. |
 | General public research | Deferred from this version | No forced dependency on old V2 TASK-006; ADR 0002 remains proposed |
 
 ADR 0003 (Host step approval) is still marked proposed despite implementation.

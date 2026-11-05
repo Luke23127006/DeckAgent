@@ -1,0 +1,320 @@
+{
+  "task": "V2 OpenCode TASK-008",
+  "date": "2026-11-05",
+  "ownerDecision": {
+    "host": "Standalone OpenCode CLI",
+    "authority": "Owner chose A in chat",
+    "adr": "docs/adr/0008-external-presentation-skill.md"
+  },
+  "candidate": {
+    "baseSha": "7403c90ff15f7343cba47f0cf4ae6125639a568d",
+    "branch": "feat/v2-opencode",
+    "dirty": true,
+    "initialWorkingTree": "clean; Task 007 committed",
+    "files": [
+      "apps/local-web/src/external-cli.ts",
+      "apps/local-web/src/external-host.ts",
+      "apps/local-web/src/external-presentation.ts",
+      "docs/adr/0008-external-presentation-skill.md",
+      "docs/versions/v2-opencode/DECISIONS.md",
+      "docs/versions/v2-opencode/PROGRESS.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/CONTRACT.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/HANDOFF.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/MANUAL-ACCEPTANCE.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/README.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/TASK-008-A.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/TASK-008-B.md",
+      "docs/versions/v2-opencode/tasks/task-008-presentation-skills/TASK-008-C.md",
+      "package.json",
+      "product-skills/deckagent-presentation/README.md",
+      "product-skills/deckagent-presentation/SKILL.md",
+      "scripts/build-workspace.mjs",
+      "scripts/test-opencode.mjs",
+      "tests/presentation-skills-integration.test.mjs",
+      "tests/presentation-skills-live.test.mjs"
+    ],
+    "sourceFingerprints": [
+      {
+        "path": "apps/local-web/src/external-cli.ts",
+        "sha256": "a010c34052a20c5aacafd50b262e34e6878c82b28697a923e24527dbce718adc"
+      },
+      {
+        "path": "apps/local-web/src/external-host.ts",
+        "sha256": "f56508a6e9d7aec2f33f06a82d966a8777b5fbd069aa2001c259d34e66f3510a"
+      },
+      {
+        "path": "apps/local-web/src/external-presentation.ts",
+        "sha256": "d6d19ed7fbb9d53ca0921440df5b53efc14520e8e671e6e2a0ca36723767ea16"
+      },
+      {
+        "path": "package.json",
+        "sha256": "d0d62534560d32472fc491dedaa76dae735d96343a5fce8c0bdc2e80c0f9584e"
+      },
+      {
+        "path": "product-skills/deckagent-presentation/README.md",
+        "sha256": "ee7f2ee749a190accd9d040794e56d1d5fa2ec34672f72caf80850e69f377457"
+      },
+      {
+        "path": "product-skills/deckagent-presentation/SKILL.md",
+        "sha256": "3928581593c6942dfafc772dfad4acd2e107735ae8cba55f5cf359bb19ac28a0"
+      },
+      {
+        "path": "scripts/build-workspace.mjs",
+        "sha256": "a999b96d69855a3d2d28a19f19b408621b776e350f5a0c09fd146c063edec0fd"
+      },
+      {
+        "path": "scripts/test-opencode.mjs",
+        "sha256": "7c8e491b99caafd5f76b0da423059b947fd02f94a1ef5cc83eaba6a41ccf325f"
+      },
+      {
+        "path": "tests/presentation-skills-integration.test.mjs",
+        "sha256": "6077a09a37e96c34b05ceb11e220d09bc692f2ed9ef4b17a8db3cf9e5a9cd1ba"
+      },
+      {
+        "path": "tests/presentation-skills-live.test.mjs",
+        "sha256": "86b3b1afd45a8b079a1ce99023ef4759c973ce0974f784c48b5753abe8d53e53"
+      }
+    ]
+  },
+  "environment": {
+    "node": "v22.19.0",
+    "os": "win32",
+    "architecture": "x64",
+    "pnpm": "11.28.5",
+    "cli": "1.19.5",
+    "cliSha256": "d7b473388cb62555970e400ce54cdfb6d6573608beea6f8fdf382cd1a698a3fa",
+    "model": "gemini-3.1-flash-lite",
+    "protocol": "native Gemini",
+    "credentials": "Environment/optional .env, no keys logged"
+  },
+  "status": {
+    "implementation": "IMPLEMENTED",
+    "A": "Automated PASS; manual/extended pending",
+    "B": "Product Skill discovered/loaded in real host; manual pending",
+    "C": "MCP, clean install, focused live edit and full live retest PASS; initial full timeout retained",
+    "G008": "NOT VERIFIED",
+    "earlierGates": "Unchanged; G-003/G-004/G-006/G-007 acceptance remains as recorded",
+    "ownerManual": "NOT VERIFIED",
+    "agentFunctionalSmoke": "PASS"
+  },
+  "checks": [
+    {
+      "name": "Build/typecheck/lint",
+      "status": "PASS",
+      "commands": [
+        "tsc -b",
+        "node scripts/build-workspace.mjs",
+        "biome lint"
+      ]
+    },
+    {
+      "name": "Formatting",
+      "status": "PASS for six new/edited source/test/launcher files",
+      "note": "Legacy build-workspace.mjs was changed only for entrypoint declarations; no unrelated whole-file formatting rewrite"
+    },
+    {
+      "name": "Product Skill validation",
+      "status": "PASS",
+      "command": "python <skill-creator>/scripts/quick_validate.py product-skills/deckagent-presentation",
+      "note": "Initial compatibility field was accepted by OpenCode but rejected by the Codex validator. Changed optional header to metadata; body/name unchanged after live qualification."
+    },
+    {
+      "name": "MCP protocol/authorization",
+      "status": "PASS",
+      "command": "pnpm.cmd test:presentation-skills",
+      "scope": "Real stdio subprocess; exact tools before confirmation; missing confirm tool; preconfirm publication denied; operator confirmation; scoped edit; stale/duplicate/cross-Chat calls; unchanged non-target HTML/revision"
+    },
+    {
+      "name": "Affected regression",
+      "status": "PASS",
+      "passed": 30,
+      "command": "node --test tests/presentation-skills-integration.test.mjs tests/deck-service.test.mjs tests/direct-editing.test.mjs tests/publish-slide.test.mjs tests/outline-state.test.mjs tests/outline-workflow.test.mjs tests/outline-client.test.mjs tests/opencode-process.test.mjs"
+    },
+    {
+      "name": "Clean installation",
+      "status": "PASS within offline source-install scope",
+      "commands": [
+        "pnpm.cmd install --offline --frozen-lockfile --ignore-scripts",
+        "pnpm.cmd build",
+        "node --test tests/presentation-skills-integration.test.mjs with clean entrypoint"
+      ],
+      "scope": "192 source files copied, no secrets/profiles/node_modules. Fresh dependency links and build; actual clean MCP executable/dependencies exercised. Cached offline install, not a fresh-network/public package install."
+    },
+    {
+      "name": "Initial complete live scenario",
+      "status": "FAIL",
+      "evidence": "task008-live.log",
+      "scope": "Actual skill load, proposal, operator confirmation, two publications succeeded. Edit send failed to complete within deadline. Cause unconfirmed."
+    },
+    {
+      "name": "Focused edit live",
+      "status": "PASS",
+      "evidence": "task008-edit-live.log",
+      "scope": "Seeded deck; actual native skill, state, read_slide, patch_slide; slide-two heading changed, slide-one bytes/revision kept"
+    },
+    {
+      "name": "Complete live retest",
+      "status": "PASS",
+      "evidence": "task008-full-retest.log",
+      "command": "DECKAGENT_SKILLS_LIVE=1 node --env-file-if-exists=.env --test tests/presentation-skills-live.test.mjs",
+      "repeatCommand": "pnpm.cmd test:presentation-skills:live",
+      "durationSeconds": 65.2,
+      "scope": "Three fresh standalone OpenCode executions; actual Skill loading, outline proposal, separate operator confirmation, two publications and scoped edit",
+      "note": "Added event streaming/static failure stages after initial failure; no automatic retry or weaker permission. Initial timeout remains recorded."
+    },
+    {
+      "name": "Documentation links/diff hygiene",
+      "status": "PASS",
+      "commands": [
+        "local Markdown link check",
+        "git diff --check"
+      ]
+    },
+    {
+      "name": "Owner and extended gate acceptance",
+      "status": "NOT VERIFIED"
+    }
+  ],
+  "limits": [
+    "Only Windows x64/OpenCode 1.19.5/native Gemini qualified",
+    "No provider-declaration capture for new native Skill-loader exception; config audit/executed tools are narrower evidence",
+    "Application tool controls are not an OS sandbox; unrestricted raw hosts cannot claim equivalent isolation",
+    "Fresh external cancellation/adversarial/material campaign remains unverified; earlier process-tree helper reused",
+    "Dedicated profiles: no Web admission coordination or concurrent Web Chat qualification",
+    "External contract exposes outline/confirmation/publication/patch only, no attachments/image acquisition/PDF/Web history",
+    "Proposals are immediately saved drafts, unlike Web request-finalization staging; they never imply confirmation",
+    "No automatic retry, native-session continuity or Web history synthesis",
+    "No public package, commit, push or Issue publication"
+  ],
+  "logs": [
+    {
+      "path": ".local-only/task008-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-only/task008-bundle.log",
+      "sha256": "8127dda6d7b52022204c262f7f5eb23952b1ac601d4ef985ae4bab7316de3421"
+    },
+    {
+      "path": ".local-only/task008-lint.log",
+      "sha256": "20af54cad7c3ea642ec4adc45ee0d4adf2a9f4ad48c772b529c2354c196cc9ac"
+    },
+    {
+      "path": ".local-only/task008-format-check.log",
+      "sha256": "b8f22f40ac2234a324359fa7c4c421a4457decdbea3c8d9f648a658801733116"
+    },
+    {
+      "path": ".local-only/task008-script-format.log",
+      "sha256": "b546a2ec599b104f0b914b79368c623e1eea592660b06e99d2287d0215148bac"
+    },
+    {
+      "path": ".local-only/task008-mcp.log",
+      "sha256": "45a30be8ea6a5b9a13a9a684f92561b2844e0eca64a2ddfbedb016ec2be4c606",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-mcp-final.log",
+      "sha256": "c1c7bb99a03b5fdaa776f3426b427d79273742f421cf7e39eeae3f50f729be0d",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-regression.log",
+      "sha256": "75192b7aab9df4374e3d564ea4a037321882b99f0257a9abcfd4ce6cad3bfce9",
+      "tests": 30,
+      "pass": 30,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-clean-install.log",
+      "sha256": "6339baf9fae2a1be3f708607c74abd307a2984d7249cbac7e32a4fa83dd6d7b5"
+    },
+    {
+      "path": ".local-only/task008-clean-build.log",
+      "sha256": "a38eee39b44041a4eacde74d53e3f7fc376f0b977f3045131d7eae3ddcfe2b25"
+    },
+    {
+      "path": ".local-only/task008-clean-mcp.log",
+      "sha256": "83526b5e456399283189a0c3fce84d7c4fae1fad227b754367a11cad569d9927",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-live.log",
+      "sha256": "9adbcfccaae3d80377b60d4bf27c8bf07252fb44b1362d064684903893197d09",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-edit-live.log",
+      "sha256": "06fdde3688cb21b3dac99d33fde1c6fb70be3ac3f4e3a6a9f8467dac0dcf6cb9",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-full-retest.log",
+      "sha256": "c96ee0e4264af0f6768ba16d26e72eb923c2d46f823322920749a8533d92bd2e",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-skill-validation.log",
+      "sha256": "c3387fbd7b7b30c8c9229d4f1342781e3317599aba06fa70544f006c83bb7925"
+    },
+    {
+      "path": ".local-only/task008-docs.log",
+      "sha256": "79f8d317082c7796d123fb4bcc3c9921c37b6504b657cc7fbaa89deeda024670"
+    },
+    {
+      "path": ".local-only/task008-agent-smoke-mcp.log",
+      "sha256": "995e201c965b7f260c699906249eec5f0b2d219de5e913d8b1ef2dbdcfd37309",
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "path": ".local-only/task008-agent-smoke-live.log",
+      "sha256": "61d8f05ff6587e84c02832f00e0396b8276faf6f65f6e681d71119d95e5a14eb",
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    }
+  ],
+  "agentSmoke": {
+    "date": "2026-11-05",
+    "requestedBy": "Owner in chat",
+    "executedBy": "Codex",
+    "status": "PASS",
+    "commands": [
+      "pnpm.cmd test:presentation-skills",
+      "pnpm.cmd test:presentation-skills:live"
+    ],
+    "mcp": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "live": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 40.3
+    },
+    "scope": "Actual native Skill load, proposal, separate operator confirmation, two publications, scoped MCP edit, non-target HTML/revision preservation; negative stdio checks",
+    "limits": "No owner UX acceptance, OS sandbox claim, fresh cancellation campaign or new provider-declaration capture. G-008 remains NOT VERIFIED."
+  }
+}

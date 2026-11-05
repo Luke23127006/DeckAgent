@@ -48,11 +48,27 @@ A/B/C values below mean new migration or missing-feature work, not inherited cod
 | [005 - Complete bounded context and manual compaction](tasks/task-005-context/README.md) | Implemented opt-in; checkpoint/accounting PASS | Browser and basic owner smoke PASS; extended pending | CLI subset and focused live PASS; full live FAIL before Compact | G-005 NOT VERIFIED; entry gates and full acceptance pending |
 | [006 - Add direct editing with controlled revisions](tasks/task-006-direct-editing/README.md) | Implemented; revision/patch checks PASS | Browser and owner basic smoke PASS | Pinned CLI and focused Gemini live PASS | G-006 NOT VERIFIED; extended acceptance and G-003 pending |
 | [007 - Deliver images and usable export](tasks/task-007-images-export/README.md) | Implemented; snapshot/storage/export checks PASS | Browser and owner six-case basic smoke PASS | Pinned CLI and Internet/Gemini live PASS | G-007 NOT VERIFIED; G-003/G-006 and extended acceptance pending |
-| [008 — Package reusable presentation Agent Skills](tasks/task-008-presentation-skills/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-008 NOT VERIFIED |
+| [008 - Package reusable presentation Agent Skills](tasks/task-008-presentation-skills/README.md) | Implemented; stdio/authorization checks PASS | Product Skill installed and loaded by real OpenCode; manual pending | Clean install, focused edit and full live retest PASS; initial timeout retained | G-008 NOT VERIFIED; earlier gates and manual/extended acceptance pending |
 | [009 — Switch default and retire legacy dependencies](tasks/task-009-runtime-retirement/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-009 NOT VERIFIED |
 | [010 — Evaluate and hand over the thesis product](tasks/task-010-thesis-acceptance/README.md) | NOT STARTED | NOT STARTED | NOT STARTED | G-010 NOT VERIFIED |
 
 ## Next actionable task
+
+Owner-requested agent smoke, 5 November 2026: **TASK-008 functional smoke PASS**.
+Both stdio negative tests and the complete real OpenCode/Gemini create-confirm-publish-edit flow passed.
+This substitutes an agent-executed check for the requested smoke, not owner UX or extended gate acceptance.
+G-008 remains NOT VERIFIED; see the Task 008 evidence for remaining limits.
+
+Earlier checkpoint:
+
+Current checkpoint: **TASK-008 standalone OpenCode Skill implemented**, 5 November 2026.
+The owner selected OpenCode CLI outside the UI. See [the contract and handoff](tasks/task-008-presentation-skills/HANDOFF.md)
+for operator confirmation, dedicated profiles and qualification limits.
+Next: owner runs external Skill manual acceptance; extended isolation/cancellation and earlier gates remain open.
+The full standalone creation/confirmation/two-slide/scoped-edit retest passed; its earlier timeout is retained.
+Do not switch the default runtime or retire Cordis.
+
+Earlier checkpoint:
 
 Owner update, 5 November 2026: **TASK-007 basic smoke PASS**, covering the six supplied cases.
 Implementation and focused automated/live checks are complete. Full G-007 remains NOT VERIFIED

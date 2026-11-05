@@ -58,6 +58,8 @@ for (const pkg of packages) {
   if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name]);
   if (pkg.name === '@deckagent/local-web') config.entry = {
     index: 'lib/types/index.js', cli: 'lib/types/cli.js', 'parser-worker': 'lib/types/materials/parser-worker.js',
+    'external-cli': 'lib/types/external-cli.js',
+    'external-host': 'lib/types/external-host.js',
   };
   await build(config);
 }
