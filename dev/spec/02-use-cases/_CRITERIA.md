@@ -43,6 +43,7 @@ Removed use case IDs:
 
 - UC-017, 05-11-2026, retired: a visual style is the rules in words of a design system (UC-010), and the user chooses a template in the interview (UC-001). Making a design system from a deck is UC-010 A11.
 - UC-014, 05-11-2026, retired: the reach of the agent of a chat is fixed by code and the user chooses no permission level; a step beyond that reach is UC-003 A51.
+- UC-011, 05-11-2026, retired: a chat holds at most one deck, and a second deck for another use starts in a new chat (UC-012) as a first draft (UC-001), with an exported deck attached as material. A change of the same deck is a follow-up request (UC-002).
 
 Layer: in the target spec (`dev/spec/`) each alternative keeps At, Ends, When and FR, with
 System in one line. Detailed responses live in the version spec (WORKFLOW.md "Spec
