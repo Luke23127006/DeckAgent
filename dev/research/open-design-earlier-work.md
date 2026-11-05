@@ -51,6 +51,7 @@ was run; source code was not read.
      (`docker compose down -v` in `QUICKSTART.md`).
    - Proposal: renaming and deleting a chat is a candidate use case, not yet scheduled
      (owner rulings of 05-11-2026 in the UC-006 and UC-013 reviews).
+   - => Parked in the spec backlog as UC-018 on 05-11-2026.
 
 7. Limits of this check.
    - `README.md` and `AGENTS.md` were read in part; the rest came from a summary of the

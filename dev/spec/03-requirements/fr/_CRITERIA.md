@@ -34,9 +34,10 @@ request is running". A rule with a value goes to `../../04-business-rules/`.
 ### IDs and files
 
 - One FR per file: `FR-xxx.md`. `xxx` is three digits. The frontmatter `id` equals the file name.
-- A new ID takes the number after the highest ID in the folder and in the removed IDs. Gaps stay as they are.
+- A new ID takes the number after the highest ID in the folder, in the parked FRs of `../../05-backlog/` and in the removed IDs. Gaps stay as they are.
 - An ID does not change when the title or wording changes, and is not reused.
 - An ID is dropped only when the behavior leaves the behavior model or is merged into another FR. A dropped ID is recorded below with the date and, after a merge, the FR it merged into.
+- A behavior left for later is parked in `../../05-backlog/`, not dropped. FR-062 and FR-081, first recorded here as dropped with a reason to look again, were parked on 05-11-2026.
 - Acceptance criterion IDs are `AC-1`, `AC-2` within one FR, not renumbered.
 
 Removed FR IDs:
@@ -57,10 +58,8 @@ Removed FR IDs:
 - FR-056, 04-11-2026, merged into FR-046.
 - FR-057, 05-11-2026, merged into FR-041 (display-name rules dropped).
 - FR-061, 05-11-2026, merged into FR-041.
-- FR-062, 05-11-2026, dropped: no restore of default models; reconsidered if runtime research finds no model catalog.
 - FR-064, 05-11-2026, merged into FR-063.
 - FR-075, 05-11-2026, dropped: the user chooses no permission level for a chat; the agent reaches what FR-077 fixes.
-- FR-081, 05-11-2026, dropped: no editing of model settings by hand; reconsidered if runtime research finds no model catalog.
 - FR-082, 05-11-2026, dropped: no named reference; the user names a file of the project folder in the request text, and an unreadable file is FR-067.
 - FR-086, 04-11-2026, merged into FR-067.
 - FR-094, 05-11-2026, dropped: no visual style; the user chooses a template and a design system (FR-022).
@@ -104,7 +103,7 @@ FR can serve several blocks; one block can cite several FRs.
 | FRG-07 | The `Undecided` section states open behavior one line each. No statement and no criterion assumes a result for it. A response that fully depends on an open decision does not get an FR; the block keeps `FR-?` | An open question becoming a requirement before it is decided | Review |
 | FRG-08 | Each criterion is a `### AC-n · name` block with Given, When, Then, Check. `Check` is `deterministic` or `evaluation`. `Then` is an observable result, one line per thing, no "if". It does not pin the exact model wording | An untestable criterion; a test tied to model wording | Lint (fields, values) + Review |
 | FRG-09 | Text follows `../../_STYLE.md` rules 1–10 in Statement and Then, and the intent of rule 11: no label, position, color, or unapproved icon; name a place by region | A requirement that locks a design nobody chose | Lint (banned words, interface words) + Review |
-| FRG-10 | The file name `FR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique. A new ID follows the highest existing or removed ID. A dropped ID is recorded in section 1, not reused | Two meanings for one ID | Lint (name, format) + CI (unique) |
+| FRG-10 | The file name `FR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique. A new ID follows the highest existing, parked or removed ID. A dropped ID is recorded in section 1, not reused | Two meanings for one ID | Lint (name, format) + CI (unique) |
 
 ## 3. Illustrations
 

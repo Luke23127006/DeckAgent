@@ -49,8 +49,9 @@ range, or "about" (NFG-04).
 ### IDs and files
 
 - One NFR per file: `NFR-xxx.md`. `xxx` is three digits. The `id` equals the file name.
-- A new ID follows the highest existing or removed ID. An ID does not change when the title or target changes, is not reused, and is not renumbered.
+- A new ID follows the highest existing, parked (`../../05-backlog/`) or removed ID. An ID does not change when the title or target changes, is not reused, and is not renumbered.
 - An ID is dropped only when the requirement leaves the behavior model or is merged into another NFR. A dropped ID is recorded below with the date and the NFR it merged into.
+- A requirement left for later is parked in `../../05-backlog/`, not dropped.
 - Measure IDs are `M-1`, `M-2` within one NFR, not renumbered.
 
 Removed NFR IDs: none.

@@ -40,8 +40,9 @@ behavior — what the system does at a limit is written in the FR.
 ### IDs and files
 
 - One BR per file: `BR-xxx.md`. `xxx` is three digits. The `id` equals the file name.
-- A new ID follows the highest existing or removed ID. An ID does not change when the title, wording, or value changes; it is not reused and not renumbered.
+- A new ID follows the highest existing, parked (`../05-backlog/`) or removed ID. An ID does not change when the title, wording, or value changes; it is not reused and not renumbered.
 - An ID is dropped only when the rule leaves the behavior model or is merged into another BR. A dropped ID is recorded below with the date and the BR it merged into.
+- A rule left for later is parked in `../05-backlog/`, not dropped.
 - Value IDs are `V-1`, `V-2` within one BR, not renumbered.
 
 Removed BR IDs:

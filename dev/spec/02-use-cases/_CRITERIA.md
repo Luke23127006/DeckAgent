@@ -36,7 +36,8 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 - One ID (`UC-xxx`) names a use case file. A flow ID (`Sx`, `Ax`) names a block in the file.
 - The namespace is `dev/spec/`. IDs of the previous spec in `dev/legacy/spec/` (AGENTS.md "Legacy source") do not belong to it until they are migrated here.
 - An ID never moves to a different goal or is reused, even after a file is deleted.
-- A new ID takes the number after the highest ID in the folder and in the removed-ID list. Gaps stay as they are.
+- A new ID takes the number after the highest ID in the folder, in the parked use cases of `../05-backlog/` and in the removed-ID list. Gaps stay as they are.
+- A use case or a flow left for later is parked in `../05-backlog/`, not removed. A parked flow keeps its ID free in its use case, and the use case names it in a Note line only.
 - IDs are not renumbered.
 
 Removed use case IDs:
@@ -73,7 +74,7 @@ scope.
 | UCG-03 | The Steps table has 3–9 `Sx` rows in order. Each row has User (intent), System (observable, no "if"), FR (ID or `FR-?`). No settings, no interface | A response buried in prose; an unclear FR source | Lint (rows, columns) + Review |
 | UCG-04 | Each alternative is a `### Ax · name` block with At, Ends, When, System, FR. `Ends` uses a value from the template. Each step that takes input, can be cancelled, depends on an external service, or can be slow has an alternative, or a recorded reason | A branch not reproducibly testable | Lint (fields) + Review |
 | UCG-05 | The Outcome is verifiable by observation. The Minimal guarantee says what stays true when any branch fails | No final claim to test; data loss on failure | Review |
-| UCG-06 | Step and branch IDs are not renumbered once cited; dropped IDs are listed and not reused. Each reference to another use case or block (an `Ends`, a "like UC-xxx Sx") names an ID that exists and is not dropped. `UC-?` in `Ends` is allowed | A citation pointing wrong; a reference to a dropped block | CI (references) + Review |
+| UCG-06 | Step and branch IDs are not renumbered once cited; dropped IDs are listed and not reused. Each reference to another use case or block (an `Ends`, a "like UC-xxx Sx") names an ID that exists and is not dropped or parked. `UC-?` in `Ends` is allowed; a parked item is named only in a Note | A citation pointing wrong; a reference to a dropped block | CI (references) + Review |
 | UCG-07 | The use case contains no rule or quality values. It cites by ID every requirement, limit, allow-list, check, or wait time a step depends on (`FR-xxx`, `[BR-xxx]`, `[NFR-xxx]`). The `?` marker is allowed on any flow | The same rule in several places; a value changed in one place but not another | Lint (numbers, markers) + CI (ID exists) |
 | UCG-08 | The product coverage stated for each reference product is `observed`, `none`, or `unverified`, with a research link. Differences are described in prose, not rule values. An unrecorded claim keeps `[assumed]` | A guess read as a fact | Lint (tags) + Review |
 | UCG-09 | Text follows `../_STYLE.md`: glossary words, no banned vague verbs, no "can/should/might" in System, conditions in When, one action per line, evidence on its own line. The use case writes intent and response, not a widget, gesture, position, style, or label; it names a place only by region | A response read two ways; a spec that breaks when design changes | Lint (banned words, interface words) + Review |

@@ -12,7 +12,8 @@ plans a version or starts a build reads this document.
   plan, approved by the PO, then locked. The implementer of an FR is never the author of
   its tests. See [Test tiers](#test-tiers) and [Enforcement](#enforcement).
 - **Two spec layers.** `dev/spec/` is the thin target product (the map).
-  `dev/versions/vN/spec/` is the full spec of one version (what gets built). See
+  `dev/versions/vN/spec/` is the full spec of one version (what gets built). Behaviors
+  left for later wait in the spec backlog `dev/spec/05-backlog/`. See
   [Spec layers](#spec-layers).
 - **Understanding of the system is a deliverable.** Each build leaves an as-built record
   focused on what carries product value: the boundary between the model and the
@@ -39,6 +40,7 @@ docs/                         public docs for outside readers (polished prose)
 dev/                          internal docs for the dev team
 ├── legacy/                   documents from before this workflow (read-only)
 ├── spec/                     target spec (thin)
+│   └── 05-backlog/           spec backlog: behaviors left for later
 ├── versions/
 │   ├── README.md             lists the active version
 │   └── vN/
@@ -83,6 +85,11 @@ Rules:
    understand it. `CHANGES.md` records the difference from the previous version by ID.
 5. **A closed version's spec is never edited.** Corrections go into the next version and
    its `CHANGES.md`.
+6. **The backlog waits outside the target.** A use case, a flow, an FR, an NFR or a BR
+   that the PO leaves for later is parked in `dev/spec/05-backlog/` with its ID and the
+   reason. No version takes a backlog item, and no target block cites one. To build it,
+   the PO promotes it to the target first (rule 3). A behavior dropped for good goes to
+   the removed list of its kind instead. See `dev/spec/05-backlog/_CRITERIA.md`.
 
 ## Test tiers
 
@@ -181,9 +188,10 @@ phases.
 
 **Owner:** PO. **Agent:** drafts the spec slices and `CHANGES.md`.
 
-1. Choose the UCs and flows of version N from the target spec. Add each new behavior
-   to the target spec first (spec rule 3). Leaving a UC out of a version never removes
-   it from the target spec.
+1. Choose the UCs and flows of version N from the target spec. Read the spec backlog
+   and promote any item the version needs to the target first (spec rule 6). Add each
+   new behavior to the target spec first (spec rule 3). Leaving a UC out of a version
+   never removes it from the target spec.
 2. Write `dev/versions/vN/spec/`. Start from the previous version spec, or from the
    target for v1. Every in-scope FR gets its ACs. Every AC gets a tier.
 3. Write `CHANGES.md`: Added / Changed / Removed by ID. In v1, everything is Added.
