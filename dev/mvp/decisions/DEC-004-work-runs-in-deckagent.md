@@ -9,9 +9,9 @@ affects: "FR-014, FR-018, FR-068"
 
 ## Question
 
-Where does the work of an active request run, and where is its state kept, so that reloading or closing the interface, a lost connection to DeckAgent, or going to another chat stops no request (FR-068)? Legacy UC-003 Note 8 named this as a design choice for an ADR. The runtime is OpenCode.
+**Where does the work of an active request run**, and **where is its state kept**, so that reloading or closing the interface, a lost connection to DeckAgent, or going to another chat **stops no request** (FR-068)? Legacy UC-003 Note 8 named this as a design choice for an ADR. The **runtime is OpenCode**.
 
-Owner ruling of 04-11-2026 that bounds the options: a request that is active when DeckAgent itself stops does not finish, and is shown as not finished when DeckAgent starts again (UC-003 A11, FR-019). No requirement asks for a request to resume after a restart.
+**Owner ruling of 04-11-2026** that **bounds the options**: a request that is **active when DeckAgent itself stops** **does not finish**, and is **shown as not finished** when DeckAgent starts again (UC-003 A11, FR-019). **No requirement asks for a request to resume after a restart**.
 
 ## Options considered
 

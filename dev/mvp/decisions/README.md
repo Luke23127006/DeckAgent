@@ -1,6 +1,6 @@
 # Decisions
 
-Each file records one technical or product decision made during a build. A decision is the output of a research question — it records what was chosen, why, and what was rejected.
+Each file records **one technical or product decision** made during a build. A decision is the **output of a research question** — it records **what was chosen**, **why**, and **what was rejected**.
 
 ## Index
 
@@ -19,8 +19,8 @@ Each file records one technical or product decision made during a build. A decis
 
 ## Conventions
 
-- One file per decision: `DEC-NNN-short-topic.md`.
-- IDs increase and are never reused.
-- Status: `open` (not decided), `decided` (settled), `revisiting` (reopened, with a reason), or `superseded` (replaced by a later decision, named in `superseded_by`).
-- Each decision links to its source research question.
-- Implementation tickets cite a decision by ID.
+- **One file per decision**: `DEC-NNN-short-topic.md`.
+- IDs **increase** and are **never reused**.
+- **Status**: `open` (not decided), `decided` (settled), `revisiting` (reopened, with a reason), or `superseded` (replaced by a later decision, named in `superseded_by`).
+- Each decision **links to its source research question**.
+- **Implementation tickets cite a decision by ID**.
