@@ -96,7 +96,28 @@ was not read.
    - => A design system is imported as files, not made with the agent. It holds named
      values, rules in words, and optional fonts and assets.
 
-8. Limits of this check.
+8. Is there a visual style apart from the design system, and how is a template chosen?
+   (checked 05-11-2026 for the review of legacy UC-017, from `README.md`,
+   `docs/modes.md` and `docs/skills-protocol.md`)
+   - Observation: no visual style apart from the design system is documented. Style
+     families such as minimal and editorial are design system packages (item 2).
+   - Observation: the user chooses "a design system, and optionally a rendering template
+     from `/api/design-templates`"; a selected template "replaces the tab's default skill
+     as the project's primary `skillId`" (`docs/modes.md`). The README counts "15 deck
+     templates and 36 themes under `design-templates/html-ppt-*/`".
+   - Observation: "No brand? Pick from 5 curated directions"; the roadmap names a
+     "5-direction picker" (`README.md`). What a direction holds is not documented.
+   - Observation: "The Template tab lists templates the user previously saved through
+     Share" (`docs/modes.md`). The roadmap names a "Brand-backed Design System" made from
+     a screenshot or URL, not yet released (`README.md`).
+   - Not found: making a design system or a template from a deck or a presentation file;
+     several built design options shown before the slides; a conflict rule between a
+     template and a design system (only "Brand tokens in DESIGN.md win on conflict" over
+     craft rules, `docs/skills-protocol.md` section 5.5).
+   - => The look is the design system and the layouts are the template, chosen
+     separately. There is no third set of design rules.
+
+9. Limits of this check.
    - The guizang-ppt reference files (`layouts.md`, `themes.md`) and `template.html` were
      not read.
    - The payload of a comment or selection in the preview is not documented in the pages

@@ -62,8 +62,17 @@ Removed FR IDs:
 - FR-081, 05-11-2026, dropped: no editing of model settings by hand; reconsidered if runtime research finds no model catalog.
 - FR-082, 05-11-2026, dropped: no named reference; the user names a file of the project folder in the request text, and an unreadable file is FR-067.
 - FR-086, 04-11-2026, merged into FR-067.
+- FR-094, 05-11-2026, dropped: no visual style; the user chooses a template and a design system (FR-022).
+- FR-095, 05-11-2026, dropped: no design options before the slides; the outline is the only checkpoint, and a design system shows a sample slide (FR-096).
+- FR-100, 05-11-2026, merged into FR-096.
+- FR-101, 05-11-2026, merged into FR-097.
+- FR-102, 05-11-2026, merged into FR-098.
+- FR-103, 05-11-2026, merged into FR-097 (from a deck) and FR-099 (from a reference presentation).
+- FR-104, 05-11-2026, dropped: no visual style, and no Required or Preferred Rules.
+- FR-105, 05-11-2026, merged into FR-136.
 - FR-108, 04-11-2026, merged into FR-107.
 - FR-109, 05-11-2026, merged into FR-044.
+- FR-110, 05-11-2026, merged into FR-112.
 - FR-111, 05-11-2026, merged into FR-038.
 - FR-114, 04-11-2026, merged into FR-113.
 - FR-115, 04-11-2026, merged into FR-113.

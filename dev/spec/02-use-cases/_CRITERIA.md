@@ -39,7 +39,9 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 - A new ID takes the number after the highest ID in the folder and in the removed-ID list. Gaps stay as they are.
 - IDs are not renumbered.
 
-Removed use case IDs: none.
+Removed use case IDs:
+
+- UC-017, 05-11-2026, retired: a visual style is the rules in words of a design system (UC-010), and the user chooses a template in the interview (UC-001). Making a design system from a deck is UC-010 A11.
 
 Layer: in the target spec (`dev/spec/`) each alternative keeps At, Ends, When and FR, with
 System in one line. Detailed responses live in the version spec (WORKFLOW.md "Spec

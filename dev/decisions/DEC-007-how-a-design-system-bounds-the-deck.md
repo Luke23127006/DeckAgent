@@ -4,7 +4,7 @@ title: "How the template and the design system bound the model, and a colour or 
 date: 05-11-2026
 status: decided
 research: "dev/research/open-design-design-systems.md items 3, 5 and 7; owner ruling after the UC-010 check, 05-11-2026"
-affects: "FR-022, FR-092, FR-093, FR-107, UC-002 A8, A19 and A21, glossary (template, theme), DEC-005 setting C2"
+affects: "FR-022, FR-092, FR-093, FR-097, FR-107, BR-017, UC-002 A8, A19 and A21, glossary (template, theme), DEC-005 setting C2"
 ---
 
 ## Question
@@ -108,3 +108,11 @@ PO rulings of 05-11-2026, in the discussion after the UC-010 check:
   compares a weak and a strong model.
 - The review of legacy UC-007 applies the same rule to a change by hand: the user's choice
   is never a fault.
+- Amended on 05-11-2026 by the PO in the review of legacy UC-017 (ruling 7A): the second
+  suggested answer of 2C no longer adds the colour or font beside the theme values. It puts
+  it in the theme of the deck in place of the theme value whose role it fits best, such as
+  the accent colour, and names that role. Every theme value keeps a role, so the model knows
+  what each one is for, and a design system made from the theme of a deck takes the current
+  values. A value put in place this way is not kept when the deck changes its design system
+  (ruling 8A, FR-093): the new design system replaces it and the system names it. A colour
+  or font the user chose for a part of a slide is still kept.

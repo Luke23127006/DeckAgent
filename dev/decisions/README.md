@@ -14,7 +14,7 @@ rejected.
 | [DEC-004](DEC-004-work-runs-in-deckagent.md) | Where the work of a request runs, so that leaving the interface stops nothing | not chosen | 04-11-2026 | open |
 | [DEC-005](DEC-005-model-writes-source-within-template.md) | Who writes the deck source, and how a design system bounds it across generation formats | The model writes the source within a prebuilt template; code makes the theme and checks each write | 04-11-2026 | decided (C2 replaced by DEC-007) |
 | [DEC-006](DEC-006-where-chat-work-is-kept.md) | Where the deck source and the work of a chat are kept: DeckAgent's own data or the project folder | not chosen | 05-11-2026 | open |
-| [DEC-007](DEC-007-how-a-design-system-bounds-the-deck.md) | What role the template plays for the model, and what happens to a colour or font the user asks for outside the theme | A layout of the template that code finds fitting, or a new one when none fits; the user is asked about a colour or font outside the theme | 05-11-2026 | decided |
+| [DEC-007](DEC-007-how-a-design-system-bounds-the-deck.md) | What role the template plays for the model, and what happens to a colour or font the user asks for outside the theme | A layout of the template that code finds fitting, or a new one when none fits; the user is asked about a colour or font outside the theme | 05-11-2026 | decided (2C amended 05-11-2026) |
 
 Legacy decisions (`dev/legacy/adr/`) are research input. They have no DEC number.
 

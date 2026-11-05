@@ -90,7 +90,7 @@ empty; each project declares its own terms and adds to them as it learns.
 | **source** | Where the content of a deck comes from: the user's material, the model's general knowledge, or public research |
 | **outside service** | A service other than the provider of the selected model, such as a search or image service, that the user set up with their own account or key |
 | **public research** | A search for public information through an outside service |
-| **brief** | What the first outline is drafted from: the interview answers, the assumption for each skipped question, the sources, the generation format and the design system |
+| **brief** | What the first outline is drafted from: the interview answers, the assumption for each skipped question, the sources, the generation format, the template and the design system |
 | **presenter notes** | Text for the presenter that belongs to one slide and is not shown to the audience |
 | **outline** | The plan of a deck: the planned slides and the planned content of each one |
 | **current outline** | The outline proposal in the latest outline response of the conversation |
@@ -103,10 +103,10 @@ empty; each project declares its own terms and adds to them as it learns.
 | **built-in design system** | A design system that comes with DeckAgent. The system never changes or removes it |
 | **custom design system** | A design system the user saved. The user is allowed to change and remove it |
 | **theme value** | A named value of a design system, such as a colour, a font or a spacing |
-| **brand file** | A file that gives the look of a brand, such as a brand guide, a logo, a font file or a design system package of another product |
+| **brand file** | A file that gives the look of a brand, such as a brand guide, a presentation, a logo, a font file or a design system package of another product |
 | **sample slide** | A slide made with a proposed design system to show it. It belongs to no deck |
-| **theme** | A design system written in the terms of one generation format: its theme values, and those the user added for the deck, as named values the deck source refers to. Only the system writes it |
-| **template** | The prebuilt layouts of one generation format that the system builds slides from. Each layout states the kinds of content it serves and how much it holds |
+| **theme** | A design system written in the terms of one generation format: its theme values, with each value the user put in place of one for the deck, as named values the deck source refers to. Only the system writes it |
+| **template** | A prebuilt set of layouts of one generation format that the system builds slides from. Each generation format has one or more built-in templates, one of them its default template; the user chooses one in the interview. Each layout states the kinds of content it serves and how much it holds |
 | **marked part** | A part of a slide that the user points to as the target of a request |
 | **closing message** | The response that ends the work on slides of a request and tells what was made or changed |
 | **placeholder** | Text that stands in for a fact no source gives |
