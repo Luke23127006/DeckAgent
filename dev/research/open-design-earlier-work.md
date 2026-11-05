@@ -26,7 +26,7 @@ was run; source code was not read.
    - Inference: a project holds its conversations and its files. That a project holds
      several conversations is not stated.
    - => DeckAgent keeps the chat as the unit: one conversation and at most one deck
-     (owner ruling of 05-11-2026). Grouping chats is reviewed with legacy UC-013.
+     (owner ruling of 05-11-2026). Grouping chats by workspace: items 8 to 10.
 
 4. Where is earlier work kept, and does it survive a restart?
    - Observation: `docs/architecture.md`: "SQLite state and daemon-owned project files".
@@ -49,11 +49,39 @@ was run; source code was not read.
 6. Can a project or conversation be renamed or deleted?
    - Observation: not documented. The only deletion found removes all local app data
      (`docker compose down -v` in `QUICKSTART.md`).
-   - Proposal: renaming and deleting a chat is a candidate use case, reconsidered with
-     legacy UC-013 (owner ruling of 05-11-2026).
+   - Proposal: renaming and deleting a chat is a candidate use case, not yet scheduled
+     (owner rulings of 05-11-2026 in the UC-006 and UC-013 reviews).
 
 7. Limits of this check.
    - `README.md` and `AGENTS.md` were read in part; the rest came from a summary of the
      page.
    - `docs/modes.md`, `docs/roadmap.md` and `docs/agent-adapters.md` were not read for
      this question.
+
+Items 8 to 10 were added on 05-11-2026 for the UC-013 review, from `README.md` (first
+part verbatim, the rest summarized), `docs/architecture.md` and `QUICKSTART.md`.
+
+8. Does a project use a folder of the user?
+   - Observation: `docs/architecture.md` section 6: "`POST /api/import/folder` creates a
+     project rooted at a user-selected folder." Section 3.5: an imported project uses "the
+     user-selected external `metadata.baseDir`" and is not copied "into the managed-project
+     root".
+   - Observation: the daemon "validates and bounds file operations against that selected
+     workspace". A desktop import needs a token "minted by the trusted main process after
+     the native folder picker succeeds".
+   - Observation: other projects are kept under the data folder of the daemon.
+   - => DeckAgent: a workspace has one project folder that the user chooses (FR-071).
+
+9. Does the agent write into that folder?
+   - Observation: the runtime is spawned "with the project workspace as its working
+     directory"; section 7: "Imported-folder projects use their validated external root".
+   - Inference: the agent of an imported project writes into the user's folder. No page
+     states it.
+   - => DeckAgent writes no file into the project folder (FR-084); where its work is kept is
+     [DEC-006](../decisions/DEC-006-where-chat-work-is-kept.md).
+
+10. Are projects grouped or removed?
+    - Observation: no page describes a group of projects (workspace, folder or tag), or
+      removing a project and what happens to its files.
+    - => DeckAgent groups chats by workspace and keeps every chat of a removed workspace
+      in the default workspace (FR-073, BR-004). No reference product shows this.

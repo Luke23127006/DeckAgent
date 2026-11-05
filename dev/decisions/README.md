@@ -13,6 +13,7 @@ rejected.
 | [DEC-003](DEC-003-user-sets-up-outside-services.md) | Who chooses the outside services besides the model provider | The user chooses and sets up each one | 04-11-2026 | decided |
 | [DEC-004](DEC-004-work-runs-in-deckagent.md) | Where the work of a request runs, so that leaving the interface stops nothing | not chosen | 04-11-2026 | open |
 | [DEC-005](DEC-005-model-writes-source-within-template.md) | Who writes the deck source, and how a design system bounds it across generation formats | The model writes the source within a prebuilt template; code makes the theme and checks each write | 04-11-2026 | decided |
+| [DEC-006](DEC-006-where-chat-work-is-kept.md) | Where the deck source and the work of a chat are kept: DeckAgent's own data or the project folder | not chosen | 05-11-2026 | open |
 
 Legacy decisions (`dev/legacy/adr/`) are research input. They have no DEC number.
 

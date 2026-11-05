@@ -60,6 +60,7 @@ Removed FR IDs:
 - FR-062, 05-11-2026, dropped: no restore of default models; reconsidered if runtime research finds no model catalog.
 - FR-064, 05-11-2026, merged into FR-063.
 - FR-081, 05-11-2026, dropped: no editing of model settings by hand; reconsidered if runtime research finds no model catalog.
+- FR-082, 05-11-2026, dropped: no named reference; the user names a file of the project folder in the request text, and an unreadable file is FR-067.
 - FR-086, 04-11-2026, merged into FR-067.
 - FR-108, 04-11-2026, merged into FR-107.
 - FR-114, 04-11-2026, merged into FR-113.
