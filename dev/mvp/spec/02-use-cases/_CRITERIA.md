@@ -59,7 +59,7 @@ A **claim about product behavior uses a tag** from `../_STYLE.md` (`[observed: <
 | UCG-07 | The use case contains no rule or quality values. It cites by ID every requirement, limit, allow-list, check, or wait time a step depends on (`FR-xxx`, `[BR-xxx]`, `[NFR-xxx]`). The `?` marker is allowed on any flow | The same rule in several places; a value changed in one place but not another | Lint (numbers, markers) + CI (ID exists) |
 | UCG-08 | The product coverage stated for each reference product is `observed`, `none`, or `unverified`, with a research link. Differences are described in prose, not rule values. An unrecorded claim keeps `[assumed]` | A guess read as a fact | Lint (tags) + Review |
 | UCG-09 | Text follows `../_STYLE.md`: glossary words, no banned vague verbs, no "can/should/might" in System, conditions in When, one action per line, evidence on its own line. The use case writes intent and response, not a widget, gesture, position, style, or label; it names a place only by region | A response read two ways; a spec that breaks when design changes | Lint (banned words, interface words) + Review |
-| UCG-10 | The interaction diagram follows `../_MERMAID.md` (MG-01..MG-10): valid, a view generated from the Steps table and Alternative flows, each message maps 1-to-1, not hand-edited | A diagram drifting from the source; a branch lost when drawn | Review (until there is a skill), then CI |
+| UCG-10 | The interaction diagram follows `../_MERMAID.md` (MG-01..MG-10): valid, a view generated from the Steps table and Alternative flows, each message maps 1-to-1 and **ends with its step ID** (`[S1]`), not hand-edited | A diagram drifting from the source; a branch lost when drawn | Review (until there is a skill), then CI |
 
 ## 4. Illustrations
 

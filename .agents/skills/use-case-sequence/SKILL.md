@@ -22,8 +22,10 @@ The **diagram is a view**. The **Steps table and the Alternative flow blocks are
 
 1. Declare participants: `participant U as User` and `participant S as System`.
 2. For each step in order:
-   - User column not empty → `U->>S: <user>`.
-   - System column not empty → `S-->>U: <system>`.
+   - User column not empty → `U->>S: <user> [S<n>]`.
+   - System column not empty → `S-->>U: <system> [S<n>]`.
+   - `[S<n>]` is the **step ID of the row**, so each message **names the step** it comes from.
+   - Remove every `**` from the content. Mermaid shows it literally.
    - Replace every `"` in the content with `'`.
    - Replace every `;` in the content with `,`. Mermaid treats `;` as a statement separator, so a label containing `;` breaks parsing.
 
@@ -41,8 +43,8 @@ The block is **exactly these lines** (each line inside the code block **indented
 sequenceDiagram
   participant U as User
   participant S as System
-  U->>S: <user>
-  S-->>U: <system>
+  U->>S: <user> [S<n>]
+  S-->>U: <system> [S<n>]
 ```
 
 *Not drawn (alternative flows): <list>.*
@@ -61,6 +63,6 @@ Follow **"Portability defaults"** in [mermaid-markdown](../mermaid-markdown/SKIL
 
 ## 7. Check and report
 
-- **Each step becomes exactly one message**. **Each alternative is recorded in the "Not drawn" line**.
+- **Each non-empty User or System cell becomes exactly one message**, which **ends with its step ID**. **No `**` is left**. **Each alternative is recorded in the "Not drawn" line**.
 - If `npx` is available, **check syntax with the Mermaid CLI**; **say whether it ran**.
 - **Report**: the file, the message count, the alternatives list, and the checks that ran.

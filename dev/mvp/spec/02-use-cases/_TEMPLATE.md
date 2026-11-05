@@ -16,8 +16,8 @@ title: ""
 sequenceDiagram
   participant U as User
   participant S as System
-  U->>S: user intent
-  S-->>U: system response
+  U->>S: user intent [S1]
+  S-->>U: system response [S1]
 ```
 <!-- END generated: use-case-sequence -->
 
