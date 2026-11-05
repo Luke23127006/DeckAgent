@@ -9,7 +9,7 @@ user-invocable: true
 
 ## Overview
 
-Create a well-structured git commit with a conventional commit message, then push it to the remote — one workflow, no extra steps.
+Create a **well-structured git commit** with a **conventional commit message**, then **push it to the remote** — **one workflow, no extra steps**.
 
 ## Instructions
 
@@ -22,12 +22,12 @@ Run these commands in parallel:
 - `git log --oneline -5` to see recent commit style
 - `git remote -v` to confirm a remote exists
 
-If no remote is configured, stop and tell the user — there's nowhere to push.
+If **no remote is configured**, **stop and tell the user** — there's nowhere to push.
 
 ### 2. Check the branch
 
-- Note the current branch name.
-- If the branch is `main` or `master`, warn the user that they're about to push directly to the primary branch and ask whether to continue.
+- **Note the current branch name**.
+- If the branch is `main` or `master`, **warn the user** that they're about to **push directly to the primary branch** and **ask whether to continue**.
 
 ### 3. Stage changes if needed
 
@@ -63,7 +63,7 @@ Follow this format:
 <optional body explaining what and why>
 ```
 
-Never add a `Co-Authored-By` trailer or any attribution to Claude or any other AI agent or model (AGENTS.md "GitHub conventions").
+**Never add a `Co-Authored-By` trailer** or **any attribution to Claude or any other AI agent** or model (AGENTS.md "GitHub conventions").
 
 Types:
 - `feat`: New feature
@@ -91,7 +91,7 @@ EOF
 - If the branch already tracks an upstream, run `git push`.
 - If no upstream is set, run `git push -u origin <branch>` to set tracking.
 
-If the push is rejected (e.g. the remote has newer commits), report the error to the user. Do not force-push or rebase automatically.
+If the push is **rejected** (e.g. the remote has newer commits), **report the error** to the user. **Do not force-push or rebase automatically**.
 
 ### 9. Verify success
 
@@ -99,20 +99,20 @@ Run `git status` and confirm:
 - The working tree is clean (or only has intentionally uncommitted files)
 - The branch is up to date with the remote
 
-Report the commit hash and the remote URL the changes were pushed to.
+**Report the commit hash** and the **remote URL** the changes were pushed to.
 
 ## Guidelines
 
-- Keep the first line under 72 characters
-- Use imperative mood ("add feature" not "added feature")
-- Focus on WHY the change was made, not just WHAT changed
-- Don't include file lists in the message — git tracks that
-- Match the style of recent commits in the repo when possible
+- Keep the **first line under 72 characters**
+- Use **imperative mood** ("add feature" not "added feature")
+- Focus on **WHY** the change was made, **not just WHAT** changed
+- **Don't include file lists** in the message — git tracks that
+- **Match the style of recent commits** in the repo when possible
 
 ## Safety
 
-- Never use `--force` or `--force-with-lease` on push
-- Never skip hooks with `--no-verify` unless explicitly asked
-- Never amend commits that have been pushed
-- If there are no changes to commit, inform the user
-- If push fails, report the error — never force-push or rebase to work around it
+- **Never use `--force` or `--force-with-lease`** on push
+- **Never skip hooks** with `--no-verify` unless explicitly asked
+- **Never amend commits that have been pushed**
+- If there are **no changes to commit**, **inform the user**
+- If **push fails**, **report the error** — **never force-push or rebase** to work around it

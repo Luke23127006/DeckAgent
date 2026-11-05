@@ -7,13 +7,13 @@ description: Shared vocabulary for designing deep modules. Use when the user wan
 
 ## Project compatibility
 
-Apply this workflow within the task scope and root `AGENTS.md`. Recorded project decisions and terminology take precedence over examples here. The system architecture is not finalized: present cross-component design choices to the task owner and label unresolved choices as proposals. This skill grants no permission to publish, change shared environments, or remove unrelated work.
+Apply this workflow **within the task scope** and root `AGENTS.md`. **Recorded project decisions and terminology take precedence** over examples here. The **system architecture is not finalized**: **present cross-component design choices to the task owner** and **label unresolved choices as proposals**. This skill **grants no permission** to publish, change shared environments, or remove unrelated work.
 
-Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. Use this language and these principles wherever code is being designed or restructured. The aim is leverage for callers, locality for maintainers, and testability for everyone.
+Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. Use this language and these principles wherever code is being designed or restructured. The aim is **leverage for callers**, **locality for maintainers**, and **testability for everyone**.
 
 ## Glossary
 
-Use this vocabulary when it clarifies the design. Preserve terminology in approved project decisions and public contracts; do not rename concepts solely to match this glossary. The _Avoid_ entries below are suggestions, not project naming rules.
+Use this vocabulary **when it clarifies the design**. **Preserve terminology** in approved project decisions and public contracts; **do not rename concepts solely to match this glossary**. The _Avoid_ entries below are **suggestions, not project naming rules**.
 
 **Module**: anything with an interface and an implementation. Deliberately scale-agnostic: a function, class, package, or tier-spanning slice. _Avoid_: unit, component, service.
 
@@ -55,11 +55,11 @@ Use this vocabulary when it clarifies the design. Preserve terminology in approv
 └─────────────────────────────────┘
 ```
 
-When designing an interface, ask:
+When **designing an interface**, ask:
 
-- Can I reduce the number of methods?
-- Can I simplify the parameters?
-- Can I hide more complexity inside?
+- Can I **reduce the number of methods**?
+- Can I **simplify the parameters**?
+- Can I **hide more complexity inside**?
 
 ## Principles
 
@@ -70,7 +70,7 @@ When designing an interface, ask:
 
 ## Designing for testability
 
-Good interfaces make testing natural:
+**Good interfaces make testing natural**:
 
 1. **Accept dependencies, don't create them.**
 

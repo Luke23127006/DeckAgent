@@ -9,7 +9,7 @@ user-invocable: true
 
 ## Overview
 
-Create well-structured git commits with conventional commit messages that clearly describe the changes.
+Create **well-structured git commits** with **conventional commit messages** that **clearly describe the changes**.
 
 ## Instructions
 
@@ -55,7 +55,7 @@ When committing changes, follow these steps:
 
    <optional body explaining what and why>
    ```
-   Never add a `Co-Authored-By` trailer or any attribution to Claude or any other AI agent or model (AGENTS.md "GitHub conventions"). Types:
+   **Never add a `Co-Authored-By` trailer** or **any attribution to Claude or any other AI agent** or model (AGENTS.md "GitHub conventions"). Types:
    - `feat`: New feature
    - `fix`: Bug fix
    - `refactor`: Code restructuring without behavior change
@@ -76,15 +76,15 @@ When committing changes, follow these steps:
 
 ## Guidelines
 
-- Keep the first line under 72 characters
-- Use imperative mood ("add feature" not "added feature")
-- Focus on WHY the change was made, not just WHAT changed
-- Don't include file lists in the message - git tracks that
-- Match the style of recent commits in the repo when possible
+- Keep the **first line under 72 characters**
+- Use **imperative mood** ("add feature" not "added feature")
+- Focus on **WHY** the change was made, **not just WHAT** changed
+- **Don't include file lists** in the message - git tracks that
+- **Match the style of recent commits** in the repo when possible
 
 ## Safety
 
-- Never use `--force` or destructive commands
-- Never skip hooks with `--no-verify` unless explicitly asked
-- Never amend commits that have been pushed
-- If there are no changes to commit, inform the user
+- **Never use `--force`** or destructive commands
+- **Never skip hooks** with `--no-verify` unless explicitly asked
+- **Never amend commits that have been pushed**
+- If there are **no changes to commit**, **inform the user**

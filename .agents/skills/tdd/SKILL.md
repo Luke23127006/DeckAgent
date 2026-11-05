@@ -7,15 +7,15 @@ description: Test-driven development. Use when the user wants to build features 
 
 ## Project compatibility
 
-Apply this workflow within the task scope and root `AGENTS.md`. Recorded project decisions and terminology take precedence over examples here. The system architecture is not finalized: present cross-component design choices to the task owner and label unresolved choices as proposals. This skill grants no permission to publish, change shared environments, or remove unrelated work.
+Apply this workflow **within the task scope** and root `AGENTS.md`. **Recorded project decisions and terminology take precedence** over examples here. The **system architecture is not finalized**: **present cross-component design choices to the task owner** and **label unresolved choices as proposals**. This skill **grants no permission** to publish, change shared environments, or remove unrelated work.
 
-TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
+TDD is the **red → green loop**. This skill is the reference that makes that loop **produce tests worth keeping**: what a good test is, where tests go, the anti-patterns, and the rules of the loop. **Every section applies on every cycle**: **consult them before and during the loop**, not after.
 
-When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
+When exploring the codebase, **read `CONTEXT.md`** (if it exists) so **test names and interface vocabulary match the project's domain language**, and **respect ADRs** in the area you're touching.
 
 ## What a good test is
 
-Tests verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't. A good test reads like a specification: "user can checkout with valid cart" tells you exactly what capability exists, and it survives refactors because it doesn't care about internal structure.
+**Tests verify behavior through public interfaces**, **not implementation details**. Code can change entirely; **tests shouldn't**. A good test **reads like a specification**: "user can checkout with valid cart" tells you exactly what capability exists, and it **survives refactors** because it doesn't care about internal structure.
 
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
 
@@ -25,7 +25,7 @@ A **seam** is the public boundary you test at: the interface where you observe b
 
 **Test at existing public interfaces.** Identify the interfaces under test from task acceptance criteria, code and existing tests. Continue within the authorized scope without asking again about established interfaces. If the change establishes or changes a system-wide boundary, present options and obtain the task owner's decision before implementing that part, as required by AGENTS.md.
 
-When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), read [codebase-design](../codebase-design/SKILL.md) for the vocabulary using the available file-reading tool. It is the shared source of the module, interface, depth, seam, adapter, leverage and locality terms, and it is a reference to consult, not a session to run.
+When the **shape of that interface is itself in question** (how deep the module is, where the seam belongs, what the interface should expose), **read [codebase-design](../codebase-design/SKILL.md)** for the vocabulary using the available file-reading tool. It is the **shared source of the module, interface, depth, seam, adapter, leverage and locality terms**, and it is a **reference to consult, not a session to run**.
 
 ## Anti-patterns
 
