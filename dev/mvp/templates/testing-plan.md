@@ -133,4 +133,4 @@ created: DD-MM-YYYY
 
 ### Regression tests
 
-Added when a bug is found and fixed. Not planned ahead.
+**Added when a bug is found and fixed**. **Not planned ahead**.

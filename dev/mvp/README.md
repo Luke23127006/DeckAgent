@@ -1,17 +1,17 @@
 # MVP
 
-Everything the MVP of DeckAgent is built from: the spec, the research, the decisions, the templates and the builds. Rules: [WORKFLOW.md](WORKFLOW.md).
+**Everything the MVP** of DeckAgent **is built from**: the spec, the research, the decisions, the templates and the builds. **Rules**: [WORKFLOW.md](WORKFLOW.md).
 
 ## At a glance
 
-- **Phase 0:** not started.
-- **Milestone:** `mvp` (not created yet).
-- **Walking skeleton:** not built, not deferred yet.
-- **Reference code:** legacy code in `apps/`, `packages/`, `vendor/`, `scripts/`; OpenCode reference on branch `feat/v2-opencode`, commit to pin at the first drift inventory ([WORKFLOW.md "Reference code"](WORKFLOW.md#reference-code)).
+- **Phase 0:** **not started**.
+- **Milestone:** `mvp` (**not created yet**).
+- **Walking skeleton:** **not built**, **not deferred yet**.
+- **Reference code:** **legacy code** in `apps/`, `packages/`, `vendor/`, `scripts/`; **OpenCode reference** on branch `feat/v2-opencode`, **commit to pin at the first drift inventory** ([WORKFLOW.md "Reference code"](WORKFLOW.md#reference-code)).
 
 ## Build order
 
-Set in Phase 0.
+**Set in Phase 0**.
 
 | # | Build | Scope | Flow tracker | Status |
 |---|---|---|---|---|

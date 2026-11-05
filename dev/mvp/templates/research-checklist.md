@@ -20,9 +20,9 @@ created: DD-MM-YYYY
 
 ## How to use
 
-Each question is tied to the FR/NFR it serves. **The PO researches and answers** — the agent supplies only the questions and the options tables as raw material. The agent does not answer for the PO and does not fill in `Choice`/`Why` of a decision record (see dev/mvp/WORKFLOW.md "Roles"). The deliverable files are created ahead of time — open the file and fill the empty fields.
+Each question is **tied to the FR/NFR it serves**. **The PO researches and answers** — the agent supplies **only the questions and the options tables** as raw material. The agent **does not answer for the PO** and **does not fill in `Choice`/`Why`** of a decision record (see dev/mvp/WORKFLOW.md "Roles"). The **deliverable files are created ahead of time** — **open the file and fill the empty fields**.
 
-When the build touches the runtime integration (OpenCode), at least one question asks how the runtime handles the part touched and where DeckAgent hooks in (dev/mvp/WORKFLOW.md "Phase 1", step 4).
+When the build **touches the runtime integration** (OpenCode), **at least one question asks how the runtime handles the part touched** and **where DeckAgent hooks in** (dev/mvp/WORKFLOW.md "Phase 1", step 4).
 
 ## Flow model
 

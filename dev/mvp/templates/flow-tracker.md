@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Flow tracker — {scope}
 
-Local mirror of the GitHub flow tracker issue (milestone `mvp`). Update this file when the issue is updated.
+**Local mirror** of the **GitHub flow tracker issue** (milestone `mvp`). **Update this file when the issue is updated**.
 
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, keep the phase order below. Every #N must be a clickable link:
      [#N](https://github.com/{owner}/{repo}/issues/N) — see dev/mvp/WORKFLOW.md "Linking convention". -->
