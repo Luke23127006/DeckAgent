@@ -12,7 +12,7 @@
 
 ## 0. Kết quả chính và cách đọc
 
-OpenDesign tạo slide deck bằng một vòng lặp model–tool. Planner đề xuất thiết kế và chọn công cụ; renderer dựng PPTX; critic trả nhận xét để planner quyết định sửa hoặc kết thúc.
+OpenDesign **tạo slide deck bằng một vòng lặp model–tool**. **Planner đề xuất thiết kế và chọn công cụ**; **renderer dựng PPTX**; **critic trả nhận xét** để planner **quyết định sửa hoặc kết thúc**.
 
 **Những điểm chính để review**
 
@@ -31,7 +31,7 @@ OpenDesign tạo slide deck bằng một vòng lặp model–tool. Planner đề
 | Phase 3 | Lý do lựa chọn kiến trúc, phương án thay thế và trade-offs |
 | Phụ lục | Môi trường, mã tái lập, cách đối chiếu tài liệu và source |
 
-Trong mỗi mục phân tích, phần giải thích được trình bày trước; bảng **Implementation Evidence** đặt ở cuối mục. Kết quả test, trace và probe được tập trung tại mục 2.8.
+Trong mỗi mục phân tích, **phần giải thích được trình bày trước**; bảng **Implementation Evidence** **đặt ở cuối mục**. **Kết quả test, trace và probe** được **tập trung tại mục 2.8**.
 
 **Phạm vi của kết luận**
 
@@ -39,7 +39,7 @@ Trong mỗi mục phân tích, phần giải thích được trình bày trướ
 - **Lý do do tác giả công bố:** lấy từ decision records hoặc ghi chú upstream; được nêu rõ khi sử dụng.
 - **Nhận định nghiên cứu:** đánh giá hoặc đề xuất rút ra từ source và kết quả kiểm chứng; chưa phải quyết định kiến trúc của DeckAgent.
 
-Nghiên cứu được thực hiện lần lượt theo ba phase của plan. Tên component trong báo cáo thể hiện trách nhiệm phân tích; không mặc định mỗi component là một service riêng.
+Nghiên cứu được thực hiện **lần lượt theo ba phase** của plan. **Tên component** trong báo cáo **thể hiện trách nhiệm phân tích**; **không mặc định mỗi component là một service riêng**.
 
 <details>
 <summary>Implementation Evidence — Kết luận tổng quan</summary>
@@ -63,14 +63,14 @@ Nghiên cứu được thực hiện lần lượt theo ba phase của plan. Tê
 
 ### 1.1. Kiến trúc điều phối dựa trên model và công cụ
 
-OpenDesign tổ chức việc tạo presentation như một **Orchestration** giữa năng lực ra quyết định của model và các thành phần thực thi. Runtime quản lý một lần xử lý từ yêu cầu tới kết quả; Planner quyết định hành động tiếp theo; tools thực hiện hành động; Rendering Pipeline tạo sản phẩm; Critic cung cấp phản hồi chất lượng.
+OpenDesign tổ chức việc tạo presentation như một **Orchestration** giữa **năng lực ra quyết định của model** và **các thành phần thực thi**. **Runtime quản lý một lần xử lý** từ yêu cầu tới kết quả; **Planner quyết định hành động tiếp theo**; **tools thực hiện hành động**; **Rendering Pipeline tạo sản phẩm**; **Critic cung cấp phản hồi chất lượng**.
 
-Các thành phần trao đổi qua một mô hình thiết kế có cấu trúc và state của lần xử lý. **Feedback Loop** đưa nhận xét về Planner để hình thành bản sửa và vòng dựng tiếp theo. Trong kiến trúc được khảo sát, Critic chạy đồng bộ với luồng điều phối: Planner chờ đánh giá rồi mới quyết định tiếp. Những vai trò này là ranh giới trách nhiệm trong ứng dụng, không mặc định là các service triển khai độc lập.
+Các thành phần **trao đổi qua một mô hình thiết kế có cấu trúc** và **state của lần xử lý**. **Feedback Loop** đưa **nhận xét về Planner** để hình thành bản sửa và vòng dựng tiếp theo. Trong kiến trúc được khảo sát, **Critic chạy đồng bộ** với luồng điều phối: **Planner chờ đánh giá rồi mới quyết định tiếp**. Những vai trò này là **ranh giới trách nhiệm trong ứng dụng**, **không mặc định là các service triển khai độc lập**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
-OpenDesign tổ chức việc tạo deck quanh một run do `PipelineRunner` quản lý.
+OpenDesign **tổ chức việc tạo deck quanh một run** do `PipelineRunner` quản lý.
 
 - **Điểm vào:** CLI hoặc chat nhận brief và attachment.
 - **Điều phối:** runner tạo context, chuẩn bị dữ liệu và khởi động `PlannerLoop`.
@@ -79,7 +79,7 @@ OpenDesign tổ chức việc tạo deck quanh một run do `PipelineRunner` qu�
 - **Dựng deck:** compositor và PPTX renderer chuyển cây slide trong spec thành PPTX cùng ảnh preview.
 - **Đánh giá và sửa:** critic trả report; planner quyết định thay đổi spec, composite lại hoặc kết thúc.
 
-Critic có backend, vòng lặp và trajectory riêng. Wrapper `critique` gọi critic đồng bộ trong luồng planner; ở nhánh đã khảo sát, planner chờ critic trả kết quả rồi mới tiếp tục.
+**Critic có backend, vòng lặp và trajectory riêng**. Wrapper `critique` **gọi critic đồng bộ** trong luồng planner; ở nhánh đã khảo sát, **planner chờ critic trả kết quả** rồi mới tiếp tục.
 
 </details>
 
@@ -141,7 +141,7 @@ Planner quyết định **cần làm gì**; tools và renderer quyết định *
 
 ### 1.3. Sơ đồ kiến trúc và ý nghĩa các kết nối
 
-Sơ đồ gốc biểu diễn Control Flow và khả năng thực thi. Đọc từ trái sang phải: yêu cầu được tiếp nhận, runtime điều phối, planner chọn hành động; feedback từ critic quay lại planner. Các nhóm sản phẩm phía dưới là những nhánh output thay thế.
+**Sơ đồ gốc biểu diễn Control Flow và khả năng thực thi**. Đọc **từ trái sang phải**: yêu cầu được tiếp nhận, runtime điều phối, planner chọn hành động; **feedback từ critic quay lại planner**. Các nhóm sản phẩm phía dưới là **những nhánh output thay thế**.
 
 ![Kiến trúc agent nguyên bản của OpenDesign](diagrams/upstream/agent_architecture.png)
 
@@ -154,14 +154,14 @@ Sơ đồ gốc biểu diễn Control Flow và khả năng thực thi. Đọc t�
 | Mũi tên đỏ Critic → Planner | Feedback Loop: trả issues/verdict để cân nhắc sửa; Critic không trực tiếp chỉnh presentation |
 | Công cụ dựng sản phẩm → POSTER / LANDING / DECK | Rendering Pipeline phân nhánh theo loại sản phẩm; với deck, tạo PPTX và preview, không chạy qua cả ba loại output |
 
-Ba vùng của hình tương ứng với **đầu vào/điều phối**, **quyết định/đánh giá** và **thực thi/output**. Đường trả kết quả từ tools và kho state được giản lược trên ảnh: kết quả trở lại hội thoại để Planner ra quyết định tiếp, còn dữ liệu thiết kế/tài nguyên được giữ trong run state. Các nhãn tool cụ thể được giải thích ở Phase 2 sau khi cơ chế Tool Invocation đã được xác lập.
+**Ba vùng của hình** tương ứng với **đầu vào/điều phối**, **quyết định/đánh giá** và **thực thi/output**. **Đường trả kết quả từ tools và kho state được giản lược** trên ảnh: **kết quả trở lại hội thoại** để Planner ra quyết định tiếp, còn **dữ liệu thiết kế/tài nguyên được giữ trong run state**. Các **nhãn tool cụ thể được giải thích ở Phase 2** sau khi cơ chế Tool Invocation đã được xác lập.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Diagram có sẵn trong repository OpenDesign**
 
-Repository đã có các hình dưới đây tại commit nghiên cứu. Báo cáo ưu tiên dùng nguyên bản những hình này; phần tiếng Việt bên dưới giải thích cách đọc và đối chiếu với implementation.
+Repository **đã có các hình dưới đây** tại commit nghiên cứu. Báo cáo **ưu tiên dùng nguyên bản** những hình này; phần tiếng Việt bên dưới **giải thích cách đọc và đối chiếu với implementation**.
 
 | Hình upstream | Nội dung | Bản trong báo cáo |
 | --- | --- | --- |
@@ -170,11 +170,11 @@ Repository đã có các hình dưới đây tại commit nghiên cứu. Báo c�
 | `assets/diagrams/paper2any_flow.png` | Đọc tài liệu, trích figure/table và trả catalog cho planner | [Mở PNG ingestion gốc](diagrams/upstream/paper2any_flow.png) |
 | `docs/opendesign-pdf-flow.svg` | Enhancer, claim extractor, planner, shared state và critic | [Mở PNG chuyển từ SVG gốc](diagrams/upstream/opendesign-pdf-flow.png), [SVG nguyên bản](diagrams/upstream/opendesign-pdf-flow.svg) |
 
-Ba PNG được sao chép nguyên byte và chèn trực tiếp vào báo cáo: ảnh kiến trúc ở mục này, ảnh ingestion ở mục 2.3, ảnh rendering ở mục 2.5. Chúng lần lượt trả lời **ai điều phối → tài liệu trở thành tài nguyên như thế nào → tài nguyên được dựng thành sản phẩm như thế nào**. Hình SVG chỉ được chuyển định dạng sang PNG để hiển thị, không đổi nội dung hoặc vẽ lại. Source và [MIT License của upstream](diagrams/upstream/LICENSE) được giữ cùng các ảnh.
+**Ba PNG được sao chép nguyên byte** và chèn trực tiếp vào báo cáo: ảnh kiến trúc ở mục này, ảnh ingestion ở mục 2.3, ảnh rendering ở mục 2.5. Chúng lần lượt trả lời **ai điều phối → tài liệu trở thành tài nguyên như thế nào → tài nguyên được dựng thành sản phẩm như thế nào**. **Hình SVG chỉ được chuyển định dạng sang PNG** để hiển thị, **không đổi nội dung hoặc vẽ lại**. **Source và [MIT License của upstream](diagrams/upstream/LICENSE) được giữ** cùng các ảnh.
 
 **Hình kiến trúc gốc**
 
-Ảnh gốc vẫn mang tiêu đề `LongcatDesign · Agent Architecture`. Báo cáo giữ nguyên chữ và nhãn của hình; các khác biệt với code được ghi riêng ở cuối mục này.
+Ảnh gốc **vẫn mang tiêu đề `LongcatDesign · Agent Architecture`**. Báo cáo **giữ nguyên chữ và nhãn của hình**; **các khác biệt với code được ghi riêng** ở cuối mục này.
 
 **Đọc ba vùng của hình**
 
@@ -182,7 +182,7 @@ Ba PNG được sao chép nguyên byte và chèn trực tiếp vào báo cáo: �
 - **Vùng giữa — quyết định và đánh giá:** `PlannerLoop` chọn việc tiếp theo; `Critic` nhận xét kết quả đã dựng để planner cân nhắc sửa.
 - **Vùng phải và hàng dưới — khả năng thực thi và sản phẩm:** các ô bên phải là danh mục tools mà planner có thể gọi. Hàng `POSTER / LANDING / DECK` là các nhóm output mà compositor hỗ trợ.
 
-Trong hình này, phần lớn mũi tên đều màu đen; hình chưa dùng một quy ước nét riêng cho mọi loại quan hệ. Cần đọc đường đi theo ý nghĩa trong bảng dưới, thay vì hiểu tất cả mũi tên là cùng một kiểu gọi hàm.
+Trong hình này, **phần lớn mũi tên đều màu đen**; hình **chưa dùng một quy ước nét riêng** cho mọi loại quan hệ. Cần **đọc đường đi theo ý nghĩa trong bảng dưới**, thay vì hiểu tất cả mũi tên là cùng một kiểu gọi hàm.
 
 **Vai trò của từng khối**
 
@@ -226,21 +226,21 @@ Trong hình này, phần lớn mũi tên đều màu đen; hình chưa dùng m�
 
 **Ví dụ đọc vòng tạo và sửa một deck**
 
-Đây là ví dụ minh họa đường đi, không phải trace của một run model thật:
+Đây là **ví dụ minh họa đường đi**, **không phải trace của một run model thật**:
 
-1. Người dùng yêu cầu: “Tạo deck 8 slides từ PDF này”. Chat gọi runner.
-2. Runner chuẩn bị brief/context và khởi động planner.
-3. Planner gọi ingest, chọn `deck` và gửi spec chứa các slide cùng figure/table references.
-4. Planner gọi `composite`. Nhánh `DECK` tạo PPTX và ảnh từng slide.
-5. Planner gọi `critique`. Giả sử critic nhận xét tiêu đề của một slide quá nhỏ.
-6. Report quay về planner theo vòng phản hồi. Planner cập nhật text size trong spec rồi gọi `composite` lần nữa.
-7. Khi quyết định kết thúc, planner gọi `finalize`. Tool đặt cờ dừng; runner ghi trajectory sau khi vòng planner trả về.
+1. Người dùng yêu cầu: “Tạo deck 8 slides từ PDF này”. **Chat gọi runner**.
+2. **Runner chuẩn bị brief/context** và **khởi động planner**.
+3. **Planner gọi ingest**, **chọn `deck`** và **gửi spec** chứa các slide cùng figure/table references.
+4. **Planner gọi `composite`**. Nhánh `DECK` **tạo PPTX và ảnh từng slide**.
+5. **Planner gọi `critique`**. Giả sử **critic nhận xét tiêu đề của một slide quá nhỏ**.
+6. **Report quay về planner** theo vòng phản hồi. **Planner cập nhật text size trong spec** rồi **gọi `composite` lần nữa**.
+7. Khi quyết định kết thúc, **planner gọi `finalize`**. **Tool đặt cờ dừng**; **runner ghi trajectory** sau khi vòng planner trả về.
 
 Như vậy, vòng `revise` là **dựng output → nhận nhận xét → planner quyết định sửa → dựng lại**. Nó không phải luồng mà critic trực tiếp thay nội dung trong file PPTX.
 
 **Workflow gốc có enhancer và shared state**
 
-SVG dưới đây có sẵn trong repo và mô tả chi tiết hơn PNG tổng quan. Phần chữ tiếng Trung được giải thích bằng bảng tiếng Việt ngay bên dưới.
+**SVG dưới đây có sẵn trong repo** và **mô tả chi tiết hơn PNG tổng quan**. **Phần chữ tiếng Trung được giải thích** bằng bảng tiếng Việt ngay bên dưới.
 
 <details>
 <summary>Mở hình workflow nhiều agent nguyên bản của OpenDesign</summary>
@@ -249,7 +249,7 @@ SVG dưới đây có sẵn trong repo và mô tả chi tiết hơn PNG tổng q
 
 </details>
 
-Màu trong SVG phân nhóm trách nhiệm: xanh dương cho enhancer/planner; tím cho claim extractor/critic; vàng cho tool environment và report; xanh lá cho shared state; đỏ nhạt cho input/output. Màu xanh lá biểu thị nơi giữ dữ liệu trong run, không phải một agent tự hoạt động.
+**Màu trong SVG phân nhóm trách nhiệm**: xanh dương cho enhancer/planner; tím cho claim extractor/critic; vàng cho tool environment và report; xanh lá cho shared state; đỏ nhạt cho input/output. **Màu xanh lá biểu thị nơi giữ dữ liệu trong run**, **không phải một agent tự hoạt động**.
 
 | Đường đi trong SVG workflow | Cách đọc bằng tiếng Việt |
 | --- | --- |
@@ -273,7 +273,7 @@ Màu trong SVG phân nhóm trách nhiệm: xanh dương cho enhancer/planner; t�
 | SVG vẽ đường `ClaimGraph Extractor → Planner` | Runner lưu graph vào context, nhưng chưa đưa graph rõ ràng vào request planner. Đã có probe tại mục 2.8; không suy từ mũi tên này rằng model planner chắc chắn đã nhận graph |
 | SVG ghi `pass / fail / max iters → finalize` | Là workflow dự kiến. Planner vẫn có thể dừng vì hết lượt, không có tool call hoặc lỗi API; không phải mọi đường dừng đều gọi finalize |
 
-Hình upstream giúp hiểu cấu trúc và chủ đích thiết kế. Với các chi tiết khác nhau giữa hình và source, báo cáo dùng hành vi code đã đối chiếu để mô tả implementation.
+**Hình upstream giúp hiểu cấu trúc và chủ đích thiết kế**. Với các chi tiết **khác nhau giữa hình và source**, báo cáo **dùng hành vi code đã đối chiếu** để mô tả implementation.
 
 </details>
 
@@ -291,7 +291,7 @@ Hình upstream giúp hiểu cấu trúc và chủ đích thiết kế. Với cá
 
 ### 1.4. End-to-end Workflow và Feedback Loop
 
-Workflow tạo deck bắt đầu từ yêu cầu có ngữ cảnh, đi qua biểu diễn thiết kế rồi tới artifact. Vòng sửa nối kết quả đánh giá trở lại quyết định thiết kế, thay vì để bộ đánh giá tự sửa file.
+**Workflow tạo deck** bắt đầu từ **yêu cầu có ngữ cảnh**, đi qua **biểu diễn thiết kế** rồi tới **artifact**. **Vòng sửa nối kết quả đánh giá trở lại quyết định thiết kế**, **thay vì để bộ đánh giá tự sửa file**.
 
 1. **Chuẩn bị yêu cầu:** nhận brief, attachments và template; tạo workspace; bổ sung thông tin nguồn và chạy các bước làm rõ/trích luận điểm nếu áp dụng.
 2. **Chuẩn bị nội dung và thiết kế:** đọc tài liệu thành thông tin/tài nguyên có thể tham chiếu; Planner đề xuất blueprint gồm slides, nội dung và bố cục.
@@ -299,7 +299,7 @@ Workflow tạo deck bắt đầu từ yêu cầu có ngữ cảnh, đi qua biể
 4. **Đánh giá và sửa:** nếu Planner yêu cầu đánh giá, Critic đối chiếu bản dựng với mục tiêu/source. Planner có thể cập nhật blueprint hoặc tài nguyên rồi dựng lại.
 5. **Kết thúc và lưu lịch sử:** Runtime tổng hợp trạng thái thực thi, kết quả đánh giá và trajectory khi đường điều phối trả về bình thường.
 
-Đây là workflow được hướng dẫn, không phải bảo đảm mọi run đi đủ từng bước. Handlers chỉ cưỡng chế những preconditions đã lập trình; việc kết thúc không bắt buộc phải có đánh giá đạt chất lượng. PPTX được tạo ở bước rendering; xuất file trong phạm vi này không bao gồm triển khai lên hosting.
+Đây là **workflow được hướng dẫn**, **không phải bảo đảm mọi run đi đủ từng bước**. **Handlers chỉ cưỡng chế những preconditions đã lập trình**; việc **kết thúc không bắt buộc phải có đánh giá đạt chất lượng**. **PPTX được tạo ở bước rendering**; **xuất file** trong phạm vi này **không bao gồm triển khai lên hosting**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
@@ -317,9 +317,9 @@ Workflow tạo deck bắt đầu từ yêu cầu có ngữ cảnh, đi qua biể
 
 **Điểm cần phân biệt**
 
-- Thứ tự trên là workflow được prompt hướng dẫn. Tool handlers chỉ cưỡng chế các precondition đã được lập trình.
-- Critique là bước được khuyến nghị; `finalize` không bắt buộc phải có critic pass.
-- PPTX được tạo ở bước composite. Finalize báo kết thúc run; việc đưa file lên hosting không nằm trong nhánh này.
+- **Thứ tự trên là workflow được prompt hướng dẫn**. **Tool handlers chỉ cưỡng chế các precondition đã được lập trình**.
+- **Critique là bước được khuyến nghị**; **`finalize` không bắt buộc phải có critic pass**.
+- **PPTX được tạo ở bước composite**. **Finalize báo kết thúc run**; **việc đưa file lên hosting không nằm trong nhánh này**.
 
 </details>
 
@@ -336,7 +336,7 @@ Workflow tạo deck bắt đầu từ yêu cầu có ngữ cảnh, đi qua biể
 
 ### 1.5. Sequence Diagram: điều khiển theo thời gian
 
-Sequence diagram làm rõ **ai chờ ai, khi nào dữ liệu trở lại vòng quyết định và khi nào run kết thúc**. Thời gian đi từ trên xuống; cột là các bên tham gia; mũi tên liền là lời gọi/cập nhật, nét đứt là kết quả trả về.
+**Sequence diagram làm rõ ai chờ ai**, **khi nào dữ liệu trở lại vòng quyết định** và **khi nào run kết thúc**. Thời gian đi **từ trên xuống**; **cột là các bên tham gia**; **mũi tên liền là lời gọi/cập nhật**, **nét đứt là kết quả trả về**.
 
 ![Sequence diagram dựng từ source tại snapshot nghiên cứu](diagrams/end-to-end-sequence.png)
 
@@ -349,23 +349,23 @@ Sequence diagram làm rõ **ai chờ ai, khi nào dữ liệu trở lại vòng 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
-Trong các file Markdown/Mermaid/PlantUML và bốn hình kiến trúc/workflow upstream đã kiểm tra tại commit chuẩn, chưa tìm thấy sequence diagram tương ứng. Hình dưới là sơ đồ tuần tự do báo cáo dựng từ code để bổ sung thứ tự gọi; không phải ảnh nguyên bản của tác giả OpenDesign.
+Trong các file Markdown/Mermaid/PlantUML và bốn hình kiến trúc/workflow upstream đã kiểm tra tại commit chuẩn, **chưa tìm thấy sequence diagram tương ứng**. Hình dưới là **sơ đồ tuần tự do báo cáo dựng từ code** để bổ sung thứ tự gọi; **không phải ảnh nguyên bản** của tác giả OpenDesign.
 
-Sơ đồ đã được đối chiếu lại với source tại commit `7dee599ca39a7c164351e7d637c2b5a24ca23842`. Nó mô tả nhánh `PipelineRunner.run` **khi planner trả về bình thường**, bao gồm cả trường hợp hết lượt hoặc dừng khi chưa có output. Đây là mô tả tĩnh từ code, không phải trace của một lần gọi model thật.
+Sơ đồ **đã được đối chiếu lại với source** tại commit `7dee599ca39a7c164351e7d637c2b5a24ca23842`. Nó mô tả nhánh `PipelineRunner.run` **khi planner trả về bình thường**, bao gồm cả trường hợp **hết lượt hoặc dừng khi chưa có output**. Đây là **mô tả tĩnh từ code**, **không phải trace** của một lần gọi model thật.
 
 [Nguồn Mermaid của sơ đồ tuần tự](diagrams/end-to-end-sequence.mmd)
 
 **Điểm cần đọc cùng sơ đồ**
 
-- Các cột là những bên tham gia; thời gian đi từ trên xuống dưới.
-- Mũi tên liền chỉ thao tác gửi/gọi hoặc cập nhật context được ghi trên nhãn; mũi tên nét đứt biểu diễn kết quả trả về.
-- Khung `loop` ngoài là vòng planner; khung `loop` trong là từng tool call của một response. `alt/else` là các nhánh lựa chọn, không phải các bước bắt buộc chạy nối tiếp.
-- Các nhánh composite và critique minh họa khi đủ preconditions. Tool khác có thể đọc/ghi context tùy handler; lỗi tool được trả bằng `ToolResultRecord.status = error` để model biết ở lượt sau.
-- Tool calls trong một response chạy tuần tự theo thứ tự model trả. Không giả định mọi run đều có chuỗi cố định `composite → critique → finalize`. Cờ `finalized` được kiểm tra sau cả batch, nên các tool đứng sau finalize trong cùng response vẫn được dispatch.
-- Cột `LLMBackend` thuộc planner. Bước self-call của critic rút gọn vòng riêng gồm backend, đọc slide/source và nhận verdict; critic không dùng chung messages hay ngân sách lượt với planner. Critic tự ghi `critic.jsonl`; wrapper ghi `critique_N.json` sau khi nhận report.
-- `Append tool results` chỉ cập nhật messages trong bộ nhớ. Request model tiếp theo xảy ra ở `create_turn` của lượt planner kế tiếp.
-- Khi không có tool call, cờ finalized đã bật, hoặc đạt `max_planner_turns`, planner trả trace cho runner. Runner tính outcome rồi ghi JSON; việc này chưa đảm bảo đã tạo được deck hay critic pass.
-- Lỗi API trong `create_turn` của planner được ném ra ngoài. Nhánh lỗi này không đi tiếp tới bước runner ghi JSON cuối trên hình. Các bước kiểm tra/sanitize/render bên trong composite được trình bày riêng ở mục 2.5.
+- **Các cột là những bên tham gia**; **thời gian đi từ trên xuống dưới**.
+- **Mũi tên liền** chỉ thao tác **gửi/gọi hoặc cập nhật context** được ghi trên nhãn; **mũi tên nét đứt** biểu diễn **kết quả trả về**.
+- Khung `loop` ngoài là **vòng planner**; khung `loop` trong là **từng tool call của một response**. `alt/else` là **các nhánh lựa chọn**, **không phải các bước bắt buộc chạy nối tiếp**.
+- Các nhánh composite và critique **minh họa khi đủ preconditions**. Tool khác có thể **đọc/ghi context tùy handler**; **lỗi tool được trả bằng `ToolResultRecord.status = error`** để model biết ở lượt sau.
+- **Tool calls trong một response chạy tuần tự** theo thứ tự model trả. **Không giả định mọi run đều có chuỗi cố định** `composite → critique → finalize`. **Cờ `finalized` được kiểm tra sau cả batch**, nên **các tool đứng sau finalize** trong cùng response **vẫn được dispatch**.
+- **Cột `LLMBackend` thuộc planner**. Bước self-call của critic **rút gọn vòng riêng** gồm backend, đọc slide/source và nhận verdict; **critic không dùng chung messages hay ngân sách lượt** với planner. **Critic tự ghi `critic.jsonl`**; **wrapper ghi `critique_N.json`** sau khi nhận report.
+- `Append tool results` **chỉ cập nhật messages trong bộ nhớ**. **Request model tiếp theo** xảy ra ở `create_turn` của **lượt planner kế tiếp**.
+- Khi **không có tool call**, **cờ finalized đã bật**, hoặc **đạt `max_planner_turns`**, **planner trả trace cho runner**. **Runner tính outcome rồi ghi JSON**; việc này **chưa đảm bảo đã tạo được deck hay critic pass**.
+- **Lỗi API trong `create_turn` của planner được ném ra ngoài**. Nhánh lỗi này **không đi tiếp tới bước runner ghi JSON cuối** trên hình. Các bước kiểm tra/sanitize/render bên trong composite được trình bày riêng ở mục 2.5.
 
 </details>
 
@@ -386,7 +386,7 @@ Sơ đồ đã được đối chiếu lại với source tại commit `7dee599c
 
 **Control Flow** phân phối quyền thực hiện công việc: Runtime khởi động, Planner chọn hành động, Tool Execution thực thi, Feedback Loop đưa kết quả về điểm quyết định. **Data Flow** mang brief, blueprint, assets, artifacts và review report qua các ranh giới này.
 
-State Management phân biệt hội thoại quyết định, dữ liệu thiết kế đang làm việc, phiên người dùng và dữ liệu đã ghi bền vững. Phân biệt này quan trọng vì một thay đổi trong hội thoại hoặc kho tài nguyên chưa tự thay đổi blueprint và file xuất.
+State Management **phân biệt hội thoại quyết định, dữ liệu thiết kế đang làm việc, phiên người dùng và dữ liệu đã ghi bền vững**. Phân biệt này quan trọng vì **một thay đổi trong hội thoại hoặc kho tài nguyên chưa tự thay đổi blueprint và file xuất**.
 
 | Lớp state | Phạm vi và trách nhiệm |
 | --- | --- |
@@ -395,17 +395,17 @@ State Management phân biệt hội thoại quyết định, dữ liệu thiết
 | Chat session | Kéo dài qua nhiều run; cung cấp lịch sử và thiết kế trước cho yêu cầu sửa |
 | Artifacts và reports | Lưu theo run/iteration trên disk để review và truy vết |
 
-Mỗi lượt tạo trong chat mở working context mới và đưa thiết kế gần nhất vào brief. Đây là cách chuyển ngữ cảnh nội dung, chưa phải phục hồi toàn bộ asset hay trạng thái thực thi. Versioned artifacts giữ lịch sử sản phẩm; chúng chưa tạo thành durable execution checkpoint để tự tiếp tục mọi run sau lỗi.
+**Mỗi lượt tạo trong chat mở working context mới** và **đưa thiết kế gần nhất vào brief**. Đây là **cách chuyển ngữ cảnh nội dung**, **chưa phải phục hồi toàn bộ asset hay trạng thái thực thi**. **Versioned artifacts giữ lịch sử sản phẩm**; chúng **chưa tạo thành durable execution checkpoint** để tự tiếp tục mọi run sau lỗi.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Luồng điều khiển**
 
-1. Runner khởi động planner.
-2. Model chọn tool.
-3. Dispatcher gọi handler.
-4. Handler trả kết quả để model quyết định bước tiếp theo.
+1. **Runner khởi động planner**.
+2. **Model chọn tool**.
+3. **Dispatcher gọi handler**.
+4. **Handler trả kết quả** để model quyết định bước tiếp theo.
 
 **Luồng dữ liệu**
 
@@ -421,14 +421,14 @@ Brief → JSON tool arguments → `DesignSpec` đã validate → tài nguyên đ
 | Phiên chat | Messages và tham chiếu các trajectory trước | Session được lưu; prior spec được đọc từ tool arguments trong trace cũ |
 | Artifact trên disk | Layer versions, composite iterations, critic reports, training trace | Mỗi run có thư mục riêng; `final/` trỏ output mới nhất bằng relative symlink |
 
-Các trường context ban đầu gồm `artifact_type`, `design_spec`, `rendered_layers`, `composition`, `critique_results`, `finalized`, `layer_versions` và `composite_iter`. Runner/tools bổ sung ingest, claim graph và warnings.
+**Các trường context ban đầu** gồm `artifact_type`, `design_spec`, `rendered_layers`, `composition`, `critique_results`, `finalized`, `layer_versions` và `composite_iter`. **Runner/tools bổ sung ingest, claim graph và warnings**.
 
 **Giới hạn cần review**
 
-- Mỗi lượt tạo trong chat khởi động một runner và context mới. Context hội thoại giúp model hiểu yêu cầu sửa, nhưng chưa đồng nghĩa đã phục hồi mọi rendered layer của run trước.
-- Spec dự định, state đã render và artifact thực tế là các lớp dữ liệu khác nhau; thay đổi một lớp chưa chắc tự cập nhật các lớp còn lại.
-- File trung gian được giữ trên disk, nhưng context trong bộ nhớ chưa phải durable execution checkpoint.
-- Trajectory tổng nằm trong `out/trajectories/`; report và trace critic nằm trong run directory.
+- **Mỗi lượt tạo trong chat khởi động một runner và context mới**. Context hội thoại giúp model hiểu yêu cầu sửa, nhưng **chưa đồng nghĩa đã phục hồi mọi rendered layer** của run trước.
+- **Spec dự định, state đã render và artifact thực tế là các lớp dữ liệu khác nhau**; **thay đổi một lớp chưa chắc tự cập nhật các lớp còn lại**.
+- **File trung gian được giữ trên disk**, nhưng **context trong bộ nhớ chưa phải durable execution checkpoint**.
+- **Trajectory tổng** nằm trong `out/trajectories/`; **report và trace critic** nằm trong run directory.
 
 </details>
 
@@ -446,20 +446,20 @@ Các trường context ban đầu gồm `artifact_type`, `design_spec`, `rendere
 
 ### 2.1. Execution Lifecycle và Orchestration
 
-Agent Runtime sở hữu vòng đời của một lần xử lý: nhận yêu cầu, chuẩn bị môi trường, bàn giao cho Planner và tổng hợp kết quả. Đầu ra kiến trúc gồm artifact do đường thực thi tạo và hồ sơ run phục vụ truy vết; thành công xuất file và chất lượng thiết kế là hai trạng thái cần phân biệt.
+**Agent Runtime sở hữu vòng đời của một lần xử lý**: nhận yêu cầu, chuẩn bị môi trường, bàn giao cho Planner và tổng hợp kết quả. Đầu ra kiến trúc gồm **artifact do đường thực thi tạo** và **hồ sơ run phục vụ truy vết**; **thành công xuất file và chất lượng thiết kế là hai trạng thái cần phân biệt**.
 
-Orchestration thực hiện các bước chuẩn bị có điều kiện trước vòng quyết định. Khi Planner trả về, Runtime đọc working state và kết quả đánh giá để lập outcome. Runtime không tự thay Planner thực hiện bước bị bỏ qua; thiếu thiết kế hay composition có thể chỉ tạo cảnh báo.
+Orchestration thực hiện **các bước chuẩn bị có điều kiện** trước vòng quyết định. Khi Planner trả về, **Runtime đọc working state và kết quả đánh giá để lập outcome**. **Runtime không tự thay Planner thực hiện bước bị bỏ qua**; **thiếu thiết kế hay composition có thể chỉ tạo cảnh báo**.
 
-Lượt điều phối/đánh giá có cap để tránh chạy vô hạn, nhưng chưa hình thành tổng budget cứng cho thời gian và chi phí. Lỗi tool được trả về vòng quyết định; lỗi model của Planner có thể chặn đường ghi lịch sử cuối. Outcome ưu tiên đánh giá gần nhất và chưa gắn chặt với đúng phiên bản sản phẩm mới nhất: vì vậy một run đã dừng, có file hoặc có verdict tốt chưa tạo thành cùng một bảo đảm.
+**Lượt điều phối/đánh giá có cap** để tránh chạy vô hạn, nhưng **chưa hình thành tổng budget cứng cho thời gian và chi phí**. **Lỗi tool được trả về vòng quyết định**; **lỗi model của Planner có thể chặn đường ghi lịch sử cuối**. **Outcome ưu tiên đánh giá gần nhất** và **chưa gắn chặt với đúng phiên bản sản phẩm mới nhất**: vì vậy một run **đã dừng, có file hoặc có verdict tốt chưa tạo thành cùng một bảo đảm**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Vai trò**
 
-- `PipelineRunner` sở hữu run ID, đường dẫn output và `ToolContext`.
-- Runner gọi các bước chuẩn bị, chạy planner rồi tổng hợp trajectory cuối.
-- Planner sở hữu messages và trace trong run; chat quản lý phiên bên ngoài nhiều run.
+- `PipelineRunner` **sở hữu run ID, đường dẫn output và `ToolContext`**.
+- **Runner gọi các bước chuẩn bị**, **chạy planner** rồi **tổng hợp trajectory cuối**.
+- **Planner sở hữu messages và trace trong run**; **chat quản lý phiên bên ngoài nhiều run**.
 
 **Đầu vào và đầu ra**
 
@@ -469,12 +469,12 @@ Lượt điều phối/đánh giá có cap để tránh chạy vô hạn, nhưng
 
 **Vòng đời thực thi**
 
-1. Tạo ID và thư mục run.
-2. Thêm thông tin template/attachment vào brief.
-3. Chạy enhancer và khởi tạo context.
-4. Chạy claim extraction nếu áp dụng.
-5. Đọc planner prompt và gọi `PlannerLoop.run`.
-6. Đọc state cuối, tính outcome và metadata, rồi ghi trajectory.
+1. **Tạo ID và thư mục run**.
+2. **Thêm thông tin template/attachment** vào brief.
+3. **Chạy enhancer và khởi tạo context**.
+4. **Chạy claim extraction** nếu áp dụng.
+5. **Đọc planner prompt** và **gọi `PlannerLoop.run`**.
+6. **Đọc state cuối, tính outcome và metadata**, rồi **ghi trajectory**.
 
 **Điều kiện dừng và cấu hình mặc định**
 
@@ -488,12 +488,12 @@ Lượt điều phối/đánh giá có cap để tránh chạy vô hạn, nhưng
 
 **Giới hạn**
 
-- Runner cảnh báo nếu thiếu spec/composition; không tự chạy bù bước mà model đã bỏ qua.
-- Các giới hạn lượt chưa tạo thành một ngân sách cứng cho tổng thời gian, mọi API call hoặc chi phí.
-- Exception từ tool handler được đổi thành tool result lỗi để model có thể phản ứng. Exception từ API planner được log rồi ném ra ngoài.
-- Runner chưa luôn ghi trajectory khi lỗi xảy ra; chat bắt lỗi và lưu ở session. Artifact trung gian có thể còn dù trace cuối chưa được tạo.
-- Terminal status ưu tiên verdict critic gần nhất. Vì vậy `pass` có thể xuất hiện khi chưa finalize; nếu đủ spec/composition và finalize nhưng không có critic, reward có thể là `None`.
-- Hàm tính outcome chưa gắn report critic với hash của composite mới nhất. Mục 2.8 ghi probe cho hành vi outcome.
+- **Runner cảnh báo nếu thiếu spec/composition**; **không tự chạy bù bước mà model đã bỏ qua**.
+- **Các giới hạn lượt chưa tạo thành một ngân sách cứng** cho tổng thời gian, mọi API call hoặc chi phí.
+- **Exception từ tool handler được đổi thành tool result lỗi** để model có thể phản ứng. **Exception từ API planner được log rồi ném ra ngoài**.
+- **Runner chưa luôn ghi trajectory khi lỗi xảy ra**; **chat bắt lỗi và lưu ở session**. **Artifact trung gian có thể còn** dù **trace cuối chưa được tạo**.
+- **Terminal status ưu tiên verdict critic gần nhất**. Vì vậy **`pass` có thể xuất hiện khi chưa finalize**; nếu đủ spec/composition và finalize nhưng **không có critic, reward có thể là `None`**.
+- **Hàm tính outcome chưa gắn report critic với hash của composite mới nhất**. Mục 2.8 ghi probe cho hành vi outcome.
 
 </details>
 
@@ -511,20 +511,20 @@ Lượt điều phối/đánh giá có cap để tránh chạy vô hạn, nhưng
 
 ### 2.2. Planning Strategy và vòng quyết định
 
-Planner chuyển mục tiêu thiết kế thành chuỗi hành động dựa trên thông tin hiện có. Đầu vào là brief, chỉ dẫn, lịch sử tương tác và các khả năng công cụ; đầu ra là quyết định hành động. Việc thay đổi sản phẩm được giao cho Tool Execution.
+**Planner chuyển mục tiêu thiết kế thành chuỗi hành động** dựa trên thông tin hiện có. **Đầu vào** là brief, chỉ dẫn, lịch sử tương tác và các khả năng công cụ; **đầu ra là quyết định hành động**. **Việc thay đổi sản phẩm được giao cho Tool Execution**.
 
-Cơ chế là **model-driven iterative planning**: gọi model → nhận hành động có cấu trúc → thực thi → đưa kết quả vào hội thoại → quyết định tiếp. Hội thoại tích lũy trong run, chưa có bước tự tóm tắt/cắt lịch sử; chưa tìm thấy thuật toán search hoặc tối ưu layout toàn cục độc lập trong vòng này.
+Cơ chế là **model-driven iterative planning**: gọi model → nhận hành động có cấu trúc → thực thi → đưa kết quả vào hội thoại → quyết định tiếp. **Hội thoại tích lũy trong run**, **chưa có bước tự tóm tắt/cắt lịch sử**; **chưa tìm thấy thuật toán search hoặc tối ưu layout toàn cục** độc lập trong vòng này.
 
-Trước đó, bước làm rõ yêu cầu có thể mở rộng brief và hạ cấp về nội dung gốc khi không áp dụng/thất bại. Với PDF, trích luận điểm tạo quan hệ giữa thesis, mechanisms và evidence; kiểm tra quote/tham chiếu giúp loại một số graph không hợp lệ. Dữ liệu này hiện được giữ trong context và chuyển cho Critic nhưng chưa đưa rõ vào request Planner. Hướng dẫn thứ tự hành động giữa các lớp prompt cũng chưa thống nhất hoàn toàn.
+Trước đó, **bước làm rõ yêu cầu có thể mở rộng brief** và **hạ cấp về nội dung gốc** khi không áp dụng/thất bại. Với PDF, **trích luận điểm tạo quan hệ giữa thesis, mechanisms và evidence**; **kiểm tra quote/tham chiếu** giúp loại một số graph không hợp lệ. Dữ liệu này **hiện được giữ trong context và chuyển cho Critic** nhưng **chưa đưa rõ vào request Planner**. **Hướng dẫn thứ tự hành động giữa các lớp prompt cũng chưa thống nhất hoàn toàn**.
 
-Backend abstraction tách chiến lược điều phối khỏi giao thức model/provider. Đây là khả năng đổi cấu hình theo vai trò, chưa phải bằng chứng các model có hành vi hoặc chất lượng tương đương. Mapping triển khai, cấu hình và điều kiện fallback được tách trong Technical Details.
+**Backend abstraction tách chiến lược điều phối khỏi giao thức model/provider**. Đây là **khả năng đổi cấu hình theo vai trò**, **chưa phải bằng chứng các model có hành vi hoặc chất lượng tương đương**. Mapping triển khai, cấu hình và điều kiện fallback được tách trong Technical Details.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Vai trò**
 
-Planner chọn tool dựa trên brief và kết quả các bước trước. Implementation dùng vòng lặp model–tool có trạng thái hội thoại; trong `PlannerLoop` đã đọc, chưa có thuật toán search hoặc tối ưu layout toàn cục riêng.
+**Planner chọn tool dựa trên brief và kết quả các bước trước**. Implementation dùng **vòng lặp model–tool có trạng thái hội thoại**; trong `PlannerLoop` đã đọc, **chưa có thuật toán search hoặc tối ưu layout toàn cục riêng**.
 
 **Đầu vào và đầu ra**
 
@@ -534,12 +534,12 @@ Planner chọn tool dựa trên brief và kết quả các bước trước. Imp
 
 **Cách hoạt động**
 
-1. Gửi context hiện tại và tool schemas tới backend.
-2. Nhận các tool calls từ model.
-3. Chạy lần lượt từng tool call trong response.
-4. Đưa tool results trở lại messages rồi lặp tiếp.
+1. **Gửi context hiện tại và tool schemas** tới backend.
+2. **Nhận các tool calls** từ model.
+3. **Chạy lần lượt từng tool call** trong response.
+4. **Đưa tool results trở lại messages** rồi lặp tiếp.
 
-Messages được tích lũy trong run; loop chưa có bước tự tóm tắt hoặc cắt lịch sử. Thinking blocks được lưu khi backend cung cấp, nhưng chưa phải bằng chứng rằng kế hoạch model đề xuất đã đúng.
+**Messages được tích lũy trong run**; loop **chưa có bước tự tóm tắt hoặc cắt lịch sử**. **Thinking blocks được lưu khi backend cung cấp**, nhưng **chưa phải bằng chứng rằng kế hoạch model đề xuất đã đúng**.
 
 **Hai bước chuẩn bị trước planner**
 
@@ -548,14 +548,14 @@ Messages được tích lũy trong run; loop chưa có bước tự tóm tắt h
 | Prompt Enhancer | Gọi model một lượt không có tools; ghép brief mở rộng với nguyên văn brief gốc | Khi bị tắt, API lỗi hoặc output ngắn hơn 400 ký tự, có thể dùng raw brief |
 | Claim Graph Extractor | Lấy PDF đầu tiên; trích text; tạo thesis, tensions, mechanisms, evidence, implications; validator kiểm tra quote và một số ID references | Thiếu PDF, text quá ngắn, API lỗi hoặc graph invalid có thể trả `None` |
 
-Các quan hệ claim graph gồm `resolves`, `supports`, `derives_from`. Validator kiểm tra evidence quote là substring sau chuẩn hóa khoảng trắng và kiểm tra một số tham chiếu tới ID tồn tại. Nghiên cứu này chưa có A/B test xác nhận lợi ích của enhancer trên mọi deck.
+Các quan hệ claim graph gồm `resolves`, `supports`, `derives_from`. **Validator kiểm tra evidence quote là substring** sau chuẩn hóa khoảng trắng và **kiểm tra một số tham chiếu tới ID tồn tại**. Nghiên cứu này **chưa có A/B test xác nhận lợi ích của enhancer** trên mọi deck.
 
 **Lựa chọn provider/model**
 
-- `make_backend` ưu tiên provider được cấu hình cho role, sau đó suy từ prefix model.
-- Hai implementation chính là `AnthropicBackend` và `OpenAICompatBackend`; chúng xử lý khác biệt về messages, reasoning và tool results.
-- Tại commit chuẩn, hằng default planner/enhancer là Kimi K2.6, critic là Qwen-VL-Max. Model thực tế còn phụ thuộc environment và fallback.
-- Những tên model này mô tả snapshot source; nghiên cứu chưa kiểm tra endpoint thật hiện còn phục vụ hay chưa.
+- `make_backend` **ưu tiên provider được cấu hình cho role**, sau đó **suy từ prefix model**.
+- **Hai implementation chính** là `AnthropicBackend` và `OpenAICompatBackend`; chúng **xử lý khác biệt về messages, reasoning và tool results**.
+- Tại commit chuẩn, **hằng default planner/enhancer là Kimi K2.6**, **critic là Qwen-VL-Max**. **Model thực tế còn phụ thuộc environment và fallback**.
+- Những tên model này **mô tả snapshot source**; nghiên cứu **chưa kiểm tra endpoint thật** hiện còn phục vụ hay chưa.
 
 **Hai điểm cần review**
 
@@ -584,15 +584,15 @@ Các quan hệ claim graph gồm `resolves`, `supports`, `derives_from`. Validat
 
 ### 2.3. Tool Invocation và Document Ingestion
 
-Tool Execution là ranh giới biến quyết định của model thành thao tác có thể quan sát. Planner được cấp mô tả khả năng/input; registry ánh xạ khả năng sang handler; kết quả thành công/lỗi quay lại đúng yêu cầu gọi. Mỗi handler chịu trách nhiệm về preconditions và cập nhật state của thao tác mình thực hiện.
+**Tool Execution là ranh giới biến quyết định của model thành thao tác có thể quan sát**. Planner được cấp **mô tả khả năng/input**; **registry ánh xạ khả năng sang handler**; **kết quả thành công/lỗi quay lại đúng yêu cầu gọi**. **Mỗi handler chịu trách nhiệm về preconditions** và **cập nhật state** của thao tác mình thực hiện.
 
-Tool Invocation tra cứu handler theo tên, gọi với dữ liệu có cấu trúc rồi đóng gói kết quả. Tên không tồn tại tạo validation error; exception handler được chuyển thành result lỗi để Planner có thể chọn bước tiếp theo. Chưa có lớp JSON Schema validation chung cho mọi handler; thiết kế có validation kiểu riêng, các công cụ khác kiểm tra theo cơ chế của mình.
+Tool Invocation **tra cứu handler theo tên**, **gọi với dữ liệu có cấu trúc** rồi **đóng gói kết quả**. **Tên không tồn tại tạo validation error**; **exception handler được chuyển thành result lỗi** để Planner có thể chọn bước tiếp theo. **Chưa có lớp JSON Schema validation chung cho mọi handler**; thiết kế có validation kiểu riêng, các công cụ khác kiểm tra theo cơ chế của mình.
 
-Document Ingestion nằm ở đầu Data Flow: biến file thành text, cấu trúc nội dung và assets có danh tính. Các nhánh parser khác nhau hội tụ về run state; catalog trả cho Planner giúp chọn tài nguyên để tham chiếu trong blueprint. Nó chưa tự quyết định vị trí tài nguyên trên từng slide.
+**Document Ingestion nằm ở đầu Data Flow**: **biến file thành text, cấu trúc nội dung và assets có danh tính**. **Các nhánh parser khác nhau hội tụ về run state**; **catalog trả cho Planner** giúp chọn tài nguyên để tham chiếu trong blueprint. Nó **chưa tự quyết định vị trí tài nguyên trên từng slide**.
 
 ![Luồng ingestion paper2any nguyên bản của OpenDesign](diagrams/upstream/paper2any_flow.png)
 
-Đọc sơ đồ từ trái sang phải rồi xuống ô summary. Cột trái là loại tài liệu, giữa là chiến lược đọc, bên phải là tài nguyên dùng lại. Các mũi tên là nhánh dữ liệu thay thế, không buộc một file đi qua tất cả bộ xử lý.
+Đọc sơ đồ **từ trái sang phải** rồi **xuống ô summary**. **Cột trái là loại tài liệu**, **giữa là chiến lược đọc**, **bên phải là tài nguyên dùng lại**. Các mũi tên là **nhánh dữ liệu thay thế**, **không buộc một file đi qua tất cả bộ xử lý**.
 
 | Khối và đường đi | Cơ chế và dữ liệu truyền qua |
 | --- | --- |
@@ -602,17 +602,17 @@ Document Ingestion nằm ở đầu Data Flow: biến file thành text, cấu tr
 | Markdown/text và ảnh đơn → passthrough | Đọc text, đăng ký ảnh local hoặc copy ảnh đầu vào; reference HTTP/data URI trong Markdown được bỏ qua |
 | Kho tài nguyên → summary → Planner | Giữ ảnh, dữ liệu bảng, caption và nguồn theo ID; trả catalog để Planner tham chiếu, renderer tra cứu khi dựng |
 
-Manifest/raw text và registry ảnh/bảng là các phần state khác nhau. Đường OCR/VLM hội tụ trong hình là mô tả giản lược, không bảo đảm cùng bộ output cho mọi format. Catalog figure được giới hạn để quản lý context trong khi kho vẫn giữ phần chưa hiển thị; giới hạn này không áp cho bảng. Các loại ID, mức giới hạn và nhãn model trên hình nằm trong Technical Details.
+**Manifest/raw text và registry ảnh/bảng là các phần state khác nhau**. Đường OCR/VLM hội tụ trong hình là **mô tả giản lược**, **không bảo đảm cùng bộ output cho mọi format**. **Catalog figure được giới hạn** để quản lý context trong khi **kho vẫn giữ phần chưa hiển thị**; **giới hạn này không áp cho bảng**. Các loại ID, mức giới hạn và nhãn model trên hình nằm trong Technical Details.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Vai trò và contract**
 
-- `TOOL_SCHEMAS` mô tả input JSON cho model.
-- `TOOL_HANDLERS` ánh xạ tên tool sang hàm Python; registry có 12 tool names tại commit chuẩn.
-- Đây là registry tĩnh trong ứng dụng, chưa phải plugin discovery hoặc remote MCP tool server.
-- Mọi handler trả `ToolResultRecord` với `status`, `error_message`, `error_category`, `payload`.
+- `TOOL_SCHEMAS` **mô tả input JSON cho model**.
+- `TOOL_HANDLERS` **ánh xạ tên tool sang hàm Python**; registry có **12 tool names** tại commit chuẩn.
+- Đây là **registry tĩnh trong ứng dụng**, **chưa phải plugin discovery hoặc remote MCP tool server**.
+- **Mọi handler trả `ToolResultRecord`** với `status`, `error_message`, `error_category`, `payload`.
 
 **Nhóm công cụ**
 
@@ -631,16 +631,16 @@ Manifest/raw text và registry ảnh/bảng là các phần state khác nhau. Đ
 
 **Cách gọi và xử lý lỗi**
 
-1. `_invoke` tìm handler theo tên tool.
-2. Tên không tồn tại trả lỗi validation kèm danh sách tool có sẵn.
-3. Handler tự kiểm tra arguments và preconditions; exception được dispatcher chuyển thành lỗi API.
-4. Result được đưa về model theo `tool_use_id`.
+1. `_invoke` **tìm handler theo tên tool**.
+2. **Tên không tồn tại trả lỗi validation** kèm danh sách tool có sẵn.
+3. **Handler tự kiểm tra arguments và preconditions**; **exception được dispatcher chuyển thành lỗi API**.
+4. **Result được đưa về model theo `tool_use_id`**.
 
-Dispatcher chưa chạy JSON Schema validation chung trước mọi handler. Riêng `propose_design_spec` dùng Pydantic; các handler khác kiểm tra input theo implementation của chúng.
+**Dispatcher chưa chạy JSON Schema validation chung** trước mọi handler. **Riêng `propose_design_spec` dùng Pydantic**; các handler khác kiểm tra input theo implementation của chúng.
 
 **Hình ingestion gốc: từ file nguồn đến tài nguyên cho planner**
 
-Đọc ảnh từ **trái sang phải**, sau đó đi xuống ô `Planner tool_result summary`. Cột trái là các loại input; cột giữa là parser tương ứng; khung phải là registry tài nguyên dùng chung. Mũi tên biểu thị dữ liệu đi vào parser hoặc được đăng ký, không có nghĩa mọi file đi qua mọi khối.
+Đọc ảnh từ **trái sang phải**, sau đó đi xuống ô `Planner tool_result summary`. **Cột trái là các loại input**; **cột giữa là parser tương ứng**; **khung phải là registry tài nguyên dùng chung**. Mũi tên biểu thị **dữ liệu đi vào parser hoặc được đăng ký**, **không có nghĩa mọi file đi qua mọi khối**.
 
 **Các khối đọc tài liệu và đường nối**
 
@@ -653,7 +653,7 @@ Dispatcher chưa chạy JSON Schema validation chung trước mọi handler. Ri�
 | `.md / .txt → passthrough` | Đọc text nguyên văn; tìm image references theo cú pháp Markdown, giải đường dẫn local rồi copy/register ảnh. Reference HTTP/data URI được bỏ qua; không tự tải ảnh từ mạng |
 | `.png / .jpg / .webp → passthrough` | Copy file ảnh, đọc kích thước và hash, đăng ký trực tiếp. Nhánh này không tự suy ra nội dung paper hay tạo bảng |
 
-`Qwen-VL-Max` và `6 workers` là nhãn cấu hình trên ảnh gốc. Implementation chọn model qua settings và có cấu hình parallelism; không nên suy rằng mọi deployment đều gọi đúng model hoặc luôn chạy sáu request đồng thời.
+`Qwen-VL-Max` và `6 workers` là **nhãn cấu hình trên ảnh gốc**. Implementation **chọn model qua settings** và có **cấu hình parallelism**; **không nên suy rằng mọi deployment đều gọi đúng model** hoặc luôn chạy sáu request đồng thời.
 
 **Các khối tài nguyên và kết quả trả về**
 
@@ -667,16 +667,16 @@ Dispatcher chưa chạy JSON Schema validation chung trước mọi handler. Ri�
 
 **Cách nối hình này với hai hình còn lại**
 
-1. Ở ảnh kiến trúc, planner chọn tool `ingest_document`; handler chọn nhánh đọc file trong ảnh này.
-2. Handler lưu tài nguyên và trả catalog. Planner dùng ID trong catalog để viết `DesignSpec` qua `propose_design_spec`; ingest chưa tự quyết định đặt hình ở slide nào.
-3. Khi planner gọi `composite`, renderer đọc spec và hydrate assets theo ID. Đây là đầu vào của ảnh rendering ở mục 2.5.
+1. Ở ảnh kiến trúc, **planner chọn tool `ingest_document`**; **handler chọn nhánh đọc file** trong ảnh này.
+2. **Handler lưu tài nguyên và trả catalog**. **Planner dùng ID trong catalog để viết `DesignSpec`** qua `propose_design_spec`; **ingest chưa tự quyết định đặt hình ở slide nào**.
+3. Khi planner gọi `composite`, **renderer đọc spec và hydrate assets theo ID**. Đây là **đầu vào của ảnh rendering** ở mục 2.5.
 
 **Giới hạn khi đọc ảnh gốc:** các đường từ OCR và VLM hội tụ vào cùng khung bên phải là mô tả tổng quát. Trong code, manifest/raw text và layer registry là hai phần state khác nhau; riêng PDF scan có thể chỉ cung cấp manifest/text, không có figure/table để tái sử dụng. Text cũng không nhất thiết được gửi nguyên văn đầy đủ cho planner chỉ vì nó đã nằm trong state.
 
 **Sinh ảnh**
 
-- Image tool thêm suffix yêu cầu không sinh chữ, ghi `.vN.png`, cập nhật version và hash trong state. Suffix này là hướng dẫn model; chưa có OCR xác nhận ảnh hoàn toàn sạch chữ.
-- `FallbackImageBackend` thử model dự phòng khi lỗi thuộc `provider_unavailable`. Các loại lỗi khác không tự đi qua cùng cơ chế fallback, và fallback vẫn có thể thất bại.
+- **Image tool thêm suffix yêu cầu không sinh chữ**, **ghi `.vN.png`**, **cập nhật version và hash** trong state. Suffix này là **hướng dẫn model**; **chưa có OCR xác nhận ảnh hoàn toàn sạch chữ**.
+- `FallbackImageBackend` **thử model dự phòng** khi lỗi thuộc `provider_unavailable`. **Các loại lỗi khác không tự đi qua cùng cơ chế fallback**, và **fallback vẫn có thể thất bại**.
 
 </details>
 
@@ -698,18 +698,18 @@ Dispatcher chưa chạy JSON Schema validation chung trước mọi handler. Ri�
 
 ### 2.4. Shared Design Model và Layer Graph
 
-Design Representation là mô hình trung gian giữa quyết định của Planner và Rendering Pipeline. Nó giữ **nội dung định trình bày, tổ chức slide, phong cách và tham chiếu tài nguyên**, giúp renderer tiêu thụ dữ liệu có cấu trúc thay vì suy lại thiết kế từ văn bản tự do.
+Design Representation là **mô hình trung gian giữa quyết định của Planner và Rendering Pipeline**. Nó giữ **nội dung định trình bày, tổ chức slide, phong cách và tham chiếu tài nguyên**, giúp **renderer tiêu thụ dữ liệu có cấu trúc** thay vì suy lại thiết kế từ văn bản tự do.
 
-Một presentation gồm các slide roots có children cho text, ảnh, bảng và chú thích. Thứ tự roots xác định thứ tự slides; z-order điều khiển các phần tử ở nhánh tương ứng. Danh tính và tham chiếu chéo nối callout với hình, nối slide với luận điểm và nối hình/bảng với assets đã ingest. Đây là cấu trúc biểu diễn và tra cứu, chưa phải constraint solver tự lan truyền mọi thay đổi hình học.
+Một presentation gồm **các slide roots có children** cho text, ảnh, bảng và chú thích. **Thứ tự roots xác định thứ tự slides**; **z-order điều khiển các phần tử** ở nhánh tương ứng. **Danh tính và tham chiếu chéo** nối callout với hình, nối slide với luận điểm và nối hình/bảng với assets đã ingest. Đây là **cấu trúc biểu diễn và tra cứu**, **chưa phải constraint solver tự lan truyền mọi thay đổi hình học**.
 
-Validation tại ranh giới tiếp nhận thiết kế kiểm tra kiểu, trường và một số điều kiện hình học cơ bản. Mô hình hiện vẫn có nhiều trường tùy chọn, nên hợp lệ về cấu trúc chưa chứng minh đủ nội dung, tài nguyên tồn tại, ID duy nhất hoặc layout đúng. Các bước chuẩn hóa/xuất còn có thể copy hay thay đổi node. Schema và mapping triển khai được đặt sau phần cơ chế này.
+**Validation tại ranh giới tiếp nhận thiết kế** kiểm tra **kiểu, trường và một số điều kiện hình học cơ bản**. Mô hình hiện **vẫn có nhiều trường tùy chọn**, nên **hợp lệ về cấu trúc chưa chứng minh đủ nội dung, tài nguyên tồn tại, ID duy nhất hoặc layout đúng**. **Các bước chuẩn hóa/xuất còn có thể copy hay thay đổi node**. Schema và mapping triển khai được đặt sau phần cơ chế này.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Vai trò**
 
-`DesignSpec` là blueprint mà planner gửi qua tool boundary. `DesignSpec.model_validate` chuyển JSON thành object có kiểu để compositor và renderer sử dụng.
+`DesignSpec` là **blueprint mà planner gửi qua tool boundary**. `DesignSpec.model_validate` **chuyển JSON thành object có kiểu** để compositor và renderer sử dụng.
 
 **Cấu trúc dữ liệu**
 
@@ -725,11 +725,11 @@ Validation tại ranh giới tiếp nhận thiết kế kiểm tra kiểu, trư�
 
 **Cách biểu diễn slides**
 
-- `layer_graph` là danh sách root nodes; node `kind="slide"` chứa cây `children`.
-- Tham chiếu chéo được biểu diễn bằng ID, chẳng hạn callout anchor và `covers`.
-- Renderer duyệt slide roots theo thứ tự danh sách; children được sắp theo `z_index` ở các nhánh tương ứng.
-- Các hàm dựng deck đã khảo sát chưa có constraint solver tự lan truyền mọi thay đổi qua graph.
-- Compositor/renderer có thể copy hoặc thay đổi một số node trong quá trình chuẩn hóa và xuất file.
+- `layer_graph` là **danh sách root nodes**; node `kind="slide"` **chứa cây `children`**.
+- **Tham chiếu chéo được biểu diễn bằng ID**, chẳng hạn callout anchor và `covers`.
+- **Renderer duyệt slide roots theo thứ tự danh sách**; **children được sắp theo `z_index`** ở các nhánh tương ứng.
+- Các hàm dựng deck đã khảo sát **chưa có constraint solver** tự lan truyền mọi thay đổi qua graph.
+- **Compositor/renderer có thể copy hoặc thay đổi một số node** trong quá trình chuẩn hóa và xuất file.
 
 **Validation hiện có**
 
@@ -739,11 +739,11 @@ Validation tại ranh giới tiếp nhận thiết kế kiểm tra kiểu, trư�
 | `DesignSpec.canvas` | Có key `w_px`, `h_px` | Vẫn là `dict[str, Any]` |
 | `LayerNode` | Kiểu và các trường đã khai báo | Nhiều optional fields; chưa cưỡng chế đầy đủ trường theo từng kind bằng discriminated union |
 
-JSON qua validation chưa chứng minh slide đầy đủ nội dung, tài nguyên tồn tại, ID duy nhất hoặc bố cục đúng.
+**JSON qua validation chưa chứng minh** slide đầy đủ nội dung, tài nguyên tồn tại, ID duy nhất hoặc bố cục đúng.
 
 **Ví dụ để đọc representation**
 
-Đây là spec minh họa, không phải output LLM của một run thật.
+Đây là **spec minh họa**, **không phải output LLM** của một run thật.
 
 ```json
 {
@@ -779,11 +779,11 @@ JSON qua validation chưa chứng minh slide đầy đủ nội dung, tài nguy�
 
 ### 2.5. Rendering Pipeline và tính tương đương của preview
 
-Rendering Pipeline chịu trách nhiệm chuyển blueprint và assets thành sản phẩm chỉnh sửa được. Đầu vào là mô hình thiết kế cùng kho tài nguyên; đầu ra là presentation, preview và thông tin phiên bản/cảnh báo để vòng điều phối tiếp tục. Lựa chọn loại sản phẩm quyết định nhánh dựng.
+**Rendering Pipeline chịu trách nhiệm chuyển blueprint và assets thành sản phẩm chỉnh sửa được**. **Đầu vào** là mô hình thiết kế cùng kho tài nguyên; **đầu ra** là presentation, preview và thông tin phiên bản/cảnh báo để vòng điều phối tiếp tục. **Lựa chọn loại sản phẩm quyết định nhánh dựng**.
 
 ![Rendering Pipeline nguyên bản của OpenDesign](diagrams/upstream/rendering_pipeline.png)
 
-Khối trên cùng là shared design model. Ba đường xuống chọn một trong ba họ sản phẩm; màu đỏ trên nhánh landing là nhấn mạnh trong ảnh gốc, không phải lỗi. Các ô dưới mỗi cột mô tả biểu diễn hoặc thành phần của output, không nhất thiết là chuỗi chuyển đổi nối tiếp.
+**Khối trên cùng là shared design model**. **Ba đường xuống chọn một trong ba họ sản phẩm**; **màu đỏ trên nhánh landing là nhấn mạnh** trong ảnh gốc, **không phải lỗi**. Các ô dưới mỗi cột **mô tả biểu diễn hoặc thành phần của output**, **không nhất thiết là chuỗi chuyển đổi nối tiếp**.
 
 | Nhánh | Vai trò các khối và đường kết nối |
 | --- | --- |
@@ -791,18 +791,18 @@ Khối trên cùng là shared design model. Ba đường xuống chọn một tr
 | Landing | Cây sections → trang HTML; table/figure nằm trong trang, không phải hai file riêng. Preview là wireframe được dựng riêng |
 | Deck | Cây slide → PPTX với text/table native; thao tác tạo bảng ghi vào presentation. PNG từng slide được dựng từ blueprint, rồi ghép grid, không được chụp từ PowerPoint |
 
-Bốn khối hỗ trợ phía dưới gồm giữ tỉ lệ ảnh khi fit vùng, phát hiện chồng chữ, kiểm tra figure–text references trong nhánh poster và chuyển bảng paper thành dữ liệu editable. Chúng bổ sung bảo vệ/khả năng dựng, không tạo thành bốn bước hậu xử lý bắt buộc hoặc bảo đảm ngữ nghĩa đúng trên mọi nhánh.
+**Bốn khối hỗ trợ phía dưới** gồm giữ tỉ lệ ảnh khi fit vùng, phát hiện chồng chữ, kiểm tra figure–text references trong nhánh poster và chuyển bảng paper thành dữ liệu editable. Chúng **bổ sung bảo vệ/khả năng dựng**, **không tạo thành bốn bước hậu xử lý bắt buộc** hoặc **bảo đảm ngữ nghĩa đúng trên mọi nhánh**.
 
-Đường deck giải tham chiếu assets, chuẩn hóa dữ liệu, audit provenance/callouts/placeholders, kiểm tra layout rồi ghi PPTX và preview; composition/version cùng warnings quay về run state và Planner. Bố cục ưu tiên template theo vai trò/slot khi có; nếu không thì chọn archetype được hỗ trợ hoặc tọa độ trực tiếp. Chưa có tối ưu layout chung theo một hàm mục tiêu.
+**Đường deck** giải tham chiếu assets, chuẩn hóa dữ liệu, audit provenance/callouts/placeholders, kiểm tra layout rồi **ghi PPTX và preview**; **composition/version cùng warnings quay về run state và Planner**. **Bố cục ưu tiên template theo vai trò/slot** khi có; nếu không thì **chọn archetype được hỗ trợ hoặc tọa độ trực tiếp**. **Chưa có tối ưu layout chung theo một hàm mục tiêu**.
 
-Text và bảng native giữ khả năng chỉnh sửa; figure raster vẫn là ảnh. Font, chuyển đổi tọa độ và giới hạn bảng có thể ảnh hưởng sản phẩm cuối. Quan trọng hơn, preview dùng engine riêng, có thể thiếu hình dạng/chú thích hoặc khác font/wrap so với PowerPoint. Vì Critic đánh giá qua preview, độ tương đương rendering là một ranh giới chất lượng cần kiểm tra, không chỉ là chi tiết hiển thị.
+**Text và bảng native giữ khả năng chỉnh sửa**; **figure raster vẫn là ảnh**. **Font, chuyển đổi tọa độ và giới hạn bảng có thể ảnh hưởng sản phẩm cuối**. Quan trọng hơn, **preview dùng engine riêng**, có thể **thiếu hình dạng/chú thích hoặc khác font/wrap so với PowerPoint**. Vì **Critic đánh giá qua preview**, **độ tương đương rendering là một ranh giới chất lượng cần kiểm tra**, không chỉ là chi tiết hiển thị.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Hình rendering gốc: từ blueprint đến sản phẩm**
 
-Đọc từ `DesignSpec` ở trên xuống **một trong ba cột** theo `artifact_type`. Ba mũi tên là ba lựa chọn renderer của `composite`, không phải yêu cầu tạo cả ba sản phẩm trong một lần gọi. Mũi tên đỏ làm nổi bật nhánh LANDING trên ảnh gốc; nó không biểu thị lỗi hay thứ tự ưu tiên của DeckAgent.
+Đọc từ `DesignSpec` ở trên xuống **một trong ba cột** theo `artifact_type`. **Ba mũi tên là ba lựa chọn renderer** của `composite`, **không phải yêu cầu tạo cả ba sản phẩm** trong một lần gọi. **Mũi tên đỏ làm nổi bật nhánh LANDING** trên ảnh gốc; nó **không biểu thị lỗi hay thứ tự ưu tiên** của DeckAgent.
 
 **Khối đầu vào và ba nhánh sản phẩm**
 
@@ -823,7 +823,7 @@ Text và bảng native giữ khả năng chỉnh sửa; figure raster vẫn là 
 
 **Bốn khối dưới cùng**
 
-Chúng mô tả khả năng hỗ trợ/kiểm tra quanh quá trình dựng, không nối thành bốn công đoạn bắt buộc sau export.
+Chúng **mô tả khả năng hỗ trợ/kiểm tra quanh quá trình dựng**, **không nối thành bốn công đoạn bắt buộc sau export**.
 
 | Khối hỗ trợ | Ý nghĩa và nơi tác động |
 | --- | --- |
@@ -843,15 +843,15 @@ Chúng mô tả khả năng hỗ trợ/kiểm tra quanh quá trình dựng, khô
 
 **Các bước dựng deck**
 
-1. Lấy slide roots và áp section-number policy.
-2. Hydrate image/table theo layer ID và tạo iteration directory.
-3. Audit provenance; phát hiện orphan callouts; sanitize spec.
-4. Chạy overlap, title/body alignment và closing checks.
-5. Viết PPTX; scrub placeholder trong OOXML.
-6. Dựng PNG từng slide và grid preview; tạo manifest/context.
-7. Cập nhật final symlinks và trả tool result.
+1. **Lấy slide roots** và **áp section-number policy**.
+2. **Hydrate image/table theo layer ID** và **tạo iteration directory**.
+3. **Audit provenance**; **phát hiện orphan callouts**; **sanitize spec**.
+4. **Chạy overlap, title/body alignment và closing checks**.
+5. **Viết PPTX**; **scrub placeholder trong OOXML**.
+6. **Dựng PNG từng slide và grid preview**; **tạo manifest/context**.
+7. **Cập nhật final symlinks** và **trả tool result**.
 
-Một số bước thay đổi dữ liệu xuất, một số chỉ trả warning. Warning chưa đồng nghĩa export bị chặn.
+**Một số bước thay đổi dữ liệu xuất**, **một số chỉ trả warning**. **Warning chưa đồng nghĩa export bị chặn**.
 
 **Ba nhánh layout**
 
@@ -861,29 +861,29 @@ Một số bước thay đổi dữ liệu xuất, một số chỉ trả warnin
 | Không có template, có archetype renderer | Gọi hàm layout Python theo `slide.archetype` | Có bốn renderer: `cover_editorial`, `evidence_snapshot`, `takeaway_list`, `thanks_qa` |
 | Archetype chưa có renderer hoặc fallback | Dựng trực tiếp theo bbox | Sáu archetype là placeholder; `evidence_snapshot` không có big-number child cũng về default |
 
-Bố cục đến từ lựa chọn của model, template/slot, archetype viết tay và bbox. Trong các nhánh đã đọc, chưa có thuật toán tìm layout tối ưu theo một hàm mục tiêu chung.
+**Bố cục đến từ lựa chọn của model, template/slot, archetype viết tay và bbox**. Trong các nhánh đã đọc, **chưa có thuật toán tìm layout tối ưu** theo một hàm mục tiêu chung.
 
 **Ảnh và bảng**
 
-- Hydration lấy `src_path` và dữ liệu còn thiếu từ `rendered_layers[layer_id]` cho image/background/table.
-- Ảnh được đưa vào PPTX bằng picture shapes.
-- Bảng dùng `add_table`, nên cell là native và còn sửa được.
-- Độ rộng cột dựa trên độ dài chuỗi; font body chọn 18/14/11 pt theo số hàng.
-- Bảng trên 8 cột bị giữ lại 6 cột đầu; renderer thêm marker vào caption trong object. Cách này làm mất dữ liệu và chưa tự chọn các cột quan trọng nhất.
+- **Hydration lấy `src_path` và dữ liệu còn thiếu** từ `rendered_layers[layer_id]` cho image/background/table.
+- **Ảnh được đưa vào PPTX bằng picture shapes**.
+- **Bảng dùng `add_table`**, nên **cell là native và còn sửa được**.
+- **Độ rộng cột dựa trên độ dài chuỗi**; **font body chọn 18/14/11 pt theo số hàng**.
+- **Bảng trên 8 cột bị giữ lại 6 cột đầu**; renderer thêm marker vào caption trong object. Cách này **làm mất dữ liệu** và **chưa tự chọn các cột quan trọng nhất**.
 
 **Typography**
 
-- Text dùng textbox, paragraph và run của `python-pptx`; bật word wrap.
-- Cỡ font đổi từ px sang pt theo hệ số 0,75; font family được gán theo tên.
-- Tọa độ đổi sang EMU và clamp về slide bounds.
-- Gán tên font chưa chứng minh font được nhúng vào file hoặc có trên máy người nhận.
+- **Text dùng textbox, paragraph và run** của `python-pptx`; **bật word wrap**.
+- **Cỡ font đổi từ px sang pt theo hệ số 0,75**; **font family được gán theo tên**.
+- **Tọa độ đổi sang EMU** và **clamp về slide bounds**.
+- **Gán tên font chưa chứng minh font được nhúng** vào file hoặc có trên máy người nhận.
 
 **Giới hạn của ảnh preview**
 
-- `render_slide_preview_png` dùng Pillow và giới hạn chiều rộng ở 960 px.
-- Hàm duyệt image/background/table và text; không chụp output của toàn bộ template/archetype renderer native.
-- Logic font/wrap khác với PowerPoint; callout hoặc shape trang trí native có thể không xuất hiện trong ảnh tương ứng.
-- Critic vì vậy có thể bỏ sót lỗi hiển thị thật trong PPTX. Kiểm tra preview chưa thay được kiểm tra file bằng PowerPoint hoặc một engine tương đương.
+- `render_slide_preview_png` **dùng Pillow** và **giới hạn chiều rộng ở 960 px**.
+- Hàm **duyệt image/background/table và text**; **không chụp output của toàn bộ template/archetype renderer native**.
+- **Logic font/wrap khác với PowerPoint**; **callout hoặc shape trang trí native có thể không xuất hiện** trong ảnh tương ứng.
+- **Critic vì vậy có thể bỏ sót lỗi hiển thị thật trong PPTX**. **Kiểm tra preview chưa thay được kiểm tra file bằng PowerPoint** hoặc một engine tương đương.
 
 </details>
 
@@ -909,22 +909,22 @@ Bố cục đến từ lựa chọn của model, template/slot, archetype viết
 
 ### 2.6. Visual Evaluation và Feedback Loop
 
-Critic đánh giá artifact so với mục tiêu thiết kế và nguồn nội dung, rồi trả report cho Planner cân nhắc sửa. Nó không sở hữu quyền thay đổi slide. Đầu vào gồm mô hình thiết kế, preview và nguồn tra cứu; đầu ra gồm điểm, verdict và issues.
+**Critic đánh giá artifact so với mục tiêu thiết kế và nguồn nội dung**, rồi **trả report cho Planner cân nhắc sửa**. Nó **không sở hữu quyền thay đổi slide**. **Đầu vào** gồm mô hình thiết kế, preview và nguồn tra cứu; **đầu ra** gồm điểm, verdict và issues.
 
-Cơ chế là vòng đánh giá riêng với truy xuất theo nhu cầu: xem slide, tìm đoạn paper, tra luận điểm, rồi trả verdict có cấu trúc. Budget ảnh/lượt giới hạn lượng dữ liệu đưa vào model; phần vượt có thể bị hoãn sang lượt khác. Hiện chưa bắt buộc đọc đủ mọi slide trước khi kết luận.
+Cơ chế là **vòng đánh giá riêng với truy xuất theo nhu cầu**: xem slide, tìm đoạn paper, tra luận điểm, rồi trả verdict có cấu trúc. **Budget ảnh/lượt giới hạn lượng dữ liệu** đưa vào model; **phần vượt có thể bị hoãn** sang lượt khác. Hiện **chưa bắt buộc đọc đủ mọi slide trước khi kết luận**.
 
-Rubric bao phủ provenance, visual hierarchy, typography, layout, narrative, factual correctness và claim coverage. Đây là hướng dẫn đánh giá cho model, chưa phải các thước đo độc lập đã hiệu chuẩn. Validation kiểm tra hình dạng report và miền điểm, nhưng chưa cưỡng chế đầy đủ quan hệ giữa score, verdict và lỗi nghiêm trọng. Do đó một report hợp lệ chưa tạo thành quality gate đáng tin cậy.
+**Rubric bao phủ** provenance, visual hierarchy, typography, layout, narrative, factual correctness và claim coverage. Đây là **hướng dẫn đánh giá cho model**, **chưa phải các thước đo độc lập đã hiệu chuẩn**. **Validation kiểm tra hình dạng report và miền điểm**, nhưng **chưa cưỡng chế đầy đủ quan hệ giữa score, verdict và lỗi nghiêm trọng**. Do đó **một report hợp lệ chưa tạo thành quality gate đáng tin cậy**.
 
-Local guards bổ sung kiểm tra cấu trúc/nội dung trước hoặc trong rendering. Kiểm tra quote có trong source chưa đủ xác nhận mọi số/claim. Lỗi gọi model hay hết budget có thể tạo failsafe report điểm thấp; cần phân biệt lỗi đánh giá với chất lượng thật của deck, nhất là khi dùng report làm reward huấn luyện. Các ngưỡng và mapping tool đánh giá nằm trong Technical Details.
+**Local guards bổ sung kiểm tra cấu trúc/nội dung** trước hoặc trong rendering. **Kiểm tra quote có trong source chưa đủ xác nhận mọi số/claim**. **Lỗi gọi model hay hết budget có thể tạo failsafe report điểm thấp**; cần **phân biệt lỗi đánh giá với chất lượng thật của deck**, nhất là khi **dùng report làm reward huấn luyện**. Các ngưỡng và mapping tool đánh giá nằm trong Technical Details.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Vai trò và dữ liệu**
 
-- Wrapper kiểm tra spec, composition, preview và giới hạn số lần critique.
-- Critic nhận spec, layer manifest, danh sách PNG, paper raw text và claim graph.
-- Critic trả `CritiqueReport`; wrapper ghi `critique_N.json`, thêm report vào `critique_results` và trả payload cho planner.
+- **Wrapper kiểm tra spec, composition, preview và giới hạn số lần critique**.
+- **Critic nhận spec, layer manifest, danh sách PNG, paper raw text và claim graph**.
+- **Critic trả `CritiqueReport`**; wrapper **ghi `critique_N.json`**, **thêm report vào `critique_results`** và **trả payload cho planner**.
 
 **Công cụ bên trong critic**
 
@@ -935,7 +935,7 @@ Local guards bổ sung kiểm tra cấu trúc/nội dung trước hoặc trong r
 | `lookup_claim_node` | Đọc một node trong claim graph |
 | `report_verdict` | Trả report có cấu trúc và kết thúc đánh giá |
 
-Ảnh được gửi dưới dạng image content block ở lượt sau; tool result chỉ trả ack nhỏ. Với mặc định 4 ảnh/lượt, call vượt budget nhận `deferred`; model phải gọi lại ở lượt khác.
+**Ảnh được gửi dưới dạng image content block ở lượt sau**; **tool result chỉ trả ack nhỏ**. Với **mặc định 4 ảnh/lượt**, **call vượt budget nhận `deferred`**; model phải gọi lại ở lượt khác.
 
 **Tiêu chí trong prompt deck**
 
@@ -947,7 +947,7 @@ Local guards bổ sung kiểm tra cấu trúc/nội dung trước hoặc trong r
 - Factual correctness so với paper.
 - Claim coverage so với graph.
 
-Đây là rubric hướng dẫn model. Source chưa có bảy hàm đo độc lập, công thức weighted score hoặc kết quả hiệu chuẩn với chuyên gia.
+Đây là **rubric hướng dẫn model**. **Source chưa có bảy hàm đo độc lập**, **công thức weighted score** hoặc **kết quả hiệu chuẩn với chuyên gia**.
 
 **Quy tắc verdict: prompt và enforcement**
 
@@ -959,17 +959,17 @@ Local guards bổ sung kiểm tra cấu trúc/nội dung trước hoặc trong r
 
 **Kiểm tra local bổ sung**
 
-- Compositor chạy provenance, overlap, orphan-callout, sanitizer, title/body alignment và closing checks.
-- Provenance chọn một số body text layers, phát hiện numeric tokens rồi kiểm tra quote tồn tại trong source sau chuẩn hóa whitespace.
-- Strict mode thay numeric tokens không xác minh được bằng `[?]`.
-- Regex integer thực tế có nhánh từ 3 chữ số; một số comment/prompt mô tả từ 4 chữ số.
+- **Compositor chạy** provenance, overlap, orphan-callout, sanitizer, title/body alignment và closing checks.
+- **Provenance chọn một số body text layers**, **phát hiện numeric tokens** rồi **kiểm tra quote tồn tại trong source** sau chuẩn hóa whitespace.
+- **Strict mode thay numeric tokens không xác minh được bằng `[?]`**.
+- **Regex integer thực tế có nhánh từ 3 chữ số**; **một số comment/prompt mô tả từ 4 chữ số**.
 
 **Giới hạn**
 
-- Quote tồn tại trong source chưa chứng minh mọi số/claim trong body được quote hỗ trợ. Mục 2.8 có phản ví dụ cụ thể.
-- Code chưa bắt critic đọc đủ mọi slide hoặc evidence trước khi trả verdict.
-- API lỗi hoặc hết budget mà chưa có verdict tạo report score 0, `fail`, kèm blocker dạng layout. Đó là lỗi đánh giá, chưa phải điểm chất lượng thật của deck.
-- Nếu dùng report làm reward huấn luyện, cần phân biệt lỗi thực thi với lỗi thiết kế.
+- **Quote tồn tại trong source chưa chứng minh mọi số/claim trong body được quote hỗ trợ**. Mục 2.8 có **phản ví dụ cụ thể**.
+- **Code chưa bắt critic đọc đủ mọi slide hoặc evidence** trước khi trả verdict.
+- **API lỗi hoặc hết budget mà chưa có verdict** tạo **report score 0, `fail`**, kèm blocker dạng layout. Đó là **lỗi đánh giá**, **chưa phải điểm chất lượng thật của deck**.
+- Nếu **dùng report làm reward huấn luyện**, cần **phân biệt lỗi thực thi với lỗi thiết kế**.
 
 </details>
 
@@ -991,11 +991,11 @@ Local guards bổ sung kiểm tra cấu trúc/nội dung trước hoặc trong r
 
 ### 2.7. Revision, Change Propagation và phạm vi bảo toàn
 
-Revision biến yêu cầu chỉnh sửa hoặc feedback thành thay đổi có thể dựng lại, đồng thời cần giữ phần ngoài phạm vi yêu cầu. Trong OpenDesign, Planner vẫn điều phối lựa chọn thao tác; chưa có một engine áp issues thành typed patch độc lập.
+**Revision biến yêu cầu chỉnh sửa hoặc feedback thành thay đổi có thể dựng lại**, đồng thời **cần giữ phần ngoài phạm vi yêu cầu**. Trong OpenDesign, **Planner vẫn điều phối lựa chọn thao tác**; **chưa có một engine áp issues thành typed patch độc lập**.
 
-Chỉnh rendered text layer là cập nhật record và tái tạo ảnh layer trong run: phần không gửi được giữ lại ở mức merge được hỗ trợ. Nhưng text native trong presentation được đọc từ blueprint, nên sửa riêng rendered record chưa lan sang mô hình thiết kế hoặc PPTX. Muốn thay text trong deck cần sửa blueprint rồi dựng lại. Merge một cấp cũng không bảo đảm giữ mọi subobject lồng sâu.
+**Chỉnh rendered text layer** là **cập nhật record và tái tạo ảnh layer trong run**: phần không gửi được giữ lại ở mức merge được hỗ trợ. Nhưng **text native trong presentation được đọc từ blueprint**, nên **sửa riêng rendered record chưa lan sang mô hình thiết kế hoặc PPTX**. **Muốn thay text trong deck cần sửa blueprint rồi dựng lại**. **Merge một cấp** cũng **không bảo đảm giữ mọi subobject lồng sâu**.
 
-Giữa các lượt chat, context mới nhận nội dung thiết kế trước nhưng chưa tự phục hồi mọi asset. Versioning giữ các bản trước để đối chiếu; nó chưa là cơ chế kiểm tra bản sửa chỉ đổi đúng vùng yêu cầu. Prompt nhắc giữ danh tính/phong cách, nhưng chưa có diff validator ngăn thay đổi ngoài phạm vi hoặc incremental rendering theo dependency graph.
+**Giữa các lượt chat**, **context mới nhận nội dung thiết kế trước** nhưng **chưa tự phục hồi mọi asset**. **Versioning giữ các bản trước để đối chiếu**; nó **chưa là cơ chế kiểm tra bản sửa chỉ đổi đúng vùng yêu cầu**. **Prompt nhắc giữ danh tính/phong cách**, nhưng **chưa có diff validator** ngăn thay đổi ngoài phạm vi hoặc **incremental rendering theo dependency graph**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
@@ -1008,26 +1008,26 @@ Giữa các lượt chat, context mới nhận nội dung thiết kế trước 
 
 **Sửa rendered text trong một run**
 
-1. `edit_layer` lấy text layer hiện có từ `rendered_layers`.
-2. Copy record hiện tại và merge diff.
-3. Merge bbox/effects một cấp; các trường khác được thay bằng giá trị mới.
-4. Gọi `render_text_layer` để ghi PNG version mới và cập nhật record.
+1. `edit_layer` **lấy text layer hiện có** từ `rendered_layers`.
+2. **Copy record hiện tại** và **merge diff**.
+3. **Merge bbox/effects một cấp**; **các trường khác được thay bằng giá trị mới**.
+4. Gọi `render_text_layer` để **ghi PNG version mới** và **cập nhật record**.
 
-Handler giữ các trường không được gửi trong diff và không render lại layer khác. Tuy nhiên, shadow/stroke subobjects có thể bị thay toàn bộ; spec không được tự đồng bộ.
+**Handler giữ các trường không được gửi trong diff** và **không render lại layer khác**. Tuy nhiên, **shadow/stroke subobjects có thể bị thay toàn bộ**; **spec không được tự đồng bộ**.
 
 **Sửa native text của deck**
 
-- PPTX renderer lấy text từ `DesignSpec.layer_graph`.
-- Deck hydration chỉ bổ sung image/background/table từ rendered registry.
-- Vì vậy, text deck phải được cập nhật trong cây spec. Workflow phù hợp với source hiện tại là gửi lại `propose_design_spec`, rồi composite.
-- Probe tại mục 2.8 kiểm tra trường hợp rendered record đã đổi nhưng native PPTX vẫn giữ text cũ.
+- **PPTX renderer lấy text từ `DesignSpec.layer_graph`**.
+- **Deck hydration chỉ bổ sung image/background/table** từ rendered registry.
+- Vì vậy, **text deck phải được cập nhật trong cây spec**. Workflow phù hợp với source hiện tại là **gửi lại `propose_design_spec`, rồi composite**.
+- Probe tại mục 2.8 kiểm tra trường hợp **rendered record đã đổi nhưng native PPTX vẫn giữ text cũ**.
 
 **Sửa giữa các lượt chat**
 
-- Mỗi lượt tạo dùng context mới; chat đưa prior spec vào brief bằng cách đọc trace cũ.
-- `edit_layer` không load layer từ run trước.
-- Giữ cùng layer ID chưa tự bảo đảm tái sử dụng mọi ảnh/PNG cũ.
-- Tác giả ghi rõ phạm vi chính của `edit_layer` là revise trong một run; lựa chọn này giữ isolation theo trajectory.
+- **Mỗi lượt tạo dùng context mới**; **chat đưa prior spec vào brief** bằng cách đọc trace cũ.
+- `edit_layer` **không load layer từ run trước**.
+- **Giữ cùng layer ID chưa tự bảo đảm tái sử dụng mọi ảnh/PNG cũ**.
+- Tác giả ghi rõ **phạm vi chính của `edit_layer` là revise trong một run**; lựa chọn này **giữ isolation theo trajectory**.
 
 **Lan truyền thay đổi và bảo toàn**
 
@@ -1054,9 +1054,9 @@ Handler giữ các trường không được gửi trong diff và không render 
 
 ### 2.8. Phạm vi kiểm chứng và các edge cases
 
-Kiểm chứng kiến trúc cần tách ba mức: cơ chế quan sát được trong source, hành vi tại ranh giới được kiểm tra bằng fixture/mock, và chất lượng sản phẩm do model thật tạo. Nghiên cứu hiện xác nhận hai mức đầu trong phạm vi đã chạy, chưa có benchmark end-to-end bằng model thật.
+**Kiểm chứng kiến trúc cần tách ba mức**: **cơ chế quan sát được trong source**, **hành vi tại ranh giới** được kiểm tra bằng fixture/mock, và **chất lượng sản phẩm do model thật tạo**. Nghiên cứu hiện **xác nhận hai mức đầu** trong phạm vi đã chạy, **chưa có benchmark end-to-end bằng model thật**.
 
-Đã chạy 20 focused checks không gọi model API: 15 qua và 5 dừng vì quyền symlink trên Windows. Assertions sau điểm lỗi chưa thực hiện; PPTX trung gian mở lại được chỉ xác nhận một phần cấu trúc, không biến check lỗi thành pass hay bảo đảm layout. Năm probes dưới đây dùng backend giả và dữ liệu tổng hợp.
+**Đã chạy 20 focused checks không gọi model API**: **15 qua** và **5 dừng vì quyền symlink trên Windows**. **Assertions sau điểm lỗi chưa thực hiện**; **PPTX trung gian mở lại được chỉ xác nhận một phần cấu trúc**, **không biến check lỗi thành pass** hay bảo đảm layout. **Năm probes dưới đây dùng backend giả và dữ liệu tổng hợp**.
 
 | Ranh giới được kiểm tra | Hành vi quan sát và hệ quả kiến trúc |
 | --- | --- |
@@ -1066,7 +1066,7 @@ Kiểm chứng kiến trúc cần tách ba mức: cơ chế quan sát được t
 | Layer edit → presentation | Rendered text đổi, blueprint/PPTX vẫn giữ text cũ; Change Propagation chưa tự đồng bộ các lớp |
 | Đánh giá → trạng thái kết thúc | Critic pass 0,9 vẫn tạo outcome pass dù chưa finalize; execution completion và quality approval chưa đồng nhất |
 
-Một edge case khác: log báo dựng deck xong được ghi trước thao tác final link có thể lỗi. Cần đọc toàn bộ kết quả thực thi thay vì dùng một log làm bảo đảm hoàn tất. Chưa kiểm chứng độ đẹp, tỷ lệ cải thiện sau revise, thời gian, tổng cost, video và endpoint hiện hành; các số này không được suy từ mock tests.
+Một edge case khác: **log báo dựng deck xong được ghi trước thao tác final link có thể lỗi**. Cần **đọc toàn bộ kết quả thực thi** thay vì **dùng một log làm bảo đảm hoàn tất**. **Chưa kiểm chứng** độ đẹp, tỷ lệ cải thiện sau revise, thời gian, tổng cost, video và endpoint hiện hành; **các số này không được suy từ mock tests**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
@@ -1082,13 +1082,13 @@ Một edge case khác: log báo dựng deck xong được ghi trước thao tác
 | Model/ảnh API | Không gọi; dùng mock backend khi cần kiểm tra logic model–tool |
 | Phạm vi test | 20 focused checks upstream và 5 probe ranh giới; chưa chạy toàn bộ smoke suite |
 
-Kết quả dưới đây thuộc môi trường này. Nếu dùng lockfile hoặc dependency khác, cần ghi nhận lại môi trường trước khi so sánh.
+**Kết quả dưới đây thuộc môi trường này**. Nếu dùng lockfile hoặc dependency khác, cần **ghi nhận lại môi trường trước khi so sánh**.
 
 **Kết quả 20 checks**
 
 - **15 checks qua:** registry, edit-layer semantics, section policy, mock critic, archetype fallback/determinism, claim validation/coverage và một số local detectors.
 - **5 checks lỗi:** đều dừng khi tạo final symlink trên Windows với `WinError 1314`.
-- Những assertion nằm sau vị trí lỗi chưa được thực hiện. Số `52/52` trong README upstream không được dùng thay kết quả lần chạy này.
+- **Những assertion nằm sau vị trí lỗi chưa được thực hiện**. **Số `52/52` trong README upstream không được dùng thay kết quả** lần chạy này.
 
 <details>
 <summary>Chi tiết tên hàm và kết quả của 20 checks</summary>
@@ -1114,7 +1114,7 @@ Kết quả dưới đây thuộc môi trường này. Nếu dùng lockfile ho�
 
 **Evidence về lỗi symlink**
 
-Trace dưới đây cho thấy PPTX đã được ghi trước khi bước tạo final symlink thất bại:
+Trace dưới đây cho thấy **PPTX đã được ghi trước khi bước tạo final symlink thất bại**:
 
 ```text
 artifact.switch: poster -> deck
@@ -1124,8 +1124,8 @@ composite.deck.done: slides=3, images=1
 _refresh_final_links: OSError [WinError 1314]
 ```
 
-- `composite.deck.done` được log trước `_refresh_final_links`; đọc riêng dòng log này sẽ dễ hiểu nhầm tool đã hoàn tất.
-- Năm lỗi được giữ nguyên trong kết quả; không sửa code, mock symlink hoặc bỏ assertion để chuyển thành pass.
+- `composite.deck.done` được **log trước `_refresh_final_links`**; đọc riêng dòng log này sẽ **dễ hiểu nhầm tool đã hoàn tất**.
+- **Năm lỗi được giữ nguyên trong kết quả**; **không sửa code, mock symlink hoặc bỏ assertion** để chuyển thành pass.
 
 **Artifact mở lại được sau lỗi**
 
@@ -1136,8 +1136,8 @@ _refresh_final_links: OSError [WinError 1314]
 | `smoke_provenance` | 2 | 15 | 1 |
 | `smoke_section_notes` | 4 | 4 | 0 |
 
-- Các file trên mở lại được bằng `python-pptx`; fixture provenance có một native table.
-- Việc parse được file xác nhận một phần cấu trúc output. Nó chưa thay thế các assertion chưa chạy hết hoặc kiểm tra font/layout trong PowerPoint.
+- **Các file trên mở lại được bằng `python-pptx`**; fixture provenance có một native table.
+- **Việc parse được file xác nhận một phần cấu trúc output**. Nó **chưa thay thế các assertion chưa chạy hết** hoặc **kiểm tra font/layout trong PowerPoint**.
 
 **Năm probe ranh giới dữ liệu**
 
@@ -1162,15 +1162,15 @@ OUTCOME_WITHOUT_FINALIZE ('pass', 0.9)
 
 </details>
 
-Các probe dùng dữ liệu tổng hợp và backend giả. Chúng xác nhận hành vi ở từng ranh giới; chưa phải run LLM sinh deck end-to-end. Mã tái lập được giữ trong phụ lục của cùng report.
+**Các probe dùng dữ liệu tổng hợp và backend giả**. Chúng **xác nhận hành vi ở từng ranh giới**; **chưa phải run LLM sinh deck end-to-end**. **Mã tái lập được giữ trong phụ lục** của cùng report.
 
 **Những nội dung chưa được kiểm chứng**
 
-- Độ đẹp và factual accuracy của deck do model thật tạo trên tập brief/paper.
-- Tỷ lệ hội tụ và mức cải thiện sau từng lần revise.
-- Thời gian và tổng chi phí end-to-end.
-- Độ tương đương giữa Pillow preview với PowerPoint/LibreOffice.
-- Hành vi xuất video và tình trạng endpoint/provider thật.
+- **Độ đẹp và factual accuracy** của deck do model thật tạo trên tập brief/paper.
+- **Tỷ lệ hội tụ và mức cải thiện** sau từng lần revise.
+- **Thời gian và tổng chi phí** end-to-end.
+- **Độ tương đương giữa Pillow preview với PowerPoint/LibreOffice**.
+- **Hành vi xuất video** và **tình trạng endpoint/provider thật**.
 
 </details>
 
@@ -1201,33 +1201,33 @@ Các probe dùng dữ liệu tổng hợp và backend giả. Chúng xác nhận 
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Cần ghi chính xác model decisions, tool IDs, reasoning và usage cho sản phẩm thiết kế lẫn dữ liệu huấn luyện.
+Cần **ghi chính xác model decisions, tool IDs, reasoning và usage** cho sản phẩm thiết kế lẫn dữ liệu huấn luyện.
 
 **Mechanism — Phương án được lựa chọn**
 
-Dùng `PlannerLoop` tự quản messages và từng cặp tool call/result; model access hiện đi qua `LLMBackend`.
+Dùng **`PlannerLoop` tự quản messages** và **từng cặp tool call/result**; **model access hiện đi qua `LLMBackend`**.
 
 **Lý do lựa chọn**
 
-Tác giả muốn kiểm soát trace và replay. Ở giai đoạn đầu, retry/streaming do framework cung cấp chưa nằm trên critical path.
+Tác giả muốn **kiểm soát trace và replay**. Ở giai đoạn đầu, **retry/streaming do framework cung cấp chưa nằm trên critical path**.
 
 **Lợi ích**
 
-- Luồng gọi tool và thay đổi state dễ audit.
-- Trace có thể bám sát contract dữ liệu huấn luyện.
+- **Luồng gọi tool và thay đổi state dễ audit**.
+- **Trace có thể bám sát contract dữ liệu huấn luyện**.
 
 **Hạn chế**
 
-- Phải tự làm resume, cancel, budget và xử lý lỗi xuyên suốt.
-- Nhánh API error hiện có thể kết thúc trước khi runner ghi trajectory cuối.
+- **Phải tự làm resume, cancel, budget và xử lý lỗi** xuyên suốt.
+- **Nhánh API error hiện có thể kết thúc trước khi runner ghi trajectory cuối**.
 
 **Phương án thay thế**
 
-Framework có durable graph/checkpoint phù hợp khi cần resume bền vững, nhưng phải tích hợp lại trace/data contract.
+**Framework có durable graph/checkpoint** phù hợp khi **cần resume bền vững**, nhưng **phải tích hợp lại trace/data contract**.
 
 **Đánh giá từ bằng chứng**
 
-Source ủng hộ khả năng audit. Nghiên cứu chưa đo để kết luận loop tự viết nhanh hoặc rẻ hơn framework; rationale cũ về gọi Anthropic SDK trực tiếp đã được mở rộng bằng backend abstraction.
+**Source ủng hộ khả năng audit**. Nghiên cứu **chưa đo để kết luận loop tự viết nhanh hoặc rẻ hơn framework**; rationale cũ về gọi Anthropic SDK trực tiếp **đã được mở rộng bằng backend abstraction**.
 
 **Implementation Evidence**
 
@@ -1239,42 +1239,42 @@ Source ủng hộ khả năng audit. Nghiên cứu chưa đo để kết luận 
 
 ### 3.2. Shared Design Model và validation boundary
 
-Khi nhiều thành phần cần hiểu cùng một thiết kế, dùng chung mô hình trung gian giảm nhu cầu dịch và đồng bộ các biểu diễn song song. Tác giả chọn đặt thiết kế tại một ranh giới công cụ có validation, tái sử dụng cấu trúc phần tử và quan hệ sẵn có cho nhiều loại sản phẩm. Nhờ đó Planner và renderer trao đổi bằng blueprint xác định, thay vì phụ thuộc việc diễn giải văn bản tự do.
+Khi nhiều thành phần cần hiểu cùng một thiết kế, **dùng chung mô hình trung gian giảm nhu cầu dịch và đồng bộ** các biểu diễn song song. Tác giả chọn **đặt thiết kế tại một ranh giới công cụ có validation**, **tái sử dụng cấu trúc phần tử và quan hệ** sẵn có cho nhiều loại sản phẩm. Nhờ đó **Planner và renderer trao đổi bằng blueprint xác định**, thay vì phụ thuộc việc diễn giải văn bản tự do.
 
-Đánh đổi là mô hình dùng chung phải chứa nhiều trường chỉ phù hợp một số loại phần tử, nên kiểm tra cấu trúc chưa đủ kiểm tra ngữ nghĩa từng loại. Schema phân loại chặt hơn giúp siết ràng buộc nhưng tăng migration/test; mô hình riêng cho deck làm trách nhiệm rõ hơn nhưng cần lớp chuyển đổi. Checks xác nhận validation/round-trip trong fixture, chưa xác nhận mọi ràng buộc nội dung hoặc liên kết đều được cưỡng chế.
+**Đánh đổi** là **mô hình dùng chung phải chứa nhiều trường chỉ phù hợp một số loại phần tử**, nên **kiểm tra cấu trúc chưa đủ kiểm tra ngữ nghĩa** từng loại. **Schema phân loại chặt hơn giúp siết ràng buộc** nhưng **tăng migration/test**; **mô hình riêng cho deck làm trách nhiệm rõ hơn** nhưng **cần lớp chuyển đổi**. **Checks xác nhận validation/round-trip trong fixture**, **chưa xác nhận mọi ràng buộc nội dung hoặc liên kết đều được cưỡng chế**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Bối cảnh**
 
-Model cần mô tả nhiều loại artifact bằng dữ liệu mà tools và renderer hiểu được.
+**Model cần mô tả nhiều loại artifact** bằng **dữ liệu mà tools và renderer hiểu được**.
 
 **Lựa chọn hiện tại**
 
-Gửi `DesignSpec` qua tool call, validate bằng Pydantic và thêm `kind="slide"` vào cây `LayerNode` dùng chung.
+**Gửi `DesignSpec` qua tool call**, **validate bằng Pydantic** và **thêm `kind="slide"` vào cây `LayerNode` dùng chung**.
 
 **Lý do lựa chọn**
 
-Tác giả muốn tái sử dụng bbox, children, z-index và hydration; tool boundary giúp validation/trace rõ hơn parse JSON từ prose.
+Tác giả muốn **tái sử dụng bbox, children, z-index và hydration**; **tool boundary giúp validation/trace rõ hơn** parse JSON từ prose.
 
 **Lợi ích**
 
-- Giảm model và plumbing song song cần đồng bộ.
-- Cùng representation có thể được nhiều renderer tiêu thụ.
+- **Giảm model và plumbing song song** cần đồng bộ.
+- **Cùng representation có thể được nhiều renderer tiêu thụ**.
 
 **Hạn chế**
 
-- Nhiều optional fields làm yếu invariants theo từng kind.
-- Spec qua validation chưa đồng nghĩa design đúng về nội dung và bố cục.
+- **Nhiều optional fields làm yếu invariants** theo từng kind.
+- **Spec qua validation chưa đồng nghĩa design đúng** về nội dung và bố cục.
 
 **Phương án thay thế**
 
-Discriminated union giúp kiểm tra từng kind chặt hơn nhưng tăng migration/test. Deck model riêng tách rõ slide semantics nhưng cần adapters.
+**Discriminated union giúp kiểm tra từng kind chặt hơn** nhưng **tăng migration/test**. **Deck model riêng tách rõ slide semantics** nhưng **cần adapters**.
 
 **Đánh giá từ bằng chứng**
 
-Source và checks xác nhận structural validation/round-trip. Chưa có bằng chứng schema hiện tại cưỡng chế đầy đủ semantic invariants.
+**Source và checks xác nhận structural validation/round-trip**. **Chưa có bằng chứng schema hiện tại cưỡng chế đầy đủ semantic invariants**.
 
 </details>
 
@@ -1291,33 +1291,33 @@ Source và checks xác nhận structural validation/round-trip. Chưa có bằng
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Người dùng cần sửa nội dung và dữ liệu sau khi export.
+**Người dùng cần sửa nội dung và dữ liệu sau khi export**.
 
 **Mechanism — Phương án được lựa chọn**
 
-Dùng native text/table shapes trong PowerPoint; illustration vẫn là raster picture.
+**Dùng native text/table shapes** trong PowerPoint; **illustration vẫn là raster picture**.
 
 **Lý do lựa chọn**
 
-Tác giả ghi nhận bảng crop từ paper khó đọc và khó chỉnh; structured table cho phép render native ở nhiều format.
+Tác giả ghi nhận **bảng crop từ paper khó đọc và khó chỉnh**; **structured table cho phép render native** ở nhiều format.
 
 **Lợi ích**
 
-- Text runs và table cells còn sửa được.
-- Có thể kiểm tra một phần cấu trúc bằng cách mở lại PPTX.
+- **Text runs và table cells còn sửa được**.
+- Có thể **kiểm tra một phần cấu trúc bằng cách mở lại PPTX**.
 
 **Hạn chế**
 
-- Phải quản lý mapping font, textbox, image/table placement và OOXML compatibility.
-- Native text/table chưa làm cho mọi chart hoặc figure trong ảnh trở thành vector.
+- **Phải quản lý mapping font, textbox, image/table placement và OOXML compatibility**.
+- **Native text/table chưa làm cho mọi chart hoặc figure trong ảnh trở thành vector**.
 
 **Phương án thay thế**
 
-Raster-only deck đơn giản và giữ hình ảnh ổn định hơn nhưng khó sửa text/bảng. HTML-to-slide tận dụng CSS nhưng cần giải quyết tương đương khi sang PPTX.
+**Raster-only deck đơn giản và giữ hình ảnh ổn định hơn** nhưng **khó sửa text/bảng**. **HTML-to-slide tận dụng CSS** nhưng **cần giải quyết tương đương khi sang PPTX**.
 
 **Đánh giá từ bằng chứng**
 
-Artifact local mở lại được với text shapes và native table. Chưa có benchmark để kết luận hướng nào luôn tạo slide đẹp hơn.
+**Artifact local mở lại được với text shapes và native table**. **Chưa có benchmark để kết luận hướng nào luôn tạo slide đẹp hơn**.
 
 **Implementation Evidence**
 
@@ -1328,42 +1328,42 @@ Artifact local mở lại được với text shapes và native table. Chưa có
 
 ### 3.4. Template, archetype và tự do bố cục
 
-Bối cảnh thiết kế là model có thể tự chọn bố cục thiếu nhất quán hoặc quá dày. Cơ chế hiện có kết hợp khuôn mẫu, mẫu bố cục chuyên biệt và vị trí tự do khi không có mẫu phù hợp. Nhận định nghiên cứu: giới hạn một phần không gian lựa chọn có thể giữ phong cách và tái sử dụng quy tắc layout; chưa phải lợi ích đã được benchmark hoặc rationale tác giả xác nhận cho mọi nhánh.
+Bối cảnh thiết kế là **model có thể tự chọn bố cục thiếu nhất quán hoặc quá dày**. Cơ chế hiện có **kết hợp khuôn mẫu, mẫu bố cục chuyên biệt và vị trí tự do** khi không có mẫu phù hợp. Nhận định nghiên cứu: **giới hạn một phần không gian lựa chọn có thể giữ phong cách và tái sử dụng quy tắc layout**; **chưa phải lợi ích đã được benchmark** hoặc rationale tác giả xác nhận cho mọi nhánh.
 
-Chỉ dùng template tăng tính nhất quán nhưng giảm biểu đạt; tọa độ tự do tăng linh hoạt nhưng dễ phát sinh lỗi hình học; constraint solver cần mô hình ràng buộc và công tích hợp. Implementation hiện chỉ hỗ trợ một phần các archetype, và preview có thể khác bản native. Fixtures xác nhận chọn nhánh/fallback và tính lặp lại với cùng input; chưa đo cải thiện chất lượng, latency hoặc chi phí model.
+**Chỉ dùng template tăng tính nhất quán nhưng giảm biểu đạt**; **tọa độ tự do tăng linh hoạt nhưng dễ phát sinh lỗi hình học**; **constraint solver cần mô hình ràng buộc và công tích hợp**. Implementation hiện **chỉ hỗ trợ một phần các archetype**, và **preview có thể khác bản native**. **Fixtures xác nhận chọn nhánh/fallback và tính lặp lại** với cùng input; **chưa đo cải thiện chất lượng, latency hoặc chi phí model**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Bối cảnh**
 
-Model có thể tạo bố cục thiếu nhất quán hoặc quá dày khi tự quyết mọi geometry.
+**Model có thể tạo bố cục thiếu nhất quán hoặc quá dày** khi tự quyết mọi geometry.
 
 **Lựa chọn hiện tại**
 
-Cung cấp template theo role/slot và các hàm archetype Python; giữ bbox fallback.
+**Cung cấp template theo role/slot** và **các hàm archetype Python**; **giữ bbox fallback**.
 
 **Lý do lựa chọn**
 
-Nhận định từ implementation: giảm bậc tự do có thể giúp chọn layout và giữ phong cách ổn định hơn. Đây là suy luận nghiên cứu, chưa phải rationale tác giả xác nhận cho mọi nhánh.
+Nhận định từ implementation: **giảm bậc tự do có thể giúp chọn layout và giữ phong cách ổn định hơn**. Đây là **suy luận nghiên cứu**, **chưa phải rationale tác giả xác nhận** cho mọi nhánh.
 
 **Lợi ích**
 
-- Tái sử dụng quy tắc layout.
-- Local fixtures cho thấy fallback hoạt động và cùng input cho slide XML giống nhau.
+- **Tái sử dụng quy tắc layout**.
+- **Local fixtures cho thấy fallback hoạt động** và **cùng input cho slide XML giống nhau**.
 
 **Hạn chế**
 
-- Mới bốn archetype có renderer riêng; template path bỏ qua archetype.
-- Pillow preview chưa chạy cùng renderer native.
+- **Mới bốn archetype có renderer riêng**; **template path bỏ qua archetype**.
+- **Pillow preview chưa chạy cùng renderer native**.
 
 **Phương án thay thế**
 
-BBox tự do tăng độ linh hoạt nhưng tăng lỗi geometry. Template-only tăng tính nhất quán nhưng hạn chế biểu đạt. Constraint solver cần mô hình constraints và thêm chi phí kỹ thuật.
+**BBox tự do tăng độ linh hoạt nhưng tăng lỗi geometry**. **Template-only tăng tính nhất quán nhưng hạn chế biểu đạt**. **Constraint solver cần mô hình constraints và thêm chi phí kỹ thuật**.
 
 **Đánh giá từ bằng chứng**
 
-Bằng chứng hiện có xác nhận cơ chế dispatch/determinism trong fixture, chưa xác nhận mức cải thiện chất lượng hoặc chi phí trên benchmark.
+Bằng chứng hiện có **xác nhận cơ chế dispatch/determinism trong fixture**, **chưa xác nhận mức cải thiện chất lượng hoặc chi phí** trên benchmark.
 
 </details>
 
@@ -1378,34 +1378,34 @@ Bằng chứng hiện có xác nhận cơ chế dispatch/determinism trong fixtu
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Cần đánh giá slide và đối chiếu paper mà không nhồi mọi ảnh/tài liệu vào mỗi lượt planner.
+Cần **đánh giá slide và đối chiếu paper** mà **không nhồi mọi ảnh/tài liệu vào mỗi lượt planner**.
 
 **Mechanism — Phương án được lựa chọn**
 
-Critic có backend, turn budget, công cụ đọc dữ liệu theo nhu cầu và trajectory riêng; planner gọi đồng bộ qua wrapper.
+**Critic có backend, turn budget, công cụ đọc dữ liệu theo nhu cầu và trajectory riêng**; **planner gọi đồng bộ qua wrapper**.
 
 **Lý do lựa chọn**
 
-Tác giả ghi rõ critic cũ hạn chế vision cho deck/landing và cần cơ chế điều phối riêng.
+Tác giả ghi rõ **critic cũ hạn chế vision cho deck/landing** và **cần cơ chế điều phối riêng**.
 
 **Lợi ích**
 
-- Tách context, prompt và trace đánh giá.
-- Budget ảnh và fail-safe giúp giới hạn một phần vòng đánh giá.
+- **Tách context, prompt và trace đánh giá**.
+- **Budget ảnh và fail-safe giúp giới hạn một phần vòng đánh giá**.
 
 **Hạn chế**
 
-- Tăng model calls và thời gian chờ; score/verdict policy chưa được code cưỡng chế đầy đủ.
-- Ảnh đánh giá là approximation; chưa bắt đọc đủ mọi slide.
-- Fail-safe có thể mã hóa lỗi môi trường thành quality score.
+- **Tăng model calls và thời gian chờ**; **score/verdict policy chưa được code cưỡng chế đầy đủ**.
+- **Ảnh đánh giá là approximation**; **chưa bắt đọc đủ mọi slide**.
+- **Fail-safe có thể mã hóa lỗi môi trường thành quality score**.
 
 **Phương án thay thế**
 
-Chỉ dùng local checks giảm model cost nhưng bỏ sót narrative/semantic issues. Critic inline ít orchestration hơn nhưng làm context planner lớn hơn. Human review tăng chi phí và thời gian.
+**Chỉ dùng local checks giảm model cost** nhưng **bỏ sót narrative/semantic issues**. **Critic inline ít orchestration hơn** nhưng **làm context planner lớn hơn**. **Human review tăng chi phí và thời gian**.
 
 **Đánh giá từ bằng chứng**
 
-Mock checks xác nhận image cap và fail-safe. Prompt critic fail khi score < 0,5, trong khi planner cho phép cứu một lần khi fail với score ≥ 0,25 rồi bỏ critique lần hai; bản sửa cuối có thể chưa được chấm lại.
+**Mock checks xác nhận image cap và fail-safe**. **Prompt critic fail khi score < 0,5**, trong khi **planner cho phép cứu một lần** khi fail với score ≥ 0,25 rồi **bỏ critique lần hai**; **bản sửa cuối có thể chưa được chấm lại**.
 
 **Implementation Evidence**
 
@@ -1425,33 +1425,33 @@ Mock checks xác nhận image cap và fail-safe. Prompt critic fail khi score < 
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Model có thể sinh số liệu không có trong paper hoặc để placeholder trong output.
+**Model có thể sinh số liệu không có trong paper** hoặc **để placeholder trong output**.
 
 **Mechanism — Phương án được lựa chọn**
 
-Dùng provenance validator, strict mutation và các detector/sanitizer local trong compositor.
+Dùng **provenance validator, strict mutation và các detector/sanitizer local** trong compositor.
 
 **Lý do lựa chọn**
 
-Source provenance ghi nhận dogfood của tác giả có số liệu bịa; prompt-only chưa đủ để chặn lỗi.
+Source provenance ghi nhận **dogfood của tác giả có số liệu bịa**; **prompt-only chưa đủ để chặn lỗi**.
 
 **Lợi ích**
 
-- Phản hồi cụ thể, có thể tái lập.
-- Rule local không cần thêm model round-trip trực tiếp.
+- **Phản hồi cụ thể, có thể tái lập**.
+- **Rule local không cần thêm model round-trip** trực tiếp.
 
 **Hạn chế**
 
-- Regex/substring chỉ kiểm tra phạm vi hẹp; có thể bỏ sót hoặc cảnh báo sai.
-- Thay số bằng `[?]` giữ dấu vết nhưng vẫn để lại deck chưa sẵn sàng trình bày.
+- **Regex/substring chỉ kiểm tra phạm vi hẹp**; **có thể bỏ sót hoặc cảnh báo sai**.
+- **Thay số bằng `[?]` giữ dấu vết** nhưng **vẫn để lại deck chưa sẵn sàng trình bày**.
 
 **Phương án thay thế**
 
-Hard reject export ngăn xuất số chưa xác minh nhưng có thể không trả được artifact. Source-span grounding và đối chiếu số/đơn vị mạnh hơn nhưng tăng công tích hợp.
+**Hard reject export ngăn xuất số chưa xác minh** nhưng **có thể không trả được artifact**. **Source-span grounding và đối chiếu số/đơn vị mạnh hơn** nhưng **tăng công tích hợp**.
 
 **Đánh giá từ bằng chứng**
 
-Probe quote thật nhưng số sai phản bác bảo đảm grounding đầy đủ. Ghi nhận dogfood upstream chưa được tái lập trên tập paper lớn trong nghiên cứu này.
+**Probe quote thật nhưng số sai** **phản bác bảo đảm grounding đầy đủ**. Ghi nhận dogfood upstream **chưa được tái lập trên tập paper lớn** trong nghiên cứu này.
 
 **Implementation Evidence**
 
@@ -1465,33 +1465,33 @@ Probe quote thật nhưng số sai phản bác bảo đảm grounding đầy đ�
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Cần giữ trajectory độc lập, đồng thời hiểu yêu cầu ngắn như tăng cỡ tiêu đề.
+Cần **giữ trajectory độc lập**, đồng thời **hiểu yêu cầu ngắn** như tăng cỡ tiêu đề.
 
 **Mechanism — Phương án được lựa chọn**
 
-Mỗi run có context mới; chat đưa spec gần nhất vào brief.
+**Mỗi run có context mới**; **chat đưa spec gần nhất vào brief**.
 
 **Lý do lựa chọn**
 
-Tác giả ghi nhận metadata-only context khiến planner quay về ví dụ few-shot sai chủ đề, nên đổi sang full-spec injection.
+Tác giả ghi nhận **metadata-only context khiến planner quay về ví dụ few-shot sai chủ đề**, nên **đổi sang full-spec injection**.
 
 **Lợi ích**
 
-- Isolation giữa runs rõ ràng.
-- Model có baseline nội dung cụ thể khi sửa.
+- **Isolation giữa runs rõ ràng**.
+- **Model có baseline nội dung cụ thể khi sửa**.
 
 **Hạn chế**
 
-- Tăng input tokens; có thể phải dựng hoặc sinh lại tài nguyên.
-- Chưa có persistent patch path cho sửa nhỏ và chưa phục hồi mọi asset chỉ bằng prior spec.
+- **Tăng input tokens**; **có thể phải dựng hoặc sinh lại tài nguyên**.
+- **Chưa có persistent patch path cho sửa nhỏ** và **chưa phục hồi mọi asset chỉ bằng prior spec**.
 
 **Phương án thay thế**
 
-Persistent document/session model giữ asset IDs và giảm tái dựng, nhưng cần thiết kế ownership, revision concurrency, undo và checkpoint.
+**Persistent document/session model giữ asset IDs và giảm tái dựng**, nhưng **cần thiết kế ownership, revision concurrency, undo và checkpoint**.
 
 **Đánh giá từ bằng chứng**
 
-Source khớp lựa chọn isolation/injection. Không suy từ context hội thoại ra các bảo đảm của persistent editor.
+**Source khớp lựa chọn isolation/injection**. **Không suy từ context hội thoại ra các bảo đảm của persistent editor**.
 
 **Implementation Evidence**
 
@@ -1504,43 +1504,43 @@ Source khớp lựa chọn isolation/injection. Không suy từ context hội th
 
 ### 3.8. Tách trajectory, versioned artifacts và persistence
 
-Quyết định của agent và sản phẩm thiết kế phục vụ hai mục đích lưu trữ khác nhau: trajectory hỗ trợ truy vết/huấn luyện, artifact hỗ trợ sử dụng và đối chiếu bản sửa. Tác giả tách hai đường dữ liệu, giảm thông tin lặp hoặc gợi ý có thể tạo shortcut learning trong trace, đồng thời giữ phiên bản trung gian và dấu vết nội dung cho so sánh hoặc preference pairs.
+Quyết định của agent và sản phẩm thiết kế **phục vụ hai mục đích lưu trữ khác nhau**: **trajectory hỗ trợ truy vết/huấn luyện**, **artifact hỗ trợ sử dụng và đối chiếu bản sửa**. Tác giả **tách hai đường dữ liệu**, **giảm thông tin lặp hoặc gợi ý có thể tạo shortcut learning** trong trace, đồng thời **giữ phiên bản trung gian và dấu vết nội dung** cho so sánh hoặc preference pairs.
 
-Đổi lại là thêm storage, chính sách retention và trách nhiệm duy trì liên kết giữa trace với artifact. Trace chưa tự phục hồi toàn bộ thực thi; thu gọn schema chưa đồng nghĩa loại mọi đường dẫn/diagnostic khỏi dữ liệu. Cơ chế trỏ tới output mới nhất còn phụ thuộc quyền symlink Windows và chưa cập nhật nguyên tử cả tập file. Stable copies portable hơn nhưng tốn IO; manifest pointer tránh phụ thuộc symlink nhưng yêu cầu consumer hiểu manifest. Đây là đánh đổi persistence, chưa phải bảo đảm bản sửa mới có chất lượng tốt hơn.
+Đổi lại là **thêm storage, chính sách retention và trách nhiệm duy trì liên kết** giữa trace với artifact. **Trace chưa tự phục hồi toàn bộ thực thi**; **thu gọn schema chưa đồng nghĩa loại mọi đường dẫn/diagnostic** khỏi dữ liệu. **Cơ chế trỏ tới output mới nhất còn phụ thuộc quyền symlink Windows** và **chưa cập nhật nguyên tử cả tập file**. **Stable copies portable hơn nhưng tốn IO**; **manifest pointer tránh phụ thuộc symlink** nhưng **yêu cầu consumer hiểu manifest**. Đây là **đánh đổi persistence**, **chưa phải bảo đảm bản sửa mới có chất lượng tốt hơn**.
 
 <details>
 <summary>Technical Details — Hồ sơ triển khai và edge cases</summary>
 
 **Bối cảnh**
 
-Trace phục vụ model learning, còn artifact phục vụ sản phẩm và so sánh trước–sau.
+**Trace phục vụ model learning**, còn **artifact phục vụ sản phẩm và so sánh trước–sau**.
 
 **Lựa chọn hiện tại**
 
-Dùng `DistillTrajectory` v2; bỏ một số top-level product fields/hints; lưu artifact theo versions và trả hash/relative path.
+Dùng **`DistillTrajectory` v2**; **bỏ một số top-level product fields/hints**; **lưu artifact theo versions** và **trả hash/relative path**.
 
 **Lý do lựa chọn**
 
-Tác giả muốn giảm dữ liệu lặp, hạn chế shortcut learning từ `next_actions` và giữ intermediate previews cho training pairs.
+Tác giả muốn **giảm dữ liệu lặp**, **hạn chế shortcut learning** từ `next_actions` và **giữ intermediate previews cho training pairs**.
 
 **Lợi ích**
 
-- Hash/version giúp đối chiếu các lần sửa.
-- Artifact cũ vẫn còn để kiểm tra hoặc tạo preference pairs.
+- **Hash/version giúp đối chiếu các lần sửa**.
+- **Artifact cũ vẫn còn** để kiểm tra hoặc tạo preference pairs.
 
 **Hạn chế**
 
-- Cần giữ file và quản lý retention/storage; trace chưa tự khôi phục model/API response.
-- Paths/diagnostic text vẫn có thể xuất hiện trong brief, arguments, error messages hoặc payload.
-- Final symlink cần quyền phù hợp trên Windows; unlink rồi tạo lại chưa là transaction nguyên tử cho toàn bộ output set.
+- **Cần giữ file và quản lý retention/storage**; **trace chưa tự khôi phục model/API response**.
+- **Paths/diagnostic text vẫn có thể xuất hiện** trong brief, arguments, error messages hoặc payload.
+- **Final symlink cần quyền phù hợp trên Windows**; **unlink rồi tạo lại chưa là transaction nguyên tử** cho toàn bộ output set.
 
 **Phương án thay thế**
 
-Stable copies tránh phụ thuộc symlink nhưng tăng IO. Manifest pointer portable hơn nhưng yêu cầu consumer hiểu manifest.
+**Stable copies tránh phụ thuộc symlink nhưng tăng IO**. **Manifest pointer portable hơn** nhưng **yêu cầu consumer hiểu manifest**.
 
 **Đánh giá từ bằng chứng**
 
-Source xác nhận schema v2 và versioned writes. Lỗi Windows ở mục 2.8 là bằng chứng thực thi cho giới hạn symlink; mục tiêu lean payload chưa phải sanitizer toàn bộ fields.
+**Source xác nhận schema v2 và versioned writes**. **Lỗi Windows ở mục 2.8** là **bằng chứng thực thi cho giới hạn symlink**; **mục tiêu lean payload chưa phải sanitizer toàn bộ fields**.
 
 </details>
 
@@ -1557,33 +1557,33 @@ Source xác nhận schema v2 và versioned writes. Lỗi Windows ở mục 2.8 l
 
 **Concept — Bối cảnh và mục tiêu kiến trúc**
 
-Planner, critic, enhancer và image generation cần năng lực khác nhau; model/endpoint có thể thay đổi.
+**Planner, critic, enhancer và image generation cần năng lực khác nhau**; **model/endpoint có thể thay đổi**.
 
 **Mechanism — Phương án được lựa chọn**
 
-Dùng backend abstraction nhỏ để đổi model/provider theo settings.
+Dùng **backend abstraction nhỏ** để **đổi model/provider theo settings**.
 
 **Lý do lựa chọn**
 
-Tác giả chọn tránh nhân đôi planner và tránh thêm framework lớn chỉ để xử lý khác biệt giao thức.
+Tác giả chọn **tránh nhân đôi planner** và **tránh thêm framework lớn** chỉ để xử lý khác biệt giao thức.
 
 **Lợi ích**
 
-- Giảm coupling giữa orchestration và provider.
-- Có thể chọn model riêng cho từng role và image fallback theo loại lỗi.
+- **Giảm coupling giữa orchestration và provider**.
+- **Có thể chọn model riêng cho từng role** và **image fallback theo loại lỗi**.
 
 **Hạn chế**
 
-- Tăng compatibility matrix cho reasoning, tool calls, vision, retry và usage.
-- Cùng giao thức chưa đồng nghĩa cùng chất lượng, latency hoặc khả năng tuân thủ workflow.
+- **Tăng compatibility matrix** cho reasoning, tool calls, vision, retry và usage.
+- **Cùng giao thức chưa đồng nghĩa cùng chất lượng, latency** hoặc khả năng tuân thủ workflow.
 
 **Phương án thay thế**
 
-Một provider giảm test matrix nhưng tăng phụ thuộc. Gateway/framework chung giảm adapter code nhưng vẫn cần kiểm chứng semantics.
+**Một provider giảm test matrix nhưng tăng phụ thuộc**. **Gateway/framework chung giảm adapter code** nhưng **vẫn cần kiểm chứng semantics**.
 
 **Đánh giá từ bằng chứng**
 
-Smoke mock xác nhận protocol nội bộ ở fixture; chưa xác nhận endpoint thật hoặc mức tiết kiệm khi giữ cùng chất lượng.
+**Smoke mock xác nhận protocol nội bộ ở fixture**; **chưa xác nhận endpoint thật** hoặc **mức tiết kiệm khi giữ cùng chất lượng**.
 
 **Implementation Evidence**
 
@@ -1595,7 +1595,7 @@ Smoke mock xác nhận protocol nội bộ ở fixture; chưa xác nhận endpoi
 
 ### 3.10. Ma trận tác động kiến trúc
 
-Hai bảng sau là đánh giá định tính dựa trên implementation. Chưa có benchmark để gán mức tăng/giảm latency hoặc chi phí cụ thể.
+Hai bảng sau là **đánh giá định tính dựa trên implementation**. **Chưa có benchmark để gán mức tăng/giảm latency hoặc chi phí cụ thể**.
 
 **Chất lượng, độ tin cậy và bảo trì**
 
@@ -1625,7 +1625,7 @@ Hai bảng sau là đánh giá định tính dựa trên implementation. Chưa c
 | Versioned artifact + final symlink | Thêm IO/hash; chưa có timing | Không thêm model call; tăng storage thay vì model cost |
 | Multi-provider | Khác nhau theo model/route; chưa đo | Có quyền lựa chọn, không chứng minh model rẻ hơn đạt cùng chất lượng |
 
-Chi phí tăng ở đây chỉ ra khả năng thêm request/context tính phí; chưa phải mức tiền đã được đo.
+**Chi phí tăng** ở đây chỉ ra **khả năng thêm request/context tính phí**; **chưa phải mức tiền đã được đo**.
 
 **Implementation Evidence**
 
@@ -1651,15 +1651,15 @@ Chi phí tăng ở đây chỉ ra khả năng thêm request/context tính phí; 
 
 **Chất lượng thiết kế**
 
-- Source và tests xác nhận có native text/table, layout rules và visual feedback.
-- Chưa có đánh giá bằng PowerPoint render hoặc human benchmark để kết luận output luôn đẹp, đúng layout hay tốt hơn một kiến trúc khác.
-- Score critic phản ánh đánh giá của model; probe cho thấy code chưa cưỡng chế đầy đủ quality gate.
+- **Source và tests xác nhận** có native text/table, layout rules và visual feedback.
+- **Chưa có đánh giá bằng PowerPoint render hoặc human benchmark** để kết luận output luôn đẹp, đúng layout hay tốt hơn một kiến trúc khác.
+- **Score critic phản ánh đánh giá của model**; probe cho thấy **code chưa cưỡng chế đầy đủ quality gate**.
 
 **Chi phí sử dụng model**
 
-- `_estimate_cost` dùng token planner, token enhancer và các constants cho image/critique.
-- Công thức chưa tổng hợp đầy đủ mọi image call, từng lượt critic, claim extractor, ingest, composer hoặc rate của từng provider.
-- `estimated_cost_usd` là heuristic của implementation. Chưa thể dùng nó như hóa đơn hoặc benchmark so sánh kiến trúc; constants cũng chưa phải bảng giá hiện hành được xác minh.
+- `_estimate_cost` **dùng token planner, token enhancer và các constants** cho image/critique.
+- **Công thức chưa tổng hợp đầy đủ** mọi image call, từng lượt critic, claim extractor, ingest, composer hoặc rate của từng provider.
+- `estimated_cost_usd` là **heuristic của implementation**. **Chưa thể dùng nó như hóa đơn hoặc benchmark** so sánh kiến trúc; **constants cũng chưa phải bảng giá hiện hành** được xác minh.
 
 **Số liệu do upstream ghi nhận**
 
@@ -1668,17 +1668,17 @@ Chi phí tăng ở đây chỉ ra khả năng thêm request/context tính phí; 
 | Một deck Claude đạt critic 0,88; 33 steps; estimated cost $9,45 | Là dogfood cũ của tác giả, chưa tái lập trong nghiên cứu này |
 | Một số lượt Kimi trước đó dừng ở max_turns | Cho thấy đổi model có thể đổi hành vi; chưa đủ để xếp hạng model |
 
-Các lượt này khác thời điểm/prompt và chưa phải so sánh lặp trên benchmark khóa chặt. Chúng cung cấp bối cảnh thiết kế, chưa chứng minh một model hoặc kiến trúc đạt cùng chất lượng với chi phí thấp hơn.
+Các lượt này **khác thời điểm/prompt** và **chưa phải so sánh lặp trên benchmark khóa chặt**. Chúng **cung cấp bối cảnh thiết kế**, **chưa chứng minh** một model hoặc kiến trúc đạt cùng chất lượng với chi phí thấp hơn.
 
 **Kết luận được phép từ evidence hiện có**
 
-- Pydantic hỗ trợ structural validation; semantic invariants còn giới hạn.
-- Claim graph tồn tại trong context và được critic nhận; đường truyền graph vào request planner còn khoảng trống.
-- Evidence quote kiểm tra được sự tồn tại; chưa đủ xác minh toàn bộ claim.
-- Versioning giữ lịch sử artifact; chưa bảo đảm bản sửa chỉ thay phần được yêu cầu.
-- Log `composite.deck.done` cần được đọc cùng tool result và lỗi sau đó.
+- **Pydantic hỗ trợ structural validation**; **semantic invariants còn giới hạn**.
+- **Claim graph tồn tại trong context và được critic nhận**; **đường truyền graph vào request planner còn khoảng trống**.
+- **Evidence quote kiểm tra được sự tồn tại**; **chưa đủ xác minh toàn bộ claim**.
+- **Versioning giữ lịch sử artifact**; **chưa bảo đảm bản sửa chỉ thay phần được yêu cầu**.
+- **Log `composite.deck.done` cần được đọc cùng tool result** và lỗi sau đó.
 
-Chi tiết thực nghiệm cho các nhận định này được tập trung ở mục 2.8.
+**Chi tiết thực nghiệm** cho các nhận định này được **tập trung ở mục 2.8**.
 
 **Implementation Evidence**
 
@@ -1700,7 +1700,7 @@ Chi tiết thực nghiệm cho các nhận định này được tập trung ở
 
 ### 3.12. Đề xuất cải tiến theo ưu tiên
 
-Các đề xuất dưới đây chưa được triển khai trong task nghiên cứu và chưa phải quyết định kiến trúc của DeckAgent.
+Các đề xuất dưới đây **chưa được triển khai** trong task nghiên cứu và **chưa phải quyết định kiến trúc của DeckAgent**.
 
 **P0 — Độ đúng của dữ liệu và đánh giá**
 
@@ -1745,13 +1745,13 @@ Các đề xuất dưới đây chưa được triển khai trong task nghiên c
 
 ### 3.13. Các câu hỏi cần thực nghiệm tiếp
 
-Các câu hỏi sau chuyển những khoảng trống đã nhận diện thành hướng đánh giá kiến trúc. Chúng xác định điều cần đo trước khi lựa chọn hoặc mở rộng giải pháp, không phải lợi ích đã được xác nhận.
+Các câu hỏi sau **chuyển những khoảng trống đã nhận diện thành hướng đánh giá kiến trúc**. Chúng **xác định điều cần đo** trước khi lựa chọn hoặc mở rộng giải pháp, **không phải lợi ích đã được xác nhận**.
 
 1. Critic có phát hiện lỗi **trong native PPTX** tốt hơn khi dùng engine render thật thay vì Pillow không? Đo precision/recall trên tập lỗi font, overflow, callout và template.
-2. Revision tăng điểm chuyên gia và factual correctness bao nhiêu so với bản đầu? Theo dõi mỗi iteration, giữ cả trường hợp regression, không chỉ bản pass.
-3. Enhancer và claim graph có cải thiện story coverage đủ để bù token/latency? Ablation riêng từng bước, trước hết sửa đường truyền graph.
-4. Template/archetype nào phù hợp nội dung nào? Đo quá tải chữ, giữ evidence, đa dạng layout và mức công sửa thủ công.
-5. Khi đổi provider/model, cùng một request có giữ tỷ lệ thành công và chi phí trong ngân sách không? Đo toàn bộ actor/image calls và phân bố nhiều run, không chỉ trung bình một run thành công.
+2. **Revision tăng điểm chuyên gia và factual correctness bao nhiêu** so với bản đầu? **Theo dõi mỗi iteration**, **giữ cả trường hợp regression**, không chỉ bản pass.
+3. **Enhancer và claim graph có cải thiện story coverage đủ để bù token/latency?** **Ablation riêng từng bước**, trước hết **sửa đường truyền graph**.
+4. **Template/archetype nào phù hợp nội dung nào?** Đo **quá tải chữ, giữ evidence, đa dạng layout và mức công sửa thủ công**.
+5. **Khi đổi provider/model**, cùng một request **có giữ tỷ lệ thành công và chi phí trong ngân sách không**? **Đo toàn bộ actor/image calls** và **phân bố nhiều run**, không chỉ trung bình một run thành công.
 
 **Implementation Evidence**
 
@@ -1784,7 +1784,7 @@ Các câu hỏi sau chuyển những khoảng trống đã nhận diện thành 
 
 ### 5.1. Checkout và môi trường kiểm chứng
 
-Thực hiện ngoài checkout DeckAgent, trong một thư mục nghiên cứu riêng. Các lệnh dưới đây không gọi API model; chạy CLI `open-design run` thật sẽ là thí nghiệm khác cần credential và ghi nhận chi phí riêng.
+**Thực hiện ngoài checkout DeckAgent**, trong **một thư mục nghiên cứu riêng**. Các lệnh dưới đây **không gọi API model**; **chạy CLI `open-design run` thật** sẽ là **thí nghiệm khác cần credential và ghi nhận chi phí riêng**.
 
 ```powershell
 git clone https://github.com/EthanGuo2022/OpenDesign.git OpenDesign-research
@@ -1796,11 +1796,11 @@ python -m venv .venv
 $env:PYTHONUTF8 = '1'
 ```
 
-Để so sánh với kết quả trong báo cáo, dùng Python 3.13.5 và lưu danh sách dependency thực tế. Ba package chính ở lần nghiên cứu này là `pydantic==2.14.1`, `python-pptx==1.0.2`, `Pillow==13.0.0`. Lệnh cài editable trên không khóa toàn bộ dependency; nếu dùng `uv sync --frozen` theo lockfile upstream thì phải ghi nhận đó là một môi trường khác. Git trên Windows có thể yêu cầu xác nhận ownership thư mục; nghiên cứu chỉ dùng exception `safe.directory` cho lệnh trên đường dẫn clone cụ thể, không sửa cấu hình global.
+Để so sánh với kết quả trong báo cáo, **dùng Python 3.13.5** và **lưu danh sách dependency thực tế**. Ba package chính ở lần nghiên cứu này là `pydantic==2.14.1`, `python-pptx==1.0.2`, `Pillow==13.0.0`. **Lệnh cài editable trên không khóa toàn bộ dependency**; nếu dùng `uv sync --frozen` theo lockfile upstream thì **phải ghi nhận đó là một môi trường khác**. Git trên Windows có thể yêu cầu xác nhận ownership thư mục; nghiên cứu **chỉ dùng exception `safe.directory`** cho lệnh trên đường dẫn clone cụ thể, **không sửa cấu hình global**.
 
 ### 5.2. Tái chạy 20 focused checks
 
-Lưu code sau thành `research_checks.py` trong checkout nghiên cứu rồi chạy bằng Python của venv. Script thu thập mọi lỗi, in kết quả, và trả exit code khác 0 nếu có check thất bại. Lần nghiên cứu gốc dùng cùng danh sách hàm qua `python -c`, thu được 15 pass/5 lỗi như mục 2.8.
+**Lưu code sau thành `research_checks.py`** trong checkout nghiên cứu rồi **chạy bằng Python của venv**. Script **thu thập mọi lỗi**, **in kết quả**, và **trả exit code khác 0** nếu có check thất bại. Lần nghiên cứu gốc dùng cùng danh sách hàm qua `python -c`, **thu được 15 pass/5 lỗi** như mục 2.8.
 
 ```python
 from open_design import smoke
@@ -1832,7 +1832,7 @@ raise SystemExit(1 if failures else 0)
 
 ### 5.3. Tái lập năm probe ranh giới
 
-Lưu code sau thành `research_probes.py` trong checkout nghiên cứu, chạy bằng Python venv từ thư mục đó. Backend mock chỉ trả `end_turn`, không gọi API; ảnh chữ/PPTX được render thật bằng implementation. Chuỗi expected output ở mục 2.8 là kết quả của cùng năm thao tác này.
+**Lưu code sau thành `research_probes.py`** trong checkout nghiên cứu, chạy bằng Python venv từ thư mục đó. **Backend mock chỉ trả `end_turn`**, **không gọi API**; **ảnh chữ/PPTX được render thật** bằng implementation. Chuỗi expected output ở mục 2.8 là **kết quả của cùng năm thao tác này**.
 
 ```python
 import json
@@ -1930,30 +1930,30 @@ print("OUTCOME_WITHOUT_FINALIZE", _derive_episode_outcome(
 | Comment nói graph được planner tham chiếu | Handoff hiện tại chỉ đặt Python state; probe request không thấy graph | Đánh dấu khoảng trống tích hợp, không coi là feature hoàn chỉnh |
 | Design rationale nói lean payload không paths/hints | Arguments, brief và payload cụ thể còn có đường dẫn/diagnostic | Chỉ khẳng định field top-level nào bị bỏ và code thực sự trả gì |
 
-Decision records là bằng chứng về ý định và lịch sử; source và probe xác nhận implementation snapshot. Không chuyển rationale lịch sử thành quy tắc kiến trúc đã được DeckAgent phê duyệt.
+**Decision records là bằng chứng về ý định và lịch sử**; **source và probe xác nhận implementation snapshot**. **Không chuyển rationale lịch sử thành quy tắc kiến trúc** đã được DeckAgent phê duyệt.
 
 ### 5.5. Kiểm tra tài liệu và giới hạn trình bày
 
-Báo cáo gồm hồ sơ Markdown và bản HTML phục vụ review theo cùng ba phase; HTML đặt source references trong Implementation Evidence, tách khỏi phần giải thích kiến trúc. Diagram dùng cho phần kiến trúc được lấy từ chính OpenDesign tại commit chuẩn, lưu trong `diagrams/upstream/`:
+Báo cáo gồm **hồ sơ Markdown và bản HTML** phục vụ review theo cùng ba phase; HTML đặt source references trong Implementation Evidence, tách khỏi phần giải thích kiến trúc. **Diagram dùng cho phần kiến trúc được lấy từ chính OpenDesign** tại commit chuẩn, lưu trong `diagrams/upstream/`:
 
 - `agent_architecture.png`: 2.200 × 1.260 px, sao chép nguyên byte.
 - `rendering_pipeline.png`: 2.000 × 1.500 px, sao chép nguyên byte.
 - `paper2any_flow.png`: 2.000 × 1.100 px, sao chép nguyên byte.
-- `opendesign-pdf-flow.svg`: giữ nguyên source; bản PNG 3.800 × 3.000 px được chuyển bằng Chrome headless ở tỷ lệ 2×.
+- `opendesign-pdf-flow.svg`: **giữ nguyên source**; bản PNG 3.800 × 3.000 px được **chuyển bằng Chrome headless** ở tỷ lệ 2×.
 - `LICENSE`: nguyên bản giấy phép MIT của upstream.
 
-Các file sao chép được đối chiếu SHA-256 với Git blobs tại commit chuẩn; ba PNG được kiểm tra lại bằng so sánh byte với checkout đúng commit. Nội dung chữ, nhãn cũ và cả hạn chế bố cục của hình upstream được giữ nguyên. Phần giải thích tiếng Việt về từng khối, đường nối và các khác biệt với code nằm ở mục 1.3, 2.3 và 2.5.
+Các file sao chép được **đối chiếu SHA-256 với Git blobs** tại commit chuẩn; **ba PNG được kiểm tra lại bằng so sánh byte** với checkout đúng commit. **Nội dung chữ, nhãn cũ và cả hạn chế bố cục của hình upstream được giữ nguyên**. Phần giải thích tiếng Việt về từng khối, đường nối và các khác biệt với code nằm ở mục 1.3, 2.3 và 2.5.
 
-Sequence diagram trong `diagrams/end-to-end-sequence.mmd` là phần báo cáo dựng từ code vì chưa tìm được hình tuần tự tương ứng trong phạm vi upstream đã kiểm tra. Bản PNG 3.950 × 5.498 px được render bằng Mermaid CLI 12.0.0 và Chrome headless sau khi đối chiếu lại runner, planner, composite, critique wrapper, critic và finalize tại commit chuẩn. Bảng nguồn ở mục 1.5 ghi rõ code ứng với từng nhóm tương tác; hình không phải evidence của một run model thật. Bản overview tự vẽ ban đầu đã được loại bỏ; báo cáo dùng ảnh kiến trúc gốc của upstream.
+**Sequence diagram** trong `diagrams/end-to-end-sequence.mmd` là **phần báo cáo dựng từ code** vì **chưa tìm được hình tuần tự tương ứng** trong phạm vi upstream đã kiểm tra. Bản PNG 3.950 × 5.498 px được **render bằng Mermaid CLI 12.0.0 và Chrome headless** sau khi **đối chiếu lại** runner, planner, composite, critique wrapper, critic và finalize tại commit chuẩn. Bảng nguồn ở mục 1.5 ghi rõ code ứng với từng nhóm tương tác; **hình không phải evidence của một run model thật**. **Bản overview tự vẽ ban đầu đã được loại bỏ**; báo cáo **dùng ảnh kiến trúc gốc của upstream**.
 
-Đã xem trực quan các ảnh upstream và PNG chuyển từ SVG, kiểm tra khả năng mở ảnh, liên kết cục bộ, source references và nguồn gốc file. Hình SVG gốc có một số nhãn dày/chồng nhau; bản PNG giữ nguyên hạn chế đó. Khi cần đọc chi tiết, mở ảnh gốc để phóng to. Công cụ chuyển/render ở thư mục tạm, không thêm dependency vào DeckAgent.
+**Đã xem trực quan** các ảnh upstream và PNG chuyển từ SVG, **kiểm tra khả năng mở ảnh, liên kết cục bộ, source references và nguồn gốc file**. **Hình SVG gốc có một số nhãn dày/chồng nhau**; **bản PNG giữ nguyên hạn chế đó**. Khi cần đọc chi tiết, **mở ảnh gốc để phóng to**. **Công cụ chuyển/render ở thư mục tạm**, **không thêm dependency vào DeckAgent**.
 
 ### 5.6. Phương pháp khảo sát source
 
-- Cố định OpenDesign ở commit chuẩn được ghi đầu báo cáo; mọi source links đều ghim cùng commit.
-- Clone source vào thư mục tạm; không đưa bản sao upstream vào DeckAgent.
-- Dùng `codebase-memory` Tier 2 để tìm cấu trúc, sau đó đọc source trực tiếp cho các kết luận quan trọng.
-- Index có 1.626 nodes, 5.480 edges; không ghi nhận parse partial/unusable. Coverage báo `metadata_changed` trên các paths sử dụng, nên graph chỉ là công cụ định hướng; kết luận dựa trên source đọc trực tiếp.
-- Ở lần đối chiếu lại diagram, checkout tạm cũ đã được dọn nên coverage báo `missing`. Đã clone lại, kiểm tra HEAD trùng commit chuẩn và đọc trực tiếp source liên quan; không dùng graph cache để khẳng định chi tiết thực thi.
-- Font, PPTX template và một số tài nguyên nhị phân không được graph phân tích.
-- Dùng code và probe để mô tả implementation; dùng decision records để giải thích ý định/lịch sử. Khi hai nguồn khác nhau, giữ rõ phạm vi của từng nguồn.
+- **Cố định OpenDesign ở commit chuẩn** được ghi đầu báo cáo; **mọi source links đều ghim cùng commit**.
+- **Clone source vào thư mục tạm**; **không đưa bản sao upstream vào DeckAgent**.
+- Dùng `codebase-memory` Tier 2 để **tìm cấu trúc**, sau đó **đọc source trực tiếp** cho các kết luận quan trọng.
+- Index có 1.626 nodes, 5.480 edges; **không ghi nhận parse partial/unusable**. Coverage báo `metadata_changed` trên các paths sử dụng, nên **graph chỉ là công cụ định hướng**; **kết luận dựa trên source đọc trực tiếp**.
+- Ở lần đối chiếu lại diagram, checkout tạm cũ đã được dọn nên coverage báo `missing`. **Đã clone lại**, **kiểm tra HEAD trùng commit chuẩn** và **đọc trực tiếp source liên quan**; **không dùng graph cache** để khẳng định chi tiết thực thi.
+- **Font, PPTX template và một số tài nguyên nhị phân không được graph phân tích**.
+- **Dùng code và probe để mô tả implementation**; **dùng decision records để giải thích ý định/lịch sử**. Khi hai nguồn khác nhau, **giữ rõ phạm vi của từng nguồn**.

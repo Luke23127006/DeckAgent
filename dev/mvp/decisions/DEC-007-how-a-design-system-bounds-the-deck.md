@@ -52,7 +52,7 @@ In 2A, 2B and 2C a **colour or font the user chose is never a fault** of the che
 - A **new layout when none fits** **keeps the freedom the model needs**, as open-design does: its rule "don't write slides from scratch" is **guidance to the agent**, with **no check after the write**.
 - The **colour or font of a slide is the user's choice**. **Refusing it** (UC-002 A19) was **too strict**, and a later change by hand (legacy UC-007) would be **hard to manage** under a rule that **counts the user's choice as a fault**. The **model's own choices stay inside the theme**, so the **deck keeps its design system**.
 - The system **asks as other agent systems do**: a **question with suggested answers ends the request**, and the **chosen answer is a new request** (FR-014, FR-031).
-- Written by the agent at the PO's request on 05-11-2026, from the PO's rulings 1B and 2C and the follow-up rulings in the same discussion.
+- **Written by the agent** at the PO's request on 05-11-2026, from the **PO's rulings 1B and 2C** and the follow-up rulings in the same discussion.
 
 ## Rejected options and why
 

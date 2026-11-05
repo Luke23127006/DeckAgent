@@ -15,7 +15,7 @@
    - **Keep one chat out of the data of another chat**.
    - Let DeckAgent **write the chat work in its own data**.
    - **Surface an `ask` step to DeckAgent**, so that UC-003 A51 can **ask the user**.
-   - See [agent-permissions.md](agent-permissions.md) items 6 and 7.
+   - **See [agent-permissions.md](agent-permissions.md) items 6 and 7**.
 
 3. **How does OpenCode keep sessions** (UC-006, NFR-008)?
    - Is **one chat one session**?

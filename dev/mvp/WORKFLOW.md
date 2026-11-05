@@ -163,7 +163,7 @@ Rules:
 
 1. Run skill `testing-plan`. Write `testing-plan.md`: the **acceptance criteria** of each in-scope FR and the **measures** of each in-scope NFR ([Spec rules](#spec-rules) rule 2), each with its **tier and test type**, and **what the test checks**. The **PO approves the plan** **before any test ticket** is created.
 2. **Split the matrix rows**: **one row per acceptance criterion or measure**, with its tier.
-3. Create `test-stub-ticket` Issues (labels `phase:test-stubs`, `uc:XXX`, `tier:*`):
+3. **Create `test-stub-ticket` Issues** (labels `phase:test-stubs`, `uc:XXX`, `tier:*`):
    - **CI tier:** a **failing test** in `tests/acceptance/` (or a security test).
    - **Eval tier:** the **eval cases and the rubric** in `tests/eval/`.
    - **Manual tier:** **no ticket**. The check is **listed in the testing plan**.
@@ -203,7 +203,7 @@ Rules:
 
 **Owner:** agent **writes them**; PO **approves**.
 
-1. Create `implementation-ticket` Issues (labels `phase:impl`, `uc:XXX`) following the [ticket rules](#ticket-rules).
+1. **Create `implementation-ticket` Issues** (labels `phase:impl`, `uc:XXX`) following the [ticket rules](#ticket-rules).
 2. Create `post-impl-test-ticket` Issues (label `phase:post-impl`), **blocked by the implementation tickets** they depend on.
 3. **Separation rule.** Each implementation ticket **names the test author** of its FR. The **test author must not be the assignee**.
 4. **Update the flow tracker.** **Fill the matrix Test and Impl columns** with ticket links.

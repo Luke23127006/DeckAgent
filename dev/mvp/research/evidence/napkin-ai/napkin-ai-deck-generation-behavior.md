@@ -102,8 +102,8 @@ The **number of questions therefore depends on the input**. The **typed-notes an
 
 After the last slide, a message with a **bold label, one sentence and four buttons**. It contains **no summary of the slides**, **no note about placeholders**, **no list of wording added** beyond the user's material, **no statement about checking the layout**, and **no mention of speaker notes**.
 
-- Typed notes: label "NEXT STEPS", "How does the report look to you?", buttons "Export the deck", "It's perfect", "Make it more formal", "Add more technical detail".
-- Solid-black picture: label "ORIENTATION DECK READY", "The orientation deck is ready, including the new slide on school safety. How would you like to proceed?", buttons "Export the deck", "Add more slides", "Change the brand style", "Apply a visual effect".
+- **Typed notes**: label "NEXT STEPS", "How does the report look to you?", buttons "Export the deck", "It's perfect", "Make it more formal", "Add more technical detail".
+- **Solid-black picture**: label "ORIENTATION DECK READY", "The orientation deck is ready, including the new slide on school safety. How would you like to proceed?", buttons "Export the deck", "Add more slides", "Change the brand style", "Apply a visual effect".
 - **None of these buttons was pressed**.
 
 A **pop-up appears** over the lower canvas **before the closing message**: "How would you rate Napkin Slides so far?" with five round faces from an angry face to a heart-eyes face, a "×" and a link "Don't ask me again". It was **not used**.
@@ -145,22 +145,22 @@ The request **goes straight to a first outline of five slides** (no question fir
 - The user's message is **the file alone**: "test_deck.pptx". The product **accepted it without text**.
 - The product **treated the file as source material**. It **did not ask what the file was for**. It **did not offer to bring the deck in as it was**.
 - It **asked two questions, one at a time**, as it does for a picture sent with no text:
-  - "AUDIENCE": "I've read your test report — who is the audience for this presentation?" The user answered "Internal team review".
-  - "LENGTH": "How many slides should we aim for to cover this system test report?" The user answered "4 slides (match source)".
+  - "**AUDIENCE**": "I've read your test report — who is the audience for this presentation?" The user answered "Internal team review".
+  - "**LENGTH**": "How many slides should we aim for to cover this system test report?" The user answered "4 slides (match source)".
   - It **asked no "TOPIC" question**. The first question **already names the file as "your test report"**.
 - It then **showed an outline**. The summary sentence reads "A concise system test report for internal team review, following the structure of your original document."
   - The outline has **4 rows**, the **same number as the source deck** and **in the same order**.
   - **Row titles are the source titles or close to them**. The first and second rows **match the source**. The third row, "Kiểm tra Font và Ghi chú", is a **rewording** of the source title "Font lạ và ghi chú". The fourth row **differs from the source only in capital letters**.
   - Each row has a **one-line subtitle**. The **subtitles are the product's own wording**. **None of them is a sentence from the source text**, which was checked against the file.
-- The outline question reads: "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" Its buttons are "Looks good, build it", "Add more detail to data slide", "Change the tone to formal" and "Adjust…".
+- The **outline question** reads: "OUTLINE OK?" / "I've drafted the 4 slides based on your document. Shall we proceed with this outline?" Its buttons are "Looks good, build it", "Add more detail to data slide", "Change the tone to formal" and "Adjust…".
 - **Not shown**: whether the **chart, the picture, the speaker notes, the unusual fonts or the special characters** of the source **reached the slides**; and **what the product does with a damaged deck file**.
 
 ### Deck file sent again into a chat that has a deck
 
 **Two static screenshots**: [before-test-case-2-upload-pptx.png](ui/images/before-test-case-2-upload-pptx.png) and [after-test-case-2-upload-pptx.png](ui/images/after-test-case-2-upload-pptx.png).
 
-- Before: the chat holds the deck built from the previous test. The last step shown is the layout step for slide 4, "4. Ký tự đặc biệt và đối tượng lạ", with the line "Visual inserted." and six layout tiles. Below it the closing message, label "NEXT STEPS": "What would you like to do with your deck?" with five buttons: "Present full screen", "Export to PowerPoint", "Review the slides", "Change the brand style" and "Apply a visual effect".
-- After: the user's message is the same file alone, "test_deck.pptx". The reply, label "REVIEW DECK": "Your 4-slide system test report is ready in Vietnamese. How would you like to proceed?" with five buttons: "Present full screen", "Export to PowerPoint", "Edit slide text", "Change brand style" and "Apply visual effect".
+- **Before**: the chat **holds the deck built from the previous test**. The last step shown is the layout step for slide 4, "4. Ký tự đặc biệt và đối tượng lạ", with the line "Visual inserted." and six layout tiles. Below it the **closing message**, label "NEXT STEPS": "What would you like to do with your deck?" with five buttons: "Present full screen", "Export to PowerPoint", "Review the slides", "Change the brand style" and "Apply a visual effect".
+- **After**: the user's message is **the same file alone**, "test_deck.pptx". The reply, label "**REVIEW DECK**": "Your 4-slide system test report is ready in Vietnamese. How would you like to proceed?" with five buttons: "Present full screen", "Export to PowerPoint", "Edit slide text", "Change brand style" and "Apply visual effect".
 - **No question stands between the message and the reply**. The product **did not offer to replace the deck or to add slides**. It **did not ask what the file was for**.
 - The **reply speaks of the existing 4-slide report**. The **images show the chat only**. They **do not show whether the deck canvas changed**, or whether slides were added or replaced.
 
@@ -168,8 +168,8 @@ The request **goes straight to a first outline of five slides** (no question fir
 
 **One static screenshot**: [after-test-case-3-upload-pptx.png](ui/images/after-test-case-3-upload-pptx.png). The image **does not show whether this is the chat of the previous test**.
 
-- The user's message holds the file "test_deck.pptx" and the text "Sử dụng nội dung trong file này làm tài liệu tham khảo để tạo thêm 2 slide mới về chủ đề Kỹ năng mềm". In English: use the content of this file as reference material to create 2 more slides on soft skills.
-- The reply, in Vietnamese: "Dạ, tôi rất sẵn lòng hỗ trợ bạn. Tuy nhiên, hiện tại tôi không thể tạo thêm slide mới vào bản thuyết trình này. Tôi có thể giúp bạn chỉnh sửa nội dung, thay đổi phong cách thương hiệu (brand style) hoặc áp dụng các hiệu ứng hình ảnh cho 4 slide hiện có về báo cáo kiểm thử hệ thống. Bạn có muốn tôi điều chỉnh nội dung nào trên các slide hiện tại không?" In English: happy to help, but it cannot add new slides to this presentation now; it can edit the content, change the brand style or apply visual effects to the 4 existing slides; does the user want any content on the current slides adjusted?
+- The user's message holds **the file "test_deck.pptx" and the text** "Sử dụng nội dung trong file này làm tài liệu tham khảo để tạo thêm 2 slide mới về chủ đề Kỹ năng mềm". In English: **use the content of this file as reference material to create 2 more slides** on soft skills.
+- **The reply, in Vietnamese**: "Dạ, tôi rất sẵn lòng hỗ trợ bạn. Tuy nhiên, hiện tại tôi không thể tạo thêm slide mới vào bản thuyết trình này. Tôi có thể giúp bạn chỉnh sửa nội dung, thay đổi phong cách thương hiệu (brand style) hoặc áp dụng các hiệu ứng hình ảnh cho 4 slide hiện có về báo cáo kiểm thử hệ thống. Bạn có muốn tôi điều chỉnh nội dung nào trên các slide hiện tại không?" In English: happy to help, but **it cannot add new slides** to this presentation now; it **can edit the content, change the brand style or apply visual effects** to the 4 existing slides; does the user want any content on the current slides adjusted?
 - The product **built no new slide** and **did not use the file as material for new slides**. The **reply language follows the request**.
 - In the study-habits deck (see the follow-up section below), the **same product offered to create a new slide**. **Why it refused here is not known**.
 
@@ -188,12 +188,12 @@ The request **goes straight to a first outline of five slides** (no question fir
 **Two static screenshots**, taken on a **finished six-slide deck about study habits**: [prompt-scoped-change.png](ui/images/prompt-scoped-change.png) and [proposed-approachs-after-prompt-global-follows-up.png](ui/images/proposed-approachs-after-prompt-global-follows-up.png). The **run that made the deck was not recorded**, and **no button in them was shown pressed**. **What each button does is therefore not known**.
 
 - **Change to one named slide.** The editor shows the deck. The chat shows the closing message, label "DECK READY": "Your guide to study skills is ready. How would you like to proceed?" Then the user's request: "Update Slide 3 ("Time Management Strategies") to specifically include the Pomodoro Technique as a practical example. Do not change any other slides."
-  - The reply, label "SLIDE UPDATED": "I've updated the "Time Management Strategies" slide to include the Pomodoro Technique details. What would you like to do next?" with four buttons: "Export the deck", "Edit another slide", "Try a different brand style", "Add more slides". The pointer is on "Edit another slide".
+  - The reply, label "**SLIDE UPDATED**": "I've updated the "Time Management Strategies" slide to include the Pomodoro Technique details. What would you like to do next?" with four buttons: "Export the deck", "Edit another slide", "Try a different brand style", "Add more slides". The pointer is on "Edit another slide".
   - **Slide 3 is the selected slide**. It shows **three cards**: "The Pomodoro Technique: Study for 25 minutes, then take a 5-minute break.", "Time Blocking: …" and "Eat the Frog: …".
   - In the visible chat, **no outline message and no question appear** between the request and the reply.
   - The **request itself says that no other slide should change**. The image has **no earlier state**, so it **does not show whether the other five slides stayed** as they were. It **does not show whether they would have stayed without that sentence**.
 - **Request for a whole-deck change and a new slide.** The user's request: "Make the tone of the entire presentation more playful and energetic, and add one new slide at the very end about "Forming Study Groups"."
-  - The reply, label "TONE UPDATED": "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with three buttons: "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now".
+  - The reply, label "**TONE UPDATED**": "I've updated the deck's tone to be more playful and energetic. Should I regenerate the existing slides to match this new vibe, or just create the new "Forming Study Groups" slide?" with **three buttons**: "Regenerate all slides", "Just create the new slide", "Keep the change, don't regenerate now".
   - The **image shows the chat only**. The **canvas is not visible**, so it is **not known whether any slide had changed** when the question appeared. The reply starts "I've updated the deck's tone", so **what had changed at that point is not known**.
   - **Not shown**: **what each button does**, whether the **third one still builds the new slide**, and whether a **whole-deck change with no new slide gets the same question**.
 

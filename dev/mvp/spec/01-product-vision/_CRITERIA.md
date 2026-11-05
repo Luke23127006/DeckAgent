@@ -1,6 +1,6 @@
 # Gate: Product vision
 
-Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../02-use-cases/`, `../03-requirements/`, `../04-business-rules/`.
+**Template**: `_TEMPLATE.md`. **Style**: `../_STYLE.md`. **Children**: `../02-use-cases/`, `../03-requirements/`, `../04-business-rules/`.
 
 ## 1. What the vision is, and is not
 

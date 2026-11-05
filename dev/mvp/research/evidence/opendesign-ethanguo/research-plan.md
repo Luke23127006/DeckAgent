@@ -62,7 +62,7 @@
 
 **Kết quả cần bàn giao (Deliverables):**
 
-- Phân tích các quyết định kiến trúc (Architecture Decision Analysis).
+- **Phân tích các quyết định kiến trúc** (Architecture Decision Analysis).
 - Bảng phân tích đánh đổi (Trade-off Matrix).
 - So sánh các phương án thay thế (Alternatives Comparison).
 - Đánh giá dựa trên bằng chứng (Evidence-Based Evaluation).
