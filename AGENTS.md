@@ -20,9 +20,9 @@ dev/mvp/WORKFLOW.md "Reference code".
   `tests/` (not its subfolders). It predates the workflow and does not run on OpenCode.
   How to run it: `dev/legacy/development/local-development.md`.
 - **OpenCode reference:** branch `feat/v2-opencode`, read at a pinned commit.
-- **Legacy documents:** `dev/legacy/` (read-only) keeps what the legacy code needs and
-  research input not yet merged. The previous spec is read on the `docs/spec` branch at
-  commit `71ff143`. Its IDs belong to `dev/mvp/spec/` only once migrated there.
+- **Legacy documents:** `dev/legacy/` (read-only) keeps only the documents tied to the
+  legacy code: how to run it and its old version plans. The previous spec is read on the
+  `docs/spec` branch at commit `71ff143`. Its IDs belong to `dev/mvp/spec/` only once migrated there.
 - Do not edit legacy documents. A behavior worth keeping goes into `dev/mvp/spec/` first.
 
 ## Engineering principles

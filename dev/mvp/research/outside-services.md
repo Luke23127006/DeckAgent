@@ -47,9 +47,9 @@ product was run; source code was not read.
 6. What content does DeepSeek Harness send to search?
    - Observation: the query, and by default `ori_question`: the latest user prompt, cut
      to 128 characters. `sendOriginalQuestion: false` turns this off.
-   - => The default sends private user text to the search provider. Legacy
-     `dev/legacy/adr/0002-provider-neutral-web-research.md` already required this to be
-     off for DeckAgent.
+   - => The default sends private user text to the search provider. A legacy architecture
+     record (ADR 0002, deleted; at commit `85130c4`) already required this to be off for
+     DeckAgent.
 
 7. What happens when a service is missing or fails?
    - Observation (DeepSeek Harness): a typed error such as

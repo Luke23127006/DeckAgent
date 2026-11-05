@@ -77,7 +77,16 @@ in a research file, a decision or the spec. Open decisions are listed in
     the system does with it. An exported HTML deck can be attached only as a ZIP, since
     BR-001 V-1 has no HTML.
 
-13. Attachment limits (BR-001 number and size, BR-002) are not set.
+13. Attachment limits (BR-001 number and size, BR-002 request length and its unit) are
+    not set. They wait for technical evidence.
+    - Trial values from the legacy research, not approved: 10 new attachments in one
+      request, 20 MiB per file, types TXT, MD, PDF, DOCX, PNG, JPEG and PPTX.
+    - Evidence to collect: a file just below, at and above the trial size; 9, 10 and 11
+      attachments; every accepted type including a valid PPTX; invalid, protected,
+      damaged and decompression-heavy documents; preparation, parsing and memory use on
+      supported hardware; a refused file keeps the draft request intact.
+    - A file of the project folder is not an attachment. Its read limit needs its own
+      measurement.
 
 14. Key storage (FR-040) and BR-006 V-1 are not answered.
 
@@ -89,3 +98,50 @@ in a research file, a decision or the spec. Open decisions are listed in
     - A UC-005 Note: setup takes only a key the user enters.
 
 16. Accessibility (legacy NFR-013) is not migrated. Legacy FR-023 cited it.
+
+## Carried from the legacy design backlog
+
+The legacy spec kept its open questions in `ideal-spec-open-design-questions.md` (on the
+`docs/spec` branch at `71ff143`, later in `dev/legacy/research/`). Checked against the
+spec on 05-11-2026. Questions the spec review already settled, or that belong to a parked
+use case (export, changes by hand, deck history, session export, variants), are not
+carried. The items below are still open.
+
+17. Workspace names (UC-013): what name a new workspace gets, whether the user can
+    change it, and whether names must be unique. Whether adding the same folder again as
+    a workspace brings back the chats it had, or starts without them.
+
+18. Requests that stopped or failed (UC-003 A11, FR-019): the spec has no try-again
+    action; the user sends a new request, which starts from the last finished deck.
+    Does the MVP need a try-again action? If yes: what runs again, and how the system
+    avoids making the same change twice (for example adding the same slide again).
+    Also: which causes of a failure keep the user from sending a new request.
+
+19. Providers (BR-006): what each built-in provider needs besides a key, which of its
+    default settings the user can change, and where its base URL can change. How the
+    system knows that a custom model API needs a key, and whether the user can change
+    the API protocol of a saved custom model API. Each answer waits for checks with the
+    provider and with OpenCode (item 1).
+
+20. Conditions of the NFR measures, decided in the testing plan of the build that takes
+    each NFR:
+    - the computers on which the performance targets hold (NFR-001, NFR-011, NFR-012,
+      NFR-014), and the providers and models (NFR-002, NFR-012);
+    - the Windows versions, hardware and browsers for building and running (NFR-014);
+    - the screen readers and browsers of the accessibility checks (legacy NFR-013);
+    - the languages DeckAgent commits to beyond Vietnamese and English, which are
+      checked first (NFR-009);
+    - whether other programs of the same user can read a saved key (NFR-006).
+
+21. Runtime limits, for the implementation plan (legacy UC-003 Note 34):
+    - several open views or windows, and several running copies of DeckAgent;
+    - a work loop with no bound, and a request whose provider sends nothing;
+    - the use of the model, of money and of the computer by one request;
+    - how a new image is made and by which part of the product; how the system knows a
+      valid way is available; what it does with a model that takes no image input; how
+      images reach the agent within the reach of NFR-003 and NFR-007;
+    - how the image abilities of each provider and model are checked;
+    - how a saved key is protected from other programs on the computer.
+
+22. A design diagnosis of a slide: judging a slide against its purpose and naming what
+    to change. No use case covers it. A product idea for the PO, not a gap in the MVP.

@@ -34,5 +34,6 @@ All notable changes to this project are recorded here.
 ### Removed
 
 - `dev/versions/`, the version spec layer and the `CHANGES.md` template.
+- The rest of the legacy documents with no value left: the legacy vision, the user segments, the legacy ADRs and the legacy research notes. The DeepSeek Harness notes are compacted into `dev/mvp/research/deepseek-harness.md`; the open design questions and attachment-limit trials still open moved into `dev/mvp/research/open-questions.md`. `dev/legacy/` keeps only `development/` and `versions/`, tied to the legacy code.
 - Legacy documents with no use left: the previous spec (read it on the `docs/spec` branch at `71ff143`), the old agent rules, the docs rules and alignment plan, the duplicate HTML of the OpenDesign report, and the `docs/design/` UX prototype with its CI step (its test file stays with the legacy code). The OpenCodeReview guide moved to `dev/development/`.
 - Legacy UC-011, UC-014 and UC-017 are retired in the target spec; `dev/spec/02-use-cases/_CRITERIA.md` says where each behavior went.

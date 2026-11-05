@@ -18,7 +18,6 @@ rejected.
 | [DEC-008](DEC-008-who-starts-a-conversation-summary.md) | Who starts the summary of a conversation that outgrows the context of the model: the system, the user or both | not chosen | 05-11-2026 | open |
 | [DEC-009](DEC-009-where-an-answer-finds-the-source-of-content.md) | Where an answer finds the source of content in the deck: a record kept when the content is written, or the model looking again | not chosen | 05-11-2026 | open |
 
-Legacy decisions (`dev/legacy/adr/`) are research input. They have no DEC number.
 
 ## Conventions
 
