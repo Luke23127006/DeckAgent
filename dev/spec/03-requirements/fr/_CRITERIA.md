@@ -77,6 +77,7 @@ Removed FR IDs:
 - FR-111, 05-11-2026, merged into FR-038.
 - FR-114, 04-11-2026, merged into FR-113.
 - FR-115, 04-11-2026, merged into FR-113.
+- FR-123, 05-11-2026, dropped: an exported source archive attached to a request is material like any attachment, and nothing is imported as a deck to change.
 
 ### Links
 
