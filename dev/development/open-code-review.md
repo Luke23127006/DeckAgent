@@ -2,8 +2,8 @@
 
 This guide explains how team members install and use the repository-local
 OpenCodeReview integration. OpenCodeReview is development tooling, not a DeckAgent
-runtime dependency. For canonical skill and mirror maintenance, see
-[Shared agent skill maintenance](../agents/skill-maintenance.md).
+runtime dependency. Skills are edited in `.agents/skills/` only; then run
+`python .agents/scripts/sync_skill_mirrors.py` to update the mirrors.
 
 ## Review scope
 

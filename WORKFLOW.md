@@ -35,8 +35,7 @@ read against its ACs is short; reviewing it is the highest-leverage check the PO
 
 ```
 docs/                         public docs for outside readers (polished prose)
-├── architecture/             as-built: module map, LLM boundary map
-└── design/                   legacy UX prototype (read by a legacy test)
+└── architecture/             as-built: module map, LLM boundary map
 dev/                          internal docs for the dev team
 ├── legacy/                   documents from before this workflow (read-only)
 ├── spec/                     target spec (thin)

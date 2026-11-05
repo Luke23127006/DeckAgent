@@ -19,11 +19,9 @@ input, not product. See WORKFLOW.md "Legacy source".
   `tests/` (not its subfolders). It still builds and runs; see
   `dev/legacy/development/local-development.md`. Code enters a workflow build only
   through a port ticket.
-- **Legacy documents:** `dev/legacy/` (read-only). The previous spec is
-  `dev/legacy/spec/`, taken from the `docs/spec` branch at commit `71ff143`. Its IDs
-  belong to `dev/spec/` only once migrated there.
-- `docs/design/` is a legacy UX prototype kept in place because
-  `tests/ux-02-prototype.test.cjs` reads it.
+- **Legacy documents:** `dev/legacy/` (read-only) keeps only what the legacy code needs
+  and research input not yet merged. The previous spec is read on the `docs/spec`
+  branch at commit `71ff143`. Its IDs belong to `dev/spec/` only once migrated there.
 - Do not edit legacy documents. A behavior worth keeping goes into `dev/spec/` first.
 
 ## Engineering principles
@@ -166,7 +164,7 @@ These lists say _who decides_. WORKFLOW.md "Roles" says _who does the work_.
 | Meeting notes | `dev/meetings/` |
 | Plan and as-built templates | `dev/templates/` |
 | Issue and PR templates | `.github/` |
-| Legacy documents, previous spec (read-only) | `dev/legacy/`, `dev/legacy/spec/` (see "Legacy source") |
+| Legacy documents (read-only) | `dev/legacy/`; previous spec at `docs/spec` @ `71ff143` (see "Legacy source") |
 | Legacy code and how to run it | `apps/`, `packages/`, `vendor/`, `scripts/`; `dev/legacy/development/local-development.md` |
 | Skills | `.agents/skills/` (mirrors: run `python .agents/scripts/sync_skill_mirrors.py`) |
 | Workflow reference | `WORKFLOW.md` |

@@ -34,7 +34,7 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 ### Use case IDs
 
 - One ID (`UC-xxx`) names a use case file. A flow ID (`Sx`, `Ax`) names a block in the file.
-- The namespace is `dev/spec/`. IDs of the previous spec in `dev/legacy/spec/` (AGENTS.md "Legacy source") do not belong to it until they are migrated here.
+- The namespace is `dev/spec/`. IDs of the previous spec (`docs/spec` branch at commit `71ff143`) do not belong to it until they are migrated here.
 - An ID never moves to a different goal or is reused, even after a file is deleted.
 - A new ID takes the number after the highest ID in the folder, in the parked use cases of `../05-backlog/` and in the removed-ID list. Gaps stay as they are.
 - A use case or a flow left for later is parked in `../05-backlog/`, not removed. A parked flow keeps its ID free in its use case, and the use case names it in a Note line only.
