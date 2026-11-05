@@ -90,14 +90,7 @@ in a research file, a decision or the spec. Open decisions are listed in
 
 14. Key storage (FR-040) and BR-006 V-1 are not answered.
 
-15. Proposals from the UC-005 follow-up that the PO closed without applying (05-11-2026):
-    - Choosing a model applies its default reasoning level (UC-005 A16, FR-055), as in
-      DeepSeek Harness.
-    - The glossary entry "model catalog" lists the context window, the levels and the
-      default.
-    - A UC-005 Note: setup takes only a key the user enters.
-
-16. Accessibility (legacy NFR-013) is not migrated. Legacy FR-023 cited it.
+15. Accessibility (legacy NFR-013) is not migrated. Legacy FR-023 cited it.
 
 ## Carried from the legacy design backlog
 
@@ -107,23 +100,23 @@ spec on 05-11-2026. Questions the spec review already settled, or that belong to
 use case (export, changes by hand, deck history, session export, variants), are not
 carried. The items below are still open.
 
-17. Workspace names (UC-013): what name a new workspace gets, whether the user can
+16. Workspace names (UC-013): what name a new workspace gets, whether the user can
     change it, and whether names must be unique. Whether adding the same folder again as
     a workspace brings back the chats it had, or starts without them.
 
-18. Requests that stopped or failed (UC-003 A11, FR-019): the spec has no try-again
+17. Requests that stopped or failed (UC-003 A11, FR-019): the spec has no try-again
     action; the user sends a new request, which starts from the last finished deck.
     Does the MVP need a try-again action? If yes: what runs again, and how the system
     avoids making the same change twice (for example adding the same slide again).
     Also: which causes of a failure keep the user from sending a new request.
 
-19. Providers (BR-006): what each built-in provider needs besides a key, which of its
+18. Providers (BR-006): what each built-in provider needs besides a key, which of its
     default settings the user can change, and where its base URL can change. How the
     system knows that a custom model API needs a key, and whether the user can change
     the API protocol of a saved custom model API. Each answer waits for checks with the
     provider and with OpenCode (item 1).
 
-20. Conditions of the NFR measures, decided in the testing plan of the build that takes
+19. Conditions of the NFR measures, decided in the testing plan of the build that takes
     each NFR:
     - the computers on which the performance targets hold (NFR-001, NFR-011, NFR-012,
       NFR-014), and the providers and models (NFR-002, NFR-012);
@@ -133,7 +126,7 @@ carried. The items below are still open.
       checked first (NFR-009);
     - whether other programs of the same user can read a saved key (NFR-006).
 
-21. Runtime limits, for the implementation plan (legacy UC-003 Note 34):
+20. Runtime limits, for the implementation plan (legacy UC-003 Note 34):
     - several open views or windows, and several running copies of DeckAgent;
     - a work loop with no bound, and a request whose provider sends nothing;
     - the use of the model, of money and of the computer by one request;
@@ -143,5 +136,3 @@ carried. The items below are still open.
     - how the image abilities of each provider and model are checked;
     - how a saved key is protected from other programs on the computer.
 
-22. A design diagnosis of a slide: judging a slide against its purpose and naming what
-    to change. No use case covers it. A product idea for the PO, not a gap in the MVP.
