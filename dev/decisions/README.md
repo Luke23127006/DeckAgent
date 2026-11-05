@@ -16,6 +16,7 @@ rejected.
 | [DEC-006](DEC-006-where-chat-work-is-kept.md) | Where the deck source and the work of a chat are kept: DeckAgent's own data or the project folder | not chosen | 05-11-2026 | open |
 | [DEC-007](DEC-007-how-a-design-system-bounds-the-deck.md) | What role the template plays for the model, and what happens to a colour or font the user asks for outside the theme | A layout of the template that code finds fitting, or a new one when none fits; the user is asked about a colour or font outside the theme | 05-11-2026 | decided (2C amended 05-11-2026) |
 | [DEC-008](DEC-008-who-starts-a-conversation-summary.md) | Who starts the summary of a conversation that outgrows the context of the model: the system, the user or both | not chosen | 05-11-2026 | open |
+| [DEC-009](DEC-009-where-an-answer-finds-the-source-of-content.md) | Where an answer finds the source of content in the deck: a record kept when the content is written, or the model looking again | not chosen | 05-11-2026 | open |
 
 Legacy decisions (`dev/legacy/adr/`) are research input. They have no DEC number.
 
