@@ -48,6 +48,7 @@ behavior — what the system does at a limit is written in the FR.
 Removed BR IDs:
 
 - BR-009, 05-11-2026, dropped: no permission presets and no approval that lasts; the reach of the agent is fixed by code (FR-077) and an approval covers one step once (FR-076).
+- BR-010, 05-11-2026, dropped: the warning threshold only told the user when to compact; the system now summarizes by itself (FR-079) and the user has no compact command.
 
 ### Links
 

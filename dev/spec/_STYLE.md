@@ -71,6 +71,8 @@ empty; each project declares its own terms and adds to them as it learns.
 | **agent** | The part of the system that does the work of a request with the selected model, such as reading files, writing the work of the chat and using outside services |
 | **approval** | The user's answer to a step of a request that goes beyond what the agent of the chat reaches without asking: allow it once, or refuse it |
 | **selected model** | The model of a chat that runs its next request |
+| **context** | What the selected model reads for a request. Each model reads a context only up to its own size |
+| **conversation summary** | A shorter text the system writes in place of the earlier conversation of a chat, for the selected model to read. The user still reads the whole conversation |
 | **provider** | A model service that runs models for DeckAgent through the user's own account |
 | **provider configuration** | One saved connection to a provider: its provider ID, what the provider needs such as a key, and its added models |
 | **provider ID** | The name that tells which provider a provider configuration connects to. It never changes after saving |
