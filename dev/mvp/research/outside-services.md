@@ -118,3 +118,19 @@ product was run; source code was not read.
       search as an outside service.
     - Proposal: the runtime research of the first build that touches models checks how
       OpenCode keeps keys and lists models, since open-design already relies on it.
+
+11. What did the legacy architecture record say about web research? Read on 05-11-2026
+    from legacy ADR 0002 "Separate web research tools from Search and Fetch providers"
+    (status proposed, PO approved the direction; deleted, readable at commit `85130c4`).
+    - Observation: search and fetch were two tools the model calls, `web_search` and
+      `web_fetch`, each behind its own provider adapter, following the DeepSeek Harness
+      web pattern. An adapter returns sources in one shape and errors with a kind.
+      Changing the provider does not change the tool names.
+    - Observation: a missing or invalid provider does not fall back to another provider;
+      search sends no private content from requests, conversations, attachments, project
+      files or decks.
+    - => The last two points match FR-089, FR-117 and FR-090 as written. The split into
+      two tools behind adapters is an implementation choice, not product behavior.
+    - Proposal: the implementation plan of the first build that does public research
+      starts from this split, after checking what OpenCode already offers for web search
+      and fetch.

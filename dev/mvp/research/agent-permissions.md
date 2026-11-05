@@ -65,3 +65,21 @@ No product was run; source code was not read.
      `bash` command that writes there is not checked.
    - Part of `docs/agent-adapters.md` was read through a summary; the quotes above come
      from the parts read in full.
+
+8. What did the legacy code decide about approving a step? Read on 05-11-2026 from
+   legacy ADR 0003 "Host owns step approval; file tools enforce the final target" (status
+   proposed; deleted, readable at commit `85130c4`).
+   - Observation: the Host held the file tool at an approval boundary. An approval had its
+     own identity and a separate endpoint, so an ordinary answer to a question could not
+     grant access. A missing answer granted nothing.
+   - Observation: path checks (canonical target, blocked app folders, links) ran right
+     before each read, and an approval could not skip them. A continuing grant named one
+     exact file, never a parent folder.
+   - Observation: a running request kept the grants it started with; an approval extended
+     that request only by the named read. A restart kept the stopped state and did not
+     run the tool again.
+   - => The spec keeps the outcome (FR-076: allow once or refuse; FR-077: fixed reach),
+     not the presets. Two points still apply on OpenCode: an answer to a question is never
+     an approval, and path checks run even after an approval.
+   - Proposal: the Phase 1 runtime research (item 6) checks both points against how
+     OpenCode shows an `ask` step.
