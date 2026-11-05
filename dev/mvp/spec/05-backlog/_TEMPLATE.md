@@ -2,7 +2,6 @@
 id: UC-000
 kind: use case
 title: ""
-parked: DD-MM-YYYY
 ---
 
 <!-- A backlog item is a behavior of the spec left for later (_CRITERIA.md).
@@ -20,20 +19,12 @@ parked: DD-MM-YYYY
 
 ## Why parked
 
-<!-- The PO ruling, in one or two lines. -->
+<!-- The reason, in one or two lines. -->
 
 ## Reconsider when
 
 <!-- A condition someone can observe, such as a research result or a review. "Not set by the PO" when none. -->
 
-## Source
-
-<!-- Legacy file, research item, meeting or review where the behavior came from. -->
-
 ## Findings
 
-<!-- What the last review learned, and the questions it left open. Omit when empty. -->
-
-## Decided
-
-<!-- Who decided, when, and in which session. -->
+<!-- What is known about the behavior, with research links, and the open questions. Omit when empty. -->

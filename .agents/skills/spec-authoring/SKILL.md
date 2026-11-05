@@ -37,9 +37,8 @@ case has no status field and no installation progress.
 
 ## New file
 
-1. Copy the folder's `_TEMPLATE.md`. Use case ID: take the number after the highest ID in
-   `02-use-cases/` and in the removed IDs (`02-use-cases/_CRITERIA.md`). Do not reuse,
-   move, or renumber.
+1. Copy the folder's `_TEMPLATE.md`. Take the next free ID named in the folder's
+   `_CRITERIA.md`, then raise that line by one. Do not reuse, move, or renumber.
 2. Fill every section. Write an unwritten requirement/rule/target as a `?` marker. Omit a
    template section marked omittable when empty.
 3. Run the style checks below.
@@ -48,7 +47,7 @@ case has no status field and no installation progress.
 
 1. Keep every ID, every citation (`FR-`, `[BR-`, `[NFR-`), the frontmatter, the evidence
    content, and the logic. If a style rule forces a meaning change, do not choose quietly:
-   make the smallest change and record it in the report.
+   make the smallest change and say so in the report, not in the file.
 2. Move the content into the template's blocks and fields.
 3. Run the style checks.
 4. Compare before/after: same IDs, same citations, same research links.
@@ -65,6 +64,8 @@ case has no status field and no installation progress.
 - Split a long sentence into one action per sentence.
 - Check that each term in the text is in the glossary; each field is at most 7 lines.
 - Check that evidence tags are on their own line.
+- Check that the file holds no history (`_STYLE.md` rule 12): no change log, no "merged
+  from", no ruling date. What changed goes in the report and the commit message.
 - Use case: run the interface check in `_STYLE.md` (rule 11, UCG-09) over the whole file
   except the frontmatter and the generated block. Rewrite each hit as intent or response,
   then apply the swap test to every User, When, and System sentence.

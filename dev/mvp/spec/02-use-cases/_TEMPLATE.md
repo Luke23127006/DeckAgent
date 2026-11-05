@@ -1,7 +1,6 @@
 ---
 id: UC-000
 title: ""
-updated: DD-MM-YYYY
 ---
 
 <!-- A use case models product behavior for one user goal reached in a single sitting (UCG-01).

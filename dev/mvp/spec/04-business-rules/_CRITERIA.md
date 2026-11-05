@@ -40,15 +40,12 @@ behavior — what the system does at a limit is written in the FR.
 ### IDs and files
 
 - One BR per file: `BR-xxx.md`. `xxx` is three digits. The `id` equals the file name.
-- A new ID follows the highest existing, parked (`../05-backlog/`) or removed ID. An ID does not change when the title, wording, or value changes; it is not reused and not renumbered.
-- An ID is dropped only when the rule leaves the behavior model or is merged into another BR. A dropped ID is recorded below with the date and the BR it merged into.
+- A new ID is the next free ID below; a number below it with no file is not used. An ID does not change when the title, wording, or value changes; it is not reused and not renumbered.
+- An ID is dropped only when the rule leaves the behavior model or is merged into another BR. Its file is deleted; its number is not used again.
 - A rule left for later is parked in `../05-backlog/`, not dropped.
 - Value IDs are `V-1`, `V-2` within one BR, not renumbered.
 
-Removed BR IDs:
-
-- BR-009, 05-11-2026, dropped: no permission presets and no approval that lasts; the reach of the agent is fixed by code (FR-077) and an approval covers one step once (FR-076).
-- BR-010, 05-11-2026, dropped: the warning threshold only told the user when to compact; the system now summarizes by itself (FR-079) and the user has no compact command.
+Next free BR ID: BR-019.
 
 ### Links
 
@@ -79,7 +76,7 @@ and report each one.
 | BRG-05 | A pending value reads `not set`. No guessed number, range, or "about". No file presents it as an approved limit | A made-up limit; an open value read as decided | Lint (`not set`) + Review |
 | BRG-06 | The `Undecided` section states an open aspect that is not a value, one line, ending "Pending decision.". An undecided value is `not set`, not an item here | An open question becoming a rule before it is decided | Review |
 | BRG-07 | A value lives in one BR. Use case, FR, NFR, and vision cite the ID, not the value again. A marker is replaced only when the BR fully covers the meaning | The same value in several files; a marker erased by a similar topic | Lint (numbers in citing files) + CI (ID exists) + Review |
-| BRG-08 | The file name `BR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique and not renumbered. A dropped ID is recorded in section 1, not reused. The BR does not name a use case, step, branch, FR, NFR, or another BR | Two meanings for one ID; a link pointing up | Lint (name, format) + CI (unique) |
+| BRG-08 | The file name `BR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique and not renumbered. A new ID is the next free ID of section 1; a dropped ID is not reused. The BR does not name a use case, step, branch, FR, NFR, or another BR | Two meanings for one ID; a link pointing up | Lint (name, format) + CI (unique) |
 | BRG-09 | Text follows `../_STYLE.md` rules 1–10 in Statement and Value. No interface (rule 11) | A rule read two ways; a design locked via a rule | Lint (banned words) + Review |
 
 ## 3. Illustrations

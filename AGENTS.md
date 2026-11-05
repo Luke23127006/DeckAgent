@@ -66,6 +66,23 @@ task.
 - Keep one concern in one change. Explain any extra change the task needs.
 - Record task results and verification evidence in the ticket's GitHub Issue.
 
+## Documents: current state, history in git
+
+Two kinds of document. Never write a change log into a living document.
+
+- **Living documents** say what is true now: `dev/mvp/spec/`, `dev/mvp/WORKFLOW.md`,
+  `dev/mvp/README.md`, `dev/mvp/templates/`, `dev/mvp/research/open-questions.md`,
+  `dev/development/`, `docs/`, `README.md`, `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`
+  and `.github/`. Edit them in place. No "changed vs", "merged from", "renamed from",
+  "retired", no "decided on <date> by <who>", no `updated` date. A removed item is
+  deleted; a removed ID is not reused (each kind names its next free ID).
+- **Records** keep their history because history is their content: decisions
+  (`dev/mvp/decisions/`), research items (`dev/mvp/research/`, dated observations; add a
+  new item rather than rewrite an old one), build files (`dev/mvp/builds/`, frozen when
+  the build closes), meeting notes (`dev/meetings/`) and `dev/legacy/`.
+- **History** of a living document goes in the commit message, and in `CHANGELOG.md`
+  when a reader of the repository needs it.
+
 ## Build workflow
 
 All work follows `dev/mvp/WORKFLOW.md`:

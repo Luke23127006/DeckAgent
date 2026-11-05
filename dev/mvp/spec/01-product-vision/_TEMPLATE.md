@@ -1,7 +1,6 @@
 ---
 id: VIS-001
 title: ""
-updated: DD-MM-YYYY
 ---
 
 <!-- Write per dev/mvp/spec/_STYLE.md. Gate: _CRITERIA.md.
@@ -15,7 +14,7 @@ updated: DD-MM-YYYY
        Status: "confirmed" (you decided) or "proposed" (AI suggests, awaiting your approval). Always present.
        Source: only when "proposed" — who proposed it and what it was inferred from.
        Spec implications: what lower spec must hold or must not assume. Only what follows directly from the statement. Omit the field when Status is "proposed".
-       Updated date: just one `updated` in the frontmatter, the last edit date. Do not record who; git history does that. -->
+     No dates and no change history: git history records when and who (_STYLE.md rule 12). -->
 
 ## What the product is
 
@@ -82,6 +81,6 @@ updated: DD-MM-YYYY
 - **Question:**
 - **Affects:** none yet
 
-## Removed
+## Next free IDs
 
-<!-- Removed IDs, one line each saying where the content went (VG-05). Not reused. Omit this section if empty. -->
+<!-- One line per kind, e.g. "P-4". A removed block is deleted and its ID is not used again (VG-05). -->

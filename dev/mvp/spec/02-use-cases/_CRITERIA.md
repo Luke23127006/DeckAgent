@@ -34,18 +34,13 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 ### Use case IDs
 
 - One ID (`UC-xxx`) names a use case file. A flow ID (`Sx`, `Ax`) names a block in the file.
-- The namespace is `dev/mvp/spec/`. IDs of the previous spec (`docs/spec` branch at commit `71ff143`) do not belong to it until they are migrated here.
+- The namespace is `dev/mvp/spec/`.
 - An ID never moves to a different goal or is reused, even after a file is deleted.
-- A new ID takes the number after the highest ID in the folder, in the parked use cases of `../05-backlog/` and in the removed-ID list. Gaps stay as they are.
+- A new ID is the next free ID below. A number below it with no file, in this folder or in `../05-backlog/`, is not used.
 - A use case or a flow left for later is parked in `../05-backlog/`, not removed. A parked flow keeps its ID free in its use case, and the use case names it in a Note line only.
 - IDs are not renumbered.
 
-Removed use case IDs:
-
-- UC-017, 05-11-2026, retired: a visual style is the rules in words of a design system (UC-010), and the user chooses a template in the interview (UC-001). Making a design system from a deck is UC-010 A11.
-- UC-014, 05-11-2026, retired: the reach of the agent of a chat is fixed by code and the user chooses no permission level; a step beyond that reach is UC-003 A51.
-- UC-011, 05-11-2026, retired: a chat holds at most one deck, and a second deck for another use starts in a new chat (UC-012) as a first draft (UC-001), with an exported deck attached as material. A change of the same deck is a follow-up request (UC-002).
-- UC-015, 05-11-2026, retired: the system summarizes a conversation that outgrows the context of the model by itself, during a request (UC-003 A52); the user has no compact command. Showing the context usage is in the backlog (FR-078).
+Next free use case ID: UC-020.
 
 Layer: in the spec (`dev/mvp/spec/`) each alternative keeps At, Ends, When and FR, with
 System in one line. Detailed responses live in the acceptance criteria of the testing
@@ -75,7 +70,7 @@ scope.
 | UCG-03 | The Steps table has 3–9 `Sx` rows in order. Each row has User (intent), System (observable, no "if"), FR (ID or `FR-?`). No settings, no interface | A response buried in prose; an unclear FR source | Lint (rows, columns) + Review |
 | UCG-04 | Each alternative is a `### Ax · name` block with At, Ends, When, System, FR. `Ends` uses a value from the template. Each step that takes input, can be cancelled, depends on an external service, or can be slow has an alternative, or a recorded reason | A branch not reproducibly testable | Lint (fields) + Review |
 | UCG-05 | The Outcome is verifiable by observation. The Minimal guarantee says what stays true when any branch fails | No final claim to test; data loss on failure | Review |
-| UCG-06 | Step and branch IDs are not renumbered once cited; dropped IDs are listed and not reused. Each reference to another use case or block (an `Ends`, a "like UC-xxx Sx") names an ID that exists and is not dropped or parked. `UC-?` in `Ends` is allowed; a parked item is named only in a Note | A citation pointing wrong; a reference to a dropped block | CI (references) + Review |
+| UCG-06 | Step and branch IDs are not renumbered once cited; a dropped ID is not reused; each use case names its next free flow ID in a Note. Each reference to another use case or block (an `Ends`, a "like UC-xxx Sx") names an ID that exists and is not dropped or parked. `UC-?` in `Ends` is allowed; a parked item is named only in a Note | A citation pointing wrong; a reference to a dropped block | CI (references) + Review |
 | UCG-07 | The use case contains no rule or quality values. It cites by ID every requirement, limit, allow-list, check, or wait time a step depends on (`FR-xxx`, `[BR-xxx]`, `[NFR-xxx]`). The `?` marker is allowed on any flow | The same rule in several places; a value changed in one place but not another | Lint (numbers, markers) + CI (ID exists) |
 | UCG-08 | The product coverage stated for each reference product is `observed`, `none`, or `unverified`, with a research link. Differences are described in prose, not rule values. An unrecorded claim keeps `[assumed]` | A guess read as a fact | Lint (tags) + Review |
 | UCG-09 | Text follows `../_STYLE.md`: glossary words, no banned vague verbs, no "can/should/might" in System, conditions in When, one action per line, evidence on its own line. The use case writes intent and response, not a widget, gesture, position, style, or label; it names a place only by region | A response read two ways; a spec that breaks when design changes | Lint (banned words, interface words) + Review |

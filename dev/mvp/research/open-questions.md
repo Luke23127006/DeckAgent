@@ -1,7 +1,6 @@
 # Open questions
 
-Questions that the spec review of 04-11-2026 to 05-11-2026 left open. Each one names the
-phase that answers it. When a question is answered, remove it here and record the answer
+Open questions about the MVP. Each one names the phase that answers it. When a question is answered, remove it here and record the answer
 in a research file, a decision or the spec. Open decisions are listed in
 [decisions/README.md](../decisions/README.md), not here.
 
@@ -21,8 +20,7 @@ in a research file, a decision or the spec. Open decisions are listed in
      DeepSeek models have a 1,048,576-token context, reasoning efforts off / low / high /
      max with `high` as the default, at most 256,000 output tokens and a fallback context
      of 1,000,000; choosing a model applies its default effort; the GUI offers only catalog
-     models; a key is only format-checked before it is saved. The "200k" the PO recalled
-     was not found there.
+     models; a key is only format-checked before it is saved.
 
 2. Can an OpenCode configuration give the reach that FR-077 fixes? Reach means the files
    and services a request may use.
@@ -79,7 +77,7 @@ in a research file, a decision or the spec. Open decisions are listed in
 
 13. Attachment limits (BR-001 number and size, BR-002 request length and its unit) are
     not set. They wait for technical evidence.
-    - Trial values from the legacy research, not approved: 10 new attachments in one
+    - Trial values, not approved: 10 new attachments in one
       request, 20 MiB per file, types TXT, MD, PDF, DOCX, PNG, JPEG and PPTX.
     - Evidence to collect: a file just below, at and above the trial size; 9, 10 and 11
       attachments; every accepted type including a valid PPTX; invalid, protected,
@@ -90,43 +88,34 @@ in a research file, a decision or the spec. Open decisions are listed in
 
 14. Key storage (FR-040) and BR-006 V-1 are not answered.
 
-15. Accessibility (legacy NFR-013) is not migrated. Legacy FR-023 cited it.
+## Other product and runtime questions
 
-## Carried from the legacy design backlog
-
-The legacy spec kept its open questions in `ideal-spec-open-design-questions.md` (on the
-`docs/spec` branch at `71ff143`, later in `dev/legacy/research/`). Checked against the
-spec on 05-11-2026. Questions the spec review already settled, or that belong to a parked
-use case (export, changes by hand, deck history, session export, variants), are not
-carried. The items below are still open.
-
-16. Workspace names (UC-013): what name a new workspace gets, whether the user can
+15. Workspace names (UC-013): what name a new workspace gets, whether the user can
     change it, and whether names must be unique. Whether adding the same folder again as
     a workspace brings back the chats it had, or starts without them.
 
-17. Requests that stopped or failed (UC-003 A11, FR-019): the spec has no try-again
+16. Requests that stopped or failed (UC-003 A11, FR-019): the spec has no try-again
     action; the user sends a new request, which starts from the last finished deck.
     Does the MVP need a try-again action? If yes: what runs again, and how the system
     avoids making the same change twice (for example adding the same slide again).
     Also: which causes of a failure keep the user from sending a new request.
 
-18. Providers (BR-006): what each built-in provider needs besides a key, which of its
+17. Providers (BR-006): what each built-in provider needs besides a key, which of its
     default settings the user can change, and where its base URL can change. How the
     system knows that a custom model API needs a key, and whether the user can change
     the API protocol of a saved custom model API. Each answer waits for checks with the
     provider and with OpenCode (item 1).
 
-19. Conditions of the NFR measures, decided in the testing plan of the build that takes
+18. Conditions of the NFR measures, decided in the testing plan of the build that takes
     each NFR:
     - the computers on which the performance targets hold (NFR-001, NFR-011, NFR-012,
       NFR-014), and the providers and models (NFR-002, NFR-012);
     - the Windows versions, hardware and browsers for building and running (NFR-014);
-    - the screen readers and browsers of the accessibility checks (legacy NFR-013);
     - the languages DeckAgent commits to beyond Vietnamese and English, which are
       checked first (NFR-009);
     - whether other programs of the same user can read a saved key (NFR-006).
 
-20. Runtime limits, for the implementation plan (legacy UC-003 Note 34):
+19. Runtime limits, for the implementation plan:
     - several open views or windows, and several running copies of DeckAgent;
     - a work loop with no bound, and a request whose provider sends nothing;
     - the use of the model, of money and of the computer by one request;

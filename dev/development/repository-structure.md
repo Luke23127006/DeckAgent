@@ -25,12 +25,12 @@ project and record the actual directories here.
 | `tests/` | Test suites and their fixtures. |
 | `config/` | Checked-in sample/development configuration; never commit secrets. |
 | `docs/` | Public documentation for outside readers; `docs/architecture/` holds the as-built module map and LLM boundary map. |
-| `dev/` | Internal documentation for the dev team: specs, versions and builds, research, decisions, conventions, templates. |
-| `dev/legacy/` | Read-only documents from before the workflow, including the previous spec. |
+| `dev/` | Internal documentation for the dev team: the MVP (`dev/mvp/`: spec, workflow, research, decisions, templates, builds), conventions, meeting notes. |
+| `dev/legacy/` | Read-only documents tied to the legacy code: how to run it, its conventions, its old version plans. |
 
 **Legacy code.** Today `apps/`, `packages/`, `vendor/`, `scripts/` and the test files
-directly in `tests/` hold the legacy code (AGENTS.md "Reference code"). Where the code of
-a workflow version lives is a Phase 3 decision; until it is recorded, do not add new
+directly in `tests/` hold the legacy code (AGENTS.md "Reference code"). Where the MVP code
+lives is a Phase 3 decision; until it is recorded, do not add new
 code next to the legacy code.
 
 ## When to create a new package (proposal)

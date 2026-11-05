@@ -1,7 +1,6 @@
 ---
 id: BR-000
 title: ""
-updated: DD-MM-YYYY
 ---
 
 <!-- A BR defines a value that product behavior depends on (BRG-01): an allow-set, limit, threshold, quota, retention time, or list.

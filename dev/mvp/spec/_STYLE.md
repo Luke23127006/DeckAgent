@@ -1,7 +1,7 @@
 # Spec writing rules
 
 Applies to every file in `dev/mvp/spec/`. Rules 5 and 7 apply to the `System` and `When`
-fields of a use case. Rule 11 applies to the whole use case.
+fields of a use case. Rule 11 applies to the whole use case. Rule 12 applies to every file.
 
 **Why:** each sentence must have one meaning, so one system response becomes one
 testable requirement. Everyday words do both.
@@ -21,9 +21,10 @@ testable requirement. Everyday words do both.
 | 9 | **Minimal bold.** Bold one glossary word on its first use in a line. At most 2 per line. | Bold a whole phrase | "Play **audio**." |
 | 10 | **Evidence on its own line.** One tag per claim. Never mid-sentence. | "…the screen stays on the first chapter `[observed: …]`, and does not offer the next chapter." | `- **Evidence:** [observed: claude-report (screen stays on first chapter)]` |
 | 11 | **Intent and response, not interface.** The user side says what the user wants. The system side says what the system reports, keeps, changes, or creates. Never name a widget, gesture, position, style, or label. Name a place only by region (see Regions). If an interface detail carries a requirement, write the requirement. | "The user opens the menu and picks a story." "Open the listening view in the bottom corner." "Show a card with a replay button." | "The user picks a story." "Open the listening view. The saved progress and the current audio stay unchanged." "Let the user replay." |
+| 12 | **Current state only, no history.** A file says what is true now. No change log, no "changed vs", "merged from", "rewritten from", "retired", no ruling date and no who decided. No `updated` date. A `Why` gives the reason, not the meeting. History lives in git and `CHANGELOG.md`; a design choice with its options lives in `dev/mvp/decisions/`. | "Legacy FR-020 is dropped. The owner ruled on 04-11-2026 that a reply is a new request." | "A question ends its request; the reply is a new request." |
 
 Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it readable. Rule 11
-keeps the spec correct when the design changes.
+keeps the spec correct when the design changes. Rule 12 keeps it cheap to maintain.
 
 ## Evidence tags
 

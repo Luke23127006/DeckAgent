@@ -20,6 +20,8 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- Living documents hold no history (AGENTS.md "Documents: current state, history in git"; spec style rule 12). The MVP spec lost every legacy reference, ruling date and "merged/retired/changed vs" note, its `updated` dates, its removed-ID lists (each kind now names its next free ID, each use case its next free flow ID) and the `Source`/`Decided` sections of backlog items. Accessibility is not an MVP question.
+
 - The spec, research, decisions, templates and workflow moved into `dev/mvp/`: the current spec is the MVP spec, with no target/version layers. `dev/mvp/README.md` holds the MVP status. `WORKFLOW.md` moved to `dev/mvp/WORKFLOW.md`.
 - Acceptance criteria and NFR measures are written per build in its testing plan, after research, not in the spec. The FR and NFR templates lost those sections; the testing-plan template gained them.
 - Phase 0 is MVP planning (build order, milestone `mvp`, walking skeleton); version close became MVP close, followed by a review of the workflow. A review of the workflow follows the first build.

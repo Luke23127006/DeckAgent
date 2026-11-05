@@ -34,49 +34,13 @@ request is running". A rule with a value goes to `../../04-business-rules/`.
 ### IDs and files
 
 - One FR per file: `FR-xxx.md`. `xxx` is three digits. The frontmatter `id` equals the file name.
-- A new ID takes the number after the highest ID in the folder, in the parked FRs of `../../05-backlog/` and in the removed IDs. Gaps stay as they are.
+- A new ID is the next free ID below. A number below it with no file, in this folder or in `../../05-backlog/`, is not used.
 - An ID does not change when the title or wording changes, and is not reused.
-- An ID is dropped only when the behavior leaves the behavior model or is merged into another FR. A dropped ID is recorded below with the date and, after a merge, the FR it merged into.
-- A behavior left for later is parked in `../../05-backlog/`, not dropped. FR-062 and FR-081, first recorded here as dropped with a reason to look again, were parked on 05-11-2026.
+- An ID is dropped only when the behavior leaves the behavior model or is merged into another FR. Its file is deleted; its number is not used again.
+- A behavior left for later is parked in `../../05-backlog/`, not dropped.
 - Acceptance criterion IDs are `AC-1`, `AC-2` within one FR, not renumbered. A later build that takes the same FR continues its numbering.
 
-Removed FR IDs:
-
-- FR-004, 04-11-2026, dropped: an outline is not cancelled; an unconfirmed outline stays and is revised.
-- FR-006, 04-11-2026, merged into FR-003.
-- FR-020, 04-11-2026, dropped: a question the system asks ends its request, and the reply is a new request (FR-014).
-- FR-026, 04-11-2026, merged into FR-025.
-- FR-030, 04-11-2026, merged into FR-031.
-- FR-032, 04-11-2026, dropped: a question ends its request, and the reply "every slide" is a clear follow-up request (FR-027).
-- FR-033, 04-11-2026, dropped: the reply "new slides only" is a clear follow-up request (FR-027).
-- FR-034, 04-11-2026, dropped: no instruction is kept aside for slides built later.
-- FR-035, 04-11-2026, merged into FR-031.
-- FR-047, 04-11-2026, merged into FR-019.
-- FR-051, 05-11-2026, merged into FR-049.
-- FR-052, 05-11-2026, merged into FR-019.
-- FR-054, 05-11-2026, merged into FR-068.
-- FR-056, 04-11-2026, merged into FR-046.
-- FR-057, 05-11-2026, merged into FR-041 (display-name rules dropped).
-- FR-061, 05-11-2026, merged into FR-041.
-- FR-064, 05-11-2026, merged into FR-063.
-- FR-075, 05-11-2026, dropped: the user chooses no permission level for a chat; the agent reaches what FR-077 fixes.
-- FR-082, 05-11-2026, dropped: no named reference; the user names a file of the project folder in the request text, and an unreadable file is FR-067.
-- FR-086, 04-11-2026, merged into FR-067.
-- FR-094, 05-11-2026, dropped: no visual style; the user chooses a template and a design system (FR-022).
-- FR-095, 05-11-2026, dropped: no design options before the slides; the outline is the only checkpoint, and a design system shows a sample slide (FR-096).
-- FR-100, 05-11-2026, merged into FR-096.
-- FR-101, 05-11-2026, merged into FR-097.
-- FR-102, 05-11-2026, merged into FR-098.
-- FR-103, 05-11-2026, merged into FR-097 (from a deck) and FR-099 (from a reference presentation).
-- FR-104, 05-11-2026, dropped: no visual style, and no Required or Preferred Rules.
-- FR-105, 05-11-2026, merged into FR-136.
-- FR-108, 04-11-2026, merged into FR-107.
-- FR-109, 05-11-2026, merged into FR-044.
-- FR-110, 05-11-2026, merged into FR-112.
-- FR-111, 05-11-2026, merged into FR-038.
-- FR-114, 04-11-2026, merged into FR-113.
-- FR-115, 04-11-2026, merged into FR-113.
-- FR-123, 05-11-2026, dropped: an exported source archive attached to a request is material like any attachment, and nothing is imported as a deck to change.
+Next free FR ID: FR-141.
 
 ### Links
 
@@ -103,7 +67,7 @@ FR can serve several blocks; one block can cite several FRs.
 | FRG-07 | The `Undecided` section states open behavior one line each. No statement and no criterion assumes a result for it. A response that fully depends on an open decision does not get an FR; the block keeps `FR-?` | An open question becoming a requirement before it is decided | Review |
 | FRG-08 | Each criterion is a `### AC-n · name` block with Given, When, Then, Check. `Check` is `deterministic` or `evaluation`. `Then` is an observable result, one line per thing, no "if". It does not pin the exact model wording | An untestable criterion; a test tied to model wording | Lint (fields, values) + Review |
 | FRG-09 | Text follows `../../_STYLE.md` rules 1–10 in Statement and Then, and the intent of rule 11: no label, position, color, or unapproved icon; name a place by region | A requirement that locks a design nobody chose | Lint (banned words, interface words) + Review |
-| FRG-10 | The file name `FR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique. A new ID follows the highest existing, parked or removed ID. A dropped ID is recorded in section 1, not reused | Two meanings for one ID | Lint (name, format) + CI (unique) |
+| FRG-10 | The file name `FR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique. A new ID is the next free ID of section 1; a dropped ID is not reused | Two meanings for one ID | Lint (name, format) + CI (unique) |
 
 ## 3. Illustrations
 

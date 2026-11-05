@@ -50,12 +50,12 @@ range, or "about" (NFG-04).
 ### IDs and files
 
 - One NFR per file: `NFR-xxx.md`. `xxx` is three digits. The `id` equals the file name.
-- A new ID follows the highest existing, parked (`../../05-backlog/`) or removed ID. An ID does not change when the title or target changes, is not reused, and is not renumbered.
-- An ID is dropped only when the requirement leaves the behavior model or is merged into another NFR. A dropped ID is recorded below with the date and the NFR it merged into.
+- A new ID is the next free ID below; a number below it with no file is not used. An ID does not change when the title or target changes, is not reused, and is not renumbered.
+- An ID is dropped only when the requirement leaves the behavior model or is merged into another NFR. Its file is deleted; its number is not used again.
 - A requirement left for later is parked in `../../05-backlog/`, not dropped.
 - Measure IDs are `M-1`, `M-2` within one NFR, not renumbered.
 
-Removed NFR IDs: none.
+Next free NFR ID: NFR-016.
 
 ### Links
 
@@ -86,7 +86,7 @@ marker stays and the missing part is reported.
 | NFG-05 | Each measure is fully defined: a repeatable Condition, a Measure and How to measure sufficient to verify. The Target has a unit and bound or is a required property. The product-controlled or end-to-end boundary and provider-dependent conditions are stated; provider time is not silently hidden. No tool, no architecture | An unverifiable requirement; provider time promised as a product result | Review |
 | NFG-06 | A pending target reads `not set` in Target and Passes when. No guessed number, range, or "about". No file presents it as an approved target | A made-up target; an open target read as decided | Lint (`not set`) + Review |
 | NFG-07 | The `Undecided` section states an open aspect that is not a target, one line, ending "Pending decision." or "Pending technical evidence." for a definition lacking evidence. A missing target is `not set`, not an item here | An open question becoming a target before it is decided | Review |
-| NFG-08 | The file name `NFR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique and not renumbered. A dropped ID is recorded in section 1, not reused. The NFR does not name a use case, step, branch, FR, or another NFR | Two meanings for one ID; a link pointing up | Lint (name, format) + CI (unique) |
+| NFG-08 | The file name `NFR-xxx.md` is three digits, equal to the frontmatter `id`. The ID is unique and not renumbered. A new ID is the next free ID of section 1; a dropped ID is not reused. The NFR does not name a use case, step, branch, FR, or another NFR | Two meanings for one ID; a link pointing up | Lint (name, format) + CI (unique) |
 | NFG-09 | Text follows `../../_STYLE.md` rules 1–10 in Statement, Condition, Measure, and Target. No interface (rule 11) | A requirement read two ways; a design locked via a quality target | Lint (banned words) + Review |
 
 ## 3. Illustrations

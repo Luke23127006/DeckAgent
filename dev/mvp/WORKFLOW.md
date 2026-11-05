@@ -93,8 +93,8 @@ Rules:
 4. **The backlog waits outside the spec.** A use case, a flow, an FR, an NFR or a BR that
    the PO leaves for later is parked in `dev/mvp/spec/05-backlog/` with its ID and the
    reason. No build takes a backlog item, and no spec block cites one. To build it, the
-   PO promotes it to the spec first (rule 3). A behavior dropped for good goes to the
-   removed list of its kind instead. See `dev/mvp/spec/05-backlog/_CRITERIA.md`.
+   PO promotes it to the spec first (rule 3). A behavior dropped for good is deleted
+   instead; its ID is not reused. See `dev/mvp/spec/05-backlog/_CRITERIA.md`.
 5. **The spec freezes at MVP close.** Later changes go through issues.
 
 ## Test tiers
@@ -413,6 +413,10 @@ that re-reads it each phase.
 3. **Fixed section order.** Each template fixes its headings. Generators keep them.
 4. **Length budget.** About one page per document. Split or link out when it grows. The
    acceptance criteria and measures of a testing plan do not count toward it.
+5. **No history in a living document.** The spec, this workflow, the templates and the
+   other living documents say what is true now; history goes to git and `CHANGELOG.md`.
+   Records (decisions, research items, build files, meeting notes) keep their dates. See
+   AGENTS.md "Documents: current state, history in git".
 
 ## Flow tracker
 

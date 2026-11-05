@@ -72,13 +72,13 @@ that `../_STYLE.md` defines is used here, not redefined (VG-06).
 | Principles | Question 4 | `P-x` | Statement, Status, Source, Why, Spec implications |
 | Boundaries | Question 5 | `B-x` | Statement, Status, Source, Why, Spec implications |
 | Open questions | Any gap | `Q-x` | Question, Affects |
-| Removed | Removed IDs | none | One line per ID |
+| Next free IDs | One line per kind | none | `I-x`, `W-x`, `P-x`, `B-x`, `Q-x` |
 
 - `Status` is `confirmed` or `proposed`. Always present.
 - `Source` appears only when `proposed` — says who proposed it and what it was inferred from.
 - `Why` gives the reason, or drop the line. Do not invent a reason.
 - `Spec implications` appears only on a `confirmed` block, and only what follows directly from the statement.
-- IDs are never renumbered or reused. A removed block is recorded under `Removed` (VG-05).
+- IDs are never renumbered or reused. A removed block is deleted; its ID is not used again (VG-05).
 
 ## 3. Criteria
 
@@ -91,12 +91,12 @@ that `../_STYLE.md` defines is used here, not redefined (VG-06).
 | VG-02 | A block says what is true of the product or for the user. It never says how code achieves it. `Why` gives your reason, or drops the line | Architecture chosen by accident | Review |
 | VG-03 | A boundary says what the product is NOT by nature, via the test in section 1. A missing feature or a scope limit is not a boundary | A V1 limit turning into a permanent one | Review |
 | VG-04 | An open question has `Question` and `Affects`. `Affects` lists the spec items awaiting the answer by ID, or "none yet". No other block answers the question | A gap hidden inside a statement | Lint (fields) + Review |
-| VG-05 | IDs `I-x`, `W-x`, `P-x`, `B-x`, `Q-x` are never renumbered or reused. A removed block is recorded under `Removed` with where the content went | A citation pointing at the wrong block | Review |
+| VG-05 | IDs `I-x`, `W-x`, `P-x`, `B-x`, `Q-x` are never renumbered or reused. The file names the next free ID of each kind | A citation pointing at the wrong block | Review |
 | VG-06 | Each fact is written once. Other blocks point by ID. The file does not redefine a term, region, or rule that `../_STYLE.md` defines | Two sources for one fact drifting apart | Review |
 | VG-07 | Each block has `Status: confirmed` or `proposed`. A `proposed` block has `Source` and no `Spec implications`. Lower spec does not rely on a `proposed` block | A proposal read as a rule | Lint (fields) + Review |
 | VG-08 | The file contains no scope, order, or priority. No use of MVP, V1, phase, roadmap | A scope decision put in the wrong place | Lint (words) + Review |
 | VG-09 | The file contains no rules or quality values. It cites `[BR-?: topic]` or `[NFR-?: topic]` for every limit or target | The same rule written in several places | Lint (numbers, markers) + CI (ID exists) |
-| VG-10 | Links are top-down only. Only `Affects` names a lower spec item, and each ID exists or is removed | A link pointing up; a dangling ID | CI (reference exists) |
+| VG-10 | Links are top-down only. Only `Affects` names a lower spec item, and each ID exists | A link pointing up; a dangling ID | CI (reference exists) |
 | VG-11 | Text follows `../_STYLE.md`: glossary words, no banned vague verbs, one fact per line, evidence on its own line | Text a reader reads two ways | Lint (banned words) + Review |
 | VG-12 | The file has no marketing. No praise words like powerful, smooth, intuitive, smart, best, easy | Marketing copy read as a commitment | Lint (words) + Review |
 | VG-13 | Only you confirm a statement. AI writes new content only as a `proposed` block or an open question. Content found in a use case, research link, or reference product is not confirmed because of that | Inference and borrowed features becoming product truth | Review |
