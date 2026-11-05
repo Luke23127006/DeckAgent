@@ -2,9 +2,9 @@
 
 # Coding conventions
 
-This document records the project's coding conventions. It is a living document: each section names a topic a convention must cover and the kind of decision it records. Fill each placeholder with the project's own choice as the codebase takes shape; an unfilled section does not constrain a change. The conventions apply to new code and to changes under review.
+This document records the project's **coding conventions**. It is a **living document**: each section names a **topic a convention must cover** and the **kind of decision it records**. **Fill each placeholder** with the project's own choice as the codebase takes shape; an **unfilled section does not constrain a change**. The conventions apply to **new code** and to **changes under review**.
 
-Examples illustrate a rule; they are not additional rules. Where the codebase does not yet follow a rule, the gap is marked **Known drift** — do not copy the drift. How a change is judged (`MUST` / `SHOULD` / `MAY`) is in [`code-review-criteria.md`](./code-review-criteria.md); where code lives is in [`repository-structure.md`](./repository-structure.md).
+**Examples illustrate a rule**; they are **not additional rules**. Where the codebase does not yet follow a rule, the gap is marked **Known drift** — **do not copy the drift**. **How a change is judged** (`MUST` / `SHOULD` / `MAY`) is in [`code-review-criteria.md`](./code-review-criteria.md); **where code lives** is in [`repository-structure.md`](./repository-structure.md).
 
 ## 1. File and directory naming
 
@@ -17,8 +17,8 @@ Examples illustrate a rule; they are not additional rules. Where the codebase do
 - `interface` for public object contracts; `type` for unions and aliases.
 - Discriminated unions carry a literal tag (`role`, `type`, `status`).
 - Mark contract fields `readonly`; use `readonly T[]` and `Readonly<Record<...>>`.
-- Distinguish a package's public API (imported through its barrel or contract file) from internal module exports; only the public API is subject to surface-stability review.
-- Prefer explicit `export` / `export type` for new public APIs so a reviewer sees the surface change in one place.
+- **Distinguish a package's public API** (imported through its barrel or contract file) from **internal module exports**; **only the public API** is subject to **surface-stability review**.
+- **Prefer explicit `export` / `export type`** for new public APIs so a reviewer **sees the surface change in one place**.
 - Classes `PascalCase`; functions, variables, and members `camelCase`; `SCREAMING_SNAKE_CASE` for error codes (see §4) and, where it helps, named constants.
 
 ## 3. Imports and module boundaries
@@ -43,19 +43,19 @@ Examples illustrate a rule; they are not additional rules. Where the codebase do
 ## 6. Type safety
 
 - `tsconfig.base.json` enables `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noUnusedLocals`, and `noUnusedParameters`; do not relax these per package.
-- Validate untrusted data at runtime before trusting its type; prefer narrow unions over `any`, use `unknown` and narrow before use, and use `never` for exhaustive checks.
-- Do not add a type assertion to hide a contract mismatch or skip validation.
+- **Validate untrusted data at runtime** before trusting its type; **prefer narrow unions over `any`**, **use `unknown` and narrow before use**, and **use `never` for exhaustive checks**.
+- **Do not add a type assertion** to **hide a contract mismatch** or **skip validation**.
 
 ## 7. Testing
 
-- New tests must be discoverable through the project's verification commands and must not require real credentials or cloud access. Record the project's current test toolchain and test-file layout here.
-- Import the built output, not `src`, so tests exercise what is shipped.
-- Use the framework's teardown hook and a temporary-directory helper for isolation; prefer loopback servers for anything network-facing.
+- **New tests must be discoverable** through the project's verification commands and **must not require real credentials or cloud access**. **Record the project's current test toolchain** and test-file layout here.
+- **Import the built output, not `src`**, so **tests exercise what is shipped**.
+- Use the **framework's teardown hook** and a **temporary-directory helper** for isolation; **prefer loopback servers** for anything network-facing.
 - What makes a change "verified" and "testable" is judged by CQC-014 and CQC-018.
 
 ## 8. Package naming and public APIs
 
 - Record the project's package scope and vendor scope here (`@<project>/*` owned; `<vendor>/*` vendored).
-- A library's public entry point is declared in its manifest so consumers resolve the same surface the build produces; apps are private with no `exports`.
-- Expose a small, stable barrel; put multi-component contracts in `contracts.ts`.
+- A library's **public entry point is declared in its manifest** so consumers **resolve the same surface the build produces**; **apps are private** with no `exports`.
+- **Expose a small, stable barrel**; put **multi-component contracts** in `contracts.ts`.
 - **Known drift:** package names do not always mirror directory paths — see `repository-structure.md`; renaming is a separate cleanup task.

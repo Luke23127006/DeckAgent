@@ -20,7 +20,7 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
-- **Markdown form** (AGENTS.md "Writing Markdown"): **no hard wrap**, each paragraph or list item **on one line**; each sentence **bolds its keywords**. Every Markdown file outside `dev/legacy/` was **unwrapped**; spec style rule 9 and research style rule 3 follow the new rule. AGENTS.md, `dev/mvp/WORKFLOW.md` and the research style guide **bold their keywords**.
+- **Markdown form** (AGENTS.md "Writing Markdown"): **no hard wrap**, each paragraph or list item **on one line**; each sentence **bolds its keywords**. Every Markdown file outside `dev/legacy/` was **unwrapped**; spec style rule 9 and research style rule 3 follow the new rule. Every living document **bolds its keywords**: the spec, the workflow, the templates, the skills, the issue and PR templates, `dev/development/`, `docs/`, README, AGENTS.md and CLAUDE.md. Records (decisions, research items, evidence) keep their form until they are next edited.
 - Living documents hold no history (AGENTS.md "Documents: current state, history in git"; spec style rule 12). The MVP spec lost every legacy reference, ruling date and "merged/retired/changed vs" note, its `updated` dates, its removed-ID lists (each kind now names its next free ID, each use case its next free flow ID) and the `Source`/`Decided` sections of backlog items. Accessibility is not an MVP question.
 
 - The spec, research, decisions, templates and workflow moved into `dev/mvp/`: the current spec is the MVP spec, with no target/version layers. `dev/mvp/README.md` holds the MVP status. `WORKFLOW.md` moved to `dev/mvp/WORKFLOW.md`.
