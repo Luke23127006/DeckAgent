@@ -10,7 +10,13 @@ labels: phase:impl, flash-ready
 <!-- What already exists that the implementer needs to know.
      Include file paths and brief descriptions. Not "see the codebase". -->
 
-**Milestone:** mvp **Use case:** UC-XXX **FR / AC:** FR-NNN / AC-N **Decisions:** DEC-NNN (link to dev/mvp/decisions/) **Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md **Test author:** @handle — must not be the assignee (separation rule) **Flow tracker:** #N
+**Milestone:** mvp
+**Use case:** UC-XXX
+**FR / AC:** FR-NNN / AC-N
+**Decisions:** DEC-NNN (link to dev/mvp/decisions/)
+**Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md
+**Test author:** @handle — must not be the assignee (separation rule)
+**Flow tracker:** #N
 
 ### LLM boundary
 
@@ -57,20 +63,20 @@ npm test -- --grep "FR-NNN"
 
 <!-- Explicit boundaries. What the implementer must NOT touch, refactor, or change. -->
 
-- Do not modify files outside the listed paths.
-- Do not modify any test in `tests/acceptance/` or `tests/eval/` (locked).
-- Do not modify any spec file.
-- Do not call the model where the LLM boundary above says none.
-- Do not add dependencies not listed here.
-- Do not refactor existing code.
-- Do not copy reference code wholesale; do not modify the legacy code.
+- **Do not modify files outside the listed paths**.
+- **Do not modify any test** in `tests/acceptance/` or `tests/eval/` (**locked**).
+- **Do not modify any spec file**.
+- **Do not call the model** where the **LLM boundary above says none**.
+- **Do not add dependencies** not listed here.
+- **Do not refactor existing code**.
+- **Do not copy reference code wholesale**; **do not modify the legacy code**.
 
 ## Acceptance
 
-- [ ] All listed tests pass
-- [ ] No other tests broken
-- [ ] Maximum 3 files changed
-- [ ] Type checks pass (`npm run typecheck` or equivalent)
+- [ ] **All listed tests pass**
+- [ ] **No other tests broken**
+- [ ] **Maximum 3 files changed**
+- [ ] **Type checks pass** (`npm run typecheck` or equivalent)
 
 ## Blocked by
 

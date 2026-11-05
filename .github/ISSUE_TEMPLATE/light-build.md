@@ -7,7 +7,10 @@ labels: build:light
 
 ## Context
 
-**Milestone:** mvp **FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue) **Tier:** ci / eval / manual **Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
+**Milestone:** mvp
+**FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue)
+**Tier:** ci / eval / manual
+**Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
 
 ## Problem
 
@@ -31,13 +34,13 @@ npm test -- --grep "FR-NNN"
 
 ## Do NOT
 
-- Do not modify files outside the listed paths.
-- Do not modify locked tests other than the one named above.
-- Do not modify any spec file.
+- **Do not modify files outside the listed paths**.
+- **Do not modify locked tests** other than the one named above.
+- **Do not modify any spec file**.
 
 ## Acceptance
 
-- [ ] Test approved by the PO
-- [ ] Test was red before the fix and is green after
-- [ ] No other tests broken
-- [ ] Matrix row added
+- [ ] **Test approved by the PO**
+- [ ] Test was **red before the fix** and is **green after**
+- [ ] **No other tests broken**
+- [ ] **Matrix row added**

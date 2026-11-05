@@ -7,7 +7,11 @@ labels: phase:research
 
 ## Context
 
-**Milestone:** mvp **Use case:** UC-XXX **Related FR/NFR:** FR-NNN / NFR-NNN **Flow step:** S?.? — {step name} **Flow tracker:** #N
+**Milestone:** mvp
+**Use case:** UC-XXX
+**Related FR/NFR:** FR-NNN / NFR-NNN
+**Flow step:** S?.? — {step name}
+**Flow tracker:** #N
 
 ## Flow diagram
 
@@ -68,9 +72,9 @@ sequenceDiagram
 
 ## Acceptance
 
-- [ ] Question answered with evidence or reasoning
-- [ ] Deliverable file created or updated
-- [ ] Reviewed
+- [ ] Question **answered with evidence or reasoning**
+- [ ] **Deliverable file created or updated**
+- [ ] **Reviewed**
 
 ## Blocked by
 

@@ -7,7 +7,10 @@ labels: phase:post-impl
 
 ## Context
 
-**Milestone:** mvp **Use case:** UC-XXX **Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md **Flow tracker:** #N
+**Milestone:** mvp
+**Use case:** UC-XXX
+**Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md
+**Flow tracker:** #N
 
 ## Test type
 
@@ -41,9 +44,9 @@ labels: phase:post-impl
 
 ## Acceptance
 
-- [ ] Test file exists
-- [ ] Test passes against the implemented code
-- [ ] Test fails when the tested behavior is broken (not a tautology)
+- [ ] **Test file exists**
+- [ ] Test **passes against the implemented code**
+- [ ] Test **fails when the tested behavior is broken** (not a tautology)
 
 ## Blocked by
 

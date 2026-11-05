@@ -30,7 +30,7 @@ _Tickets added when the testing plan is created. Format: #N title (tier, author 
 <!-- Gate: PO approves; module boundaries and LLM boundary filled -->
 <!-- Blocked by: Phase 2 complete -->
 
-- [ ] Implementation plan approved by the PO
+- [ ] **Implementation plan approved** by the PO
 
 ## Phase 4: Implementation tickets
 <!-- Gate: all tickets created and linked; test author ≠ assignee on every ticket -->
@@ -46,11 +46,11 @@ _Post-impl test tickets added alongside the implementation tickets._
 <!-- Gate: this issue closed; every matrix row's Verified column is ticked -->
 <!-- Blocked by: Phase 5 complete -->
 
-- [ ] Full CI suite, smoke and E2E pass
-- [ ] Eval run recorded for every eval-tier AC
-- [ ] As-built: PO prediction, then actual flow and drift
-- [ ] docs/architecture/ updated
-- [ ] Manual checks done by the PO
+- [ ] **Full CI suite, smoke and E2E pass**
+- [ ] **Eval run recorded** for every eval-tier AC
+- [ ] **As-built**: PO prediction, then actual flow and drift
+- [ ] **docs/architecture/ updated**
+- [ ] **Manual checks done** by the PO
 
 ### Verified per AC
 <!-- One line per AC, taken from dev/mvp/builds/UC-XXX/traceability-matrix.md -->
