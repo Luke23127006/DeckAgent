@@ -2,7 +2,8 @@
 id: DEC-005
 title: "The model writes the deck source within a template; code makes the theme and checks"
 date: 04-11-2026
-status: decided
+status: revisiting
+revisited_by: DEC-007
 research: "dev/research/open-design-design-systems.md; owner ruling in the UC-002 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-022, FR-092, FR-093, FR-107, FR-131, BR-003, NFR-009; replaces DEC-002"
 ---

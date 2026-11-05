@@ -105,8 +105,8 @@ empty; each project declares its own terms and adds to them as it learns.
 | **theme value** | A named value of a design system, such as a colour, a font or a spacing |
 | **brand file** | A file that gives the look of a brand, such as a brand guide, a logo, a font file or a design system package of another product |
 | **sample slide** | A slide made with a proposed design system to show it. It belongs to no deck |
-| **theme** | A design system written in the terms of one generation format: its theme values as named values the deck source refers to. Only the system writes it |
-| **template** | The prebuilt layouts of one generation format that the system builds slides from |
+| **theme** | A design system written in the terms of one generation format: its theme values, and those the user added for the deck, as named values the deck source refers to. Only the system writes it |
+| **template** | The prebuilt layouts of one generation format that the system builds slides from. Each layout states the kinds of content it serves and how much it holds |
 | **marked part** | A part of a slide that the user points to as the target of a request |
 | **closing message** | The response that ends the work on slides of a request and tells what was made or changed |
 | **placeholder** | Text that stands in for a fact no source gives |
