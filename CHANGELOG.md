@@ -17,6 +17,7 @@ All notable changes to this project are recorded here.
 - Target spec in `dev/spec/`, migrated from the legacy spec one use case at a time: UC-001, UC-002, UC-003, UC-005, UC-006, UC-010, UC-012 and UC-013, with their FRs, NFRs, BRs, glossary terms and research files.
 - Decision records DEC-001 to DEC-007 in `dev/decisions/`; DEC-004 and DEC-006 are still open.
 - The v3 legacy sync plan in `dev/versions/`.
+- `dev/research/open-questions.md`: the runtime and product questions the spec review left open, each with the phase that answers it.
 
 ### Changed
 
