@@ -59,6 +59,7 @@ Removed FR IDs:
 - FR-061, 05-11-2026, merged into FR-041.
 - FR-062, 05-11-2026, dropped: no restore of default models; reconsidered if runtime research finds no model catalog.
 - FR-064, 05-11-2026, merged into FR-063.
+- FR-075, 05-11-2026, dropped: the user chooses no permission level for a chat; the agent reaches what FR-077 fixes.
 - FR-081, 05-11-2026, dropped: no editing of model settings by hand; reconsidered if runtime research finds no model catalog.
 - FR-082, 05-11-2026, dropped: no named reference; the user names a file of the project folder in the request text, and an unreadable file is FR-067.
 - FR-086, 04-11-2026, merged into FR-067.

@@ -42,6 +42,7 @@ explores broadly. Evidence says where an idea came from; it does not choose anyt
 Removed use case IDs:
 
 - UC-017, 05-11-2026, retired: a visual style is the rules in words of a design system (UC-010), and the user chooses a template in the interview (UC-001). Making a design system from a deck is UC-010 A11.
+- UC-014, 05-11-2026, retired: the reach of the agent of a chat is fixed by code and the user chooses no permission level; a step beyond that reach is UC-003 A51.
 
 Layer: in the target spec (`dev/spec/`) each alternative keeps At, Ends, When and FR, with
 System in one line. Detailed responses live in the version spec (WORKFLOW.md "Spec

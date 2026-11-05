@@ -44,7 +44,9 @@ behavior — what the system does at a limit is written in the FR.
 - An ID is dropped only when the rule leaves the behavior model or is merged into another BR. A dropped ID is recorded below with the date and the BR it merged into.
 - Value IDs are `V-1`, `V-2` within one BR, not renumbered.
 
-Removed BR IDs: none.
+Removed BR IDs:
+
+- BR-009, 05-11-2026, dropped: no permission presets and no approval that lasts; the reach of the agent is fixed by code (FR-077) and an approval covers one step once (FR-076).
 
 ### Links
 

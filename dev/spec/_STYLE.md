@@ -68,6 +68,8 @@ empty; each project declares its own terms and adds to them as it learns.
 | **attachment** | A file the user adds to the draft. It is being prepared, ready, or rejected with a reason |
 | **status message** | The response that says, while a request is active, what the system is doing and how long it has worked |
 | **activity** | One thing the system did or does for a request, such as reading a file or building a slide, with its state |
+| **agent** | The part of the system that does the work of a request with the selected model, such as reading files, writing the work of the chat and using outside services |
+| **approval** | The user's answer to a step of a request that goes beyond what the agent of the chat reaches without asking: allow it once, or refuse it |
 | **selected model** | The model of a chat that runs its next request |
 | **provider** | A model service that runs models for DeckAgent through the user's own account |
 | **provider configuration** | One saved connection to a provider: its provider ID, what the provider needs such as a key, and its added models |
@@ -79,7 +81,7 @@ empty; each project declares its own terms and adds to them as it learns.
 | **added model** | A model the user added to a provider configuration |
 | **selectable model** | An added model of a saved provider configuration, which a chat is allowed to select |
 | **reasoning level** | How much the selected model reasons for a request, among the levels that model has |
-| **material** | What the user gives for a deck: request text, attached files and the files of the project folder that the request names |
+| **material** | What the user gives for a deck: request text, attached files and the files of the project folder that a request reads, named or not |
 | **workspace** | A group of chats. Each workspace other than the default workspace has one project folder, and no two workspaces have the same one |
 | **project folder** | The folder on the user's computer that the user chose for a workspace. It holds the user's files |
 | **workspace in use** | The workspace whose chats are the earlier chats and that a new chat joins |
