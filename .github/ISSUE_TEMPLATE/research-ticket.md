@@ -7,18 +7,13 @@ labels: phase:research
 
 ## Context
 
-**Milestone:** mvp
-**Use case:** UC-XXX
-**Related FR/NFR:** FR-NNN / NFR-NNN
-**Flow step:** S?.? — {step name}
-**Flow tracker:** #N
+**Milestone:** mvp **Use case:** UC-XXX **Related FR/NFR:** FR-NNN / NFR-NNN **Flow step:** S?.? — {step name} **Flow tracker:** #N
 
 ## Flow diagram
 
 <!-- Mermaid sequence diagram showing the runtime flow of the UC.
      Highlight the step(s) this question relates to using `activate` / `note`.
-     The reader should see WHERE in the flow this question comes from
-     before reading the question itself. -->
+     The reader should see WHERE in the flow this question comes from before reading the question itself. -->
 
 ```mermaid
 sequenceDiagram
@@ -41,8 +36,7 @@ sequenceDiagram
 ```
 
 <!-- Replace the diagram above with the actual flow for this UC.
-     Use `rect rgb(255, 230, 150)` to highlight the step(s)
-     this research question comes from. -->
+     Use `rect rgb(255, 230, 150)` to highlight the step(s) this research question comes from. -->
 
 ## Question
 
@@ -64,15 +58,13 @@ sequenceDiagram
 
 ## Deliverable
 
-<!-- What closing this ticket produces. Use a clickable link so the reviewer
-     can open the file directly. Format:
+<!-- What closing this ticket produces. Use a clickable link so the reviewer can open the file directly. Format:
 
      **Decision record:** [dev/mvp/decisions/DEC-NNN-topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/mvp/decisions/DEC-NNN-topic.md)
 
      **Research answer:** [dev/mvp/research/topic.md](https://github.com/BuhDuy256/deck-agent/blob/main/dev/mvp/research/topic.md), section RQ-N
 
-     The PO writes the answer and the decision's Choice / Why. The agent supplies the
-     options table only (dev/mvp/WORKFLOW.md "Roles"). -->
+     The PO writes the answer and the decision's Choice / Why. The agent supplies the options table only (dev/mvp/WORKFLOW.md "Roles"). -->
 
 ## Acceptance
 

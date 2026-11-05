@@ -6,10 +6,7 @@ created: DD-MM-YYYY
 
 # Research checklist — {scope}
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block,
-     link to matrix rows instead of restating requirements, keep the section order below,
-     keep under ~1 page. Every #N and file path is a clickable link (dev/mvp/WORKFLOW.md
-     "Linking convention"). -->
+<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, link to matrix rows instead of restating requirements, keep the section order below, keep under ~1 page. Every #N and file path is a clickable link (dev/mvp/WORKFLOW.md "Linking convention"). -->
 
 ## At a glance
 
@@ -23,20 +20,13 @@ created: DD-MM-YYYY
 
 ## How to use
 
-Each question is tied to the FR/NFR it serves. **The PO researches and answers** —
-the agent supplies only the questions and the options tables as raw material. The agent
-does not answer for the PO and does not fill in `Choice`/`Why` of a decision record
-(see dev/mvp/WORKFLOW.md "Roles"). The deliverable files are created ahead of time —
-open the file and fill the empty fields.
+Each question is tied to the FR/NFR it serves. **The PO researches and answers** — the agent supplies only the questions and the options tables as raw material. The agent does not answer for the PO and does not fill in `Choice`/`Why` of a decision record (see dev/mvp/WORKFLOW.md "Roles"). The deliverable files are created ahead of time — open the file and fill the empty fields.
 
-When the build touches the runtime integration (OpenCode), at least one question asks
-how the runtime handles the part touched and where DeckAgent hooks in (dev/mvp/WORKFLOW.md
-"Phase 1", step 4).
+When the build touches the runtime integration (OpenCode), at least one question asks how the runtime handles the part touched and where DeckAgent hooks in (dev/mvp/WORKFLOW.md "Phase 1", step 4).
 
 ## Flow model
 
-<!-- Trace each technical step that happens when the UC runs. Each step shows what the
-     system does at runtime. A research question is pinned to the step it arises from. -->
+<!-- Trace each technical step that happens when the UC runs. Each step shows what the system does at runtime. A research question is pinned to the step it arises from. -->
 
 ### {S1 — step name}
 
@@ -79,8 +69,7 @@ how the runtime handles the part touched and where DeckAgent hooks in (dev/mvp/W
 
 ## Reference code drift
 
-<!-- Only when the reference code already implements in-scope behavior
-     (dev/mvp/WORKFLOW.md "Reference code"). Name the branch and the commit read.
+<!-- Only when the reference code already implements in-scope behavior (dev/mvp/WORKFLOW.md "Reference code"). Name the branch and the commit read.
      One line per in-scope FR. The PO rules each line; the spec wins over the code. -->
 
 Read at: `feat/v2-opencode` @ `{commit}`

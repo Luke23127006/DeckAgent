@@ -21,13 +21,11 @@ created: DD-MM-YYYY
 ## Prediction
 
 <!-- Written by the PO, from memory, in a few lines. Example:
-     "Request → interview module asks audience/duration → model drafts outline →
-      confirm → theme applied by code → model writes slide content per slide." -->
+     "Request → interview module asks audience/duration → model drafts outline → confirm → theme applied by code → model writes slide content per slide." -->
 
 ## Actual flow
 
-<!-- Written by the agent from the merged code. Value flows only. A short sequence
-     diagram through the real components (UI → server → runtime → tools → renderer). -->
+<!-- Written by the agent from the merged code. Value flows only. A short sequence diagram through the real components (UI → server → runtime → tools → renderer). -->
 
 ```mermaid
 sequenceDiagram
@@ -47,9 +45,7 @@ sequenceDiagram
 
 ## Drift
 
-<!-- Report only drift on value parts (dev/mvp/WORKFLOW.md "As-built layer"): a model call where
-     the plan says code or the reverse; a prebuilt asset bypassed; a module boundary
-     crossed. Each item: what, where (file), effect, proposed action. Omit renames. -->
+<!-- Report only drift on value parts (dev/mvp/WORKFLOW.md "As-built layer"): a model call where the plan says code or the reverse; a prebuilt asset bypassed; a module boundary crossed. Each item: what, where (file), effect, proposed action. Omit renames. -->
 
 ## Prediction vs actual
 

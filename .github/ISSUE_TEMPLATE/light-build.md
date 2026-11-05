@@ -7,10 +7,7 @@ labels: build:light
 
 ## Context
 
-**Milestone:** mvp
-**FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue)
-**Tier:** ci / eval / manual
-**Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
+**Milestone:** mvp **FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue) **Tier:** ci / eval / manual **Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
 
 ## Problem
 

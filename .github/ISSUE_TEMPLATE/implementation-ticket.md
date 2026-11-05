@@ -10,13 +10,7 @@ labels: phase:impl, flash-ready
 <!-- What already exists that the implementer needs to know.
      Include file paths and brief descriptions. Not "see the codebase". -->
 
-**Milestone:** mvp
-**Use case:** UC-XXX
-**FR / AC:** FR-NNN / AC-N
-**Decisions:** DEC-NNN (link to dev/mvp/decisions/)
-**Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md
-**Test author:** @handle — must not be the assignee (separation rule)
-**Flow tracker:** #N
+**Milestone:** mvp **Use case:** UC-XXX **FR / AC:** FR-NNN / AC-N **Decisions:** DEC-NNN (link to dev/mvp/decisions/) **Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md **Test author:** @handle — must not be the assignee (separation rule) **Flow tracker:** #N
 
 ### LLM boundary
 
@@ -34,8 +28,7 @@ labels: phase:impl, flash-ready
 
 ### Reference code
 
-<!-- Only when the plan step names one (dev/mvp/WORKFLOW.md "Reference code"). Read it to
-     understand; write new code against the tests. Omit if empty. -->
+<!-- Only when the plan step names one (dev/mvp/WORKFLOW.md "Reference code"). Read it to understand; write new code against the tests. Omit if empty. -->
 
 - `feat/v2-opencode` @ `{commit}`: `path/to/file.ts` — what to learn from it
 

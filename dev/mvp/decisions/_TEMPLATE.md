@@ -10,8 +10,7 @@ affects: "FR-NNN, NFR-NNN"
 ## Question
 
 <!-- The research question this decision answers. Include a link to the ticket:
-     (RQ-N, ticket [#N](https://github.com/{owner}/{repo}/issues/N))
-     See dev/mvp/WORKFLOW.md "Linking convention". -->
+     (RQ-N, ticket [#N](https://github.com/{owner}/{repo}/issues/N)) See dev/mvp/WORKFLOW.md "Linking convention". -->
 
 ## Options considered
 

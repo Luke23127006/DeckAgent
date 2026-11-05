@@ -8,11 +8,8 @@ status: draft
 
 # Implementation plan — {scope}
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block,
-     reference matrix rows and tests by id (don't restate them), keep the section order
-     below, keep under ~1 page.
-     The PO decides the module boundaries and the LLM boundary (dev/mvp/WORKFLOW.md "Phase 3");
-     the agent drafts. -->
+<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference matrix rows and tests by id (don't restate them), keep the section order below, keep under ~1 page.
+     The PO decides the module boundaries and the LLM boundary (dev/mvp/WORKFLOW.md "Phase 3"); the agent drafts. -->
 
 ## At a glance
 
@@ -31,8 +28,7 @@ status: draft
 
 ## Module boundaries
 
-<!-- Decided by the PO (skill codebase-design). One row per module this build creates or
-     changes. If it differs from docs/architecture/modules.md, say what changes. -->
+<!-- Decided by the PO (skill codebase-design). One row per module this build creates or changes. If it differs from docs/architecture/modules.md, say what changes. -->
 
 | Module | Path | Owns | Depends on (contract) |
 |---|---|---|---|
@@ -40,8 +36,7 @@ status: draft
 
 ## LLM boundary
 
-<!-- One row per step of every value flow in scope. Default is "code": a step calls the
-     model only to understand the request, interview the user, or write content.
+<!-- One row per step of every value flow in scope. Default is "code": a step calls the model only to understand the request, interview the user, or write content.
      Prebuilt assets: themes, layouts, animations, format renderers. -->
 
 | Step | Model or code | What the model receives | What the model decides | Prebuilt assets used |

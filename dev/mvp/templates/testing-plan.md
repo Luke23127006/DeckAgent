@@ -7,12 +7,9 @@ created: DD-MM-YYYY
 
 # Testing plan — {scope}
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block,
-     reference FRs by ID (don't restate the statement), keep the section order below.
-     This is the one home of the acceptance criteria and measures of the build
-     (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
-     Written by the PO (the agent drafts). Developers write the tests from this plan;
-     the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2"). -->
+<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
+     This is the one home of the acceptance criteria and measures of the build (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
+     Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2"). -->
 
 ## At a glance
 
@@ -27,9 +24,7 @@ created: DD-MM-YYYY
 
 ## Acceptance criteria
 
-<!-- Written after Phase 1, so research results shape them. One "### FR-NNN" heading per
-     in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered;
-     a later build that takes the same FR continues its numbering.
+<!-- Written after Phase 1, so research results shape them. One "### FR-NNN" heading per in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered; a later build that takes the same FR continues its numbering.
      Given: the relevant state and input, described well enough to repeat. When: a user action or event.
      Then: the observable result, one line per thing, no "if".
      Check: deterministic (observable state or an exact invariant) | evaluation (a person judges meaning/relevance against Then).
@@ -78,9 +73,7 @@ created: DD-MM-YYYY
 
 ### Acceptance tests
 
-<!-- "Checks": what the test asserts, in one line — enough for a developer to write it
-     and for the PO to review it against the AC. DEC: the decision that shaped this test,
-     so a changed decision points to the tests to revisit. -->
+<!-- "Checks": what the test asserts, in one line — enough for a developer to write it and for the PO to review it against the AC. DEC: the decision that shaped this test, so a changed decision points to the tests to revisit. -->
 
 | AC | FR | DEC | Checks | Fixture / mock | Ticket | Status |
 |---|---|---|---|---|---|---|
@@ -94,8 +87,7 @@ created: DD-MM-YYYY
 
 ## Eval cases (eval tier)
 
-<!-- One block per eval-tier AC. Cases and rubric live in tests/eval/; this table names
-     them. The rubric scores what the AC's Then says, nothing else. -->
+<!-- One block per eval-tier AC. Cases and rubric live in tests/eval/; this table names them. The rubric scores what the AC's Then says, nothing else. -->
 
 | AC | FR | Cases (inputs) | Rubric criteria | Pass threshold | Ticket | Status |
 |---|---|---|---|---|---|---|

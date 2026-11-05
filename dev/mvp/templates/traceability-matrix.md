@@ -7,13 +7,9 @@ created: DD-MM-YYYY
 
 # Traceability matrix — {scope}
 
-The build's traceability spine. One row per in-scope FR/AC (and per NFR), threading
-requirement → tier → research/decision → test → implementation ticket → verification.
+The build's traceability spine. One row per in-scope FR/AC (and per NFR), threading requirement → tier → research/decision → test → implementation ticket → verification.
 
-**No-orphan rule:** every deliverable must have a consumer downstream. No phase gate
-closes while a row is missing a link that phase was responsible for producing (see
-dev/mvp/WORKFLOW.md "Traceability"). Other plan documents link to rows here instead of restating
-requirements (dev/mvp/WORKFLOW.md "Document rules").
+**No-orphan rule:** every deliverable must have a consumer downstream. No phase gate closes while a row is missing a link that phase was responsible for producing (see dev/mvp/WORKFLOW.md "Traceability"). Other plan documents link to rows here instead of restating requirements (dev/mvp/WORKFLOW.md "Document rules").
 
 ## At a glance
 
@@ -37,20 +33,14 @@ requirements (dev/mvp/WORKFLOW.md "Document rules").
 
 ## Columns
 
-- **FR / AC** — in Phase 1, one row per in-scope FR and NFR. In Phase 2, each FR row
-  splits into one row per acceptance criterion and each NFR row into one row per measure
-  (`NFR-NNN / M-1`).
-- **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"). Set in Phase 2 from the
-  testing plan; empty in Phase 1.
+- **FR / AC** — in Phase 1, one row per in-scope FR and NFR. In Phase 2, each FR row splits into one row per acceptance criterion and each NFR row into one row per measure (`NFR-NNN / M-1`).
+- **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"). Set in Phase 2 from the testing plan; empty in Phase 1.
 - **RQ** — the answered research question for this row (may be empty).
 - **DEC** — the decision that shaped this row (may be empty).
-- **Test (ticket)** — the test-stub ticket that proves the AC. For a manual row, the
-  check's anchor in the testing plan. **Required** for every row after Phase 2.
-- **Test author** — who wrote the test. Must differ from the implementer (separation
-  rule), except in a light build.
+- **Test (ticket)** — the test-stub ticket that proves the AC. For a manual row, the check's anchor in the testing plan. **Required** for every row after Phase 2.
+- **Test author** — who wrote the test. Must differ from the implementer (separation rule), except in a light build.
 - **Impl (ticket / PR)** — the ticket or PR that makes this row pass. Not a function link.
-- **Verified** — `[x]` once the PO confirms this AC in Phase 6: CI green for `ci`, a
-  recorded eval run for `eval`, the PO's own check for `manual`.
+- **Verified** — `[x]` once the PO confirms this AC in Phase 6: CI green for `ci`, a recorded eval run for `eval`, the PO's own check for `manual`.
 
 ## Orphan check (run at every gate)
 

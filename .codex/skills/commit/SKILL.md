@@ -55,8 +55,7 @@ When committing changes, follow these steps:
 
    <optional body explaining what and why>
    ```
-   Never add a `Co-Authored-By` trailer or any attribution to Claude or any other AI agent or model (AGENTS.md "GitHub conventions").
-   Types:
+   Never add a `Co-Authored-By` trailer or any attribution to Claude or any other AI agent or model (AGENTS.md "GitHub conventions"). Types:
    - `feat`: New feature
    - `fix`: Bug fix
    - `refactor`: Code restructuring without behavior change
