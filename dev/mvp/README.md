@@ -4,9 +4,10 @@
 
 ## At a glance
 
-- **Phase 0:** **in progress**. The **build order is approved** (below) and the **milestone exists**; the **walking skeleton** remains.
+- **Phase 0:** **closed**. The **build order is approved** (below), the **milestone exists** and the **walking skeleton is deferred**.
 - **Milestone:** [`mvp`](https://github.com/Luke23127006/DeckAgent/milestone/1).
-- **Walking skeleton:** **not built**. It is **built in Phase 0**, **time-boxed**, **before the first build**, together with a **spike** that **counts how often code rejects the deck source the model writes** within a template (DEC-005; [open-questions.md](research/open-questions.md) item 5).
+- **Walking skeleton:** **deferred** to the **first implementation ticket of the first build**; that ticket **blocks Phase 5 of every build**. **Why:** building it first **answers nothing that is not answered elsewhere**. **OpenCode already ran on Windows** in the OpenCode reference at `5bd9c17`. Each **runtime question** is answered by the **Phase 1 runtime research** of the **build that touches the part**. The **first build calls no runtime**.
+- **Spike** that **counts how often code rejects the deck source the model writes** within a template (DEC-005): **Phase 1 of the slide build** (B5), the **first build that writes slides** ([open-questions.md](research/open-questions.md) item 5).
 - **Reference code:** **legacy code** in `apps/`, `packages/`, `vendor/`, `scripts/`; **OpenCode reference** on branch `feat/v2-opencode`, **commit to pin at the first drift inventory** ([WORKFLOW.md "Reference code"](WORKFLOW.md#reference-code)).
 
 ## Build order
