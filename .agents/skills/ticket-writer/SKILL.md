@@ -39,13 +39,13 @@ gh issue create \
 ```
 
 The **body follows the matching template** in `.github/ISSUE_TEMPLATE/`:
-- **Research questions** → `research-ticket.md` (includes a **Mermaid sequence diagram** showing the UC flow with the **relevant step highlighted**)
+- **Research questions** → `research-ticket.md`: **one ticket per question** whose "Trả lời bằng" is `có sẵn`, `thử nhỏ` or `anh quyết`; **none** for `không cần research` or `để build sau`. The ticket **includes the map** of the checklist with the **question's block highlighted**
 - **Test stubs** → `test-stub-ticket.md`, plus the label `tier:ci` or `tier:eval` from the testing plan. **Manual-tier ACs get no ticket**.
 - **Implementation steps** → `implementation-ticket.md`. **Fill Test author** from the matrix and the **LLM boundary** block from the plan's LLM boundary table.
 - **Post-impl tests** → `post-impl-test-ticket.md`
 - **Light build** → `light-build.md`, label `build:light`; **add its row** to `dev/mvp/builds/_light/traceability-matrix.md`.
 
-For **research tickets**, the **flow diagram is generated from the flow model** in the research checklist. The **same base diagram is reused** across related questions — **only the highlighted `rect` moves** to the step each question comes from.
+For **research tickets**, the **map is copied from section 1** of the research checklist. The **same map is reused** across the build's questions; **only the highlight moves**: the **question's block** gets class `here`, the **other blocks of this build** lose it. The ticket **restates "Vì sao" and "Đã biết"** from the checklist, so the reader **needs no other file**.
 
 ### 3. Set dependencies
 

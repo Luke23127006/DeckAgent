@@ -6,81 +6,82 @@ created: DD-MM-YYYY
 
 # Research checklist — {scope}
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, link to matrix rows instead of restating requirements, keep the section order below, keep under ~1 page. Every #N and file path is a clickable link (dev/mvp/WORKFLOW.md "Linking convention"). -->
+<!-- Format "map first, questions after". Written by skill `research-questions`. Prose in Vietnamese with English technical terms (the PO's choice); no bare ID: say what it is in words first, the ID in parentheses. Keep the section order below. Every #N and file path is a clickable link (dev/mvp/WORKFLOW.md "Linking convention"). The questions (section 3) do not count toward the one-page budget. -->
 
 ## At a glance
 
-- **Use case:** UC-XXX
-- **Steps:** S1-S2 (or "all")
-- **Alternatives:** A1, A3 (or "all")
-- **FRs in scope:** FR-NNN, FR-NNN
-- **NFRs in scope:** NFR-NNN
-- **Status:** _N open / N answered / N decided_
+- **Build:** {build name in words} ({UC-XXX}), **steps and alternatives** in scope ("all" or the list). **N items** of the spec: table in section 4.
+- **Runtime:** {touches OpenCode or not, and which part}.
+- **Status:** **N questions**: _N không cần research · N để build sau · N có sẵn · N thử nhỏ · N anh quyết_ (_N of them spec gaps_).
 - **Spine:** [traceability-matrix.md](./traceability-matrix.md)
 
-## How to use
+## Cách đọc
 
-Each question is **tied to the FR/NFR it serves**. **The PO researches and answers** — the agent supplies **only the questions and the options tables** as raw material. The agent **does not answer for the PO** and **does not fill in `Choice`/`Why`** of a decision record (see dev/mvp/WORKFLOW.md "Roles"). The **deliverable files are created ahead of time** — **open the file and fill the empty fields**.
+Đọc **sơ đồ** (mục 1) → **ranh giới của phần đang xây** (mục 2) → **câu hỏi theo từng khối** trên sơ đồ (mục 3). Mỗi câu ghi **vì sao phải bận tâm**, **đã biết gì**, **trả lời bằng gì** và **chặn bước nào**. "Trả lời bằng" có 5 loại:
+- `không cần research`: **chuyện thường**, implementation plan **tự chọn**; **không có ticket**;
+- `có sẵn`: **bằng chứng đã có** (code mẫu, sản phẩm khác, docs), anh **chỉ cần gật**;
+- `thử nhỏ`: **vài phép thử trên máy**, dưới một giờ;
+- `anh quyết`: **lựa chọn sản phẩm hoặc công nghệ**; nếu là **hành vi mới** thì **vào spec trước** khi build dùng;
+- `để build sau`: thuộc **build khác**, **không chặn** build này; **không có ticket**.
 
-When the build **touches the runtime integration** (OpenCode), **at least one question asks how the runtime handles the part touched** and **where DeckAgent hooks in** (dev/mvp/WORKFLOW.md "Phase 1", step 4).
+## 1. Bản đồ: build này nằm ở đâu
 
-## Flow model
+<!-- One Mermaid flowchart of the WHOLE product along the build order: every block a build makes, the user's folder, DeckAgent's own data, OpenCode and the model. Blocks this build makes: class `here`. Blocks of later builds: class `later`, with the build named in the label. Dotted edges: paths this build does not run but must leave room for. Labels in words. -->
 
-<!-- Trace each technical step that happens when the UC runs. Each step shows what the system does at runtime. A research question is pinned to the step it arises from. -->
+```mermaid
+flowchart LR
+  U(["Người dùng"])
+  A["Khối build này làm"]
+  B["Khối build sau<br/>build N"]
+  U --> A
+  A -.->|"chừa chỗ"| B
+  classDef here fill:#ffe08a,stroke:#b8860b,stroke-width:2px,color:#000
+  classDef later fill:#f2f2f2,stroke:#bbbbbb,color:#888888
+  class A here
+  class B later
+```
 
-### {S1 — step name}
+- **Khối vàng**: **build này làm**. **Khối xám**: **build sau**. **Nét đứt**: **chưa chạy** trong build này, nhưng **build này phải chừa chỗ**.
+- **Ta đang ở đây:** {one sentence: what this build adds to the product, in words}.
 
-1. **S1.1** — {specific technical action}
-2. **S1.2** — {next action} → **RQ-N** _(don't know how)_
-3. **S1.3** — {next action}
+## 2. Phần đang xây: vào gì, ra gì, ai dựa vào
 
-### {S2 — step name}
+1. **Vào:** {what the user or another block gives it}.
+2. **Ra:** {what it shows, keeps or creates}.
+3. **Build sau dựa vào gì** (đổi muộn ở đây là **đắt nhất**): {each contract, with the build that uses it}.
+4. **Không làm:** {what this build does not do, such as calling the model}.
 
-1. **S2.1** — {technical action}
-2. **S2.2** — {action} → **RQ-N** _(decision needed)_
+## 3. Câu hỏi theo từng khối
 
-### Alternative flows
+<!-- One `###` per block of the map. Each question: `N. **RQ-N · question**`, then the fields below, one line each. Lenses to walk at each block: contract, data and its lifetime, failure midway, two at once, runtime, model or code, security and reach, testability, traps in the reference code, spec gaps, behavior this build cannot test yet. Before asking, triage: already answered by evidence we have → `có sẵn`; common, low risk or cheap to change → `không cần research`; only questions nobody else can answer cost time. -->
 
-#### {A1 — branch name} (splits from S1.2)
+### Khối A · {block name}
 
-1. **A1.1** — {error / exception handling} → **RQ-N** _(don't know how to handle)_
+1. **RQ-1 · {question}**
+   - **Vì sao:** {what goes wrong if it is skipped}.
+   - **Đã biết:** {evidence with links: reference code at its commit, other products, docs}.
+   - **Trả lời bằng:** `{kind}`. **Chặn:** {testing plan / implementation plan / nothing}.
 
-## Deliverable map
+### Không hỏi, và vì sao
 
-<!-- Link each RQ to its deliverable file. Use full Markdown links. -->
+- **{Topic}:** {why it needs no question}.
 
-| RQ | Type | File |
-|---|---|---|
-| RQ-1 | research | [dev/mvp/research/topic.md](https://github.com/{owner}/{repo}/blob/main/dev/mvp/research/topic.md) |
+## 4. Code mẫu khớp spec tới đâu
 
-## Questions
+<!-- Drift inventory (dev/mvp/WORKFLOW.md "Reference code" rule 2). One row per in-scope item. Read at `{branch}` @ `{commit}`. The PO rules each row; the spec wins over the code. -->
 
-### FR-NNN — name
+Đọc ở `{branch}` @ `{commit}`.
 
-| # | Question | Why it matters | Ticket | Status |
-|---|---|---|---|---|
-| RQ-1 | | | [#N](https://github.com/{owner}/{repo}/issues/N) | open |
+| Việc (theo spec) | ID | File code mẫu | Khớp | Khác gì | PO phán |
+|---|---|---|---|---|---|
+| {behavior in words} | FR-NNN | [file](https://github.com/{owner}/{repo}/blob/{commit}/path) | match / differ / missing | | |
 
-### NFR-NNN — name
+## 5. Ticket và nơi ghi câu trả lời
 
-| # | Question | Why it matters | Ticket | Status |
-|---|---|---|---|---|
-| RQ-N | | | [#N](https://github.com/{owner}/{repo}/issues/N) | open |
+<!-- One row per question with a ticket (`có sẵn`, `thử nhỏ`, `anh quyết`). Deliverable: a research file section, a decision record (options only; the PO writes Choice and Why), or a spec change (spec first, the PO approves). -->
 
-## Reference code drift
+| RQ | Ticket | Nơi ghi câu trả lời | Trạng thái |
+|---|---|---|---|
+| RQ-1 | [#N](https://github.com/{owner}/{repo}/issues/N) | [dev/mvp/research/topic.md](https://github.com/{owner}/{repo}/blob/main/dev/mvp/research/topic.md) | open |
 
-<!-- Only when the reference code already implements in-scope behavior (dev/mvp/WORKFLOW.md "Reference code"). Name the branch and the commit read.
-     One line per in-scope FR. The PO rules each line; the spec wins over the code. -->
-
-Read at: `feat/v2-opencode` @ `{commit}`
-
-| FR | Reference file | match / differ / missing | What differs | PO ruling |
-|---|---|---|---|---|
-| FR-NNN | | | | |
-
-## Status values
-
-- `open` — not started
-- `researching` — in progress
-- `answered` — answered in dev/mvp/research/
-- `decided` — decided in dev/mvp/decisions/DEC-NNN
+Trạng thái: `open`, `researching`, `answered` (ghi trong research), `decided` (ghi trong một decision), `in spec` (đã vào spec).
