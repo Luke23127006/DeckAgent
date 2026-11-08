@@ -2,7 +2,7 @@
 id: DEC-010
 title: "How DeckAgent runs on the user's computer: a local server with a browser, or a desktop app"
 date: 08-11-2026
-status: open
+status: decided
 research: "RQ-1 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
 affects: "FR-071, FR-083"
 ---
@@ -23,16 +23,19 @@ affects: "FR-071, FR-083"
 
 ## Choice
 
-<!-- Left to the PO. -->
+**A · Local server, browser, typed path.**
 
 ## Why
 
-<!-- Left to the PO. -->
+Like the **DeepSeek harness**: **easy to code and easy to use**. DeckAgent is headed toward an **open-source** product, and a **local server with a browser** fits that direction.
 
 ## Rejected options and why
 
-<!-- Left to the PO. -->
+- **B · Dialog opened by the server:** the dialog **may open behind the browser**, and the server needs a **PowerShell call** to open it; it can come later as a **light build** because it gives the server **the same path string**.
+- **C · Desktop app:** **one more layer** to package, build and test, which this choice avoids.
 
 ## Consequences
 
-<!-- Left to the PO. -->
+- The workspace field **takes a typed or pasted path**; a wrong path is reported as a **folder that cannot be read**, with what the user can do next (FR-071, FR-083).
+- The **walking skeleton** is a **Node server opened in a browser**.
+- The server receives **a path string** in every option, so a **folder dialog added later** changes **only the input field**.

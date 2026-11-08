@@ -2,7 +2,7 @@
 id: DEC-012
 title: "What several open interfaces share: the workspace in use and the current chat"
 date: 08-11-2026
-status: open
+status: decided
 research: "RQ-9 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
 affects: "FR-071, FR-053, FR-038"
 ---
@@ -21,16 +21,18 @@ When the user has **two interfaces open at once** (two browser tabs, or two wind
 
 ## Choice
 
-<!-- Left to the PO. -->
+**A · The program keeps one workspace in use**; **every open interface follows it**.
 
 ## Why
 
-<!-- Left to the PO. -->
+The PO took the **recommendation as shown**: the **glossary stays as written** (one workspace in use), and the **channel that pushes changes to the interface** is **needed anyway** when build 3 **streams answers**.
 
 ## Rejected options and why
 
-<!-- Left to the PO. -->
+- **B · Each interface keeps its own:** needs a **spec change** to the glossary, and the server must know **which interface** a new chat came from.
+- **C · One interface at a time:** a **second tab or a reload** would be **refused or take over**, which **surprises the user**.
 
 ## Consequences
 
-<!-- Left to the PO. -->
+- The server **pushes a change of the workspace in use** to **every open interface**.
+- A **new chat** carries the **workspace the interface shows** `[proposed]`; when it **differs from the workspace in use**, the server **creates no chat** and the interface **updates first**. The **implementation plan** settles this detail.

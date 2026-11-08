@@ -49,3 +49,9 @@ Question: **how does open-design keep earlier work**, and **how does the user fi
 10. **Are projects grouped or removed?**
     - Observation: **no page describes a group of projects** (workspace, folder or tag), or **removing a project** and **what happens to its files**.
     - => **DeckAgent groups chats by workspace** and **keeps every chat of a removed workspace in the default workspace** (FR-073, BR-004). **No reference product shows this**.
+
+11. **Which folders does an import refuse?** (08-11-2026, code at commit `87a4f91`)
+    - Observation: `apps/daemon/src/import-export-routes.ts` (`POST /api/import/folder`) runs **`realpath`** on the path, then refuses **the root of a file system**, the **data folder or a folder inside it**, **system folders** (`C:\Windows`, `C:\Program Files`, `C:\Program Files (x86)`, a folder **inside or holding** one, from `apps/daemon/src/linked-dirs.ts`), the **user's home folder itself**, and `.ssh`, `.aws`, `.gnupg`, `.kube`, `.docker` in the home folder **and inside them**.
+    - Observation: each is a **plain refusal** with a reason; **no warning to confirm**.
+    - Observation: a folder that **holds the data folder** but is **not the home folder** (such as `C:\Users\<name>\AppData`) is **not refused**.
+    - => **DeckAgent refuses the same folders**, plus **a folder that holds its own data**, since it **writes nothing in a project folder** (FR-084, BR-019).

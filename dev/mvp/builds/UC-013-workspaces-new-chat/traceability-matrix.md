@@ -14,7 +14,7 @@ The build's **traceability spine**. **One row per in-scope FR and BR** in Phase 
 - **Requirement text:** statements in `dev/mvp/spec/`; acceptance criteria in [testing-plan.md](./testing-plan.md) (Phase 2)
 - **Use cases:** **workspace theo thư mục** (UC-013) and **bắt đầu chat mới** (UC-012), **all steps and alternatives**
 - **Research:** [research-checklist.md](./research-checklist.md)
-- **Status:** _11 rows · 0 tested · 0 implemented · 0 verified_
+- **Status:** _13 rows · 0 tested · 0 implemented · 0 verified_
 
 ## Matrix
 
@@ -25,12 +25,25 @@ The build's **traceability spine**. **One row per in-scope FR and BR** in Phase 
 | FR-073 · xoá workspace | | RQ-15 | DEC-011 | | | | [ ] |
 | FR-074 · báo thư mục không đọc được | | RQ-5 | DEC-006 | | | | [ ] |
 | FR-083 · chọn thư mục khác | | RQ-3, RQ-4, RQ-15 | DEC-010 | | | | [ ] |
+| FR-142 · báo thư mục khác ở chỗ thư mục dự án | | RQ-4, RQ-5 | | | | | [ ] |
 | FR-084 · không đổi file trong thư mục dự án | | RQ-2, RQ-3 | DEC-006, DEC-011 | | | | [ ] |
 | FR-141 · đổi tên workspace | | RQ-7 | | | | | [ ] |
 | FR-053 · bắt đầu chat mới | | RQ-14, RQ-15 | DEC-012 | | | | [ ] |
 | FR-048 · hiện các chat cũ | | RQ-13 | | | | | [ ] |
 | FR-038 · giữ bản nháp của chat | | RQ-12 | DEC-012 | | | | [ ] |
 | BR-004 · chat nào được giữ | | RQ-2 | DEC-006, DEC-011 | | | | [ ] |
+| BR-019 · thư mục không được làm thư mục dự án | | RQ-3 | | | | | [ ] |
+
+## Moved to a later build
+
+The PO ruled (RQ-15, [#56](https://github.com/Luke23127006/DeckAgent/issues/56)) that a behavior is **tested in the first build that can test it**. These parts **get no criterion in this build**; that build's testing plan **takes them**.
+
+| Behavior | FR | Needs | Tested in |
+|---|---|---|---|
+| **No removal and no folder change** while a **request is active** in the workspace | FR-073, FR-083 | **Requests** | Build 3 |
+| **Requests keep running** when the user **switches workspace** or **starts a new chat** | FR-071, FR-053 | **Requests** | Build 3 |
+| A new chat takes the **model of the latest choice** | FR-053 | **Providers** | Build 2 |
+| **Naming a chat** after its content: the **model adds a name** in its first answer, **code falls back** to the first words of the request (RQ-13, [#55](https://github.com/Luke23127006/DeckAgent/issues/55)) | FR-048 | **Requests** | Build 3 |
 
 ## Orphan check (run at every gate)
 

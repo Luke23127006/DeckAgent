@@ -19,6 +19,8 @@ All notable changes to this project are recorded here.
 - `dev/research/open-questions.md`: the runtime and product questions the spec review left open, each with the phase that answers it.
 - **MVP build order** in `dev/mvp/README.md`: **eight builds**, each **one vertical slice** that **depends only on the builds before it**, after a **time-boxed walking skeleton and spike** in Phase 0. The reasons and the **build of every FR, NFR and BR** are in `dev/mvp/research/mvp-build-order.md`.
 - `dev/mvp/research/opencode-reference.md`: an **analysis of the reference code** on `feat/v2-opencode` at commit `5bd9c17`: its **problems**, **where it differs from the MVP spec**, **what it helps with**, and **which files each build reads**.
+- **Research answers of the first build** (workspaces and new chat): **DEC-010** (a **local server with a browser**, the user **types the folder path**), **DEC-011** (data in **SQLite through `better-sqlite3`**), **DEC-012** (**one workspace in use**, followed by **every open interface**); `windows-folders.md` items 1–2 (a folder is **the same when its file-system ID matches**; a **different folder at the old place** is told apart); `open-design-earlier-work.md` item 11 (**folders open-design refuses**).
+- **FR-142** (report a **different folder at the place of a project folder**, UC-013 A12) and **BR-019** (**folders that cannot be a project folder**).
 
 ### Changed
 

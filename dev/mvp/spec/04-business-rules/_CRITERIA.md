@@ -37,7 +37,7 @@ Each value is a `### V-n · name` block with a **Value field**. **Exact value**:
 - A rule **left for later is parked** in `../05-backlog/`, **not dropped**.
 - **Value IDs** are `V-1`, `V-2` **within one BR**, **not renumbered**.
 
-**Next free BR ID: BR-019**.
+**Next free BR ID: BR-020**.
 
 ### Links
 
