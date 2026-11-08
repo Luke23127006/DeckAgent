@@ -17,6 +17,8 @@ All notable changes to this project are recorded here.
 - Decision records DEC-001 to DEC-007 in `dev/decisions/`; DEC-004 and DEC-006 are still open.
 - The v3 legacy sync plan in `dev/versions/`.
 - `dev/research/open-questions.md`: the runtime and product questions the spec review left open, each with the phase that answers it.
+- **MVP build order** in `dev/mvp/README.md`: **eight builds**, each **one vertical slice** that **depends only on the builds before it**, after a **time-boxed walking skeleton and spike** in Phase 0. The reasons and the **build of every FR, NFR and BR** are in `dev/mvp/research/mvp-build-order.md`.
+- `dev/mvp/research/opencode-reference.md`: an **analysis of the reference code** on `feat/v2-opencode` at commit `5bd9c17`: its **problems**, **where it differs from the MVP spec**, **what it helps with**, and **which files each build reads**.
 
 ### Changed
 
