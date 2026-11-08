@@ -16,7 +16,7 @@ Each build is **one vertical slice** that **depends only on builds before it**. 
 
 | # | Build | Scope | Flow tracker | Status |
 |---|---|---|---|---|
-| B1 | **Workspaces and new chat** | UC-013, UC-012 | — | not started |
+| B1 | **Workspaces and new chat** | UC-013, UC-012 | [#48](https://github.com/Luke23127006/DeckAgent/issues/48) | Phase 1: research |
 | B2 | **Services and keys** | UC-005 | — | not started |
 | B3 | **Send a request and wait** | UC-003 | — | not started |
 | B4 | **First draft: the outline** (interview, outline, revision, confirmation, sources) | UC-001, outline part | — | not started |
