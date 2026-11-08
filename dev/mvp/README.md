@@ -4,8 +4,8 @@
 
 ## At a glance
 
-- **Phase 0:** **in progress**. The **build order is approved** (below); the **milestone** and the **walking skeleton** remain.
-- **Milestone:** `mvp` (**not created yet**).
+- **Phase 0:** **in progress**. The **build order is approved** (below) and the **milestone exists**; the **walking skeleton** remains.
+- **Milestone:** [`mvp`](https://github.com/Luke23127006/DeckAgent/milestone/1).
 - **Walking skeleton:** **not built**. It is **built in Phase 0**, **time-boxed**, **before the first build**, together with a **spike** that **counts how often code rejects the deck source the model writes** within a template (DEC-005; [open-questions.md](research/open-questions.md) item 5).
 - **Reference code:** **legacy code** in `apps/`, `packages/`, `vendor/`, `scripts/`; **OpenCode reference** on branch `feat/v2-opencode`, **commit to pin at the first drift inventory** ([WORKFLOW.md "Reference code"](WORKFLOW.md#reference-code)).
 
