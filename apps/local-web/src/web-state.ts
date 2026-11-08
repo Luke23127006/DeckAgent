@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import type { ActivityEvent, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import { HttpError, validateUserQuestion } from '@deckagent/host-api'
-import type { RequestSnapshot, StoredActivity, StoredRequest, WebSession, WebSettings } from '@deckagent/host-api'
+import type { RequestSnapshot, StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
 import type { SqliteSessionStore, SessionInfo } from '@deckagent/session-persistence'
 
 export function record(value: unknown): value is Record<string, unknown> {
@@ -51,6 +51,8 @@ export class WebState {
         ) STRICT;
         CREATE TABLE requests (sequence INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, session_id TEXT NOT NULL, payload TEXT NOT NULL) STRICT;
         PRAGMA application_id=1145132866; PRAGMA user_version=1;`)
+      // Added after schema version 1 shipped: created on demand so existing data files keep working.
+      this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
       this.db.prepare('SELECT id, payload FROM providers LIMIT 0').all()
       this.db.prepare('SELECT sequence, session_id, request_id, activity_id, payload FROM activities LIMIT 0').all()
       this.db.prepare('SELECT sequence, id, session_id, payload FROM requests LIMIT 0').all()
@@ -72,6 +74,18 @@ export class WebState {
       this.db.close()
       throw error
     }
+  }
+
+  preferences(): WebPreferences {
+    const row = this.db.prepare("SELECT value FROM preferences WHERE key='theme'").get()
+    return { theme: row?.value === 'light' || row?.value === 'dark' ? row.value : 'system' }
+  }
+
+  savePreferences(value: unknown): WebPreferences {
+    if (!record(value) || Object.keys(value).some(key => key !== 'theme') || (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system'))
+      throw new HttpError(400, 'INVALID_REQUEST')
+    this.db.prepare("INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(value.theme)
+    return this.preferences()
   }
 
   selectable(value: ModelSelection | undefined): boolean {

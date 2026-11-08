@@ -62,6 +62,7 @@ không cho lưu bộ nhớ đệm và giới hạn nội dung JSON của yêu c�
 | `PUT /api/providers/:id` | Lưu tên, giao thức, URL gốc, model ID và key tùy chọn chỉ được ghi. Không truyền key thì giữ nguyên; key rỗng xóa key cho API tùy chỉnh. ID trên route định danh provider; giao thức đã lưu không thể đổi trong bản này. |
 | `DELETE /api/providers/:id` | Xóa khi không có yêu cầu Agent đang dùng; giữ hội thoại. |
 | `GET /api/providers/:id/catalog` | Tra cứu danh sách model khi được yêu cầu; không sinh văn bản hoặc tự thêm/chọn model. |
+| `GET/PUT /api/preferences` | Đọc/lưu tùy chọn giao diện của Host: `{ "theme": "light" \| "dark" \| "system" }`. Chỉ nhận đúng khóa `theme`; giá trị khác trả `400`. Lưu trong bảng `preferences` của `web.sqlite` (tạo khi cần, không đổi phiên bản schema), nên không phụ thuộc cổng hay origin của trình duyệt. `WebManagement.preferences` là tùy chọn: Host không cung cấp thì route không tồn tại. Trang `/theme.js` (không cần token) áp dụng giá trị đã lưu trước lần vẽ đầu tiên. |
 | `GET/POST /api/sessions` | Liệt kê thông tin lịch sử/yêu cầu đang chạy, hoặc tạo chat rỗng với lựa chọn model tùy chọn. |
 | `PUT /api/sessions/:id/selection` | Chọn model cho yêu cầu tiếp theo. |
 | `GET /api/sessions/:id/activities` | Trả hoạt động được lưu bền vững, có thứ tự; không chứa suy luận nội bộ hoặc thông tin xác thực. |

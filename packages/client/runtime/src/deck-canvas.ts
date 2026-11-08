@@ -8,8 +8,8 @@ import { mountDeckResizer } from './deck-resizer.ts'
  */
 export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reveal: () => void): DeckModel {
   const panel = element('section', undefined, 'deck-panel')
-  panel.setAttribute('aria-label', 'Presentation deck')
-  const title = element('h2', 'Deck canvas')
+  panel.setAttribute('aria-label', 'Bộ slide')
+  const title = element('h2', 'Bộ slide')
   const progress = element('small', '0/0 slide đã lưu', 'deck-progress')
   progress.setAttribute('aria-live', 'polite')
   const headingText = element('div', undefined, 'deck-heading')
@@ -24,10 +24,10 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   const state = element('p', '', 'deck-connection')
   state.setAttribute('role', 'status')
   const slides = element('nav', undefined, 'deck-slide-list')
-  slides.setAttribute('aria-label', 'Slides')
+  slides.setAttribute('aria-label', 'Danh sách slide')
   const slideButtons = new Map<string, HTMLButtonElement>()
   const frame = element('iframe')
-  frame.title = 'Published slide'
+  frame.title = 'Slide đã lưu'
   frame.setAttribute('sandbox', '')
   frame.referrerPolicy = 'no-referrer'
   frame.hidden = true
@@ -37,8 +37,10 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   stage.append(frame, placeholder)
   const caption = element('p', 'Chat này chưa có deck đã xác nhận', 'slide-caption')
   caption.setAttribute('aria-live', 'polite')
-  const previous = button('◀ Trước', () => navigate(-1))
-  const next = button('Sau ▶', () => navigate(1))
+  const previous = button('Trước', () => navigate(-1))
+  const next = button('Sau', () => navigate(1))
+  previous.classList.add('deck-prev')
+  next.classList.add('deck-next')
   previous.disabled = true
   next.disabled = true
   let rendered = '',
@@ -76,7 +78,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
           : value.connection === 'reconnecting'
             ? 'Đang kết nối lại — hiển thị bản đã lưu gần nhất'
             : 'Đang kết nối'
-    title.textContent = 'Deck canvas'
+    title.textContent = 'Bộ slide'
     const published = snapshot.slides.filter(slide => slide.status === 'published').length
     progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
     for (const [id, item] of slideButtons) if (!snapshot.slides.some(slide => slide.slideId === id)) {
@@ -132,7 +134,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     if (slide) model.select(slide.slideId)
   }
   const controls = element('nav', undefined, 'deck-controls')
-  controls.setAttribute('aria-label', 'Slide navigation')
+  controls.setAttribute('aria-label', 'Điều hướng slide')
   controls.append(
     previous,
     caption,

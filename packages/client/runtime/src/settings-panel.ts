@@ -9,7 +9,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   message.setAttribute('role', 'status')
   const chooser = element('select')
   const providerList = element('section', undefined, 'provider-list')
-  providerList.setAttribute('aria-label', 'Configured providers')
+  providerList.setAttribute('aria-label', 'Provider đã cấu hình')
   const kind = element('select')
   const form = element('form')
   const fields = element('fieldset')
@@ -162,7 +162,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       offered.append(new Option(template.displayName, `new:${template.id}`))
     offered.append(new Option('Custom model API', 'new:custom'))
     chooser.replaceChildren(saved, offered)
-    providerList.replaceChildren(element('h3', 'Your providers'))
+    providerList.replaceChildren(element('h3', 'Provider đã lưu'))
     if (!providers.length) providerList.append(element('p', 'Chưa có provider. Thêm kết nối bên dưới.'))
     for (const provider of providers) {
       const card = button('', () => {
@@ -252,13 +252,13 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     delete workspace.dataset.view
     return true
   }
-  const close = button('◀', requestClose)
+  const close = button('', requestClose)
   close.className = 'settings-back'
   close.title = 'Quay lại chat'
   close.setAttribute('aria-label', 'Quay lại chat')
   const cancel = button('Hủy', requestClose)
   const connection = element('section', undefined, 'settings-section')
-  connection.append(element('h3', 'Connection'),
+  connection.append(element('h3', 'Kết nối'),
     field('Provider type', kind),
     field('Provider ID', id),
     field('Display name', name),
@@ -269,7 +269,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   credentials.append(element('h3', 'API key'), element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
     field('API key', key), field('Remove saved key', removeKey))
   const modelSection = element('section', undefined, 'settings-section')
-  modelSection.append(element('h3', 'Models'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
+  modelSection.append(element('h3', 'Model'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
     field('Added model IDs', models),
     loadCatalog,
     field('Model catalog', available),
@@ -293,7 +293,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     modelChips.replaceChildren()
     for (const model of models.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean)) {
       const chip = element('span', undefined, 'model-chip')
-      const remove = button('×', () => {
+      const remove = button('', () => {
         models.value = models.value.split(/\r?\n/).filter(value => value.trim() !== model).join('\n')
         renderModels()
         manual.focus()

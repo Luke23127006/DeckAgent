@@ -12,6 +12,8 @@ import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
+import { themeControl } from './theme.ts'
+import { initMotion } from './motion.ts'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -22,7 +24,7 @@ const root = document.querySelector<HTMLElement>('#app')!
 root.replaceChildren()
 const navigation = element('aside', undefined, 'chat-navigation')
 const chats = element('nav')
-chats.setAttribute('aria-label', 'Chat history')
+chats.setAttribute('aria-label', 'Lịch sử chat')
 const conversation = element('section', undefined, 'conversation')
 const heading = element('header', undefined, 'conversation-header')
 const title = element('h1', 'Chat mới')
@@ -34,12 +36,12 @@ welcome.append(element('h2', 'Hãy mô tả deck bạn muốn'),
   element('p', 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.'))
 const model = element('select')
 model.disabled = true
-model.setAttribute('aria-label', 'Selected model')
+model.setAttribute('aria-label', 'Model đã chọn')
 const status = element('p', '', 'request-status')
 status.setAttribute('role', 'status')
 status.hidden = true
 const messages = element('div', undefined, 'messages')
-messages.setAttribute('aria-label', 'Conversation')
+messages.setAttribute('aria-label', 'Hội thoại')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
 const questionUI = questionView(answer => run(replyToQuestion(answer)))
@@ -51,7 +53,12 @@ const timeline = new ConversationView(messages, (type, proposal) => {
   if (!input.value) input.value = 'Sửa outline: '
   input.focus()
   input.setSelectionRange(input.value.length, input.value.length)
-}, outlineDock)
+}, outlineDock, {
+  retry: text => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); saveDraft(); controls() },
+  settings: () => run(settingsUI.open()),
+  draft: () => input.value,
+  viewSlide: slideId => { showDeck(); deckModel.select(slideId) },
+})
 const form = element('form', undefined, 'composer')
 form.noValidate = true
 form.dataset.slot = 'request'
@@ -59,9 +66,9 @@ const input = element('textarea')
 input.name = 'input'
 input.required = true
 input.placeholder = 'Nhập hoặc dán yêu cầu của bạn…'
-input.setAttribute('aria-label', 'Agent request')
-const submit = element('button', '↑', 'send-action')
-submit.setAttribute('aria-label', 'Send request')
+input.setAttribute('aria-label', 'Nội dung yêu cầu')
+const submit = element('button', '', 'send-action')
+submit.setAttribute('aria-label', 'Gửi yêu cầu')
 submit.title = 'Gửi yêu cầu (Enter)'
 submit.type = 'submit'
 submit.disabled = true
@@ -69,11 +76,11 @@ const createPresentation = button('Đề xuất outline', () => {
   if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
 })
 createPresentation.disabled = true
-const stopRequest = button('■', () => {
+const stopRequest = button('Dừng', () => {
   if (current?.activeRequestId) run(client.stop(current.activeRequestId).then(() => {}))
 })
 stopRequest.className = 'stop-action'
-stopRequest.setAttribute('aria-label', 'Stop')
+stopRequest.setAttribute('aria-label', 'Dừng yêu cầu')
 stopRequest.title = 'Dừng yêu cầu'
 stopRequest.hidden = true
 const deck = element('aside', undefined, 'deck-sidebar')
@@ -81,7 +88,7 @@ deck.hidden = true
 mountDeckTab(deck)
 const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-sidebar')
 publishedDeck.hidden = true
-const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = false })
+const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = true })
 let current: WebSession | undefined
 let waiting: RequestSnapshot | undefined
 let pendingReply: { key: string; value: RequestReply } | undefined
@@ -152,7 +159,7 @@ function run(work: Promise<void>) {
     const code = error instanceof Error ? error.message : ''
     const feedback = failureFeedback(code)
     status.textContent = `${feedback.label}. ${feedback.detail}`
-    status.title = feedback.code ? `Error code: ${feedback.code}` : ''
+    status.title = feedback.code ? `Mã lỗi: ${feedback.code}` : ''
   })
 }
 function controls() {
@@ -176,24 +183,26 @@ function controls() {
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
   timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
   questionUI.update(question, submit.disabled)
+  timeline.setQuestion(question?.prompt)
   input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
   picker.update(settings, !!current?.activeRequestId)
   title.textContent = chatTitle
   title.title = chatTitle
   const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
   headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
-    : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : current?.selectable ? '' : 'Chọn model để bắt đầu'
-  navigationHint.hidden = !active
+    : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : ''
+  const outlinePending = !!outlineState?.proposals.some(proposal => proposal.status === 'current')
+  headerState.dataset.waiting = String(!!question || (!active && outlinePending))
+  navigationHint.hidden = !active || chats.hidden
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
-  openDeck.hidden = !outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)
+  openDeck.hidden = (!outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) || !publishedDeck.hidden
   fitInput()
-  if (!current?.selectable && !current?.activeRequestId) {
+  // Only a saved model that can no longer be used needs a notice; with no model chosen yet the picker already says so.
+  if (!current?.selectable && !current?.activeRequestId && current?.selection) {
     status.hidden = false
     status.dataset.kind = 'setup'
-    status.textContent = current?.selection
-      ? `Model ${current.selection.model} không còn chọn được. Hãy chọn model khác.`
-      : 'Chọn model để gửi yêu cầu. Bạn có thể thêm model trong Cài đặt.'
+    status.textContent = `Model ${current.selection.model} không còn chọn được. Hãy chọn model khác.`
   } else if (status.dataset.kind === 'setup') {
     status.hidden = true
   }
@@ -222,11 +231,11 @@ function renderChats() {
     const updated = element('time')
     updated.dateTime = session.updatedAt
     const date = new Date(session.updatedAt)
-    updated.textContent = Number.isNaN(date.getTime()) ? 'Updated time unavailable' : date.toLocaleString()
-    const slides = session.hasSlides === undefined ? 'Slides unknown' : session.hasSlides ? 'Has slides' : 'No slides yet'
+    updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
+    const slides = session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
     item.append(element('strong', !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'), updated,
-      element('small', `${slides}${session.activeRequestId ? ' · Working…' : ''}`))
-    item.title = `${session.title ?? 'Chat mới'} · ${updated.textContent} · ${slides}\n${session.sessionId}`
+      element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
+    item.title = `${session.title ?? 'Chat mới'} · ${updated.textContent} · ${slides}`
     item.dataset.sessionId = session.sessionId
     item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
     item.disabled = switchingBlocked()
@@ -345,45 +354,109 @@ const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settin
 function switchingBlocked(): boolean {
   return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
 }
-const newChatButton = button('+  Chat mới', () => run(newChat()))
+const newChatButton = button('Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
+newChatButton.title = 'Chat mới'
 const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
 navigationHint.hidden = true
-const recents = button('Gần đây ⌄', () => {
+const recents = button('Gần đây', () => {
   chats.hidden = !chats.hidden
   recents.setAttribute('aria-expanded', String(!chats.hidden))
+  controls()
 })
 recents.className = 'recents-toggle'
 recents.setAttribute('aria-expanded', 'true')
+// On a phone the chat list starts folded so the conversation owns the first screen.
+const compactNavigation = matchMedia('(max-width:720px)')
+const foldRecents = () => { chats.hidden = compactNavigation.matches; recents.setAttribute('aria-expanded', String(!chats.hidden)) }
+foldRecents()
+compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
 recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
 const developerTools = element('details', undefined, 'developer-tools')
 developerTools.append(element('summary', 'Công cụ phát triển'), button('Mở deck mẫu', () => {
+  closeAccountMenu()
   publishedDeck.hidden = true
   deck.hidden = false
 }))
+// The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
+const navToggle = button('', () => setNavigation(root.dataset.nav !== 'collapsed'))
+navToggle.className = 'nav-toggle'
+function setNavigation(collapse: boolean, remember = true) {
+  if (collapse) root.dataset.nav = 'collapsed'
+  else delete root.dataset.nav
+  const label = collapse ? 'Hiện danh sách chat' : 'Ẩn danh sách chat'
+  navToggle.setAttribute('aria-expanded', String(!collapse))
+  navToggle.setAttribute('aria-label', label)
+  navToggle.title = label
+  if (remember) try { localStorage.setItem('deckagent-nav', collapse ? 'collapsed' : 'open') } catch { /* Optional layout preference. */ }
+}
+let storedNavigation: string | null = null
+try { storedNavigation = localStorage.getItem('deckagent-nav') } catch { /* Optional layout preference. */ }
+setNavigation(storedNavigation === 'collapsed', false)
+const navTop = element('div', undefined, 'nav-top')
+navTop.append(element('div', 'DeckAgent', 'wordmark'), navToggle)
+// Settings, theme, reconnect and developer tools live in one menu at the bottom of the sidebar, like the Claude app.
+const accountMenu = element('div', undefined, 'account-menu')
+accountMenu.id = 'account-menu'
+accountMenu.setAttribute('role', 'menu')
+accountMenu.setAttribute('aria-label', 'Cài đặt và công cụ')
+accountMenu.hidden = true
+const accountTrigger = button('', () => (accountMenu.hidden ? openAccountMenu() : closeAccountMenu()))
+accountTrigger.className = 'account-trigger'
+accountTrigger.title = 'Cài đặt'
+accountTrigger.setAttribute('aria-haspopup', 'menu')
+accountTrigger.setAttribute('aria-controls', 'account-menu')
+accountTrigger.setAttribute('aria-expanded', 'false')
+accountTrigger.append(element('span', undefined, 'account-avatar'), element('span', 'Cài đặt', 'account-label'))
+function openAccountMenu() {
+  accountMenu.hidden = false
+  accountTrigger.setAttribute('aria-expanded', 'true')
+  const box = accountTrigger.getBoundingClientRect()
+  const width = Math.min(280, innerWidth - 16)
+  accountMenu.style.width = `${width}px`
+  accountMenu.style.left = `${Math.max(8, Math.min(box.left, innerWidth - width - 8))}px`
+  accountMenu.dataset.side = box.top > innerHeight / 2 ? 'above' : 'below'
+  if (accountMenu.dataset.side === 'above') { accountMenu.style.top = ''; accountMenu.style.bottom = `${innerHeight - box.top + 8}px` }
+  else { accountMenu.style.bottom = ''; accountMenu.style.top = `${box.bottom + 8}px` }
+}
+function closeAccountMenu(restoreFocus = false) {
+  if (accountMenu.hidden) return
+  accountMenu.hidden = true
+  accountTrigger.setAttribute('aria-expanded', 'false')
+  if (restoreFocus) accountTrigger.focus()
+}
+// The menu closes on Escape and on any press outside it, like the model popover.
+document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAccountMenu(true) })
+document.addEventListener('pointerdown', event => {
+  if (!accountMenu.hidden && !accountMenu.contains(event.target as Node) && !accountTrigger.contains(event.target as Node)) closeAccountMenu()
+})
+const themeSection = element('div', undefined, 'menu-section')
+themeSection.append(element('span', 'Giao diện'), themeControl(management))
+accountMenu.append(
+  element('p', 'Chạy trên máy của bạn', 'menu-note'),
+  Object.assign(button('Cài đặt model', () => { closeAccountMenu(); run(settingsUI.open()) }), { className: 'settings-open', title: 'Cài đặt model' }),
+  themeSection,
+)
 navigation.append(
-  element('div', 'DeckAgent', 'wordmark'),
+  navTop,
   newChatButton,
   navigationHint,
   recents,
   chats,
-  button('⚙  Cài đặt model', () => run(settingsUI.open())),
-  developerTools,
+  accountTrigger,
+  accountMenu,
 )
 const headingText = element('div', undefined, 'chat-heading')
 headingText.append(title, headerState)
-const openDeck = button('Mở deck', () => { deck.hidden = true; publishedDeck.hidden = false })
+function showDeck() { deck.hidden = true; publishedDeck.hidden = false; openDeck.hidden = true }
+const openDeck = button('Mở deck', showDeck)
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
-const moreActions = element('details', undefined, 'chat-more-actions')
-const moreSummary = element('summary', '⋯')
-moreSummary.setAttribute('aria-label', 'More chat actions')
-moreSummary.title = 'More chat actions'
-moreActions.append(moreSummary)
-headingActions.append(openDeck, moreActions)
+headingActions.append(openDeck)
 heading.append(headingText, headingActions)
 const reconnect = button('Kết nối lại / đọc lịch sử', () => {
+  closeAccountMenu()
   if (reconnecting) return
   reconnecting = true
   controls()
@@ -401,7 +474,7 @@ const reconnect = button('Kết nối lại / đọc lịch sử', () => {
   )
 })
 reconnect.id = 'reconnect'
-moreActions.append(reconnect)
+accountMenu.append(reconnect, element('div', undefined, 'menu-sep'), developerTools)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
 const attachment = button('+', () => {})
@@ -409,8 +482,7 @@ attachment.disabled = true
 attachment.className = 'attachment-action'
 attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
 attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
-composerControls.append(attachment)
-moreActions.append(createPresentation)
+composerControls.append(attachment, createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
@@ -426,6 +498,7 @@ const dock = element('div', undefined, 'composer-dock')
 dock.append(questionUI.node, outlineDock, form)
 conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
+initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
 const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
 navigationSize.observe(navigation)

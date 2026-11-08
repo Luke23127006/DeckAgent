@@ -122,8 +122,18 @@ export interface StoredRequest {
   readonly noticeIndex?: number
 }
 
+/** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
+export interface WebPreferences {
+  readonly theme: 'light' | 'dark' | 'system'
+}
+
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
+  /** Optional: an older application without it simply has no `/api/preferences`. */
+  readonly preferences?: {
+    get(): Promise<WebPreferences>
+    save(value: unknown): Promise<WebPreferences>
+  }
   settings(): Promise<WebSettings>
   saveProvider(id: string, value: unknown): Promise<void>
   deleteProvider(id: string): Promise<void>

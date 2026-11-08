@@ -4,7 +4,7 @@ import { button, element } from './dom.ts'
 /** One accessible view over the existing selection control; choosing never submits a request. */
 export function modelPicker(select: HTMLSelectElement, manage: () => void, add: () => void) {
   const node = element('div', undefined, 'model-picker')
-  const trigger = button('Chọn model ⌃', () => toggle(panel.hidden !== false))
+  const trigger = button('Chọn model', () => toggle(panel.hidden !== false))
   trigger.setAttribute('aria-label', 'Chọn model')
   trigger.setAttribute('aria-haspopup', 'dialog')
   trigger.setAttribute('aria-expanded', 'false')
@@ -20,7 +20,7 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
   const options = element('div', undefined, 'model-options')
   options.id = 'model-options'
   options.setAttribute('role', 'tabpanel')
-  const manageButton = button('⚙', () => { toggle(false); manage() })
+  const manageButton = button('', () => { toggle(false); manage() })
   manageButton.className = 'model-manage'
   manageButton.setAttribute('aria-label', 'Cài đặt model')
   manageButton.title = 'Cài đặt model'
@@ -116,7 +116,7 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
       providers = settings.providers
       trigger.disabled = select.disabled
       trigger.textContent = select.selectedOptions[0]?.value && select.value !== '__settings'
-        ? `${select.selectedOptions[0]!.textContent} ⌃` : providers.some(provider => provider.models.length) ? 'Chọn model ⌃' : 'Chưa có model ⌃'
+        ? `${select.selectedOptions[0]!.textContent}` : providers.some(provider => provider.models.length) ? 'Chọn model' : 'Chưa có model'
       note.hidden = !running
       const next = JSON.stringify([providers, select.value, select.disabled])
       if (signature !== next) {

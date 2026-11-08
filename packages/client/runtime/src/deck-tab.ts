@@ -4,7 +4,7 @@ import { mountDeckResizer } from './deck-resizer.ts'
 /** Sample-only tab. It has no Session–Deck mapping or publication/storage responsibilities. */
 export function mountDeckTab(container: HTMLElement): void {
   const panel = element('section', undefined, 'deck-panel')
-  panel.setAttribute('aria-label', 'Sample Deck')
+  panel.setAttribute('aria-label', 'Deck mẫu')
   const heading = element('header')
   const close = button('Đóng deck', () => {
     container.hidden = true
@@ -12,7 +12,7 @@ export function mountDeckTab(container: HTMLElement): void {
   })
   heading.append(element('h2', 'Deck mẫu'), close)
   const frame = element('iframe')
-  frame.title = 'Sample slide'
+  frame.title = 'Slide mẫu'
   frame.setAttribute('sandbox', '')
   frame.referrerPolicy = 'no-referrer'
   const caption = element('p', '', 'slide-caption')
@@ -24,12 +24,12 @@ export function mountDeckTab(container: HTMLElement): void {
     save()
   }
   const controls = element('nav', undefined, 'deck-controls')
-  controls.setAttribute('aria-label', 'Slide navigation')
-  const previous = button('◀ Trước', () => {
+  controls.setAttribute('aria-label', 'Điều hướng slide')
+  const previous = button('Trước', () => {
     current = (current + 2) % 3
     render()
   })
-  const next = button('Sau ▶', () => {
+  const next = button('Sau', () => {
     current = (current + 1) % 3
     render()
   })
@@ -39,6 +39,8 @@ export function mountDeckTab(container: HTMLElement): void {
       caption.textContent = 'Trình duyệt không hỗ trợ toàn màn hình'
     })
   })
+  previous.classList.add('deck-prev')
+  next.classList.add('deck-next')
   controls.append(previous, next, fullscreen)
   let width = '520'
   function save() {

@@ -304,3 +304,44 @@ test('settings persist encrypted keys; changing selection/key during a request a
   assert.equal((await api('sessions')).data[0].selectable, false)
   assert.equal((await client.history(session.sessionId)).length, 4)
 })
+
+test('The interface theme is kept by the Host, so it survives a restart on a different port', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-theme-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const open = () => startLocalWeb({ workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), port: 0 })
+  const call = (app, path, init = {}) => fetch(`${app.origin}${path}`, { ...init, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' } })
+  let app = await open()
+  try {
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system' })
+    assert.equal(await (await fetch(`${app.origin}/theme.js`)).text(), '', 'System theme sets nothing before first paint')
+    for (const body of ['{"theme":"neon"}', '{"theme":"dark","extra":1}', '{}', '[]']) {
+      const rejected = await call(app, '/api/preferences', { method: 'PUT', body })
+      assert.equal(rejected.status, 400, body)
+    }
+    assert.equal((await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"dark"}' })).status, 200)
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
+    assert.equal((await fetch(`${app.origin}/api/preferences`)).status, 401, 'Preferences need the Host token like every other API')
+  } finally { await app.close() }
+  app = await open()
+  try {
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark' })
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
+    await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system"}' })
+    assert.equal(await (await fetch(`${app.origin}/theme.js`)).text(), '')
+  } finally { await app.close() }
+})
+
+test('An existing web.sqlite without the preferences table is upgraded in place', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-theme-upgrade-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const options = { workspace: join(dir, 'workspace'), dataDir: join(dir, 'data'), port: 0 }
+  await (await startLocalWeb(options)).close()
+  const db = new DatabaseSync(join(dir, 'data', 'web.sqlite'))
+  db.exec('DROP TABLE preferences')
+  db.close()
+  const app = await startLocalWeb(options)
+  try {
+    const response = await fetch(`${app.origin}/api/preferences`, { headers: { authorization: `Bearer ${app.token}` } })
+    assert.deepEqual(await response.json(), { theme: 'system' })
+  } finally { await app.close() }
+})

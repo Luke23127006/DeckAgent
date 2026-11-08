@@ -15,5 +15,8 @@
   "dependencies": {
     "@deckagent/deck": "workspace:*",
     "@deckagent/host-api": "workspace:*"
+  },
+  "devDependencies": {
+    "animejs": "4.5.0"
   }
 }
