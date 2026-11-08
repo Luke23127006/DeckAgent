@@ -222,7 +222,8 @@ function renderModels() {
 function renderChats() {
   chats.replaceChildren()
   const visible = sessions.filter(session => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides || readDraft(session.sessionId).trim())
-  visible.sort((a, b) => a.sessionId === current?.sessionId ? -1 : b.sessionId === current?.sessionId ? 1 : b.updatedAt.localeCompare(a.updatedAt))
+  // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
+  visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId))
   if (!visible.length) chats.append(element('p', 'Chưa có chat trước.'))
   for (const session of visible) {
     const item = button('', () =>
@@ -373,12 +374,6 @@ foldRecents()
 compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
 recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
-const developerTools = element('details', undefined, 'developer-tools')
-developerTools.append(element('summary', 'Công cụ phát triển'), button('Mở deck mẫu', () => {
-  closeAccountMenu()
-  publishedDeck.hidden = true
-  deck.hidden = false
-}))
 // The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
 const navToggle = button('', () => setNavigation(root.dataset.nav !== 'collapsed'))
 navToggle.className = 'nav-toggle'
@@ -474,7 +469,7 @@ const reconnect = button('Kết nối lại / đọc lịch sử', () => {
   )
 })
 reconnect.id = 'reconnect'
-accountMenu.append(reconnect, element('div', undefined, 'menu-sep'), developerTools)
+accountMenu.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
 const attachment = button('+', () => {})

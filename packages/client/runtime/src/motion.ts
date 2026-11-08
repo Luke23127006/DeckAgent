@@ -76,7 +76,7 @@ function menuIn(menu: HTMLElement): void {
   const above = menu.dataset.side !== 'below'
   const rows = [
     ...menu.querySelectorAll<HTMLElement>(
-      ':scope > p, :scope > button, :scope > .menu-section, :scope > .developer-tools',
+      ':scope > p, :scope > button, :scope > .menu-section',
     ),
   ]
   menu.style.transformOrigin = above ? 'left bottom' : 'left top'

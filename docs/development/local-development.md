@@ -133,7 +133,7 @@ pnpm.cmd start:local-web
 ```
 
 This opens an authenticated local browser with Conversation, model selection, Settings,
-History, Activity Log and a Sample Deck tab. Settings can be opened before a model is set up.
+History and Activity Log. Settings can be opened before a model is set up.
 The Agent has workspace `read_file`/`write_file` tools.
 Default workspace is `.deckagent/workspace`; writes create new files, never overwrite.
 Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sqlite`

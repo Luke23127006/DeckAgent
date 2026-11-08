@@ -172,7 +172,7 @@ test('interactive composer selects a model without work, sends with Enter and pr
   assert.equal(await evaluate(`document.querySelector('#app').dataset.nav === undefined && document.querySelector('.chat-navigation nav').checkVisibility()`), true, 'The toggle restores the chat list')
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`)
   await eventually(() => evaluate(`document.querySelector('dialog').open`), 'Settings missing')
-  assert.equal(await evaluate(`document.querySelector('dialog').matches(':modal')`), false, 'Settings is a workspace page')
+  assert.equal(await evaluate(`document.querySelector('dialog').matches(':modal')`), true, 'Settings is a popup over the chat')
   await evaluate(`document.querySelector('[aria-label="Display name"]').value='Unsaved';document.querySelector('[aria-label="Display name"]').dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;document.querySelector('.settings-back').click();true`)
   assert.equal(await evaluate(`document.querySelector('dialog').open`), true, 'Declining discard must keep Settings open')
   await evaluate(`window.confirm=()=>true;document.querySelector('.settings-back').click();true`)
@@ -719,7 +719,8 @@ test('real browser boots, sends an Agent request, shows completion and restores 
   assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).textContent.includes('File created in workspace')`), false, 'Earlier success output must not attach to the failed turn')
   assert.equal(await evaluate(`document.querySelectorAll('.request-record').length`), 2, 'Each turn must have exactly one record')
   assert.equal(await evaluate(`[...document.querySelectorAll('.request-record')].at(-1).previousElementSibling.textContent.includes('Write outside')`), true, 'Follow-up request must keep its own conversation position')
-  await evaluate(`document.querySelector('.developer-tools').open=true; [...document.querySelectorAll('button')].find(button=>button.textContent==='Mở deck mẫu').click(); true`)
+  // The menu entry for the sample deck was removed; open its panel directly so the sample deck keeps its coverage.
+  await evaluate(`document.querySelector('.published-deck-sidebar').hidden=true; document.querySelector('.deck-sidebar').hidden=false; true`)
   assert.equal(await evaluate(`document.querySelector('.deck-sidebar').hidden`), false)
   assert.equal(await evaluate(`document.querySelector('iframe').getAttribute('sandbox')`), '')
   await evaluate(`[...document.querySelectorAll('button')].find(button=>button.textContent==='Sau').click(); true`)

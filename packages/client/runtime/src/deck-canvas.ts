@@ -22,6 +22,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     }),
   )
   const state = element('p', '', 'deck-connection')
+  state.hidden = true
   state.setAttribute('role', 'status')
   const slides = element('nav', undefined, 'deck-slide-list')
   slides.setAttribute('aria-label', 'Danh sách slide')
@@ -78,6 +79,8 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
           : value.connection === 'reconnecting'
             ? 'Đang kết nối lại — hiển thị bản đã lưu gần nhất'
             : 'Đang kết nối'
+    // A healthy connection needs no line; show the state only when the user must know about it.
+    state.hidden = value.connection === 'live'
     title.textContent = 'Bộ slide'
     const published = snapshot.slides.filter(slide => slide.status === 'published').length
     progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
@@ -143,6 +146,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       const work = document.fullscreenElement ? document.exitFullscreen() : panel.requestFullscreen()
       work.catch(() => {
         state.textContent = 'Trình duyệt không hỗ trợ toàn màn hình'
+        state.hidden = false
       })
     }),
   )
@@ -160,9 +164,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
       /* Layout remains usable. */
     }
   })
-  const footer = element('footer', undefined, 'deck-footer')
-  footer.append(element('p', 'Chỉ xem. Để sửa slide, hãy gửi yêu cầu trong chat.'), state)
-  panel.append(heading, stage, controls, slides, footer)
+  panel.append(heading, stage, controls, slides, state)
   container.append(panel)
   return model
 }
