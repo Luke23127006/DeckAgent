@@ -39,7 +39,7 @@ gh issue create \
 ```
 
 The **body follows the matching template** in `.github/ISSUE_TEMPLATE/`:
-- **Research questions** → `research-ticket.md`: **one ticket per question** whose "Trả lời bằng" is `có sẵn`, `thử nhỏ` or `anh quyết`; **none** for `không cần research` or `để build sau`. The ticket **includes the map** of the checklist with the **question's block highlighted**
+- **Research questions** → `research-ticket.md`: **one ticket per question** whose "Trả lời bằng" is `thử nhỏ` or `anh quyết`; **none** for `không cần research` or `để build sau`. A `có sẵn` question **gets no ticket**: the PO **nods at the step it blocks** (usually the testing plan). Questions with the **same way of answering** and the **same deliverable** (for example several **spec gaps** answered in **one spec change**) **share one ticket**, which **lists each RQ**. The ticket **includes the map** of the checklist with the **question's block highlighted**
 - **Test stubs** → `test-stub-ticket.md`, plus the label `tier:ci` or `tier:eval` from the testing plan. **Manual-tier ACs get no ticket**.
 - **Implementation steps** → `implementation-ticket.md`. **Fill Test author** from the matrix and the **LLM boundary** block from the plan's LLM boundary table.
 - **Post-impl tests** → `post-impl-test-ticket.md`

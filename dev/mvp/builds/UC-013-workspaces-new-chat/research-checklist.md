@@ -178,20 +178,18 @@ flowchart LR
 
 ## 5. Ticket và nơi ghi câu trả lời
 
-**Chưa tạo ticket.** Khi tạo: **một ticket cho mỗi câu** `có sẵn`, `thử nhỏ` hoặc `anh quyết` (**11 câu**: RQ-1, RQ-2, RQ-3, RQ-4, RQ-5, RQ-7, RQ-8, RQ-9, RQ-12, RQ-13, RQ-15).
+**Issue theo dõi build:** [#48](https://github.com/Luke23127006/DeckAgent/issues/48). **8 ticket**: **ba chỗ spec còn thiếu** gộp **một ticket** (cùng cách trả lời, cùng nơi ghi); câu **tên bị từ chối** (`có sẵn`) **không có ticket**, anh **gật khi viết testing plan**.
 
 | RQ | Ticket | Nơi ghi câu trả lời | Trạng thái |
 |---|---|---|---|
-| RQ-1 · dạng app | — | quyết định mới | open |
-| RQ-2 · nơi lưu | — | quyết định mới | open |
-| RQ-3 · thư mục bị từ chối | — | spec: use case workspace | open |
-| RQ-4 · cùng thư mục | — | research mới về thư mục trên Windows | open |
-| RQ-5 · thư mục khác ở chỗ cũ | — | research mới về thư mục trên Windows; spec nếu đổi hành vi | open |
-| RQ-7 · tên bị từ chối | — | spec: yêu cầu đổi tên và một luật mới | open |
-| RQ-8 · workspace sau khi mở lại | — | spec: use case workspace | open |
-| RQ-9 · hai giao diện | — | quyết định mới | open |
-| RQ-12 · bản nháp khi tải lại | — | spec: yêu cầu "giữ bản nháp" | open |
-| RQ-13 · ai đặt tên chat | — | implementation plan (ranh giới model và code) | open |
-| RQ-15 · phần chưa test được | — | ma trận và testing plan | open |
+| RQ-1 · dạng app | [#49](https://github.com/Luke23127006/DeckAgent/issues/49) | [DEC-010](../../decisions/DEC-010-how-deckagent-runs.md) | open |
+| RQ-2 · nơi lưu | [#50](https://github.com/Luke23127006/DeckAgent/issues/50) | [DEC-011](../../decisions/DEC-011-how-deckagent-data-is-stored.md) | open |
+| RQ-3, RQ-8, RQ-12 · ba chỗ spec còn thiếu | [#51](https://github.com/Luke23127006/DeckAgent/issues/51) | spec: use case workspace, yêu cầu "giữ bản nháp" | open |
+| RQ-4 · cùng thư mục | [#52](https://github.com/Luke23127006/DeckAgent/issues/52) | [windows-folders.md](../../research/windows-folders.md) | open |
+| RQ-5 · thư mục khác ở chỗ cũ | [#53](https://github.com/Luke23127006/DeckAgent/issues/53) | [windows-folders.md](../../research/windows-folders.md); spec nếu đổi hành vi | open |
+| RQ-7 · tên bị từ chối | — | spec: yêu cầu đổi tên và một luật mới, ở testing plan | open |
+| RQ-9 · hai giao diện | [#54](https://github.com/Luke23127006/DeckAgent/issues/54) | [DEC-012](../../decisions/DEC-012-several-open-interfaces.md) | open |
+| RQ-13 · ai đặt tên chat | [#55](https://github.com/Luke23127006/DeckAgent/issues/55) | implementation plan (ranh giới model và code) | open |
+| RQ-15 · phần chưa test được | [#56](https://github.com/Luke23127006/DeckAgent/issues/56) | ma trận và testing plan | open |
 
 Trạng thái: `open`, `researching`, `answered` (ghi trong research), `decided` (ghi trong một decision), `in spec` (đã vào spec).

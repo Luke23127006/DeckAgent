@@ -20,17 +20,17 @@ The build's **traceability spine**. **One row per in-scope FR and BR** in Phase 
 
 | FR / AC | Tier | RQ | DEC | Test (ticket) | Test author | Impl (ticket / PR) | Verified |
 |---|---|---|---|---|---|---|---|
-| FR-071 · thêm và chuyển workspace | | RQ-1, RQ-3, RQ-4, RQ-8, RQ-9 | | | | | [ ] |
-| FR-072 · workspace mặc định | | RQ-8 | | | | | [ ] |
-| FR-073 · xoá workspace | | RQ-15 | | | | | [ ] |
+| FR-071 · thêm và chuyển workspace | | RQ-1, RQ-3, RQ-4, RQ-8, RQ-9 | DEC-010, DEC-012 | | | | [ ] |
+| FR-072 · workspace mặc định | | RQ-8 | DEC-011 | | | | [ ] |
+| FR-073 · xoá workspace | | RQ-15 | DEC-011 | | | | [ ] |
 | FR-074 · báo thư mục không đọc được | | RQ-5 | DEC-006 | | | | [ ] |
-| FR-083 · chọn thư mục khác | | RQ-3, RQ-4, RQ-15 | | | | | [ ] |
-| FR-084 · không đổi file trong thư mục dự án | | RQ-2, RQ-3 | DEC-006 | | | | [ ] |
+| FR-083 · chọn thư mục khác | | RQ-3, RQ-4, RQ-15 | DEC-010 | | | | [ ] |
+| FR-084 · không đổi file trong thư mục dự án | | RQ-2, RQ-3 | DEC-006, DEC-011 | | | | [ ] |
 | FR-141 · đổi tên workspace | | RQ-7 | | | | | [ ] |
-| FR-053 · bắt đầu chat mới | | RQ-14, RQ-15 | | | | | [ ] |
+| FR-053 · bắt đầu chat mới | | RQ-14, RQ-15 | DEC-012 | | | | [ ] |
 | FR-048 · hiện các chat cũ | | RQ-13 | | | | | [ ] |
-| FR-038 · giữ bản nháp của chat | | RQ-12 | | | | | [ ] |
-| BR-004 · chat nào được giữ | | RQ-2 | DEC-006 | | | | [ ] |
+| FR-038 · giữ bản nháp của chat | | RQ-12 | DEC-012 | | | | [ ] |
+| BR-004 · chat nào được giữ | | RQ-2 | DEC-006, DEC-011 | | | | [ ] |
 
 ## Orphan check (run at every gate)
 
