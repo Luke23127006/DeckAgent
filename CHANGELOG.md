@@ -22,6 +22,7 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **Workspaces** (UC-013, UC-006): a new workspace **takes the name of its folder**, **two workspaces may share a name**, and the user **renames a workspace** (new FR-141). A **removed workspace's chats become ungrouped chats**, **apart from every workspace**, as DeepSeek Harness does; **adding the folder again gives an empty workspace**. The open question on workspace names is answered.
 - **Markdown form** (AGENTS.md "Writing Markdown"): **no hard wrap**, each paragraph or list item **on one line**; each sentence **bolds its keywords**. Every Markdown file outside `dev/legacy/` was **unwrapped**; spec style rule 9 and research style rule 3 follow the new rule. Every living document **bolds its keywords**: the spec, the workflow, the templates, the skills, the issue and PR templates, `dev/development/`, `docs/`, README, AGENTS.md and CLAUDE.md, and every file of `dev/mvp/`, the decisions, research notes and evidence reports included.
 - Living documents hold no history (AGENTS.md "Documents: current state, history in git"; spec style rule 12). The MVP spec lost every legacy reference, ruling date and "merged/retired/changed vs" note, its `updated` dates, its removed-ID lists (each kind now names its next free ID, each use case its next free flow ID) and the `Source`/`Decided` sections of backlog items. Accessibility is not an MVP question.
 

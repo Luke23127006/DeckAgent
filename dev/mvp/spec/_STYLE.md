@@ -72,10 +72,11 @@ A **region** is a **place that holds one kind of information**. It is **defined 
 | **selectable model** | An added model of a saved provider configuration, which a chat is allowed to select |
 | **reasoning level** | How much the selected model reasons for a request, among the levels that model has |
 | **material** | What the user gives for a deck: request text, attached files and the files of the project folder that a request reads, named or not |
-| **workspace** | A group of chats. Each workspace other than the default workspace has one project folder, and no two workspaces have the same one |
+| **workspace** | A group of chats with a name. Each workspace other than the default workspace has one project folder, and no two workspaces have the same one |
 | **project folder** | The folder on the user's computer that the user chose for a workspace. It holds the user's files |
-| **workspace in use** | The workspace whose chats are the earlier chats and that a new chat joins |
+| **workspace in use** | The workspace whose chats the system shows as earlier chats and that a new chat joins |
 | **default workspace** | The workspace with no project folder that exists from the first start. It is never removed |
+| **ungrouped chat** | A chat whose workspace was removed. It belongs to no workspace and has no project folder |
 | **interview** | The questions the system asks before the first outline, about the topics the request does not answer |
 | **suggested answer** | An answer the system offers for the user to choose instead of typing one |
 | **suggested revision** | A change to the current outline that the system offers for the user to choose instead of typing one |

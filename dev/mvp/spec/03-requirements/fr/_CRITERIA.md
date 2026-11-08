@@ -35,7 +35,7 @@ A **rule with no value stays in the FR**, e.g. "the user cannot start a new sess
 - A behavior **left for later is parked** in `../../05-backlog/`, **not dropped**.
 - **Acceptance criterion IDs** are `AC-1`, `AC-2` **within one FR**, **not renumbered**. A **later build** that takes the same FR **continues its numbering**.
 
-**Next free FR ID: FR-141**.
+**Next free FR ID: FR-142**.
 
 ### Links
 

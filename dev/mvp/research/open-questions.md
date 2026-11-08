@@ -55,8 +55,6 @@
 
 ## Other product and runtime questions
 
-15. **Workspace names** (UC-013): **what name a new workspace gets**, whether the **user can change it**, and whether **names must be unique**. Whether **adding the same folder again** as a workspace **brings back the chats it had**, or **starts without them**.
-
 16. **Requests that stopped or failed** (UC-003 A11, FR-019): the spec has **no try-again action**; the user **sends a new request**, which **starts from the last finished deck**. Does the **MVP need a try-again action**? If yes: **what runs again**, and how the system **avoids making the same change twice** (for example adding the same slide again). Also: **which causes of a failure keep the user from sending a new request**.
 
 17. **Providers** (BR-006): **what each built-in provider needs besides a key**, **which of its default settings the user can change**, and **where its base URL can change**. How the system **knows that a custom model API needs a key**, and whether the user can **change the API protocol** of a saved custom model API. Each answer **waits for checks with the provider and with OpenCode** (item 1).

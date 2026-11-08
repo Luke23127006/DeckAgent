@@ -49,3 +49,8 @@ Question: **what did the team learn from DeepSeek Harness** (`https://github.com
    - **Most items come from DeepSeek docs and READMEs**; **source code was read only** for the sidebar, the storage domain and the workspace feed.
    - **Nothing here was checked against OpenCode**. **Each inference is a question for the Phase 1 runtime research**, **not an answer**.
    - The **model settings of DeepSeek Harness**, chosen by the PO as the reference for model settings, are **recorded in [open-questions.md](open-questions.md) item 1**.
+
+9. **What happens to the chats of a removed workspace?** Added **08-11-2026** from the **PO's own test** of the DeepSeek Harness app; **no version was noted**.
+   - Observation: after a **workspace is removed**, its **sessions stay**, listed in a **separate group "Ungrouped"**, **apart from every workspace**, the default one included: [removed-workspace-ungrouped.png](evidence/deepseek-harness/removed-workspace-ungrouped.png).
+   - Observation: **adding a workspace again for the same folder** gives an **empty workspace**; the **old sessions stay in "Ungrouped"**.
+   - => DeckAgent **follows this behavior**: a **chat of a removed workspace becomes an ungrouped chat** (FR-073, BR-004), and **adding its former project folder again sets up a new workspace without it** (FR-071).
