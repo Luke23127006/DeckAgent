@@ -823,18 +823,18 @@ Mỗi ticket **đổi tối đa 3 file**, label `tier:ci`. Trừ T0c, mọi file
 
 | Ticket | Criteria | Files | Fixtures | Blocked by |
 |---|---|---|---|---|
-| T0c · test runner | — | `package.json` (Vitest `4.1.12`, script `test:acceptance`), `pnpm-lock.yaml`, `vitest.config.ts` | — | — |
-| T0a · test driver | — | `support/deckagent.ts`, `support/errors.ts` | — | T0c |
-| T0b · Windows fixture | — | `support/winfs.ts`, `support/winfs.test.ts`, `support/global-setup.ts` | mọi fixture và self-test của chúng | T0c |
-| T1 · thêm và chuyển workspace | FR-071 AC-1..5, 8, 9, 11, 12, 15 | `workspaces-add-switch.test.ts` | `junction`, `substDrive`, `shortName`, `longPath`, `denyRead`, `move` | T0a, T0b |
-| T2 · refused folder (security) | FR-071 AC-6, 7; FR-083 AC-4 | `refused-folders.test.ts` | `root`, `junction`, `substDrive` | T0a, T0b |
-| T3 · nhiều interface | FR-071 AC-10; FR-053 AC-4; FR-038 AC-3 | `several-interfaces.test.ts` | — | T0a, T0b |
-| T4 · default workspace và xoá workspace | FR-072 AC-1..4; FR-073 AC-1..5, 7 | `default-and-remove.test.ts` | — | T0a, T0b |
-| T5 · folder mất hoặc bị thay | FR-074 AC-1..5; FR-142 AC-1..5 | `folder-gone-or-replaced.test.ts` | `move`, `junction`, `denyRead` | T0a, T0b |
-| T6 · đổi folder và đổi tên | FR-083 AC-1..3, 5, 6; FR-141 AC-1..7 | `change-folder-rename.test.ts` | `junction`, `move` | T0a, T0b |
-| T7 · project folder không đổi | FR-084 AC-1, 2 | `project-folder-untouched.test.ts` | `snapshot`, `move` | T0a, T0b |
-| T8 · chat mới, chat cũ, draft | FR-053 AC-1..3, 5; FR-048 AC-2; FR-038 AC-1, 2, 4 | `chats-and-drafts.test.ts` | — | T0a, T0b |
-| T9 · hành động khi folder lỗi | FR-071 AC-13, 14; FR-073 AC-6; FR-083 AC-7; FR-141 AC-8 | `actions-on-broken-folder.test.ts` | `move`, `snapshot` | T0a, T0b |
+| [#58](https://github.com/Luke23127006/DeckAgent/issues/58) T0c · test runner | — | `package.json` (Vitest `4.1.12`, script `test:acceptance`), `pnpm-lock.yaml`, `vitest.config.ts` | — | — |
+| [#59](https://github.com/Luke23127006/DeckAgent/issues/59) T0a · test driver | — | `support/deckagent.ts`, `support/errors.ts` | — | T0c |
+| [#60](https://github.com/Luke23127006/DeckAgent/issues/60) T0b · Windows fixture | — | `support/winfs.ts`, `support/winfs.test.ts`, `support/global-setup.ts` | mọi fixture và self-test của chúng | T0c |
+| [#61](https://github.com/Luke23127006/DeckAgent/issues/61) T1 · thêm và chuyển workspace | FR-071 AC-1..5, 8, 9, 11, 12, 15 | `workspaces-add-switch.test.ts` | `junction`, `substDrive`, `shortName`, `longPath`, `denyRead`, `move` | T0a, T0b |
+| [#62](https://github.com/Luke23127006/DeckAgent/issues/62) T2 · refused folder (security) | FR-071 AC-6, 7; FR-083 AC-4 | `refused-folders.test.ts` | `root`, `junction`, `substDrive` | T0a, T0b |
+| [#63](https://github.com/Luke23127006/DeckAgent/issues/63) T3 · nhiều interface | FR-071 AC-10; FR-053 AC-4; FR-038 AC-3 | `several-interfaces.test.ts` | — | T0a, T0b |
+| [#64](https://github.com/Luke23127006/DeckAgent/issues/64) T4 · default workspace và xoá workspace | FR-072 AC-1..4; FR-073 AC-1..5, 7 | `default-and-remove.test.ts` | — | T0a, T0b |
+| [#65](https://github.com/Luke23127006/DeckAgent/issues/65) T5 · folder mất hoặc bị thay | FR-074 AC-1..5; FR-142 AC-1..5 | `folder-gone-or-replaced.test.ts` | `move`, `junction`, `denyRead` | T0a, T0b |
+| [#66](https://github.com/Luke23127006/DeckAgent/issues/66) T6 · đổi folder và đổi tên | FR-083 AC-1..3, 5, 6; FR-141 AC-1..7 | `change-folder-rename.test.ts` | `junction`, `move` | T0a, T0b |
+| [#67](https://github.com/Luke23127006/DeckAgent/issues/67) T7 · project folder không đổi | FR-084 AC-1, 2 | `project-folder-untouched.test.ts` | `snapshot`, `move` | T0a, T0b |
+| [#68](https://github.com/Luke23127006/DeckAgent/issues/68) T8 · chat mới, chat cũ, draft | FR-053 AC-1..3, 5; FR-048 AC-2; FR-038 AC-1, 2, 4 | `chats-and-drafts.test.ts` | — | T0a, T0b |
+| [#69](https://github.com/Luke23127006/DeckAgent/issues/69) T9 · hành động khi folder lỗi | FR-071 AC-13, 14; FR-073 AC-6; FR-083 AC-7; FR-141 AC-8 | `actions-on-broken-folder.test.ts` | `move`, `snapshot` | T0a, T0b |
 
 **Phase 4 phải có**, ngoài các implementation ticket theo module:
 - **một ticket nối driver** (`deckagent.ts` gọi interface thật); nó **chặn mọi lần đổi `it.fails` thành `it`**, và mỗi implementation PR **cho thấy ở commit đầu** rằng test của nó **fail vì assertion** (test-strategy.md);
