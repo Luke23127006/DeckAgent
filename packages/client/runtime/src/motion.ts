@@ -74,11 +74,7 @@ function bulk(nodes: readonly HTMLElement[]): void {
 
 function menuIn(menu: HTMLElement): void {
   const above = menu.dataset.side !== 'below'
-  const rows = [
-    ...menu.querySelectorAll<HTMLElement>(
-      ':scope > p, :scope > button, :scope > .menu-section',
-    ),
-  ]
+  const rows = [...menu.querySelectorAll<HTMLElement>(':scope > p, :scope > button, :scope > .menu-section')]
   menu.style.transformOrigin = above ? 'left bottom' : 'left top'
   hold(rows)
   utils.set(rows, { opacity: 0 })
@@ -173,14 +169,71 @@ function deckIn(deck: HTMLElement): void {
   })
 }
 
+let lastSlide = -1
+
+/** The stage slides in from the side the user is heading to; a first load or a new chat only swells in. */
 function slideIn(frame: HTMLElement): void {
-  animate(frame, {
-    opacity: [0.3, 1],
-    scale: [0.972, 1],
-    duration: 560,
+  const list = frame.closest('.deck-panel')?.querySelector('.deck-slide-list')
+  const current = list ? [...list.children].findIndex(item => item.getAttribute('aria-current') === 'true') : -1
+  const direction = lastSlide < 0 || current < 0 ? 0 : Math.sign(current - lastSlide)
+  lastSlide = current
+  animate(
+    frame,
+    direction
+      ? {
+          translateX: [direction * 40, 0],
+          opacity: [0, 1],
+          duration: 440,
+          ease: 'outExpo',
+          onComplete: () => settle(frame),
+        }
+      : { opacity: [0.3, 1], scale: [0.972, 1], duration: 560, ease: 'outExpo', onComplete: () => settle(frame) },
+  )
+}
+
+function previewIn(frame: HTMLElement): void {
+  utils.set(frame, { opacity: 0 })
+  animate(frame, { opacity: [0, 1], duration: 360, ease: 'outQuad', onComplete: () => settle(frame) })
+}
+
+/** The slide counter rolls one step up or down, the way the slide changed. */
+function counterRoll(counter: HTMLElement, before: string | null | undefined): void {
+  const from = Number.parseInt(before ?? '', 10)
+  const to = Number.parseInt(counter.textContent ?? '', 10)
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return
+  animate(counter, {
+    translateY: [Math.sign(to - from) * 9, 0],
+    opacity: [0.2, 1],
+    duration: 320,
     ease: 'outExpo',
-    onComplete: () => settle(frame),
+    onComplete: () => settle(counter),
   })
+}
+
+/** Entering presentation: the slide swells in and the control pill rises once the screen has changed. */
+function presentIn(panel: HTMLElement): void {
+  const stage = panel.querySelector<HTMLElement>('.deck-stage')
+  const controls = panel.querySelector<HTMLElement>('.deck-controls')
+  if (stage)
+    animate(stage, {
+      scale: [0.94, 1],
+      opacity: [0, 1],
+      duration: 620,
+      ease: 'outExpo',
+      onComplete: () => settle(stage),
+    })
+  if (controls) {
+    hold([controls])
+    utils.set(controls, { opacity: 0 })
+    animate(controls, {
+      translateY: [18, 0],
+      opacity: [0, 1],
+      delay: 260,
+      duration: 520,
+      ease: 'outExpo',
+      onComplete: () => settle(controls),
+    })
+  }
 }
 
 function thumbnailIn(item: HTMLElement): void {
@@ -246,9 +299,15 @@ export function initMotion(root: HTMLElement): void {
     const fresh: HTMLElement[] = []
     for (const record of records) {
       if (record.type === 'childList') {
+        if (record.target instanceof HTMLElement && record.target.matches('.deck-counter')) {
+          counterRoll(record.target, record.removedNodes[0]?.textContent)
+          continue
+        }
         for (const node of record.addedNodes) {
           if (!(node instanceof HTMLElement)) continue
-          if (record.target instanceof HTMLElement && record.target.matches('.messages') && node.matches(message))
+          if (record.target instanceof HTMLElement && record.target.matches('.thumbnail') && node.matches('iframe'))
+            previewIn(node)
+          else if (record.target instanceof HTMLElement && record.target.matches('.messages') && node.matches(message))
             fresh.push(node)
           else if (
             record.target instanceof HTMLElement &&
@@ -274,6 +333,7 @@ export function initMotion(root: HTMLElement): void {
         else if (target.matches('.welcome')) welcomeIn(target)
         else if (target.matches('.published-deck-sidebar')) deckIn(target)
       } else if (record.attributeName === 'srcdoc' && target.matches('.deck-stage iframe')) slideIn(target)
+      else if (record.attributeName === 'data-presenting' && target.dataset.presenting === 'true') presentIn(target)
     }
     if (fresh.length > 3) bulk(fresh)
     else for (const node of fresh) node.matches('.message.user') ? fly(root, node) : pop(node)
@@ -282,6 +342,6 @@ export function initMotion(root: HTMLElement): void {
     childList: true,
     attributes: true,
     attributeOldValue: true,
-    attributeFilter: ['data-status', 'hidden', 'srcdoc'],
+    attributeFilter: ['data-status', 'hidden', 'srcdoc', 'data-presenting'],
   })
 }
