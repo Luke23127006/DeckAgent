@@ -15,6 +15,7 @@ created: DD-MM-YYYY
 
 ## At a glance
 
+- **What this document is:** in ISO/IEC/IEEE 29119-3 terms, it **joins the test plan and the test specification** of the build; the **driver, fixtures and tickets** are its **test implementation** part. They live together so the PO **approves one document**.
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
@@ -23,9 +24,9 @@ created: DD-MM-YYYY
 - **Tiers:** _N ci · N eval · N manual_
 - **Technical checklist (C1–C8):** _N of 8 pass_ — failures listed in review-flows.md
 
-<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Coverage: criteria met / required by the risk level; a criterion not met is a deviation in review-flows.md. -->
+<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Planned coverage: coverage items that have a written criterion / items the risk level requires; it is a plan, not a test result. An item without a criterion is a deviation in review-flows.md. -->
 
-| Item | Risk | Kinds and techniques | Coverage met / required |
+| Item | Risk | Kinds and techniques | Planned coverage (criteria written / required) |
 |---|---|---|---|
 | FR-NNN | high | The lifecycle uses **state transition**. The input range uses **EP + BVA**. | 0 / 0 |
 | NFR-NNN | normal | Reliability uses **fault injection**. | 0 / 0 |
@@ -46,6 +47,14 @@ created: DD-MM-YYYY
 | Fixture | Sets up | Self-test |
 |---|---|---|
 | `fixtureName` | | |
+
+## Testing risks
+
+<!-- Risks to the testing itself, not to the product (the product risk is the Risk column above): what could make a test unable to run, or make it pass without proving anything. One row per risk; a ruling about it lives in review-flows.md. Write "None." when the build has none. -->
+
+| ID | Risk | Impact if it happens | Mitigation | Owner |
+|---|---|---|---|---|
+| R1 | | | | |
 
 ## Acceptance criteria
 

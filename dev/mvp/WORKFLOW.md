@@ -237,9 +237,9 @@ Rules:
 3. **Predict, then compare.** **Before reading anything the agent wrote**, the **PO writes a short prediction** in `as-built.md`: "this flow goes through A → B → C; the model is called at X and Y". The agent then fills in the **actual flow** and the **drift**.
 4. The agent **updates `docs/architecture/`** (see [As-built layer](#as-built-layer)).
 5. The **PO runs the manual-tier checks**.
-6. The **PO ticks the Verified column** row by row, then **closes the flow tracker**.
+6. The **PO ticks the Verified column** row by row. A **row that still fails is not ticked**; the PO **chooses one of two**: **fix it** in a **light build** with a **regression test**, or **move its behavior to the spec backlog** with the reason ([Spec rules](#spec-rules) rule 4). Then the PO **closes the flow tracker**.
 
-**Gate:** **CI green**; an **eval run is recorded** for every eval-tier criterion; `as-built.md` has the **prediction, the actual flow and the drift**; `docs/architecture/` **is current**; **every matrix row is verified**; the **Phase 6 exit** of `dev/development/test-strategy.md` "Phases" **is met**.
+**Gate:** **CI green**; an **eval run is recorded** for every eval-tier criterion; `as-built.md` has the **prediction, the actual flow and the drift**; `docs/architecture/` **is current**; **every matrix row is verified**, or its **behavior is moved to the spec backlog**; the **Phase 6 exit** of `dev/development/test-strategy.md` "Phases" **is met**.
 
 ### Review after the first build
 

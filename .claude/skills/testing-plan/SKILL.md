@@ -63,9 +63,11 @@ For each in-scope NFR, **write `M-n` blocks** with the technique of its NFR kind
 
 **Default** from `Check`: `deterministic` → **ci** (the **model is replaced** by a recorded fixture or a mock); `evaluation` → **eval** (fixed cases, a rubric that scores **exactly the Then**, a **proposed pass threshold**); **only a person can judge it** → **manual** (what the PO checks and how). **Flag a tier that looks wrong** instead of changing it.
 
-### Step 6 — Test driver and fixtures
+### Step 6 — Test driver, fixtures and testing risks
 
 List the **driver functions** the criteria call, the **fields** they assert, and each **fixture** with **what it sets up** and **its self-test**. **Only build-specific content**; the general rules stay in the strategy.
+
+For each fixture, runner or CI condition, ask **what could stop a test from running** or **let it pass without proving anything**. Each such risk is a row of **"Testing risks"**: the **impact**, the **mitigation** (a self-test, a lock, a blocking ticket) and its **owner**.
 
 ### Step 7 — Post-implementation tests
 
@@ -77,7 +79,7 @@ Group the ci-tier criteria into tickets: **one concern**, **at most 3 files**, *
 
 ### Step 9 — Count and check
 
-- Fill **"Coverage met / required"** per item. Each **unmet criterion** is a **deviation** in review-flows.md, with its reason.
+- Fill **"Planned coverage"** per item: items **with a written criterion** / items **the risk level requires**. It is a **plan, not a test result**. Each **unmet criterion** is a **deviation** in review-flows.md, with its reason.
 - Run the **technical checklist C1–C8** on every criterion and ticket. Each **failure** is fixed in the draft or listed in review-flows.md as **kind `checklist`**.
 - Fill the **counts** in both At a glance blocks.
 

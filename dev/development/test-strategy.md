@@ -64,7 +64,7 @@ The **WORKFLOW gate** of each phase **includes this table's exit column**.
 
 | Phase | Box | What is added | Exit | PO sees |
 |---|---|---|---|---|
-| **Phase 2** | **Black** | **Review-flows view**, acceptance tests and eval cases, **from the spec** and the techniques of each item's **risk level** | Every **coverage criterion** is met or **ruled a deviation**; every CI test is an **expected failure** (`it.fails`) that **can fail on an assertion**; the **checklist passes** | **Criteria met / required**, **open deviations**, **checklist failures** |
+| **Phase 2** | **Black** | **Review-flows view**, acceptance tests and eval cases, **from the spec** and the techniques of each item's **risk level** | Every **coverage criterion** is met or **ruled a deviation**; every CI test is an **expected failure** (`it.fails`) that **can fail on an assertion**; the **checklist passes** | **Planned coverage** (criteria written / required), **open deviations**, **checklist failures**, **testing risks** |
 | **Phase 5** | **White** | Unit tests **per module** | The PR's **first commit** shows its tests **fail on an assertion**; its `it.fails` are then **flipped to `it`** and **green**; **branch coverage** of new code reaches the **threshold the PO sets** in the implementation plan; an **uncovered branch** is **tested or explained** in the PR | **`it.fails` left in the build**, **branch coverage per module** |
 | **Phase 6** | **White** | **Mutation testing** on the **high-risk modules**, **in the first build only**; the **workflow review** after it decides **whether it stays** | **No `it.fails` left**; each **surviving mutant** is **killed by a new test** or **ruled equivalent** by the PO | **Mutation score**, **surviving mutants**, **eval scores** |
 

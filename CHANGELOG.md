@@ -29,6 +29,7 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **Testing plan** gains a **"Testing risks"** section (what could stop a test from running or make it pass without proof), names its coverage column **"Planned coverage"** so it does not read as a test result, and says which **29119-3 documents** it joins. **Phase 6**: a row that still fails is **fixed in a light build** or its behavior is **moved to the spec backlog**.
 - **Phase 2 derives from the test strategy**: the `testing-plan` skill and template set a **risk level per item**, a **`Catches` line per criterion**, the **test driver and fixtures**, post-implementation tests and test-stub tickets. A CI test is an **expected failure** whose **implementation PR's first commit** shows it **fails on an assertion**.
 - **FR-071**: a folder name **longer than the longest name is cut**; adding a folder that **was moved** gives its workspace **the new place**. **FR-141**: spaces at both ends are **dropped**, a **refused name changes nothing**. **DEC-012**: the **current chat is not shared** between interfaces.
 - **Research checklist format "map first, questions after"** (template, skill `research-questions`, skill `ticket-writer`, research ticket template): a **map of the whole product** with the **build's blocks highlighted**, the **build's boundary**, then **questions per block**, each **triaged by how it gets answered** (no research needed, later build, existing evidence, small check, PO decides). **Only the last three get a ticket.** Prose in Vietnamese with English technical terms.
