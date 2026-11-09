@@ -15,9 +15,9 @@ Each file records **one technical or product decision** made during a build. A d
 | [DEC-007](DEC-007-how-a-design-system-bounds-the-deck.md) | What role the template plays for the model, and what happens to a colour or font the user asks for outside the theme | A layout of the template that code finds fitting, or a new one when none fits; the user is asked about a colour or font outside the theme | 05-11-2026 | decided (2C amended 05-11-2026) |
 | [DEC-008](DEC-008-who-starts-a-conversation-summary.md) | Who starts the summary of a conversation that outgrows the context of the model: the system, the user or both | not chosen | 05-11-2026 | open |
 | [DEC-009](DEC-009-where-an-answer-finds-the-source-of-content.md) | Where an answer finds the source of content in the deck: a record kept when the content is written, or the model looking again | not chosen | 05-11-2026 | open |
-| [DEC-010](DEC-010-how-deckagent-runs.md) | How DeckAgent runs on the user's computer, and how the user chooses a folder: local server with a browser, or a desktop app | not chosen | 08-11-2026 | open |
-| [DEC-011](DEC-011-how-deckagent-data-is-stored.md) | What DeckAgent stores its own data in: SQLite or JSON files | not chosen | 08-11-2026 | open |
-| [DEC-012](DEC-012-several-open-interfaces.md) | What several open interfaces share: the workspace in use and the current chat | not chosen | 08-11-2026 | open |
+| [DEC-010](DEC-010-how-deckagent-runs.md) | How DeckAgent runs on the user's computer, and how the user chooses a folder: local server with a browser, or a desktop app | A · local server, browser, typed path | 08-11-2026 | decided |
+| [DEC-011](DEC-011-how-deckagent-data-is-stored.md) | What DeckAgent stores its own data in: SQLite or JSON files | B · SQLite through `better-sqlite3` | 08-11-2026 | decided |
+| [DEC-012](DEC-012-several-open-interfaces.md) | What several open interfaces share: the workspace in use | A · shared by the program | 08-11-2026 | decided |
 
 
 ## Conventions

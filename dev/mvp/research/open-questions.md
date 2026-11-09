@@ -73,3 +73,5 @@
     - how the **image abilities of each provider and model are checked**;
     - how a **saved key is protected from other programs** on the computer.
 
+20. **Network folders** (UNC paths such as `\\server\share`): can a **folder on the network** be a **project folder** (FR-071, BR-019)? The **first build does not test it**: a test needs an **SMB share or admin rights** on CI.
+

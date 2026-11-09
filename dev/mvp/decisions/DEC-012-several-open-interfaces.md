@@ -1,6 +1,6 @@
 ---
 id: DEC-012
-title: "What several open interfaces share: the workspace in use and the current chat"
+title: "What several open interfaces share: the workspace in use"
 date: 08-11-2026
 status: decided
 research: "RQ-9 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
@@ -35,4 +35,5 @@ The PO took the **recommendation as shown**: the **glossary stays as written** (
 ## Consequences
 
 - The server **pushes a change of the workspace in use** to **every open interface**.
+- The **current chat is not shared**: **each interface keeps its own current chat**; the **draft of one chat** is the **same in every interface** (FR-038). Clarified by the PO on 08-11-2026 in the testing plan review of the first build.
 - A **new chat** carries the **workspace the interface shows** `[proposed]`; when it **differs from the workspace in use**, the server **creates no chat** and the interface **updates first**. The **implementation plan** settles this detail.
