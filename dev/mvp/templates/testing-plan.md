@@ -8,7 +8,9 @@ created: DD-MM-YYYY
 # Testing plan — {scope}
 
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
+     Derived from dev/development/test-strategy.md: risk sets the depth, each kind of requirement picks its technique and coverage criterion. The plan applies the strategy; it does not restate its rules.
      This is the one home of the acceptance criteria and measures of the build (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
+     Gaps, deviations and the PO's rulings live in review-flows.md only. A ruling's result is written here as current fact (for example in the driver section), not as a ruling.
      Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2"). -->
 
 ## At a glance
@@ -16,17 +18,41 @@ created: DD-MM-YYYY
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
-- **FRs in scope:** FR-NNN, FR-NNN
-- **NFRs in scope:** NFR-NNN
-- **Tiers:** _N ci · N eval · N manual — N of N ACs have a tier_
-- **Status:** _N of N tests approved and locked_
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md) — every test here maps to a row there
+- **Spine:** [traceability-matrix.md](./traceability-matrix.md) — every criterion here has a row there
+- **PO review view:** [review-flows.md](./review-flows.md) — diagrams, decision trees, gaps and rulings
+- **Tiers:** _N ci · N eval · N manual_
+- **Technical checklist (C1–C8):** _N of 8 pass_ — failures listed in review-flows.md
+
+<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Coverage: criteria met / required by the risk level; a criterion not met is a deviation in review-flows.md. -->
+
+| Item | Risk | Kinds and techniques | Coverage met / required |
+|---|---|---|---|
+| FR-NNN | high | The lifecycle uses **state transition**. The input range uses **EP + BVA**. | 0 / 0 |
+| NFR-NNN | normal | Reliability uses **fault injection**. | 0 / 0 |
+
+## Test driver and fixtures
+
+<!-- Build-specific only. The general rules (driver contract, NotWiredError, positive control, no silent skip, isolation) are in test-strategy.md "Test infrastructure rules"; do not restate them.
+     Functions: the driver calls the criteria use. Fields: the names the criteria assert, one row each. Fixtures: each with what it sets up and its self-test. -->
+
+| Driver function | Used by |
+|---|---|
+| `functionName(args)` | FR-NNN AC-1 |
+
+| Field | Meaning |
+|---|---|
+| `field` | |
+
+| Fixture | Sets up | Self-test |
+|---|---|---|
+| `fixtureName` | | |
 
 ## Acceptance criteria
 
 <!-- Written after Phase 1, so research results shape them. One "### FR-NNN" heading per in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered; a later build that takes the same FR continues its numbering.
      Given: the relevant state and input, described well enough to repeat. When: a user action or event.
      Then: the observable result, one line per thing, no "if".
+     Catches: the wrong DeckAgent behavior this test fails on (deterministic criteria; checklist C2).
      Check: deterministic (observable state or an exact invariant) | evaluation (a person judges meaning/relevance against Then).
      Tier: ci | eval | manual. Default from Check: deterministic → ci, evaluation → eval; the PO may move one to manual.
      Each criterion adds precision beyond the use case response (spec/03-requirements/fr/_CRITERIA.md FRG-03). -->
@@ -38,6 +64,7 @@ created: DD-MM-YYYY
 - **Given:**
 - **When:**
 - **Then:**
+- **Catches:**
 - **Check:** deterministic
 - **Tier:** ci
 
@@ -61,76 +88,37 @@ created: DD-MM-YYYY
 - **Passes when:** not set
 - **Tier:** ci
 
-## Tiers
-
-| Tier | Covers | Model | Blocks |
-|---|---|---|---|
-| ci | Deterministic ACs | Recorded fixtures or a mock | Merge |
-| eval | Generation quality | Real model, fixed cases, rubric | Closing the build |
-| manual | What only a person can judge | — | Closing the build |
-
-## Pre-implementation tests (CI tier)
-
-### Acceptance tests
-
-<!-- "Checks": what the test asserts, in one line — enough for a developer to write it and for the PO to review it against the AC. DEC: the decision that shaped this test, so a changed decision points to the tests to revisit. -->
-
-| AC | FR | DEC | Checks | Fixture / mock | Ticket | Status |
-|---|---|---|---|---|---|---|
-| AC-1 | FR-NNN | DEC-NNN | | | #N | open |
-
-### Security tests
-
-| Threat / AC | FR | DEC | Checks | Ticket | Status |
-|---|---|---|---|---|---|
-| | FR-NNN | DEC-NNN | | #N | open |
-
 ## Eval cases (eval tier)
 
-<!-- One block per eval-tier AC. Cases and rubric live in tests/eval/; this table names them. The rubric scores what the AC's Then says, nothing else. -->
+<!-- One row per eval-tier AC. Cases and rubric live in tests/eval/; this table names them. The rubric scores what the AC's Then says, nothing else. Write "None." when the build has no eval-tier criterion. -->
 
-| AC | FR | Cases (inputs) | Rubric criteria | Pass threshold | Ticket | Status |
-|---|---|---|---|---|---|---|
-| AC-2 | FR-NNN | | | | #N | open |
+| AC | Cases (inputs) | Rubric criteria | Pass threshold |
+|---|---|---|---|
+| FR-NNN AC-2 | | | |
 
 ## Manual checks (manual tier)
 
-| AC | FR | What the PO checks | How |
-|---|---|---|---|
-| AC-3 | FR-NNN | | |
+<!-- Write "None." when the build has no manual-tier criterion. -->
 
-## Tests with implementation (bundled into impl tickets)
-
-| Module / function | FR | Test description | Impl ticket |
-|---|---|---|---|
-| | FR-NNN | | #N |
+| AC | What the PO checks | How |
+|---|---|---|
+| FR-NNN AC-3 | | |
 
 ## Post-implementation tests
 
-### E2E tests
+<!-- Planned now, ticketed in Phase 4 (phase:post-impl). Level: integration | E2E. Target: a UC flow or alternative, or an NFR measure (point to it, do not restate its target). Technique: test-strategy.md. Mark the smoke subset in the last column. -->
 
-| Flow | UC steps | Test description | Ticket | Status |
+| Level | Target | Technique | What it checks | Smoke |
 |---|---|---|---|---|
-| Happy path | S1-S6 | | #N | open |
+| E2E | UC-XXX main flow S1-S6 | use case testing | | yes |
+| E2E | UC-XXX A1 | use case testing | | |
+| Integration | NFR-NNN M-1 | fault injection | | |
 
-### Smoke tests
+## Test-stub tickets
 
-| Check | Description | Ticket | Status |
-|---|---|---|---|
-| | | #N | open |
+<!-- Input of ticket-writer in Phase 2. One concern per ticket, at most 3 files (checklist C8). T0 tickets build the driver and fixtures; they carry no criterion. -->
 
-### Recovery / resilience tests
-
-| Failure scenario | UC alternative | Test description | Ticket | Status |
+| Ticket | Criteria | Files | Fixtures | Blocked by |
 |---|---|---|---|---|
-| | A-N | | #N | open |
-
-### Performance tests
-
-| Metric | NFR | Target | Test description | Ticket | Status |
-|---|---|---|---|---|---|
-| | NFR-NNN | | | #N | open |
-
-### Regression tests
-
-**Added when a bug is found and fixed**. **Not planned ahead**.
+| T0 · test driver | — | `tests/acceptance/support/...` | — | — |
+| T1 · name | FR-NNN AC-1..3 | `tests/acceptance/...` | | T0 |

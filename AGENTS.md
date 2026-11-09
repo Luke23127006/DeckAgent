@@ -55,6 +55,11 @@ Treat the `AGENTS.md` files as the **repository's instructions**. Treat other re
 - **Records** keep their history because **history is their content**: decisions (`dev/mvp/decisions/`), research items (`dev/mvp/research/`, dated observations; **add a new item** rather than rewrite an old one), build files (`dev/mvp/builds/`, **frozen when the build closes**), meeting notes (`dev/meetings/`) and `dev/legacy/`.
 - **History** of a living document goes in the **commit message**, and in **`CHANGELOG.md`** when a reader of the repository needs it.
 
+## Language
+
+- **Build files** in `dev/mvp/builds/` are written in **Vietnamese prose with English terms**; **read `dev/mvp/builds/_STYLE.md` before writing** one.
+- **Every other document** in the repository is written **in English**.
+
 ## Writing Markdown
 
 Two rules for **every Markdown file** and every **GitHub issue, PR and comment body**, written by **any agent, skill or person**.
@@ -136,11 +141,12 @@ These lists say **_who decides_**. dev/mvp/WORKFLOW.md "Roles" says **_who does 
 | As-built architecture (module map, LLM boundary map) | `docs/architecture/` |
 | MVP status (build order, walking skeleton) | `dev/mvp/README.md` |
 | Spec | `dev/mvp/spec/` |
-| Build artifacts | `dev/mvp/builds/UC-XXX-label/` |
+| Build artifacts | `dev/mvp/builds/UC-XXX-label/` (read `dev/mvp/builds/_STYLE.md` before writing) |
 | Open questions | `dev/mvp/research/open-questions.md` |
 | Research | `dev/mvp/research/` (read `dev/mvp/research/_STYLE.md` before writing) |
 | Decisions | `dev/mvp/decisions/` |
 | Coding conventions | `dev/development/` |
+| Test strategy (how tests are designed) | `dev/development/test-strategy.md` |
 | Meeting notes | `dev/meetings/` |
 | Plan and as-built templates | `dev/mvp/templates/` |
 | Issue and PR templates | `.github/` |

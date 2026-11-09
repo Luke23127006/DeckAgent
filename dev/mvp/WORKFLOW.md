@@ -5,7 +5,7 @@ How DeckAgent goes **from the MVP spec to working code** with a **five-person te
 ## At a glance
 
 - **One product owner (PO)** owns the spec, the research decisions, the testing plan, the implementation plan and **every verdict**. **Developers** pull tickets and **write tests and code**. **The agent** drafts and does the legwork. See [Roles](#roles).
-- **Quality is enforced by tests, not by PR review.** Tests are **written from the PO's plan**, **approved by the PO**, then **locked**. The **implementer of an FR** is **never the author of its tests**. See [Test tiers](#test-tiers) and [Enforcement](#enforcement).
+- **Quality is enforced by tests, not by PR review.** Tests are **written from the PO's plan**, **approved by the PO**, then **locked**. The **implementer of an FR** is **never the author of its tests**. **How tests are designed** is in `dev/development/test-strategy.md`. See [Test tiers](#test-tiers) and [Enforcement](#enforcement).
 - **One spec.** `dev/mvp/spec/` is **the spec of the MVP**. It **states behavior**; the **acceptance criteria** are written **per build in its testing plan**. Behaviors **left for later** wait in the **spec backlog** `dev/mvp/spec/05-backlog/`. See [Spec rules](#spec-rules).
 - **The MVP code is new.** The **legacy code** and the **OpenCode code** on `feat/v2-opencode` are **reference, not product**. See [Reference code](#reference-code).
 - **Understanding of the system is a deliverable.** Each build leaves an **as-built record** focused on what carries product value: the **boundary between the model and the deterministic parts**. See [As-built layer](#as-built-layer).
@@ -42,10 +42,11 @@ dev/                          internal docs for the dev team
 │           ├── traceability-matrix.md
 │           ├── research-checklist.md
 │           ├── testing-plan.md
+│           ├── review-flows.md
 │           ├── implementation-plan.md
 │           ├── as-built.md
 │           └── eval-runs/YYYY-MM-DD.md
-├── development/              coding conventions, review criteria, repo structure
+├── development/              coding conventions, review criteria, repo structure, test strategy
 ├── meetings/                 meeting transcripts and notes
 └── legacy/                   documents tied to the legacy code (read-only)
 ```
@@ -161,10 +162,10 @@ Rules:
 
 **Owner:** PO **writes the plan** and **approves the tests**. **Developers** write the tests.
 
-1. Run skill `testing-plan`. Write `testing-plan.md`: the **acceptance criteria** of each in-scope FR and the **measures** of each in-scope NFR ([Spec rules](#spec-rules) rule 2), each with its **tier and test type**, and **what the test checks**. The **PO approves the plan** **before any test ticket** is created.
+1. Run skill `testing-plan`, which **applies** `dev/development/test-strategy.md`. Write `testing-plan.md`: the **risk level** of each in-scope item, the **acceptance criteria** of each in-scope FR and the **measures** of each in-scope NFR ([Spec rules](#spec-rules) rule 2), each with its **tier** and its **`Catches` line**. Write `review-flows.md`, the PO's **review view**: diagrams, decision trees, and the **gaps, deviations and rulings**. The **PO approves both** **before any test ticket** is created.
 2. **Split the matrix rows**: **one row per acceptance criterion or measure**, with its tier.
 3. **Create `test-stub-ticket` Issues** (labels `phase:test-stubs`, `uc:XXX`, `tier:*`):
-   - **CI tier:** a **failing test** in `tests/acceptance/` (or a security test).
+   - **CI tier:** a **failing test** in `tests/acceptance/` (or a security test), written as an **expected failure** (`it.fails`), so CI **stays green while the test fails** and **turns red if it passes unexpectedly**. It must fail **on a real assertion**; the **implementation PR** shows that in its **first commit** (`dev/development/test-strategy.md` "Test infrastructure rules").
    - **Eval tier:** the **eval cases and the rubric** in `tests/eval/`.
    - **Manual tier:** **no ticket**. The check is **listed in the testing plan**.
 4. The **PO reviews each test PR** against its criteria. **A merged test is locked** by CODEOWNERS: **changing it needs the PO** again.
@@ -181,13 +182,13 @@ Rules:
 | E2E, smoke, performance | After all implementation | `phase:post-impl` |
 | Regression | With each bug fix | `phase:post-impl` or `build:light` |
 
-**Gate:** the PO **approved the testing plan**; all **test-stub tickets are closed**; every **CI-tier** criterion has an **approved, red, locked test**; every **eval-tier** criterion has **approved cases and a rubric**; every **manual-tier** criterion is **listed in the testing plan**; every in-scope **DEC is consumed** by at least one test.
+**Gate:** the PO **approved the testing plan**; all **test-stub tickets are closed**; every **CI-tier** criterion has an **approved, locked test** that runs as an **expected failure**; every **eval-tier** criterion has **approved cases and a rubric**; every **manual-tier** criterion is **listed in the testing plan**; every in-scope **DEC is consumed** by at least one test; the **Phase 2 exit** of `dev/development/test-strategy.md` "Phases" **is met**.
 
 ### Phase 3 — Implementation plan
 
 **Owner:** PO. **Agent:** drafts it.
 
-1. Write `implementation-plan.md`. Each step names **what to build** (module, file path), the **tests it makes pass**, the **decisions it depends on**, and the **reference code it reads** ([Reference code](#reference-code) rule 4).
+1. Write `implementation-plan.md`. Each step names **what to build** (module, file path), the **tests it makes pass**, the **decisions it depends on**, and the **reference code it reads** ([Reference code](#reference-code) rule 4). The plan sets the **branch coverage threshold** of new code (`dev/development/test-strategy.md` "Phases").
 2. **Module boundaries.** The **PO decides the module split and the seams** (skill `codebase-design`). This is where **understanding of the code structure** is formed.
 3. **LLM boundary.** For **each step of every value flow** in scope, the plan states:
 
@@ -215,16 +216,17 @@ Rules:
 **Owner:** developers. **Agent:** light review.
 
 1. The **PO assigns tickets**. The implementer **reads the ticket and its context**, branches, implements, and **runs the ticket's test command**.
-2. The PR uses the **PR template**: **ticket link**, **test command output**, **scope checkbox**.
-3. The agent **reviews with `/code-review`** and checks:
+2. The implementation PR's **first commit** shows that its tests **fail on an assertion** against the new code. A **later commit** **turns the expected failures of its criteria into plain tests** (`it.fails` → `it`). That **one-word change** is the **only change** it makes to a **locked test**, and the **PO approves it** with the PR (CODEOWNERS).
+3. The PR uses the **PR template**: **ticket link**, **test command output**, **scope checkbox**.
+4. The agent **reviews with `/code-review`** and checks:
    - the change **stays within the ticket's files** (at most 3);
-   - **no locked test or spec file** is touched;
+   - **no locked test or spec file** is touched, **except** the `it.fails` → `it` change of step 2;
    - the **separation rule holds**;
    - the **LLM boundary** from the plan holds: **no model call where the plan says code**.
-4. **Merge when CI is green** and the **review passes**. A PR that touches a **CODEOWNERS path** also **needs the PO**.
-5. **Close the ticket** and **update the flow tracker**.
+5. **Merge when CI is green** and the **review passes**. A PR that touches a **CODEOWNERS path** also **needs the PO**.
+6. **Close the ticket** and **update the flow tracker**.
 
-**Gate:** all `phase:impl` and `phase:post-impl` **tickets are closed**.
+**Gate:** all `phase:impl` and `phase:post-impl` **tickets are closed**; the **Phase 5 exit** of `dev/development/test-strategy.md` "Phases" **is met**.
 
 ### Phase 6 — Verification
 
@@ -237,7 +239,7 @@ Rules:
 5. The **PO runs the manual-tier checks**.
 6. The **PO ticks the Verified column** row by row, then **closes the flow tracker**.
 
-**Gate:** **CI green**; an **eval run is recorded** for every eval-tier criterion; `as-built.md` has the **prediction, the actual flow and the drift**; `docs/architecture/` **is current**; **every matrix row is verified**.
+**Gate:** **CI green**; an **eval run is recorded** for every eval-tier criterion; `as-built.md` has the **prediction, the actual flow and the drift**; `docs/architecture/` **is current**; **every matrix row is verified**; the **Phase 6 exit** of `dev/development/test-strategy.md` "Phases" **is met**.
 
 ### Review after the first build
 
