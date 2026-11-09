@@ -31,6 +31,8 @@ created: DD-MM-YYYY
 <!-- Gate: tests approved and locked; eval cases and rubric approved; manual checks listed -->
 <!-- Blocked by: Phase 1 complete -->
 
+- [ ] Gate 1: [test-analysis.md](./test-analysis.md) and the approach approved
+- [ ] Gate 2: [test-design.md](./test-design.md) and the AC approved
 - [ ] [#N](https://github.com/{owner}/{repo}/issues/N) test stub title (tier: ci, author: @handle)
 
 ## Phase 3: Implementation plan
@@ -57,7 +59,9 @@ created: DD-MM-YYYY
 - [ ] Eval run recorded for every eval-tier AC: [eval-runs/](./eval-runs/)
 - [ ] As-built: prediction written by the PO, then actual flow and drift: [as-built.md](./as-built.md)
 - [ ] `docs/architecture/` updated (LLM boundary map, module map)
-- [ ] Manual checks done by the PO
+- [ ] Manual checks and exploratory sessions done by the PO
+- [ ] Test summary written: [test-summary.md](./test-summary.md)
+- [ ] Gate 3: build verdict
 
 ### Verified per AC
 <!-- One line per AC, taken from the traceability matrix -->

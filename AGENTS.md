@@ -89,7 +89,7 @@ Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a lig
 |---|---|
 | Write or rewrite a spec file | `spec-authoring` |
 | Generate research questions for a build | `research-questions` |
-| Generate a testing plan (tiers, test types) | `testing-plan` |
+| Generate the test analysis and the testing plan (test basis, test types, tiers) | `testing-plan` |
 | Create GitHub Issues from a plan | `ticket-writer` |
 | Update flow tracker issue | `flow-tracker-update` |
 | Implement with TDD | `tdd` |

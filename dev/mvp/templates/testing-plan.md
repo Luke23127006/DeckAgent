@@ -10,26 +10,39 @@ created: DD-MM-YYYY
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
      Derived from dev/development/test-strategy.md: risk sets the depth, each kind of requirement picks its technique and coverage criterion. The plan applies the strategy; it does not restate its rules.
      This is the one home of the acceptance criteria and measures of the build (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
-     Gaps, deviations and the PO's rulings live in review-flows.md only. A ruling's result is written here as current fact (for example in the driver section), not as a ruling.
-     Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2"). -->
+     Scope rulings and rulings on ambiguities live in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact (for example in the driver section), not as a ruling.
+     Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2").
+     Gates (dev/development/test-strategy.md "Gates"): Gate 1 covers At a glance, Test approach, Testing risks and Post-implementation tests, with test-analysis.md; Gate 2 covers Acceptance criteria, Measures, Eval cases and Manual checks, with test-design.md. Test driver and fixtures and Test-stub tickets are the implementation contract. -->
 
 ## At a glance
 
-- **What this document is:** in ISO/IEC/IEEE 29119-3 terms, it **joins the test plan and the test specification** of the build; the **driver, fixtures and tickets** are its **test implementation** part. They live together so the PO **approves one document**.
+- **What this document is:** in ISO/IEC/IEEE 29119-3 terms, it is the **test plan** of the build and holds the **test cases** of its test specification (the AC and measures); the **test design specification** is [test-design.md](./test-design.md); the **driver, fixtures and tickets** are the **test implementation** part.
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
+- **Test analysis (Gate 1):** [test-analysis.md](./test-analysis.md) — the test basis, the test types and the automation feasibility
 - **Spine:** [traceability-matrix.md](./traceability-matrix.md) — every criterion here has a row there
-- **PO review view:** [review-flows.md](./review-flows.md) — diagrams, decision trees, gaps and rulings
+- **Test design (Gate 2):** [test-design.md](./test-design.md) — techniques, conditions, coverage items, gaps and design rulings
 - **Tiers:** _N ci · N eval · N manual_
-- **Technical checklist (C1–C8):** _N of 8 pass_ — failures listed in review-flows.md
+- **Technical checklist (C1–C8):** _N of 8 pass_ — failures listed in test-design.md
 
-<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Planned coverage: coverage items that have a written criterion / items the risk level requires; it is a plan, not a test result. An item without a criterion is a deviation in review-flows.md. -->
+<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Planned coverage: coverage items that have a test case / items the risk level requires, with the excluded and deferred counts beside it; it is a plan, not a test result. An item without a criterion is a deviation in test-design.md. -->
 
-| Item | Risk | Kinds and techniques | Planned coverage (criteria written / required) |
+| Item | Risk | Kinds and techniques | Planned coverage (items with a test case / required; excluded, deferred) |
 |---|---|---|---|
-| FR-NNN | high | The lifecycle uses **state transition**. The input range uses **EP + BVA**. | 0 / 0 |
-| NFR-NNN | normal | Reliability uses **fault injection**. | 0 / 0 |
+| FR-NNN | high | The lifecycle uses **state transition**. The input range uses **EP + BVA**. | 0 / 0 (excluded 0, deferred 0) |
+| NFR-NNN | normal | Reliability uses **fault injection**. | 0 / 0 (excluded 0, deferred 0) |
+
+## Test approach
+
+<!-- Gate 1. Levels and tiers per group of items, the coverage targets and the exit criteria, the environment. The techniques are in the At a glance table and the types and their approaches are in test-analysis.md; do not restate them. -->
+
+| Group of items | Level | Tier | Coverage target |
+|---|---|---|---|
+| FR-NNN | acceptance | ci | every event in every state |
+
+- **Exit criteria:**
+- **Environment:**
 
 ## Test driver and fixtures
 
@@ -50,7 +63,7 @@ created: DD-MM-YYYY
 
 ## Testing risks
 
-<!-- Risks to the testing itself, not to the product (the product risk is the Risk column above): what could make a test unable to run, or make it pass without proving anything. One row per risk; a ruling about it lives in review-flows.md. Write "None." when the build has none. -->
+<!-- Risks to the testing itself, not to the product (the product risk is the Risk column above): what could make a test unable to run, or make it pass without proving anything. One row per risk; a ruling about it lives in test-design.md. For a risk that comes from a mechanism, link its row in test-analysis.md "Automation feasibility" and do not restate its status. Write "None." when the build has none. -->
 
 | ID | Risk | Impact if it happens | Mitigation | Owner |
 |---|---|---|---|---|
@@ -64,6 +77,7 @@ created: DD-MM-YYYY
      Catches: the wrong DeckAgent behavior this test fails on (deterministic criteria; checklist C2).
      Check: deterministic (observable state or an exact invariant) | evaluation (a person judges meaning/relevance against Then).
      Tier: ci | eval | manual. Default from Check: deterministic → ci, evaluation → eval; the PO may move one to manual.
+     Serves: the basis items (test-analysis.md) and the condition codes (test-design.md) this criterion covers. Every AC cites at least one basis item. One AC may hold several variants; list them in When, because each independent variant is its own test case and has its own result.
      Each criterion adds precision beyond the use case response (spec/03-requirements/fr/_CRITERIA.md FRG-03). -->
 
 ### FR-NNN
@@ -74,6 +88,7 @@ created: DD-MM-YYYY
 - **When:**
 - **Then:**
 - **Catches:**
+- **Serves:** BI-1; X1
 - **Check:** deterministic
 - **Tier:** ci
 
@@ -112,6 +127,12 @@ created: DD-MM-YYYY
 | AC | What the PO checks | How |
 |---|---|---|
 | FR-NNN AC-3 | | |
+
+<!-- Exploratory charters: one row per session. It creates no locked test; the findings go to a defect issue or a ruling. Write "None." when the build has none. -->
+
+| Charter | Type | Scope | Time box |
+|---|---|---|---|
+| | security | | |
 
 ## Post-implementation tests
 
