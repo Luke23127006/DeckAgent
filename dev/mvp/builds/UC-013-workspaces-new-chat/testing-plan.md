@@ -15,17 +15,19 @@ created: 08-11-2026
 
 ## At a glance
 
+- **Tài liệu này là gì:** theo ISO/IEC/IEEE 29119-3, nó **gộp test plan và test specification** của build; phần **driver, fixture và ticket** là **test implementation**. Gộp lại để PO **duyệt một tài liệu**.
 - **Use cases:** UC-013, UC-012
 - **Steps:** all
 - **Alternatives:** all, **trừ** các phần **dời sang build sau** ([matrix](./traceability-matrix.md), mục "Moved to a later build"). **BR-004, BR-019, BR-020** được test **qua các FR trích dẫn chúng**.
 - **Spine:** [traceability-matrix.md](./traceability-matrix.md), **một dòng cho mỗi AC và measure**
 - **PO review view:** [review-flows.md](./review-flows.md): sơ đồ, bảng kiểm tra đủ (mọi event ở mọi state), cây quyết định, các bảng phân lớp, **gaps và rulings**
 - **Tiers:** _63 AC ci · 1 measure ci · 0 eval · 0 manual_
-- **Technical checklist (C1–C8):** _8 / 8 pass sau các sửa C-2_ (review-flows.md mục 8); **chạy lại** sau khi áp các ruling mới
+- **Technical checklist (C1–C8):** _8 / 8 pass_ (review-flows.md mục 8)
+- **Testing risks:** _6_, ở mục [Testing risks](#testing-risks)
 
-<!-- Coverage: số mục coverage (bước UC, ô state × event, nhánh lá, lớp đầu vào, bất biến) đã có AC / số mục mà risk level đòi, trừ các mục PO đã ruling không test hoặc dời. Một ô thuộc FR của AC phủ nó; ô không test thuộc FR định nghĩa event. Ruling nằm ở review-flows.md mục 8. -->
+<!-- Planned coverage, là kế hoạch chứ không phải kết quả chạy test: số mục coverage (bước UC, ô state × event, nhánh lá, lớp đầu vào, bất biến) đã có AC / số mục mà risk level đòi, trừ các mục PO đã ruling không test hoặc dời. Một ô thuộc FR của AC phủ nó; ô không test thuộc FR định nghĩa event. Ruling nằm ở review-flows.md mục 8. -->
 
-| Item | Risk | Kinds and techniques | Coverage met / required |
+| Item | Risk | Kinds and techniques | Planned coverage (criteria written / required) |
 |---|---|---|---|
 | FR-071 | high | Flow của use case dùng **use case testing**. Vòng đời workspace dùng **state transition**. Luật chọn folder dùng **decision table**. Đường dẫn và tên folder dùng **EP + BVA**. "Không đọc file" và "giữ chat" dùng **invariant check**. | 38 / 38 (dời: Z-10, Z-12) |
 | FR-072 | normal | Flow của use case dùng **use case testing**. | 7 / 7 |
@@ -94,6 +96,19 @@ Fixture nằm ở `tests/acceptance/support/winfs.ts`. **Mọi folder tạm** n�
 | `move(from, to)` | dời folder, **thử lại** khi EPERM | `from` **không còn**, `to` **có** |
 | `snapshot(path)` | ghi **mọi file và folder**, kể cả folder rỗng: tên, kích thước, **hash nội dung**, thuộc tính (ẩn, chỉ đọc), **ADS**; **không ghi thời gian** của chính folder | **Positive control:** khi test đổi một byte, một thuộc tính hoặc một ADS, snapshot mới phải **khác** snapshot cũ |
 | global setup | **chỉ gỡ** ổ `subst` và **chỉ `icacls /reset`** các folder mà **registry của suite** (`root\registry.json`) ghi từ lần chạy trước, **dưới lock file** của suite | ổ `subst` **không có trong registry** **không bị đụng** |
+
+## Testing risks
+
+Đây là rủi ro của **chính việc test**, không phải rủi ro của sản phẩm (cột Risk ở trên): điều có thể làm một test **không chạy được**, hoặc **pass mà không chứng minh gì**.
+
+| ID | Rủi ro | Hậu quả nếu xảy ra | Cách giảm | Ai lo |
+|---|---|---|---|---|
+| R1 | Ổ `C:` của runner **tắt tên 8.3**. | Self-test của `shortName` fail, nên **CI đỏ**; trường hợp tên 8.3 của FR-071 AC-2 **không chạy được**. | Self-test **fail rõ ràng**, không skip ngầm. GitHub runner hiện **có bật** 8.3 (folder tạm `RUNNER~1`). Nếu runner tắt 8.3, PO quyết: bật lại bằng `fsutil 8dot3name set`, hoặc bỏ trường hợp 8.3. | Người viết T0b (#60) |
+| R2 | Image `windows-2022` của GitHub **đổi phiên bản** (image này không ghim tuyệt đối). | Hành vi của ACL, `subst` hoặc junction đổi, nên fixture **hỏng** hoặc test **pass sai**. | **Self-test của fixture** chạy trong mỗi lần chạy suite và chỉ ra fixture nào hỏng. | PO, khi duyệt step CI |
+| R3 | **Ticket preload** của fs audit **chưa merge**. | Các AC dùng `fsAudit` (T1, T5, T6) **không chứng minh được** chúng fail vì assertion, nên **chưa đổi được** sang `it`. | `fsAudit` throw `AuditNotEnabledError`. Phase 4 có **ticket preload riêng**, và ticket đó chặn việc đổi `it.fails` thành `it` của các AC này. | Implementation plan (Phase 3) |
+| R4 | `denyRead` **không đặt được ACL**, hoặc **không trả lại quyền** sau test. | Test "mất quyền đọc" **pass mà không có folder bị chặn**, hoặc để lại một folder **bị khoá** cho lần chạy sau. | Self-test kiểm `fs.readdir` **thật sự fail**. Quyền được trả lại trong `finally`. Global setup **`icacls /reset`** các folder mà registry của suite ghi lại. | Người viết T0b (#60) |
+| R5 | Hai lần chạy song song **lấy cùng một ký tự ổ** `subst`. | Một test trỏ vào **folder của test khác**, nên kết quả **sai** hoặc **flaky**. | Lấy ký tự ổ **dưới lock** của suite, **thử lại** khi ký tự vừa bị lấy, **gỡ** ổ sau test, và chỉ dọn ổ **có trong registry**. | Người viết T0b (#60) |
+| R6 | **Step CI `test:acceptance` chưa có** trong workflow (một thay đổi riêng, chờ PO duyệt, ruling P-5). | Test đã khoá **không chặn merge**: một PR làm hỏng hành vi **vẫn merge được**. | PO duyệt step CI **trước khi PR implementation đầu tiên** của Phase 5 merge. | PO |
 
 ## Acceptance criteria
 
