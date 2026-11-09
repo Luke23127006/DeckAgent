@@ -1,20 +1,33 @@
 ---
 scope: "Workspace theo thư mục (UC-013) và chat mới (UC-012)"
-title: "Review flows — testing plan của build đầu tiên"
+title: "Test design — workspace theo thư mục và chat mới"
 milestone: mvp
 created: 08-11-2026
 ---
 
-# Review flows — testing plan của build đầu tiên
+# Test design — workspace theo thư mục và chat mới
 
 ## At a glance
 
-- **Dùng để làm gì:** PO kiểm [testing-plan.md](./testing-plan.md) **theo flow của sản phẩm**. Mỗi sơ đồ cho thấy **AC nằm ở đâu** và **chỗ nào trống**. Đây là nơi **kiểm coverage criterion** của [test-strategy.md](../../../development/test-strategy.md), và là **chỗ duy nhất** ghi **gap, deviation và ruling**.
+- **Dùng để làm gì:** đây là **Test Design Specification** của build ([test-strategy.md](../../../development/test-strategy.md) mục "Test design specification"), record của **Gate 2**. PO kiểm ở đây **technique nào được áp dụng và vì sao**, **cách áp dụng**, các **condition** suy ra từ **basis item** nào, các **coverage item** và tiêu chí đủ, **liên kết** từ condition tới **AC và test case**, và các **gap, deviation và design ruling**. **Scope ruling** nằm ở [test-analysis.md](./test-analysis.md); **AC** nằm ở [testing-plan.md](./testing-plan.md).
+- **Gate 2:** _Not started_. Nội dung dưới đây là **phần thiết kế đã viết trước khi đổi artifact**; nó **chưa đủ** trách nhiệm mới. Các việc còn lại ghi ở [mục 8](#8-gaps-deviations-và-rulings), phần "**Gate 2 pending**".
 - **Cách đọc một chủ đề:** đọc **sơ đồ** trước; mỗi mũi tên có **một mã** (W1, F1, C1). Sau đó đọc khung **Luôn đúng**: các điều DeckAgent phải giữ **ở mọi mũi tên**. Cuối cùng đọc **bảng mũi tên**: mỗi mũi tên một dòng, ghi **khi nào** nó xảy ra, **DeckAgent phải làm gì**, và **lỗi nào** của DeckAgent mà test bắt được.
 - **Ký hiệu:** mũi tên **nét đứt** là **dời sang build sau**. Các event **giữ nguyên state** gom vào **một ô "Ở lại …"** nối bằng **nét chấm**, thay cho mũi tên vòng về chính nó. Một mũi tên **chưa có AC** trỏ vào ô **"Z-n · chưa có AC"** (một gap ở mục 8).
-- **Status:** planned coverage (AC đã viết / mục cần phủ) **112 / 112**; **3 mục PO ruling không test hoặc dời** (Z-9, Z-10, Z-12). **Mọi gap và deviation đã có ruling** ([mục 8](#8-gaps-deviations-và-rulings)). Checklist C1–C8: **8 / 8 pass**.
+- **Status:** planned coverage (AC đã viết / mục cần phủ) **112 / 112**, tính trên **AC và coverage cũ** (Z-21); **3 mục PO ruling không test hoặc dời** (Z-9, Z-10, Z-12). Các ruling Z-1 đến Z-17 đã có; **Z-18 đến Z-25 pending**. Checklist C1–C8: **8 / 8 pass** trên bản cũ.
 
-## 1. Tổng quan
+## 1. Kỹ thuật đã áp dụng và tổng quan
+
+<!-- Bảng ghi technique đã có section trong file này. Cột basis item và số coverage item chưa điền: đó là việc của Gate 2 (Z-23). -->
+
+| Technique | Áp dụng cho | Vì sao | Coverage criterion | Coverage items | Section |
+|---|---|---|---|---|---|
+| State transition | FR-071, FR-072, FR-073, FR-074, FR-083, FR-141, FR-142 (vòng đời workspace, folder); FR-053, FR-038 (chat, draft) | Vòng đời của workspace và folder; risk high | Mọi event ở mọi state, kể cả event bị từ chối | Gate 2 pending | 2, 3, 4, 5 |
+| Decision table | FR-071, FR-083, FR-142 với BR-019 (đường dẫn folder); FR-141 với BR-020 (tên workspace) | Luật nhiều điều kiện; risk high | Mỗi leaf một outcome và ít nhất một test | Gate 2 pending | 6, 7 |
+| EP + BVA | Đường dẫn folder; tên workspace (BR-020) | Đầu vào có format và giới hạn | Mọi partition; mỗi biên ở ba giá trị | Gate 2 pending | 6, 7 |
+| Invariant check | FR-084, FR-071, FR-074, FR-083, FR-142 | Câu "không đọc file", "không đổi folder", "giữ chat" | Assert sau mọi hành động của vùng, có positive control | Gate 2 pending | Khung "Luôn đúng" ở 2, 3 |
+| Use case testing | Flow của UC-013 và UC-012 | Testing plan chọn cho mọi FR | Mọi step và alternative có end state khác | Gate 2 pending | **Chưa có section** (Z-25) |
+| Threat-based | Security: confidentiality, integrity, authorization (FR-143) | Test type đã chọn ở Gate 1 | Mỗi threat scenario được giữ có test | Gate 2 pending | **Chưa có section** (Z-25) |
+| Fault injection | NFR-008 M-1 | Reliability; risk high | Điểm chèn lỗi × failure mode đã chọn | Gate 2 pending | **Chưa có section** (Z-25) |
 
 ```mermaid
 flowchart LR
@@ -309,6 +322,21 @@ flowchart TD
 ## 8. Gaps, deviations và rulings
 
 **Kind:** **gap** (spec không trả lời), **deviation** (không áp dụng một kỹ thuật hoặc coverage criterion mà risk level đòi), **checklist** (lỗi C1–C8), **infra** (lựa chọn về hạ tầng test). Kết quả của một ruling được ghi vào [testing-plan.md](./testing-plan.md) **như sự thật hiện tại**.
+
+### Gate 2 pending
+
+Các vấn đề này **đã được nhận diện** khi đóng Gate 1 và đổi artifact. **Chưa có đề xuất**; Test Design của Gate 2 xử lý chúng. **Không sửa AC** và **không thêm test case** trước bước đó.
+
+| ID | Kind | What | PO ruling |
+|---|---|---|---|
+| Z-18 | checklist | **FR-071 AC-12** đòi tên workspace **giống từng byte** tên folder NFD, **mâu thuẫn** với quy tắc **NFC** của ruling AM-2 (FR-071, BR-020 đã sửa). | pending |
+| Z-19 | deviation | **FR-143** (từ chối thay đổi workspace và chat từ client không được phép) **chưa có AC** và **chưa có dòng** trong [traceability-matrix.md](./traceability-matrix.md). | pending |
+| Z-20 | infra | Mục "Test driver and fixtures" của [testing-plan.md](./testing-plan.md) **vẫn ghi `stat`** là positive control của `fsAudit`, **trái ruling M3** ở [test-analysis.md](./test-analysis.md). | pending |
+| Z-21 | deviation | **Planned coverage** ở At a glance của testing-plan.md **vẫn tính trên AC và coverage cũ**, chưa trên coverage item của file này. | pending |
+| Z-22 | deviation | Một AC **chứa nhiều biến thể độc lập** (ví dụ FR-071 AC-2 có 7 dạng đường dẫn). Mỗi biến thể phải là **một test case riêng**, có **kết quả riêng**. | pending |
+| Z-23 | deviation | Condition của file này **có mã** nhưng **chưa liên kết** tới **basis item** của test-analysis.md và tới **test case**; bảng ở mục 1 **chưa có số coverage item**. | pending |
+| Z-24 | gap | Candidate gap **CG-1 đến CG-10** (BR-019, BR-020) ở test-analysis.md là **đầu vào** của Test Design: kiểm từng cái **bằng technique** đã ghi, **không tự chuyển** thành test case. | pending |
+| Z-25 | deviation | **Use case testing**, **threat-based** (security, gồm FR-143) và **fault injection** (NFR-008 M-1) **chưa có section** trong file này. | pending |
 
 ### Ruling ngày 09-11-2026
 

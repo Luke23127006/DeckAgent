@@ -99,12 +99,12 @@ PO đã quyết (RQ-15, [#56](https://github.com/Luke23127006/DeckAgent/issues/5
 | **Request vẫn chạy** khi người dùng **chuyển workspace** hoặc **tạo chat mới** | FR-071, FR-053 | **Request** | Build 3 |
 | Chat mới lấy **model của lần chọn gần nhất** | FR-053 | **Provider** | Build 2 |
 | FR-048: hiện **chat từ trước lần khởi động lại**, hiện **ungrouped chat riêng**, nói **chat đổi lần cuối khi nào** (testing plan P-2) | FR-048 | **Request đã gửi** (BR-004 V-1) | Build 3 |
-| FR-084: **file người dùng đưa làm attachment** giữ nguyên (review flows Z-3) | FR-084 | **Attachment** | Build 3 |
+| FR-084: **file người dùng đưa làm attachment** giữ nguyên (test design Z-3) | FR-084 | **Attachment** | Build 3 |
 | FR-048: nói **chat có slide không** (testing plan P-2) | FR-048 | **Deck** | Build 5 |
-| FR-048 AC-1: **chỉ chat của workspace đang dùng** (review flows Z-13) | FR-048 | **Request đã gửi** (BR-004 V-1) | Build 3 |
-| FR-071: **không gửi gì tới model**, **không dừng request** khi thêm hoặc chuyển workspace (review flows Z-12) | FR-071 | **Model, request** | Build 3 |
-| NFR-008: chat **nhận request mới** sau khi DeckAgent chết giữa chừng (review flows Z-14) | NFR-008 | **Request** | Build 3 |
-| FR-071: folder trên **đường dẫn mạng UNC** (review flows Z-10, open-questions.md item 20) | FR-071 | **Câu trả lời của PO** và **share SMB trên CI** | Chưa có build |
+| FR-048 AC-1: **chỉ chat của workspace đang dùng** (test design Z-13) | FR-048 | **Request đã gửi** (BR-004 V-1) | Build 3 |
+| FR-071: **không gửi gì tới model**, **không dừng request** khi thêm hoặc chuyển workspace (test design Z-12) | FR-071 | **Model, request** | Build 3 |
+| NFR-008: chat **nhận request mới** sau khi DeckAgent chết giữa chừng (test design Z-14) | NFR-008 | **Request** | Build 3 |
+| FR-071: folder trên **đường dẫn mạng UNC** (test design Z-10, open-questions.md item 20) | FR-071 | **Câu trả lời của PO** và **share SMB trên CI** | Chưa có build |
 | **Đặt tên chat** theo nội dung: **model đặt tên** trong câu trả lời đầu tiên; khi model không đặt, **code lấy vài chữ đầu** của request (RQ-13, [#55](https://github.com/Luke23127006/DeckAgent/issues/55)) | FR-048 | **Request** | Build 3 |
 
 ## Orphan check (chạy ở mỗi gate)
