@@ -18,6 +18,7 @@ Each file records **one technical or product decision** made during a build. A d
 | [DEC-010](DEC-010-how-deckagent-runs.md) | How DeckAgent runs on the user's computer, and how the user chooses a folder: local server with a browser, or a desktop app | A · local server, browser, typed path | 08-11-2026 | decided |
 | [DEC-011](DEC-011-how-deckagent-data-is-stored.md) | What DeckAgent stores its own data in: SQLite or JSON files | B · SQLite through `better-sqlite3` | 08-11-2026 | decided |
 | [DEC-012](DEC-012-several-open-interfaces.md) | What several open interfaces share: the workspace in use | A · shared by the program | 08-11-2026 | decided |
+| [DEC-013](DEC-013-test-runner.md) | Which runner the acceptance tests use: Vitest or the Node test runner | A · Vitest, pinned, set up by its own ticket | 09-11-2026 | decided |
 
 
 ## Conventions

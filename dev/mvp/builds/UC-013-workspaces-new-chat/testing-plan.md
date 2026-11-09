@@ -78,6 +78,7 @@ Driver nằm ở `tests/acceptance/support/deckagent.ts`. Mọi response **có c
 - **So đường dẫn** sau `realpathSync.native` ở **cả hai vế**, vì folder tạm có thể là **đường dẫn 8.3**. **Ngoại lệ:** đường dẫn **không còn tồn tại** được so **như chuỗi** với **giá trị DeckAgent đã trả trước đó** (FR-083 AC-6).
 - **fs audit:** chế độ test chạy server với **một module preload** ghi **mọi lệnh `fs`** và đường dẫn của nó. `fsAudit(path)` trả về các lệnh trên đường dẫn **nằm trong `path`**, so sau khi **chuẩn hoá cả hai vế**: `realpathSync.native` khi đường dẫn tồn tại, nếu không thì `path.resolve` và **không phân biệt hoa thường**. Như vậy một lệnh **qua junction hoặc đường dẫn 8.3** vẫn bị bắt. **Được phép:** `stat`, `access`, `opendir` trên **chính project folder**. **Không được phép:** `open`, `readFile`, `createReadStream` trên **bất kỳ file nào bên trong**. **Positive control:** mỗi lần dùng phải thấy **ít nhất một `stat`** trên project folder. Khi preload **chưa bật**, `fsAudit` throw **`AuditNotEnabledError`**. Vì vậy các AC dùng `fsAudit` **chỉ chứng minh được** fail vì assertion, và **chỉ đổi sang `it`**, **sau** khi **implementation ticket của preload** merge.
 - **Folder thay thế:** driver khởi động DeckAgent với **folder thay thế** cho **folder của người dùng**, **các key folder**, **data folder** và **system folder**. Chúng là **fixture**: **folder thật trên đĩa**, **không mock** hành vi DeckAgent. **Hai yêu cầu cho Phase 3:** DeckAgent **đọc các đường dẫn này từ cấu hình lúc khởi động**, **không đọc lúc load module**; server **nhận port 0** để chạy **nhiều server song song** ([open-design-earlier-work.md](../../research/open-design-earlier-work.md) item 12).
+- **Runner:** **Vitest** `4.1.12`, ghim version (DEC-013). Lệnh chạy là `pnpm test:acceptance`.
 - **CI:** test chạy qua **một step `test:acceptance` mới** trong `.github/workflows/workspace.yml`, là **một thay đổi riêng**, **PO duyệt**. Workflow đã **ghim Node `22.19.0`**, **ghim action theo SHA**, lấy **pnpm theo `package.json`**; riêng **image `windows-2022`** **không ghim tuyệt đối**.
 
 Fixture nằm ở `tests/acceptance/support/winfs.ts`. **Mọi folder tạm** nằm dưới **một root trên ổ `C:`** (`C:\deckagent-test\<runId>`), vì FR-071 AC-6 cần `userDir` và `systemDirs` **cùng ổ với `C:\`**.
@@ -818,12 +819,13 @@ E2E chạy qua **interface thật trên browser**: acceptance test kiểm **hàn
 
 ## Test-stub tickets
 
-Mỗi ticket **đổi tối đa 3 file**, label `tier:ci`, mọi file nằm trong `tests/acceptance/`. **T0a và T0b chặn mọi ticket khác.** Mọi acceptance test viết bằng **`it.fails`**.
+Mỗi ticket **đổi tối đa 3 file**, label `tier:ci`. Trừ T0c, mọi file nằm trong `tests/acceptance/`. **T0c chặn mọi ticket khác**; **T0a và T0b chặn T1 đến T9**. Mọi acceptance test viết bằng **`it.fails`** của **Vitest** (DEC-013).
 
 | Ticket | Criteria | Files | Fixtures | Blocked by |
 |---|---|---|---|---|
-| T0a · test driver | — | `support/deckagent.ts`, `support/errors.ts` | — | — |
-| T0b · Windows fixture | — | `support/winfs.ts`, `support/winfs.test.ts`, `support/global-setup.ts` | mọi fixture và self-test của chúng | — |
+| T0c · test runner | — | `package.json` (Vitest `4.1.12`, script `test:acceptance`), `pnpm-lock.yaml`, `vitest.config.ts` | — | — |
+| T0a · test driver | — | `support/deckagent.ts`, `support/errors.ts` | — | T0c |
+| T0b · Windows fixture | — | `support/winfs.ts`, `support/winfs.test.ts`, `support/global-setup.ts` | mọi fixture và self-test của chúng | T0c |
 | T1 · thêm và chuyển workspace | FR-071 AC-1..5, 8, 9, 11, 12, 15 | `workspaces-add-switch.test.ts` | `junction`, `substDrive`, `shortName`, `longPath`, `denyRead`, `move` | T0a, T0b |
 | T2 · refused folder (security) | FR-071 AC-6, 7; FR-083 AC-4 | `refused-folders.test.ts` | `root`, `junction`, `substDrive` | T0a, T0b |
 | T3 · nhiều interface | FR-071 AC-10; FR-053 AC-4; FR-038 AC-3 | `several-interfaces.test.ts` | — | T0a, T0b |
