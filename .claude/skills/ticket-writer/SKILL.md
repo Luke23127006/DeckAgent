@@ -1,6 +1,6 @@
 ---
 name: ticket-writer
-description: Create GitHub Issues from a plan document (research checklist, testing plan, or implementation plan). Uses the issue templates in .github/ISSUE_TEMPLATE/. Sets labels, milestones, and blocked-by references.
+description: Create GitHub Issues from a plan document (research checklist, test implementation contract, or implementation plan). Uses the issue templates in .github/ISSUE_TEMPLATE/. Sets labels, milestones, and blocked-by references.
 ---
 
 # Ticket writer
@@ -10,9 +10,9 @@ description: Create GitHub Issues from a plan document (research checklist, test
 ## Input
 
 One of:
-- `dev/mvp/builds/UC-XXX-label/research-checklist.md` → creates research tickets
-- `dev/mvp/builds/UC-XXX-label/testing-plan.md` → creates test stub tickets
-- `dev/mvp/builds/UC-XXX-label/implementation-plan.md` → creates implementation and post-impl tickets
+- `dev/mvp/builds/UC-XXX-label/research/research-checklist.md` → creates research tickets
+- `dev/mvp/builds/UC-XXX-label/implementation/test-implementation.md` → creates test stub tickets (the criteria they cite live in `testing/design/acceptance-criteria.md`)
+- `dev/mvp/builds/UC-XXX-label/implementation/implementation-plan.md` → creates implementation and post-impl tickets
 
 Or a **single light build** (bug fix or small change) → **one `light-build.md` issue**.
 
@@ -40,7 +40,7 @@ gh issue create \
 
 The **body follows the matching template** in `.github/ISSUE_TEMPLATE/`:
 - **Research questions** → `research-ticket.md`: **one ticket per question** whose "Trả lời bằng" is `thử nhỏ` or `anh quyết`; **none** for `không cần research` or `để build sau`. A `có sẵn` question **gets no ticket**: the PO **nods at the step it blocks** (usually the testing plan). Questions with the **same way of answering** and the **same deliverable** (for example several **spec gaps** answered in **one spec change**) **share one ticket**, which **lists each RQ**. The ticket **includes the map** of the checklist with the **question's block highlighted**
-- **Test stubs** → `test-stub-ticket.md`, plus the label `tier:ci` or `tier:eval` from the testing plan. **Manual-tier ACs get no ticket**.
+- **Test stubs** → `test-stub-ticket.md`, plus the label `tier:ci` or `tier:eval` from the AC's tier in `acceptance-criteria.md`. **Manual-tier ACs get no ticket**.
 - **Implementation steps** → `implementation-ticket.md`. **Fill Test author** from the matrix and the **LLM boundary** block from the plan's LLM boundary table.
 - **Post-impl tests** → `post-impl-test-ticket.md`
 - **Light build** → `light-build.md`, label `build:light`; **add its row** to `dev/mvp/builds/_light/traceability-matrix.md`.
@@ -61,7 +61,7 @@ For **research tickets**, the **map is copied from section 1** of the research c
 
 ### 5. Update the local mirror
 
-**Update** `dev/mvp/builds/UC-XXX-label/flow-tracker.md` with the **new ticket numbers**. **Update the source plan document's ticket column** with issue numbers. **Update** `dev/mvp/builds/UC-XXX-label/traceability-matrix.md`: **fill the Test and Impl columns** with the new ticket links. Before finishing, **run the matrix's no-orphan check** — **no test or implementation ticket may exist without a matrix row** (see dev/mvp/WORKFLOW.md "Traceability"). Keep ticket bodies to a **matrix-row reference** (FR/AC id + link) **rather than restating requirement text** (dev/mvp/WORKFLOW.md "Document rules").
+**Update** `dev/mvp/builds/UC-XXX-label/flow-tracker.md` with the **new ticket numbers**. **Update the source plan document's ticket column** with issue numbers. **Update** `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md`: **fill the Test and Impl columns** with the new ticket links. Before finishing, **run the matrix's no-orphan check** — **no test or implementation ticket may exist without a matrix row** (see dev/mvp/WORKFLOW.md "Traceability"). Keep ticket bodies to a **matrix-row reference** (FR/AC id + link) **rather than restating requirement text** (dev/mvp/WORKFLOW.md "Document rules").
 
 ## Ticket rules
 

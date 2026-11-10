@@ -36,7 +36,7 @@ Template: `_TEMPLATE.md`. Style: `../_STYLE.md`. Children: `../03-requirements/f
 
 **Next free use case ID: UC-020**.
 
-**Layer**: in the spec (`dev/mvp/spec/`) each alternative keeps **At, Ends, When and FR**, with **System in one line**. **Detailed responses** live in the **acceptance criteria of the testing plan** of a build (dev/mvp/WORKFLOW.md "Spec rules"). **Notes stay short**: a **design choice is one line** that **links its proposal** in `dev/mvp/decisions/`, **never the reasoning itself**.
+**Layer**: in the spec (`dev/mvp/spec/`) each alternative keeps **At, Ends, When and FR**, with **System in one line**. **Detailed responses** live in the **acceptance criteria** of a build (`testing/design/acceptance-criteria.md`) (dev/mvp/WORKFLOW.md "Spec rules"). **Notes stay short**: a **design choice is one line** that **links its proposal** in `dev/mvp/decisions/`, **never the reasoning itself**.
 
 ## 2. Evidence tags
 

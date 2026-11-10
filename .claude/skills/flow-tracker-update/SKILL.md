@@ -44,7 +44,7 @@ The gates are defined in dev/mvp/WORKFLOW.md "Phases". This skill **reports whet
 - **Phase 3:** the implementation plan is approved by the PO.
 - **Phase 4:** every implementation ticket **exists** and **names a test author who is not its assignee**. **Report any separation-rule conflict**.
 - **Phase 5:** all `phase:impl` and `phase:post-impl` tickets closed.
-- **Phase 6:** every row in `dev/mvp/builds/UC-XXX-label/traceability-matrix.md` has Verified ticked; `eval-runs/` has a run for every eval-tier AC; `as-built.md` has a prediction, an actual flow and a drift section. Mirror the per-AC checklist under "Verified per AC" from the matrix rows.
+- **Phase 6:** every row in `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md` has Verified ticked; `testing/execution/eval-runs/` has a run for every eval-tier AC; `implementation/as-built.md` has a prediction, an actual flow and a drift section. Mirror the per-AC checklist under "Verified per AC" from the matrix rows.
 
 **Report a gate as "ready for the PO"** rather than "complete".
 

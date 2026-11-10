@@ -1,6 +1,6 @@
 # Build files — style guide
 
-**Read this file before writing** or editing any file in `dev/mvp/builds/`: research checklist, traceability matrix, testing plan, implementation plan, as-built record, eval runs. The **templates** in `dev/mvp/templates/` fix **the headings**; this file fixes **how the text reads**.
+**Read this file before writing** or editing any file in `dev/mvp/builds/`: research checklist, traceability matrix, test analysis, testing plan, test design and its technique evidence files, acceptance criteria, test implementation, implementation plan, as-built record, eval runs. The **templates** in `dev/mvp/templates/` fix **the headings**; this file fixes **how the text reads**.
 
 ## Language
 

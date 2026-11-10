@@ -9,9 +9,9 @@ labels: phase:test-stubs
 
 **Milestone:** mvp
 **Use case:** UC-XXX
-**FR / AC:** FR-NNN / AC-N (criterion text in the build's `testing-plan.md`)
+**FR / AC:** FR-NNN / AC-N (criterion text in the build's `testing/design/acceptance-criteria.md`)
 **Tier:** ci / eval <!-- also set the label tier:ci or tier:eval -->
-**Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md (row AC-N)
+**Acceptance criteria:** dev/mvp/builds/UC-XXX-label/testing/design/acceptance-criteria.md (AC-N); **contract:** dev/mvp/builds/UC-XXX-label/implementation/test-implementation.md
 **Flow tracker:** #N
 
 > The **author of this ticket's test must not implement FR-NNN** (separation rule, dev/mvp/WORKFLOW.md "Phase 4"). The **PO approves the test before it merges**; once merged it is **locked**.
@@ -22,7 +22,7 @@ labels: phase:test-stubs
 
 ## What to test
 
-<!-- Copy the "Checks" cell of the testing plan row. Reference the AC's Given / When / Then by id; do not restate it. -->
+<!-- Copy the "Catches" line of the AC in acceptance-criteria.md. Reference the AC's Given / When / Then by id; do not restate it. -->
 
 ## Test file
 
@@ -38,7 +38,7 @@ labels: phase:test-stubs
 ## Skeleton
 
 <!-- ci: describe/it blocks with assertions. The test must RUN (red) but not PASS.
-     eval: case inputs and rubric criteria with the pass threshold from the testing plan. -->
+     eval: case inputs and rubric criteria with the pass threshold from acceptance-criteria.md ("Eval cases"). -->
 
 ```typescript
 // Example — replace with actual skeleton

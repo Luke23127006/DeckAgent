@@ -19,7 +19,7 @@ status: draft
 - **FRs in scope:** FR-NNN, FR-NNN
 - **Decisions needed:** DEC-NNN, DEC-NNN
 - **Status:** draft / reviewed / approved
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md) — every step maps to a row there
+- **Spine:** [traceability-matrix.md](../testing/traceability-matrix.md) — every step maps to a row there
 
 ## Entry conditions
 

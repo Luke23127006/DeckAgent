@@ -53,6 +53,6 @@ _Post-impl test tickets added alongside the implementation tickets._
 - [ ] **Manual checks done** by the PO
 
 ### Verified per AC
-<!-- One line per AC, taken from dev/mvp/builds/UC-XXX/traceability-matrix.md -->
+<!-- One line per AC, taken from dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md -->
 
 _AC list added from the traceability matrix when Phase 6 is reached._

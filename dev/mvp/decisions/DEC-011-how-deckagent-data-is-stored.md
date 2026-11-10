@@ -3,7 +3,7 @@ id: DEC-011
 title: "How DeckAgent stores its own data: SQLite or JSON files"
 date: 08-11-2026
 status: decided
-research: "RQ-2 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
+research: "RQ-2 in dev/mvp/builds/UC-013-workspaces-new-chat/research/research-checklist.md"
 affects: "FR-071, FR-072, FR-073, FR-084, BR-004"
 ---
 

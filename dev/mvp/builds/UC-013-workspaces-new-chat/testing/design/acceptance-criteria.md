@@ -1,137 +1,50 @@
 ---
 scope: "Workspace theo thư mục (UC-013) và chat mới (UC-012)"
-title: "Testing plan — workspace theo thư mục và chat mới"
+title: "Acceptance criteria và measures — workspace theo thư mục và chat mới"
 milestone: mvp
 created: 08-11-2026
 ---
 
-# Testing plan — workspace theo thư mục và chat mới
+# Acceptance criteria và measures — workspace theo thư mục và chat mới
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
-     Derived from dev/development/test-strategy.md: risk sets the depth, each kind of requirement picks its technique and coverage criterion. The plan applies the strategy; it does not restate its rules.
-     This is the one home of the acceptance criteria and measures of the build (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
-     Gaps, deviations and the PO's design rulings live in test-design.md only. A ruling's result is written here as current fact.
-     Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2"). -->
+<!-- Nơi duy nhất giữ AC, measure, eval case, manual check và exploratory charter của build (dev/mvp/WORKFLOW.md "Spec rules" rule 2). Thuộc Test Design, quyết ở Gate 2. AC và measure được viết hoặc rà SAU KHI technique của test-design.md đã suy ra condition và coverage item từ basis item và plan; AC nháp chỉ được đọc ở bước reconciliation của mỗi technique (test-strategy.md "How a technique is applied"). -->
 
 ## At a glance
 
-- **Tài liệu này là gì:** theo ISO/IEC/IEEE 29119-3, nó **gộp test plan và test specification** của build; phần **driver, fixture và ticket** là **test implementation**. Gộp lại để PO **duyệt một tài liệu**.
-- **Use cases:** UC-013, UC-012
-- **Steps:** all
-- **Alternatives:** all, **trừ** các phần **dời sang build sau** ([matrix](./traceability-matrix.md), mục "Moved to a later build"). **BR-004, BR-019, BR-020** được test **qua các FR trích dẫn chúng**.
-- **Test analysis (Gate 1):** [test-analysis.md](./test-analysis.md): basis item, quality risk, test type và automation feasibility của build
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md), **một dòng cho mỗi AC và measure**
-- **Test design (Gate 2):** [test-design.md](./test-design.md): technique đã áp dụng, sơ đồ, bảng state × event, cây quyết định, các bảng phân lớp, **gaps và design rulings**
-- **Tiers:** _63 AC ci · 1 measure ci · 0 eval · 0 manual_
-- **Technical checklist (C1–C8):** _8 / 8 pass_ (test-design.md mục 8)
-- **Testing risks:** _9_, ở mục [Testing risks](#testing-risks)
+- **Status:** **bản nháp trước STLC**, **chưa qua Gate 2**. Nội dung dưới đây được **chuyển nguyên** từ testing-plan.md, **không sửa** AC, measure hay test case nào.
+- **Dùng thế nào:** Test Design **không lấy** các AC này làm đầu vào. Mỗi technique ở [test-design.md](./test-design.md) suy ra condition và coverage item **từ basis item và plan**; AC ở đây chỉ được đọc ở **bước reconciliation** (match, missing, conflict, unsupported). Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage.
+- **Đã biết cần sửa ở Gate 2:** Z-18 (FR-071 AC-12 trái quy tắc NFC), Z-19 (FR-143 chưa có AC), Z-22 (chưa có dòng `Variants`); xem [test-design.md](./test-design.md) mục "Gaps, deviations và rulings".
+- **Basis:** [test-analysis.md](../analysis/test-analysis.md) · **Plan:** [testing-plan.md](../planning/testing-plan.md) · **Spine:** [traceability-matrix.md](../traceability-matrix.md) · **Driver, fixture, ticket:** [test-implementation.md](../../implementation/test-implementation.md)
 
-<!-- Planned coverage, là kế hoạch chứ không phải kết quả chạy test: số mục coverage (bước UC, ô state × event, nhánh lá, lớp đầu vào, bất biến) đã có AC / số mục mà risk level đòi, trừ các mục PO đã ruling không test hoặc dời. Một ô thuộc FR của AC phủ nó; ô không test thuộc FR định nghĩa event. Ruling nằm ở test-design.md mục 8. -->
+## AC, measure và test case
 
-| Item | Risk | Kinds and techniques | Planned coverage (criteria written / required) |
-|---|---|---|---|
-| FR-071 | high | Flow của use case dùng **use case testing**. Vòng đời workspace dùng **state transition**. Luật chọn folder dùng **decision table**. Đường dẫn và tên folder dùng **EP + BVA**. "Không đọc file" và "giữ chat" dùng **invariant check**. | 38 / 38 (dời: Z-10, Z-12) |
-| FR-072 | normal | Flow của use case dùng **use case testing**. | 7 / 7 |
-| FR-073 | high | Flow của use case dùng **use case testing**. Vòng đời workspace dùng **state transition**. "Chat giữ nguyên" dùng **invariant check**. | 8 / 8 (không test: Z-9) |
-| FR-074 | high | Flow của use case dùng **use case testing**. Vòng đời của folder dùng **state transition**. "Không đọc file" dùng **invariant check**. | 7 / 7 |
-| FR-083 | high | Flow của use case dùng **use case testing**. Vòng đời workspace dùng **state transition**. Luật chọn folder dùng **decision table**. "Không đọc file" dùng **invariant check**. | 14 / 14 |
-| FR-142 | high | Flow của use case dùng **use case testing**. Vòng đời của folder dùng **state transition**. Luật chọn folder dùng **decision table**. "Không đọc file" dùng **invariant check**. | 12 / 12 |
-| FR-084 | high | "Project folder không đổi" dùng **invariant check**, có **positive control**. | 10 / 10 |
-| FR-141 | normal | Flow của use case dùng **use case testing**. PO **chỉ định thêm** một gap: tên 1 ký tự, dùng **BVA**. | 6 / 6 |
-| FR-053 | normal | Flow của use case dùng **use case testing**. | 3 / 3 |
-| FR-048 | normal | Flow của use case dùng **use case testing**. | 1 / 1 |
-| FR-038 | normal | Flow của use case dùng **use case testing**. | 4 / 4 |
-| NFR-008 | high | Reliability dùng **fault injection**. | 2 / 2 (phần request: Z-14) |
-| **Tổng** | | | **112 / 112** (3 mục không test hoặc dời) |
+<!-- Định nghĩa nằm ở test-strategy.md "The chain" và "Test infrastructure rules"; mục này chỉ ghi cách build áp dụng chúng. -->
 
-## Test approach
+Ba khái niệm **tách nhau**:
+- **AC** nói **điều kiện PO chấp nhận** một hành vi của FR, BR hoặc flow. AC **không phải một input**.
+- **Measure** nói **đại lượng hoặc tính chất** quyết định một NFR, với **điều kiện, target và luật pass**. Build này có **một measure**: NFR-008 M-1.
+- **Test case** là **một phép kiểm cụ thể** của một AC hoặc một measure: **một biến thể input**, precondition và expected result.
 
-<!-- Gate 1. Level và tier theo nhóm item, coverage target, exit criteria, môi trường. Technique nằm ở bảng At a glance; type và approach của chúng nằm ở test-analysis.md; không nhắc lại ở đây. -->
+**Cách nhận diện và truy vết một biến thể:**
+- Một biến thể là **độc lập** khi nó **khác các biến thể khác ở một coverage item** của condition (một partition, một giá trị biên, một ô state × event, một leaf, một dạng đường dẫn, một phần tử của closed list, một điểm chèn lỗi), và nó **pass hoặc fail được một mình**. Ví dụ: bảy dạng đường dẫn của FR-071 AC-2 là **bảy test case**.
+- Mỗi AC hoặc measure có dòng **`Variants`**: mỗi biến thể một **nhãn** (`V1`, `V2`…) kèm **coverage item** của nó. AC chỉ có một input thì có `V1`.
+- **ID của test case** là ID của AC hoặc measure **cộng nhãn**: `FR-071 AC-2 V6`, `NFR-008 M-1 V3`. Nhãn **không đánh số lại**.
+- **Tên test trong code** bắt đầu bằng **ID của test case**; mỗi biến thể có **`it.fails` riêng**, ví dụ qua parameterized test.
+- [test-design.md](./test-design.md) nối **mỗi coverage item** với **ID của test case** kiểm nó. Matrix giữ **một dòng cho mỗi AC hoặc measure**; test case truy vết **qua ID** của nó.
+- AC và measure hiện có **chưa có dòng `Variants`**. Gate 2 **thêm nhãn** khi rà từng AC (Z-22); plan **không tính** biến thể nào trước bước đó.
 
-| Nhóm item | Level | Tier | Coverage target |
-|---|---|---|---|
-| Hành vi của FR-071, FR-072, FR-073, FR-074, FR-083, FR-142, FR-141, FR-053, FR-048, FR-038 | acceptance (qua driver vào cả server) | ci | Theo bảng At a glance: mọi step và alternative (use case testing), mọi event ở mọi state kể cả event bị từ chối (state transition), mọi leaf (decision table), mọi partition và mỗi biên ở ba giá trị (EP + BVA) |
-| FR-084 và các bất biến "không đọc file", "không đổi file", "giữ chat và draft" | acceptance | ci | Bất biến được assert sau mọi hành động của vùng, kèm positive control |
-| NFR-008 M-1 | integration (Phase 5, `phase:post-impl`) | ci | Fault injection do yêu cầu quy định: kill tại mỗi bước ghi của xoá workspace và tạo chat. Phase 3 xác định các điểm chèn lỗi và cách kích hoạt failure một cách xác định được (mechanism M13 ở [test-analysis.md](./test-analysis.md)) |
-| Flow của UC-013 và UC-012 | E2E (Phase 5) | ci | Luồng chính và mỗi alternative cho end state khác; tập smoke được đánh dấu ở "Post-implementation tests" |
-| Module của code mới | unit (Phase 5, trong ticket implementation) | ci | Branch coverage theo ngưỡng PO đặt ở implementation plan |
-| Security — confidentiality và integrity: bypass của luật folder bị từ chối; DeckAgent không đọc hay đổi file của project folder | acceptance (FR-071 AC-6, AC-7, FR-083 AC-4, FR-084 AC-1, AC-2) | ci | Kịch bản threat qua test đã khoá (T2, T7); thêm exploratory theo charter viết ở Gate 2, và exploratory không tạo test khoá |
-| Security — authorization: client không được phép thay đổi workspace hoặc chat qua server local | acceptance (hành vi là FR-143 trong spec; AC viết ở Gate 2; mechanism M18) | ci | Một request từ client không được phép bị từ chối và không đổi trạng thái. Cơ chế (session token, Origin validation hay khác) do implementation plan quyết. Build không bảo vệ trước tiến trình khác chạy cùng quyền hệ điều hành |
+**Truy vết của measure:**
 
-- **Exit criteria:** mỗi coverage criterion đạt hoặc được ruling là deviation; mọi test ci là expected failure (`it.fails`) có thể fail ở một assertion, **một `it.fails` cho mỗi biến thể độc lập**; checklist C1–C8 đạt; mọi mechanism mà một AC cần đã có status ở [test-analysis.md](./test-analysis.md) mục 3; mục `excluded` và `deferred` được báo riêng bên cạnh tỉ lệ coverage.
-- **Environment:** Windows (image `windows-2022` trên CI); Node `22.19.0`; Vitest `4.1.12` (DEC-013); `better-sqlite3` (DEC-011); folder tạm dưới `C:\deckagent-test\<runId>`. Chi tiết ở mục "Test driver and fixtures".
+| Measure | Basis item | Quality risk | Technique và level | Coverage item (biến thể) | Mechanism | Record Gate 2 |
+|---|---|---|---|---|---|---|
+| NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá (Z-14) | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm do Phase 3 chốt (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (Z-25); dòng của M-1 trong matrix |
 
-## Test driver and fixtures
+Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-008.3) **không thuộc** M-1; build nhận của chúng ghi ở test-analysis.md (SR-7, SR-8d, SR-9).
 
-Luật chung của driver và fixture nằm ở [test-strategy.md](../../../development/test-strategy.md) "Test infrastructure rules". Mục này chỉ ghi **phần riêng của build**. **Contract phía test** (function, field, quy tắc dưới đây) và **fixture** được **quyết khi PO duyệt plan này**; **Phase 3 chỉ quyết** cách **nối driver vào interface thật**.
-
-Driver nằm ở `tests/acceptance/support/deckagent.ts`. Mọi response **có cấu trúc**; test **assert field**, **không so chữ hiển thị**. Mọi function nhận **interface** làm ngữ cảnh: mặc định là interface đầu tiên; test nhiều interface gọi qua `openInterface()`.
-
-| Driver function | Used by |
-|---|---|
-| `start({ dataDir, userDir, keyDirs, systemDirs?, cwd })`: `cwd` là folder chạy server. **`systemDirs` thay thế toàn bộ** danh sách system folder (BR-019 V-2); **bỏ trống** thì dùng **danh sách thật** | mọi test; bỏ trống `systemDirs` chỉ ở test `C:\Windows` thật (FR-071 AC-7) |
-| `stop()` (trả về khi **tiến trình đã thoát** và **file handle đã nhả**), `restart()` (cùng data folder) | FR-072 AC-2, FR-073 AC-7, FR-083 AC-6, FR-142 AC-1, AC-2, FR-038 AC-4, FR-084 AC-1 |
-| `openInterface()` (trả về khi client **đã đăng ký nhận event**), `reload(interface)` | FR-071 AC-10, FR-053 AC-4, FR-038 AC-2, AC-3 |
-| `addFolder(path)`, `switchTo(id)`, `listWorkspaces()`, `inUse()` | FR-071, FR-072, FR-073, FR-074, FR-142 |
-| `rename(id, name)`, `chooseFolder(id, path)`, `useDifferentFolder(id)` | FR-141, FR-083, FR-142 |
-| `requestRemove(id)` trả về **trạng thái chờ xác nhận do server tạo**; `confirmRemove(id)`, `cancelRemove(id)` gửi **quyết định của người dùng** | FR-072 AC-3, FR-073 |
-| `newChat()`, `openChat(id)`, `currentChat()`, `setDraft(text)` (trả về khi server **xác nhận đã lưu**), `getDraft(chatId)`, `earlierWork()`, `ungroupedChats()` | FR-053, FR-048, FR-038, FR-073 |
-| `waitForEvent(interface, name, timeoutMs)` | FR-071 AC-10 |
-| `fsAudit(path)` | FR-071 AC-8, FR-074 AC-1, AC-2, FR-083 AC-1, FR-142 AC-1 |
-
-| Field | Meaning |
-|---|---|
-| `error.code` | `folder_unreadable`, `folder_refused`, `folder_taken`, `no_folder`, `name_refused` |
-| `refusal.rules` | các value của BR, ví dụ `["BR-019 V-1", "BR-019 V-2"]` |
-| `refusal.insideAllowed` | `true` \| `false` |
-| `unreadable.actions` | tập con của `restore`, `grantAccess`, `chooseFolder` |
-| `takenBy` | workspace đang giữ folder đó |
-| workspace | `id`, `name`, `folder`, `status` (`readable` \| `unreadable` \| `differentFolder`), `isDefault` |
-| `removal` | trạng thái chờ xác nhận, với `folderStays` và `chatsStay` |
-| chat | `id`, `workspaceId` (rỗng với ungrouped chat), `model`, `draft` |
-| `currentChat()` | `{ chatId }` **của chính interface đó** |
-| event `workspaceInUse` | `{ workspaceId }` |
-| `notice` | `noModel`, `noEarlierChats` |
-| `raw` | **response gốc**, **chưa đổi tên field**. AC "không có field `cause`" kiểm trên `raw` |
-
-**Quy tắc riêng của build:**
-- **So đường dẫn** sau `realpathSync.native` ở **cả hai vế**, vì folder tạm có thể là **đường dẫn 8.3**. **Ngoại lệ:** đường dẫn **không còn tồn tại** được so **như chuỗi** với **giá trị DeckAgent đã trả trước đó** (FR-083 AC-6).
-- **fs audit:** chế độ test chạy server với **một module preload** ghi **mọi lệnh `fs`** và đường dẫn của nó. `fsAudit(path)` trả về các lệnh trên đường dẫn **nằm trong `path`**, so sau khi **chuẩn hoá cả hai vế**: `realpathSync.native` khi đường dẫn tồn tại, nếu không thì `path.resolve` và **không phân biệt hoa thường**. Như vậy một lệnh **qua junction hoặc đường dẫn 8.3** vẫn bị bắt. **Được phép:** `stat`, `access`, `opendir` trên **chính project folder**. **Không được phép:** `open`, `readFile`, `createReadStream` trên **bất kỳ file nào bên trong**. **Positive control:** mỗi lần dùng phải thấy **ít nhất một `stat`** trên project folder. Khi preload **chưa bật**, `fsAudit` throw **`AuditNotEnabledError`**. Vì vậy các AC dùng `fsAudit` **chỉ chứng minh được** fail vì assertion, và **chỉ đổi sang `it`**, **sau** khi **implementation ticket của preload** merge.
-- **Folder thay thế:** driver khởi động DeckAgent với **folder thay thế** cho **folder của người dùng**, **các key folder**, **data folder** và **system folder**. Chúng là **fixture**: **folder thật trên đĩa**, **không mock** hành vi DeckAgent. **Hai yêu cầu cho Phase 3:** DeckAgent **đọc các đường dẫn này từ cấu hình lúc khởi động**, **không đọc lúc load module**; server **nhận port 0** để chạy **nhiều server song song** ([open-design-earlier-work.md](../../research/open-design-earlier-work.md) item 12).
-- **Runner:** **Vitest** `4.1.12`, ghim version (DEC-013). Lệnh chạy là `pnpm test:acceptance`.
-- **CI:** test chạy qua **một step `test:acceptance` mới** trong `.github/workflows/workspace.yml`, là **một thay đổi riêng**, **PO duyệt**. Workflow đã **ghim Node `22.19.0`**, **ghim action theo SHA**, lấy **pnpm theo `package.json`**; riêng **image `windows-2022`** **không ghim tuyệt đối**.
-
-Fixture nằm ở `tests/acceptance/support/winfs.ts`. **Mọi folder tạm** nằm dưới **một root trên ổ `C:`** (`C:\deckagent-test\<runId>`), vì FR-071 AC-6 cần `userDir` và `systemDirs` **cùng ổ với `C:\`**.
-
-| Fixture | Sets up | Self-test |
-|---|---|---|
-| `root()` | root của lần chạy trên `C:`; **mỗi test một folder con riêng** bên dưới | root **nằm trên ổ `C:`**; nếu không, **fail** |
-| `junction(target)` | junction tới `target` | `realpathSync.native` của junction **bằng** `target` |
-| `substDrive(target)` | ổ `subst` trỏ vào `target`, lấy letter **dưới lock** của suite, **thử lại** khi letter vừa bị lấy, **gỡ** sau test | ổ mới **đọc được** và trỏ đúng `target` |
-| `shortName(path)` | đường dẫn **8.3** của `path` | đường dẫn 8.3 **khác chuỗi** và **trỏ cùng folder**; nếu volume tắt 8.3: **fail trên CI** |
-| `longPath(length)` | folder có đường dẫn **đúng `length` ký tự** | `fs.statSync` folder đó **thành công** |
-| `denyRead(path)` | chặn quyền đọc; **trả lại trong `finally`** | `fs.readdir` **thật sự fail**; nếu không: **fail trên CI**, trên máy dev **skip kèm lý do** chỉ khi `DECKAGENT_ALLOW_FIXTURE_SKIP=1` |
-| `move(from, to)` | dời folder, **thử lại** khi EPERM | `from` **không còn**, `to` **có** |
-| `snapshot(path)` | ghi **mọi file và folder**, kể cả folder rỗng: tên, kích thước, **hash nội dung**, thuộc tính (ẩn, chỉ đọc), **ADS**; **không ghi thời gian** của chính folder | **Positive control:** khi test đổi một byte, một thuộc tính hoặc một ADS, snapshot mới phải **khác** snapshot cũ |
-| global setup | **chỉ gỡ** ổ `subst` và **chỉ `icacls /reset`** các folder mà **registry của suite** (`root\registry.json`) ghi từ lần chạy trước, **dưới lock file** của suite | ổ `subst` **không có trong registry** **không bị đụng** |
-
-## Testing risks
-
-Đây là rủi ro của **chính việc test**, không phải rủi ro của sản phẩm (cột Risk ở trên): điều có thể làm một test **không chạy được**, hoặc **pass mà không chứng minh gì**. Với rủi ro đến từ một mechanism, **status của mechanism** nằm ở [test-analysis.md](./test-analysis.md) mục 3; bảng dưới **không nhắc lại status**.
-
-| ID | Rủi ro | Hậu quả nếu xảy ra | Cách giảm | Ai lo |
-|---|---|---|---|---|
-| R1 | Ổ `C:` của runner **tắt tên 8.3**. | Self-test của `shortName` fail, nên **CI đỏ**; trường hợp tên 8.3 của FR-071 AC-2 **không chạy được**. | Self-test **fail rõ ràng**, không skip ngầm. GitHub runner hiện **có bật** 8.3 (folder tạm `RUNNER~1`). Nếu runner tắt 8.3, PO quyết: bật lại bằng `fsutil 8dot3name set`, hoặc bỏ trường hợp 8.3. | Người viết T0b (#60) |
-| R2 | Image `windows-2022` của GitHub **đổi phiên bản** (image này không ghim tuyệt đối). | Hành vi của ACL, `subst` hoặc junction đổi, nên fixture **hỏng** hoặc test **pass sai**. | **Self-test của fixture** chạy trong mỗi lần chạy suite và chỉ ra fixture nào hỏng. | PO, khi duyệt step CI |
-| R3 | **Ticket preload** của fs audit **chưa merge**. | Các AC dùng `fsAudit` (T1, T5, T6) **không chứng minh được** chúng fail vì assertion, nên **chưa đổi được** sang `it`. | `fsAudit` throw `AuditNotEnabledError`. Phase 4 có **ticket preload riêng**, và ticket đó chặn việc đổi `it.fails` thành `it` của các AC này. | Implementation plan (Phase 3) |
-| R4 | `denyRead` **không đặt được ACL**, hoặc **không trả lại quyền** sau test. | Test "mất quyền đọc" **pass mà không có folder bị chặn**, hoặc để lại một folder **bị khoá** cho lần chạy sau. | Self-test kiểm `fs.readdir` **thật sự fail**. Quyền được trả lại trong `finally`. Global setup **`icacls /reset`** các folder mà registry của suite ghi lại. | Người viết T0b (#60) |
-| R5 | Hai lần chạy song song **lấy cùng một ký tự ổ** `subst`. | Một test trỏ vào **folder của test khác**, nên kết quả **sai** hoặc **flaky**. | Lấy ký tự ổ **dưới lock** của suite, **thử lại** khi ký tự vừa bị lấy, **gỡ** ổ sau test, và chỉ dọn ổ **có trong registry**. | Người viết T0b (#60) |
-| R6 | **Step CI `test:acceptance` chưa có** trong workflow (một thay đổi riêng, chờ PO duyệt, ruling P-5). | Test đã khoá **không chặn merge**: một PR làm hỏng hành vi **vẫn merge được**. | PO duyệt step CI **trước khi PR implementation đầu tiên** của Phase 5 merge. | PO |
-| R7 | **Positive control của `fsAudit` chỉ chứng minh audit thấy một `stat`** (mechanism M3). | Audit có thể không thấy một lệnh đọc file đi qua worker thread, tiến trình con hoặc native module, nên test "không đọc file" **pass mà không chứng minh gì**. | PO yêu cầu positive control chứng minh audit phát hiện được một thao tác đọc file bị cấm. Nếu không quan sát được các đường đọc liên quan, test này **chưa được dùng làm bằng chứng đạt AC**. Mục "Test driver and fixtures" (Gate 2) phải đổi theo yêu cầu này. | Người viết T0a (#59) và ticket preload |
-| R8 | **Không có cách xác định để kill đúng giữa hai bước ghi** (mechanism M13). | Measure M-1 **không chạy được ổn định**; yêu cầu reliability rủi ro cao **không có test**. | Phase 3 xác định các điểm chèn lỗi và cách kích hoạt failure một cách xác định được. Build 2 và build 6 thêm điểm chèn riêng cho đường ghi setup, deck và slide. | Implementation plan (Phase 3) |
-| R9 | **CI không tạo được symlink** (mechanism M17). | Một AC cho symlink (CG-7) **bị chặn**, hoặc bị **bỏ qua ngầm**. | Gate 2 nêu phương án thay thế hoặc ghi một deviation; **không skip ngầm**. | PO, ở Gate 2 |
 
 ## Acceptance criteria
+
+> **Status: bản nháp trước STLC, chưa qua Gate 2.** Các AC dưới đây **được giữ nguyên**, nhưng **không phải đầu vào** của Test Design: chúng chỉ được đọc ở **bước reconciliation** của mỗi technique. Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage; Gate 2 **rà từng AC** theo condition của [test-design.md](./test-design.md) (Z-18 đến Z-25), và **thêm dòng `Serves` và `Variants`** cho mỗi AC và measure (mục "AC, measure và test case" ở trên).
 
 <!-- Given/When/Then/Catches/Check/Tier. "Cùng folder" theo windows-folders.md mục 1 (PO quyết ở #52): cùng dev:ino; khi không đọc được ID thì cùng đường dẫn realpathSync.native. -->
 
@@ -839,40 +752,3 @@ None. **Đặt tên chat**, phần duy nhất do model tạo, đã **dời sang 
 
 None.
 
-## Post-implementation tests
-
-E2E chạy qua **interface thật trên browser**: acceptance test kiểm **hành vi qua field**; E2E kiểm rằng **người dùng thật sự thấy** thông tin và hành động tương ứng, **không so câu chữ**. **Đầu vào cho Phase 3** (open-design, research item 12): **Playwright với Chromium**; mỗi worker có **data folder và port riêng**; **thử lại 1 lần trên CI** và **báo** test nào **chỉ pass nhờ thử lại**; **chờ tín hiệu sẵn sàng**, **không chờ thời gian cố định**; run lỗi thì **giữ log và data folder**. PO **chốt framework ở Phase 3**.
-
-| Level | Target | Technique | What it checks | Smoke |
-|---|---|---|---|---|
-| E2E | UC-013 main flow S1-S3 | use case testing | Người dùng mở DeckAgent lần đầu, **thêm `Proj`**, **tạo chat** trong workspace đó, **chuyển sang default workspace**, rồi **chuyển lại**. Test kiểm rằng người dùng **thấy chat đó** trong danh sách. | yes |
-| E2E | UC-013 A2 | use case testing | Người dùng **yêu cầu xoá** một workspace có chat. Test kiểm rằng người dùng **thấy câu hỏi xác nhận**, và câu hỏi nói folder và chat **vẫn còn**. Người dùng **xác nhận**. Test kiểm rằng chat **thành ungrouped chat**, và default workspace **là workspace đang dùng**. | |
-| E2E | UC-013 A3, A12 | use case testing | Folder của workspace **bị dời đi**. Test kiểm rằng người dùng **thấy báo lỗi** kèm **ít nhất một việc làm tiếp dùng được**. Một **folder mới được tạo ở chỗ cũ**. Test kiểm rằng người dùng **thấy báo có folder khác**, rồi **dùng được** folder đó. | |
-| E2E | UC-013 A6, A11, A13 | use case testing | Người dùng **chọn folder khác**, **đổi tên** workspace, rồi đưa **một tên bị từ chối**. Test kiểm rằng người dùng **thấy lý do** từ chối, và chat **vẫn còn** trong workspace. | |
-| E2E | UC-013 S3, FR-048 AC-2 | use case testing | Workspace **chưa có chat cũ**; người dùng **xem chat cũ**. Test kiểm rằng người dùng **thấy báo không có chat cũ**. | |
-| E2E | UC-012 main flow, A1 | use case testing | Người dùng **tạo chat mới** từ một chat có draft. Test kiểm rằng draft cũ **giữ nguyên**, chat mới **rỗng**, và người dùng **thấy báo chưa có model**. | yes |
-| Integration | NFR-008 M-1 | fault injection | Như **measure M-1** ở trên. | |
-
-## Test-stub tickets
-
-Mỗi ticket **đổi tối đa 3 file**, label `tier:ci`. Trừ T0c, mọi file nằm trong `tests/acceptance/`. **T0c chặn mọi ticket khác**; **T0a và T0b chặn T1 đến T9**. Mọi acceptance test viết bằng **`it.fails`** của **Vitest** (DEC-013).
-
-| Ticket | Criteria | Files | Fixtures | Blocked by |
-|---|---|---|---|---|
-| [#58](https://github.com/Luke23127006/DeckAgent/issues/58) T0c · test runner | — | `package.json` (Vitest `4.1.12`, script `test:acceptance`), `pnpm-lock.yaml`, `vitest.config.ts` | — | — |
-| [#59](https://github.com/Luke23127006/DeckAgent/issues/59) T0a · test driver | — | `support/deckagent.ts`, `support/errors.ts` | — | T0c |
-| [#60](https://github.com/Luke23127006/DeckAgent/issues/60) T0b · Windows fixture | — | `support/winfs.ts`, `support/winfs.test.ts`, `support/global-setup.ts` | mọi fixture và self-test của chúng | T0c |
-| [#61](https://github.com/Luke23127006/DeckAgent/issues/61) T1 · thêm và chuyển workspace | FR-071 AC-1..5, 8, 9, 11, 12, 15 | `workspaces-add-switch.test.ts` | `junction`, `substDrive`, `shortName`, `longPath`, `denyRead`, `move` | T0a, T0b |
-| [#62](https://github.com/Luke23127006/DeckAgent/issues/62) T2 · refused folder (security) | FR-071 AC-6, 7; FR-083 AC-4 | `refused-folders.test.ts` | `root`, `junction`, `substDrive` | T0a, T0b |
-| [#63](https://github.com/Luke23127006/DeckAgent/issues/63) T3 · nhiều interface | FR-071 AC-10; FR-053 AC-4; FR-038 AC-3 | `several-interfaces.test.ts` | — | T0a, T0b |
-| [#64](https://github.com/Luke23127006/DeckAgent/issues/64) T4 · default workspace và xoá workspace | FR-072 AC-1..4; FR-073 AC-1..5, 7 | `default-and-remove.test.ts` | — | T0a, T0b |
-| [#65](https://github.com/Luke23127006/DeckAgent/issues/65) T5 · folder mất hoặc bị thay | FR-074 AC-1..5; FR-142 AC-1..5 | `folder-gone-or-replaced.test.ts` | `move`, `junction`, `denyRead` | T0a, T0b |
-| [#66](https://github.com/Luke23127006/DeckAgent/issues/66) T6 · đổi folder và đổi tên | FR-083 AC-1..3, 5, 6; FR-141 AC-1..7 | `change-folder-rename.test.ts` | `junction`, `move` | T0a, T0b |
-| [#67](https://github.com/Luke23127006/DeckAgent/issues/67) T7 · project folder không đổi | FR-084 AC-1, 2 | `project-folder-untouched.test.ts` | `snapshot`, `move` | T0a, T0b |
-| [#68](https://github.com/Luke23127006/DeckAgent/issues/68) T8 · chat mới, chat cũ, draft | FR-053 AC-1..3, 5; FR-048 AC-2; FR-038 AC-1, 2, 4 | `chats-and-drafts.test.ts` | — | T0a, T0b |
-| [#69](https://github.com/Luke23127006/DeckAgent/issues/69) T9 · hành động khi folder lỗi | FR-071 AC-13, 14; FR-073 AC-6; FR-083 AC-7; FR-141 AC-8 | `actions-on-broken-folder.test.ts` | `move`, `snapshot` | T0a, T0b |
-
-**Phase 4 phải có**, ngoài các implementation ticket theo module:
-- **một ticket nối driver** (`deckagent.ts` gọi interface thật); nó **chặn mọi lần đổi `it.fails` thành `it`**, và mỗi implementation PR **cho thấy ở commit đầu** rằng test của nó **fail vì assertion** (test-strategy.md);
-- **một ticket preload của fs audit**; các AC dùng `fsAudit` ở **T1, T5 và T6** **chỉ đổi sang `it`** sau ticket này;
-- **một ticket integration** cho NFR-008 M-1 (`phase:post-impl`), cùng **unit test chèn lỗi** của transaction xoá workspace trong implementation ticket của nó.

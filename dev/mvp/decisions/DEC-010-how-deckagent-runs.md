@@ -3,7 +3,7 @@ id: DEC-010
 title: "How DeckAgent runs on the user's computer: a local server with a browser, or a desktop app"
 date: 08-11-2026
 status: decided
-research: "RQ-1 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
+research: "RQ-1 in dev/mvp/builds/UC-013-workspaces-new-chat/research/research-checklist.md"
 affects: "FR-071, FR-083"
 ---
 

@@ -11,7 +11,7 @@ created: 08-11-2026
 - **Build:** build đầu tiên: **workspace theo thư mục** (UC-013) và **bắt đầu chat mới** (UC-012), **mọi bước và mọi luồng phụ**. **11 mục** của spec: bảng ở mục 4.
 - **Runtime:** build này **không gọi OpenCode**, **không gọi model**, **không đọc file nào** của thư mục dự án. **Ticket code đầu tiên** của build là **walking skeleton** đã hoãn ở Phase 0.
 - **Status:** **15 câu**: **3 không cần research**, **1 để build sau**, **1 có sẵn**, **2 thử nhỏ**, **8 anh quyết** (**3** trong đó là **chỗ spec còn thiếu**).
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md)
+- **Spine:** [traceability-matrix.md](../testing/traceability-matrix.md)
 
 ## Cách đọc
 
@@ -78,7 +78,7 @@ flowchart LR
 
 1. **RQ-1 · DeckAgent là server trên máy cộng trình duyệt, hay là app desktop?**
    - **Vì sao:** glossary của spec nói **tải lại hay đóng giao diện không dừng DeckAgent**, tức **giao diện tách khỏi chương trình**. Nhưng **trình duyệt không đưa được đường dẫn thư mục** cho server: nó chỉ trả một **handle**, không trả đường dẫn. Build này **mang ticket skeleton**; chọn sai dạng app thì **mọi build sau làm lại giao diện**.
-   - **Đã biết:** code mẫu là **server Node cộng trình duyệt**, người dùng **gõ đường dẫn thư mục bằng tay** ([workspace-view.ts:137](https://github.com/Luke23127006/DeckAgent/blob/5bd9c17/packages/client/runtime/src/workspace-view.ts#L137)). open-design bản desktop **mở hộp chọn thư mục của hệ điều hành** ở tiến trình chính rồi **cấp token** cho daemon ([open-design-earlier-work.md](../../research/open-design-earlier-work.md) item 8).
+   - **Đã biết:** code mẫu là **server Node cộng trình duyệt**, người dùng **gõ đường dẫn thư mục bằng tay** ([workspace-view.ts:137](https://github.com/Luke23127006/DeckAgent/blob/5bd9c17/packages/client/runtime/src/workspace-view.ts#L137)). open-design bản desktop **mở hộp chọn thư mục của hệ điều hành** ở tiến trình chính rồi **cấp token** cho daemon ([open-design-earlier-work.md](../../../research/open-design-earlier-work.md) item 8).
    - **Trả lời bằng:** `anh quyết`, dựa trên hai bằng chứng trên. **Chặn:** implementation plan.
 
 2. **RQ-2 · Dữ liệu lưu bằng gì: SQLite hay file JSON?**
@@ -182,13 +182,13 @@ flowchart LR
 
 | RQ | Ticket | Nơi ghi câu trả lời | Trạng thái |
 |---|---|---|---|
-| RQ-1 · dạng app | [#49](https://github.com/Luke23127006/DeckAgent/issues/49) | [DEC-010](../../decisions/DEC-010-how-deckagent-runs.md) | open |
-| RQ-2 · nơi lưu | [#50](https://github.com/Luke23127006/DeckAgent/issues/50) | [DEC-011](../../decisions/DEC-011-how-deckagent-data-is-stored.md) | open |
+| RQ-1 · dạng app | [#49](https://github.com/Luke23127006/DeckAgent/issues/49) | [DEC-010](../../../decisions/DEC-010-how-deckagent-runs.md) | open |
+| RQ-2 · nơi lưu | [#50](https://github.com/Luke23127006/DeckAgent/issues/50) | [DEC-011](../../../decisions/DEC-011-how-deckagent-data-is-stored.md) | open |
 | RQ-3, RQ-8, RQ-12 · ba chỗ spec còn thiếu | [#51](https://github.com/Luke23127006/DeckAgent/issues/51) | spec: use case workspace, yêu cầu "giữ bản nháp" | open |
-| RQ-4 · cùng thư mục | [#52](https://github.com/Luke23127006/DeckAgent/issues/52) | [windows-folders.md](../../research/windows-folders.md) | open |
-| RQ-5 · thư mục khác ở chỗ cũ | [#53](https://github.com/Luke23127006/DeckAgent/issues/53) | [windows-folders.md](../../research/windows-folders.md); spec nếu đổi hành vi | open |
+| RQ-4 · cùng thư mục | [#52](https://github.com/Luke23127006/DeckAgent/issues/52) | [windows-folders.md](../../../research/windows-folders.md) | open |
+| RQ-5 · thư mục khác ở chỗ cũ | [#53](https://github.com/Luke23127006/DeckAgent/issues/53) | [windows-folders.md](../../../research/windows-folders.md); spec nếu đổi hành vi | open |
 | RQ-7 · tên bị từ chối | — | spec: yêu cầu đổi tên và một luật mới, ở testing plan | open |
-| RQ-9 · hai giao diện | [#54](https://github.com/Luke23127006/DeckAgent/issues/54) | [DEC-012](../../decisions/DEC-012-several-open-interfaces.md) | open |
+| RQ-9 · hai giao diện | [#54](https://github.com/Luke23127006/DeckAgent/issues/54) | [DEC-012](../../../decisions/DEC-012-several-open-interfaces.md) | open |
 | RQ-13 · ai đặt tên chat | [#55](https://github.com/Luke23127006/DeckAgent/issues/55) | implementation plan (ranh giới model và code) | open |
 | RQ-15 · phần chưa test được | [#56](https://github.com/Luke23127006/DeckAgent/issues/56) | ma trận và testing plan | open |
 

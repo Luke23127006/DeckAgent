@@ -16,7 +16,7 @@ created: DD-MM-YYYY
 - **Use case:** UC-XXX
 - **Value flows covered:** S1-S6 (the flows in the Phase 3 LLM boundary table)
 - **Drift found:** _none / N items_
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md)
+- **Spine:** [traceability-matrix.md](../testing/traceability-matrix.md)
 
 ## Prediction
 

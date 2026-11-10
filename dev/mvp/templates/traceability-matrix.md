@@ -13,7 +13,7 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 
 ## At a glance
 
-- **Requirement text:** statements in `dev/mvp/spec/`; acceptance criteria and measures in [testing-plan.md](./testing-plan.md)
+- **Requirement text:** statements in `dev/mvp/spec/`; acceptance criteria and measures in [acceptance-criteria.md](./design/acceptance-criteria.md)
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
@@ -37,16 +37,16 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 
 | Basis item | Status | Ruling |
 |---|---|---|
-| BI-N | excluded | [SR-n](./test-analysis.md) |
+| BI-N | excluded | [SR-n](./analysis/test-analysis.md) |
 
 ## Columns
 
 - **FR / AC** — in **Phase 1**, **one row per in-scope FR and NFR**. In **Phase 2**, each FR row **splits into one row per acceptance criterion** and each NFR row **into one row per measure** (`NFR-NNN / M-1`).
-- **Basis items** and **Conditions** — the **basis items** (`test-analysis.md`) the row covers, and the **condition codes** (`test-design.md`) that serve it. **Filled in Phase 2**.
+- **Basis items** and **Conditions** — the **basis items** (`test-analysis.md`) the row covers, and the **condition codes** (`design/techniques/`) that serve it. **Filled in Phase 2**.
 - **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"). **Set in Phase 2** from the testing plan; **empty in Phase 1**.
 - **RQ** — the **answered research question** for this row (may be empty).
 - **DEC** — the **decision that shaped this row** (may be empty).
-- **Test (ticket)** — the **test-stub ticket that proves the AC**. For a **manual row**, the **check's anchor in the testing plan**. **Required** for every row after Phase 2.
+- **Test (ticket)** — the **test-stub ticket that proves the AC**. For a **manual row**, the **check's anchor in `acceptance-criteria.md`**. **Required** for every row after Phase 2.
 - **Test author** — **who wrote the test**. **Must differ from the implementer** (separation rule), **except in a light build**.
 - **Impl (ticket / PR)** — the **ticket or PR that makes this row pass**. **Not a function link**.
 - **Result** — the **last run** of the row's tests (`pass`, `fail`) and the **defect issue** if any.

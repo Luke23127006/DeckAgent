@@ -20,7 +20,7 @@ created: DD-MM-YYYY
 - **Alternatives:** A1, A3 (or "all")
 - **FRs in scope:** FR-NNN, FR-NNN
 - **Active phase:** Phase 1
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md)
+- **Spine:** [traceability-matrix.md](./testing/traceability-matrix.md)
 
 ## Phase 1: Research
 <!-- Gate: all research tickets closed; every row has a tier; no orphan RQ -->
@@ -31,8 +31,8 @@ created: DD-MM-YYYY
 <!-- Gate: tests approved and locked; eval cases and rubric approved; manual checks listed -->
 <!-- Blocked by: Phase 1 complete -->
 
-- [ ] Gate 1: [test-analysis.md](./test-analysis.md) and the approach approved
-- [ ] Gate 2: [test-design.md](./test-design.md) and the AC approved
+- [ ] Gate 1: [test-analysis.md](./testing/analysis/test-analysis.md) and the approach approved
+- [ ] Gate 2: [test-design.md](./testing/design/test-design.md) and the AC approved
 - [ ] [#N](https://github.com/{owner}/{repo}/issues/N) test stub title (tier: ci, author: @handle)
 
 ## Phase 3: Implementation plan
@@ -56,11 +56,11 @@ created: DD-MM-YYYY
 <!-- Blocked by: Phase 5 complete -->
 
 - [ ] Full CI suite, smoke and E2E pass
-- [ ] Eval run recorded for every eval-tier AC: [eval-runs/](./eval-runs/)
-- [ ] As-built: prediction written by the PO, then actual flow and drift: [as-built.md](./as-built.md)
+- [ ] Eval run recorded for every eval-tier AC: [eval-runs/](./testing/execution/eval-runs/)
+- [ ] As-built: prediction written by the PO, then actual flow and drift: [as-built.md](./implementation/as-built.md)
 - [ ] `docs/architecture/` updated (LLM boundary map, module map)
 - [ ] Manual checks and exploratory sessions done by the PO
-- [ ] Test summary written: [test-summary.md](./test-summary.md)
+- [ ] Test summary written: [test-summary.md](./testing/test-summary.md)
 - [ ] Gate 3: build verdict
 
 ### Verified per AC

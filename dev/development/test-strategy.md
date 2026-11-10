@@ -6,6 +6,7 @@ How DeckAgent **decides which tests a build needs**, and **how a reader checks t
 
 - **Risk sets the depth.** The PO gives each in-scope FR and NFR a **risk level**; the level decides **which techniques apply** ([Risk and depth](#risk-and-depth)).
 - **Requirements pick the technique.** Each **kind of requirement** has **one test design technique** and **one coverage criterion** ([Technique per requirement](#technique-per-requirement)). A plan is **complete** when **every criterion is met**, not when the reviewer runs out of ideas.
+- **Planning applies rules to records.** Each planning decision names its **inputs** in the test analysis and the **rule** that turns them into the decision, so the PO **recomputes it** instead of trusting a rationale ([Planning decisions](#planning-decisions)).
 - **Every link of the chain has a rule and a record.** A test traces **basis item → condition → AC → test case → test → result** ([The chain](#the-chain)), so when a test is wrong the PO can **name the decision that failed** and **open its record**.
 - **STLC explains, WORKFLOW operates.** The six activities of the Software Testing Life Cycle say **what testing produces**; each happens **inside a WORKFLOW phase** ([Frame](#frame-stlc-and-the-workflow)). There is **no second phase system**.
 - **Black-box first, white-box later.** **Phase 2** designs tests **from the spec only**; **Phase 5** adds **unit tests and branch coverage**; **Phase 6** checks **test strength** ([Phases](#phases)).
@@ -18,10 +19,10 @@ STLC names the **activities of testing** and what each produces. It is a **frame
 
 | STLC activity | Produces | Happens in | Decided at |
 |---|---|---|---|
-| **Requirement analysis** | Test basis register, quality risk and type record, automation feasibility (`test-analysis.md`) | Phase 2, first | Gate 1 |
-| **Test planning** | Approach, levels, coverage targets, exit criteria, environment, test-side risks (`testing-plan.md`) | Phase 2 | Gate 1 |
-| **Test case design** | Test design specification: techniques, conditions and coverage items (`test-design.md`); AC and test data (`testing-plan.md`) | Phase 2 | Gate 2 |
-| **Test implementation and environment setup** | Driver, fixtures, expected-failure tests (test-stub tickets); unit tests (implementation tickets) | Phase 2, Phase 4–5 | [Checks](#checks-that-are-not-gates) |
+| **Requirement analysis** | Test basis register, quality risk and type record, automation feasibility (`testing/analysis/test-analysis.md`) | Phase 2, first | Gate 1 |
+| **Test planning** | Objectives, risk and technique selection per item, approach, levels, coverage targets, environment, dependencies, entry and exit criteria, test-side risks, design inputs (`testing/planning/testing-plan.md`) | Phase 2 | Gate 1 |
+| **Test case design** | Test design specification: one **evidence file per technique** (step outputs, coverage items, test cases, reconciliation) and the summary `test-design.md`; AC, measures and test data (`acceptance-criteria.md`), all in `testing/design/` | Phase 2 | Gate 2 |
+| **Test implementation and environment setup** | Driver and fixture contract, test-stub ticket list (`implementation/test-implementation.md`); expected-failure tests (test-stub tickets); unit tests (implementation tickets) | Phase 2, Phase 4–5 | [Checks](#checks-that-are-not-gates) |
 | **Test execution** | CI results, eval runs, defect issues | Phase 5–6 | — |
 | **Test closure** | `test-summary.md`, the **Verified** column of the matrix | Phase 6 | Gate 3 |
 
@@ -35,7 +36,7 @@ Four concepts, **kept apart**:
 |---|---|---|---|
 | **Level** | Which **object** is tested | unit, integration, acceptance, E2E ([Test levels](#test-levels)) | Planning |
 | **Type** | Which **quality** is checked | functional, performance, security, reliability, platform, usability ([Test types](#test-types-and-approaches)) | Analysis (selection), planning (approach) |
-| **Technique** | **How conditions are derived** from the basis | EP + BVA, decision table, state transition ([Technique per requirement](#technique-per-requirement)) | Design |
+| **Technique** | **How conditions are derived** from the basis | EP + BVA, decision table, state transition ([Technique per requirement](#technique-per-requirement)) | Planning (**selected** from the kind and the risk level); design (**applied**) |
 | **Coverage criterion** | **When the technique is applied enough** | the share of the technique's **coverage items** that have a test ([Coverage](#coverage)) | Planning (target), design (items), execution (count) |
 
 **Level and type are independent**: security can be tested at several levels. A **technique serves a type**. A **coverage criterion belongs to a technique**.
@@ -46,25 +47,26 @@ What the chain links:
 |---|---|---|
 | **Basis item** | One **testable statement** of the spec: a UC step or alternative, a clause of an FR or NFR, a value of a BR ([Test basis register](#test-basis-register)) | `test-analysis.md` |
 | **Condition** | **One thing to check**, derived by a technique from basis items. It carries an **ID** | `test-design.md` |
-| **AC** | The **condition under which the PO accepts a behavior**. One basis item may have **several** AC. An AC may be **drafted early** and is **final at Gate 2** | `testing-plan.md` |
-| **Test case** | A condition with **input, precondition and expected result**. One AC may give **several** cases; **independent variants are separate cases** ([Test infrastructure rules](#test-infrastructure-rules)) | AC block, test code |
+| **AC** | The **condition under which the PO accepts a behavior** of an FR, BR or UC flow. It states **what must hold**, not one input. One basis item may have **several** AC. An AC may be **drafted early** and is **final at Gate 2** | `acceptance-criteria.md` |
+| **Measure** | The **quantity or property** that decides an **NFR**, with its **condition, target and pass rule**. It plays the role of an AC for an NFR, and **cites its basis items** the same way | `acceptance-criteria.md` |
+| **Test case** | **One concrete check** of an AC or a measure: its **input**, its **preconditions**, its **actions** and its **expected result**, and the **coverage items** it exercises. One AC or measure may give **several** cases; **each independent variant is its own case** ([Test infrastructure rules](#test-infrastructure-rules)). A case may exercise **several coverage items**, and a coverage item may be checked by **several cases**; the relation is **not one to one**. **How coverage items combine in one case** is set by the **technique** (its capability skill), not by a rule common to all techniques. It has an **ID**: the AC or measure ID plus a **variant label** (`FR-071 AC-2 V3`, `NFR-008 M-1 V2`); an AC with one variant has the label `V1` | Variant list of the AC or measure block; test name in the code; the technique evidence file |
 | **Test** | A test case written as **code** | `tests/` |
 | **Result** | **Pass or fail** of a run, and the **defect** if any | CI, `eval-runs/`, defect issue |
 
 **Link rules** hold at review, **whatever order the records were written in**:
-- Every **AC cites at least one basis item**.
-- Every **condition cites a basis item**, and the AC it serves.
-- Every **test case cites at least one condition**.
+- Every **AC and every measure cites at least one basis item**.
+- Every **condition cites a basis item**, and the AC or measure it serves.
+- Every **test case cites at least one condition**, and **its ID names its AC or measure**.
 - Every **basis item** has a condition and a test case, **or** the status `excluded` or `deferred` with a scope ruling.
 
-The **forward direction finds omissions**; the **backward direction finds tests the spec does not support** ("Rule from the spec only"). The chain gives the **main order of inference**; the **order of writing is free**: an AC may be drafted early, and a condition found during design may add an AC.
+The **forward direction finds omissions**; the **backward direction finds tests the spec does not support** ("Rule from the spec only"). The chain gives the **order of inference**. An AC **may be drafted early**, but a **drafted AC is never an input of design**: a technique derives its outputs **from the basis items and the plan only**, and drafted AC are **compared at the end** ([How a technique is applied](#how-a-technique-is-applied), reconciliation). A condition found during design **may add an AC**.
 
 ## Risk and depth
 
 | Risk level | Applies to | Depth |
 |---|---|---|
 | **High** | **Data loss**, **security** (access outside the allowed folder, data leaving the machine), **writes to a project folder**, **half state after a kill** | **Every technique** of [Technique per requirement](#technique-per-requirement) that matches its kinds; **mutation testing** in Phase 6 |
-| **Normal** | Everything else | **Use case testing** and the **`Catches` line**; other techniques **only for a gap** the PO names |
+| **Normal** | Everything else | **Use case testing** and the **`Catches` line**; other techniques **only for a gap** the PO names. **Every item `to test` still gets a condition** (rule P1 of [Planning decisions](#planning-decisions)) |
 
 The PO sets the level **per FR and NFR** in the testing plan's **At a glance**. **Without a level, an item is high.** **Quality risks** that no statement names are found in the test analysis ([Test types](#test-types-and-approaches)); the PO sets their level the same way.
 
@@ -126,7 +128,7 @@ Each spec part is read for **its kind**; one part may hold **several kinds**, an
 | Kind of requirement | Technique | Coverage criterion (met when…) |
 |---|---|---|
 | **Use case flow** (steps, alternatives) | **Use case testing** | **every step** and **every alternative** reaching a **different end state** has a test |
-| **Lifecycle** (an object with states: workspace, chat, folder status) | **State transition testing** | **every event in every state** has a test, **including events that must be refused**; the **state diagram** is drawn in `test-design.md`, and its **state × event matrix** gives **every event in every state** an answer |
+| **Lifecycle** (an object with states: workspace, chat, folder status) | **State transition testing** | **every event in every state** has a test, **including events that must be refused**; the **state × event matrix** gives **every event in every state** an answer; a **diagram is optional** |
 | **Rule with several conditions** (a BR with values, a validation order) | **Decision table** | **every leaf** of the **decision tree** has **one outcome** and **at least one test**; a test input **falls in exactly one leaf** |
 | **Input with a range or a format** (names, paths, sizes, counts) | **Equivalence partitioning + boundary value analysis** | **every partition** has a test, and **each boundary** is tested **at, just below and just above** |
 | **Invariant** ("never reads a file", "never changes the project folder") | **Invariant check** on every test of the area | the invariant is **asserted after every action** in its area, with a **positive control** that proves the check **can see a violation** |
@@ -140,11 +142,21 @@ Each spec part is read for **its kind**; one part may hold **several kinds**, an
 
 ### How a technique is applied
 
-The **steps are the method**: the PO can **redo one section by hand** and compare it with the plan.
+The **steps are the method**: the PO can **redo one section by hand** and compare it with the plan. Rules for **every technique**:
+- **Each step leaves its own output** in the technique's **evidence file** (a list or a table), and that output is **enough to check the next step** without reading what follows it. For example, the **partitions can be reviewed before any test case** exists.
+- A step uses **only the basis items, the plan and the outputs of earlier steps**. Each output row **cites its basis item** or the earlier output it comes from, and the **reason** where the step makes a choice.
+- A step whose output is **wrong is corrected before the next step** builds on it.
+- The **coverage items are fixed before test cases are attached** to them.
+- **Each test case is its own record**: its **ID**, **input** (exact, or a reference to one row of a data table that fixes it), **preconditions**, **actions**, **expected result** with its **source**, the **coverage items** it exercises, and its **status**. Preconditions and actions shared by a group may be written **once** above the group; a row never holds **several test case IDs**.
+- A test case is **Ready** when **every** part of its expected result has a basis item, and **Blocked** when **any** part waits for a ruling (it names the gap). A Blocked case may still list the parts that **are** known.
+- Each coverage item has **one status**: **Covered** (at least one **Ready** test case), **Blocked** (identified, but every test case for it waits for a ruling), **Uncovered** (no test case), **Infeasible** (a fact shows it cannot occur). Counts report **each status separately**; only **Covered** counts toward test design coverage.
+- A **completion check** closes the test cases: every coverage item is **Covered**, or **Blocked** with its gap, or **Infeasible** with its fact; an **Uncovered** item fails the check. The technique's skill adds **its own checks** (for example every state × event cell answered).
+- **Design evidence is not execution evidence.** A completion check and a script that recomputes expected values show the **design is consistent**; they do **not** show that a fixture can build the input or that the product behaves as expected. The evidence file says, for each result, whether it is **design-checked**, **computed** (by a script it names), **assumed** (an assumption with where it gets confirmed) or **awaiting execution**.
+- The **last step is reconciliation**: each coverage item is compared with the **drafted AC** and recorded as **match**, **missing** (no AC checks it), **conflict** (the AC's expected result disagrees with the spec), or **unsupported** (an AC or a variant that no coverage item needs). Reconciliation is a **final check, not the measure of design quality**: a design is judged by **its steps and their basis**, and **neither finding nor not finding a difference** proves it right.
 
 | Technique | Steps | Coverage items |
 |---|---|---|
-| **EP + BVA** | 1) List the **variables**. 2) Split each into **partitions**, valid and invalid, by the rule. 3) Find the **boundaries**. 4) Find the **sub-variables** (counting unit, encoding, normalization, trimming). 5) Take **three values** per boundary. 6) Each case has **one invalid condition** | partitions, boundary values |
+| **EP + BVA** | 1) **Inputs and variables**: the basis items, the **input and output variables**, and the **rules** that act on each. 2) **Domain analysis**: the **domain** of each variable, its **sub-variables** (counting unit, encoding, normalization, trimming), and the **relations between variables** (a variable that decides which rules apply). 3) **Partitions**, valid and invalid, each with its **reason** and its **expected behavior from the spec**. 4) **Boundaries**, derived from the partitions and the rules, with **three values** each (just below, at, just above). 5) **Coverage items** and the criterion; list what is **not covered** and why. 6) **Representatives and test cases**: a **representative value** per partition and the boundary values, then the cases, each with **input, preconditions, actions and expected result** and the **coverage items** it exercises, combined as the technique's method says. 7) **Reconciliation** | partitions, boundary values |
 | **Decision table** | 1) List the **conditions** and **actions** from the statement and the BR values. 2) List **every combination**. 3) Mark a combination **infeasible** only with the spec statement that excludes it. 4) **Merge** combinations only with an **argument, from the spec, that the outcome is the same**, recorded with the merge. 5) Each remaining rule is one item | rules (leaves) |
 | **State transition** | 1) States and events **from the spec**. 2) The **state × event matrix**. 3) **Model completeness**: every cell has an answer in the spec (a transition, a refusal, a no-op); an **empty cell is a gap** for the PO. 4) The **coverage criterion** is the one in the table above | state-event pairs |
 | **Use case testing** | 1) The **main flow**. 2) Each **alternative** is a flow. 3) Combinations of alternatives **only at high risk**. 4) Each flow names its **end state** | flows |
@@ -181,7 +193,7 @@ Coverage is **a count over a list that exists before the count**. The **denomina
 - **Requirement coverage is necessary, not sufficient.** An item with a test case is not shown to be **tested enough**; the test design coverage answers that.
 - **Execution and pass coverage are never judged alone.** Their denominator is test cases, so **fewer test cases make them look better**. They mean something **only when the two design measures are fixed and met**.
 - **Each variant counts as one test case** in execution coverage and pass coverage.
-- **Planned coverage is a plan**, not a result of running tests.
+- **Planned coverage is a plan**, not a result of running tests. It counts **Covered** coverage items only; **Blocked**, **Uncovered** and **Infeasible** items are reported **beside** the ratio.
 
 ## Automation feasibility
 
@@ -198,14 +210,45 @@ Every mechanism a test depends on (a fixture, an audit, a runner or CI condition
 - A test **does not count as evidence for its AC** at Gate 3 while a mechanism it depends on is **not `verified`**.
 - A **fixture self-test that runs green on CI** is the usual way to reach `verified`. A **spike** is used where no self-test exists.
 
+## Planning decisions
+
+Test planning turns the **approved test analysis** into decisions. Each decision is a **rule of this section applied to recorded inputs**, so the PO **recomputes** it from the records; the plan keeps the **inputs, the rule applied and the output**, not the agent's reasoning. Planning **never reads drafted AC or test cases**: a decision derived from them is **back-fitted**, whatever rationale it carries. When a rule needs a fact the analysis lacks (a **mechanism**, a **quality risk**), the fact goes **back to the analysis** (a **delta** for the PO after Gate 1), never into the plan alone. A **classification is never changed to justify a technique**: a technique the kind does not select needs **its own source** (P4, P5), recorded in the plan.
+
+| Decision | Inputs | Rule | Output in `testing-plan.md` | The PO checks |
+|---|---|---|---|---|
+| **Technique per item group** | Register: **kind, risk, scope** of each item; quality risk and type record; the **words of the item** (behavior traits) | P1–P5 below | Technique selection table: one row per **item and kind**, with the items, the rule and the technique | The **row counts add up** to the register's `to test` count; **one row recomputes** from the register |
+| **Depth parameters** | Risk level; BR values (closed lists, sources); UC alternatives; quality risks at high | Strategy rules: closed lists, alternative combinations, a quality risk's variable (P4) | Design inputs table | Each parameter **cites its value or ruling** |
+| **Level** | Where the item's result is **observable**; the mechanisms it needs | L1–L4 below | Levels; a level per design input | Each level **cites its rule** |
+| **Approach** | Type record (selected, approach) | **Copied**, not decided again | Types by level and approach | Every **selected type** has a row with its **items** |
+| **Quality risk handling** | Quality risk record | Each risk is handled by a **technique on named items**, or is a **known risk** with its ruling | Quality risks by approach | Every **quality risk** has a row |
+| **Coverage criterion and targets** | Technique table of this strategy; approved scope | The criterion is the **technique's**; denominators come from the **approved scope** ([Coverage](#coverage)) | Items table; coverage targets | No denominator **counts AC or test cases** |
+| **Environment and dependencies** | Automation feasibility | Every **mechanism** a selected technique needs **has a row** in the feasibility record; a missing one is a **delta** | Environment; dependencies; design inputs | Each design input **lists its mechanisms** |
+| **Entry and exit** | [Phases](#phases); the gates | Each criterion names the **record or check that shows it** | Entry and exit criteria | Each criterion is **answerable from a record** |
+
+**Technique selection rules:**
+- **P1 · Floor.** **Every item `to test`**, at any risk, gets **at least one condition** and a **`Catches` line**. This is what **requirement coverage** counts.
+- **P2 · Kind at high risk.** Each **kind of a high item** selects the technique of [Technique per requirement](#technique-per-requirement).
+- **P3 · Kind at normal risk.** A **flow item** selects **use case testing**; other kinds get **P1 only**, unless the **PO names a gap**, or the item is a **state, event, partition or area** of a technique that **a high item selects** (then it is a **coverage item of that technique**, recorded **with the high item**; the normal item's own depth does not change).
+- **P4 · Type and quality risk.** A **selected type** whose approach names a technique (security: **threat-based**; reliability: **fault injection**; platform: **partitions by platform trait**) adds that technique to the **items its source names**. A **quality risk at high** adds **its variable** (a sub-variable, a partition, a path form, an oracle such as the refusal reason) to the technique of the **items it names**, even when an item is normal; that item's own depth stays.
+- **P5 · Behavior trait.** Planning re-reads each item for **traits its kind does not cover**: an outcome that **depends on a condition or a source** ("when", "only for", "and not for") selects a **decision table**; a **count, length, format, set of forms** or a **containment** ("itself", "inside", "contains") selects **EP + BVA**; an object that **changes state** selects **state transition**; "never", "keeps", "does not" selects an **invariant check**. The selection row **quotes the words** of the item that show the trait; the **register's kind stays as approved**. After Gate 1, a trait selection is a **planning delta** and selects nothing until the PO approves it.
+- A high item whose kind selects a technique that the plan **does not apply** is a **deviation** ([Technique per requirement](#technique-per-requirement)).
+
+**Level rules:**
+- **L1 · Acceptance** for every item whose result is **observable through the public interface** of the server, with mechanisms that exist **before implementation**.
+- **L2 · E2E** for **UC flows**, and for a result that **only the real interface** shows.
+- **L3 · Integration** when the test needs a **real external part** or a **failure point** that only the **implementation plan** defines.
+- **L4 · Unit** for **structure**, and for a failure **inside one module** that no higher level can trigger.
+
+**Hand-off to design.** The plan gives **one design input per technique evidence file** of `testing/design/techniques/`: the **basis items**, the **coverage criterion and depth parameters**, the **mechanisms**, the **candidate gaps** to check, and the **pending deltas** that block it. Design **starts an evidence file only when its input has no pending delta**, and the file **cites the input** instead of restating why the technique was selected.
+
 ## Gates
 
 The PO decides at **three gates**, on the **records**, not on test code. **Gate 1 and Gate 2 are reached in Phase 2**; **Gate 3 is the Phase 6 verdict**.
 
 | Gate | The PO decides | Records | What the PO can recompute |
 |---|---|---|---|
-| **1 · Scope and approach** | **What is tested**, which **types** and **levels**, how **deep**, and **when to stop** | `test-analysis.md`; in `testing-plan.md`: approach, levels, coverage targets, exit criteria, testing risks and the post-implementation plan | Recount the sentence map (unmapped normative units = 0); every `excluded` and `deferred` item has a scope ruling; every type has a row; every mechanism has a status |
-| **2 · Test design** | The **conditions are complete**, the **AC are final**, each **expected result has a source** | `test-design.md`; AC in `testing-plan.md` | Redo one technique section by hand; count the coverage items; the link rules hold |
+| **1 · Scope and approach** | **What is tested**, which **types** and **levels**, how **deep**, and **when to stop** | `test-analysis.md`; `testing-plan.md` (objectives, risk and technique selection, approach, levels, coverage targets, environment, dependencies, entry and exit criteria, testing risks, the post-implementation plan, design inputs) | Recount the sentence map (unmapped normative units = 0); every `excluded` and `deferred` item has a scope ruling; every type has a row; every mechanism has a status; the **technique selection rows add up** to the `to test` count and **one row recomputes** from the register ([Planning decisions](#planning-decisions)) |
+| **2 · Test design** | The **conditions are complete**, the **AC are final**, each **expected result has a source** | The technique evidence files and `test-design.md`; `acceptance-criteria.md` | Redo one technique section by hand, **step by step**, checking each step's output against the basis; count the coverage items; the link rules hold |
 | **3 · Build verdict** | The **evidence is enough to accept the build** | `test-summary.md`, the matrix | The coverage table; open defects; `excluded` and `deferred` items; residual risks |
 
 ### Checks that are not gates
@@ -248,6 +291,7 @@ The **WORKFLOW gate** of each phase **includes this table's exit column**.
 
 - **Test driver.** Acceptance tests **call only the driver**. The driver **calls only the public interface**, **renames fields** with a **fixed mapping**, **passes values unchanged** both ways, **never derives** a business value, and **throws a contract error** on a missing or unknown field, so a reader **tells a driver failure from a DeckAgent failure**.
 - **Not wired yet.** Until the driver is wired, every driver function **throws `NotWiredError`**. A test **cannot show it fails for the right reason** before the product API it calls exists, so **each implementation PR** shows it: its **first commit** runs the PR's tests **against the new API** and shows that **each fails on an assertion**, not on `NotWiredError` or a contract error; a **later commit** turns `it.fails` into `it`.
+- **How a variant is identified.** A variant is **independent** when it **differs from the others in at least one coverage item** of a condition (a partition, a boundary value, a state-event cell, a leaf, a path form, a closed-list member, an injection point) and **can pass or fail alone**. The AC or measure block **lists each variant** with its **label** (`V1`, `V2`…) and its **coverage item**; the **test name in the code starts with the test case ID** (`FR-071 AC-2 V3 · junction`); the technique evidence file links **each coverage item** to the **test case IDs** that check it. Labels are **never renumbered**; a removed variant leaves its label unused.
 - **Independent variants are separate test cases.** One AC may hold **several variants** (seven forms of one path, four unreadable folders, two refused names). Each variant that is an **independent condition** runs as **its own case**, for example with a **parameterized test**, so each gets **its own result**. A test **never counts as having checked a variant** because **another assertion in the same test** failed as expected. In particular, an expected failure (`it.fails`) around a **loop over variants** ends at the **first failing assertion** and **hides the rest**, so every variant needs **its own `it.fails`**, and the implementation PR shows **each variant** failing on an assertion in its first commit.
 - **Invariant audits have a positive control.** An audit (for example the **file-system audit**) has a **self-test** that **performs the forbidden action** and **expects the audit to see it**.
 - **No silent skip on CI.** A fixture that **cannot set up** its condition **fails on CI**. On a developer machine it may **skip with a reason**, **only behind an explicit opt-in** variable.
@@ -284,25 +328,31 @@ The agent runs it on **every testing plan** before the PO approves it, and again
 
 ## Test design specification
 
-Each build has **one test design specification**, `test-design.md` (template `dev/mvp/templates/test-design.md`), the **record of Gate 2**. It lets the PO check **six things**:
-1. **Which techniques** were applied, and **why**: the kind of requirement and the risk level that select each one.
-2. **How each technique was applied**: its **steps** from [How a technique is applied](#how-a-technique-is-applied), with their evidence (variables and sub-variables, infeasible combinations, merges and their arguments, empty cells, screened threats, chosen injection points).
+Each build has **one test design specification** in `testing/design/`, the **record of Gate 2**, in **two parts**:
+- **One evidence file per design input**, `techniques/Dn-topic.md` (template `dev/mvp/templates/test-design-technique.md`): the **output of each step** of one technique, its **coverage items**, its **test cases** and its **reconciliation**. The PO **reviews one technique at a time**, and can review a step's output **before the next step exists**.
+- The summary `test-design.md` (template `dev/mvp/templates/test-design.md`): the **techniques applied** with their **coverage counts**, and the **ruling log** of gaps, deviations and design rulings.
+
+Together they let the PO check **six things**:
+1. **Which techniques** were applied: each evidence file **cites its design input** in the testing plan, which holds **why** it was selected ([Planning decisions](#planning-decisions)).
+2. **How each technique was applied**: the **output of each step** from [How a technique is applied](#how-a-technique-is-applied), **in the order of the steps** (variables and sub-variables, infeasible combinations, merges and their arguments, empty cells, screened threats, chosen injection points), ending with the **reconciliation** against the drafted AC.
 3. Which **conditions** each technique derived, and from **which basis items**.
 4. The **coverage items** and the **coverage criterion** that makes them enough, with the **count**.
-5. How each **condition links to its AC** and to the **test cases** (independent variants) that check it.
+5. How each **condition links to its AC** and to the **test cases** that check it; each test case has its **input, preconditions, actions, expected result** and the **coverage items** it exercises.
 6. The **gaps, deviations and design rulings**, with the PO's ruling or `pending`.
 
-**The form follows the technique**, not one diagram for all:
+**The form follows the technique**: no technique is forced into another's structure, and a **diagram is optional** wherever a table already answers the question:
 
-| Technique | Its section shows |
+| Technique | Its evidence file shows |
 |---|---|
 | **Use case testing** | The main flow and each alternative, with its end state |
-| **State transition** | States, events, a state diagram with one row per arrow, and the **state × event matrix** (a diagram **cannot show a missing arrow**; the matrix gives **every cell** an answer) |
+| **State transition** | States, events, **one row per transition**, and the **state × event matrix** (a diagram **cannot show a missing arrow**; the matrix gives **every cell** an answer) |
 | **Decision table** | Conditions, actions, rules (a table or a tree with one outcome per leaf), infeasible combinations and merges |
-| **EP + BVA** | Variables, sub-variables, partitions, boundaries with their three values |
+| **EP + BVA** | Variables, sub-variables, partitions, **representatives**, boundaries with their three values |
 | **Invariant check** | The "never" statements, the area each is asserted in, the positive control |
 | **Threat-based** | Assets, trust boundaries, entry points, threat scenarios with their screening |
 | **Fault injection** | Injection points, failure modes and the reason for each, the state checked after restart |
 | **Performance** (when selected) | Operation, workload conditions, metric, target or `not set` |
 
-A build keeps **only the sections of the techniques it applies**. Every arrow, cell, rule, partition, boundary, invariant, scenario and injection point is a **condition** with an **ID unique in the file**. A condition **without an AC** is a **gap** in its ruling log. **Scope rulings** and **rulings on ambiguities** stay in `test-analysis.md`; the **AC and measures** stay in `testing-plan.md`.
+A build has **only the evidence files of the techniques it applies**. Every transition, cell, rule, partition, boundary, invariant, scenario and injection point is a **condition** with an **ID unique in the build** (the design input code is its prefix when two files would collide). A condition **without an AC** is a **gap** in the ruling log. **Scope rulings** and **rulings on ambiguities** stay in `test-analysis.md`; the **AC and measures** stay in `acceptance-criteria.md`; the **driver and fixture contract** stays in `implementation/test-implementation.md` and **follows the design**, never the reverse.
+
+**Skills by capability.** The method of a technique (its steps, the evidence each step leaves, how to check it) and of a test type (performance, security, reliability) is taught by **one skill per capability**, for example `equivalence-partitioning`, `boundary-value-analysis`, `decision-table-testing` (these three exist), `state-transition`, `performance-testing`, `security-testing`, `reliability-testing`. This strategy keeps the **rules every skill obeys** (the chain, the step rules, coverage, the gates); the `testing-plan` skill **orchestrates** the activities and calls a capability skill **where one exists**. Until a capability skill exists, its technique follows [How a technique is applied](#how-a-technique-is-applied).

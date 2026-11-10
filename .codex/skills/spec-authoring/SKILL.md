@@ -16,7 +16,7 @@ The **rules live in three files**. **Read them before writing**; **do not restat
 There is **one spec**, `dev/mvp/spec/` (dev/mvp/WORKFLOW.md "Spec rules"). **Every change needs the PO's approval**.
 
 - A **use case** keeps its **interaction diagram**, its **Steps table** and its **alternatives** with a **one-line `When`** each; an **FR or NFR** keeps its **Statement only**; a **BR** keeps its **rule and values**.
-- **No acceptance criteria and no measures**: those are written in the **testing plan of a build** (skill `testing-plan`).
+- **No acceptance criteria and no measures**: those are written in the **acceptance criteria file of a build** (`testing/design/acceptance-criteria.md`, skill `testing-plan`).
 - A **new behavior claims its ID here** **before a build uses it**.
 
 ## Content sources

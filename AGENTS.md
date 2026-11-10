@@ -72,7 +72,7 @@ Two rules for **every Markdown file** and every **GitHub issue, PR and comment b
 All work follows `dev/mvp/WORKFLOW.md`:
 
 - **Phase 0 — MVP planning** (once): **build order**, milestone `mvp`, **walking skeleton** (it may be deferred).
-- **Phases 1–6** (once per build): **research** → **testing plan** (acceptance criteria) and **test stubs** → **implementation plan** → **tickets** → **execution** → **verification**.
+- **Phases 1–6** (once per build): **research** → **test analysis, testing plan and test design** (acceptance criteria) and **test stubs** → **implementation plan** → **tickets** → **execution** → **verification**.
 - **MVP close**: **freeze the spec**, **review the workflow**, move to **work driven by issues**.
 
 Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a light build), then **start Phase 1**. "Continue" + a build name: **read its flow tracker issue first**.
@@ -90,6 +90,9 @@ Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a lig
 | Write or rewrite a spec file | `spec-authoring` |
 | Generate research questions for a build | `research-questions` |
 | Generate the test analysis and the testing plan (test basis, test types, tiers) | `testing-plan` |
+| Apply equivalence partitioning to a design input | `equivalence-partitioning` |
+| Apply boundary value analysis to a design input | `boundary-value-analysis` |
+| Apply decision table testing to a design input | `decision-table-testing` |
 | Create GitHub Issues from a plan | `ticket-writer` |
 | Update flow tracker issue | `flow-tracker-update` |
 | Implement with TDD | `tdd` |
@@ -141,7 +144,7 @@ These lists say **_who decides_**. dev/mvp/WORKFLOW.md "Roles" says **_who does 
 | As-built architecture (module map, LLM boundary map) | `docs/architecture/` |
 | MVP status (build order, walking skeleton) | `dev/mvp/README.md` |
 | Spec | `dev/mvp/spec/` |
-| Build artifacts | `dev/mvp/builds/UC-XXX-label/` (read `dev/mvp/builds/_STYLE.md` before writing) |
+| Build artifacts | `dev/mvp/builds/UC-XXX-label/`: `research/`, `testing/` (`analysis/`, `planning/`, `design/`), `implementation/`; layout in dev/mvp/WORKFLOW.md "Repository layout" (read `dev/mvp/builds/_STYLE.md` before writing) |
 | Open questions | `dev/mvp/research/open-questions.md` |
 | Research | `dev/mvp/research/` (read `dev/mvp/research/_STYLE.md` before writing) |
 | Decisions | `dev/mvp/decisions/` |

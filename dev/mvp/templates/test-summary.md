@@ -16,7 +16,7 @@ created: DD-MM-YYYY
 - **Purpose:** the PO decides at **Gate 3** whether the **evidence is enough to accept the build**.
 - **Use case:** UC-XXX
 - **Spine:** [traceability-matrix.md](./traceability-matrix.md)
-- **Records:** [test-analysis.md](./test-analysis.md), [testing-plan.md](./testing-plan.md), [test-design.md](./test-design.md)
+- **Records:** [test-analysis.md](./analysis/test-analysis.md), [testing-plan.md](./planning/testing-plan.md), [test-design.md](./design/test-design.md), [acceptance-criteria.md](./design/acceptance-criteria.md)
 - **Status:** _N rows verified of N · N defects open · N mechanisms not `verified`_
 
 ## 1. Coverage

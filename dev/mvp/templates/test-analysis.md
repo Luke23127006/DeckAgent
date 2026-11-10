@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Test analysis — {scope}
 
-<!-- The records of Gate 1 (dev/development/test-strategy.md "Test basis register", "Test types and approaches", "Automation feasibility", "Gates"). The PO approves them, together with the approach sections of testing-plan.md, before any design starts.
+<!-- The records of Gate 1 (dev/development/test-strategy.md "Test basis register", "Test types and approaches", "Automation feasibility", "Gates"). The PO approves them, together with testing-plan.md, before any design starts.
      Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 
@@ -17,8 +17,8 @@ created: DD-MM-YYYY
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md)
-- **Approach, levels, targets:** [testing-plan.md](./testing-plan.md)
+- **Spine:** [traceability-matrix.md](../traceability-matrix.md)
+- **Approach, levels, targets:** [testing-plan.md](../planning/testing-plan.md)
 - **Status:** _N basis items (N to test · N deferred · N excluded) · N spec units · N unmapped normative units · N excluded or deferred items without a PO ruling · N types selected · N mechanisms `assumed` · N `blocked`_
 
 ## 1. Test basis register

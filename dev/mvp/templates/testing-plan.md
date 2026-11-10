@@ -8,135 +8,140 @@ created: DD-MM-YYYY
 # Testing plan — {scope}
 
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
-     Derived from dev/development/test-strategy.md: risk sets the depth, each kind of requirement picks its technique and coverage criterion. The plan applies the strategy; it does not restate its rules.
-     This is the one home of the acceptance criteria and measures of the build (dev/mvp/WORKFLOW.md "Spec rules"); the length budget does not count them.
-     Scope rulings and rulings on ambiguities live in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact (for example in the driver section), not as a ruling.
-     Written by the PO (the agent drafts). Developers write the tests from this plan; the PO approves each test before it is locked (dev/mvp/WORKFLOW.md "Phase 2").
-     Gates (dev/development/test-strategy.md "Gates"): Gate 1 covers At a glance, Test approach, Testing risks and Post-implementation tests, with test-analysis.md; Gate 2 covers Acceptance criteria, Measures, Eval cases and Manual checks, with test-design.md. Test driver and fixtures and Test-stub tickets are the implementation contract. -->
+     Planning decisions only, decided at Gate 1 with test-analysis.md, each derived by the rules of dev/development/test-strategy.md "Planning decisions". The plan applies the strategy; it does not restate its rules.
+     Not here: the AC, measures, eval cases, manual checks and charters (../design/acceptance-criteria.md, Gate 2); the conditions, coverage items and test cases (../design/techniques/); the driver, fixtures and test-stub tickets (../../implementation/test-implementation.md).
+     Scope rulings and rulings on ambiguities live in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact, not as a ruling.
+     Written by the PO (the agent drafts). -->
 
 ## At a glance
 
-- **What this document is:** in ISO/IEC/IEEE 29119-3 terms, it is the **test plan** of the build and holds the **test cases** of its test specification (the AC and measures); the **test design specification** is [test-design.md](./test-design.md); the **driver, fixtures and tickets** are the **test implementation** part.
+- **What this document is:** the **test plan** of the build: the **planning decisions**, each with its **inputs and rule**, and the **design inputs** handed to Gate 2 (section 2.3). The structure follows the **STLC activities** of test-strategy.md "Frame"; it **does not claim conformance** to an external standard.
 - **Use case:** UC-XXX
 - **Steps:** S1-S2 (or "all")
 - **Alternatives:** A1, A3 (or "all")
-- **Test analysis (Gate 1):** [test-analysis.md](./test-analysis.md) — the test basis, the test types and the automation feasibility
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md) — every criterion here has a row there
-- **Test design (Gate 2):** [test-design.md](./test-design.md) — techniques, conditions, coverage items, gaps and design rulings
-- **Tiers:** _N ci · N eval · N manual_
-- **Technical checklist (C1–C8):** _N of 8 pass_ — failures listed in test-design.md
+- **Test analysis (Gate 1):** [test-analysis.md](../analysis/test-analysis.md) — the test basis, the test types and the automation feasibility
+- **Spine:** [traceability-matrix.md](../traceability-matrix.md)
+- **Test design (Gate 2):** [test-design.md](../design/test-design.md) — techniques applied, coverage counts, gaps and design rulings; AC in [acceptance-criteria.md](../design/acceptance-criteria.md)
+- **Gate 1:** _Not started_ · **Gate 2:** _Not started_
+- **Requirement coverage target:** _N / N_ basis items `to test`; excluded N, deferred N
+- **Planned coverage:** _N / N_ coverage items, from test-design.md at Gate 2
 
-<!-- One row per in-scope FR and NFR. Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). Kinds and techniques: one sentence per kind, naming its technique (test-strategy.md "Technique per requirement"). Planned coverage: coverage items that have a test case / items the risk level requires, with the excluded and deferred counts beside it; it is a plan, not a test result. An item without a criterion is a deviation in test-design.md. -->
+## 1. Test objectives
 
-| Item | Risk | Kinds and techniques | Planned coverage (items with a test case / required; excluded, deferred) |
-|---|---|---|---|
-| FR-NNN | high | The lifecycle uses **state transition**. The input range uses **EP + BVA**. | 0 / 0 (excluded 0, deferred 0) |
-| NFR-NNN | normal | Reliability uses **fault injection**. | 0 / 0 (excluded 0, deferred 0) |
+<!-- What the tests of this build are for, one row each; an objective is not an AC. Name the evidence that shows it at Gate 3. State the two roles of the acceptance tests (test-strategy.md "Test levels"). List what is outside the objectives (types not selected, platforms not claimed, residual risks). -->
 
-## Test approach
-
-<!-- Gate 1. Levels and tiers per group of items, the coverage targets and the exit criteria, the environment. The techniques are in the At a glance table and the types and their approaches are in test-analysis.md; do not restate them. -->
-
-| Group of items | Level | Tier | Coverage target |
-|---|---|---|---|
-| FR-NNN | acceptance | ci | every event in every state |
-
-- **Exit criteria:**
-- **Environment:**
-
-## Test driver and fixtures
-
-<!-- Build-specific only. The general rules (driver contract, NotWiredError, positive control, no silent skip, isolation) are in test-strategy.md "Test infrastructure rules"; do not restate them.
-     Functions: the driver calls the criteria use. Fields: the names the criteria assert, one row each. Fixtures: each with what it sets up and its self-test. -->
-
-| Driver function | Used by |
-|---|---|
-| `functionName(args)` | FR-NNN AC-1 |
-
-| Field | Meaning |
-|---|---|
-| `field` | |
-
-| Fixture | Sets up | Self-test |
+| ID | Objective | Evidence at Gate 3 |
 |---|---|---|
-| `fixtureName` | | |
+| O1 | | |
 
-## Testing risks
+## 2. Items, risk and techniques
 
-<!-- Risks to the testing itself, not to the product (the product risk is the Risk column above): what could make a test unable to run, or make it pass without proving anything. One row per risk; a ruling about it lives in test-design.md. For a risk that comes from a mechanism, link its row in test-analysis.md "Automation feasibility" and do not restate its status. Write "None." when the build has none. -->
+<!-- Derived by the rules of test-strategy.md "Planning decisions" from the approved test-analysis.md, never from drafted AC or test cases. Three tables: the selection (evidence), the items (summary) and the design inputs (hand-off). -->
+
+### 2.1 Technique selection
+
+<!-- One row per item and kind, read off the register: only items to test. Risk: the register's. Rule: P1–P5 of the strategy. Technique: what the rule selects; "P1 only" when it selects nothing beyond the floor; "through X" when a technique of another item covers it (P3). A technique selected by a behavior trait (P5) quotes the item's words in the Rule cell; the register's kind stays as approved; after Gate 1 the row carries its planning delta and selects nothing until the PO approves it. Check line: the row counts add up to the register's to test count. -->
+
+| Item | Kind | Items to test | Risk | Rule | Technique | Design input |
+|---|---|---|---|---|---|---|
+| FR-NNN | lifecycle | .1, .3 | high | P2 | state transition | D1 |
+| FR-NNN | invariant | .4 | normal | P3 | P1 only; through invariant check of UC-XXX.G1 | D5 |
+| BR-NNN | range or format | V2 | high | P2; P5 ("only for user names") | EP + BVA; decision table | D2 |
+
+**Check:** _N_ rows, _N_ items; the register has _N_ items `to test`.
+
+### 2.2 Items
+
+<!-- One row per in-scope FR and NFR; the PO sets Risk: high | normal (test-strategy.md "Risk and depth"; unset = high). BR and UC rows take their risk from the register of test-analysis.md. Basis items: to test (deferred, excluded), from the register. Kinds and techniques: the summary of 2.1 for the item. Coverage criterion: the strategy's, per technique. Level: where its AC or measures are checked (section 3.1). Gate 2 record: the AC or measures section and the design inputs of 2.3. Every FR, NFR, BR and UC of the test basis has a row. The coverage item counts and the planned coverage are Gate 2 results, in test-design.md. -->
+
+| Item | Risk | Basis items to test (deferred, excluded) | Kinds | Techniques | Coverage criterion | Level | Gate 2 record |
+|---|---|---|---|---|---|---|---|
+| FR-NNN | high | 0 (0, 0) | lifecycle, range or format | **state transition**, **EP + BVA** | every event in every state; every partition, each boundary at three values | acceptance | AC of FR-NNN; test-design.md "State transition" |
+| NFR-NNN | normal | 0 (0, 0) | reliability | **fault injection** | injection point × failure mode, as chosen | integration | measures of NFR-NNN; test-design.md "Fault injection" |
+| BR-NNN | high (from FR-NNN) | 0 (0, 0) | multi-condition rule | **decision table** | every leaf | acceptance, through FR-NNN | AC of the FRs that cite it; test-design.md "Decision table" |
+| UC-XXX | high | 0 (0, 0) | flow | **use case testing** | every step and alternative with a different end state | acceptance, E2E | AC of its FRs; section 8; test-design.md "Use case testing" |
+
+### 2.3 Design inputs
+
+<!-- The hand-off to Gate 2 (test-strategy.md "Planning decisions"): one row per technique evidence file of ../design/techniques/. Basis items: from 2.1. Criterion and depth: the strategy's criterion plus the depth parameters (closed list criterion, name sources, alternative combinations, a quality risk's variable), each with its value or ruling. Mechanisms: rows of test-analysis.md "Automation feasibility". Candidate gaps: the ones the section checks. Blocked by: pending planning deltas; design starts the evidence file only when this cell is empty. The evidence file cites the code and does not restate why. -->
+
+| Code | Technique evidence file | Basis items | Criterion and depth parameters | Level (rule) | Mechanisms | Candidate gaps | Blocked by |
+|---|---|---|---|---|---|---|---|
+| D1 | State transition: object | FR-NNN.1, .3 | every event in every state | acceptance (L1) | M1, M2 | CG-n | — |
+
+## 3. Test approach
+
+### 3.1 Levels
+
+<!-- One row per level the build uses (test-strategy.md "Test levels"): the object and scope in this build, when it is written, who writes it, the tier. Add mutation testing in Phase 6 when the strategy requires it. -->
+
+| Level | Object and scope | Written | Who writes it | Tier |
+|---|---|---|---|---|
+| Acceptance | | Phase 2 | | ci |
+
+### 3.2 Types by level and approach
+
+<!-- One row per type selected in test-analysis.md; do not restate the selection or its source. Basis items: the items the type's source names (rule P4), or "all" for functional; a type with no basis item (structural, change-related) says what it runs on. -->
+
+| Selected type | Basis items | Level | Approach | Technique (design input) |
+|---|---|---|---|---|
+| Functional | all | acceptance | scripted automated | 2.1 |
+
+### 3.3 Quality risks by approach
+
+<!-- One row per quality risk of test-analysis.md: the technique and the items that address it (rule P4), and the variable it adds; or the ruling that leaves it untested. -->
+
+| Quality risk | Risk level | Basis items | Addressed by (design input) |
+|---|---|---|---|
+| QR-1 | | | |
+
+### 3.4 Coverage targets
+
+<!-- The five measures of test-strategy.md "Coverage". The denominator comes from the approved scope, never from a count of AC or test cases. -->
+
+| Measure | Denominator in this build | Target | Measured at |
+|---|---|---|---|
+| Requirement coverage | | | Gate 2, Gate 3 |
+| Test design coverage | | 100 %; a shortfall is a deviation | Gate 2 |
+| Execution coverage | | | Phase 6 |
+| Pass coverage | | | Gate 3 |
+| Structural coverage | | threshold set in the implementation plan | Phase 5 |
+
+## 4. Environment
+
+<!-- OS and file system, runtime, runner, storage, folders and their substitutes, rights, E2E browser, developer machine. Test data. Environment validation (fixture self-tests). Link the mechanism rows of test-analysis.md; do not restate their status. -->
+
+| Component | Value | Note |
+|---|---|---|
+| | | |
+
+## 5. Dependencies
+
+<!-- What the tests need that is resolved elsewhere (a ticket, a Phase 3 decision, a CI change), and what it blocks. Do not restate mechanism status. -->
+
+| Dependency | Resolved in | Blocks |
+|---|---|---|
+| | | |
+
+## 6. Entry and exit criteria
+
+<!-- One row per testing activity: test design (Gate 2), test implementation, execution (Phase 5), closure (Gate 3). The exits apply test-strategy.md "Phases" to the build. Each criterion names the record or check that shows it. Test design starts per section, when its design input (2.3) has no pending delta. Add the suspension and resumption rules. -->
+
+| Activity | Entry | Exit |
+|---|---|---|
+| Test design (Gate 2) | Gate 1 approved | |
+
+## 7. Testing risks
+
+<!-- Risks to the testing itself, not to the product (the product risk is the Risk column of section 2): what could make a test unable to run, or make it pass without proving anything. One row per risk; a ruling about it lives in test-design.md. For a risk that comes from a mechanism, link its row in test-analysis.md "Automation feasibility" and do not restate its status. Write "None." when the build has none. -->
 
 | ID | Risk | Impact if it happens | Mitigation | Owner |
 |---|---|---|---|---|
 | R1 | | | | |
 
-## Acceptance criteria
+## 8. Post-implementation tests
 
-<!-- Written after Phase 1, so research results shape them. One "### FR-NNN" heading per in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered; a later build that takes the same FR continues its numbering.
-     Given: the relevant state and input, described well enough to repeat. When: a user action or event.
-     Then: the observable result, one line per thing, no "if".
-     Catches: the wrong DeckAgent behavior this test fails on (deterministic criteria; checklist C2).
-     Check: deterministic (observable state or an exact invariant) | evaluation (a person judges meaning/relevance against Then).
-     Tier: ci | eval | manual. Default from Check: deterministic → ci, evaluation → eval; the PO may move one to manual.
-     Serves: the basis items (test-analysis.md) and the condition codes (test-design.md) this criterion covers. Every AC cites at least one basis item. One AC may hold several variants; list them in When, because each independent variant is its own test case and has its own result.
-     Each criterion adds precision beyond the use case response (spec/03-requirements/fr/_CRITERIA.md FRG-03). -->
-
-### FR-NNN
-
-#### AC-1 · short name
-
-- **Given:**
-- **When:**
-- **Then:**
-- **Catches:**
-- **Serves:** BI-1; X1
-- **Check:** deterministic
-- **Tier:** ci
-
-## Measures
-
-<!-- One "### NFR-NNN" heading per in-scope NFR, then one block per measure: "#### M-n · name".
-     Condition: the state, input, and environment, enough to repeat; state the product-controlled or end-to-end boundary; state provider-dependent conditions, do not silently hide provider time.
-     Measure: the quantity measured or the property checked. How to measure: in prose, no tool, no architecture.
-     Target: a value with unit and bound, or a required property. "not set" while pending; do not guess a number.
-     Passes when: what counts as a pass. "not set" while pending.
-     Rules: spec/03-requirements/nfr/_CRITERIA.md NFG-05, NFG-06. -->
-
-### NFR-NNN
-
-#### M-1 · measure name
-
-- **Condition:**
-- **Measure:**
-- **How to measure:**
-- **Target:** not set
-- **Passes when:** not set
-- **Tier:** ci
-
-## Eval cases (eval tier)
-
-<!-- One row per eval-tier AC. Cases and rubric live in tests/eval/; this table names them. The rubric scores what the AC's Then says, nothing else. Write "None." when the build has no eval-tier criterion. -->
-
-| AC | Cases (inputs) | Rubric criteria | Pass threshold |
-|---|---|---|---|
-| FR-NNN AC-2 | | | |
-
-## Manual checks (manual tier)
-
-<!-- Write "None." when the build has no manual-tier criterion. -->
-
-| AC | What the PO checks | How |
-|---|---|---|
-| FR-NNN AC-3 | | |
-
-<!-- Exploratory charters: one row per session. It creates no locked test; the findings go to a defect issue or a ruling. Write "None." when the build has none. -->
-
-| Charter | Type | Scope | Time box |
-|---|---|---|---|
-| | security | | |
-
-## Post-implementation tests
-
-<!-- Planned now, ticketed in Phase 4 (phase:post-impl). Level: integration | E2E. Target: a UC flow or alternative, or an NFR measure (point to it, do not restate its target). Technique: test-strategy.md. Mark the smoke subset in the last column. -->
+<!-- Planned now, ticketed in Phase 4 (phase:post-impl). Level: integration | E2E. Target: a UC flow or alternative, or an NFR measure (point to it, do not restate its target). Technique: test-strategy.md. Mark the smoke subset in the last column. List the tickets Phase 4 must create besides the module tickets. -->
 
 | Level | Target | Technique | What it checks | Smoke |
 |---|---|---|---|---|
@@ -144,11 +149,10 @@ created: DD-MM-YYYY
 | E2E | UC-XXX A1 | use case testing | | |
 | Integration | NFR-NNN M-1 | fault injection | | |
 
-## Test-stub tickets
+## 9. Planning deltas for the PO
 
-<!-- Input of ticket-writer in Phase 2. One concern per ticket, at most 3 files (checklist C8). T0 tickets build the driver and fixtures; they carry no criterion. -->
+<!-- Each change of the plan after Gate 1 is approved, and each conflict with a Gate 1 decision, one row each with a proposal; the PO rules it. Write "None." before Gate 1. -->
 
-| Ticket | Criteria | Files | Fixtures | Blocked by |
+| ID | Kind | What changes or needs a decision | Proposal | PO ruling |
 |---|---|---|---|---|
-| T0 · test driver | — | `tests/acceptance/support/...` | — | — |
-| T1 · name | FR-NNN AC-1..3 | `tests/acceptance/...` | | T0 |
+| PD-1 | | | | pending |

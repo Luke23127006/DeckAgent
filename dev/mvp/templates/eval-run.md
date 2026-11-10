@@ -8,7 +8,7 @@ model: ""
 
 # Eval run — {scope} — DD-MM-YYYY
 
-<!-- Save as dev/mvp/builds/UC-XXX-label/eval-runs/YYYY-MM-DD.md.
+<!-- Save as dev/mvp/builds/UC-XXX-label/testing/execution/eval-runs/YYYY-MM-DD.md.
      Anyone may run an eval (dev/mvp/WORKFLOW.md "Test tiers"). Cases and rubrics are in tests/eval/; this file records one run. -->
 
 ## At a glance

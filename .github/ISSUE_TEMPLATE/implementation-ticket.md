@@ -14,7 +14,7 @@ labels: phase:impl, flash-ready
 **Use case:** UC-XXX
 **FR / AC:** FR-NNN / AC-N
 **Decisions:** DEC-NNN (link to dev/mvp/decisions/)
-**Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation-plan.md
+**Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation/implementation-plan.md
 **Test author:** @handle — must not be the assignee (separation rule)
 **Flow tracker:** #N
 

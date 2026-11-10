@@ -68,8 +68,8 @@ Close section 3 with **"Không hỏi, và vì sao"**: the topics a reader would 
 
 ## Output
 
-1. **Create** `dev/mvp/builds/UC-XXX-label/research-checklist.md` from `dev/mvp/templates/research-checklist.md`. **Keep its sections in order.**
-2. **Seed** `dev/mvp/builds/UC-XXX-label/traceability-matrix.md` from `dev/mvp/templates/traceability-matrix.md`: **one row per in-scope FR and NFR**, **Tier empty**.
+1. **Create** `dev/mvp/builds/UC-XXX-label/research/research-checklist.md` from `dev/mvp/templates/research-checklist.md`. **Keep its sections in order.**
+2. **Seed** `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md` from `dev/mvp/templates/traceability-matrix.md`: **one row per in-scope FR and NFR**, **Tier empty**.
 3. **Deliverables**, created when the tickets are created (skill `ticket-writer`), listed in section 5 of the checklist:
    - **Research answer:** a **new numbered item** in the matching topic file of `dev/mvp/research/`. Research files are **records**: **add an item**, do not rewrite an old one.
    - **Decision record:** `dev/mvp/decisions/DEC-NNN-topic.md` from `dev/mvp/decisions/_TEMPLATE.md`, **options table only**; **Choice and Why stay empty** for the PO.

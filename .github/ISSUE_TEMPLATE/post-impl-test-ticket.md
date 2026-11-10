@@ -9,7 +9,7 @@ labels: phase:post-impl
 
 **Milestone:** mvp
 **Use case:** UC-XXX
-**Testing plan:** dev/mvp/builds/UC-XXX-label/testing-plan.md
+**Testing plan:** dev/mvp/builds/UC-XXX-label/testing/planning/testing-plan.md (section "Post-implementation tests")
 **Flow tracker:** #N
 
 ## Test type

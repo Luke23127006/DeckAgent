@@ -24,7 +24,7 @@ A **rule with no value stays in the FR**, e.g. "the user cannot start a new sess
 - **Reuse** an FR when another block needs the **same behavior**: the **same kind of condition**, the **same expected result**.
 - **Same words is not same behavior.** **Reuse only when the meaning is the same**.
 - **No duplicate FRs.** Before writing, **search the folder** for existing statements.
-- **Precision.** An FR may mention the **core behavior**; an **acceptance criterion**, written in the **testing plan of a build** (`dev/mvp/WORKFLOW.md` "Spec rules"), **adds at least one of**: an observable result, a relevant input condition, an edge case, a guarantee that holds, error behavior. An FR that **only repeats the use case is not written**.
+- **Precision.** An FR may mention the **core behavior**; an **acceptance criterion**, written in the **acceptance criteria file of a build** (`testing/design/acceptance-criteria.md`; `dev/mvp/WORKFLOW.md` "Spec rules"), **adds at least one of**: an observable result, a relevant input condition, an edge case, a guarantee that holds, error behavior. An FR that **only repeats the use case is not written**.
 
 ### IDs and files
 
@@ -53,8 +53,8 @@ A **rule with no value stays in the FR**, e.g. "the user cannot start a new sess
 |---|---|---|---|
 | FRG-01 | The FR states one system behavior under a stated condition. No goal, journey, rule values, quality targets, interface, architecture, progress, or version | A requirement restating the journey; a value in two places | Review |
 | FRG-02 | Granularity per section 1: one cohesive purpose; split by reason; reuse for the same behavior; no second FR for a behavior an FR already covers | A giant FR; one FR per step out of habit; the same behavior written twice | Review |
-| FRG-03 | An acceptance criterion (in the testing plan of a build) adds testable precision beyond the use case response: result, input, edge, invariant, error behavior | An FR that only copies the use case, adding no test | Review |
-| FRG-04 | The file follows `_TEMPLATE.md`: frontmatter `id` and `title`; the Requirement fields in order; no acceptance criterion (they live in the testing plan of a build). An empty `Why` drops its line. `Undecided` and `Notes` are omitted when empty. No version, priority, progress, evidence, or use case field | A file that cannot be compared or checked | Lint (fields, order) |
+| FRG-03 | An acceptance criterion (in `testing/design/acceptance-criteria.md` of a build) adds testable precision beyond the use case response: result, input, edge, invariant, error behavior | An FR that only copies the use case, adding no test | Review |
+| FRG-04 | The file follows `_TEMPLATE.md`: frontmatter `id` and `title`; the Requirement fields in order; no acceptance criterion (they live in `testing/design/acceptance-criteria.md` of a build). An empty `Why` drops its line. `Undecided` and `Notes` are omitted when empty. No version, priority, progress, evidence, or use case field | A file that cannot be compared or checked | Lint (fields, order) |
 | FRG-05 | `Status` is `confirmed` or `proposed`. A `proposed` block has `Why` | An approval status nobody defined | Lint (value, fields) |
 | FRG-06 | The FR contains no rule values or quality targets. It cites `[BR-xxx]`/`[NFR-xxx]`, or the `?` marker. Example input in a criterion is allowed | The same value in several files | Lint (numbers, markers) + CI (ID exists) |
 | FRG-07 | The `Undecided` section states open behavior one line each. No statement and no criterion assumes a result for it. A response that fully depends on an open decision does not get an FR; the block keeps `FR-?` | An open question becoming a requirement before it is decided | Review |

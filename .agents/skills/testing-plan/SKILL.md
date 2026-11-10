@@ -15,7 +15,7 @@ The plan **applies** `dev/development/test-strategy.md`. It **does not invent a 
 2. The use case file: `dev/mvp/spec/02-use-cases/UC-XXX.md`
 3. Every in-scope FR and NFR in `dev/mvp/spec/03-requirements/`, and the BRs they cite.
 4. Decisions from Phase 1: `dev/mvp/decisions/DEC-*.md`
-5. The research checklist and the matrix: `dev/mvp/builds/UC-XXX-label/`
+5. The research checklist and the matrix: `dev/mvp/builds/UC-XXX-label/research/research-checklist.md`, `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md`
 6. `dev/mvp/spec/03-requirements/fr/_CRITERIA.md` and `nfr/_CRITERIA.md`: the rules a criterion and a measure meet.
 7. `dev/mvp/builds/_STYLE.md`: build files are **Vietnamese prose with English terms**.
 8. **Optional idea source**: the **legacy acceptance criteria** of the same FR on the `docs/spec` branch at `71ff143`. They are **not approved**; the **current statement wins**.
@@ -23,12 +23,19 @@ The plan **applies** `dev/development/test-strategy.md`. It **does not invent a 
 
 ## Output
 
-- `dev/mvp/builds/UC-XXX-label/test-analysis.md` from `dev/mvp/templates/test-analysis.md` (**Gate 1**).
-- `dev/mvp/builds/UC-XXX-label/testing-plan.md` from `dev/mvp/templates/testing-plan.md`: the **approach sections** (Gate 1), the **acceptance criteria and measures** (Gate 2).
-- `dev/mvp/builds/UC-XXX-label/test-design.md` from `dev/mvp/templates/test-design.md` (**Gate 2**).
-- The **updated** `traceability-matrix.md`.
+All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one kind of fact**.
 
-**Keep each template's section order** and **front-load `## At a glance`** (dev/mvp/WORKFLOW.md "Document rules"). **Scope rulings** (which items are `excluded` or `deferred`) and the **rulings on ambiguities** live **only in test-analysis.md**; **gaps, deviations and the design rulings** live **only in test-design.md**. The plan states a ruling's **result as current fact**. A ruling the PO has not given reads **`pending`**.
+| File | Template | Owns | Gate |
+|---|---|---|---|
+| `testing/analysis/test-analysis.md` | `test-analysis.md` | Basis register, sentence map, scope rulings, quality risks, types, automation feasibility, ambiguities | 1 |
+| `testing/planning/testing-plan.md` | `testing-plan.md` | **Planning decisions only**, each with its inputs and rule, and the **design inputs** | 1 |
+| `testing/design/techniques/Dn-topic.md` | `test-design-technique.md` | The **evidence of one technique**: each step's output, coverage items, test cases, reconciliation | 2 |
+| `testing/design/test-design.md` | `test-design.md` | Techniques applied with coverage counts; the **ruling log** of gaps, deviations and design rulings | 2 |
+| `testing/design/acceptance-criteria.md` | `acceptance-criteria.md` | AC, measures, eval cases, manual checks, exploratory charters | 2 |
+| `implementation/test-implementation.md` | `test-implementation.md` | Driver functions and fields, fixtures and self-tests, test-stub ticket list | per ticket |
+| `testing/traceability-matrix.md` | `traceability-matrix.md` | The spine | — |
+
+**Keep each template's section order** and **front-load `## At a glance`** (dev/mvp/WORKFLOW.md "Document rules"). **Scope rulings** and **rulings on ambiguities** live **only in test-analysis.md**; **gaps, deviations and design rulings** live **only in test-design.md**. A ruling's **result** is written **as current fact** into the file that owns it. A ruling the PO has not given reads **`pending`**. **Never write a fact into a file that does not own it**; link to its home.
 
 ## Process
 
@@ -52,18 +59,18 @@ One row per **mechanism** a test depends on (a fixture, an audit, a runner or CI
 
 #### Step 5 — Approach, levels, targets
 
-In `testing-plan.md`, write the **"Kinds and techniques"** cell of the At a glance table (**one sentence per kind**, naming its technique), then the **test approach**: the **level** of each group of items, the **coverage targets** and the **exit criteria**, the **environment**. Then the **testing risks** (what could stop a test from running or let it pass without proving anything; **link the mechanism rows** of `test-analysis.md`, **do not restate their status**) and the **post-implementation tests**: one row per **E2E** test for the **main flow** and **each alternative** reaching a **different end state**, and per **integration** test an NFR measure needs (fault injection, timing); **point to the measure**, do not restate its target; **mark the smoke subset**. The **risk level** decides which techniques **apply**; the **coverage criterion** of each applied technique sets the **required count**. **Stop here**: the **PO decides Gate 1** before Part B starts.
+In `testing-plan.md`, write the **test planning sections 1–9** in the template's order, applying the rules of the strategy's **"Planning decisions"** to the records of Steps 1–4: **derive each decision from the register, the quality risk and type record and the feasibility record only**; **never from drafted AC or test cases**, and never write a decision first and its reason after. **Objectives**: what the tests are for, the **evidence** of each at Gate 3, the **two roles** of the acceptance tests, and what is **outside** the objectives. **Items, risk and techniques**: first the **technique selection** (2.1): read the register **item by item**, one row per **item and kind** with the **rule** (P1–P5) and the technique it selects, and **check that the rows add up** to the `to test` count. A technique the kind does not select needs **its own source**: a selected type or quality risk (P4), or a **behavior trait** (P5) whose **words you quote**; **never change the register's kind** to justify a technique, and after Gate 1 a new selection is a **planning delta**. Then the **items** (2.2): one row per FR and NFR (plus BR and UC rows with the register's risk), the **basis item counts** from the approved scope, the **kinds**, the **techniques** of 2.1 and their **coverage criterion**; **no coverage item count** (that is Gate 2). Then the **design inputs** (2.3): one row per technique section with its **basis items**, **criterion and depth parameters**, **level and its rule**, **mechanisms**, **candidate gaps** and the **pending deltas that block it**; every mechanism a technique needs **has a feasibility row**, or its absence is a **delta**. Then the **test approach**: the **levels** (rules L1–L4), the **types by level** with the **items** each type's source names, the **quality risks by approach** with their **items** and the variable each adds, and the **five coverage targets** with denominators from the **approved scope**, never from a count of AC. Then the **environment**, the **dependencies** (what is resolved elsewhere and what it blocks), and the **entry and exit criteria** per testing activity. Then the **testing risks** (what could stop a test from running or let it pass without proving anything; **link the mechanism rows** of `test-analysis.md`, **do not restate their status**) and the **post-implementation tests**: one row per **E2E** test for the **main flow** and **each alternative** reaching a **different end state**, and per **integration** test an NFR measure needs (fault injection, timing); **point to the measure**, do not restate its target; **mark the smoke subset**. **After Gate 1 is approved**, a change to these sections, or a conflict with a Gate 1 decision, goes to **"Planning deltas for the PO"** with a proposal; **do not apply it** to the Gate 1 decision yourself. **AC and test cases written before Gate 2 are not coverage evidence.** The **risk level** decides which techniques **apply**; the **coverage criterion** of each applied technique sets the **required count**. **Stop here**: the **PO decides Gate 1** before Part B starts.
 
 ### Part B — Gate 2: test design
 
-#### Step 6 — Write the test design specification
+#### Step 6 — Apply each technique, one evidence file per design input
 
-Write `test-design.md` (strategy "Test design specification"). **Start with "Techniques applied"**: one row per technique the plan applies, with the **basis items** it covers, **why** it is selected (kind of requirement, risk level), its **coverage criterion** and its **coverage item count**. Then **one section per applied technique**, in the template's order; **delete the sections of techniques the build does not apply**. For each, **follow its steps** in the strategy's "How a technique is applied" and **keep the evidence in its section**:
+**The method comes before the result.** For each design input of the plan (section 2.3) **with no pending delta**, create `testing/design/techniques/Dn-topic.md` from `test-design-technique.md` and **keep only its technique's form**. Use the **capability skill** of the technique when one exists; otherwise **follow its steps** in the strategy's "How a technique is applied". **Keep the output of each step, in step order**: the intermediate results (variables, partitions, representatives, boundaries, conditions and rules, states, events and transitions, threats, injection points) **are the evidence**, not scaffolding to delete. **Derive from the basis items and the plan only**: **do not read the drafted AC, the drafted test cases or the pre-STLC design** until the reconciliation step, and **do not start from test cases you already have in mind** and fill the tables to fit them. Each output row **cites its basis item** or the earlier output it comes from, with the **reason** for each choice. **Fix the coverage items before writing test cases**, and **stop for the PO** where the design input asks. Each test case has its **input, preconditions, actions, expected result** (with its source) and the **coverage items** it exercises; how coverage items **combine in one case** follows the **technique's method** (its capability skill), not a rule common to all techniques. **End each file with the reconciliation table** (match, missing, conflict, unsupported); it is a final check, **not the success measure** of the design. **No technique is forced into another's form**, and a **diagram is optional**. Then update `test-design.md`: one row per design input with its **evidence file** and **coverage count**, and the **ruling log**. Per technique:
 
 - **Use case testing:** the **main flow** and each **alternative** reaching a **different end state**, with that end state.
-- **State transition:** the **states and events** from the spec; **one diagram per lifecycle**, arrows numbered, **refused events included**; one row per arrow; then the **state × event matrix**: **fill every cell** with a code and a few words, a **"—" with the reason** the event cannot happen, or a **Z-n** gap. **Use the matrix to find gaps**: check each "—" really cannot happen, and each code really starts in that state.
+- **State transition:** the **states and events** from the spec; **one row per transition**, numbered, **refused events included** (a diagram only when it helps); then the **state × event matrix**: **fill every cell** with a code and a few words, a **"—" with the reason** the event cannot happen, or a **Z-n** gap. **Use the matrix to find gaps**: check each "—" really cannot happen, and each code really starts in that state.
 - **Decision table:** the **conditions and actions**, every **rule** (a table, or a tree with **one outcome per leaf**), the **infeasible combinations** with the statement that excludes them, each **merge with its argument**; **define the terms** the conditions use.
-- **EP + BVA:** the **variables** and **sub-variables** (counting unit, encoding, normalization, trimming), the **partitions**, the **boundaries** with their **three values**.
+- **EP + BVA:** the **inputs and variables** with the rules acting on each; the **domain analysis** (domains, **sub-variables** such as counting unit, encoding, normalization, trimming, and the **relations between variables**); the **partitions** with reason and expected behavior; the **boundaries** with their **three values**; the **coverage items** and what is not covered; the **representatives**; the **test cases**; the **reconciliation**.
 - **Invariant check:** each **"never" statement**, the **area** it is asserted in, its **positive control**.
 - **Threat-based:** **assets**, **trust boundaries**, **entry points**, **threat scenarios**, each **screened** as kept or not feasible with the reason.
 - **Fault injection:** **injection points** and **failure modes**, each with **its reason**, and the **state checked** after restart or retry.
@@ -73,13 +80,13 @@ Write `test-design.md` (strategy "Test design specification"). **Start with "Tec
 
 #### Step 7 — Acceptance criteria and measures
 
-For each in-scope FR, **write `AC-n` blocks**: **Given, When, Then, Catches, Serves, Check, Tier**. Each **adds precision beyond the use case response** (FRG-03). **One criterion may serve several arrows, leaves or classes**; **every condition** gets **at least one**. **`Serves`** lists the **basis items** and the **condition codes** of the criterion. **One AC may hold several variants**; list them, because **each independent variant is its own test case** (strategy "Test infrastructure rules"). For an FR an **earlier build already took**, **continue its AC numbering**.
+In `testing/design/acceptance-criteria.md`, **after** the evidence files have fixed the conditions and test cases: an AC drafted earlier is **revised from the reconciliation**, never the reverse. For each in-scope FR, **write `AC-n` blocks**: **Given, When, Then, Catches, Serves, Variants, Check, Tier**. **An AC is not a test case**: it states what must hold; its **test cases** are its variants. Each **adds precision beyond the use case response** (FRG-03). **One criterion may serve several arrows, leaves or classes**; **every condition** gets **at least one**. **`Serves`** lists the **basis items** and the **condition codes** of the criterion. **`Variants`** lists **each test case** with its **label** (`V1`, `V2`…), its **input**, what it changes in the preconditions or actions, and its **coverage items**, as derived in the evidence file; the test case ID is the AC ID plus the label (strategy "The chain", "Test infrastructure rules"). BR items and UC flows are served **through the AC of the FRs** that exercise them; **every basis item** reaches an AC or a measure. For an FR an **earlier build already took**, **continue its AC numbering**.
 
 - **Catches** names the **wrong DeckAgent behavior** the test fails on. **Apply the shared error list** to every matching criterion.
 - **Input ranges:** test **every partition** and **each boundary at, below and above**.
 - **Invariants:** assert **after every action** of the area; the audit has a **positive control**.
 
-For each in-scope NFR, **write `M-n` blocks** with the technique of its NFR kind. A target the PO has not set **reads `not set`**; **never guess a number**. For fault injection, **record each injection point and failure mode with its reason**.
+For each in-scope NFR, **write `M-n` blocks** with the technique of its NFR kind, with **`Serves`** (basis items, conditions) and **`Variants`** (each run condition, such as an injection point × failure mode, is a test case). A target the PO has not set **reads `not set`**; **never guess a number**. For fault injection, **record each injection point and failure mode with its reason**.
 
 **Do not add behavior the statement lacks**: **flag it as a gap**.
 
@@ -89,19 +96,19 @@ For each in-scope NFR, **write `M-n` blocks** with the technique of its NFR kind
 
 #### Step 9 — Test driver and fixtures
 
-List the **driver functions** the criteria call, the **fields** they assert, and each **fixture** with **what it sets up** and **its self-test**. **Only build-specific content**; the general rules stay in the strategy. A fixture, runner or CI condition that **could stop a test** or **let it pass without proving anything** is a row of **"Testing risks"** (Step 5), not of this section.
+In `implementation/test-implementation.md`, list the **driver functions** the criteria call, the **fields** they assert, and each **fixture** with **what it sets up** and **its self-test**. **Only build-specific content**; the general rules stay in the strategy. The contract **follows the final AC**: an existing contract is a **baseline**, never a limit on the design; a criterion that needs a function, field or fixture it lacks **extends it**. A fixture, runner or CI condition that **could stop a test** or **let it pass without proving anything** is a row of **"Testing risks"** (Step 5), not of this section.
 
 #### Step 10 — Exploratory charters
 
-List the **exploratory charters** (scope, time box) when a type uses that approach.
+List the **exploratory charters** (scope, time box) in `acceptance-criteria.md` when a type uses that approach.
 
 #### Step 11 — Test-stub tickets
 
-Group the ci-tier criteria into tickets: **one concern**, **at most 3 files**, **blocked only by named tickets**. **T0 tickets** build the driver and the fixtures and **carry no criterion**. A ticket's test command shows **each variant** of its AC as **its own case**.
+In `implementation/test-implementation.md`, group the ci-tier criteria into tickets: **one concern**, **at most 3 files**, **blocked only by named tickets**. **T0 tickets** build the driver and the fixtures and **carry no criterion**. A ticket's test command shows **each variant** of its AC as **its own case**.
 
 #### Step 12 — Count and check
 
-- Fill **"Planned coverage"** per item: **coverage items with a test case** / items **the risk level requires**, with the **`excluded` and `deferred` counts beside** the ratio. It is a **plan, not a test result**. Each **unmet criterion** is a **deviation** in test-design.md, with its reason.
+- Fill **"Planned coverage"** per design input in test-design.md "Techniques applied", from each evidence file, and its total in the testing plan's At a glance: **coverage items with a test case** / items **the risk level requires**, with the **`excluded` and `deferred` counts beside** the ratio. It is a **plan, not a test result**. Each **unmet criterion** is a **deviation** in test-design.md, with its reason.
 - Run the **link rules** of the strategy (AC → basis item, condition → basis item, test case → condition, basis item → condition and test case or a status with a ruling).
 - Run the **technical checklist C1–C8** on every criterion and ticket. Each **failure** is fixed in the draft or listed in test-design.md as **kind `checklist`**.
 - Fill the **counts** in the At a glance blocks.
@@ -110,10 +117,22 @@ Group the ci-tier criteria into tickets: **one concern**, **at most 3 files**, *
 
 **Split each FR row into one row per AC** and **each NFR row into one row per measure**, **fill the Tier**, the **basis items and conditions**, the **DEC that shaped the row**, and the **test-stub ticket** in the Test column. List the **`excluded` and `deferred` items** apart.
 
+## Capability skills
+
+This skill **orchestrates** the testing activities and **owns no technique's method**. The method of each **technique** and **test type** belongs to **one skill per capability** (strategy "Test design specification", "Skills by capability"):
+
+| Kind | Skills | Each one teaches |
+|---|---|---|
+| Technique | **Built:** `equivalence-partitioning`, `boundary-value-analysis`, `decision-table-testing`. **Planned:** `state-transition`, `use-case-testing`, `invariant-check`, `threat-based`, `fault-injection` | Its steps, the **evidence each step leaves**, the **checkpoint** where the PO reviews, how to **check its own output** before the next step |
+| Test type | `security-testing`, `reliability-testing`, `performance-testing`, `platform-testing` | How the type is **selected**, which **techniques and measurements** it uses, its **oracle** (asserted or recorded-only), its **mechanisms** |
+
+A design input whose technique **has a skill** follows that skill, step by step, and records **its completion checks**. A technique **without a skill yet** applies the strategy's "How a technique is applied" and "NFR kinds" directly, and says so in the evidence file. Skills that **share** a design input (EP with BVA or a decision table) write **one evidence file**: EP owns the variables, dimensions and classes; the others **reference their codes**. A capability skill **never overrides** the strategy's rules (the chain, step rules, coverage, gates); it **expands the method**.
+
 ## Rules
 
 - **Every in-scope AC appears** with **exactly one tier**. **No AC is skipped**.
-- **Do not start Part B before the PO approves Gate 1.**
+- **Do not start Part B before the PO approves Gate 1**, and **do not start an evidence file** whose design input has a **pending delta**.
+- **Do not count a filled template as an applied technique**: a technique is applied when **each step's output exists**, cites its source, and the PO **can redo it**.
 - **No orphan (dev/mvp/WORKFLOW.md "Traceability"):** every in-scope FR/AC and NFR has **at least one test**, and every in-scope DEC is **consumed by at least one test or implementation step**. **Flag gaps**.
 - **Do not invent test scenarios** beyond what the **spec statements and the approved criteria** define; a technique **finds gaps**, it **does not fill them**.
 - **No ci-tier test calls a real model**.

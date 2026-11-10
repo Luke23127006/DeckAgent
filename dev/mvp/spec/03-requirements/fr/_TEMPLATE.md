@@ -19,7 +19,7 @@ title: ""
 - **Status:** confirmed
 - **Why:**
 
-<!-- No acceptance criteria here: they are written in the testing plan of the build that takes this FR (dev/mvp/WORKFLOW.md "Spec rules"). -->
+<!-- No acceptance criteria here: they are written in `testing/design/acceptance-criteria.md` of the build that takes this FR (dev/mvp/WORKFLOW.md "Spec rules"). -->
 
 ## Undecided
 

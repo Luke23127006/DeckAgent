@@ -3,7 +3,7 @@ id: DEC-012
 title: "What several open interfaces share: the workspace in use"
 date: 08-11-2026
 status: decided
-research: "RQ-9 in dev/mvp/builds/UC-013-workspaces-new-chat/research-checklist.md"
+research: "RQ-9 in dev/mvp/builds/UC-013-workspaces-new-chat/research/research-checklist.md"
 affects: "FR-071, FR-053, FR-038"
 ---
 

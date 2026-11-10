@@ -13,7 +13,7 @@ created: DD-MM-YYYY
 - **Build:** {build name in words} ({UC-XXX}), **steps and alternatives** in scope ("all" or the list). **N items** of the spec: table in section 4.
 - **Runtime:** {touches OpenCode or not, and which part}.
 - **Status:** **N questions**: _N không cần research · N để build sau · N có sẵn · N thử nhỏ · N anh quyết_ (_N of them spec gaps_).
-- **Spine:** [traceability-matrix.md](./traceability-matrix.md)
+- **Spine:** [traceability-matrix.md](../testing/traceability-matrix.md)
 
 ## Cách đọc
 
