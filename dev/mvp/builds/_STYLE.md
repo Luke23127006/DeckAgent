@@ -34,6 +34,10 @@
 
 13. **One cell, one kind of content.** Do not compress a whole `Given`/`When`/`Then` into one cell of comma-separated pieces. **Split it** into a "Khi" cell and a "DeckAgent phải" cell, **one sentence per check**.
 
+## Content
+
+14. **Write the outcome, not the conversation.** Before a sentence or a section, ask: **does the person who designs, writes or runs the tests act on it?** If not, **leave it out**. A decision reads as its **result**: "Item **deferred, build 3**: cần request", "**Đọc là:** tên so theo NFC", **not** "PO đã ruling (09-11-2026): …". **Never name who decided or when**; write **`pending`** while a decision is open. **Do not restate** a rule of `dev/development/test-strategy.md` as a caveat, and **do not keep** a table that only records **a review** or **a check whose result changed nothing**.
+
 ## Form
 
-14. Follow AGENTS.md "Writing Markdown": **one line per paragraph or list item**, and **bold the keywords** of each sentence. **One `Then` line holds one checkable thing.**
+15. Follow AGENTS.md "Writing Markdown": **one line per paragraph or list item**, and **bold the keywords** of each sentence. **One `Then` line holds one checkable thing.**

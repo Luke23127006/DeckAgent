@@ -54,7 +54,7 @@ Question: **who chooses and sets up the outside services** an agent uses besides
     - Observation: `docs/agent-adapters.md` says the **BYOK path runs the OpenCode CLI** (`byok-opencode`); `README.md` **still describes a direct BYOK proxy**.
     - Inference: **open-design itself uses OpenCode for BYOK**, so **OpenCode likely owns the provider call and its model list** there. **Not checked**.
     - => DeckAgent UC-005 **matches open-design** on: the **user's own key**, a **custom compatible endpoint**, the **user choosing the image service**, a **model ID typed by hand**, and a **model change that applies only to later runs**.
-    - => **DeckAgent differs**, by owner ruling or by choice: it **always checks the key before saving** (05-11-2026), **offers fewer built-in providers** (a local model service goes through a custom model API), **gets a model catalog from the provider**, and **sets up web search as an outside service**.
+    - => **DeckAgent differs**: it **always checks the key before saving**, **offers fewer built-in providers** (a local model service goes through a custom model API), **gets a model catalog from the provider**, and **sets up web search as an outside service**.
     - Proposal: the **runtime research of the first build that touches models** **checks how OpenCode keeps keys and lists models**, since **open-design already relies on it**.
 
 11. **What did the legacy architecture record say about web research?** Read on 05-11-2026 from legacy ADR 0002 "Separate web research tools from Search and Fetch providers" (status proposed, PO approved the direction; deleted, readable at commit `85130c4`).

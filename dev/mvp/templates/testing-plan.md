@@ -10,7 +10,7 @@ created: DD-MM-YYYY
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
      Planning decisions only, decided at Gate 1 with test-analysis.md, each derived by the rules of dev/development/test-strategy.md "Planning decisions". The plan applies the strategy; it does not restate its rules.
      Not here: the AC, measures, eval cases, manual checks and charters (../design/acceptance-criteria.md, Gate 2); the conditions, coverage items and test cases (../design/techniques/); the driver, fixtures and test-stub tickets (../../implementation/test-implementation.md).
-     Scope rulings and rulings on ambiguities live in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact, not as a ruling.
+     Scope rulings live in the matrix's "Items not tested" and readings of ambiguities in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact, not as a ruling.
      Written by the PO (the agent drafts). -->
 
 ## At a glance
@@ -151,8 +151,8 @@ created: DD-MM-YYYY
 
 ## 9. Planning deltas for the PO
 
-<!-- Each change of the plan after Gate 1 is approved, and each conflict with a Gate 1 decision, one row each with a proposal; the PO rules it. Write "None." before Gate 1. -->
+<!-- Each change of the plan after Gate 1 is approved, and each conflict with a Gate 1 decision, one row each with a proposal; the PO decides it. A decided delta is applied to the section it changes and removed from this table, so the table holds only open deltas. Write "None." when there is none. -->
 
-| ID | Kind | What changes or needs a decision | Proposal | PO ruling |
+| ID | Kind | What changes or needs a decision | Proposal | Outcome |
 |---|---|---|---|---|
 | PD-1 | | | | pending |

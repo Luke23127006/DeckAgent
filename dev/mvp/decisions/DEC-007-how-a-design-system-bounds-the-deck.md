@@ -3,7 +3,7 @@ id: DEC-007
 title: "How the template and the design system bound the model, and a colour or font the user asks for"
 date: 05-11-2026
 status: decided
-research: "dev/mvp/research/open-design-design-systems.md items 3, 5 and 7; owner ruling after the UC-010 check, 05-11-2026"
+research: "dev/mvp/research/open-design-design-systems.md items 3, 5 and 7"
 affects: "FR-022, FR-092, FR-093, FR-097, FR-107, BR-017, UC-002 A8, A19 and A21, glossary (template, theme), DEC-005 setting C2"
 ---
 
@@ -19,8 +19,6 @@ affects: "FR-022, FR-092, FR-093, FR-097, FR-107, BR-017, UC-002 A8, A19 and A21
 2. **What does the system do** when the user asks for a **colour or a font that the theme of the deck does not hold**?
 
 A **goal of the project bounds both answers**: a **weak model gives a result close to a strong model**. A **decision that code or a prebuilt asset takes does not depend on the model**.
-
-**Owner ruling of 05-11-2026: 1B and 2C**. The **Choice and the Why are left to the PO**.
 
 ## Options considered
 
@@ -45,14 +43,11 @@ In 2A, 2B and 2C a **colour or font the user chose is never a fault** of the che
 
 ## Why
 
-**PO rulings of 05-11-2026**, in the discussion after the UC-010 check:
-
 - **Setting C2 of DEC-005 limited the model** to the layouts of the template, but **no check enforces it**. DeckAgent has **no ecosystem of templates** like open-design, so **few templates would make every deck narrow**, with **no guarantee in return**.
 - A goal of the project is a **result close between a weak and a strong model**; the user **brings their own model** (BYOK). **Starting from a template keeps a floor of quality** for any model, and **letting code pick the layouts that fit** **moves the hardest design choice out of the model**. **1C would put the whole design on the model** and **widen that gap**.
 - A **new layout when none fits** **keeps the freedom the model needs**, as open-design does: its rule "don't write slides from scratch" is **guidance to the agent**, with **no check after the write**.
 - The **colour or font of a slide is the user's choice**. **Refusing it** (UC-002 A19) was **too strict**, and a later change by hand (legacy UC-007) would be **hard to manage** under a rule that **counts the user's choice as a fault**. The **model's own choices stay inside the theme**, so the **deck keeps its design system**.
 - The system **asks as other agent systems do**: a **question with suggested answers ends the request**, and the **chosen answer is a new request** (FR-014, FR-031).
-- **Written by the agent** at the PO's request on 05-11-2026, from the **PO's rulings 1B and 2C** and the follow-up rulings in the same discussion.
 
 ## Rejected options and why
 
@@ -68,4 +63,4 @@ In 2A, 2B and 2C a **colour or font the user chose is never a fault** of the che
 - **How a layout states its kinds of content and its capacity**, and **whether the outline records the kind of content of each slide**, are **set in Phase 1 research or the Phase 3 plan** of the first build.
 - The **Phase 1 spike of DEC-005** also **counts the slides for which no layout fits**, and **compares a weak and a strong model**.
 - The review of legacy UC-007 **applies the same rule to a change by hand**: the **user's choice is never a fault**.
-- **Amended on 05-11-2026** by the PO in the review of legacy UC-017 (ruling 7A): the second suggested answer of 2C **no longer adds the colour or font beside the theme values**. It **puts it in the theme of the deck in place of the theme value whose role it fits best**, such as the accent colour, and **names that role**. **Every theme value keeps a role**, so the **model knows what each one is for**, and a design system made from the theme of a deck **takes the current values**. A value put in place this way is **not kept when the deck changes its design system** (ruling 8A, FR-093): the **new design system replaces it** and the **system names it**. A **colour or font the user chose for a part of a slide is still kept**.
+- The second suggested answer of 2C **puts the colour or font in the theme of the deck in place of the theme value whose role it fits best**, such as the accent colour, and **names that role**. **Every theme value keeps a role**, so the **model knows what each one is for**, and a design system made from the theme of a deck **takes the current values**. A value put in place this way is **not kept when the deck changes its design system** (FR-093): the **new design system replaces it** and the **system names it**. A **colour or font the user chose for a part of a slide is still kept**.

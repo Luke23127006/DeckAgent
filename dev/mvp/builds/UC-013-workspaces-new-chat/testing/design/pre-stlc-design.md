@@ -12,10 +12,10 @@ created: 08-11-2026
 ## At a glance
 
 - **Status:** **bản nháp trước STLC**, chuyển nguyên từ test-design.md; các mã W, F, C, Q và K ở đây **trỏ vào AC nháp** của [acceptance-criteria.md](./acceptance-criteria.md).
-- **Dùng thế nào:** Test Design **không đọc** file này khi suy ra condition. File chỉ được dùng ở **bước reconciliation** của mỗi technique, cùng AC nháp, để **không mất** những gì đã tìm được trước đây (ví dụ các ô của Z-16, Z-17). Các ruling Z-n nằm ở [test-design.md](./test-design.md).
+- **Dùng thế nào:** Test Design **không đọc** file này khi suy ra condition. File chỉ được dùng ở **bước reconciliation** của mỗi technique, cùng AC nháp, để **không mất** những gì đã tìm được trước đây.
 - **Cách đọc một chủ đề:** đọc **sơ đồ** trước; mỗi mũi tên có **một mã** (W1, F1, C1). Sau đó đọc khung **Luôn đúng**: các điều DeckAgent phải giữ **ở mọi mũi tên**. Cuối cùng đọc **bảng mũi tên**: mỗi mũi tên một dòng, ghi **khi nào** nó xảy ra, **DeckAgent phải làm gì**, và **lỗi nào** của DeckAgent mà test bắt được.
-- **Ký hiệu:** mũi tên **nét đứt** là **dời sang build sau**. Các event **giữ nguyên state** gom vào **một ô "Ở lại …"** nối bằng **nét chấm**, thay cho mũi tên vòng về chính nó. Một mũi tên **chưa có AC** trỏ vào ô **"Z-n · chưa có AC"** (một gap ở [test-design.md](./test-design.md)).
-- **Chỗ khác plan đã biết:** mục 1 dưới đây áp **state transition** cho chat và draft, và **threat-based** cho integrity; plan không chọn hai việc đó ([testing-plan.md](../planning/testing-plan.md) mục 2.2, PD-16).
+- **Ký hiệu:** mũi tên **nét đứt** là **dời sang build sau**. Các event **giữ nguyên state** gom vào **một ô "Ở lại …"** nối bằng **nét chấm**, thay cho mũi tên vòng về chính nó.
+- **Chỗ khác plan đã biết:** mục 1 dưới đây áp **state transition** cho chat và draft, và **threat-based** cho integrity; plan không chọn hai việc đó ([testing-plan.md](../planning/testing-plan.md) mục 2.2).
 
 ## 1. Kỹ thuật đã áp dụng và tổng quan (bản cũ)
 
@@ -156,23 +156,23 @@ flowchart TD
 **Cách đọc một ô:**
 - **Mã và vài chữ** (ví dụ "W12 · giữ W đang dùng"): event này **đã có AC**; mã trỏ về **bảng mũi tên** ở mục 2 hoặc 3.
 - **"—" kèm lý do:** event này **không thể xảy ra** ở state đó.
-- **Z-n in đậm:** ô **chưa có AC**. Mục 8 ghi **đề xuất** và **ruling của PO** cho ô đó.
+- **Không test:** spec không nói DeckAgent làm gì ở ô này.
 
 State là **state của workspace `W`**. Cột "chờ xác nhận xoá" là lúc DeckAgent **đang hỏi xác nhận xoá `W`**, khi `W` **đọc được**. Với `W` đang lỗi, việc **yêu cầu xoá rồi xác nhận** nằm chung trong một mũi tên (F12).
 
 | Event | Default workspace | `W` đọc được | `W` không đọc được | `W` có folder khác ở chỗ cũ | Chờ xác nhận xoá `W` |
 |---|---|---|---|---|---|
-| **Mở chat** của workspace | W4 · tạo chat, giữ draft | C1, C3 · chat mới vào `W`, giữ draft | F3 · mở chat, giữ draft | F8 · mở chat, giữ draft | **Z-9** |
-| **Chuyển sang workspace khác** | W20 · `W` thành đang dùng | W9 · default thành đang dùng | F19 · giữ `status` của `W` | F19 · giữ `status` của `W` | **Z-9** |
-| **Thêm lại folder** của chính workspace | — · default không có folder | W8 · không tạo workspace mới | F14 · `W` nhận chỗ mới | F15 · tạo workspace mới | **Z-9** |
-| **Đổi tên** | W5 · vẫn là default | W10 · giữ folder và chat | F11 · giữ `status` | F11 · giữ `status` | **Z-9** |
-| **Chọn folder khác** | W6 · vẫn không có folder | W11 · giữ tên và chat | F6 · `W` đọc được | F13 · `W` đọc được | **Z-9** |
+| **Mở chat** của workspace | W4 · tạo chat, giữ draft | C1, C3 · chat mới vào `W`, giữ draft | F3 · mở chat, giữ draft | F8 · mở chat, giữ draft | không test |
+| **Chuyển sang workspace khác** | W20 · `W` thành đang dùng | W9 · default thành đang dùng | F19 · giữ `status` của `W` | F19 · giữ `status` của `W` | không test |
+| **Thêm lại folder** của chính workspace | — · default không có folder | W8 · không tạo workspace mới | F14 · `W` nhận chỗ mới | F15 · tạo workspace mới | không test |
+| **Đổi tên** | W5 · vẫn là default | W10 · giữ folder và chat | F11 · giữ `status` | F11 · giữ `status` | không test |
+| **Chọn folder khác** | W6 · vẫn không có folder | W11 · giữ tên và chat | F6 · `W` đọc được | F13 · `W` đọc được | không test |
 | **Dùng folder đang ở chỗ cũ** | — · không có chỗ cũ | — · chỗ cũ là folder của `W` | — · chỗ cũ không có folder | F9 · `W` đọc được; F10 · bị từ chối | — · chỗ cũ là folder của `W` |
 | **Yêu cầu xoá** | W7 · giữ default | W13 · hỏi xác nhận | F12 · hỏi, rồi xoá | F12 · hỏi, rồi xoá | — · đang hỏi |
 | **Xác nhận xoá** | — · chưa hỏi | — · chưa hỏi | — · nằm trong F12 | — · nằm trong F12 | W15 · xoá `W`, chat thành ungrouped |
 | **Huỷ xoá** | — · chưa hỏi | — · chưa hỏi | — · chưa hỏi | — · chưa hỏi | W14 · giữ `W` |
 | **Khởi động lại** | W19 · giữ default đang dùng | W12 · giữ `W` đang dùng | F5 · giữ đường dẫn cũ | F16 · vẫn báo folder khác | W18 · giữ `W` |
-| **Folder trên đĩa thay đổi** | — · default không có folder | F1 · bị dời đi; F2 · mất quyền đọc; F7 · có folder mới ở chỗ cũ | F4 · folder về chỗ cũ; F17 · có folder mới ở chỗ cũ | F18 · folder mới bị dời đi | **Z-9** |
+| **Folder trên đĩa thay đổi** | — · default không có folder | F1 · bị dời đi; F2 · mất quyền đọc; F7 · có folder mới ở chỗ cũ | F4 · folder về chỗ cũ; F17 · có folder mới ở chỗ cũ | F18 · folder mới bị dời đi | không test |
 
 ## 5. Chat và draft
 
@@ -233,7 +233,7 @@ sequenceDiagram
 
 ## 6. Cây quyết định: đường dẫn folder
 
-Dùng cho **thêm workspace** (FR-071), **chọn folder khác** (FR-083) và **dùng folder khác ở chỗ cũ** (FR-142). Thứ tự câu hỏi **từ trên xuống** chỉ để **vẽ**, **không phải hành vi bắt buộc** (Z-4).
+Dùng cho **thêm workspace** (FR-071), **chọn folder khác** (FR-083) và **dùng folder khác ở chỗ cũ** (FR-142). Thứ tự câu hỏi **từ trên xuống** chỉ để **vẽ**, **không phải hành vi bắt buộc**.
 
 ```mermaid
 flowchart TD
@@ -278,9 +278,9 @@ flowchart TD
 - Khi từ chối, DeckAgent **liệt kê mọi value của BR-019** mà folder vi phạm, không chỉ value đầu tiên.
 - **"Cùng folder"**: hai đường dẫn là cùng folder khi chúng có **cùng ID folder** (`dev:ino`). Khi DeckAgent **không đọc được ID**, hai đường dẫn là cùng folder khi chúng **trỏ tới cùng đường dẫn thật** (`realpathSync.native`).
 - Một đường dẫn **trỏ vào file** được coi là **folder không đọc được**. Một **đường dẫn tương đối** cũng được coi là **folder không đọc được** (FR-071, DEC-010).
-- Một folder có thể **rơi vào hai nhánh** cùng lúc; khi đó kết quả **tuỳ thứ tự kiểm**, mà **spec không nói thứ tự**. Vì vậy mỗi test **chỉ dùng folder rơi vào đúng một nhánh** (Z-4).
+- Một folder có thể **rơi vào hai nhánh** cùng lúc; khi đó kết quả **tuỳ thứ tự kiểm**, mà **spec không nói thứ tự**. Vì vậy mỗi test **chỉ dùng folder rơi vào đúng một nhánh**.
 
-**Phân lớp đường dẫn** (kỹ thuật EP + BVA). Các lớp này **chỉ được test qua thao tác thêm workspace**. Thao tác đổi folder và dùng folder khác **đi qua các nhánh lá** của cây, nên vẫn được test ở mỗi nhánh (Z-15).
+**Phân lớp đường dẫn** (kỹ thuật EP + BVA). Các lớp này **chỉ được test qua thao tác thêm workspace**. Thao tác đổi folder và dùng folder khác **đi qua các nhánh lá** của cây, nên vẫn được test ở mỗi nhánh.
 
 | Lớp đường dẫn | Ví dụ | DeckAgent phải | AC |
 |---|---|---|---|
@@ -290,5 +290,5 @@ flowchart TD
 | Đường dẫn **không đọc được** | tương đối; trỏ vào file; không tồn tại; bị chặn quyền đọc | **Từ chối** với lỗi `folder_unreadable`. | FR-071 AC-4 |
 | Đường dẫn **rỗng** | rỗng; chỉ có khoảng trắng | **Từ chối** với lỗi `no_folder`. | FR-071 AC-5 |
 | Đường dẫn **dài** quanh giới hạn 260 ký tự của Windows | 259, 260, 261 và 300 ký tự | **Nhận** folder. | FR-071 AC-11 |
-| Đường dẫn **mạng UNC** | `\\server\share` | Chưa test: **dời lại** (Z-10, open-questions.md item 20). | — |
+| Đường dẫn **mạng UNC** | `\\server\share` | Chưa test: **dời lại** (SR-12, open-questions.md item 20). | — |
 

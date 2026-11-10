@@ -35,5 +35,5 @@ The PO took the **recommendation as shown**: the **glossary stays as written** (
 ## Consequences
 
 - The server **pushes a change of the workspace in use** to **every open interface**.
-- The **current chat is not shared**: **each interface keeps its own current chat**; the **draft of one chat** is the **same in every interface** (FR-038). Clarified by the PO on 08-11-2026 in the testing plan review of the first build.
+- The **current chat is not shared**: **each interface keeps its own current chat**; the **draft of one chat** is the **same in every interface** (FR-038).
 - A **new chat** carries the **workspace the interface shows** `[proposed]`; when it **differs from the workspace in use**, the server **creates no chat** and the interface **updates first**. The **implementation plan** settles this detail.

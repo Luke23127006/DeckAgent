@@ -89,23 +89,30 @@ created: 08-11-2026
 | BR-019 · folder không được làm project folder | — | RQ-3 | | qua FR-071 AC-6, AC-7, FR-083 AC-4 và FR-142 AC-3 | | | [ ] |
 | BR-020 · tên workspace bị từ chối | — | RQ-7 | | qua FR-141 AC-5, AC-6 | | | [ ] |
 
-## Moved to a later build
+## Items not tested
 
-PO đã quyết (RQ-15, [#56](https://github.com/Luke23127006/DeckAgent/issues/56)): mỗi behavior được **test ở build đầu tiên test được nó**. Các phần dưới đây **không có criterion trong build này**; **testing plan của build kia nhận chúng**.
+Mỗi behavior được **test ở build đầu tiên test được nó** (RQ-15, [#56](https://github.com/Luke23127006/DeckAgent/issues/56)). Các basis item dưới đây **không có criterion trong build này** và **không được tính là đã phủ**; **testing plan của build nhận** lấy chúng. Approval của từng item nằm ở [basis-register.md](./analysis/basis-register.md).
 
-| Behavior | FR | Cần | Test ở |
-|---|---|---|---|
-| **Không xoá workspace và không đổi folder** khi workspace có **request đang chạy** | FR-073, FR-083 | **Request** | Build 3 |
-| **Request vẫn chạy** khi người dùng **chuyển workspace** hoặc **tạo chat mới** | FR-071, FR-053 | **Request** | Build 3 |
-| Chat mới lấy **model của lần chọn gần nhất** | FR-053 | **Provider** | Build 2 |
-| FR-048: hiện **chat từ trước lần khởi động lại**, hiện **ungrouped chat riêng**, nói **chat đổi lần cuối khi nào** (testing plan P-2) | FR-048 | **Request đã gửi** (BR-004 V-1) | Build 3 |
-| FR-084: **file người dùng đưa làm attachment** giữ nguyên (test design Z-3) | FR-084 | **Attachment** | Build 3 |
-| FR-048: nói **chat có slide không** (testing plan P-2) | FR-048 | **Deck** | Build 5 |
-| FR-048 AC-1: **chỉ chat của workspace đang dùng** (test design Z-13) | FR-048 | **Request đã gửi** (BR-004 V-1) | Build 3 |
-| FR-071: **không gửi gì tới model**, **không dừng request** khi thêm hoặc chuyển workspace (test design Z-12) | FR-071 | **Model, request** | Build 3 |
-| NFR-008: chat **nhận request mới** sau khi DeckAgent chết giữa chừng (test design Z-14) | NFR-008 | **Request** | Build 3 |
-| FR-071: folder trên **đường dẫn mạng UNC** (test design Z-10, open-questions.md item 20) | FR-071 | **Câu trả lời của PO** và **share SMB trên CI** | Chưa có build |
-| **Đặt tên chat** theo nội dung: **model đặt tên** trong câu trả lời đầu tiên; khi model không đặt, **code lấy vài chữ đầu** của request (RQ-13, [#55](https://github.com/Luke23127006/DeckAgent/issues/55)) | FR-048 | **Request** | Build 3 |
+| ID | Items | Status | Cần | Build |
+|---|---|---|---|---|
+| SR-1 | FR-071.12, FR-071.13, FR-053.2, FR-073.6a, FR-073.6b, FR-073.6c, FR-083.8a, FR-083.8b, FR-083.8c, UC-013.S2b, UC-013.A5, UC-013.A7b, UC-012.S1c | deferred | **Request đang chạy**, hoặc **model nhận dữ liệu**. Build 1 chưa có, nên assert **luôn pass**. | Build 3 |
+| SR-2 | FR-141.4, UC-013.A11b, UC-013.A6b, FR-038.4b, FR-084.1b, UC-013.G3, UC-012.S2b, UC-013.N1, UC-013.N2, FR-073.N1b, FR-053.N1c | deferred | **Request** hoặc **agent**, ở các sự kiện đổi tên, chọn folder, rời chat, quy tắc chung của UC-013 và FR-084. | Build 3 |
+| SR-3 | FR-048.1, FR-048.2, FR-048.3, FR-048.4, FR-048.5, BR-004.V1, UC-013.S3b | deferred | **Request đã gửi**: danh sách chat cũ, tên chat (RQ-13, [#55](https://github.com/Luke23127006/DeckAgent/issues/55)) và quy tắc "chat nào được giữ". | Build 3 |
+| SR-4 | FR-048.6 | deferred | **Deck**: nói chat có slide hay không. | Build 5 |
+| SR-5 | FR-053.6, FR-053.7b, FR-053.N1a, FR-053.N1b, UC-012.S2a, UC-012.A1b | deferred | **Provider**: chat mới lấy selected model của lần chọn gần nhất. | Build 2 |
+| SR-6 | FR-084.2 | deferred | **Attachment**: file người dùng đưa làm attachment. | Build 3 |
+| SR-7 | NFR-008.2b | deferred | **Request**: chat nhận request mới sau khi DeckAgent kết thúc bất ngờ. | Build 3 |
+| SR-8a | FR-072.7b, FR-073.4c, FR-074.7b, FR-142.6b, UC-013.A2c, UC-013.G2b | deferred | **Conversation**, chỉ có khi request gửi được. | Build 3 |
+| SR-8b | FR-073.4b, UC-013.A2b | deferred | **Model selection**. | Build 2 |
+| SR-8c | FR-072.7c, FR-073.4d, FR-074.7c, FR-142.6c, UC-013.A2d, UC-013.G2c, FR-053.1b, FR-084.1c, UC-012.S1b, FR-053.N2 | deferred | **Deck**. | Build 5 |
+| SR-8d | NFR-008.1b, NFR-008.3 | deferred | **Deck** và **điểm chèn lỗi** trên đường ghi deck và slide (M13 mở rộng). Khi implementation plan của build 5 có điểm chèn đáng tin, phép kiểm **về build 5**. | Build 6 |
+| SR-9 | FR-038.1b, NFR-008.1c | deferred | **Màn setup** và **provider**. | Build 2 |
+| SR-10 | FR-072.4b, BR-004.V2 | excluded | Một lần chạy test **không quan sát được** điều này, hoặc người dùng **không tạo được** tình huống. | — |
+| SR-11 | FR-084.3 | deferred | **Export** (UC-004, FR-085 ở backlog). Vế "không file nào khác xuất hiện" **đã kiểm qua FR-084.1a**. | Khi export vào scope |
+| SR-12 | FR-071.1, **chỉ nhóm UNC** | deferred | **Đường dẫn mạng UNC**: câu trả lời ở open-questions.md mục 20 và **share SMB trên CI**. Phần còn lại của FR-071.1 **to test**. | Chưa có build |
+| SR-13 | UC-012.N1 | deferred | **Attachment**: archive đã export đính kèm vào chat mới. | Build 3 |
+
+**Item rủi ro high bị dời:** FR-084.1b (build 3), FR-084.1c (build 5), FR-073.4b đến FR-073.4d (build 2, 3, 5). Tới build nhận, chúng **chỉ được bảo vệ** bởi **test đã khoá** của build này.
 
 ## Orphan check (chạy ở mỗi gate)
 

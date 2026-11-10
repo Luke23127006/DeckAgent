@@ -3,7 +3,7 @@ id: DEC-006
 title: "Where the deck source and the work of a chat are kept"
 date: 05-11-2026
 status: open
-research: "dev/mvp/research/open-design-earlier-work.md items 8 to 10; owner ruling in the UC-013 spec review, 05-11-2026; runtime research of the first build that touches workspaces"
+research: "dev/mvp/research/open-design-earlier-work.md items 8 to 10; runtime research of the first build that touches workspaces"
 affects: "FR-084, FR-072, FR-073, FR-074, NFR-008"
 ---
 
@@ -11,7 +11,7 @@ affects: "FR-084, FR-072, FR-073, FR-074, NFR-008"
 
 **Where does DeckAgent keep the deck source** and the rest of the work of a chat (the conversation, the outline, the record of each request): **in its own data**, or **in the project folder** of the workspace? DEC-005 says the **system and the user change the same files** of the deck source, and the legacy spec said **DeckAgent writes no file into the project folder**. The answer constrains changes by hand (legacy UC-007), going back to an earlier state (legacy UC-008), export (legacy UC-004) and a project folder that cannot be read (FR-074).
 
-**Owner ruling of 05-11-2026** in the UC-013 review: **option A**. **FR-084 is written from it**. The **Choice and the Why are left to the PO**.
+**Working answer: option A**. **FR-084 is written from it**. **Choice** and **Why**: pending (the PO writes them).
 
 **Legacy input**: the **legacy code made the same choice** (legacy ADR 0001, accepted; readable at commit `85130c4`). Its consequences, **for the PO to keep or drop**: the **data folder has a fixed path** that does not depend on where DeckAgent starts; **workspace and chat IDs do not depend on the folder path**; the **agent's temporary files are kept apart** from the user's files and from saved chat data; the **project folder is read-only**, and **only an export the user asks for writes into it**.
 

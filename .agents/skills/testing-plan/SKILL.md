@@ -27,7 +27,9 @@ All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one k
 
 | File | Template | Owns | Gate |
 |---|---|---|---|
-| `testing/analysis/test-analysis.md` | `test-analysis.md` | Basis register, sentence map, scope rulings, quality risks, types, automation feasibility, ambiguities | 1 |
+| `testing/analysis/test-analysis.md` | `test-analysis.md` | Counts of the basis, quality risks, types, automation feasibility, ambiguities and candidate gaps | 1 |
+| `testing/analysis/basis-register.md` | `basis-register.md` | The register rows: one per basis item | 1 |
+| `testing/analysis/sentence-map.md` | `sentence-map.md` | The sentence map: every unit of the in-scope spec text, its class and items | 1 |
 | `testing/planning/testing-plan.md` | `testing-plan.md` | **Planning decisions only**, each with its inputs and rule, and the **design inputs** | 1 |
 | `testing/design/techniques/Dn-topic.md` | `test-design-technique.md` | The **evidence of one technique**: each step's output, coverage items, test cases, reconciliation | 2 |
 | `testing/design/test-design.md` | `test-design.md` | Techniques applied with coverage counts; the **ruling log** of gaps, deviations and design rulings | 2 |
@@ -35,7 +37,7 @@ All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one k
 | `implementation/test-implementation.md` | `test-implementation.md` | Driver functions and fields, fixtures and self-tests, test-stub ticket list | per ticket |
 | `testing/traceability-matrix.md` | `traceability-matrix.md` | The spine | — |
 
-**Keep each template's section order** and **front-load `## At a glance`** (dev/mvp/WORKFLOW.md "Document rules"). **Scope rulings** and **rulings on ambiguities** live **only in test-analysis.md**; **gaps, deviations and design rulings** live **only in test-design.md**. A ruling's **result** is written **as current fact** into the file that owns it. A ruling the PO has not given reads **`pending`**. **Never write a fact into a file that does not own it**; link to its home.
+**Keep each template's section order** and **front-load `## At a glance`** (dev/mvp/WORKFLOW.md "Document rules"). **Scope rulings** live **only in the matrix's "Items not tested"**; **readings of ambiguities** **only in test-analysis.md**; **gaps, deviations and design rulings** **only in test-design.md**. A ruling's **result** is written **as current fact** into the file that owns it. A ruling the PO has not given reads **`pending`**. **Write outcomes, not the conversation** (dev/mvp/WORKFLOW.md "Document rules" rule 7): **never who decided or when**, and **no table** that only records a review or a check that changed nothing. **Never write a fact into a file that does not own it**; link to its home.
 
 ## Process
 
@@ -43,7 +45,7 @@ All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one k
 
 #### Step 1 — Test basis register
 
-List every **basis item** of the in-scope spec in `test-analysis.md`: **cut each spec text into units**, **classify each unit** (normative, explanatory, definition), **cut the normative ones** into items by the rules in the strategy's "Test basis register", give each item a **kind**, an **ID**, a **scope** (`to test`, `excluded`, `deferred`) and an **approval** (`approved`, `pending`), and flag **ambiguities**. **Classify by the content of the unit, never by its scope**: a behavior that a spec outside the build owns stays **normative**, and its item is `deferred`. **Split** an item that mixes behaviors of different scope. Write the **sentence map** (every unit, its locator, its class, its items) and **recount from it**: the unmapped normative units are **0**. A **closed list inside a BR value** is **one item**; its members are **test data**. Give each `excluded` or `deferred` item a **scope ruling** (reason, build, ruling); mark its approval **`pending`** when the PO has not ruled, and keep it in the coverage denominator until then. Compare UC steps and alternatives, FRs and BR values: **each mismatch is a candidate gap**, recorded with **why it is fine** or **raised to the PO**.
+List every **basis item** of the in-scope spec in `basis-register.md`: **cut each spec text into units**, **classify each unit** (normative, explanatory, definition), **cut the normative ones** into items by the rules in the strategy's "Test basis register", give each item a **kind**, an **ID**, a **scope** (`to test`, `excluded`, `deferred`) and an **approval** (`approved`, `pending`), and flag **ambiguities**. **Classify by the content of the unit, never by its scope**: a behavior that a spec outside the build owns stays **normative**, and its item is `deferred`. **Split** an item that mixes behaviors of different scope. Write the **sentence map** in `sentence-map.md` (every unit, its locator, its class, its items) and **recount from it**: the unmapped normative units are **0**. Copy the **counts per spec** from both files into section 1 of `test-analysis.md`. A **closed list inside a BR value** is **one item**; its members are **test data**. Give each `excluded` or `deferred` item a **scope ruling** in the matrix's **"Items not tested"** (items, what they need, build); mark its approval **`pending`** when the PO has not ruled, and keep it in the coverage denominator until then. Compare UC steps and alternatives, FRs and BR values: a mismatch that **changes something** becomes an **item**, an **ambiguity** or a **candidate gap**; one that **changes nothing** is **not recorded**.
 
 #### Step 2 — Risk level per item
 

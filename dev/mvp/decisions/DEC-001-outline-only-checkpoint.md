@@ -3,7 +3,7 @@ id: DEC-001
 title: "The outline is the only checkpoint before any slide"
 date: 04-11-2026
 status: decided
-research: "none; owner ruling in the UC-001 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
+research: "none; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-001, FR-003, FR-021, FR-113, FR-116, BR-013"
 ---
 
@@ -28,7 +28,6 @@ Option A: **one confirmation of the outline**, with the **brief shown beside it*
 - The teacher feedback of 23-10-2026 puts the **interview before the outline** and the **format choice up front**, so the **format needs no confirmation of its own** after the outline.
 - The **brief shows with the outline**, so the user **still reads every interview answer and assumption** before anything is built (FR-008, FR-021).
 - **One stop before the slides** keeps the **first draft short** for the user.
-- Written by the agent at the PO's request on 04-11-2026, from the PO's rulings in the UC-001 review ("**the outline is the only checkpoint**", "**no separate brief confirmation**").
 
 ## Rejected options and why
 

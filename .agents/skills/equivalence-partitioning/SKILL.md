@@ -18,7 +18,7 @@ The rules every technique obeys (the chain, step outputs, anti-anchoring, covera
 ## Inputs
 
 1. The **design input** row of `testing/planning/testing-plan.md` section 2.3: its **basis items**, **coverage criterion and depth parameters** (for example "per name source", "closed list: every member", a quality risk's sub-variable), **mechanisms**, **candidate gaps**.
-2. The **basis items** in `testing/analysis/test-analysis.md` (register, ambiguity rulings) and the **spec text** they cut from.
+2. The **basis items** in `testing/analysis/basis-register.md`, the **ambiguity rulings** in `testing/analysis/test-analysis.md`, and the **spec text** they cut from.
 3. **Platform facts** the domain depends on, each with its source (a research file, a mechanism, a check you ran).
 
 **Never read** the drafted AC (`acceptance-criteria.md`), drafted test cases or `pre-stlc-design.md` before the reconciliation step.

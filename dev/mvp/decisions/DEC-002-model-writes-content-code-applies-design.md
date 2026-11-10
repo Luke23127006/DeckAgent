@@ -4,11 +4,11 @@ title: "The model writes the content; code applies the design system"
 date: 04-11-2026
 status: superseded
 superseded_by: DEC-005
-research: "none; owner ruling in the UC-001 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
+research: "none; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-022, FR-091, FR-093, BR-003, NFR-009"
 ---
 
-> **Superseded** on 04-11-2026 by [DEC-005](DEC-005-model-writes-source-within-template.md) in the UC-002 spec review: option A gave **no way to make a free design change** in a follow-up request, **lost changes by hand**, and **needed a full renderer per generation format**. **Kept as a record; do not apply it.**
+> **Superseded** on 04-11-2026 by [DEC-005](DEC-005-model-writes-source-within-template.md): option A gave **no way to make a free design change** in a follow-up request, **lost changes by hand**, and **needed a full renderer per generation format**. **Kept as a record; do not apply it.**
 
 ## Question
 
@@ -31,7 +31,7 @@ Option A: the **model writes the content of each slide**, including **what kind 
 - The teacher feedback of 23-10-2026 asks for **deterministic, prebuilt assets**, and dev/mvp/WORKFLOW.md Phase 3 makes **code the default**: the model is called to understand the request, interview the user or write content.
 - The **same input gives the same look**, so **NFR-009 (display integrity) is testable with fixtures** instead of judged per run.
 - **Saying what kind of slide it is** (a title, a list, a comparison, an image with text) is **part of writing the content**, so the model **still shapes each slide without styling it**.
-- Written by the agent at the PO's request on 04-11-2026, from the PO's ruling in the UC-001 review that UC-001 keeps **only the choice of a prebuilt design system**.
+- UC-001 keeps **only the choice of a prebuilt design system**.
 
 ## Rejected options and why
 

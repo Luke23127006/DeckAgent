@@ -3,7 +3,7 @@ id: DEC-009
 title: "Where an answer finds the source of content in the deck"
 date: 05-11-2026
 status: open
-research: "owner ruling in the UC-009 spec review, 05-11-2026; no research item"
+research: "no research item"
 affects: "FR-138, FR-024, FR-029, FR-137, UC-001 S5, UC-002 S3, UC-009 A3"
 ---
 
@@ -11,7 +11,7 @@ affects: "FR-138, FR-024, FR-029, FR-137, UC-001 S5, UC-002 S3, UC-009 A3"
 
 The user asks **where a figure, a date, a name or a claim** in the deck **comes from**. **Where does the answer find that source**: in a **record the system keeps when it writes the content**, or by having the **model look again** through the deck and the material **when the user asks**? The answer sets **what the first draft and each follow-up request keep** while they write slides, and whether the answer is **checked in CI or only in eval**. The **closing messages** of the first draft (FR-024) and of a follow-up request (FR-029) **already disclose the source per slide**.
 
-**Owner ruling of 05-11-2026** in the UC-009 review: **option A**. **FR-138 and UC-009 A3 are written from it**, and FR-138 is cited at UC-001 S5 and UC-002 S3. The **Choice and the Why are left to the PO**.
+**Working answer: option A**. **FR-138 and UC-009 A3 are written from it**, and FR-138 is cited at UC-001 S5 and UC-002 S3. **Choice** and **Why**: pending (the PO writes them).
 
 ## Options considered
 

@@ -25,7 +25,7 @@ Option C: the **user chooses and sets up each outside service**.
 
 ## Why
 
-The PO's ruling of 04-11-2026: "**the user chooses, like open-design**". It matches "**your model, your key**" in `README.md`. **Neither open-design nor DeepSeek Harness keeps a team-approved list** (`dev/mvp/research/outside-services.md` items 3, 5, 8).
+**The user chooses, like open-design.** It matches "**your model, your key**" in `README.md`. **Neither open-design nor DeepSeek Harness keeps a team-approved list** (`dev/mvp/research/outside-services.md` items 3, 5, 8).
 
 ## Rejected options and why
 

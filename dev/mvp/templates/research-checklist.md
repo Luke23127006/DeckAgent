@@ -68,11 +68,11 @@ flowchart LR
 
 ## 4. Code mẫu khớp spec tới đâu
 
-<!-- Drift inventory (dev/mvp/WORKFLOW.md "Reference code" rule 2). One row per in-scope item. Read at `{branch}` @ `{commit}`. The PO rules each row; the spec wins over the code. -->
+<!-- Drift inventory (dev/mvp/WORKFLOW.md "Reference code" rule 2). One row per in-scope item. Read at `{branch}` @ `{commit}`. The PO rules each row; the spec wins over the code. Kết quả: the outcome as current fact (carried, dropped, or "vào spec trước"), or "pending"; never who decided or when. -->
 
 Đọc ở `{branch}` @ `{commit}`.
 
-| Việc (theo spec) | ID | File code mẫu | Khớp | Khác gì | PO phán |
+| Việc (theo spec) | ID | File code mẫu | Khớp | Khác gì | Kết quả |
 |---|---|---|---|---|---|
 | {behavior in words} | FR-NNN | [file](https://github.com/{owner}/{repo}/blob/{commit}/path) | match / differ / missing | | |
 

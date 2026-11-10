@@ -12,7 +12,7 @@ Question: **how does open-design keep earlier work**, and **how does the user fi
 3. **What is the unit of earlier work?**
    - Observation: `docs/architecture.md` 3.2 lists "**project and conversation persistence**" as a daemon task. 3.1: "Projects, conversations, messages, and project files are **hydrated through the daemon APIs**." The **daemon** is the **local program that runs next to the web interface**.
    - Inference: a **project holds its conversations and its files**. That a **project holds several conversations is not stated**.
-   - => **DeckAgent keeps the chat as the unit**: **one conversation and at most one deck** (owner ruling of 05-11-2026). **Grouping chats by workspace**: items 8 to 10.
+   - => **DeckAgent keeps the chat as the unit**: **one conversation and at most one deck**. **Grouping chats by workspace**: items 8 to 10.
 
 4. **Where is earlier work kept**, and **does it survive a restart**?
    - Observation: `docs/architecture.md`: "**SQLite state and daemon-owned project files**". The **data folder comes from `OD_DATA_DIR`**; the docs give **no concrete path on purpose** (`AGENTS.md`, "Daemon data directory contract").
@@ -26,7 +26,7 @@ Question: **how does open-design keep earlier work**, and **how does the user fi
 
 6. **Can a project or conversation be renamed or deleted?**
    - Observation: **not documented**. The **only deletion found removes all local app data** (`docker compose down -v` in `QUICKSTART.md`).
-   - Proposal: **renaming and deleting a chat** is a **candidate use case**, **not yet scheduled** (owner rulings of 05-11-2026 in the UC-006 and UC-013 reviews).
+   - Proposal: **renaming and deleting a chat** is a **candidate use case**, **not yet scheduled**.
    - => **Parked in the spec backlog as UC-018** on 05-11-2026.
 
 7. **Limits of this check.**

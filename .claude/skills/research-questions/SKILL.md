@@ -64,7 +64,7 @@ Close section 3 with **"Không hỏi, và vì sao"**: the topics a reader would 
 
 ### Step 4 — Drift inventory
 
-**One row per in-scope item**: the behavior **in words**, its ID, the **reference file at its commit**, `match` / `differ` / `missing`, **what differs**. **Leave the PO ruling empty**. Write "**chưa kiểm**" for a row not read yet, and **finish it before the gate**.
+**One row per in-scope item**: the behavior **in words**, its ID, the **reference file at its commit**, `match` / `differ` / `missing`, **what differs**. **Leave the Kết quả column `pending`**: the PO rules it, and it holds the **outcome only**, never who decided or when. Write "**chưa kiểm**" for a row not read yet, and **finish it before the gate**.
 
 ## Output
 

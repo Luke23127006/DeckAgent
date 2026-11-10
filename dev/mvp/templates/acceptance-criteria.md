@@ -25,7 +25,7 @@ created: DD-MM-YYYY
      Catches: the wrong DeckAgent behavior this test fails on (deterministic criteria; checklist C2).
      Check: deterministic (observable state or an exact invariant) | evaluation (a person judges meaning/relevance against Then).
      Tier: ci | eval | manual. Default from Check: deterministic → ci, evaluation → eval; the PO may move one to manual.
-     Serves: the basis items (test-analysis.md) and the condition codes (techniques/) this criterion covers. Every AC cites at least one basis item.
+     Serves: the basis items (../analysis/basis-register.md) and the condition codes (techniques/) this criterion covers. Every AC cites at least one basis item.
      Variants: the test cases of this AC, one line each: label (V1, V2…), the input, any precondition or action that differs from Given and When, the expected result when it differs from Then, and the coverage items it exercises (one or more, combined as the technique's method says; the relation is not one to one). An AC with one input has V1. Each variant is its own test case with its own result; its ID is the AC ID plus the label (test-strategy.md "The chain"). The technique evidence file holds the derivation; this line holds the case.
      Each criterion adds precision beyond the use case response (spec/03-requirements/fr/_CRITERIA.md FRG-03). -->
 
@@ -49,7 +49,7 @@ created: DD-MM-YYYY
      Measure: the quantity measured or the property checked. How to measure: in prose, no tool, no architecture.
      Target: a value with unit and bound, or a required property. "not set" while pending; do not guess a number.
      Passes when: what counts as a pass. "not set" while pending.
-     Serves: the basis items (test-analysis.md) and the condition codes (techniques/) this measure covers; every measure cites at least one basis item.
+     Serves: the basis items (../analysis/basis-register.md) and the condition codes (techniques/) this measure covers; every measure cites at least one basis item.
      Variants: the test cases of this measure, one line each: label, the run condition (for example an injection point × failure mode, or a workload), the coverage item. Each is its own test case with its own result.
      Rules: spec/03-requirements/nfr/_CRITERIA.md NFG-05, NFG-06. -->
 

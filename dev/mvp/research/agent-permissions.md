@@ -12,7 +12,7 @@ Question: **how do the runtime and open-design limit what a coding agent reaches
 3. **What does the user see when a step is `ask`?**
    - Observation: the answers are **`once`** (this request), **`always`** (matching requests "for the rest of the current OpenCode session") and **`reject`**.
    - **Not found**: a way to **take back an `always` answer**.
-   - => An **approval that lasts is bounded by the session** in OpenCode. **DeckAgent needs only `once` and `reject`** (owner ruling 4A of 05-11-2026).
+   - => An **approval that lasts is bounded by the session** in OpenCode. **DeckAgent needs only `once` and `reject`**.
 
 4. **How are paths outside the project handled**, and **can the limits differ per agent**?
    - Observation: `external_directory` covers "**tool calls that touch paths outside the working directory** where OpenCode was started"; its **default is `ask`**.

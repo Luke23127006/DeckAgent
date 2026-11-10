@@ -3,7 +3,7 @@ id: DEC-005
 title: "The model writes the deck source within a template; code makes the theme and checks"
 date: 04-11-2026
 status: decided
-research: "dev/mvp/research/open-design-design-systems.md; owner ruling in the UC-002 spec review, 04-11-2026; teacher feedback of 23-10-2026 in dev/meetings/"
+research: "dev/mvp/research/open-design-design-systems.md; teacher feedback of 23-10-2026 in dev/meetings/"
 affects: "FR-022, FR-092, FR-093, FR-107, FR-131, BR-003, NFR-009; replaces DEC-002"
 ---
 
@@ -11,7 +11,7 @@ affects: "FR-022, FR-092, FR-093, FR-107, FR-131, BR-003, NFR-009; replaces DEC-
 
 **Who writes the source of a deck** (the HTML, Markdown or other file the user sees and exports), and **how does a design system bound it**, when DeckAgent offers **several generation formats**? The answer constrains the first draft (FR-022), design changes and changes to a marked part of a slide in a follow-up request (FR-107, FR-131), changes by hand (legacy UC-007), design systems (legacy UC-010, UC-017) and export (legacy UC-004).
 
-**DEC-002 chose code to render the slides** from content data. In the UC-002 review it gave **no way to make a free design change** such as "make the title bigger", it **lost changes by hand** when code rendered a slide again, and **each new generation format needed a full renderer**.
+**DEC-002 chose code to render the slides** from content data. It gave **no way to make a free design change** such as "make the title bigger", it **lost changes by hand** when code rendered a slide again, and **each new generation format needed a full renderer**.
 
 ## Options considered
 
@@ -32,7 +32,7 @@ Option C, with **three settings**:
 
 ## Why
 
-**PO ruling of 04-11-2026** in the UC-002 review, after **comparing the options with open-design**:
+After **comparing the options with open-design**:
 
 - **Free design changes in a follow-up request**, like open-design and Claude slide design: "make the title bigger" and a change to a marked part of a slide (FR-107, FR-131).
 - **Several generation formats**, as the teacher asked on 23-10-2026: a **new format needs a template and a theme translator**, **not a full renderer**.
@@ -40,7 +40,6 @@ Option C, with **three settings**:
 - The **look stays consistent** across slides and decks, as the teacher asked: **colours and fonts come only from the theme**, and **changing the design system changes the theme in one place**.
 - **CI still blocks merges**: the checks are **invariants** (slides outside the scope unchanged, no colour or font outside the theme, no text cut off), **not judged output**.
 - **C is the only option that drops none of these needs**.
-- Written by the agent at the PO's request on 04-11-2026, after the PO **chose option C and settings C1–C3** in the UC-002 review.
 
 ## Rejected options and why
 

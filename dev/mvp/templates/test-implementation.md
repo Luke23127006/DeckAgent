@@ -11,7 +11,7 @@ created: DD-MM-YYYY
 
 ## At a glance
 
-- **Status:** _draft · baseline approved by the PO (date)_
+- **Status:** _draft · baseline approved_
 - **Criteria:** [acceptance-criteria.md](../testing/design/acceptance-criteria.md) · **Mechanisms:** [test-analysis.md](../testing/analysis/test-analysis.md) "Automation feasibility"
 
 ## Test driver and fixtures

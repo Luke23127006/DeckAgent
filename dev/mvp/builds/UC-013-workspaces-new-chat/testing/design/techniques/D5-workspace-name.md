@@ -9,8 +9,8 @@ created: 09-11-2026
 
 <!-- Evidence của design input D5 (testing-plan.md mục 2.3). Phương pháp: skill equivalence-partitioning, boundary-value-analysis và decision-table-testing. Mỗi bước giữ output riêng, theo thứ tự; test case chỉ dùng output của các bước trước; AC nháp chỉ được đọc ở mục "Reconciliation". Trạng thái coverage item và test case theo test-strategy.md "How a technique is applied". -->
 
-- **Design input:** [testing-plan.md](../../planning/testing-plan.md) mục 2.3, dòng **D5**: criterion là **mọi partition** và **mỗi biên ở ba giá trị**, **ở mỗi nguồn tên** (PD-3), có biến phụ **đơn vị đếm, NFC, trim** (QR-7); **mọi rule** của decision table (PD-14); leaf từ chối assert **lý do** (QR-10). Mechanism: M1, M2, M10, M19.
-- **Status:** đã sửa theo **review của PO** (F-01 đến F-05, 09-11-2026). **Chưa approved**; chờ PO review lại.
+- **Design input:** [testing-plan.md](../../planning/testing-plan.md) mục 2.3, dòng **D5**: criterion là **mọi partition** và **mỗi biên ở ba giá trị**, **ở mỗi nguồn tên**, có biến phụ **đơn vị đếm, NFC, trim** (QR-7); **mọi rule** của decision table; leaf từ chối assert **lý do** (QR-10). Mechanism: M1, M2, M10, M19.
+- **Status:** chờ PO review.
 - **Coverage status:**
 
   | Technique | Covered | Blocked | Uncovered | Infeasible |
@@ -368,37 +368,36 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 
 ## Completion checks
 
-"Lần đầu" là kết quả ngày 09-11-2026; "cuối" là sau khi sửa theo review. Loại bằng chứng theo mục kế tiếp.
+Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết kế** chạy, nên **vẫn cần PO review**.
 
-| Check | Lần đầu | Cuối | Loại bằng chứng | Ghi chú |
-|---|---|---|---|---|
-| EP-C1 · biến | pass | pass | design-checked | O5 có từ FR-071.15 |
-| EP-C2 · cover | pass | pass | design-checked | Mỗi dimension có câu cover |
-| EP-C3 · nguồn | pass | pass | design-checked | EC23 (phần được giữ) và EC34 ghi gap |
-| EP-C4 · infeasible | pass | pass | design-checked, assumed | EC21 dựa trên RL3, trong đó có AS-2 |
-| EP-C5 · representative | pass | pass | computed | **Lần đầu báo pass sai:** representative EC23 (`0123456789` lặp 15) cho **cùng kết quả** dù giữ 100 đầu hay 100 cuối, trái với lý do ghi ở EP-4. Script lần này phát hiện; đã đổi representative |
-| EP-C6 · coverage | **pass sai** | pass | design-checked | **F-01:** lần đầu tính EC34 là đã phủ dù TC42 chưa có expected. Nay EC34 là **Blocked** |
-| EP-C7 · attribution | pass | pass | design-checked | TC2, TC3, TC4: một class invalid, dimension khác ở base |
-| EP-C8 · traceability | **pass sai** | pass | design-checked | **F-02:** lần đầu một dòng chứa **nhiều test case**. Nay mỗi ID một dòng, có status |
-| EP-C9 · giao cho BVA | pass | pass | design-checked | — |
-| EP-C10 · loại bằng chứng | chưa có | pass | design-checked | **F-05**; mục "Loại bằng chứng" |
-| BVA-C1 · suy ra | **pass sai** | pass | design-checked | **F-04:** BD4 và BD6 chưa có loại và nguồn. Nay mỗi biên có loại, nguồn, mục tiêu và criterion |
-| BVA-C2 · đại lượng đo | pass | pass | design-checked | — |
-| BVA-C3 · giá trị | pass | pass | computed | — |
-| BVA-C4 · variant | **fail** | pass | design-checked | Thiếu BD1-T; reconciliation phát hiện (lần trước) |
-| BVA-C5 · gồm cả biên | pass | pass | design-checked | — |
-| BVA-C6 · coverage | **pass sai** | pass | design-checked, computed | Lần đầu không phân biệt Blocked. Nay 5 giá trị Blocked (Z-28); script xác định giá trị nào **không** phụ thuộc Z-28 |
-| BVA-C7 · tách biệt | pass | pass | design-checked | — |
-| DT-C1 · condition | **pass sai** | pass | design-checked | **F-03:** C2 ở nguồn folder đổi nghĩa theo Z-26. Nay C2 đo theo xử lý của từng nguồn; Z-26 là expected của EC34 |
-| DT-C2 · liệt kê | pass | pass | design-checked | 8 tổ hợp |
-| DT-C3 · infeasible | pass | pass | design-checked, assumed | CB6 dựa trên AS-2 |
-| DT-C4 · merge | pass | pass | design-checked | — |
-| DT-C5 · action | pass | pass | design-checked | — |
-| DT-C6 · nhất quán | pass | pass | design-checked | — |
-| DT-C7 · coverage | **pass sai** | pass | design-checked | **F-01:** DR6 có TC42 chưa có expected. Nay DR6 không còn; DR1 đến DR5 Covered |
-| DT-C8 · một rule | pass | pass | design-checked | — |
+| Check | Kết quả | Loại bằng chứng | Ghi chú |
+|---|---|---|---|
+| EP-C1 · biến | pass | design-checked | O5 có từ FR-071.15 |
+| EP-C2 · cover | pass | design-checked | Mỗi dimension có câu cover |
+| EP-C3 · nguồn | pass | design-checked | EC23 (phần được giữ) và EC34 ghi gap |
+| EP-C4 · infeasible | pass | design-checked, assumed | EC21 dựa trên RL3, trong đó có AS-2 |
+| EP-C5 · representative | pass | computed | Representative EC23 cho **kết quả khác nhau** khi giữ 100 đầu hay 100 cuối |
+| EP-C6 · coverage | pass | design-checked | EC34 **Blocked**: TC42 chưa có expected (Z-26) |
+| EP-C7 · attribution | pass | design-checked | TC2, TC3, TC4: một class invalid, dimension khác ở base |
+| EP-C8 · traceability | pass | design-checked | Mỗi ID một dòng, có status |
+| EP-C9 · giao cho BVA | pass | design-checked | — |
+| EP-C10 · loại bằng chứng | pass | design-checked | Mục "Loại bằng chứng" |
+| BVA-C1 · suy ra | pass | design-checked | Mỗi biên có loại, nguồn, mục tiêu và criterion |
+| BVA-C2 · đại lượng đo | pass | design-checked | — |
+| BVA-C3 · giá trị | pass | computed | — |
+| BVA-C4 · variant | pass | design-checked | Có BD1-T |
+| BVA-C5 · gồm cả biên | pass | design-checked | — |
+| BVA-C6 · coverage | pass | design-checked, computed | 5 giá trị Blocked (Z-28); script xác định giá trị nào **không** phụ thuộc Z-28 |
+| BVA-C7 · tách biệt | pass | design-checked | — |
+| DT-C1 · condition | pass | design-checked | C2 đo theo xử lý của **từng nguồn**; Z-26 là expected của EC34 |
+| DT-C2 · liệt kê | pass | design-checked | 8 tổ hợp |
+| DT-C3 · infeasible | pass | design-checked, assumed | CB6 dựa trên AS-2 |
+| DT-C4 · merge | pass | design-checked | — |
+| DT-C5 · action | pass | design-checked | — |
+| DT-C6 · nhất quán | pass | design-checked | — |
+| DT-C7 · coverage | pass | design-checked | DR1 đến DR5 Covered |
+| DT-C8 · một rule | pass | design-checked | — |
 
-**Điều này cho thấy:** ở lần đầu, **bảy check báo pass sai**. **PO review** tìm ra sáu (EP-C6, EP-C8, BVA-C1, BVA-C6, DT-C1, DT-C7; F-01 đến F-04); **script** của lần này tìm ra EP-C5. Không check nào tự phát hiện lỗi của chính nó. Nguyên nhân: check chưa có **trạng thái Blocked**, chưa đòi **mỗi ID một dòng**, chưa đòi **loại biên** và **condition không phụ thuộc ruling**. Skill và strategy đã thêm các điều kiện đó. Lần chạy cuối vẫn do **chính người thiết kế** làm, nên vẫn cần PO review.
 
 ## Loại bằng chứng
 
@@ -411,7 +410,7 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 
 ## Reconciliation với AC nháp
 
-Đọc **sau khi** mọi mục trên đã xong. AC: [acceptance-criteria.md](../acceptance-criteria.md). Kết quả không đổi so với lần trước, trừ ghi chú về DR6.
+Đọc **sau khi** mọi mục trên đã xong. AC: [acceptance-criteria.md](../acceptance-criteria.md).
 
 | Coverage item | AC nháp | Kết quả | Ghi chú |
 |---|---|---|---|
@@ -420,7 +419,7 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 | EC14 | FR-141 AC-4 | match | AC chỉ dùng dấu cách; class là cả tập `trim()` |
 | EC2, BD2.trên, DR1, DR2 | FR-141 AC-5 | match | Lý do `BR-020 V-1` và `V-2` khớp A6 |
 | BD2-N−.đúng | FR-141 AC-6 | match | — |
-| BD1.đúng, BD1-T.đúng | FR-141 AC-7 | match | AC-7 đã làm lộ việc thiếu BD1-T |
+| BD1.đúng, BD1-T.đúng | FR-141 AC-7 | match | — |
 | BD3.đúng | FR-071 AC-15 | match | Phần "tên đúng 100 ký tự" |
 | EC23, BD3.trên | FR-071 AC-15 | **conflict** | AC đòi **"100 ký tự đầu"**; spec chỉ nói **cắt còn 100** (Z-28) |
 | EC25 | FR-071 AC-12 | **conflict** | AC đòi tên **giống từng byte** tên folder NFD; spec đòi **dạng NFC** (Z-18) |
@@ -430,31 +429,24 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 | BD1, BD2, BD2-T, BD2-N+, BD2-U, BD2-G (trừ giá trị đã match) | — | missing | — |
 | BD3-N−, BD3-N+, BD3-U, BD3-G, BD4, BD5, BD6, DR4, DR5 | — | missing | — |
 
-**AC không được sửa** ở bước này: việc viết lại AC đợi ruling của Z-18, Z-26, Z-28 và PO review D5.
-
-## So với pilot cũ
-
-- **Giữ** (đã kiểm lại từng dòng): biến; biến phụ NFC, đơn vị đếm, khoảng trắng; RL1 đến RL5 (RL5 có bằng chứng chạy được); phần lớn class và biên; DT1 đến DT5 (nay DR1 đến DR5, có đủ action); Z-26, Z-27.
-- **Sửa:** class "tên rỗng" tách hai; class khoảng trắng tách theo dimension; bỏ chữ "đầu" không có căn cứ (Z-28); đuôi khoảng trắng của tên folder tạo được; bỏ nhãn "merged"; O5 và đổi tên default workspace trỏ về D5 và D1.
-- **Bỏ khỏi D5:** hai folder NFC và NFD là hai folder: thuộc **D2**.
-- **Thêm:** EC7, EC26, EC31, EC36, EC38; BD1-T, BD2-G, BD3-N−, BD3-U, BD3-G, BD6; action A1 đến A7; test case; reconciliation.
+**AC không được sửa** ở bước này: việc viết lại AC đợi outcome của Z-18, Z-26, Z-28 và PO review D5.
 
 ## Assumption
 
 | Code | Assumption | Điều làm nó sai | Nơi xác nhận |
 |---|---|---|---|
 | AS-1 | Interface **không gửi** chuỗi có surrogate lẻ trong tên người dùng đặt | Driver hoặc interface cho phép gửi chuỗi JavaScript bất kỳ | Contract của driver; nếu sai, thêm class và gap |
-| AS-2 | Domain tên folder là tên NTFS cho phép (không rỗng, tối đa 255 đơn vị UTF-16) | Folder trên file system khác (coverage limitation, PD-9) | Self-test của M19 |
+| AS-2 | Domain tên folder là tên NTFS cho phép (không rỗng, tối đa 255 đơn vị UTF-16) | Folder trên file system khác (coverage limitation) | Self-test của M19 |
 | AS-3 | M19 tạo được tên **có ký tự khoảng trắng ở cuối** (dấu cách, U+2028) qua `\\?\` | Fixture không tạo được, hoặc DeckAgent không đọc được folder đó | Self-test của M19; nếu sai, EC33 chỉ còn đầu tên và ghi deviation |
 | AS-4 | Folder tên 255 đơn vị tạo và đọc được dưới root của test | Đường dẫn vượt giới hạn mà fixture không xử lý | Self-test của M19 và M7 (`longPath`) |
 | AS-5 | Một **phần đầu** của chuỗi NFC vẫn là NFC, nên tên đã cắt **vẫn ở dạng NFC** | Một chuỗi mà phần đầu không còn NFC | Script thử mọi chữ cơ sở và hai dấu combining trong U+0300 đến U+036F: **không thấy** phản ví dụ; **không phải chứng minh** |
 | AS-6 | Tập `trim()` của DeckAgent là tập của Node `22.19.0` (Unicode 16.0, 25 ký tự) | DeckAgent chạy trên runtime có phiên bản Unicode khác | Phiên bản Node được **ghim** ở CI (testing-plan.md mục 4) |
 
-## Gaps và đánh giá theo thẩm quyền
+## Gaps đang mở
 
-Nhật ký ruling ở [test-design.md](../test-design.md). Không gap nào được agent tự đóng.
+Đề xuất của mỗi gap nằm ở [test-design.md](../test-design.md) mục 2. Ảnh hưởng lên D5:
 
-- **Z-26 · tên folder chỉ gồm khoảng trắng.** Đọc lại BR-020: statement so tên "sau khi bỏ khoảng trắng ở hai đầu" **chỉ với tên người dùng đặt**; V-1 định nghĩa tên rỗng là tên không còn ký tự "sau khi bỏ khoảng trắng ở hai đầu **(V-3)**"; V-3 nói hệ thống **không bỏ gì** khỏi tên lấy từ folder. FR-071 nói tên "**không bỏ khoảng trắng nào**" và **không có nhánh từ chối** vì tên. Ba câu **cùng một hướng**: tên U+00A0 **có một ký tự**, không rơi vào V-1, và được nhận (DR5). **Đề xuất:** PO xác nhận cách đọc này, **không cần sửa spec**, không áp quy tắc trim của tên người dùng cho folder. Đến khi đó TC42 **Blocked**.
-- **Z-27 · tập khoảng trắng.** Theo hướng của PO: tập là **toàn bộ** ký tự `trim()` bỏ (25 ký tự); bốn ký tự V-3 nêu tên là **ví dụ**; độ sâu theo **Planning đã duyệt**, tức **một representative cho mỗi class**, vì plan không đánh dấu V-3 là closed list. D5 đã áp dụng (EP-2, EP-4). **Đề xuất:** đóng Z-27 theo hướng này.
-- **Z-28 · cắt tên folder.** Đây là **quyết định product behavior**, không suy ra được từ technique. Đề xuất giữ **100 code point đầu** sau NFC, và **thêm câu đó vào spec**; cần PO duyệt thay đổi spec. Đến khi đó TC35, TC53, TC59, TC60, TC61, TC62 **Blocked**; độ dài 100 vẫn được ghi là phần đã biết.
-- **Z-18 · FR-071 AC-12 trái NFC.** Theo khuyến nghị của PO: **sửa AC theo BR-020** ở Gate 2, **không đổi spec**.
+- **Z-26 · tên folder chỉ gồm khoảng trắng:** EC34 và TC42 **Blocked**; theo đề xuất, tên U+00A0 **có một ký tự** và **được nhận** (DR5).
+- **Z-27 · tập khoảng trắng:** D5 dùng **toàn bộ** tập `trim()` (25 ký tự), **một representative cho mỗi class** (EP-2, EP-4).
+- **Z-28 · cắt tên folder:** TC35, TC53, TC59, TC60, TC61, TC62 **Blocked**; độ dài 100 vẫn được assert như phần đã biết.
+- **Z-18 · FR-071 AC-12 trái NFC:** conflict EC25 ở reconciliation.

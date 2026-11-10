@@ -19,7 +19,7 @@ STLC names the **activities of testing** and what each produces. It is a **frame
 
 | STLC activity | Produces | Happens in | Decided at |
 |---|---|---|---|
-| **Requirement analysis** | Test basis register, quality risk and type record, automation feasibility (`testing/analysis/test-analysis.md`) | Phase 2, first | Gate 1 |
+| **Requirement analysis** | Test basis register, quality risk and type record, automation feasibility (`testing/analysis/`: `test-analysis.md`, with `basis-register.md` and `sentence-map.md`) | Phase 2, first | Gate 1 |
 | **Test planning** | Objectives, risk and technique selection per item, approach, levels, coverage targets, environment, dependencies, entry and exit criteria, test-side risks, design inputs (`testing/planning/testing-plan.md`) | Phase 2 | Gate 1 |
 | **Test case design** | Test design specification: one **evidence file per technique** (step outputs, coverage items, test cases, reconciliation) and the summary `test-design.md`; AC, measures and test data (`acceptance-criteria.md`), all in `testing/design/` | Phase 2 | Gate 2 |
 | **Test implementation and environment setup** | Driver and fixture contract, test-stub ticket list (`implementation/test-implementation.md`); expected-failure tests (test-stub tickets); unit tests (implementation tickets) | Phase 2, Phase 4–5 | [Checks](#checks-that-are-not-gates) |
@@ -45,7 +45,7 @@ What the chain links:
 
 | Entity | Meaning | Recorded in |
 |---|---|---|
-| **Basis item** | One **testable statement** of the spec: a UC step or alternative, a clause of an FR or NFR, a value of a BR ([Test basis register](#test-basis-register)) | `test-analysis.md` |
+| **Basis item** | One **testable statement** of the spec: a UC step or alternative, a clause of an FR or NFR, a value of a BR ([Test basis register](#test-basis-register)) | `basis-register.md` |
 | **Condition** | **One thing to check**, derived by a technique from basis items. It carries an **ID** | `test-design.md` |
 | **AC** | The **condition under which the PO accepts a behavior** of an FR, BR or UC flow. It states **what must hold**, not one input. One basis item may have **several** AC. An AC may be **drafted early** and is **final at Gate 2** | `acceptance-criteria.md` |
 | **Measure** | The **quantity or property** that decides an **NFR**, with its **condition, target and pass rule**. It plays the role of an AC for an NFR, and **cites its basis items** the same way | `acceptance-criteria.md` |
@@ -109,16 +109,16 @@ Each type gets **one row** in the quality risk and type record with **three attr
 
 The **basis item** is the unit of **requirement coverage**. The register **lists every item** of the in-scope spec, with its **kind**, its **risk level** (taken from its FR or NFR, where the PO sets it), its **ambiguities**, its **scope** (`to test`, `excluded` or `deferred`) and the **approval** of that scope (`approved` or `pending`). How items are cut:
 - First **cut each spec text into units** (a sentence, or a clause ended by `;`) and **classify each unit**: **normative** (it states a behavior or a value), **explanatory** (a reason, an example, a note that adds no behavior) or **definition** (a term, a boundary, a pointer to another spec). A note that **states a behavior is normative**, in whatever section it sits. **Classification follows the content of the unit, never its scope**: a normative unit whose behavior another spec outside the build owns is **still normative**, and its item is `deferred` with a scope ruling that names the owner. A unit that only **points** to another spec, or **states a boundary**, is a definition. Only **normative units** become items.
-- The register shows the **sentence map**: **every unit** with a **stable locator**, its **class** and the **items it feeds**. The PO can **recount** it and can follow any unit to its items and any item back to its units.
+- The **sentence map** (`sentence-map.md`, beside the register) shows **every unit** with a **stable locator**, its **class** and the **items it feeds**. The PO can **recount** it and can follow any unit to its items and any item back to its units.
 - An item that **mixes behaviors of different scope** (one needs a request, another does not) is **split**, one item per scope, so that its status is **true of all of it**.
-- **Scope rulings.** An `excluded` or `deferred` item points to a **scope ruling** in the same file: the **reason**, the **build** that takes it and the **PO's ruling**. The register keeps **two separate attributes**: the **proposed scope** and its **approval**. A scope the PO has not approved is `pending`, and it is **not yet in force**. Gaps and deviations of the design are ruled in `test-design.md`.
+- **Scope rulings.** An `excluded` or `deferred` item points to a **scope ruling** (`SR-n`), one row per reason in the **"Items not tested"** section of the build's `traceability-matrix.md`: the **items**, **what they need** that the build lacks, and the **build that takes them** (or why they are excluded). The register keeps **two separate attributes**: the **proposed scope** and its **approval**. A scope the PO has not approved is `pending`, and it is **not yet in force**. Gaps and deviations of the design are ruled in `test-design.md`.
 - Each **"when X, then Y"** is one item; each **effect joined by "and"** is one item; each **negation** ("changes no file") is one item, and it is an **invariant**.
 - Each **value (V-n) of a BR** is one item. The **members of a closed list inside a value** are **not** items of their own: they are **test data**, and the [closed list rule](#technique-per-requirement) sets the criterion.
 - Each **UC step** and **alternative** is one item.
 
 **Checks that the list is complete:**
 - Every **normative unit** of the in-scope spec text **maps to at least one item**. The **count of unmapped normative units**, read off the sentence map, is **0** at Gate 1; the count is **not independent evidence** while one reader made the map.
-- **Cross-reference:** compare UC steps and alternatives, FRs, and BR values with one another (does each step and alternative appear in an FR, is each FR cited by a UC or a BR, does each BR value have an item). A **mismatch is a candidate gap for review, not a spec error**: an FR about stored data or configuration may belong to **no user flow**. The register records **why** each mismatch is fine, or **raises it to the PO**.
+- **Cross-reference:** compare UC steps and alternatives, FRs, and BR values with one another (does each step and alternative appear in an FR, is each FR cited by a UC or a BR, does each BR value have an item). A **mismatch is a candidate gap for review, not a spec error**: an FR about stored data or configuration may belong to **no user flow**. A mismatch that **changes something** becomes an **item**, an **ambiguity** or a **candidate gap**; one that **changes nothing** is **not recorded**.
 - A second reader may **re-derive the list independently**; the **differences** are read by the PO. Agreement is **not proof**: the register **reduces** omissions, it does not remove them. What it misses is caught by **error guessing**, **exploratory testing** and **defects that escape** ([Going back](#going-back)).
 
 ## Technique per requirement
@@ -247,7 +247,7 @@ The PO decides at **three gates**, on the **records**, not on test code. **Gate 
 
 | Gate | The PO decides | Records | What the PO can recompute |
 |---|---|---|---|
-| **1 · Scope and approach** | **What is tested**, which **types** and **levels**, how **deep**, and **when to stop** | `test-analysis.md`; `testing-plan.md` (objectives, risk and technique selection, approach, levels, coverage targets, environment, dependencies, entry and exit criteria, testing risks, the post-implementation plan, design inputs) | Recount the sentence map (unmapped normative units = 0); every `excluded` and `deferred` item has a scope ruling; every type has a row; every mechanism has a status; the **technique selection rows add up** to the `to test` count and **one row recomputes** from the register ([Planning decisions](#planning-decisions)) |
+| **1 · Scope and approach** | **What is tested**, which **types** and **levels**, how **deep**, and **when to stop** | `test-analysis.md` with `basis-register.md` and `sentence-map.md`; `testing-plan.md` (objectives, risk and technique selection, approach, levels, coverage targets, environment, dependencies, entry and exit criteria, testing risks, the post-implementation plan, design inputs) | Recount the sentence map (unmapped normative units = 0); every `excluded` and `deferred` item has a scope ruling; every type has a row; every mechanism has a status; the **technique selection rows add up** to the `to test` count and **one row recomputes** from the register ([Planning decisions](#planning-decisions)) |
 | **2 · Test design** | The **conditions are complete**, the **AC are final**, each **expected result has a source** | The technique evidence files and `test-design.md`; `acceptance-criteria.md` | Redo one technique section by hand, **step by step**, checking each step's output against the basis; count the coverage items; the link rules hold |
 | **3 · Build verdict** | The **evidence is enough to accept the build** | `test-summary.md`, the matrix | The coverage table; open defects; `excluded` and `deferred` items; residual risks |
 
@@ -338,7 +338,7 @@ Together they let the PO check **six things**:
 3. Which **conditions** each technique derived, and from **which basis items**.
 4. The **coverage items** and the **coverage criterion** that makes them enough, with the **count**.
 5. How each **condition links to its AC** and to the **test cases** that check it; each test case has its **input, preconditions, actions, expected result** and the **coverage items** it exercises.
-6. The **gaps, deviations and design rulings**, with the PO's ruling or `pending`.
+6. The **gaps, deviations and design rulings**, each with its **outcome** or `pending`.
 
 **The form follows the technique**: no technique is forced into another's structure, and a **diagram is optional** wherever a table already answers the question:
 
@@ -353,6 +353,6 @@ Together they let the PO check **six things**:
 | **Fault injection** | Injection points, failure modes and the reason for each, the state checked after restart |
 | **Performance** (when selected) | Operation, workload conditions, metric, target or `not set` |
 
-A build has **only the evidence files of the techniques it applies**. Every transition, cell, rule, partition, boundary, invariant, scenario and injection point is a **condition** with an **ID unique in the build** (the design input code is its prefix when two files would collide). A condition **without an AC** is a **gap** in the ruling log. **Scope rulings** and **rulings on ambiguities** stay in `test-analysis.md`; the **AC and measures** stay in `acceptance-criteria.md`; the **driver and fixture contract** stays in `implementation/test-implementation.md` and **follows the design**, never the reverse.
+A build has **only the evidence files of the techniques it applies**. Every transition, cell, rule, partition, boundary, invariant, scenario and injection point is a **condition** with an **ID unique in the build** (the design input code is its prefix when two files would collide). A condition **without an AC** is a **gap** in the ruling log. **Scope rulings** stay in the matrix's "Items not tested" and **rulings on ambiguities** in `test-analysis.md`; the **AC and measures** stay in `acceptance-criteria.md`; the **driver and fixture contract** stays in `implementation/test-implementation.md` and **follows the design**, never the reverse.
 
 **Skills by capability.** The method of a technique (its steps, the evidence each step leaves, how to check it) and of a test type (performance, security, reliability) is taught by **one skill per capability**, for example `equivalence-partitioning`, `boundary-value-analysis`, `decision-table-testing` (these three exist), `state-transition`, `performance-testing`, `security-testing`, `reliability-testing`. This strategy keeps the **rules every skill obeys** (the chain, the step rules, coverage, the gates); the `testing-plan` skill **orchestrates** the activities and calls a capability skill **where one exists**. Until a capability skill exists, its technique follows [How a technique is applied](#how-a-technique-is-applied).

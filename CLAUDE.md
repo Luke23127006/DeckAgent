@@ -9,6 +9,7 @@
 - All AGENTS.md skills **exist at `.agents/skills/<name>/SKILL.md`** — **check before saying "not found"**.
 
 - **Never add a `Co-Authored-By` trailer** or **any attribution to Claude or any other AI agent** in a commit, PR or issue (AGENTS.md "GitHub conventions").
+- **No conversation log in any document.** Write a decision as its **result** or `pending`; **never "PO đã xác nhận / duyệt (date)"**, and no section that only records a review (AGENTS.md "Documents", `dev/mvp/builds/_STYLE.md` rule 14).
 - **Edit skills in `.agents/skills/` only**, then **run `python .agents/scripts/sync_skill_mirrors.py`**; **never edit `.claude/skills/` or `.codex/skills/` directly**.
 
 ## Workflow triggers

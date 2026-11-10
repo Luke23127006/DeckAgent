@@ -33,16 +33,16 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 
 ## Items not tested
 
-<!-- Basis items ruled excluded or deferred (test-strategy.md "Coverage"). They are never counted as covered. Write "None." when there is none. -->
+<!-- The scope rulings: one row per reason for which basis items are excluded or deferred (test-strategy.md "Test basis register"). They are never counted as covered. Needs: what the item needs that this build lacks, or why it can never be tested (excluded). Build: the build whose testing plan takes the items, "—" for excluded. A row whose items the PO has not approved reads "pending" in Build; the approval of each item is in analysis/basis-register.md. Write the outcome only, never who decided or when (dev/mvp/WORKFLOW.md "Document rules" rule 7). Write "None." when there is none. -->
 
-| Basis item | Status | Ruling |
-|---|---|---|
-| BI-N | excluded | [SR-n](./analysis/test-analysis.md) |
+| ID | Items | Status | Needs | Build |
+|---|---|---|---|---|
+| SR-1 | FR-NNN.n | deferred | | build N |
 
 ## Columns
 
 - **FR / AC** — in **Phase 1**, **one row per in-scope FR and NFR**. In **Phase 2**, each FR row **splits into one row per acceptance criterion** and each NFR row **into one row per measure** (`NFR-NNN / M-1`).
-- **Basis items** and **Conditions** — the **basis items** (`test-analysis.md`) the row covers, and the **condition codes** (`design/techniques/`) that serve it. **Filled in Phase 2**.
+- **Basis items** and **Conditions** — the **basis items** (`analysis/basis-register.md`) the row covers, and the **condition codes** (`design/techniques/`) that serve it. **Filled in Phase 2**.
 - **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"). **Set in Phase 2** from the testing plan; **empty in Phase 1**.
 - **RQ** — the **answered research question** for this row (may be empty).
 - **DEC** — the **decision that shaped this row** (may be empty).
@@ -60,4 +60,4 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 - [ ] **Every in-scope DEC is consumed** by at least one row (test or impl).
 - [ ] **Every answered RQ leads to a DEC** or a row that uses its result.
 - [ ] **No test or implementation ticket exists without a matrix row**.
-- [ ] **Link rules hold** (after Phase 2): every AC cites a basis item; every condition cites a basis item; every test case cites a condition; every basis item has a condition and a test case, or is listed under **Items not tested** with a ruling.
+- [ ] **Link rules hold** (after Phase 2): every AC cites a basis item; every condition cites a basis item; every test case cites a condition; every basis item has a condition and a test case, or is listed under **Items not tested**.

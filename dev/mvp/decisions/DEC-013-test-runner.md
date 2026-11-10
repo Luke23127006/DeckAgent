@@ -35,5 +35,5 @@ The PO took the **recommendation as shown**: Vitest **matches every approved doc
 ## Consequences
 
 - **T0c** adds Vitest `4.1.12` to the root `package.json`, a **`test:acceptance` script**, and **`vitest.config.ts`** for `tests/acceptance/`.
-- The **CI step** that runs `test:acceptance` stays **a separate change the PO approves** (ruling P-5 of the first build).
+- The **CI step** that runs `test:acceptance` stays **a separate change the PO approves**.
 - Unit and integration tests of the MVP **may use the same runner**; the **implementation plan** settles it.

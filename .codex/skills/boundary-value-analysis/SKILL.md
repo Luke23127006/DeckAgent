@@ -68,7 +68,7 @@ BVA contributes to the shared **Test cases** section:
 | BVA-C6 · coverage | A feasible boundary value is **Uncovered**, or reported **Covered** while all its test cases are **Blocked** |
 | BVA-C7 · isolation | A test case varies more than one boundary value |
 
-The checks find **missing or misplaced values** on the dimensions EP listed; they **cannot** find a limit that the spec states and EP did not model as a dimension (that is EP-C1 and the PO's review).
+The checks find **missing or misplaced values** on the dimensions EP listed; they **cannot** find a limit that the spec states and EP did not model as a dimension (that is EP-C1 and the PO review of the design).
 
 ## Gaps, assumptions, deviations
 

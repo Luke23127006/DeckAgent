@@ -160,9 +160,9 @@ flowchart LR
 
 ## 4. Code mẫu khớp spec tới đâu
 
-Đọc ở `feat/v2-opencode` @ `5bd9c17`. Cột **PO phán** để trống cho anh: **bug thì không mang theo**; **hành vi muốn giữ mà spec chưa có** thì **vào spec trước**; **spec thắng code**.
+Đọc ở `feat/v2-opencode` @ `5bd9c17`. Cột **Kết quả**: **bug thì không mang theo**; **hành vi muốn giữ mà spec chưa có** thì **vào spec trước**; **spec thắng code**.
 
-| Việc (theo spec) | ID | File code mẫu | Khớp | Khác gì | PO phán |
+| Việc (theo spec) | ID | File code mẫu | Khớp | Khác gì | Kết quả |
 |---|---|---|---|---|---|
 | Thêm workspace, chuyển workspace đang dùng | FR-071 | [workspace-registry.ts](https://github.com/Luke23127006/DeckAgent/blob/5bd9c17/apps/local-web/src/workspace-registry.ts) | match | Tên **lấy từ tên thư mục**; còn **nhận thêm tên tuỳ chọn** lúc thêm. Người dùng **gõ đường dẫn** (RQ-1) | **Theo spec**; **bỏ tên tuỳ chọn** lúc thêm (đổi tên là FR-141) |
 | Workspace mặc định từ lần chạy đầu | FR-072 | workspace-registry.ts | match | Tên cố định "Default Workspace" | **Theo spec**; **thêm**: mở lại **workspace dùng lần cuối** (FR-072) |

@@ -11,15 +11,15 @@ created: 08-11-2026
 
 ## At a glance
 
-- **Status:** **baseline tham khảo**. Contract phía test và fixture **được PO chốt khi duyệt plan** (ruling P-3, P-4, D-5 ở [test-design.md](../testing/design/test-design.md)); nội dung dưới đây được **chuyển nguyên** từ testing-plan.md.
-- **Không giới hạn Test Design:** Test Design suy ra condition **từ basis item và plan**, không từ function hay fixture có sẵn. Khi Gate 2 cần một function, field hay fixture **chưa có**, contract **được mở rộng**; khi AC cuối khác AC mà ticket dựa vào, ticket **được sửa theo AC cuối** (PD-7).
-- **Còn mở:** positive control của `fsAudit` (Z-20, PD-8), function cho **client không được phép** (M18).
-- **Ticket (PD-7, [testing-plan.md](../testing/planning/testing-plan.md) mục 9):** **#58** (T0c, test runner) đi tiếp **nếu độc lập** với AC và driver contract; **#59 đến #69 chờ Gate 2**, rồi body được cập nhật theo Test Design đã duyệt.
+- **Status:** **baseline**. Contract phía test và fixture **đã chốt**; Phase 3 **chỉ quyết cách nối** driver vào DeckAgent.
+- **Không giới hạn Test Design:** Test Design suy ra condition **từ basis item và plan**, không từ function hay fixture có sẵn. Khi Gate 2 cần một function, field hay fixture **chưa có**, contract **được mở rộng**; khi AC cuối khác AC mà ticket dựa vào, ticket **được sửa theo AC cuối**.
+- **Còn mở:** positive control của `fsAudit` (Z-20), function cho **client không được phép** (M18).
+- **Ticket:** **#58** (T0c, test runner) đi tiếp **nếu độc lập** với AC và driver contract; **#59 đến #69 chờ Gate 2**, rồi body được cập nhật theo Test Design đã duyệt.
 - **Ticket GitHub:** body của #58 đến #69 **chưa đổi**; chúng còn trỏ đường dẫn cũ `dev/mvp/builds/UC-013-workspaces-new-chat/testing-plan.md`.
 
 ## Test driver and fixtures
 
-> **Test implementation contract**, không thuộc Gate 1 hay Gate 2; nó được kiểm **theo từng ticket**. Contract **chưa sửa** theo ruling M3 (positive control của `fsAudit`, Z-20) và chưa có function cho **client không được phép** (M18); Gate 2 cập nhật nó (PD-7, PD-8).
+> **Test implementation contract**, không thuộc Gate 1 hay Gate 2; nó được kiểm **theo từng ticket**. Contract **chưa sửa** positive control của `fsAudit` (Z-20) và chưa có function cho **client không được phép** (M18); Gate 2 cập nhật nó.
 
 Luật chung của driver và fixture nằm ở [test-strategy.md](../../../../development/test-strategy.md) "Test infrastructure rules". Mục này chỉ ghi **phần riêng của build**. **Contract phía test** (function, field, quy tắc dưới đây) và **fixture** được **quyết khi PO duyệt plan này**; **Phase 3 chỉ quyết** cách **nối driver vào interface thật**.
 
@@ -71,7 +71,7 @@ Fixture nằm ở `tests/acceptance/support/winfs.ts`. **Mọi folder tạm** n�
 | `denyRead(path)` | chặn quyền đọc; **trả lại trong `finally`** | `fs.readdir` **thật sự fail**; nếu không: **fail trên CI**, trên máy dev **skip kèm lý do** chỉ khi `DECKAGENT_ALLOW_FIXTURE_SKIP=1` |
 | `move(from, to)` | dời folder, **thử lại** khi EPERM | `from` **không còn**, `to` **có** |
 | `snapshot(path)` | ghi **mọi file và folder**, kể cả folder rỗng: tên, kích thước, **hash nội dung**, thuộc tính (ẩn, chỉ đọc), **ADS**; **không ghi thời gian** của chính folder | **Positive control:** khi test đổi một byte, một thuộc tính hoặc một ADS, snapshot mới phải **khác** snapshot cũ |
-| `namedFolder(name)` (M19, PD-15) | folder có **tên đúng chuỗi code point** `name`, kể cả NFD, ký tự ngoài BMP, khoảng trắng ở đầu | `readdir` của folder cha trả về **đúng chuỗi code point** đã tạo |
+| `namedFolder(name)` (M19) | folder có **tên đúng chuỗi code point** `name`, kể cả NFD, ký tự ngoài BMP, khoảng trắng ở đầu | `readdir` của folder cha trả về **đúng chuỗi code point** đã tạo |
 | global setup | **chỉ gỡ** ổ `subst` và **chỉ `icacls /reset`** các folder mà **registry của suite** (`root\registry.json`) ghi từ lần chạy trước, **dưới lock file** của suite | ổ `subst` **không có trong registry** **không bị đụng** |
 
 

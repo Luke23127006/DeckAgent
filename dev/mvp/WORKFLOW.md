@@ -43,7 +43,10 @@ dev/                          internal docs for the dev team
 │           │   └── research-checklist.md         Phase 1: questions, drift inventory
 │           ├── testing/
 │           │   ├── traceability-matrix.md        the spine of the build
-│           │   ├── analysis/test-analysis.md     Gate 1: basis register, risks, types, feasibility
+│           │   ├── analysis/                     Gate 1
+│           │   │   ├── test-analysis.md          summary: basis counts, risks, types, feasibility, ambiguities
+│           │   │   ├── basis-register.md         one row per basis item
+│           │   │   └── sentence-map.md           every unit of the spec text, its class and items
 │           │   ├── planning/testing-plan.md      Gate 1: planning decisions, design inputs
 │           │   ├── design/                       Gate 2
 │           │   │   ├── test-design.md            summary: techniques, coverage counts, ruling log
@@ -173,7 +176,7 @@ Rules:
 
 **Owner:** PO **writes the plan** and **approves the tests**. **Developers** write the tests.
 
-1. Run skill `testing-plan`, which **applies** `dev/development/test-strategy.md`. **Gate 1 records first:** write `testing/analysis/test-analysis.md` (the **test basis register** with its **sentence map** and **scope rulings**, the **quality risks and test types**, the **automation feasibility**, the **ambiguities**) and `testing/planning/testing-plan.md`, which holds **planning decisions only** (the **objectives**, the **risk level** of each in-scope item, the **technique selection** with its rules, the **levels**, the **coverage targets**, the **environment and dependencies**, the **entry and exit criteria**, the **testing risks**, the **post-implementation tests**, and the **design inputs** handed to Gate 2). The **PO approves them (Gate 1)** **before any design starts**.
+1. Run skill `testing-plan`, which **applies** `dev/development/test-strategy.md`. **Gate 1 records first:** write `testing/analysis/test-analysis.md` (the **counts of the test basis**, the **quality risks and test types**, the **automation feasibility**, the **ambiguities**), with the **register rows** in `basis-register.md` and the **sentence map** in `sentence-map.md` beside it and the **scope rulings** in the matrix's "Items not tested", and `testing/planning/testing-plan.md`, which holds **planning decisions only** (the **objectives**, the **risk level** of each in-scope item, the **technique selection** with its rules, the **levels**, the **coverage targets**, the **environment and dependencies**, the **entry and exit criteria**, the **testing risks**, the **post-implementation tests**, and the **design inputs** handed to Gate 2). The **PO approves them (Gate 1)** **before any design starts**.
 2. **Gate 2 records**, in `testing/design/`: **one evidence file per design input** in `techniques/`, holding the **output of each step** of its technique, its **coverage items** and its **test cases**, ending with the **reconciliation** against drafted AC; the summary `test-design.md` (**techniques applied**, **coverage counts**, **gaps, deviations and design rulings**; `dev/development/test-strategy.md` "Test design specification"); then `acceptance-criteria.md`: the **acceptance criteria** of each in-scope FR and the **measures** of each in-scope NFR ([Spec rules](#spec-rules) rule 2), each with its **tier**, its **`Catches` line**, the **conditions it serves** and its **test cases**. The **PO approves them (Gate 2)** **before any test ticket** is created.
 3. **Split the matrix rows**: **one row per acceptance criterion or measure**, with its tier, its **basis items** and its **conditions**.
 4. **Write the test implementation contract** in `implementation/test-implementation.md`: the **driver functions and fields** the AC use, the **fixtures** with their **self-tests**, and the **test-stub ticket list**. It **follows the final AC**; it never limits the design. Then **create `test-stub-ticket` Issues** from it (labels `phase:test-stubs`, `uc:XXX`, `tier:*`):
@@ -313,9 +316,10 @@ Every plan document and template serves **two readers**: a **person skimming it*
 1. **Front-load.** Open with `## At a glance`: **scope**, **status**, and a **link to the matrix**.
 2. **Link, don't restate.** **One fact lives in one home.** Plans **reference matrix rows by ID**. They **never copy requirement text**.
 3. **Fixed section order.** Each template **fixes its headings**. Generators **keep them**.
-4. **Length budget.** **About one page** per document. **Split or link out** when it grows. The **acceptance criteria and measures** (`acceptance-criteria.md`), the **basis register with its sentence map** of a test analysis, and the **technique evidence files** **do not count** toward it: their length follows the spec they cover.
+4. **Length budget.** **About one page** per document. **Split or link out** when it grows. The **acceptance criteria and measures** (`acceptance-criteria.md`), the **basis register** and the **sentence map** of a test analysis (`basis-register.md`, `sentence-map.md`), and the **technique evidence files** **do not count** toward it: their length follows the spec they cover.
 5. **No history in a living document.** The spec, this workflow, the templates and the other living documents say **what is true now**; **history goes to git** and `CHANGELOG.md`. **Records** (decisions, research items, build files, meeting notes) **keep their dates**. See AGENTS.md "Documents: current state, history in git".
 6. **One line, bold keywords.** Each **paragraph or list item sits on one line** (**no hard wrap**), and each sentence **bolds the words that carry its meaning**. See AGENTS.md "Writing Markdown".
+7. **Outcomes, not the conversation.** Every document holds what its reader **acts on**. A decision is written as its **result**, or **`pending`** while open; **who decided and when** stays in the **flow tracker issue** and **git**. A section that only records **a review** or **a check that changed nothing** is **not kept**. See AGENTS.md "Documents: current state, history in git".
 
 ## Flow tracker
 

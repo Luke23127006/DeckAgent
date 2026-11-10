@@ -37,7 +37,7 @@ Ba khái niệm **tách nhau**:
 
 | Measure | Basis item | Quality risk | Technique và level | Coverage item (biến thể) | Mechanism | Record Gate 2 |
 |---|---|---|---|---|---|---|
-| NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá (Z-14) | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm do Phase 3 chốt (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (Z-25); dòng của M-1 trong matrix |
+| NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm do Phase 3 chốt (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (Z-25); dòng của M-1 trong matrix |
 
 Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-008.3) **không thuộc** M-1; build nhận của chúng ghi ở test-analysis.md (SR-7, SR-8d, SR-9).
 
@@ -46,7 +46,7 @@ Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-0
 
 > **Status: bản nháp trước STLC, chưa qua Gate 2.** Các AC dưới đây **được giữ nguyên**, nhưng **không phải đầu vào** của Test Design: chúng chỉ được đọc ở **bước reconciliation** của mỗi technique. Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage; Gate 2 **rà từng AC** theo condition của [test-design.md](./test-design.md) (Z-18 đến Z-25), và **thêm dòng `Serves` và `Variants`** cho mỗi AC và measure (mục "AC, measure và test case" ở trên).
 
-<!-- Given/When/Then/Catches/Check/Tier. "Cùng folder" theo windows-folders.md mục 1 (PO quyết ở #52): cùng dev:ino; khi không đọc được ID thì cùng đường dẫn realpathSync.native. -->
+<!-- Given/When/Then/Catches/Check/Tier. "Cùng folder" theo windows-folders.md mục 1: cùng dev:ino; khi không đọc được ID thì cùng đường dẫn realpathSync.native. -->
 
 ### FR-071
 
@@ -733,7 +733,7 @@ _"Không gửi gì" **dời sang build 3**: build này **chưa gửi được** 
 
 ### NFR-008
 
-_Build này chỉ test phần **chat** của NFR-008. Deck và setup provider thuộc **build sau**; vế "**nhận request mới**" **dời sang build 3** (test-design.md Z-14)._
+_Build này chỉ test phần **chat** của NFR-008. Deck và setup provider thuộc **build sau**; vế "**nhận request mới**" **dời sang build 3** (SR-7 ở traceability-matrix.md)._
 
 #### M-1 · Chat giữ trạng thái đã lưu khi DeckAgent chết giữa chừng
 

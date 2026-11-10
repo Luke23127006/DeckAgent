@@ -8,7 +8,7 @@ created: DD-MM-YYYY
 # Test design — {scope}
 
 <!-- The summary of the Test Design Specification of the build (dev/development/test-strategy.md "Test design specification"), the record of Gate 2. The evidence of each technique lives in techniques/Dn-topic.md (template test-design-technique.md); this file is the index of those files, the coverage counts and the ruling log.
-     Homes: the basis items, the scope rulings and the rulings on ambiguities live in ../analysis/test-analysis.md; the selection of each technique and its design input in ../planning/testing-plan.md; the AC and measures in acceptance-criteria.md. This file cites them by ID and does not restate them.
+     Homes: the basis items live in ../analysis/basis-register.md; the scope rulings in ../traceability-matrix.md "Items not tested"; the readings of ambiguities in ../analysis/test-analysis.md; the selection of each technique and its design input in ../planning/testing-plan.md; the AC and measures in acceptance-criteria.md. This file cites them by ID and does not restate them.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 
 ## At a glance
@@ -27,8 +27,8 @@ created: DD-MM-YYYY
 
 ## 2. Gaps, deviations and design rulings
 
-<!-- Kind: gap (the spec does not answer), deviation (a technique or coverage criterion the risk level requires is not applied), checklist (a C1–C8 failure), infra (a test-infrastructure choice). Ruling: the PO's, with the date, or "pending". A ruled item's result is written as current fact into the file that owns it: testing-plan.md, acceptance-criteria.md, an evidence file or ../../implementation/test-implementation.md. Scope rulings and rulings on ambiguities stay in test-analysis.md. -->
+<!-- Kind: gap (the spec does not answer), deviation (a technique or coverage criterion the risk level requires is not applied), checklist (a C1–C8 failure), infra (a test-infrastructure choice). Outcome: "pending" while the PO has not decided. A decided item's result is written as current fact into the file that owns it (testing-plan.md, acceptance-criteria.md, an evidence file, ../../implementation/test-implementation.md, or the spec) and the row is removed, so the table holds only open items. Scope rulings stay in the matrix's "Items not tested" and readings of ambiguities in ../analysis/test-analysis.md. -->
 
-| ID | Kind | What, proposal | PO ruling (DD-MM-YYYY) |
+| ID | Kind | What, proposal | Outcome |
 |---|---|---|---|
 | Z-1 | gap | | pending |
