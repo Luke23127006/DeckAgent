@@ -40,6 +40,9 @@
       "path": "packages/session/persistence"
     },
     {
+      "path": "packages/workspace/registry"
+    },
+    {
       "path": "packages/tools/filesystem"
     },
     {

@@ -53,8 +53,11 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
-  /** Host owns the returned handle until the turn and disposal finish. */
-  readonly openAgent: (sessionId: string, requestId: string, request: AgentRequest) => Promise<RequestAgent>
+  /**
+   * Host owns the returned handle until the turn and disposal finish.
+   * Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`.
+   */
+  readonly openAgent?: (sessionId: string, requestId: string, request: AgentRequest) => Promise<RequestAgent>
   /** Persist an active transition before it becomes visible or starts more model work. */
   readonly requestState?: (snapshot: RequestSnapshot) => Promise<void>
   /** Runs after handle disposal and before terminal snapshot/Session lock release. */
@@ -103,6 +106,34 @@ export interface WebSession {
   readonly selection?: ModelSelection
   readonly selectable: boolean
   readonly activeRequestId?: string
+  /** Workspace of the chat; `null` for an ungrouped chat. */
+  readonly workspaceId: string | null
+  /** False when the saved work of the chat cannot be read; the chat stays listed (FR-050). */
+  readonly readable: boolean
+  /** True while the Host keeps a non-empty draft for the chat. */
+  readonly hasDraft?: boolean
+}
+
+export type WorkspaceFolderStatus = 'none' | 'available' | 'unreadable' | 'different-folder'
+
+/** Browser projection of a workspace. The folder path is shown to the user who chose it, on the local Host only. */
+export interface WorkspaceView {
+  readonly id: string
+  readonly name: string
+  readonly folder: string | null
+  readonly isDefault: boolean
+  readonly folderStatus: WorkspaceFolderStatus
+}
+
+export interface WorkspaceList {
+  readonly workspaces: readonly WorkspaceView[]
+  /** The workspace in use. */
+  readonly selectedId: string
+}
+
+export interface ChatDraft {
+  readonly sessionId: string
+  readonly text: string
 }
 
 export interface StoredActivity extends ActivityEvent {
@@ -139,8 +170,31 @@ export interface WebManagement {
   deleteProvider(id: string): Promise<void>
   catalog(id: string): Promise<readonly string[]>
   sessions(): Promise<readonly WebSession[]>
+  /** Creates the chat in the workspace in use. */
   createSession(value: unknown): Promise<WebSession>
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
+  /** Optional: an application without workspaces has no `/api/workspaces` routes. */
+  readonly workspaces?: WorkspaceManagement
+  /** Earlier chats whose name or conversation holds the words. Body: `{ words }`. */
+  searchSessions?(value: unknown): Promise<readonly WebSession[]>
+  readonly drafts?: {
+    get(sessionId: string): Promise<ChatDraft>
+    save(sessionId: string, value: unknown): Promise<ChatDraft>
+  }
+}
+
+/** Workspace operations. Every input is untrusted JSON; the application validates it. */
+export interface WorkspaceManagement {
+  list(): Promise<WorkspaceList>
+  /** Body: `{ folder }`. Sets up a workspace, or finds the one of that folder, and makes it the workspace in use. */
+  add(value: unknown): Promise<WorkspaceList>
+  /** Body: `{ id }`. */
+  select(value: unknown): Promise<WorkspaceList>
+  /** Body: `{ name }`. */
+  rename(id: string, value: unknown): Promise<WorkspaceList>
+  /** Body: `{ folder }`. */
+  relink(id: string, value: unknown): Promise<WorkspaceList>
+  remove(id: string): Promise<WorkspaceList>
 }

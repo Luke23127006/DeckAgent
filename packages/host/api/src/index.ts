@@ -3,12 +3,14 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DeckError } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
-import type { AgentRequest, HostOptions, RequestSnapshot } from './contracts.ts'
+import type { AgentRequest, HostOptions, RequestSnapshot, WebSession } from './contracts.ts'
 import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
 import { requestReply } from './request-reply.ts'
 
 export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebPreferences, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export type { ChatDraft, WorkspaceFolderStatus, WorkspaceList, WorkspaceManagement, WorkspaceView } from './contracts.ts'
+export type { HttpErrorDetail } from './http-error.ts'
 export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
@@ -86,7 +88,12 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = new RequestController(options.openAgent, options.finishRequest, options.requestState)
+  const openAgent = options.openAgent
+  const controller = new RequestController(
+    openAgent ?? (async () => { throw new HttpError(503, 'REQUESTS_UNAVAILABLE') }),
+    options.finishRequest,
+    options.requestState,
+  )
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -107,7 +114,8 @@ export async function startHost(options: HostOptions) {
       const deck = error instanceof DeckError
       const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
       json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed' },
+        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed',
+          ...(known && error.detail ? { detail: error.detail } : {}) },
       })
     })
   })
@@ -116,6 +124,13 @@ export async function startHost(options: HostOptions) {
   server.on('clientError', (_error, socket) => {
     socket.destroy()
   })
+
+  async function withActive(sessions: readonly WebSession[]): Promise<readonly WebSession[]> {
+    return sessions.map(session => {
+      const activeRequestId = controller.active(session.sessionId)
+      return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
+    })
+  }
 
   async function route(req: IncomingMessage, res: ServerResponse) {
     if (closing) throw new HttpError(503, 'HOST_CLOSED')
@@ -161,13 +176,7 @@ export async function startHost(options: HostOptions) {
       const catalog = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(url.pathname)
       if (catalog && req.method === 'GET') { json(res, 200, await management.catalog(catalog[1]!)); return }
       if (url.pathname === '/api/sessions') {
-        if (req.method === 'GET') {
-          const sessions = await management.sessions()
-          json(res, 200, sessions.map(session => {
-            const activeRequestId = controller.active(session.sessionId)
-            return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
-          })); return
-        }
+        if (req.method === 'GET') { json(res, 200, await withActive(await management.sessions())); return }
         if (req.method === 'POST') { json(res, 201, await management.createSession(await readJson(req))); return }
       }
       const resource = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(url.pathname)
@@ -180,8 +189,34 @@ export async function startHost(options: HostOptions) {
       if (resource?.[2] === 'requests' && req.method === 'GET') {
         json(res, 200, await management.requests(resource[1]!)); return
       }
+      if (url.pathname === '/api/sessions/search' && req.method === 'POST' && management.searchSessions) {
+        json(res, 200, await withActive(await management.searchSessions(await readJson(req)))); return
+      }
+      const draft = /^\/api\/sessions\/([\w-]{1,100})\/draft$/.exec(url.pathname)
+      if (draft && management.drafts) {
+        if (req.method === 'GET') { json(res, 200, await management.drafts.get(draft[1]!)); return }
+        if (req.method === 'PUT') { json(res, 200, await management.drafts.save(draft[1]!, await readJson(req))); return }
+      }
+      const workspaces = management.workspaces
+      if (workspaces && url.pathname.startsWith('/api/workspaces')) {
+        if (url.pathname === '/api/workspaces') {
+          if (req.method === 'GET') { json(res, 200, await workspaces.list()); return }
+          if (req.method === 'POST') { json(res, 200, await workspaces.add(await readJson(req))); return }
+        }
+        if (url.pathname === '/api/workspaces/selected' && req.method === 'PUT') {
+          json(res, 200, await workspaces.select(await readJson(req))); return
+        }
+        const workspace = /^\/api\/workspaces\/([\w-]{1,100})(\/folder)?$/.exec(url.pathname)
+        if (workspace && workspace[1] !== 'selected') {
+          if (!workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req))); return }
+          if (!workspace[2] && req.method === 'DELETE') { json(res, 200, await workspaces.remove(workspace[1]!)); return }
+          if (workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req))); return }
+        }
+      }
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
+      // No Agent runtime is connected: refuse the request instead of pretending to start work.
+      if (!openAgent) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
       json(res, 202, await controller.submit(await body(req)))
       return
     }

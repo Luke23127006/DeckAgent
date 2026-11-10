@@ -2,9 +2,9 @@ import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { parseArgs, promisify } from 'node:util'
 import { ModelProviders } from '@deckagent/model-providers'
-import { RuntimeError } from '@deckagent/agent-runtime'
 import type { ModelConnection } from '@deckagent/model-providers'
-import { startLocalWeb } from './index.ts'
+import { StorageError, resolveStorageRoot, startLocalWeb } from './index.ts'
+import type { LocalWebOptions } from './index.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -56,7 +56,6 @@ async function main() {
       config: { type: 'string' },
       provider: { type: 'string' },
       model: { type: 'string' },
-      workspace: { type: 'string' },
       'data-dir': { type: 'string' },
       port: { type: 'string' },
       help: { type: 'boolean' },
@@ -66,7 +65,7 @@ async function main() {
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--workspace .deckagent/workspace] [--data-dir .deckagent] [--confirmed-deck config/deck.confirmed.example.json] [--port 0] [--no-open]\nOpens Settings even without a model. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for TASK-005 manual testing only; it is not the TASK-006 outline workflow. Ctrl+C shuts down Host and drains active work.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--port 0] [--no-open]\nRuns without a model: workspaces and chats work, sending a request is not available yet. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
     )
     return
   }
@@ -83,7 +82,7 @@ async function main() {
   }
   const port = Number(values.port ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
-  let confirmedDecks: NonNullable<Parameters<typeof startLocalWeb>[0]['confirmedDecks']> = []
+  let confirmedDecks: NonNullable<LocalWebOptions['confirmedDecks']> = []
   if (values['confirmed-deck']) {
     const value: unknown = JSON.parse(await readFile(values['confirmed-deck'], 'utf8'))
     if (!object(value) || typeof value.sessionId !== 'string' || typeof value.outlineId !== 'string' || !Array.isArray(value.slides)
@@ -97,8 +96,7 @@ async function main() {
     confirmedDecks,
     connections,
     ...(provider && model ? { selection: { provider, model } } : {}),
-    workspace: values.workspace ?? '.deckagent/workspace',
-    dataDir: values['data-dir'] ?? '.deckagent',
+    dataDir: resolveStorageRoot({ flag: values['data-dir'] }),
     port,
   })
   const stop = () => {
@@ -132,15 +130,11 @@ async function main() {
 }
 
 main().catch(error => {
-  if (error instanceof RuntimeError && error.code === 'PROVIDER_CREDENTIALS') {
-    console.error(
-      'PROVIDER_CREDENTIALS: Set a valid API key in the root .env or terminal environment, then restart Host. Terminal variables override .env, even when empty; remove an old variable to use .env. Keys must have no whitespace or invisible characters.',
-    )
+  if (error instanceof StorageError) {
+    console.error(`${error.code}: ${error.message}`)
     process.exitCode = 1
     return
   }
-  console.error(
-    'Local Web failed. Check arguments, model configuration, environment credentials, workspace and permissions.',
-  )
+  console.error('Local Web failed. Check the arguments, the model configuration and the permissions of the data folder.')
   process.exitCode = 1
 })

@@ -6,6 +6,8 @@ import type {
   WebPreferences,
   WebSession,
   WebSettings,
+  WorkspaceList,
+  WorkspaceView,
 } from '@deckagent/host-api'
 import { userQuestion } from './user-question.ts'
 
@@ -49,7 +51,9 @@ function session(value: unknown): WebSession {
     typeof value.selectable !== 'boolean' ||
     (value.activeRequestId !== undefined && typeof value.activeRequestId !== 'string') ||
     (value.title !== undefined && typeof value.title !== 'string') ||
-    (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean')
+    (value.hasSlides !== undefined && typeof value.hasSlides !== 'boolean') ||
+    (value.workspaceId !== null && typeof value.workspaceId !== 'string') ||
+    typeof value.readable !== 'boolean'
   )
     invalid()
   const chosen = value.selection
@@ -66,12 +70,75 @@ function session(value: unknown): WebSession {
     ...(typeof value.title === 'string' ? { title: value.title } : {}),
     ...(typeof value.hasSlides === 'boolean' ? { hasSlides: value.hasSlides } : {}),
     selectable: value.selectable,
+    workspaceId: typeof value.workspaceId === 'string' ? value.workspaceId : null,
+    readable: value.readable === true,
+    ...(value.hasDraft === true ? { hasDraft: true } : {}),
     ...(object(chosen) && typeof chosen.provider === 'string' && typeof chosen.model === 'string'
       ? { selection: { provider: chosen.provider, model: chosen.model } }
       : {}),
     ...(typeof value.activeRequestId === 'string' ? { activeRequestId: value.activeRequestId } : {}),
   }
 }
+
+const workspaceStatuses = ['none', 'available', 'unreadable', 'different-folder'] as const
+
+function workspaceList(value: unknown): WorkspaceList {
+  if (!object(value) || typeof value.selectedId !== 'string' || !Array.isArray(value.workspaces)) invalid()
+  return {
+    selectedId: value.selectedId,
+    workspaces: value.workspaces.map((item: unknown): WorkspaceView => {
+      if (
+        !object(item) ||
+        typeof item.id !== 'string' ||
+        typeof item.name !== 'string' ||
+        (item.folder !== null && typeof item.folder !== 'string') ||
+        typeof item.isDefault !== 'boolean' ||
+        !workspaceStatuses.some(status => status === item.folderStatus)
+      )
+        invalid()
+      return {
+        id: item.id,
+        name: item.name,
+        folder: typeof item.folder === 'string' ? item.folder : null,
+        isDefault: item.isDefault,
+        folderStatus: workspaceStatuses.find(status => status === item.folderStatus)!,
+      }
+    }),
+  }
+}
+
+/** A refused management request: `message` is the stable error code; `detail` holds only safe facts. */
+export class ManagementError extends Error {
+  constructor(
+    code: string,
+    readonly detail: Readonly<Record<string, string | boolean>> = {},
+  ) {
+    super(code)
+    this.name = 'ManagementError'
+  }
+}
+
+const allowedCodes = [
+  'INVALID_PROVIDER',
+  'MODEL_NOT_SELECTABLE',
+  'PROVIDER_NAME_EXISTS',
+  'PROTOCOL_IMMUTABLE',
+  'NEW_ENDPOINT_REQUIRES_KEY',
+  'PROVIDER_BUSY',
+  'AUTH_REQUIRED',
+  'SESSION_NOT_FOUND',
+  'CHAT_UNREADABLE',
+  'DRAFT_TOO_LARGE',
+  'WORKSPACE_NOT_FOUND',
+  'WORKSPACE_DEFAULT',
+  'WORKSPACE_FOLDER_REQUIRED',
+  'WORKSPACE_FOLDER_INVALID',
+  'WORKSPACE_FOLDER_UNREADABLE',
+  'WORKSPACE_FOLDER_REFUSED',
+  'WORKSPACE_FOLDER_IN_USE',
+  'WORKSPACE_NAME_EMPTY',
+  'WORKSPACE_NAME_TOO_LONG',
+]
 
 /** Validates management responses separately from request streaming. */
 export class ManagementClient {
@@ -89,21 +156,14 @@ export class ManagementClient {
       ...(value === undefined ? {} : { body: JSON.stringify(value) }),
     })
     if (!response.ok) {
-      const data: unknown = await response.json()
-      const allowed = [
-        'INVALID_PROVIDER',
-        'MODEL_NOT_SELECTABLE',
-        'PROVIDER_NAME_EXISTS',
-        'PROTOCOL_IMMUTABLE',
-        'NEW_ENDPOINT_REQUIRES_KEY',
-        'PROVIDER_BUSY',
-        'AUTH_REQUIRED',
-      ]
-      const code =
-        object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
-          ? data.error.code
-          : 'SETTINGS_REQUEST_FAILED'
-      throw new Error(code)
+      const data: unknown = await response.json().catch(() => undefined)
+      const error = object(data) && object(data.error) ? data.error : undefined
+      const code = error && typeof error.code === 'string' && allowedCodes.includes(error.code) ? error.code : 'SETTINGS_REQUEST_FAILED'
+      const detail: Record<string, string | boolean> = {}
+      if (error && object(error.detail) && code !== 'SETTINGS_REQUEST_FAILED')
+        for (const [key, item] of Object.entries(error.detail))
+          if (typeof item === 'string' || typeof item === 'boolean') detail[key] = item
+      throw new ManagementError(code, detail)
     }
     return response.json()
   }
@@ -150,6 +210,47 @@ export class ManagementClient {
 
   async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
     return session(await this.request(`sessions/${encodeURIComponent(id)}/selection`, 'PUT', value))
+  }
+
+  /** Earlier chats whose name or conversation holds every word. */
+  async search(words: string): Promise<readonly WebSession[]> {
+    const data = await this.request('sessions/search', 'POST', { words })
+    if (!Array.isArray(data)) invalid()
+    return data.map(session)
+  }
+
+  async draft(id: string): Promise<string> {
+    const data = await this.request(`sessions/${encodeURIComponent(id)}/draft`)
+    if (!object(data) || typeof data.text !== 'string') invalid()
+    return data.text
+  }
+
+  async saveDraft(id: string, text: string): Promise<void> {
+    await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', { text })
+  }
+
+  async workspaces(): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces'))
+  }
+
+  async addWorkspace(folder: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces', 'POST', { folder }))
+  }
+
+  async selectWorkspace(id: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces/selected', 'PUT', { id }))
+  }
+
+  async renameWorkspace(id: string, name: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { name }))
+  }
+
+  async relinkWorkspace(id: string, folder: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request(`workspaces/${encodeURIComponent(id)}/folder`, 'PUT', { folder }))
+  }
+
+  async removeWorkspace(id: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request(`workspaces/${encodeURIComponent(id)}`, 'DELETE'))
   }
 
   async save(

@@ -1,4 +1,4 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings } from '@deckagent/host-api'
+import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -14,6 +14,14 @@ import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
+import { workspaceView } from './workspace-view.ts'
+
+/**
+ * No Agent runtime is connected in this build (B01): the Host refuses every request, so the composer
+ * keeps drafts but offers no send. The OpenCode runtime connects in B02.
+ */
+const requestsAvailable = false
+const requestsUnavailableText = 'Chưa thể gửi yêu cầu trong bản này: DeckAgent chưa kết nối runtime tạo slide. Bạn vẫn soạn được bản nháp, tạo và mở lại chat.'
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -94,17 +102,14 @@ let waiting: RequestSnapshot | undefined
 let pendingReply: { key: string; value: RequestReply } | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
 let sessions: readonly WebSession[] = []
+let workspaces: WorkspaceList = { workspaces: [], selectedId: 'default' }
+let searchWords = ''
+let searchResults: Set<string> | undefined
 let watch: AbortController | undefined
 let generation = 0
 const sending = new Set<string>()
 const selecting = new Set<string>()
 const drafts = new Map<string, string>()
-let recentModels: { provider: string; model: string }[] = []
-try {
-  const saved: unknown = JSON.parse(sessionStorage.getItem('deckagent-recent-models') ?? '[]')
-  if (Array.isArray(saved)) recentModels = saved.filter(value => value && typeof value === 'object' &&
-    typeof value.provider === 'string' && typeof value.model === 'string').slice(-100)
-} catch { /* Optional tab-local preferences; Host remains the source of selectable models. */ }
 let polling = false
 let disposed = false
 let reconnecting = false
@@ -124,25 +129,32 @@ function fitInput() {
   input.style.height = `${Math.min(180, Math.max(44, input.scrollHeight))}px`
 }
 
+// The Host keeps the draft of each chat (FR-038): a reload and every open interface see the same draft.
+// `drafts` only mirrors what this page last read or typed; it is not a second store.
+const pendingDrafts = new Map<string, ReturnType<typeof setTimeout>>()
 function saveDraft() {
   if (!current) return
-  drafts.set(current.sessionId, input.value)
-  try {
-    const key = `deckagent-draft:${current.sessionId}`
-    if (input.value) sessionStorage.setItem(key, input.value)
-    else sessionStorage.removeItem(key)
-  } catch { /* Drafts still survive switching chats within this page. */ }
+  const id = current.sessionId
+  drafts.set(id, input.value)
+  clearTimeout(pendingDrafts.get(id))
+  pendingDrafts.set(id, setTimeout(() => { void flushDraft(id) }, 250))
 }
-function readDraft(id: string): string {
-  if (drafts.has(id)) return drafts.get(id)!
-  let saved = ''
-  try { saved = sessionStorage.getItem(`deckagent-draft:${id}`) ?? '' } catch { /* Optional tab-local recovery. */ }
-  drafts.set(id, saved)
-  return saved
+async function flushDraft(id: string) {
+  const timer = pendingDrafts.get(id)
+  if (timer === undefined) return
+  clearTimeout(timer)
+  pendingDrafts.delete(id)
+  try { await management.saveDraft(id, drafts.get(id) ?? '') } catch {
+    status.hidden = false
+    status.dataset.kind = 'error'
+    status.textContent = 'Chưa lưu được bản nháp vào DeckAgent. Kiểm tra kết nối; nội dung vẫn còn trong ô soạn thảo.'
+  }
 }
-function rememberModel(value: { provider: string; model: string }) {
-  recentModels = recentModels.filter(item => item.provider !== value.provider || item.model !== value.model).concat(value).slice(-100)
-  try { sessionStorage.setItem('deckagent-recent-models', JSON.stringify(recentModels)) } catch { /* Optional tab-local preference. */ }
+async function readDraft(id: string): Promise<string> {
+  await flushDraft(id)
+  const text = await management.draft(id)
+  drafts.set(id, text)
+  return text
 }
 
 function remember(id: string) {
@@ -169,7 +181,10 @@ function controls() {
   for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
   model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
+  workspaceUI.setBusy(opening !== undefined || creating)
+  unavailable.hidden = requestsAvailable
   submit.disabled =
+    !requestsAvailable ||
     !current ||
     creating ||
     reconnecting ||
@@ -219,35 +234,51 @@ function renderModels() {
   model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
   controls()
 }
+function chatButton(session: WebSession) {
+  const item = button('', () =>
+    run(open(session)),
+  )
+  const updated = element('time')
+  updated.dateTime = session.updatedAt
+  const date = new Date(session.updatedAt)
+  updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
+  const slides = !session.readable ? 'Không mở được chat này' : session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
+  const name = !session.readable ? 'Chat không đọc được' : !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'
+  item.append(element('strong', name), updated, element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
+  item.title = `${name} · ${updated.textContent} · ${slides}`
+  item.dataset.sessionId = session.sessionId
+  if (!session.readable) item.dataset.unreadable = 'true'
+  item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
+  item.disabled = switchingBlocked()
+  return item
+}
 function renderChats() {
   chats.replaceChildren()
-  const visible = sessions.filter(session => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides || readDraft(session.sessionId).trim())
+  const listed = (session: WebSession) => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides
+    || !session.readable || session.hasDraft || drafts.get(session.sessionId)?.trim()
+  const found = searchResults
+  const visible = sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
   // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
   visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId))
-  if (!visible.length) chats.append(element('p', 'Chưa có chat trước.'))
-  for (const session of visible) {
-    const item = button('', () =>
-      run(open(session)),
-    )
-    const updated = element('time')
-    updated.dateTime = session.updatedAt
-    const date = new Date(session.updatedAt)
-    updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
-    const slides = session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
-    item.append(element('strong', !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'), updated,
-      element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
-    item.title = `${session.title ?? 'Chat mới'} · ${updated.textContent} · ${slides}`
-    item.dataset.sessionId = session.sessionId
-    item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
-    item.disabled = switchingBlocked()
-    chats.append(item)
+  // UC-006 S1: the chats of the workspace in use, and the ungrouped chats apart from them, whichever workspace is in use.
+  const grouped = visible.filter(session => session.workspaceId === workspaces.selectedId)
+  const ungrouped = visible.filter(session => session.workspaceId === null)
+  if (!grouped.length && !ungrouped.length)
+    chats.append(element('p', found ? 'Không có chat nào khớp với các từ đã nhập.' : 'Chưa có chat trước.'))
+  for (const session of grouped) chats.append(chatButton(session))
+  if (ungrouped.length) {
+    chats.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
+    for (const session of ungrouped) chats.append(chatButton(session))
   }
 }
 async function refresh() {
-  const [nextSettings, nextSessions] = await Promise.all([management.settings(), management.sessions()])
+  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
   settings = nextSettings
   sessions = nextSessions
+  workspaces = nextWorkspaces
+  workspaceUI.update(workspaces)
   if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
+  if (searchWords) searchResults = new Set((await management.search(searchWords)).map(session => session.sessionId))
   renderModels()
   renderChats()
 }
@@ -305,11 +336,11 @@ async function open(session: WebSession) {
   picker.close()
   // Read everything before replacing current state. A failed open leaves the old chat intact.
   const previousGeneration = generation
+  if (current) { saveDraft(); await flushDraft(current.sessionId) }
   const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
-    management.requests(session.sessionId), outlines.snapshot(session.sessionId)])
+    management.requests(session.sessionId), outlines.snapshot(session.sessionId), readDraft(session.sessionId)])
   if (generation !== previousGeneration || (switching && switchingBlocked())) return
-  if (current) saveDraft()
-  input.value = readDraft(session.sessionId)
+  input.value = loaded[4]
   generation++
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
@@ -339,18 +370,48 @@ async function open(session: WebSession) {
 async function newChat() {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
-  if (current && !historyPresent) { input.focus(); return }
-  const selection = [...recentModels].reverse().find(item => settings.providers.some(provider =>
-    provider.id === item.provider && provider.models.includes(item.model)))
+  // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
+  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) { input.focus(); return }
   creating = true
   controls()
   try {
-    const created = await management.create(selection)
+    // FR-053: the Host gives the new chat the most recent model choice of any chat, when still selectable.
+    const created = await management.create()
     await refresh()
     await open(created)
   } finally { creating = false; controls() }
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
+const workspaceUI = workspaceView(management, root, async (next, reloadChats) => {
+  // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
+  workspaces = next
+  if (reloadChats) await refresh()
+  else renderChats()
+  controls()
+})
+const search = element('form', undefined, 'chat-search')
+search.setAttribute('role', 'search')
+const searchInput = element('input')
+searchInput.type = 'search'
+searchInput.placeholder = 'Tìm chat theo từ…'
+searchInput.setAttribute('aria-label', 'Tìm chat trước theo từ')
+search.append(searchInput)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+function findChats() {
+  const words = searchInput.value.trim()
+  searchWords = words
+  if (!words) { searchResults = undefined; renderChats(); return }
+  run(management.search(words).then(found => {
+    // FR-134: keep the words; show only the chats that hold them.
+    if (searchWords !== words) return
+    searchResults = new Set(found.map(session => session.sessionId))
+    renderChats()
+  }))
+}
+searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(findChats, 200) })
+search.addEventListener('submit', event => { event.preventDefault(); clearTimeout(searchTimer); findChats() })
+const unavailable = element('p', requestsUnavailableText, 'requests-unavailable')
+unavailable.setAttribute('role', 'note')
 const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
 function switchingBlocked(): boolean {
   return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
@@ -435,9 +496,11 @@ accountMenu.append(
 )
 navigation.append(
   navTop,
+  workspaceUI.node,
   newChatButton,
   navigationHint,
   recents,
+  search,
   chats,
   accountTrigger,
   accountMenu,
@@ -481,7 +544,7 @@ composerControls.append(attachment, createPresentation)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
-form.append(input, composerActions)
+form.append(unavailable, input, composerActions)
 input.addEventListener('input', () => { saveDraft(); controls() })
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -522,7 +585,6 @@ model.addEventListener('change', () => {
         )
           return
         await management.select(id, { provider: value.provider, model: value.model })
-        rememberModel({ provider: value.provider, model: value.model })
         await refresh()
         if (current?.sessionId === id) status.hidden = true
       } finally {
@@ -619,7 +681,7 @@ const timer = setInterval(() => {
 window.addEventListener(
   'pagehide',
   () => {
-    saveDraft()
+    if (current) { saveDraft(); void flushDraft(current.sessionId) }
     navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
@@ -630,6 +692,17 @@ window.addEventListener(
 )
 window.addEventListener('pageshow', event => {
   if (event.persisted) location.reload()
+})
+// Another open interface may have changed the draft of this chat; show the Host's draft when this one is idle.
+window.addEventListener('focus', () => {
+  const id = current?.sessionId
+  if (!id || pendingDrafts.has(id) || document.activeElement === input) return
+  management.draft(id).then(text => {
+    if (current?.sessionId !== id || pendingDrafts.has(id) || input.value === text) return
+    drafts.set(id, text)
+    input.value = text
+    controls()
+  }, () => { /* The draft on screen stays; the next save reports a lost connection. */ })
 })
 run(
   (async () => {

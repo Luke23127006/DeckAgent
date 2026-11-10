@@ -131,8 +131,11 @@ Neutrals plus one blue.
 - **OK / Error**: completed mark, failed mark and failed label only.
 
 ### Named Rules
+
 **The One Blur Rule.** Blur lives on the window layer and on floating surfaces (popover, menus, outline card, wizard). Never put `backdrop-filter` on an ancestor of the model picker: the fixed popover would move.
+
 **The Mark Beside Color Rule.** Every state color travels with a drawn mark and a text label.
+
 **The One Waiting Block Rule.** At most one blue-tinted block is on screen.
 
 ## Typography

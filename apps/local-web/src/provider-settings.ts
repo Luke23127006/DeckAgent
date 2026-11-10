@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { ModelProviders, transformCredential } from '@deckagent/model-providers'
 import type { ModelConnection } from '@deckagent/model-providers'
-import type { ModelAdapter, ModelSelection } from '@deckagent/agent-runtime'
+import type { ModelSelection } from '@deckagent/session-persistence'
 import { HttpError } from '@deckagent/host-api'
 import type { ProviderSettings, WebSettings } from '@deckagent/host-api'
 import { record } from './web-state.ts'
@@ -56,19 +56,15 @@ function parseProvider(id: string, value: unknown): { saved: SavedProvider; key?
   }
 }
 
-/** Owns settings and credential snapshots; a request releases its provider lease after disposal. */
+/** Owns provider settings and credential snapshots. Requests capture settings at admission (B02). */
 export class ProviderStore {
   private readonly providers = new Map<string, SavedProvider>()
   private readonly keys = new Map<string, string>()
-  private readonly active = new Map<string, number>()
   private readonly deleted = new Set<string>()
   private mutation: Promise<void> = Promise.resolve()
   private readonly catalogAbort = new AbortController()
 
-  constructor(
-    private readonly db: DatabaseSync,
-    private readonly fixture?: { model: ModelAdapter; selection: ModelSelection },
-  ) {}
+  constructor(private readonly db: DatabaseSync) {}
 
   async load(connections: readonly ModelConnection[] = [], initial?: ModelSelection): Promise<void> {
     for (const row of this.db.prepare('SELECT id, payload FROM providers').all()) {
@@ -122,16 +118,6 @@ export class ProviderStore {
       hasKey: !!value.encryptedKey || this.keys.has(value.connection.id),
       keyAvailable: this.keys.has(value.connection.id),
     }))
-    if (this.fixture && !providers.some(provider => provider.id === this.fixture!.selection.provider))
-      providers.push({
-        id: this.fixture.selection.provider,
-        displayName: this.fixture.selection.provider,
-        protocol: 'chat-completions',
-        baseUrl: 'http://127.0.0.1',
-        models: [this.fixture.selection.model],
-        hasKey: false,
-        keyAvailable: false,
-      })
     return { providers, persistentKeys: process.platform === 'win32', builtIns: builtInProviders }
   }
 
@@ -173,7 +159,6 @@ export class ProviderStore {
 
   remove(id: string): Promise<void> {
     return this.serialize(async () => {
-      if (this.active.get(id)) throw new HttpError(409, 'PROVIDER_BUSY')
       if (!this.providers.has(id)) throw new HttpError(404, 'PROVIDER_NOT_FOUND')
       // A tombstone prevents old CLI bootstrap flags from resurrecting a deleted configuration.
       this.db
@@ -185,40 +170,6 @@ export class ProviderStore {
       this.deleted.add(id)
       this.keys.delete(id)
     })
-  }
-
-  capture(chosen: ModelSelection): { model: ModelAdapter; release: () => void } {
-    let model: ModelAdapter
-    if (
-      this.fixture &&
-      chosen.provider === this.fixture.selection.provider &&
-      chosen.model === this.fixture.selection.model
-    )
-      model = this.fixture.model
-    else {
-      const saved = this.providers.get(chosen.provider)
-      if (!saved?.models.includes(chosen.model)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-      const key = this.keys.get(chosen.provider)
-      const connection = {
-        ...saved.connection,
-        ...(key || saved.encryptedKey || saved.connection.apiKeyEnv ? { apiKeyEnv: 'REQUEST_KEY' } : {}),
-      }
-      const adapter = new ModelProviders([connection], { environment: { REQUEST_KEY: key } })
-      adapter.validateSelection(chosen)
-      model = adapter
-    }
-    this.active.set(chosen.provider, (this.active.get(chosen.provider) ?? 0) + 1)
-    let released = false
-    return {
-      model,
-      release: () => {
-        if (released) return
-        released = true
-        const count = (this.active.get(chosen.provider) ?? 1) - 1
-        if (count) this.active.set(chosen.provider, count)
-        else this.active.delete(chosen.provider)
-      },
-    }
   }
 
   async catalog(id: string): Promise<readonly string[]> {

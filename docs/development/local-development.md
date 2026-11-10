@@ -1,9 +1,6 @@
 # Local development
 
-Practical setup, configuration, and day-to-day commands for developing DeckAgent.
-README.md stays small: an intro, a quick start and document pointers. This guide
-owns the rest: provider configuration, the Web app walkthrough, CLI usage, session
-persistence, testing, and common problems.
+Practical setup, configuration, and day-to-day commands for developing DeckAgent. README.md stays small: an intro, a quick start and document pointers. This guide owns the rest: provider configuration, the Web app walkthrough, CLI usage, session persistence, testing, and common problems.
 
 ## Requirements
 
@@ -19,9 +16,7 @@ node --version
 pnpm --version
 ```
 
-If pnpm is missing, install Node first, then run
-`npm install --global pnpm@11.28.5`. On Windows PowerShell the repository uses
-`pnpm.cmd` to avoid the `pnpm.ps1` shim being blocked by the execution policy.
+If pnpm is missing, install Node first, then run `npm install --global pnpm@11.28.5`. On Windows PowerShell the repository uses `pnpm.cmd` to avoid the `pnpm.ps1` shim being blocked by the execution policy.
 
 ## Install, typecheck, build
 
@@ -31,9 +26,7 @@ pnpm.cmd typecheck
 pnpm.cmd build
 ```
 
-`typecheck` runs `tsc -b`. `build` typechecks and then bundles each workspace package
-into its `lib/` output. Re-run `build` after changing source: tests and the CLI import
-the built `lib/` output, not `src/`.
+`typecheck` runs `tsc -b`. `build` typechecks and then bundles each workspace package into its `lib/` output. Re-run `build` after changing source: tests and the CLI import the built `lib/` output, not `src/`.
 
 ## Lint and format
 
@@ -43,12 +36,7 @@ pnpm.cmd format:check apps/agent-runtime/src/chat.ts # check one changed file
 pnpm.cmd format apps/agent-runtime/src/chat.ts       # format one changed file
 ```
 
-`lint` is enforced in Workspace CI. Always pass explicit changed-file paths to
-`format` and `format:check`: without a path, `pnpm format` rewrites every file Biome
-selects, and the legacy code has a large formatting drift (~31 files). Whole-workspace
-`pnpm format:check` reports that pre-existing drift and is not an acceptance check.
-Format only the files you changed before committing. Configuration lives in
-`biome.json`.
+`lint` is enforced in Workspace CI. Always pass explicit changed-file paths to `format` and `format:check`: without a path, `pnpm format` rewrites every file Biome selects, and the legacy code has a large formatting drift (~31 files). Whole-workspace `pnpm format:check` reports that pre-existing drift and is not an acceptance check. Format only the files you changed before committing. Configuration lives in `biome.json`.
 
 ## Run the CLI
 
@@ -56,8 +44,7 @@ Format only the files you changed before committing. Configuration lives in
 pnpm.cmd chat
 ```
 
-On first run an interactive wizard asks for provider, model, and API key, verifies the
-connection, and saves the choice. Other entry points:
+On first run an interactive wizard asks for provider, model, and API key, verifies the connection, and saves the choice. Other entry points:
 
 ```powershell
 pnpm.cmd chat --setup                          # reconfigure
@@ -68,19 +55,11 @@ pnpm.cmd chat --prompt "<one turn>"            # non-interactive single turn
 pnpm.cmd chat --config <file> --provider <id> --model <id>
 ```
 
-Useful flags: `--tools` enables the `noop` echo tool; `--data-dir <dir>` moves storage
-(default `.deckagent`); `--session <id>` resumes a specific conversation. In chat,
-`/history` prints role/content and `/exit` quits; Ctrl+C cancels the active turn, and
-at idle it exits.
+Useful flags: `--tools` enables the `noop` echo tool; `--data-dir <dir>` moves storage (default `.deckagent`); `--session <id>` resumes a specific conversation. In chat, `/history` prints role/content and `/exit` quits; Ctrl+C cancels the active turn, and at idle it exits.
 
 ## Provider/model configuration and credentials
 
-The sample configuration is
-[`config/models.example.json`](../../config/models.example.json). Each connection has an
-`id`, `protocol`, `baseUrl`, and `apiKeyEnv` — the name of the environment variable
-that holds the key. Pass a different file with `--config`; a config file takes
-precedence over the saved profile. `DECKAGENT_MODELS_CONFIG`, `DECKAGENT_PROVIDER`, and
-`DECKAGENT_MODEL` are environment alternatives for non-interactive runs.
+The sample configuration is [`config/models.example.json`](../../config/models.example.json). Each connection has an `id`, `protocol`, `baseUrl`, and `apiKeyEnv` — the name of the environment variable that holds the key. Pass a different file with `--config`; a config file takes precedence over the saved profile. `DECKAGENT_MODELS_CONFIG`, `DECKAGENT_PROVIDER`, and `DECKAGENT_MODEL` are environment alternatives for non-interactive runs.
 
 | Connection | Protocol | API key environment variable |
 | --- | --- | --- |
@@ -89,26 +68,15 @@ precedence over the saved profile. `DECKAGENT_MODELS_CONFIG`, `DECKAGENT_PROVIDE
 | `deepseek` | Chat Completions | `DEEPSEEK_API_KEY` |
 | `anthropic` | Anthropic Messages | `ANTHROPIC_API_KEY` |
 
-The wizard stores non-secret configuration in `.deckagent/profile.json`, encrypted
-keys in `.deckagent/credentials/` (Windows DPAPI), and conversations in
-`.deckagent/sessions.sqlite`. The whole `.deckagent/` directory is gitignored. The
-environment variable is used first, then a stored encrypted key, then a hidden prompt
-when both are missing.
+The wizard stores non-secret configuration in `.deckagent/profile.json`, encrypted keys in `.deckagent/credentials/` (Windows DPAPI), and conversations in `.deckagent/sessions.sqlite`. The whole `.deckagent/` directory is gitignored. The environment variable is used first, then a stored encrypted key, then a hidden prompt when both are missing.
 
-`pnpm.cmd chat` and `pnpm.cmd start:local-web` load the optional root `.env` through
-Node's native `--env-file-if-exists` flag. Direct `node apps/...` invocations do not
-load it unless you pass the flag yourself. Copy [the empty template](../../.env.example)
-to `.env` if it does not already exist, and fill only the provider keys you use:
+`pnpm.cmd chat` and `pnpm.cmd start:local-web` load the optional root `.env` through Node's native `--env-file-if-exists` flag. Direct `node apps/...` invocations do not load it unless you pass the flag yourself. Copy [the empty template](../../.env.example) to `.env` if it does not already exist, and fill only the provider keys you use:
 
 ```dotenv
 GEMINI_API_KEY=your-key-here
 ```
 
-The real `.env` is gitignored; never commit or share it. Existing terminal variables
-override `.env`, even when empty. If an old terminal key is masking the file, run
-`Remove-Item Env:GEMINI_API_KEY -ErrorAction SilentlyContinue`, then restart the
-CLI/Host. Editing `.env` does not change an already running process. Local Web opens
-Settings even without a usable key; request admission checks credentials before sending.
+The real `.env` is gitignored; never commit or share it. Existing terminal variables override `.env`, even when empty. If an old terminal key is masking the file, run `Remove-Item Env:GEMINI_API_KEY -ErrorAction SilentlyContinue`, then restart the CLI/Host. Editing `.env` does not change an already running process. Local Web opens Settings even without a usable key; request admission checks credentials before sending.
 
 To set a key for the current PowerShell session without printing it:
 
@@ -118,84 +86,65 @@ To set a key for the current PowerShell session without printing it:
 
 ## Session persistence
 
-Every chat is saved to SQLite automatically. A session created without `--session`
-gets a generated ID printed as `Session: chat-<id>`; resume it later with
-`pnpm.cmd chat --session chat-<id>`. A session records its provider/model and refuses a
-conflicting selection. Sessions are local-only — do not run two CLIs against the same
-session concurrently. `--list-sessions` and `--history` read without calling a model.
+Every chat is saved to SQLite automatically. A session created without `--session` gets a generated ID printed as `Session: chat-<id>`; resume it later with `pnpm.cmd chat --session chat-<id>`. A session records its provider/model and refuses a conflicting selection. Sessions are local-only — do not run two CLIs against the same session concurrently. `--list-sessions` and `--history` read without calling a model.
 
-## Local Web, Models Settings and File Tools
+## Local Web, workspaces and chats
 
-After build, start Web and configure a provider/key/model in Models & settings:
+After build, start Web:
 
 ```powershell
 pnpm.cmd start:local-web
 ```
 
-This opens an authenticated local browser with Conversation, model selection, Settings,
-History and Activity Log. Settings can be opened before a model is set up.
-The Agent has workspace `read_file`/`write_file` tools.
-Default workspace is `.deckagent/workspace`; writes create new files, never overwrite.
-Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sqlite`
-stores Web Settings, encrypted keys and activity/request records. Web key persistence
-uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change
-within a chat; active work keeps its captured model and settings until completion.
+This opens an authenticated local browser. No model and no API key are needed to start. You can:
 
-The presentation workflow once the model is ready:
+- work in the default workspace, which has no project folder, or add a workspace for a folder by typing its full path;
+- switch, rename, remove a workspace, or choose another folder for it. Removing a workspace keeps its chats as ungrouped chats;
+- start a new chat, reopen an earlier chat, and find earlier chats by the words in their name or conversation;
+- keep a draft in each chat. The Host keeps the draft while it runs, across reloads; a draft is not kept after the Host stops;
+- set up providers and models in Settings. Web key persistence uses Windows CurrentUser DPAPI; the UI never reads a saved key back.
 
-1. Enter your presentation request, including the topic, language and number of
-   slides, and choose **Create presentation** to start the outline workflow.
-2. Read the proposed outline. Expand or collapse planned-slide details, ask for
-   changes through **Revise outline**, or choose **Cancel outline**.
-3. Choose **Confirm outline** on the current proposal. The confirmed outline becomes
-   read-only, the Canvas opens and slides move from Pending to published as they
-   finish.
-4. Use **History** to reopen a chat. Reloading or restarting with the same data
-   directory preserves conversations, confirmed outlines and published slides.
+Sending a request is not available in this build: the Host refuses `POST /api/requests` with `REQUESTS_UNAVAILABLE`, and the composer says why. The OpenCode runtime connects in a later build. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
 
-**Send request** stays available for ordinary chat and follow-up instructions. If a
-confirmed deck still has Pending slides after an error, send a request to continue
-the unfinished slides; do not confirm the same outline again.
+Application Storage is chosen in this order: `--data-dir <folder>`, then the `DECKAGENT_DATA_DIR` environment variable, then the app-data folder of the OS:
 
-With no arguments, `pnpm.cmd start:local-web` uses these paths relative to the
-repository root:
+| OS | Default data folder |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\DeckAgent` |
+| macOS | `~/Library/Application Support/DeckAgent` |
+| Linux | `$XDG_DATA_HOME/deckagent`, or `~/.local/share/deckagent` |
+
+The data folder holds:
 
 ```text
-.deckagent/
-├── sessions.sqlite   # conversations
-├── web.sqlite        # Web settings, requests and activities
-├── decks.sqlite      # outlines, Deck metadata and published slide content/revisions
-└── workspace/        # files read/created by the Agent; shared by chats
+<data folder>/
+├── db/
+│   ├── workspaces.sqlite  # workspaces, their folder references and the workspace in use
+│   ├── sessions.sqlite    # chats and conversations
+│   ├── decks.sqlite       # outlines, Deck metadata and published slide content/revisions
+│   └── web.sqlite         # Web settings, encrypted keys, request and activity records
+└── files/                 # managed files (empty until a later build)
 ```
 
-Missing directories are created automatically; existing data is reused. To use
-separate demo data and workspace, run:
+Missing folders are created; existing data is reused. A data folder that is a file, cannot be written, holds a damaged database, or sits inside the project folder of a workspace stops the start with a message that says what to do; no file is reset. Data in the old `.deckagent/` layout of the repository is not moved. To use separate demo data, run:
 
 ```powershell
-pnpm.cmd start:local-web --data-dir .deckagent/demo --workspace .deckagent/demo/workspace
+pnpm.cmd start:local-web --data-dir C:\Temp\deckagent-demo
 ```
 
-Restart with the same arguments to reopen that demo's data. API keys, databases and
-workspace files stay outside Git.
+Restart with the same arguments to reopen that demo's data. API keys and databases stay outside Git.
 
-To bootstrap the previous environment-based workflow, use
-`pnpm.cmd start:local-web --provider google --model <model-id>`. This reads
-`config/models.example.json` and environment credentials (including optional `.env`).
-Saving that provider in Web Settings makes the saved configuration take precedence
-on later starts. Web does not use the CLI's saved wizard profile/key.
-Use `--help` for overrides. Do not share the browser URL. Ctrl+C drains and stops Host.
-Do not run CLI and Web against the same Session concurrently.
+To bootstrap the previous environment-based workflow, use `pnpm.cmd start:local-web --provider google --model <model-id>`. This reads `config/models.example.json` and environment credentials (including optional `.env`). Saving that provider in Web Settings makes the saved configuration take precedence on later starts. Web does not use the CLI's saved wizard profile/key. Use `--help` for overrides. Do not share the browser URL. Ctrl+C drains and stops Host. Do not run CLI and Web against the same Session concurrently.
 
 ```powershell
+pnpm.cmd test:local-foundation # workspaces, chats, drafts, search and Application Storage
 pnpm.cmd test:tools-browser  # File policy + API/SSE + client + SQLite integration
-pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM and reload/reconnect
+pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM, workspaces, drafts and reload
 pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
-pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
+pnpm.cmd test:local-web     # Settings, DPAPI, model selection and preferences
 ```
 
-These checks use local fixtures and require no cloud keys. The contracts, manual
-acceptance checklist and handoffs that belong to them are part of the implementation
-plan of the active version, under `docs/versions/`.
+These checks use local fixtures and require no cloud keys. The contracts, manual acceptance checklist and handoffs that belong to them are in the GitHub Issue of the task.
 
 ## Tests
 
@@ -208,8 +157,7 @@ pnpm.cmd test:chat-setup
 pnpm.cmd start:cordis-smoke   # boot/unload the Cordis smoke CLI
 ```
 
-Tests use the Node built-in `node:test` runner, temporary SQLite files, and loopback
-HTTP servers; they do not need real credentials or cloud access.
+Tests use the Node built-in `node:test` runner, temporary SQLite files, and loopback HTTP servers; they do not need real credentials or cloud access.
 
 ## Common problems
 
@@ -234,6 +182,4 @@ HTTP servers; they do not need real credentials or cloud access.
 | `SESSION_SCHEMA` / `SESSION_CORRUPT` | Keep the data; check the app/file version, or try another data directory |
 | `SESSION_STORAGE` | Check disk space, write permission, and whether another process holds the database |
 
-During chat turns the CLI prints only the stable error code with a fixed message (most
-provider errors show `Turn failed`). Detailed provider messages — transport phase/code
-and HTTP status — appear only during the first-run setup connection check.
+During chat turns the CLI prints only the stable error code with a fixed message (most provider errors show `Turn failed`). Detailed provider messages — transport phase/code and HTTP status — appear only during the first-run setup connection check.

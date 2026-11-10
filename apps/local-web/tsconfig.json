@@ -9,16 +9,6 @@
   ],
   "references": [
     { "path": "../../packages/presentation/deck" },
-    { "path": "../../packages/tools/presentation" },
-    {
-      "path": "../../vendor/cordis"
-    },
-    {
-      "path": "../../packages/agent/runtime"
-    },
-    {
-      "path": "../../packages/tools/filesystem"
-    },
     {
       "path": "../../packages/host/api"
     },
@@ -30,6 +20,9 @@
     },
     {
       "path": "../../packages/session/persistence"
+    },
+    {
+      "path": "../../packages/workspace/registry"
     }
   ]
 }

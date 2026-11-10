@@ -10,7 +10,7 @@ web
 
 A person who wants a presentation made from a request (VISION W-1, confirmed by the owner). They bring their own model key and run DeckAgent on their own computer. They open the local web interface from the machine that runs DeckAgent.
 
-The specs list nine user segments (`docs/spec/02-users/USR-001` to `USR-009`), for example a student defending a thesis in a second language. All are marked `[assumed]`: no user research backs any of them. No segment is the primary user. Future design work must not rank them or invent a persona.
+The spec defines no user segment, and no user research backs one. Future design work must not rank users or invent a persona.
 
 ## Product Purpose
 
@@ -20,7 +20,7 @@ DeckAgent lets the user turn a request for a presentation into a presentation, w
 
 This app is the local web interface, the one interface V1 takes. V1 goal (owner, 11-10-2026): "Enable users to create, preview, and refine a presentation through conversation with their chosen AI model, so the result reflects their instructions and improves toward their expectations through clarification and feedback."
 
-V1 success criteria (`docs/versions/v1/SCOPE.md`): SC-1 instruction fidelity, SC-2 intent clarification, SC-3 iterative convergence.
+V1 success criteria: SC-1 instruction fidelity, SC-2 intent clarification, SC-3 iterative convergence.
 
 ## Positioning
 
@@ -43,7 +43,7 @@ In V1:
 - Multiple provider configurations, with a model chosen per chat.
 - Images: the agent uses images the user attached, and creates new images for slides. How new images are created is undecided.
 
-Not in V1 (`SCOPE.md`):
+Not in V1:
 - Export. V1 ends when the user has reviewed the deck in the web interface.
 - Direct editing of the outline text. Light direct editing on a slide (bold, italic, font).
 - Terminal interface (TUI). It stays a direction in VISION P-3.
@@ -60,9 +60,7 @@ Undecided (VISION open questions): whether a deck has one author by the nature o
 
 ## Evidence on Hand
 
-- Product spec: `docs/spec/` (vision, nine user segments, use cases, requirements, business rules).
-- V1 scope and implementation records: `docs/versions/v1/` (`SCOPE.md`, `PROGRESS.md`, `task-004-local-web.md`, `ui-prototype-alignment-todo.md`).
-- UX design work: `docs/design/UX-design/` (V1 UX foundation, UX prototype, interactive prototype, state inventory, transition matrix, Figma annotations and copy).
+- Product spec: `docs/spec/` (use cases, requirements, business rules, backlog).
 - Sample slides for the deck canvas: `apps/local-web/src/sample-slides.ts`.
 - Absent: user research, testimonials, customers, benchmarks and usage data. Do not make any up.
 
@@ -76,4 +74,4 @@ Undecided (VISION open questions): whether a deck has one author by the nature o
 
 ## Accessibility & Inclusion
 
-No product-specific accessibility standard has been set. Some segments mention a non-native language and the audience's accessibility needs (`docs/spec/02-users/dimensions.md`), all `[assumed]`. Record a required standard here when the owner sets one.
+No product-specific accessibility standard has been set. Record a required standard here when the owner sets one.

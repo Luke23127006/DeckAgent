@@ -1,8 +1,10 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { RuntimeError } from '@deckagent/agent-runtime'
+import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 1
+const schemaVersion = 2
+/** Chats saved before workspaces existed belong to the default workspace. */
+export const defaultWorkspaceId = 'default'
 
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
@@ -13,24 +15,33 @@ export function initialize(db: DatabaseSync): void {
       db.exec(`
         CREATE TABLE sessions (
           id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-          provider TEXT, model TEXT,
+          provider TEXT, model TEXT, workspace_id TEXT,
           CHECK ((provider IS NULL AND model IS NULL) OR (provider IS NOT NULL AND model IS NOT NULL))
         ) STRICT;
         CREATE TABLE messages (
           session_id TEXT NOT NULL REFERENCES sessions(id), sequence INTEGER NOT NULL CHECK (sequence > 0),
           payload TEXT NOT NULL, PRIMARY KEY (session_id, sequence)
         ) STRICT;
+        CREATE INDEX sessions_workspace ON sessions(workspace_id);
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
+    } else if (version === 1 && owner === applicationId) {
+      // v1 -> v2: chats gain a workspace. Rows are kept; none is reset.
+      db.exec(`
+        ALTER TABLE sessions ADD COLUMN workspace_id TEXT;
+        UPDATE sessions SET workspace_id = '${defaultWorkspaceId}';
+        CREATE INDEX sessions_workspace ON sessions(workspace_id);
+        PRAGMA user_version = ${schemaVersion};
+      `)
     } else if (version !== schemaVersion || owner !== applicationId) {
-      throw new RuntimeError('SESSION_SCHEMA', 'Unsupported Session database format. Keep the file and use a compatible version or another data directory')
+      throw new SessionError('SESSION_SCHEMA', 'Unsupported Session database format. Keep the file and use a compatible version or another data directory')
     }
     // Catch damaged files or incomplete schemas before accepting requests. Never reset them.
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get()) {
-      throw new RuntimeError('SESSION_CORRUPT', 'Session database failed its integrity check')
+      throw new SessionError('SESSION_CORRUPT', 'Session database failed its integrity check')
     }
-    db.prepare('SELECT id, created_at, updated_at, provider, model FROM sessions LIMIT 0').all()
+    db.prepare('SELECT id, created_at, updated_at, provider, model, workspace_id FROM sessions LIMIT 0').all()
     db.prepare('SELECT session_id, sequence, payload FROM messages LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {

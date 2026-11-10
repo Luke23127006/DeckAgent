@@ -73,7 +73,7 @@ export class HostClient {
     })
     if (!response.ok) {
       const data: unknown = await response.json()
-      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT', 'REPLY_STALE', 'REPLY_CONFLICT', 'INVALID_REPLY']
+      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT', 'REPLY_STALE', 'REPLY_CONFLICT', 'INVALID_REPLY', 'CHAT_UNREADABLE', 'SESSION_NOT_FOUND', 'REQUESTS_UNAVAILABLE']
       const code = object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
         ? data.error.code : response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'
       throw new Error(code)
