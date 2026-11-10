@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Traceability matrix — {scope}
 
-The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR), threading **requirement → basis items → conditions → tier → research/decision → test → implementation ticket → result → verification**.
+**Optional.** Kept by a build whose criteria **several tasks share** (dev/mvp/WORKFLOW.md "Traceability"); a smaller change links its criterion, test and result in its PR or issue. **One row per in-scope FR/AC** (and per NFR), threading **requirement → basis items → conditions → tier → research/decision → test → implementation → result → verification**. Rows are **added as the work reaches them**, not all in advance.
 
 **No-orphan check:** every deliverable should have a **consumer downstream**; a **missing link** usually means **forgotten work** (see dev/mvp/WORKFLOW.md "Traceability"). Other plan documents **link to rows here** **instead of restating requirements** (dev/mvp/WORKFLOW.md "Document rules").
 
@@ -25,7 +25,7 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 
 ## Matrix
 
-| FR / AC | Basis items | Conditions | Tier | RQ | DEC | Test (ticket) | Test author | Impl (ticket / PR) | Result | Verified |
+| FR / AC | Basis items | Conditions | Tier | RQ | DEC | Test | Test author | Impl (PR) | Result | Verified |
 |---|---|---|---|---|---|---|---|---|---|---|
 | FR-NNN / AC-1 | BI-1 | X1 | ci | [RQ-N](...) | [DEC-NNN](...) | [#N](https://github.com/{owner}/{repo}/issues/N) | @handle | [#N](https://github.com/{owner}/{repo}/issues/N) | | [ ] |
 | FR-NNN / AC-2 | BI-2 | K1, K2 | eval | | | [#N](https://github.com/{owner}/{repo}/issues/N) | @handle | [#N](https://github.com/{owner}/{repo}/issues/N) | | [ ] |
@@ -41,23 +41,20 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 
 ## Columns
 
-- **FR / AC** — in **Phase 1**, **one row per in-scope FR and NFR**. In **Phase 2**, each FR row **splits into one row per acceptance criterion** and each NFR row **into one row per measure** (`NFR-NNN / M-1`).
-- **Basis items** and **Conditions** — the **basis items** (`analysis/basis-register.md`) the row covers, and the **condition codes** (`design/techniques/`) that serve it. **Filled in Phase 2**.
-- **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"). **Set in Phase 2** from the testing plan; **empty in Phase 1**.
+- **FR / AC** — **one row per in-scope FR and NFR**; once its criteria are written, each FR row **splits into one row per acceptance criterion** and each NFR row **into one row per measure** (`NFR-NNN / M-1`).
+- **Basis items** and **Conditions** — the **basis items** the row covers, and the **condition codes** that serve it, where the build keeps those records.
+- **Tier** — `ci`, `eval` or `manual` (dev/mvp/WORKFLOW.md "Test tiers"), set when the criterion is written.
 - **RQ** — the **answered research question** for this row (may be empty).
 - **DEC** — the **decision that shaped this row** (may be empty).
-- **Test (ticket)** — the **test-stub ticket that proves the AC**. For a **manual row**, the **check's anchor in `acceptance-criteria.md`**. **Required** for every row after Phase 2.
+- **Test** — the **test that proves the AC** (file and test name, or the PR that adds it). For a **manual row**, the **check's anchor in `acceptance-criteria.md`**.
 - **Test author** — **who wrote the test**; preferably **not the implementer** (dev/development/test-strategy.md "Test levels").
-- **Impl (ticket / PR)** — the **ticket or PR that makes this row pass**. **Not a function link**.
+- **Impl (PR)** — the **PR that makes this row pass**. **Not a function link**.
 - **Result** — the **last run** of the row's tests (`pass`, `fail`) and the **defect issue** if any.
-- **Verified** — `[x]` once the AC **holds in Phase 6**: **CI green** for `ci`, a **recorded eval run** for `eval`, the **PO's own check** for `manual`.
+- **Verified** — `[x]` once the AC **holds**: **CI green** for `ci`, a **recorded eval run** for `eval`, the **PO's own check** for `manual`.
 
-## Orphan check (end of each phase)
+## Orphan check (when a task closes)
 
-- [ ] **Every in-scope FR and NFR has a row** (Phase 1); **every AC and measure has a row and a tier** (after Phase 2).
-- [ ] **Every row has at least one test** (after Phase 2).
-- [ ] **The test author and the implementer differ**, or the row says why not.
+- [ ] **Every row the work reached has at least one test**, and **every criterion has a tier**.
 - [ ] **Every in-scope DEC is consumed** by at least one row (test or impl).
-- [ ] **Every answered RQ leads to a DEC** or a row that uses its result.
-- [ ] **No test or implementation ticket exists without a matrix row**.
-- [ ] **Link rules hold** (after Phase 2): every AC cites a basis item; every condition cites a basis item; every test case cites a condition; every basis item has a condition and a test case, or is listed under **Items not tested**.
+- [ ] **No test exists without a row**, in the areas this matrix covers.
+- [ ] Where the records exist, the **link rules hold**: every AC cites a basis item; every condition cites a basis item; every test case cites a condition; every basis item has a condition and a test case, or is listed under **Items not tested**.

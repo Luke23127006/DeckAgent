@@ -7,14 +7,14 @@ created: DD-MM-YYYY
 
 # As-built — {scope}
 
-<!-- Phase 6 (dev/mvp/WORKFLOW.md "As-built layer"). Keep within one page.
+<!-- Before a build with a value flow is accepted (dev/mvp/WORKFLOW.md "As-built layer"). Keep within one page.
      Order matters: the PO writes "Prediction" BEFORE reading anything the agent wrote.
      Then the agent fills "Actual flow" and "Drift" from the merged code. -->
 
 ## At a glance
 
 - **Use case:** UC-XXX
-- **Value flows covered:** S1-S6 (the flows in the Phase 3 LLM boundary table)
+- **Value flows covered:** S1-S6 (the flows of the approved LLM boundary)
 - **Drift found:** _none / N items_
 - **Spine:** [traceability-matrix.md](../testing/traceability-matrix.md)
 

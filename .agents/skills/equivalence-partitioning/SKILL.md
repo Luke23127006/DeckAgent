@@ -1,6 +1,6 @@
 ---
 name: equivalence-partitioning
-description: Apply equivalence partitioning to one design input of a build's test design. Identifies the input and output variables from the test basis, the domain and the dimensions of each input, partitions every dimension into disjoint equivalence classes with an expected behavior taken from the spec, picks a representative value per class, fixes the class coverage items, derives test cases by the EP combination rule and runs the EP completion checks. Owns the variables, dimensions, classes and representatives that boundary-value-analysis and decision-table-testing reference. Used in Phase 2 test design, called by the testing-plan skill.
+description: Apply equivalence partitioning to one design input (of a build's test design, or of the behavior a task implements). Identifies the input and output variables from the test basis, the domain and the dimensions of each input, partitions every dimension into disjoint equivalence classes with an expected behavior taken from the spec, picks a representative value per class, fixes the class coverage items, derives test cases by the EP combination rule and runs the EP completion checks. Owns the variables, dimensions, classes and representatives that boundary-value-analysis and decision-table-testing reference. Used when a design input needs it, in a build's shared test design or inside one task, usually through the testing-plan skill.
 ---
 
 # Equivalence partitioning
@@ -16,6 +16,8 @@ The rules every technique obeys (the chain, step outputs, anti-anchoring, covera
 - EP **alone is not enough** when the classes are **ordered** and the spec puts a **limit** between them: run **boundary-value-analysis** on those dimensions.
 
 ## Inputs
+
+**Inside one task**, the design input is the **behavior in scope** and its **spec items**; the inputs below are read **where they exist**, and the step outputs and test cases may be kept in the **issue, the PR or the test file** instead of an evidence file (dev/development/test-strategy.md "Required and optional"). The **method and its checks stay the same**.
 
 1. The **design input** row of `testing/planning/testing-plan.md` section 2.3: its **basis items**, **coverage criterion and depth parameters** (for example "per name source", "closed list: every member", a quality risk's sub-variable), **mechanisms**, **candidate gaps**.
 2. The **basis items** in `testing/analysis/basis-register.md`, the **ambiguity rulings** in `testing/analysis/test-analysis.md`, and the **spec text** they cut from.

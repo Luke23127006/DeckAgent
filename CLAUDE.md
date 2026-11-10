@@ -10,15 +10,15 @@
 
 - **Never add a `Co-Authored-By` trailer** or **any attribution to Claude or any other AI agent** in a commit, PR or issue (AGENTS.md "GitHub conventions").
 - **No conversation log in any document.** Write a decision as its **result** or `pending`; **never "PO đã xác nhận / duyệt (date)"**, and no section that only records a review (AGENTS.md "Documents", `dev/mvp/builds/_STYLE.md` rule 14).
+- **No hidden process.** Do not require an issue, plan, tracker, test ticket, record or PO approval that the engineering rules do not need; reuse existing test design instead of regenerating it.
 - **Edit skills in `.agents/skills/` only**, then **run `python .agents/scripts/sync_skill_mirrors.py`**; **never edit `.claude/skills/` or `.codex/skills/` directly**.
 
 ## Workflow triggers
 
-- When the user says "**plan the MVP**" or "**start the MVP**": **run Phase 0** (MVP planning).
-- When the user **requests a build** (e.g., "build UC-001", "build the fetch flow", "build FR-001"): **check that Phase 0 is closed** (`dev/mvp/README.md`), **determine the scope from the spec** (UC steps, alternatives, FRs, NFRs), and **start Phase 1**.
-- When the user reports a **bug fix or a small change** to an existing FR: **propose a light build**.
-- When the user says "**close the MVP**": **run the MVP-close checklist**.
-- When the user says "**continue**" + a build name: **read the flow tracker issue** on GitHub **first**, then **resume at the active phase**.
-- When the user says "**status**" + a build name: **show the flow tracker status** **without making changes**.
+- When the user **asks for a feature, an FR or a build** (e.g., "build UC-001", "build the fetch flow", "build FR-001"): **determine the scope from the spec** (UC steps, alternatives, FRs, NFRs), **read the existing test knowledge** (`dev/mvp/README.md` "MVP testing", the build's records), fill **only the gaps that change correctness**, and **start implementing** under the engineering rules (AGENTS.md "Engineering principles"). **Do not open a build-wide lifecycle.**
+- When the user reports a **bug or a small change** to an existing FR: **reproduce it**, add a **regression test**, fix, verify, report.
+- When the user says "**close the MVP**": **run the MVP-close checklist** (dev/mvp/WORKFLOW.md "MVP close").
+- When the user says "**continue**" + a task or a build: **read its issue or tracker first**, when it has one, then resume.
+- When the user says "**status**" + a task or a build: **show it** **without making changes**.
 
-The **scope** can be a **full UC**, a **subset of steps**, **specific alternatives**, or **individual FRs**. See dev/mvp/WORKFLOW.md "Trigger and scope" for examples.
+The **scope** can be a **full UC**, a **subset of steps**, **specific alternatives**, or **individual FRs**.

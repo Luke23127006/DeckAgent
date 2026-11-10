@@ -1,31 +1,25 @@
 ---
-name: Light build
-about: A bug fix or a small change to an existing FR (dev/mvp/WORKFLOW.md "Build sizes").
-title: "Light: "
-labels: build:light
+name: Small change
+about: A bug fix or a small change to an existing FR, tracked by this one issue when it needs an issue at all.
+title: "Fix: "
+labels: ""
 ---
 
 ## Context
 
 **Milestone:** mvp
-**FR / AC:** FR-NNN / AC-N (existing or new; statement in `dev/mvp/spec/`, criterion written in this issue)
+**FR / AC:** FR-NNN / AC-N (statement in `dev/mvp/spec/`; the criterion may be written here)
 **Tier:** ci / eval / manual
-**Matrix row:** dev/mvp/builds/_light/traceability-matrix.md
 
 ## Problem
 
-<!-- Observed vs expected. For a bug: steps to reproduce. -->
+<!-- Observed vs expected, with the source of the expected behavior. For a bug: steps to reproduce. -->
 
 ## Test
 
-<!-- The test that fails now and passes after the fix. Path and what it checks.
-     Write it first and see it fail. The same developer may write both. -->
+<!-- The regression test, built from the reproduction: it fails now and passes after the fix. Path and what it checks. -->
 
 `tests/...`
-
-```bash
-npm test -- --grep "FR-NNN"
-```
 
 ## Fix
 
@@ -40,6 +34,5 @@ npm test -- --grep "FR-NNN"
 
 ## Acceptance
 
-- [ ] Test was **red before the fix** and is **green after**
-- [ ] **No other tests broken**
-- [ ] **Matrix row added**
+- [ ] The regression test was **red before the fix** and is **green after**
+- [ ] **No other test broken**

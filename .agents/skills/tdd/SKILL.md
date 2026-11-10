@@ -11,6 +11,8 @@ Apply this workflow **within the task scope** and root `AGENTS.md`. **Recorded p
 
 TDD is the **red → green loop**. This skill is the reference that makes that loop **produce tests worth keeping**: what a good test is, where tests go, the anti-patterns, and the rules of the loop. **Every section applies on every cycle**: **consult them before and during the loop**, not after.
 
+**Before the loop, reuse what exists.** Take the **expected results and test cases** from the existing design (the spec, the build's `testing/` records, the task issue) instead of re-deriving them, and add **only the cases that are missing** (dev/mvp/WORKFLOW.md "Engineering rules"). Start with the **most important cases** and add more **per slice** until the behavior's coverage criterion is met. A case that rests on a **pending ruling** waits; the others proceed.
+
 When exploring the codebase, **read `CONTEXT.md`** (if it exists) so **test names and interface vocabulary match the project's domain language**, and **respect ADRs** in the area you're touching.
 
 ## What a good test is
@@ -35,6 +37,6 @@ When the **shape of that interface is itself in question** (how deep the module 
 
 ## Rules of the loop
 
-- **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
+- **Red before green** for **new behavior**. Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features. Tests of **existing behavior** (a refactor's regression tests) **pass from the start**; that is expected, not a defect.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **Refactor after green when needed.** Keep refactoring within the task scope, preserve observable behavior, and rerun relevant checks. Review the final diff against the task and AGENTS.md; no additional review skill is required.

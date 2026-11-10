@@ -19,7 +19,7 @@ created: DD-MM-YYYY
 
 ## Acceptance criteria
 
-<!-- Written after Phase 1, so research results shape them. One "### FR-NNN" heading per in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered; a later build that takes the same FR continues its numbering.
+<!-- Written once the research that shapes them is answered, and before the code they verify. One "### FR-NNN" heading per in-scope FR, then one block per criterion: "#### AC-n · name". IDs are not renumbered; a later build that takes the same FR continues its numbering.
      Given: the relevant state and input, described well enough to repeat. When: a user action or event.
      Then: the observable result, one line per thing, no "if".
      Catches: the wrong DeckAgent behavior this test fails on (deterministic criteria; checklist C2).

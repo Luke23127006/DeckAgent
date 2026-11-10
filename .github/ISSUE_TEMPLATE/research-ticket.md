@@ -1,8 +1,8 @@
 ---
 name: Research ticket
-about: A technical or product question to answer before implementation.
+about: A technical or product question to answer before the work that depends on it.
 title: "Research: "
-labels: phase:research
+labels: ""
 ---
 
 ## Context
@@ -12,7 +12,7 @@ labels: phase:research
 **Block of the map:** {block name}
 **Related items:** {behavior in words} (FR-NNN)
 **Answer by:** `có sẵn` / `thử nhỏ` / `anh quyết`
-**Flow tracker:** #N
+**Flow tracker:** #N (when the build has one)
 
 ## Map
 

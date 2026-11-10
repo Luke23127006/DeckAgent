@@ -1,29 +1,50 @@
 ---
 name: testing-plan
-description: Generate the test analysis, the testing plan and the test design specification from FRs, NFRs and decisions, by applying dev/development/test-strategy.md. Lists the test basis, selects the test types, records the automation feasibility, sets each item's risk level, picks the technique and coverage criterion per kind of requirement, drafts the acceptance criteria and measures with a tier and a Catches line, plans the test driver, fixtures, post-implementation tests and test-stub tickets, and runs the technical checklist C1–C8. Used at the start of Phase 2.
+description: Run the test analysis, test planning or test design a change is missing, at the depth its risk needs, by applying dev/development/test-strategy.md. Focused by default - reuse the existing records, add only the missing expected behaviors, risks, techniques or test cases for the behaviors in scope, and write them where they serve (issue, PR, test file). A full record set (basis register, sentence map, testing plan, technique evidence files, acceptance criteria, test-implementation contract, matrix) is produced only when explicitly needed for a high-risk area several tasks share. Not a phase and not a prerequisite for implementation.
 ---
 
 # Testing plan
 
-**Draft the test analysis**, the **testing plan** of a build and its **test design specification**. The **PO settles the scope** and **what the spec means** where it is unclear; the rest the team reviews. **Developers write the tests** from the AC, and a teammate reviews each test PR (dev/mvp/WORKFLOW.md "Phase 2").
+**Supply the testing knowledge a change is missing**: test analysis, test planning, test design, or any one of them. **Reuse first**: read the records that exist, and add **only what is missing** for the **behaviors in scope**. The PO settles **scope** and **what the spec means** where it is unclear; everything else is the team's.
 
-The plan **applies** `dev/development/test-strategy.md`. It **does not invent a method** and **does not restate the strategy's rules**; it **points to them**.
+The skill **applies** `dev/development/test-strategy.md`. It **does not invent a method** and **does not restate the strategy's rules**; it **points to them**. It is **not a phase** and **not a gate**: implementation starts as soon as the behavior in hand has its expected results and its verification design.
+
+## Choose the scope of the run
+
+| Mode | When | Output |
+|---|---|---|
+| **Focused** (default) | One behavior or a few: a task, a feature, a gap found while coding | For the behaviors in scope: the **expected behavior and source**, the **risks**, the **level and technique**, and the **test cases** (input, preconditions, actions, expected result), written in the **issue, the PR or the test file**. A shared record is updated **only** when the addition is **reusable** or changes **shared coverage**. |
+| **Extend a record** | An area that already keeps formal records (B1's `testing/`) needs a missing design input or new items | The **missing part only**, in the record that owns it (a new technique file, new rows, a new ruling); **never regenerate** what exists |
+| **Full record** | A **high-risk area several tasks share**, with no records yet, where a reviewer must be able to **redo the design by hand** | The file set under "Output of a full record", built step by step below |
+
+**Pick the smallest mode that protects correctness.** Run **only the activities that are missing**: analysis without a plan, a plan without new design, or one technique on one input. A **step of the full process** may be used on its own when it helps (for example the EP + BVA steps on one input, with the cases kept in the test file).
+
+**Focused run, in short:**
+1. **Read** the spec items of the behavior and the **existing design** for them (the build's `testing/` records, `dev/mvp/README.md` "MVP testing").
+2. **List what is missing** for correctness: an expected result, a risk, a boundary, a refusal, a bypass, a failure mode. Stop when nothing is missing.
+3. **Resolve or flag ambiguities**: a product question goes to the PO as `pending`, and the cases that depend on it are **left out**; the rest proceed.
+4. **Choose depth by risk** (strategy "Risk and depth"): high-risk kinds get their technique **on the behavior in scope**, not on the whole area.
+5. **Write the cases** with their expected results and sources where they serve. **Hand off** to implementation (skill `tdd`).
+
+## Full record
+
+The rest of this skill describes the **full record**. Use it **only in the "Full record" or "Extend a record" mode**, and in the second case only for the **part being added**.
 
 ## Input
 
 1. `dev/development/test-strategy.md`: the frame, the chain, risk and depth, test types and approaches, the test basis register, technique per requirement and how it is applied, coverage, automation feasibility, checks, infrastructure rules, shared error list, technical checklist.
 2. The use case file: `dev/mvp/spec/02-use-cases/UC-XXX.md`
 3. Every in-scope FR and NFR in `dev/mvp/spec/03-requirements/`, and the BRs they cite.
-4. Decisions from Phase 1: `dev/mvp/decisions/DEC-*.md`
-5. The research checklist and the matrix: `dev/mvp/builds/UC-XXX-label/research/research-checklist.md`, `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md`
+4. The decisions that shape the behaviors: `dev/mvp/decisions/DEC-*.md`
+5. The records that exist: research checklist, matrix, analysis, plan, design (`dev/mvp/builds/UC-XXX-label/`)
 6. `dev/mvp/spec/03-requirements/fr/_CRITERIA.md` and `nfr/_CRITERIA.md`: the rules a criterion and a measure meet.
 7. `dev/mvp/builds/_STYLE.md`: build files are **Vietnamese prose with English terms**.
 8. **Optional idea source**: the **legacy acceptance criteria** of the same FR on the `docs/spec` branch at `71ff143`. They are **not approved**; the **current statement wins**.
 9. **Candidate gaps** from earlier reviews. They are **inputs to the register**, not findings: **check each with the technique**; never add a test case only because a gap was listed.
 
-## Output
+## Output of a full record
 
-All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one kind of fact**.
+All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one kind of fact**. A file that **would say nothing** for the area is **not created**.
 
 | File | Template | Owns | Part |
 |---|---|---|---|
@@ -34,12 +55,12 @@ All paths below are under `dev/mvp/builds/UC-XXX-label/`; each file **owns one k
 | `testing/design/techniques/Dn-topic.md` | `test-design-technique.md` | The **evidence of one technique**: each step's output, coverage items, test cases, reconciliation | B |
 | `testing/design/test-design.md` | `test-design.md` | Techniques applied with coverage counts; the **ruling log** of gaps, deviations and design rulings | B |
 | `testing/design/acceptance-criteria.md` | `acceptance-criteria.md` | AC, measures, eval cases, manual checks, exploratory charters | B |
-| `implementation/test-implementation.md` | `test-implementation.md` | Driver functions and fields, fixtures and self-tests, test-stub ticket list | B |
+| `implementation/test-implementation.md` | `test-implementation.md` | Driver functions and fields, fixtures and self-tests; a test ticket list only when work is handed off as tickets | B |
 | `testing/traceability-matrix.md` | `traceability-matrix.md` | The spine | — |
 
 **Keep each template's section order** and **front-load `## At a glance`** (dev/mvp/WORKFLOW.md "Document rules"). **Scope rulings** live **only in the matrix's "Items not tested"**; **readings of ambiguities** **only in test-analysis.md**; **gaps, deviations and design rulings** **only in test-design.md**. A ruling's **result** is written **as current fact** into the file that owns it. A ruling the PO has not given reads **`pending`**. **Write outcomes, not the conversation** (dev/mvp/WORKFLOW.md "Document rules" rule 7): **never who decided or when**, and **no table** that only records a review or a check that changed nothing. **Never write a fact into a file that does not own it**; link to its home.
 
-## Process
+## Full record process
 
 ### Part A — Scope and approach
 
@@ -104,9 +125,9 @@ In `implementation/test-implementation.md`, list the **driver functions** the cr
 
 List the **exploratory charters** (scope, time box) in `acceptance-criteria.md` when a type uses that approach.
 
-#### Step 11 — Test-stub tickets
+#### Step 11 — Test tickets (optional)
 
-In `implementation/test-implementation.md`, group the ci-tier criteria into tickets: **one concern**, **kept small**, **blocked only by named tickets**. Tickets for an area **may be opened** once **its AC are clear**. **T0 tickets** build the driver and the fixtures and **carry no criterion**. A ticket's test command shows **each variant** of its AC as **its own case**.
+**Only when tests are handed off as separate tickets.** Otherwise tests are written **with the implementation**, and this step is skipped. When used, in `implementation/test-implementation.md`, group the ci-tier criteria into tickets: **one concern**, **kept small**, **blocked only by named tickets**. A ticket's test command shows **each variant** of its AC as **its own case**. A ticket is **never a prerequisite** for implementing a behavior whose design exists.
 
 #### Step 12 — Count and check
 
@@ -115,9 +136,9 @@ In `implementation/test-implementation.md`, group the ci-tier criteria into tick
 - Run the **technical checklist C1–C8** on every criterion and ticket. Each **failure** is fixed in the draft or listed in test-design.md as **kind `checklist`**.
 - Fill the **counts** in the At a glance blocks.
 
-#### Step 13 — Matrix
+#### Step 13 — Matrix (when one is kept)
 
-**Split each FR row into one row per AC** and **each NFR row into one row per measure**, **fill the Tier**, the **basis items and conditions**, the **DEC that shaped the row**, and the **test-stub ticket** in the Test column. List the **`excluded` and `deferred` items** apart.
+**Split each FR row into one row per AC** and **each NFR row into one row per measure**, **fill the Tier**, the **basis items and conditions**, the **DEC that shaped the row**, and the **test** (or its ticket, when one exists) in the Test column. List the **`excluded` and `deferred` items** apart.
 
 ## Capability skills
 
@@ -132,11 +153,19 @@ A design input whose technique **has a skill** follows that skill, step by step,
 
 ## Rules
 
-- **Every in-scope AC appears** with **exactly one tier**. **No AC is skipped**.
+These apply **in every mode**:
+
+- **Reuse before creating.** Read the existing records first; **never regenerate** a design that exists.
+- **Expected results come from the spec**, a decision, the existing behavior or a reproduction; a case that rests on a **pending ruling** is **left out**, not guessed.
+- **Do not invent test scenarios** beyond what the **spec statements** define; a technique **finds gaps**, it **does not fill them**.
+- **Depth follows risk**: high-risk behaviors get the techniques their kinds call for, **on the behaviors in scope**.
+- **No ci-tier test calls a real model**.
+- A ci test of **new deterministic behavior** written **ahead of its code** is an **expected failure** (`it.fails`) that **can fail on a real assertion**, **one per independent variant** (strategy "Test infrastructure rules", checklist C5). Tests of existing behavior need no red state.
+- The agent **drafts and proposes**; it **does not settle a scope**, **answer a spec question** or **accept a build**: those are the PO's.
+
+These apply **to a full record** only:
+
+- **Every in-scope AC appears** with **exactly one tier**.
 - **Do not start an evidence file** whose design input **waits on an open question** that would change its expected results.
 - **Do not count a filled template as an applied technique**: a technique is applied when **each step's output exists**, cites its source, and a reviewer **can redo it**.
-- **No orphan (dev/mvp/WORKFLOW.md "Traceability"):** every in-scope FR/AC and NFR has **at least one test**, and every in-scope DEC is **consumed by at least one test or implementation step**. **Flag gaps**.
-- **Do not invent test scenarios** beyond what the **spec statements and the criteria** define; a technique **finds gaps**, it **does not fill them**.
-- **No ci-tier test calls a real model**.
-- **Pre-implementation ci tests are expected failures** (`it.fails`) that **can fail on a real assertion**, **one per independent variant**; the **implementation PR's first commit** shows it (strategy "Test infrastructure rules", checklist C5).
-- The agent **drafts and proposes**; it **does not settle a scope**, **answer a spec question** or **accept the build**: those are the PO's.
+- **Report orphans** in the matrix: an FR/AC or NFR with **no test**, a DEC **nobody uses**.

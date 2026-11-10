@@ -1,10 +1,10 @@
-## Ticket
+## What and why
 
-Closes #N
+<!-- The behavior this PR adds or changes, and its source (spec item, decision, existing behavior, reproduction). Link the issue when there is one: "Closes #N". -->
 
-## Test command output
+## Verification
 
-<!-- Paste the output of the ticket's test command. A PR without it is not reviewed. -->
+<!-- The checks run and their output; what the tests cover; what stayed unverified and the residual risks. -->
 
 ```text
 
@@ -12,8 +12,8 @@ Closes #N
 
 ## Checklist
 
-- [ ] **The change stays within the ticket**; any extra file is explained below
-- [ ] **No test is weakened**; a change to `tests/acceptance/` or `tests/eval/` **says why** below
+- [ ] **The change stays within its concern**; any extra file is explained above
+- [ ] **No test is weakened**; a change to `tests/acceptance/` or `tests/eval/` **says why** above
 - [ ] **No spec file is changed** (spec changes go through the PO)
-- [ ] **No model call is added** where the ticket's LLM boundary says none
+- [ ] **No model call is added** where the approved LLM boundary says none
 - [ ] **CI is green**

@@ -1,6 +1,6 @@
 ---
 name: decision-table-testing
-description: Apply decision table testing to one design input of a build's test design. Lists the conditions and actions a rule combines, enumerates every combination, marks infeasible ones with the statement that excludes them, merges only with a spec argument, gives each remaining rule its actions from the spec or a gap, fixes the rule coverage items, derives test cases whose inputs fall in exactly one rule and runs the decision table completion checks. Conditions on an input value reference the classes owned by equivalence-partitioning. Used in Phase 2 test design, called by the testing-plan skill.
+description: Apply decision table testing to one design input (of a build's test design, or of the behavior a task implements). Lists the conditions and actions a rule combines, enumerates every combination, marks infeasible ones with the statement that excludes them, merges only with a spec argument, gives each remaining rule its actions from the spec or a gap, fixes the rule coverage items, derives test cases whose inputs fall in exactly one rule and runs the decision table completion checks. Conditions on an input value reference the classes owned by equivalence-partitioning. Used when a design input needs it, in a build's shared test design or inside one task, usually through the testing-plan skill.
 ---
 
 # Decision table testing
@@ -15,6 +15,8 @@ The rules every technique obeys are in `dev/development/test-strategy.md`; this 
 - **Do not use** for a single condition with two outcomes (EP's valid and invalid classes already cover it), for behavior that depends on **order of events** (state transition), or to **re-test the classes of one input** (EP).
 
 ## Inputs
+
+**Inside one task**, the design input is the **behavior in scope** and its **spec items**; the inputs below are read **where they exist**, and the step outputs and test cases may be kept in the **issue, the PR or the test file** instead of an evidence file (dev/development/test-strategy.md "Required and optional"). The **method and its checks stay the same**.
 
 1. The **design input** row (criterion: every rule; depth parameters).
 2. The **basis items** and spec text that state the conditions and the outcomes.

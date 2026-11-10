@@ -1,11 +1,11 @@
 ---
 name: research-questions
-description: Generate the research checklist of a build in the format "map first, questions after". Reads the in-scope use cases, FRs, NFRs and BRs, draws where the build sits in the whole product, states its boundary, then derives questions per block of the map, each triaged by how it gets answered. Fills the drift inventory against the reference code. Used at the start of Phase 1.
+description: Generate the research checklist of a build in the format "map first, questions after". Reads the in-scope use cases, FRs, NFRs and BRs, draws where the build sits in the whole product, states its boundary, then derives questions per block of the map, each triaged by how it gets answered. Fills the drift inventory against the reference code. Used only when an unknown can change correctness, feasibility or the approach of the work; not a required step of a build or a task.
 ---
 
 # Research questions
 
-**Generate the research checklist** of a build, so the PO **understands the context first** and **sees why each question matters**. The checklist is **not a list of questions**: it is a **map**, a **boundary**, then **questions read off the map**.
+**Generate the research checklist** of a build, so the PO **understands the context first** and **sees why each question matters**. Run it **when unknowns can change correctness, feasibility or the approach** (dev/mvp/WORKFLOW.md "Research and decisions"); where the spec, a decision or the reference code already answers, **cite the answer instead**. A single unknown inside one task needs **one question in its issue or PR**, not a checklist. The checklist is **not a list of questions**: it is a **map**, a **boundary**, then **questions read off the map**.
 
 ## Input
 
@@ -35,7 +35,7 @@ Walk **each highlighted block** and its **edges**. Look **beyond the spec and th
 - **Data**: where it is kept, how long, what survives a restart, what a removal removes.
 - **Failure midway**: a crash or an error between two writes.
 - **Two at once**: two views, two requests, two copies of DeckAgent.
-- **Runtime**: what OpenCode does already, where DeckAgent hooks in (mandatory when the build touches the runtime, dev/mvp/WORKFLOW.md "Phase 1").
+- **Runtime**: what OpenCode does already, where DeckAgent hooks in (mandatory when the work touches the runtime, dev/mvp/WORKFLOW.md "Research and decisions").
 - **Model or code**: whether a step calls the model or uses deterministic code; the **default is code**.
 - **Security and reach**: keys, paths, what the agent reads and sends to a provider.
 - **Testability**: how a test fakes the model, which fixture it needs.
@@ -64,7 +64,7 @@ Close section 3 with **"Không hỏi, và vì sao"**: the topics a reader would 
 
 ### Step 4 — Drift inventory
 
-**One row per in-scope item**: the behavior **in words**, its ID, the **reference file at its commit**, `match` / `differ` / `missing`, **what differs**. **Leave the Kết quả column `pending`**: the PO rules it, and it holds the **outcome only**, never who decided or when. Write "**chưa kiểm**" for a row not read yet, and **finish it before Phase 2** uses it.
+**One row per in-scope item**: the behavior **in words**, its ID, the **reference file at its commit**, `match` / `differ` / `missing`, **what differs**. **Leave the Kết quả column `pending`**: the PO rules it, and it holds the **outcome only**, never who decided or when. Write "**chưa kiểm**" for a row not read yet, and **finish it before a test or the code** relies on it.
 
 ## Output
 

@@ -1,8 +1,8 @@
 # Open questions
 
-**Open questions about the MVP**. Each one **names the phase that answers it**. When a question is **answered**, **remove it here** and **record the answer** in a research file, a decision or the spec. **Open decisions** are listed in [decisions/README.md](../decisions/README.md), **not here**.
+**Open questions about the MVP**. Each one **names the work that answers it**. When a question is **answered**, **remove it here** and **record the answer** in a research file, a decision or the spec. **Open decisions** are listed in [decisions/README.md](../decisions/README.md), **not here**.
 
-## Runtime research (Phase 1 of the first build that touches the part)
+## Runtime research (answered by the first task that touches the part)
 
 1. Does **OpenCode own provider keys**, their **storage** and a **model catalog**? A **model catalog** is the **list of models a provider offers**, with the context window, the reasoning levels and the input kinds of each (for example from `models.dev`).
    - **Belief of the PO, not verified**: OpenCode **owns keys and a catalog** with the context window, reasoning levels and default values.

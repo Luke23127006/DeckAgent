@@ -7,11 +7,12 @@ created: DD-MM-YYYY
 
 # Testing plan — {scope}
 
-<!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
+<!-- Optional: a full testing plan record, for a high-risk area several tasks share (dev/development/test-strategy.md "Required and optional"). A single behavior names its level, tier and technique in its issue or PR instead. Fill only the sections the area needs.
+     Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
      Planning decisions only, made with test-analysis.md, each derived by the rules of dev/development/test-strategy.md "Planning decisions". The plan applies the strategy; it does not restate its rules.
-     Not here: the AC, measures, eval cases, manual checks and charters (../design/acceptance-criteria.md); the conditions, coverage items and test cases (../design/techniques/); the driver, fixtures and test-stub tickets (../../implementation/test-implementation.md).
+     Not here: the AC, measures, eval cases, manual checks and charters (../design/acceptance-criteria.md); the conditions, coverage items and test cases (../design/techniques/); the driver and fixtures (../../implementation/test-implementation.md).
      Scope rulings live in the matrix's "Items not tested" and readings of ambiguities in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact, not as a ruling.
-     Written by the PO (the agent drafts). -->
+     Drafted by the agent or a developer; the PO rules only the open questions on scope and on what the spec means. -->
 
 ## At a glance
 
@@ -73,11 +74,11 @@ created: DD-MM-YYYY
 
 ### 3.1 Levels
 
-<!-- One row per level the build uses (test-strategy.md "Test levels"): the object and scope in this build, when it is written, who writes it, the tier. Add mutation testing in Phase 6 when the strategy requires it. -->
+<!-- One row per level the build uses (test-strategy.md "Test levels"): the object and scope in this build, when it is written, who writes it, the tier. Add mutation testing before the build is accepted when the strategy requires it. -->
 
 | Level | Object and scope | Written | Who writes it | Tier |
 |---|---|---|---|---|
-| Acceptance | | Phase 2 | | ci |
+| Acceptance | | before or with the code of the behavior | | ci |
 
 ### 3.2 Types by level and approach
 
@@ -101,11 +102,11 @@ created: DD-MM-YYYY
 
 | Measure | Denominator in this build | Target | Measured at |
 |---|---|---|---|
-| Requirement coverage | | | test design, Phase 6 |
+| Requirement coverage | | | test design, before build acceptance |
 | Test design coverage | | 100 %; a shortfall is a deviation | test design |
-| Execution coverage | | | Phase 6 |
-| Pass coverage | | | Phase 6 |
-| Structural coverage | | threshold set in the implementation plan | Phase 5 |
+| Execution coverage | | | before build acceptance |
+| Pass coverage | | | before build acceptance |
+| Structural coverage | | threshold `not set` until the PO sets one | with each increment |
 
 ## 4. Environment
 
@@ -117,7 +118,7 @@ created: DD-MM-YYYY
 
 ## 5. Dependencies
 
-<!-- What the tests need that is resolved elsewhere (a ticket, a Phase 3 decision, a CI change), and what it blocks. Do not restate mechanism status. -->
+<!-- What the tests need that is resolved elsewhere (a decision, a mechanism, a CI change), and what it blocks. Do not restate mechanism status. -->
 
 | Dependency | Resolved in | Blocks |
 |---|---|---|
@@ -125,7 +126,7 @@ created: DD-MM-YYYY
 
 ## 6. Entry and exit criteria
 
-<!-- One row per testing activity: test design, test implementation, execution (Phase 5), closure (Phase 6). The exits apply test-strategy.md "Phases" to the build. Each criterion names the record or check that shows it. Test design starts per section, when its design input (2.3) is clear enough. Add the suspension and resumption rules. -->
+<!-- One row per testing activity: test design, test implementation, execution, closure. The exits apply test-strategy.md "Evidence by moment" to the build; they report progress and gate no task. Each criterion names the record or check that shows it. Test design starts per section, when its design input (2.3) is clear enough. Add the suspension and resumption rules. -->
 
 | Activity | Entry | Exit |
 |---|---|---|
@@ -141,7 +142,7 @@ created: DD-MM-YYYY
 
 ## 8. Post-implementation tests
 
-<!-- Planned now, ticketed in Phase 4 (phase:post-impl). Level: integration | E2E. Target: a UC flow or alternative, or an NFR measure (point to it, do not restate its target). Technique: test-strategy.md. Mark the smoke subset in the last column. List the tickets Phase 4 must create besides the module tickets. -->
+<!-- Planned now, written once their parts exist. Level: integration | E2E. Target: a UC flow or alternative, or an NFR measure (point to it, do not restate its target). Technique: test-strategy.md. Mark the smoke subset in the last column. Name a ticket only when the test is handed off. -->
 
 | Level | Target | Technique | What it checks | Smoke |
 |---|---|---|---|---|

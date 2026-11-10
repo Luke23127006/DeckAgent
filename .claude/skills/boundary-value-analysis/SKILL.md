@@ -1,6 +1,6 @@
 ---
 name: boundary-value-analysis
-description: Apply boundary value analysis to one design input of a build's test design. Finds every boundary between ordered equivalence classes (and at the edges of a domain), places it on the quantity the rule actually measures, derives the boundary values the plan's criterion requires, adds the measurement variants where a transformation separates the raw value from the measured one, fixes the boundary-value coverage items, derives test cases by the BVA rule and runs the BVA completion checks. References the variables and classes owned by equivalence-partitioning. Used in Phase 2 test design, called by the testing-plan skill.
+description: Apply boundary value analysis to one design input (of a build's test design, or of the behavior a task implements). Finds every boundary between ordered equivalence classes (and at the edges of a domain), places it on the quantity the rule actually measures, derives the boundary values the plan's criterion requires, adds the measurement variants where a transformation separates the raw value from the measured one, fixes the boundary-value coverage items, derives test cases by the BVA rule and runs the BVA completion checks. References the variables and classes owned by equivalence-partitioning. Used when a design input needs it, in a build's shared test design or inside one task, usually through the testing-plan skill.
 ---
 
 # Boundary value analysis
@@ -16,6 +16,8 @@ The rules every technique obeys are in `dev/development/test-strategy.md`; this 
 - **Do not use** on an **unordered** dimension (a set of forms, a normalization form, a source): there is no "just above". Those stay with equivalence-partitioning.
 
 ## Inputs
+
+**Inside one task**, the design input is the **behavior in scope** and its **spec items**; the inputs below are read **where they exist**, and the step outputs and test cases may be kept in the **issue, the PR or the test file** instead of an evidence file (dev/development/test-strategy.md "Required and optional"). The **method and its checks stay the same**.
 
 1. The **classes and dimensions** from **equivalence-partitioning** in the same evidence file (`EC-n`, the dimension list). **BVA does not define classes**: if a dimension it needs has no classes yet, run EP-1 to EP-3 for it first; EP owns them.
 2. The **design input** row (coverage criterion: two-value or **three-value** boundaries, the dimensions the plan names, such as "the measured length after NFC and trim").

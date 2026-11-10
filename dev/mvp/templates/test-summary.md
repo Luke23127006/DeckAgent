@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Test summary — {scope}
 
-<!-- The evidence for accepting the build (dev/development/test-strategy.md "Coverage"). The agent drafts it in Phase 6; the PO accepts the build from it.
+<!-- The evidence for accepting the build (dev/development/test-strategy.md "Coverage"). Optional: the agent drafts it before a build is accepted when the build keeps formal test records; otherwise the evidence lives in the PRs, CI and the tracker. The PO accepts the build from the evidence.
      Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, keep the section order below.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 

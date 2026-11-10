@@ -1,68 +1,54 @@
 ---
 name: flow-tracker-update
-description: Update the flow tracker issue for a UC. Reads current issue statuses from GitHub and updates the tracker's phase checklists. Used after any ticket closes.
+description: Update an optional flow tracker issue of a build that has several tasks in flight. Reads the current state of the issues the tracker lists and updates its Tasks and Verification checklists. A coordination tool only; it gates nothing.
 ---
 
 # Flow tracker update
 
-**Update the flow tracker issue** to reflect **current ticket statuses**.
+**Update a build's flow tracker issue** so it shows the **current state of its tasks**. A tracker exists **only when a build has several tasks in flight** (dev/mvp/WORKFLOW.md "MVP delivery"); it is a **progress display**, **not a gate**.
 
 ## Input
 
-- The UC identifier (e.g., UC-001).
 - The flow tracker issue number.
+- The UC identifier (e.g., UC-001), to filter issues.
+
 ## Process
 
-### 1. Get current ticket statuses
+### 1. Get current statuses
 
-The milestone `mvp` holds **every build**, so **filter by the UC label too**, and **keep only the tickets the tracker body lists** (several builds of one UC can coexist).
+The milestone `mvp` holds **every build**, so **filter by the UC label too**, and **keep only the issues the tracker body lists**.
 
 ```bash
 gh issue list --milestone "mvp" --label "uc:XXX" --state all --json number,title,state,labels,assignees
 ```
 
-### 2. Group by phase
+### 2. Update the Tasks list
 
-Using the `phase:*` labels, **group tickets into their phases**. Show the **tier of test tickets** (`tier:*`) and the **test author of implementation tickets**.
+For each issue the tracker lists:
+- `[x]` if the issue is `closed`
+- `[ ]` if the issue is `open`
 
-### 3. Update the flow tracker issue
-
-For each ticket:
-- `[x]` if the issue state is `closed`
-- `[ ]` if the issue state is `open`
+Older trackers may still show **phase sections**; keep their content, and **do not add phase sections** to a new tracker.
 
 ```bash
 gh issue edit TRACKER_NUMBER --body "..."
 ```
 
-### 4. Check "Done when"
+### 3. Report the Verification state
 
-Each phase of dev/mvp/WORKFLOW.md "Phases" ends with a **"Done when"** list. This skill **reports how far its ticket-based parts hold**; it is a **progress report**, not a verdict.
+Report **facts only**: CI green on `main`; an **eval run recorded** under `testing/execution/eval-runs/` for each scored criterion; **manual checks done**; `docs/architecture/` current when a boundary changed. **Accepting the build** is the PO's.
 
-- **Phase 1:** the `phase:research` tickets that block the tests or the plan are closed.
-- **Phase 2:** the `phase:test-stubs` tickets closed.
-- **Phase 3:** the module and LLM boundaries are settled in the implementation plan.
-- **Phase 4:** every matrix row has its implementation ticket. **Point out** a ticket whose assignee also wrote its tests.
-- **Phase 5:** all `phase:impl` and `phase:post-impl` tickets closed.
-- **Phase 6:** `testing/execution/eval-runs/` has a run for every eval-tier AC; `implementation/as-built.md` has a prediction, an actual flow and a drift section; the matrix rows show their Verified state. Mirror the per-AC checklist under "Verified per AC" from the matrix rows. **Accepting the build** is the PO's.
+### 4. Local mirror (when one exists)
 
-### 5. Update the local mirror
-
-**Update `dev/mvp/builds/UC-XXX-label/flow-tracker.md`** to **match the GitHub issue**.
+When the build keeps `dev/mvp/builds/UC-XXX-label/flow-tracker.md`, **update it to match the issue**. Do not create one.
 
 ## Linking convention
 
-All `#N` references in local plan files **must be clickable Markdown links** (see dev/mvp/WORKFLOW.md "Linking convention"). At the start, **derive the repo base URL**:
-
-```bash
-git remote get-url origin
-# https://github.com/{owner}/{repo}.git → base = https://github.com/{owner}/{repo}
-```
-
-When updating `dev/mvp/builds/UC-XXX-label/flow-tracker.md`, **write every ticket reference as `[#N]({base}/issues/N)`**. The **GitHub issue body uses bare `#N`** (auto-linked).
+In local files, **write every issue reference as `[#N]({base}/issues/N)`** (dev/mvp/WORKFLOW.md "Linking convention"); derive `{base}` from `git remote get-url origin`. The **GitHub issue body uses bare `#N`**.
 
 ## Rules
 
-- **Do not close tickets** — **only update the tracker display**.
-- **Do not change ticket labels or assignments**.
-- **Report the current phase** and **any blocked tickets** in the output.
+- **Do not close issues**: **only update the tracker display**.
+- **Do not change labels or assignments**.
+- **Editing the tracker publishes** to GitHub: do it **when asked**.
+- **Report blocked tasks** and the **open verification items** in the output.

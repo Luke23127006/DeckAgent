@@ -20,7 +20,7 @@ The layout below is a **proposed default**, **not an approved decision**. **Adju
 | `dev/` | Internal documentation for the dev team: the MVP (`dev/mvp/`: spec, workflow, research, decisions, templates, builds), conventions, meeting notes. |
 | `dev/legacy/` | Read-only documents tied to the legacy code: how to run it, its conventions, its old version plans. |
 
-**Legacy code.** Today `apps/`, `packages/`, `vendor/`, `scripts/` and the test files directly in `tests/` **hold the legacy code** (AGENTS.md "Reference code"). **Where the MVP code lives is a Phase 3 decision**; until it is recorded, **do not add new code next to the legacy code**.
+**Legacy code.** Today `apps/`, `packages/`, `vendor/`, `scripts/` and the test files directly in `tests/` **hold the legacy code** (AGENTS.md "Reference code"). **Where the MVP code lives** (the **MVP code root**) is **one PO decision**, `pending`; until it is recorded, **do not add new code next to the legacy code**. The **layout inside the code root** (modules, folders, internal interfaces) is the **developers' choice**.
 
 ## When to create a new package (proposal)
 
