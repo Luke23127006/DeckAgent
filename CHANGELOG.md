@@ -13,6 +13,11 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+- `docs/build/rebuild/adr/` holds seven decision records for the rebuild: local storage and data ownership, chat and session history, tools and permissions, request and event lifecycle, deck artifacts and revisions, credentials and models, and the design system and templates
+- `docs/build/rebuild/architecture/` states the contracts those decisions imply, one file per area: data, session, events, tools and permissions, credentials and models, and the design system and templates, with `overview.md` as the entry point
+- `docs/build/rebuild/planning/` maps each product behavior family to the minimum prerequisites it needs and lists the technical gaps that no decision covers yet
+  - The dependency analysis is complete and hands off to the build sequence that `implementation-plan.md` and `builds/B01.md` will hold; those two files do not exist yet, so the links to them are forward references
+  - The decision records, the architecture notes and the planning notes are written in Vietnamese and keep their decision and behavior IDs inside `docs/build/`, which departs from the plain-English rule in `AGENTS.md` and the no-plan-detail rule in `docs/AGENTS.md`
 - `docs/build/rebuild/research/` holds the rebuild research: the direction (rebuild on the OpenCode Agent Loop, keep the `clean-main` UI), the reference baseline commit, the runtime comparison, the code inventory, the architecture direction and the CLI integration validation
   - The notes are written in Vietnamese, which departs from the plain-English rule in `AGENTS.md`, and they sit outside `docs/research/` because they record a build sequence rather than one product
 - `commit` and `commit-push` skills, which write a conventional commit message and an entry in this file
