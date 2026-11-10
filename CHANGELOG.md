@@ -13,6 +13,8 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+- `docs/build/rebuild/research/` holds the rebuild research: the direction (rebuild on the OpenCode Agent Loop, keep the `clean-main` UI), the reference baseline commit, the runtime comparison, the code inventory, the architecture direction and the CLI integration validation
+  - The notes are written in Vietnamese, which departs from the plain-English rule in `AGENTS.md`, and they sit outside `docs/research/` because they record a build sequence rather than one product
 - `commit` and `commit-push` skills, which write a conventional commit message and an entry in this file
 - `docs/development/writing-documents.md`: living documents and records, outcomes and not the conversation, one line per paragraph, clickable links, no bare ID
 - `docs/research/_STYLE.md`: how a research note is written
