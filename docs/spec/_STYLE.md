@@ -1,111 +1,124 @@
-# Spec style: plain English
+# Spec writing rules
 
-Applies to every file in `docs/spec/`. Raw research notes under `docs/research/` are exempt. In use cases, rules 2 to 8 apply to the response text of the interactions, and rule 10 to every use case, both prose and diagram labels. In user segments, hedge words such as "may" are allowed when they state real uncertainty, and the person's devices and input methods may be named, because they describe the person and not the product.
+Applies to **every file** in `docs/spec/`. Rules 5 and 7 apply to the **`System` and `When` fields** of a use case; the **System text of a step** is its `Note over U,S` line in the interaction diagram. Rule 11 applies to the **whole use case**. Rule 12 applies to **every file**.
 
-**Why:** most readers are not native English speakers. A System response becomes a functional requirement, so it must have one meaning. Plain words give both.
+**Why:** each sentence must have **one meaning**, so **one system response becomes one testable requirement**. **Everyday words do both**.
 
 ## Rules
 
-| # | Rule | Not this | Write this |
+| # | Rule | Don't write | Write |
 |---|---|---|---|
-| 1 | **One thing, one name.** Use the terms in the table below. Never swap in a synonym. | "request area" and "request zone" for the same thing | "request area" every time |
-| 2 | **Use ordinary words.** show, keep, use, start, end, earlier, next, to | display, render, retain, utilize, initiate, terminate, prior, subsequent, in order to | "The system shows the outline." |
-| 3 | **No idioms or phrasal verbs.** | "folded into the same deck", "kicks off", "falls back" | "added to the same deck", "starts", "uses the default" |
-| 4 | **No vague verbs.** Banned: handle, manage, support, process, ensure, properly, gracefully, appropriate. A use case names no interface label, so there is no exemption (rule 10) | "The system handles the failure gracefully." | "The system says the outline could not be drafted and keeps the request." |
-| 5 | **No may, might, should, could in a System response.** Say what the system does. Use **can** only for what the user is allowed to do. | "The system may show a notice." | "The system shows a notice." |
-| 6 | **Short, active sentences.** At most 20 words. Subject first. One action per sentence or message. Citations such as `[BR-xxx]` do not count. | "A notice is shown that the work was stopped and how many slides were made." | "The system shows a notice that it stopped. The notice gives the number of slides made." |
-| 7 | **Conditions go with the branch they name.** A response has no "if". In a use case, an alternative's condition sits in the `alt`, `opt` or `loop` label of its own Alternative Flow diagram, next to the flow ID it belongs to. The Main Flow holds the successful path and names no alternative condition. When behavior differs by step or moment, start the response with a plain label: "At S3:", "Connection returns:". | "If the file is too large, the system rejects it." A condition on a rejected option placed inside the Main Flow "to show when it applies" | `opt A3 · A file is over the size limit [BR-?]` — response: "Shows the reason on the file card." |
-| 8 | **One action per response. Split a crowded interaction into more messages, more `alt` branches, or another section.** | One 110-word diagram label | One message per thing the user can see |
-| 9 | **Bold sparingly.** Bold a defined term from the table, on its first use in a bullet only. At most 2 per bullet. | Bold on whole phrases | "Shows the **deck canvas**." |
-| 10 | **Intent and response, not interface.** The user side says what the user wants to do. The system side says what the system tells, keeps, changes or builds. Never name a widget, a gesture, a position, a look or a label. Name a place only by its zone (see Zones). If a UI detail carries a requirement, write the requirement. | "The user opens the + menu and chooses a skill." "Opens the dashboard as an overlay at the bottom right." "Shows a card with a Retry button." | "The user chooses a skill." "Opens the dashboard. The conversation, the request text and the attachments stay as they were." "Lets the user try again." |
+| 1 | **One thing, one name.** Use the exact word from the glossary. Never swap in a synonym. | "progress" and "listening position" for the same thing | "progress" everywhere |
+| 2 | **Use plain words.** show, keep, use, start, end, before, after | display, maintain, initialize, terminate, prior, subsequent | "The system plays audio." |
+| 3 | **No idioms or flowery phrases.** | "green-light", "seal the deal", "U-turn" | "agree", "end", "change its mind" |
+| 4 | **No vague verbs.** Banned: handle, manage, support, ensure, process, carry out, appropriate, properly, smoothly. | "The system handles errors smoothly." | "The system reports it could not fetch the content and keeps the link the user entered." |
+| 5 | **No "can", "should", "might", "may" in a system response.** State what the system does. Use **"is allowed to"** only for a user permission. | "The system can show a message." | "The system shows a message." |
+| 6 | **Short, active sentences.** One action per sentence. A `[BR-xxx]` citation does not count. | "A message is shown that the job has stopped and how many chapters are done." | "The system shows a message that it has stopped. The message states how many chapters were done." |
+| 7 | **Conditions go in the When field.** A system response has no "if". When behavior differs by step, open with a label: "At S3:", "On reconnect:". | "If the link is invalid, the system rejects it." | When: "The link does not match a source [BR-?]." System: "State the reason." |
+| 8 | **One action per line. At most 7 lines per field.** | One cell of 110 words | One line per thing the user can observe |
+| 9 | **Bold the keywords.** In each sentence, bold the few words or short phrases that carry its meaning, about one per clause. **Headings, code, paths and field labels** such as `**Statement:**` stay as they are; in a **table**, bold is **optional**. Reading only the bold gives the meaning. Never bold a whole sentence. | "**The system keeps the draft when the user leaves the chat.**" or no bold at all | "The system **keeps the draft** when the user **leaves the chat**." |
+| 10 | **Evidence on its own line.** One tag per claim. Never mid-sentence. | "…the screen stays on the first chapter `[observed: …]`, and does not offer the next chapter." | `- **Evidence:** [observed: claude-report (screen stays on first chapter)]` |
+| 11 | **Intent and response, not interface.** The user side says what the user wants. The system side says what the system reports, keeps, changes, or creates. Never name a widget, gesture, position, style, or label. Name a place only by region (see Regions). If an interface detail carries a requirement, write the requirement. | "The user opens the menu and picks a story." "Open the listening view in the bottom corner." "Show a card with a replay button." | "The user picks a story." "Open the listening view. The saved progress and the current audio stay unchanged." "Let the user replay." |
+| 12 | **Current state only, no history.** A file says what is true now. No change log, no "changed vs", "merged from", "rewritten from", "retired", no ruling date and no who decided. No `updated` date. A `Why` gives the reason, not the meeting. History lives in git and `CHANGELOG.md`; a design choice with its options lives in a decision record in `docs/adr/`. | "Legacy FR-020 is dropped. The owner ruled on 04-11-2026 that a reply is a new request." | "A question ends its request; the reply is a new request." |
 
-Rules 4 to 7 keep a response testable. Rules 1 to 3 and 6 keep it easy to read. Rule 10 keeps the spec true when the design changes. Where a behavior came from is a research matter under `docs/research/`; a use case links it only when the link helps the reader understand the behavior.
+Rules 4 to 7 keep a response **testable**. Rules 1 to 3 and 6 keep it **readable**. Rule 11 keeps the spec **correct when the design changes**. Rule 12 keeps it **cheap to maintain**.
 
-## Zones
+## Evidence tags
 
-A zone is a named place where a kind of information lives. It is defined by what it holds, never by where it sits or how it looks. The list is closed:
+**One tag per claim**. **Keys stay in English** so they are **greppable**; the **source content is written in prose**:
 
-- **request area**: what the user is preparing to send.
-- **conversation**: what the user and the system have said to each other.
-- **deck canvas**: the slides of the deck.
+- `[observed: <source> (<what it shows>)]` — seen in a transcript or product
+- `[inferred: <source>]` — inferred from observed facts
+- `[assumed]` or `[assumed: <what>]` — no evidence yet
 
-A use case may say that something is shown, kept or changed in a zone. It may not say how the zone is laid out or reached. To add a zone, add a row to the term table and say what it holds.
+In a list (usage context, knowledge, …), the **last line can be a single** `- **Evidence:** [assumed]`. It **counts for every item above it** without its own Evidence line.
 
-## Terms
+## Regions
 
-Use these words for these things. Add a row when a new term is needed. Do not add a synonym. A term never names a widget, a gesture, a position or a look.
+A **region** is a **place that holds one kind of information**. It is **defined by what it holds**, **never by where it is or what it looks like**. The **list is closed**; each product **declares its own regions in the glossary**. The project has **no settled regions yet**. A use case may say something is **shown, kept, or changed in a region**. It **must not say how a region is laid out** or navigated to. To **add a region**, **add a row to the glossary** and **say what it holds**.
 
-| Term | Means |
+## Glossary
+
+**Use these words for these things**. **Add a row** when a new word is needed. **Do not add a synonym**. A word **never names a widget, gesture, position, or style**. This table **starts empty**; each project **declares its own terms** and adds to them as it learns.
+
+| Term | Meaning |
 |---|---|
-| **request** | What the user sends: text, files, or both |
-| **request area** | The zone for the request the user is preparing: the request text and the attachments |
-| **request text** | The words of a request, typed, pasted or spoken |
-| **attachment** | One file or photo added to a request, with its name or preview, its type and its state |
-| **conversation** | The zone that holds the messages between the user and the system, in order |
-| **outline** | The content plan the system drafts before any slide exists. It plans the slides: each planned slide has its title and the content planned for it |
-| **confirmed outline** | An outline the user has confirmed. It is read-only |
-| **deck** | All slides of the presentation |
-| **slide** | One part of the deck that the audience sees at a time |
-| **planned slide** | One slide the outline plans. It holds a title and the planned content for that slide. It is not a built slide |
-| **deck canvas** | The zone where the system shows the slides |
-| **notice** | A short message the system gives about what happened |
-| **status message** | The text in the conversation that says what the system is doing now and how the request stands |
-| **activity** | One piece of work the system did or planned during a request. It holds what the system did, its state and the information known about its result |
-| **activity state** | What an activity has reached: planned, running, completed, failed, stopped or interrupted. Planned means the system produced a plan that names the activity; a request with no plan has no planned activity. Interrupted means the work on the activity ended before its result was confirmed, because DeckAgent ended. It is not a stop and not a failure. The interrupted state is a proposed default, not an approved owner decision |
-| **activity timeline** | The activities of one request in the order they happen. An executed activity is work that started. A planned activity is work the system planned but has not started, and it appears only when the system produced a plan. The conversation shows the activities with the status message of the request |
-| **activity detail** | The information the system shows about one activity when the user reads it. It can name an internal step, an argument or a result when that is safe to show |
-| **placeholder** | Text the system wrote because the user gave none |
-| **design system** | A reusable set of brand identity rules and design constraints, such as brand colours, fonts, logos and spacing. It can be used for different decks independently of visual styles |
-| **default design system** | The design system the system uses when the user chose none |
-| **visual style** | A reusable set of presentation design rules, such as layout preferences, visual density and visual treatment. It is independent of a design system |
-| **built-in visual style** | A visual style DeckAgent provides. The user can choose it or copy it, but cannot change its original definition |
-| **custom visual style** | A visual style the user creates, changes, saves, removes and reuses |
-| **deck state** | The content and design of a deck at one moment in its work. It is not a version: a version is a release of DeckAgent (`docs/versions/`) |
-| **variant** | Another deck that exists beside a deck, for another use. It is not a deck state |
-| **chat** | One line of work with DeckAgent: its conversation and the presentation work that belongs to it. This term does not fix how many decks a chat holds. A version decides that in its scope file (`docs/versions/`) |
-| **dashboard** | A place where the user sets up skills or models. Opening it keeps the conversation, the request text and the attachments as they were |
-| **provider configuration** | One saved connection to a model service. It is more than a key. It connects to a built-in provider or to a custom model API. It holds a provider ID, a display name and what the provider needs, such as a key. It also holds its added models |
-| **built-in provider** | A model provider that DeckAgent offers by name [BR-005]. DeckAgent knows its provider ID and its default settings |
-| **custom model API** | A model service that the user describes: its provider ID, its base URL and its API protocol. It is not a built-in provider |
-| **provider ID** | The name that identifies the provider of a provider configuration. A built-in provider has its own. The user gives one to a custom model API. It never changes after the provider configuration is saved. It is not the display name |
-| **base URL** | The address to which the system sends the requests of a provider configuration |
-| **API protocol** | The way a model service expects to be asked [BR-005]. Several custom model APIs can use the same API protocol |
-| **display name** | The name the user gives a provider configuration [BR-008]. It never says which provider the configuration connects to |
-| **model catalog** | The list of models that a provider returns when the system asks for it. It is not the list of added models. It does not show which models the user's key can run. Some providers return none |
-| **default models** | The added models that DeckAgent gives for a built-in provider, where it has them [BR-005]. The user can restore them |
-| **model ID** | The name by which a provider identifies one of its models |
-| **added model** | A model ID that the user added to one provider configuration. It comes from the model catalog or is given by hand. It belongs to that provider configuration only. Saving it does not show that the provider runs it |
-| **selectable model** | An added model that the user can choose for a chat [BR-005]. Being selectable does not show that the provider runs it |
-| **selected model** | The added model chosen for one chat. Each chat has its own. It runs a new request only while it is selectable |
-| **try again** | An option the system offers after its work failed or was stopped. Only the user starts it. The system never tries again by itself. The term does not say what work runs again. It means neither the whole work, nor only the missing part, nor undoing what was done. The use case that owns the work says what runs again. Examples: draft the outline again, build the slides again from the confirmed outline, apply the change again. If that use case does not say it, it stays an open question |
-| **edit the request** | The user takes the sent request back into the request area, changes it, and sends it again |
-| **pattern** | An earlier deck the user gives so the system follows its structure. It gives no content and no design instructions |
-| **workspace** | A named group of chats for one project folder. The user adds one by choosing a folder, and choosing that folder again returns the same workspace. Removing one changes no file of the user and no chat |
-| **default workspace** | The workspace the system gives for a first start, before the user chose a folder. It has no project folder and cannot be removed |
-| **project folder** | The one folder of the user that a workspace other than the default workspace stands for. The chats of that workspace can read the files in it. DeckAgent writes no file of its own work into it |
-| **ungrouped chats** | The chats that belonged to a removed workspace. The user finds them together, apart from the chats of every workspace that is set up. They belong to no workspace |
-| **file of the user** | A file or a folder the user made or put in a project folder, or gave to a request as an attachment or a reference. DeckAgent changes none of them. Material DeckAgent makes for its own work is not a file of the user |
-| **workspace data** | The work DeckAgent saves for a workspace: its chats, their conversations, outlines and decks, and the last saved state of each. DeckAgent keeps it for the chats, apart from the project folder, so it stays available when that folder does not. The agent reaches it only through what DeckAgent lets a request do |
-| **permission** | What the agent of one chat can reach on the computer, and where it must ask the user first. The files of the user in the project folder of the workspace of the chat are inside it. A chat that belongs to no workspace has no project folder in it. The data of another chat never is |
-| **reference** | A file or a folder in the project folder of the workspace of the chat that the request names as material. Naming it raises no permission by itself. It becomes part of the data of the request when a request reads it, and only while it can be read |
-| **reasoning level** | How much an added model thinks about a request, as the user chooses it for a chat. The model and its provider set which levels it has |
-| **context usage** | How much of the context of the selected model the conversation and the request in preparation use. It is an estimate unless the provider reported it |
-| **compact** | A summary the system makes of the earlier conversation, so the work stays within the context of the selected model. The whole conversation stays readable |
+| **account** | The user's identity for access and for keeping their own data |
+| **chat** | One line of work with the system. It holds one conversation and at most one deck |
+| **current chat** | The chat the user works in now |
+| **earlier chat** | A chat the system keeps as earlier work, other than the current chat, that the user is allowed to open again |
+| **conversation** | Region. Holds the requests of a chat and the responses of the system, in order |
+| **deck canvas** | Region. Holds the slides of the deck of a chat |
+| **interface** | The part of DeckAgent the user sees and uses. Reloading or closing it does not stop DeckAgent |
+| **request** | One message the user sends, with its material, and the work the system does for it until that work ends |
+| **active request** | A request whose work has not ended. A chat has at most one |
+| **draft** | The request text and attachments a user prepared in a chat and has not sent yet |
+| **attachment** | A file the user adds to the draft. It is being prepared, ready, or rejected with a reason |
+| **status message** | The response that says, while a request is active, what the system is doing and how long it has worked |
+| **activity** | One thing the system did or does for a request, such as reading a file or building a slide, with its state |
+| **agent** | The part of the system that does the work of a request with the selected model, such as reading files, writing the work of the chat and using outside services |
+| **approval** | The user's answer to a step of a request that goes beyond what the agent of the chat reaches without asking: allow it once, or refuse it |
+| **selected model** | The model of a chat that runs its next request |
+| **context** | What the selected model reads for a request. Each model reads a context only up to its own size |
+| **conversation summary** | A shorter text the system writes in place of the earlier conversation of a chat, for the selected model to read. The user still reads the whole conversation |
+| **provider** | A model service that runs models for DeckAgent through the user's own account |
+| **provider configuration** | One saved connection to a provider: its provider ID, what the provider needs such as a key, and its added models |
+| **provider ID** | The name that tells which provider a provider configuration connects to. It never changes after saving |
+| **built-in provider** | A provider DeckAgent knows in advance, with a fixed provider ID |
+| **custom model API** | A provider the user describes with a provider ID, a base URL and an API protocol |
+| **key** | The secret of the user's own account that a provider or an outside service asks for |
+| **model catalog** | The list of models a provider reports. It adds no model by itself |
+| **added model** | A model the user added to a provider configuration |
+| **selectable model** | An added model of a saved provider configuration, which a chat is allowed to select |
+| **reasoning level** | How much the selected model reasons for a request, among the levels that model has |
+| **material** | What the user gives for a deck: request text, attached files and the files of the project folder that a request reads, named or not |
+| **workspace** | A group of chats with a name. Each workspace other than the default workspace has one project folder, and no two workspaces have the same one |
+| **project folder** | The folder on the user's computer that the user chose for a workspace. It holds the user's files |
+| **workspace in use** | The workspace whose chats the system shows as earlier chats and that a new chat joins |
+| **default workspace** | The workspace with no project folder that exists from the first start. It is never removed |
+| **ungrouped chat** | A chat whose workspace was removed. It belongs to no workspace and has no project folder |
+| **interview** | The questions the system asks before the first outline, about the topics the request does not answer |
+| **suggested answer** | An answer the system offers for the user to choose instead of typing one |
+| **suggested revision** | A change to the current outline that the system offers for the user to choose instead of typing one |
+| **source** | Where the content of a deck comes from: the user's material, the model's general knowledge, or public research |
+| **outside service** | A service other than the provider of the selected model, such as a search or image service, that the user set up with their own account or key |
+| **public research** | A search for public information through an outside service |
+| **brief** | What the first outline is drafted from: the interview answers, the assumption for each skipped question, the sources, the generation format, the template and the design system |
+| **presenter notes** | Text for the presenter that belongs to one slide and is not shown to the audience |
+| **outline** | The plan of a deck: the planned slides and the planned content of each one |
+| **current outline** | The outline proposal in the latest outline response of the conversation |
+| **confirmed outline** | The current outline after the user confirms it. It does not change |
+| **deck** | The slides of a chat |
+| **follow-up request** | A request in a chat that has a confirmed outline or a deck with slides |
+| **generation format** | The kind of source the deck is built in, such as HTML or Markdown. One deck has one |
+| **deck source** | The working files of the deck in its generation format. The system and the user change the same files |
+| **design system** | A saved set of design rules for the look of slides: its theme values, rules in words for using them, and brand files such as a logo. A built-in design system or a custom design system. It holds no layout |
+| **built-in design system** | A design system that comes with DeckAgent. The system never changes or removes it |
+| **custom design system** | A design system the user saved. The user is allowed to change and remove it |
+| **theme value** | A named value of a design system, such as a colour, a font or a spacing |
+| **brand file** | A file that gives the look of a brand, such as a brand guide, a presentation, a logo, a font file or a design system package of another product |
+| **sample slide** | A slide made with a proposed design system to show it. It belongs to no deck |
+| **theme** | A design system written in the terms of one generation format: its theme values, with each value the user put in place of one for the deck, as named values the deck source refers to. Only the system writes it |
+| **template** | A prebuilt set of layouts of one generation format that the system builds slides from. Each generation format has one or more built-in templates, one of them its default template; the user chooses one in the interview. Each layout states the kinds of content it serves and how much it holds |
+| **marked part** | A part of a slide that the user points to as the target of a request |
+| **closing message** | The response that ends the work on slides of a request and tells what was made or changed |
+| **placeholder** | Text that stands in for a fact no source gives |
+| _(add a row)_ | _(describe the meaning, do not name a widget or position)_ |
 
 ## How to check
 
-No tooling exists yet, so review does it. There are two checks.
+There is **no tool yet**, so **review does this**. There are **two groups of checks**.
 
-**Words.** Run this on the response text of a use case's interactions, on the prose of `Goal`, `Preconditions` and `Behavior constraints`, and on `Situation and goal` in users and the vision. Each hit is fixed or has a stated reason.
-
-```
-grep -nEi '\b(handl(e|es|ed|ing)|manag(e|es|ed|ing)|support(s|ed)?|process(es|ed|ing)?|ensur(e|es|ed)|properly|gracefully|appropriate(ly)?|may|might|should|could)\b'
-```
-
-**Interface (rule 10).** Run this on the whole use case, except the frontmatter and the flow IDs. Diagram labels count. Each hit is rewritten as an intent or a response. A hit that is not interface language (for example "right" in "right-to-left script") has a stated reason.
+**Wording.** Run on the `System` and `When` fields, and on `Situation and goal`. Each hit is **fixed or given a recorded reason**.
 
 ```
-grep -nEi '\b(button|click(s|ed)?|tap(s|ped)?|press(es|ed)?|hover(s|ed)?|drag(s|ged)?|swipe|scroll(s|ed|ing)?|menu|dropdown|drop-down|picker|dialog|modal|pop-?up|overlay|window|tab|toolbar|sidebar|panel|strip|thumbnail|card|pill|icon|toggle|checkbox|controls?|selector|screen|page|dimm?(ed)?|highlight(ed)?|grey|gray|red|green|bottom|top|left|right|above|below|corner|box|field|label)\b'
+handle|manage|support|ensure|process|carry out|appropriate|properly|smoothly|can|could|should|might|may
 ```
 
-Then apply the **swap test** to each sentence: picture the same product with another interface, such as touch only, voice only, or a different layout. If the sentence is still true, it passes. If it is not, it describes the interface and is rewritten.
+**Interface (rule 11).** Run on the **whole use case**, except the frontmatter. Each hit is **rewritten as intent or response**. A hit that is **not interface language** (e.g. "right" in "right-to-left text") gets a **recorded reason**.
+
+```
+button|click|tap|swipe|scroll|menu|dropdown|dialog|popup|tab|sidebar|toolbar|card|chip|icon|toggle|checkbox|screen|page|corner|above|below|left|right|label|input field
+```
+
+Then apply the **swap test** to each sentence: imagine the **same product with a different interface**, e.g. touch-only or voice-only. If the sentence is **still true, it passes**. If not, it **describes the interface** and is **rewritten**.

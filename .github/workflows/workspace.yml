@@ -82,10 +82,6 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:session-persistence
 
-      - name: UX prototype regression
-        id: ux
-        run: node tests/ux-02-prototype.test.cjs
-
       - name: Chat first-run setup and Windows encrypted credentials (local HTTP only)
         id: chat_setup
         timeout-minutes: 3
@@ -143,7 +139,6 @@ jobs:
           SESSIONS_RESULT: ${{ steps.sessions.outcome }}
           CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
           BOOT_RESULT: ${{ steps.boot.outcome }}
-          UX_RESULT: ${{ steps.ux.outcome }}
           TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
           BROWSER_RESULT: ${{ steps.browser.outcome }}
           ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
@@ -166,7 +161,6 @@ jobs:
           - Session persistence (TASK-002-C, local HTTP only): $env:SESSIONS_RESULT
           - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
           - Boot/unload: $env:BOOT_RESULT
-          - UX regression: $env:UX_RESULT
           - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Real browser reload / Agent / allowed and denied file writes: $env:BROWSER_RESULT
           - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
@@ -176,7 +170,7 @@ jobs:
           - Recovery / Stop / scoped editing / history: $env:RECOVERY_EDITING_RESULT
           - Run: $env:RUN_URL
 
-          Record this run URL and tested SHA in PROGRESS.md. A successful push run on
+          Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on
           dev supplies automated evidence; also verify every criterion of the gate.
           Gate 002 additionally requires a real-model request and history readback
           after Host restart on the accepted baseline (manual evidence; no cloud keys

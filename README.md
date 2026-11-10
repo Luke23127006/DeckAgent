@@ -24,8 +24,7 @@ Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. On other shells, u
 
 ## Documentation
 
-- [Product vision](docs/spec/01-product-vision/VISION.md) — the intended product
-  behavior and scope.
+- [Product spec](docs/spec/) — the use cases, requirements and business rules of the product, and the behaviors left for later.
 - [Local development](docs/development/local-development.md) — setup, provider/key
   configuration, the Web app walkthrough, CLI usage, testing, and common problems.
 

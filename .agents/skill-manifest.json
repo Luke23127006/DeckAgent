@@ -203,10 +203,43 @@
       "source_path": null,
       "installed_path": ".agents/skills/spec-authoring",
       "decision": "Adjust",
-      "reason": "Write or rewrite use case and user segment files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill. Adapted for the Main Flow First use case format: one complete hand-written Main Flow sequence diagram first, each alternative in its own subsection sorted by Ax number, with divergence point and stated end; nothing is generated and no flow is labeled Active or Closed.",
-      "compatibility": "Tool-neutral instructions. Edit use case diagrams through this skill and the mermaid-markdown portability defaults.",
+      "reason": "Write or rewrite use case files from the folder template, criteria and docs/spec/_STYLE.md without copying those rules into the skill. The interaction diagram holds the main flow and is the source of each step's text; the Steps table holds the same steps; alternatives are blocks with a one-line When. A design choice is written as its result or pending, and research items are stated in evidence tags, not linked.",
+      "compatibility": "Tool-neutral instructions. Checks that a use case's interaction diagram and Steps table hold the same steps.",
       "dependencies": [
-        "mermaid-markdown"
+        "mermaid-markdown",
+        "Optional Mermaid CLI (npx) for a syntax check."
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "commit",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/commit",
+      "decision": "Create",
+      "reason": "Self-contained commit workflow: stages and commits with a conventional message and a CHANGELOG.md entry, without pushing.",
+      "compatibility": "Uses Bash(git:*) for git operations.",
+      "dependencies": [
+        "Git >= 2.41"
+      ],
+      "reviewed_resources": [
+        "SKILL.md"
+      ],
+      "status": "installed"
+    },
+    {
+      "name": "commit-push",
+      "source_repository": "repository-local",
+      "source_path": null,
+      "installed_path": ".agents/skills/commit-push",
+      "decision": "Create",
+      "reason": "Self-contained commit-and-push workflow. Stages, commits with a conventional message, updates the changelog, and pushes to the remote.",
+      "compatibility": "Uses Bash(git:*) for git operations.",
+      "dependencies": [
+        "Git >= 2.41"
       ],
       "reviewed_resources": [
         "SKILL.md"

@@ -193,9 +193,7 @@ pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web sta
 pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
 ```
 
-These checks use local fixtures and require no cloud keys. The contracts, manual
-acceptance checklist and handoffs that belong to them are part of the implementation
-plan of the active version, under `docs/versions/`.
+These checks use local fixtures and require no cloud keys. The contracts, manual acceptance checklist and handoffs that belong to them are in the GitHub Issue of the task.
 
 ## Tests
 

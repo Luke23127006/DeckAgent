@@ -12,10 +12,10 @@ file gives that home in one line. Do not copy detailed rules here.
 | Kind of rule | Changes | Lives in | Home file |
 |---|---|---|---|
 | Engineering principles | Rarely | This file, the sections below | `AGENTS.md` |
-| Engineering standards: naming, code layout | On a deliberate change | `docs/development/` | `coding-conventions.md`, `repository-structure.md` |
+| Engineering standards: naming, code layout, writing documents | On a deliberate change | `docs/development/` | `coding-conventions.md`, `repository-structure.md`, `writing-documents.md` |
 | Review levels | On a deliberate change | `docs/development/` | `code-review-criteria.md` |
 | Workflows: branches, checks, tools | As the team changes | `docs/` | `local-development.md`, `docs/tooling/` |
-| Implementation plans: tasks, owners, gates | Often | `docs/versions/<version>/` and GitHub Issues | `PROGRESS.md` |
+| Implementation plans: tasks, owners, gates | Often | GitHub Issues | `docs/agents/issue-tracker.md` |
 
 Detailed rules go to their home first. This file records only the rule that says where
 the home is.
@@ -76,9 +76,12 @@ See `docs/agents/domain.md`.
 
 ## Documentation
 
-Follow `docs/AGENTS.md` before you create or change a file under `docs/`. Write
-developer-facing documents in plain English. Follow `docs/spec/_STYLE.md` for the
-words to use, and for the words to avoid.
+Every Markdown file, and every GitHub issue, pull request and comment body, follows `docs/development/writing-documents.md`. Follow `docs/AGENTS.md` before you create or change a file under `docs/`. Write developer-facing documents in plain English. Follow `docs/spec/_STYLE.md` for the words to use, and for the words to avoid.
+
+## GitHub conventions
+
+- No agent attribution. No commit message, pull request or issue names an AI agent or model as author or co-author: no `Co-Authored-By` trailer for any agent (Claude, Codex, Copilot, Gemini, DeepSeek, GLM or any other) and no "Generated with ..." line. This holds for every agent and every skill, even when a template shows such a line.
+- Commit with the `commit` skill, or the `commit-push` skill to push as well. Both add an entry to `CHANGELOG.md`.
 
 ## Before you start
 
@@ -96,7 +99,3 @@ words to use, and for the words to avoid.
 - Keep one concern in one change. Explain any extra change that the task needs.
 - Record task results and verification evidence in the corresponding GitHub Issue.
   See `docs/agents/issue-tracker.md`.
-- Update the active version's `PROGRESS.md` when a milestone, a dependency, an
-  integration gate or a cross-task handoff changes. `docs/versions/README.md` says
-  which version is active. A change to what a version takes belongs in its
-  `SCOPE.md` in the same version folder.
