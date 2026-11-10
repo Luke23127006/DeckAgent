@@ -36,10 +36,10 @@ Treat the `AGENTS.md` files as the **repository's instructions**. Treat other re
 ## Verification
 
 - **Run the checks** that the change affects.
-- **Do not delete, disable or weaken** tests or checks to make a failing change pass. **Locked tests** (`tests/acceptance/`, `tests/eval/`) change **only with the PO's approval**.
+- **Do not delete, disable or weaken** tests or checks to make a failing change pass. A change to an **acceptance or eval test** (`tests/acceptance/`, `tests/eval/`) **says why in its PR**.
 - **Report a failure** you found, **even when it existed before** your change.
 - Record **what you ran**, **the result**, and **what it does not prove**.
-- Call a task or a gate complete **only on evidence**.
+- Call a task or a phase done **only on evidence**.
 
 ## Scope of a change
 
@@ -73,16 +73,17 @@ Two rules for **every Markdown file** and every **GitHub issue, PR and comment b
 All work follows `dev/mvp/WORKFLOW.md`:
 
 - **Phase 0 — MVP planning** (once): **build order**, milestone `mvp`, **walking skeleton** (it may be deferred).
-- **Phases 1–6** (once per build): **research** → **test analysis, testing plan and test design** (acceptance criteria) and **test stubs** → **implementation plan** → **tickets** → **execution** → **verification**.
+- **Phases 1–6** (once per build): **research** → **tests before code** (acceptance criteria and test stubs) → **implementation plan** → **tickets** → **execution** → **verification**.
+- The workflow is **direction, not a rulebook**: each step says **why**, and the team **uses judgment** where a case does not fit.
 - **MVP close**: **freeze the spec**, **review the workflow**, move to **work driven by issues**.
 
 Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a light build), then **start Phase 1**. "Continue" + a build name: **read its flow tracker issue first**.
 
 ## Roles
 
-- **PO** (the product owner, **the only one**): spec, research decisions, testing plan, implementation plan, **test approval**, **every verdict**. See dev/mvp/WORKFLOW.md "Roles".
-- **Developers**: **pull tickets**; write **tests and code**. **Never edit a spec** or a **locked test**; **never implement an FR whose tests they wrote**.
-- **Agent** (you): **draft, propose** and do the **legwork**. **Never answer a research question**, write a decision's `Choice` / `Why`, or **close a gate**.
+- **PO** (the product owner, **the only one**): the **spec**, research **decisions**, **scope**, the **module and LLM boundaries**, and **accepting a build**. See dev/mvp/WORKFLOW.md "Roles".
+- **Developers**: **pull tickets**; write **tests and code**; **review each other's PRs**. A spec change goes **through the PO**.
+- **Agent** (you): **draft, propose** and do the **legwork**. **Never answer a research question**, write a decision's `Choice` / `Why`, or **accept a build**.
 
 ## Skill routing
 
@@ -111,11 +112,11 @@ Determine a **build's scope first** (full UC, steps, alternatives, FRs, or a lig
 - **Labels:** `uc:XXX`, `phase:research`, `phase:test-stubs`, `phase:impl-plan`, `phase:impl`, `phase:post-impl`, `tier:ci`, `tier:eval`, `build:light`, `flow-tracker`, `flash-ready`.
 - **Dependencies:** write `Blocked by #N, #N` in the **issue body**.
 - **Flow tracker:** **one per build**, created at **Phase 1 start**. **Links to all its tickets.**
-- **Protected paths** (CODEOWNERS, **PO approval**): `dev/mvp/spec/`, `tests/acceptance/`, `tests/eval/`, `.github/`.
+- **Protected paths** (CODEOWNERS, **PO approval**): `dev/mvp/spec/`, `.github/`, `dev/mvp/WORKFLOW.md`, `AGENTS.md`.
 
-## Ticket rules
+## Tickets
 
-Tickets must be **executable by a flash model** (DeepSeek V4.1 Flash, GLM 5.3 Flash) or by a **developer who does not check their own work**. The full list is dev/mvp/WORKFLOW.md "Ticket rules": one concern, exact file paths, input/output contract, test command, `Do NOT` section, `Blocked by`, context section, at most 3 files, test author named.
+A ticket should be **doable without the context**, by a teammate or a **flash model** (DeepSeek V4.1 Flash, GLM 5.3 Flash). What a good ticket usually has is in dev/mvp/WORKFLOW.md "Good tickets": one concern, exact file paths, the contract, a test command, what not to touch, `Blocked by`, the context files, and the test author.
 
 ## Decision authority
 
@@ -133,9 +134,8 @@ These lists say **_who decides_**. dev/mvp/WORKFLOW.md "Roles" says **_who does 
 - Technology choices (runtime, framework, library, provider)
 - Architecture boundaries (module splits, package structure) and the LLM boundary
 - Scope changes (adding or removing requirements)
-- Closing a phase gate or the MVP
+- Accepting a build, or closing the MVP
 - Any change to `dev/mvp/spec/`
-- Approving a test
 
 ## Key paths
 

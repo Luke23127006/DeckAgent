@@ -35,18 +35,16 @@ For each ticket:
 gh issue edit TRACKER_NUMBER --body "..."
 ```
 
-### 4. Check phase gates
+### 4. Check "Done when"
 
-The gates are defined in dev/mvp/WORKFLOW.md "Phases". This skill **reports whether their ticket-based parts hold**; it **never closes a gate** (the PO does).
+Each phase of dev/mvp/WORKFLOW.md "Phases" ends with a **"Done when"** list. This skill **reports how far its ticket-based parts hold**; it is a **progress report**, not a verdict.
 
-- **Phase 1:** all `phase:research` tickets closed.
-- **Phase 2:** all `phase:test-stubs` tickets closed (each test approved by the PO).
-- **Phase 3:** the implementation plan is approved by the PO.
-- **Phase 4:** every implementation ticket **exists** and **names a test author who is not its assignee**. **Report any separation-rule conflict**.
+- **Phase 1:** the `phase:research` tickets that block the tests or the plan are closed.
+- **Phase 2:** the `phase:test-stubs` tickets closed.
+- **Phase 3:** the module and LLM boundaries are settled in the implementation plan.
+- **Phase 4:** every matrix row has its implementation ticket. **Point out** a ticket whose assignee also wrote its tests.
 - **Phase 5:** all `phase:impl` and `phase:post-impl` tickets closed.
-- **Phase 6:** every row in `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md` has Verified ticked; `testing/execution/eval-runs/` has a run for every eval-tier AC; `implementation/as-built.md` has a prediction, an actual flow and a drift section. Mirror the per-AC checklist under "Verified per AC" from the matrix rows.
-
-**Report a gate as "ready for the PO"** rather than "complete".
+- **Phase 6:** `testing/execution/eval-runs/` has a run for every eval-tier AC; `implementation/as-built.md` has a prediction, an actual flow and a drift section; the matrix rows show their Verified state. Mirror the per-AC checklist under "Verified per AC" from the matrix rows. **Accepting the build** is the PO's.
 
 ### 5. Update the local mirror
 

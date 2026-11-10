@@ -7,7 +7,7 @@ created: 08-11-2026
 
 # Traceability matrix — workspace theo folder và chat mới
 
-**Traceability spine** của build. Phase 1 có **một dòng cho mỗi FR và BR** trong scope; sau Phase 2 có **một dòng cho mỗi acceptance criterion**. **Không gate nào đóng** khi một dòng còn **thiếu link mà phase đó phải tạo** (dev/mvp/WORKFLOW.md "Traceability").
+**Traceability spine** của build. Phase 1 có **một dòng cho mỗi FR và BR** trong scope; sau Phase 2 có **một dòng cho mỗi acceptance criterion**. Một dòng **thiếu link** thường là **việc bị quên** (dev/mvp/WORKFLOW.md "Traceability").
 
 ## At a glance
 
@@ -112,13 +112,13 @@ Mỗi behavior được **test ở build đầu tiên test được nó** (RQ-15
 | SR-12 | FR-071.1, **chỉ nhóm UNC** | deferred | **Đường dẫn mạng UNC**: câu trả lời ở open-questions.md mục 20 và **share SMB trên CI**. Phần còn lại của FR-071.1 **to test**. | Chưa có build |
 | SR-13 | UC-012.N1 | deferred | **Attachment**: archive đã export đính kèm vào chat mới. | Build 3 |
 
-**Item rủi ro high bị dời:** FR-084.1b (build 3), FR-084.1c (build 5), FR-073.4b đến FR-073.4d (build 2, 3, 5). Tới build nhận, chúng **chỉ được bảo vệ** bởi **test đã khoá** của build này.
+**Item rủi ro high bị dời:** FR-084.1b (build 3), FR-084.1c (build 5), FR-073.4b đến FR-073.4d (build 2, 3, 5). Tới build nhận, chúng **chỉ được bảo vệ** bởi **acceptance test** của build này.
 
-## Orphan check (chạy ở mỗi gate)
+## Orphan check (cuối mỗi phase)
 
 - [ ] **Mỗi FR và NFR trong scope có một dòng** (Phase 1); **mỗi AC và measure có một dòng và một tier** (sau Phase 2).
 - [ ] **Mỗi dòng có ít nhất một test** (sau Phase 2).
-- [ ] **Người implement không phải test author** của cùng dòng.
+- [ ] **Người implement khác test author** của cùng dòng, hoặc dòng ghi lý do.
 - [ ] **Mỗi DEC trong scope được dùng** bởi ít nhất một dòng (test hoặc impl).
 - [ ] **Mỗi RQ đã trả lời dẫn tới một DEC** hoặc một dòng dùng kết quả của nó.
 - [ ] **Không có test ticket hay implementation ticket nào thiếu dòng trong matrix**.

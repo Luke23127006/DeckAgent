@@ -61,25 +61,24 @@ For **research tickets**, the **map is copied from section 1** of the research c
 
 ### 5. Update the local mirror
 
-**Update** `dev/mvp/builds/UC-XXX-label/flow-tracker.md` with the **new ticket numbers**. **Update the source plan document's ticket column** with issue numbers. **Update** `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md`: **fill the Test and Impl columns** with the new ticket links. Before finishing, **run the matrix's no-orphan check** — **no test or implementation ticket may exist without a matrix row** (see dev/mvp/WORKFLOW.md "Traceability"). Keep ticket bodies to a **matrix-row reference** (FR/AC id + link) **rather than restating requirement text** (dev/mvp/WORKFLOW.md "Document rules").
+**Update** `dev/mvp/builds/UC-XXX-label/flow-tracker.md` with the **new ticket numbers**. **Update the source plan document's ticket column** with issue numbers. **Update** `dev/mvp/builds/UC-XXX-label/testing/traceability-matrix.md`: **fill the Test and Impl columns** with the new ticket links. Before finishing, **run the matrix's orphan check** and **report** a test or implementation ticket **without a matrix row** (see dev/mvp/WORKFLOW.md "Traceability"). Keep ticket bodies to a **matrix-row reference** (FR/AC id + link) **rather than restating requirement text** (dev/mvp/WORKFLOW.md "Document rules").
 
-## Ticket rules
+## Good tickets
 
-Implementation tickets must be **executable by a flash model** or by a **developer who does not check their own work** (dev/mvp/WORKFLOW.md "Ticket rules"):
+A ticket should be **doable without the context**, by a teammate or a **flash model** (dev/mvp/WORKFLOW.md "Good tickets"). Aim for:
 
-1. One concern per ticket.
+1. One concern per ticket; **split it** when it grows past a few files.
 2. Exact file paths.
 3. Input/output contract with types.
 4. Test command as acceptance criteria.
 5. Do NOT section with explicit boundaries.
 6. Blocked by prerequisites.
 7. Context section with the existing files the implementer needs.
-8. Maximum 3 files changed.
-9. Test author named.
+8. Test author named, when someone else wrote the tests.
 
-## Separation rule
+## Test author
 
-The **test author of an FR must not implement it** (dev/mvp/WORKFLOW.md "Phase 4"). When the PO assigns tickets, or when asked to suggest assignees, **check every implementation ticket against the matrix's Test author column** and **flag any conflict**. **Light builds are exempt**.
+The **test author of an FR** is preferably **not its implementer** (dev/development/test-strategy.md "Test levels"). When asked to suggest assignees, **check the matrix's Test author column** and **point out** a ticket whose assignee wrote its tests.
 
 ## Linking convention
 
@@ -100,6 +99,6 @@ Apply to every output:
 
 - **One milestone, `mvp`**. **Create it if it does not exist** (normally done in Phase 0): `gh api repos/{owner}/{repo}/milestones -f title="mvp"`.
 - **Create labels first** if they do not exist (dev/mvp/WORKFLOW.md "Labels").
-- The **agent writes the tickets**; the **PO approves them before any is assigned**.
+- The **agent writes the tickets**; the team **reviews them** when it picks them up.
 - **Always reference the flow tracker issue** in every ticket body.
 - **Number tickets in dependency order** so that **blocked-by references point to lower-numbered issues**.

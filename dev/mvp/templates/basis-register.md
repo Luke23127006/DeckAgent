@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Basis register — {scope}
 
-<!-- A record of Gate 1, beside test-analysis.md (dev/development/test-strategy.md "Test basis register"). It holds the register rows only; their counts and the ambiguities live in test-analysis.md, the scope rulings in the matrix's "Items not tested". The units each item is cut from are in sentence-map.md.
+<!-- Part of the test analysis, beside test-analysis.md (dev/development/test-strategy.md "Test basis register"). It holds the register rows only; their counts and the ambiguities live in test-analysis.md, the scope rulings in the matrix's "Items not tested". The units each item is cut from are in sentence-map.md.
      Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below. Its length follows the spec it covers.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 

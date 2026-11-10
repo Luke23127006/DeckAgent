@@ -19,7 +19,7 @@ labels: build:light
 ## Test
 
 <!-- The test that fails now and passes after the fix. Path and what it checks.
-     The PO approves the test before the fix merges. The same developer may write both. -->
+     Write it first and see it fail. The same developer may write both. -->
 
 `tests/...`
 
@@ -29,18 +29,17 @@ npm test -- --grep "FR-NNN"
 
 ## Fix
 
-- **File(s):** `src/...` (at most 3)
+- **File(s):** `src/...`
 - **Change:** one or two sentences
 
 ## Do NOT
 
 - **Do not modify files outside the listed paths**.
-- **Do not modify locked tests** other than the one named above.
+- **Do not weaken other tests**; a change to one says why in the PR.
 - **Do not modify any spec file**.
 
 ## Acceptance
 
-- [ ] **Test approved by the PO**
 - [ ] Test was **red before the fix** and is **green after**
 - [ ] **No other tests broken**
 - [ ] **Matrix row added**

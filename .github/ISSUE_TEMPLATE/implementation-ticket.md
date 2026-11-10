@@ -15,7 +15,7 @@ labels: phase:impl, flash-ready
 **FR / AC:** FR-NNN / AC-N
 **Decisions:** DEC-NNN (link to dev/mvp/decisions/)
 **Plan step:** Step N of dev/mvp/builds/UC-XXX-label/implementation/implementation-plan.md
-**Test author:** @handle — must not be the assignee (separation rule)
+**Test author:** @handle — preferably not the assignee
 **Flow tracker:** #N
 
 ### LLM boundary
@@ -64,7 +64,7 @@ npm test -- --grep "FR-NNN"
 <!-- Explicit boundaries. What the implementer must NOT touch, refactor, or change. -->
 
 - **Do not modify files outside the listed paths**.
-- **Do not modify any test** in `tests/acceptance/` or `tests/eval/` (**locked**).
+- **Do not weaken any test** in `tests/acceptance/` or `tests/eval/`; a needed change **says why in the PR**.
 - **Do not modify any spec file**.
 - **Do not call the model** where the **LLM boundary above says none**.
 - **Do not add dependencies** not listed here.
@@ -75,7 +75,7 @@ npm test -- --grep "FR-NNN"
 
 - [ ] **All listed tests pass**
 - [ ] **No other tests broken**
-- [ ] **Maximum 3 files changed**
+- [ ] **The change stays within the listed files**
 - [ ] **Type checks pass** (`npm run typecheck` or equivalent)
 
 ## Blocked by

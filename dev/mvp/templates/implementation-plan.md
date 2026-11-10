@@ -23,8 +23,8 @@ status: draft
 
 ## Entry conditions
 
-- [ ] All in-scope research tickets closed (Phase 1 gate)
-- [ ] All in-scope test-stub tickets closed; tests approved and locked (Phase 2 gate)
+- [ ] The research questions that block this plan are answered (Phase 1)
+- [ ] The CI-tier criteria in scope have tests that fail as expected (Phase 2)
 
 ## Module boundaries
 

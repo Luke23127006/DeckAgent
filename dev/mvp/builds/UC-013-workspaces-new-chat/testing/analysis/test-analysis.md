@@ -7,7 +7,7 @@ created: 09-11-2026
 
 # Test analysis — workspace theo folder và chat mới
 
-<!-- Record của Gate 1 (dev/development/test-strategy.md "Test basis register", "Test types and approaches", "Automation feasibility", "Gates"). Các dòng của register nằm ở basis-register.md (cách đặt ID của basis item ghi ở đầu file đó); sentence map ở sentence-map.md; item không test, cùng scope ruling của chúng, ở mục "Items not tested" của matrix. File này giữ số đếm, quality risk và test type, mechanism, ambiguity và candidate gap.
+<!-- Tóm tắt test analysis (dev/development/test-strategy.md "Test basis register", "Test types and approaches", "Automation feasibility"). Các dòng của register nằm ở basis-register.md (cách đặt ID của basis item ghi ở đầu file đó); sentence map ở sentence-map.md; item không test, cùng scope ruling của chúng, ở mục "Items not tested" của matrix. File này giữ số đếm, quality risk và test type, mechanism, ambiguity và candidate gap.
      Build file viết bằng tiếng Việt với thuật ngữ tiếng Anh (dev/mvp/builds/_STYLE.md). -->
 
 ## Contents
@@ -80,21 +80,21 @@ created: 09-11-2026
 |---|---|---|---|---|
 | Functional | yes | Mọi FR, BR và flow trong scope (mục 1) | asserted | scripted automated: acceptance qua driver, E2E ở Phase 5 |
 | Performance | no | QR-9 là **known risk**. Spec **không có ngưỡng thời gian**. Thời gian chạy của cả một test trong CI gồm khởi động server, fixture, thao tác, đọc trạng thái và cleanup, và tải của runner thay đổi giữa các lần chạy, nên **không đo được** thời gian DeckAgent thực hiện một thao tác. Một phép đo hợp lệ phải nêu operation, metric và điều kiện đo. | — | — |
-| Security — confidentiality | yes | QR-2, BR-019 (Why). Build này kiểm phần **từ chối folder** và **"không đọc file"**; việc gửi nội dung cho provider thuộc build 3. | asserted | scripted automated (threat scenario: link, junction, ổ `subst`, tiền tố `\\?\`, đường dẫn tương đối); exploratory (charter ở Gate 2) |
+| Security — confidentiality | yes | QR-2, BR-019 (Why). Build này kiểm phần **từ chối folder** và **"không đọc file"**; việc gửi nội dung cho provider thuộc build 3. | asserted | scripted automated (threat scenario: link, junction, ổ `subst`, tiền tố `\\?\`, đường dẫn tương đối); exploratory (charter ở test design) |
 | Security — integrity | yes | QR-3, FR-084.1a, FR-071.10 | asserted | scripted automated (snapshot trước và sau, có positive control) |
 | Security — authentication | no | Spec **không có tài khoản** hay đăng nhập; DeckAgent chạy trên máy một người dùng (precondition của UC-013). Việc server local bị gọi từ nơi khác nằm ở hàng authorization. | — | — |
-| Security — authorization | yes | QR-8, FR-143. Cơ chế (session token, Origin validation hay khác) do **implementation plan** chọn. **Ngoài phạm vi:** tiến trình khác chạy **cùng quyền hệ điều hành**. | asserted | scripted automated (request từ client không được phép **bị từ chối** và **không đổi trạng thái**; mechanism M18); exploratory (charter ở Gate 2) |
+| Security — authorization | yes | QR-8, FR-143. Cơ chế (session token, Origin validation hay khác) do **implementation plan** chọn. **Ngoài phạm vi:** tiến trình khác chạy **cùng quyền hệ điều hành**. | asserted | scripted automated (request từ client không được phép **bị từ chối** và **không đổi trạng thái**; mechanism M18); exploratory (charter ở test design) |
 | Security — availability | no | Phần DeckAgent còn chạy được sau khi kết thúc bất ngờ nằm ở hàng Reliability (NFR-008). | — | — |
 | Security — non-repudiation | no | Spec không có yêu cầu về dấu vết hay truy cứu trách nhiệm; một người dùng. | — | — |
 | Reliability and recovery | yes | QR-5, NFR-008 | asserted | scripted automated (fault injection: kill tại mỗi bước ghi của xoá workspace và tạo chat) |
 | Configuration, platform, installation | yes, phần platform | QR-1, QR-4, QR-7. Mục tiêu là **Windows** (AM-4). Spec không có yêu cầu cài đặt; browser khác Chromium chưa được chọn. | asserted | scripted automated (chia lớp theo đặc điểm nền tảng: độ dài đường dẫn, tên 8.3, hoa thường, NFC và NFD) |
 | Usability | no | Build này **chưa thiết kế giao diện**. Nội dung thông báo được kiểm như hành vi qua **field có cấu trúc**; câu chữ chờ build có giao diện. | — | — |
 | Structural | yes | Phase 5: unit test cho mỗi module và branch coverage theo ngưỡng của implementation plan | asserted | scripted automated |
-| Change-related (retest, regression) | yes | Bộ acceptance test bị khoá chạy trên mọi PR; mỗi lần sửa lỗi có retest | asserted | scripted automated |
+| Change-related (retest, regression) | yes | Bộ acceptance test chạy trên mọi PR; mỗi lần sửa lỗi có retest | asserted | scripted automated |
 
 ## 3. Automation feasibility
 
-<!-- Status: verified (đã chạy, có bằng chứng) | assumed (có cơ sở, chưa chạy) | blocked (chưa có cách đáng tin) | not applicable. "Bằng chứng" của hàng assumed ghi cơ sở và nơi bằng chứng sẽ xuất hiện. Một test không được tính là bằng chứng của AC ở Gate 3 khi mechanism nó cần chưa verified. -->
+<!-- Status: verified (đã chạy, có bằng chứng) | assumed (có cơ sở, chưa chạy) | blocked (chưa có cách đáng tin) | not applicable. "Bằng chứng" của hàng assumed ghi cơ sở và nơi bằng chứng sẽ xuất hiện. Một test không được tính là bằng chứng của AC khi chấp nhận build, nếu mechanism nó cần chưa verified. -->
 
 | ID | Mechanism | Cần cho | Status | Bằng chứng hoặc cơ sở | Nếu chưa verified |
 |---|---|---|---|---|---|
@@ -108,19 +108,19 @@ created: 09-11-2026
 | M8 | Fixture `denyRead` (ACL chặn đọc, trả lại trong `finally`) | FR-071.7, FR-074, FR-083.6, FR-142 | assumed | R4. Self-test kiểm `fs.readdir` thật sự fail. Chưa chạy trên CI. | Mất các trường hợp "mất quyền đọc". |
 | M9 | Fixture `snapshot` (mọi file, hash, thuộc tính, ADS, kể cả folder rỗng) | FR-084.1a, FR-071.10 | assumed | Đọc ADS cần công cụ ngoài `fs` (PowerShell hoặc tương đương); chưa thử. Positive control: đổi một byte, một thuộc tính hay một ADS thì snapshot đổi. | Bất biến "không đổi file" yếu đi: không thấy việc thêm ADS. |
 | M10 | Fixture `move`, `root()`, global setup với registry và lock | Mọi test dùng folder | assumed | Chưa chạy. Self-test nằm trong T0b. | Test chạy không cô lập; rủi ro R4 và R5. |
-| M11 | Image `windows-2022` của GitHub và step CI `test:acceptance` | Mọi test ci | assumed | R2, R6. Step CI chưa có trong workflow; PO phải duyệt. | Test đã khoá không chặn merge. |
+| M11 | Image `windows-2022` của GitHub và step CI `test:acceptance` | Mọi test ci | assumed | R2, R6. Step CI chưa có trong workflow; PO phải duyệt (`.github/`). | Acceptance test không chặn merge. |
 | M12 | DeckAgent đọc userDir, keyDirs, systemDirs, dataDir từ cấu hình lúc khởi động, và nhận port 0 | Mọi AC dùng folder thay thế | assumed | Yêu cầu cho Phase 3. Chưa có code. | Test phải dùng folder thật của máy; vi phạm C7 và không cô lập được. |
 | M13 | Điểm chèn lỗi giữa các bước ghi của xoá workspace và tạo chat | NFR-008.1a, NFR-008.2a (M-1); sau này NFR-008.1c (build 2), NFR-008.1b và NFR-008.3 (build 6, SR-8d) | assumed | Chưa có cách quyết định để kill đúng giữa hai bước ghi nếu sản phẩm không có điểm chèn. **Phase 3 phải xác định** các injection point và cách **kích hoạt failure một cách xác định được** (ví dụ một biến môi trường). Đường ghi setup và đường ghi deck và slide thêm điểm chèn riêng ở build của chúng. | M-1 không chạy được ổn định; yêu cầu reliability có rủi ro cao mà không có test. |
 | M14 | Hai interface thật cùng lúc và kênh đẩy sự kiện `workspaceInUse` | FR-038.3, FR-053.3, FR-071.3 | assumed | DEC-012: server đẩy thay đổi tới mọi interface. Chưa có code. | Mất các AC nhiều interface (T3). |
 | M15 | `better-sqlite3` build native trên `windows-2022` | Chạy được sản phẩm trên CI | assumed | DEC-011: open-design làm như vậy trên Windows. Chưa chạy ở repo này. | Không chạy được sản phẩm trên CI. |
 | M16 | Playwright với Chromium | E2E (Phase 5) | assumed | open-design-earlier-work.md item 12; framework chốt ở Phase 3. | Mất E2E; AC acceptance không bị ảnh hưởng. |
-| M17 | Fixture `symlink` | BR-019.R0 (CG-7) | assumed | [windows-folders.md](../../../../research/windows-folders.md) mục 1: tạo symlink cần **quyền administrator** trên máy dev; runner CI có thể chạy với quyền đó. Chưa chạy. | Nếu CI không tạo được symlink, Gate 2 phải nêu **phương án thay thế** hoặc ghi **deviation**, không skip ngầm. AC cho symlink bị chặn khi fixture không chạy. |
+| M17 | Fixture `symlink` | BR-019.R0 (CG-7) | assumed | [windows-folders.md](../../../../research/windows-folders.md) mục 1: tạo symlink cần **quyền administrator** trên máy dev; runner CI có thể chạy với quyền đó. Chưa chạy. | Nếu CI không tạo được symlink, test design phải nêu **phương án thay thế** hoặc ghi **deviation**, không skip ngầm. AC cho symlink bị chặn khi fixture không chạy. |
 | M18 | Driver gửi một thao tác thay đổi workspace hoặc chat từ một client mà DeckAgent không cho phép (ví dụ request mang Origin của trang khác, hoặc không mang thông tin xác thực) vào server local | Security — authorization (QR-8, FR-143) | assumed | DEC-010 chọn server local với trình duyệt, nên một request từ trình duyệt mang **Origin khác** là tình huống thật. Client nào được phép do **implementation plan** quyết, nên chưa chạy được. | Không test nào chứng minh FR-143; yêu cầu bảo mật chỉ còn exploratory. |
 | M19 | Fixture `namedFolder(name)`: tạo folder có **tên chính xác theo code point** (tên NFD, ký tự ngoài BMP, khoảng trắng ở đầu, tên chỉ gồm U+00A0, tên dài hơn 100 code point) | Nguồn tên folder của BR-020 (FR-071.2, FR-071.15; design input D5) | assumed | NTFS lưu tên folder **theo code point**, không chuẩn hoá; chưa chạy. Self-test trong T0b: `readdir` của folder cha trả về **đúng chuỗi code point** đã tạo. | Partition theo nguồn tên folder (NFD, ngoài BMP, khoảng trắng) **không chạy được**, hoặc chạy trên tên **khác** tên đã định. |
 
 ## 4. Ambiguities và candidate gaps
 
-<!-- Ambiguity là chỗ spec nói chưa rõ. "Đọc là" là cách đọc mà test dùng, hoặc "pending" khi PO chưa quyết. Spec entry: "không cần" | file spec phải đổi, chờ PO cho phép sửa (dev/mvp/spec/ là đường dẫn protected) | "trong spec". Chưa dùng cách đọc làm expected result khi Spec entry chưa là "không cần" hoặc "trong spec". Candidate gap là điều nghi là thiếu test; nó là đầu vào cho Gate 2, không phải finding, và không thêm test case chỉ vì gap được liệt kê. -->
+<!-- Ambiguity là chỗ spec nói chưa rõ. "Đọc là" là cách đọc mà test dùng, hoặc "pending" khi PO chưa quyết. Spec entry: "không cần" | file spec phải đổi, chờ PO cho phép sửa (dev/mvp/spec/ là đường dẫn protected) | "trong spec". Chưa dùng cách đọc làm expected result khi Spec entry chưa là "không cần" hoặc "trong spec". Candidate gap là điều nghi là thiếu test; nó là đầu vào cho test design, không phải finding, và không thêm test case chỉ vì gap được liệt kê. -->
 
 ### Ambiguities
 
@@ -133,12 +133,12 @@ created: 09-11-2026
 | AM-5 | QR-8 | Ai được gọi server local: tiến trình khác, người dùng khác, trang web? | Chỉ **client được DeckAgent cho phép** mới thực hiện được thao tác **thay đổi trạng thái** workspace và chat; **trang web bên ngoài** không thực hiện được qua server local (FR-143). **Ngoài phạm vi:** tiến trình khác chạy cùng quyền hệ điều hành, và hệ thống đăng nhập. | Trong spec: FR-143 |
 | AM-6 | FR-073.1 | Spec không nói điều gì xảy ra với đổi tên, chọn folder, chuyển workspace khi DeckAgent đang chờ xác nhận xoá. | **Không test**; interface quyết cách hỏi. | Không cần |
 | AM-7 | NFR-008.1a | NFR-008 chỉ nói về trạng thái của mỗi chat; nó không nói về workspace nửa chừng khi kill giữa thêm, đổi tên hay chọn folder. | Chỉ có **unit test chèn lỗi** của transaction **xoá**; NFR-008 **không mở rộng** sang mọi transaction. | Không cần |
-| AM-8 | BR-019 V-1 | V-1 nói "root của mọi drive, ví dụ `C:\` và `D:\`" nhưng lại ghi là closed list. | V-1 là **root của mọi drive**, một **lớp giá trị** (kind range or format). `C:\` và `D:\` **chỉ là ví dụ**; tiêu chí closed list **không áp dụng**, Gate 2 áp dụng EP theo các dạng drive. | Trong spec: BR-019 V-1 |
+| AM-8 | BR-019 V-1 | V-1 nói "root của mọi drive, ví dụ `C:\` và `D:\`" nhưng lại ghi là closed list. | V-1 là **root của mọi drive**, một **lớp giá trị** (kind range or format). `C:\` và `D:\` **chỉ là ví dụ**; tiêu chí closed list **không áp dụng**, test design áp dụng EP theo các dạng drive. | Trong spec: BR-019 V-1 |
 | AM-9 | FR-071.7, FR-083.6 | Spec không nói điều gì xảy ra khi người dùng đưa **một file** hoặc **một đường dẫn tương đối** thay cho folder. | Cả hai được coi là **folder không đọc được**. | Không cần |
 
 ### Candidate gaps
 
-<!-- Nguồn: review trước (BR-019, BR-020) và việc đọc spec. Gate 2 kiểm từng gap bằng technique ghi ở cột cuối. -->
+<!-- Nguồn: review trước (BR-019, BR-020) và việc đọc spec. Test design kiểm từng gap bằng technique ghi ở cột cuối. -->
 
 | ID | Item | Điều nghi ngờ | Technique sẽ kiểm |
 |---|---|---|---|

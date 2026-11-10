@@ -7,21 +7,21 @@ created: 08-11-2026
 
 # Test implementation — workspace theo thư mục và chat mới
 
-<!-- Contract triển khai test của build: driver, fixture và test-stub ticket. Không thuộc Gate 1 hay Gate 2; nó được kiểm theo từng ticket (test-strategy.md "Checks that are not gates"). Luật chung nằm ở test-strategy.md "Test infrastructure rules". -->
+<!-- Contract triển khai test của build: driver, fixture và test-stub ticket. Nó được kiểm theo từng ticket (test-strategy.md "Checks"). Luật chung nằm ở test-strategy.md "Test infrastructure rules". -->
 
 ## At a glance
 
 - **Status:** **baseline**. Contract phía test và fixture **đã chốt**; Phase 3 **chỉ quyết cách nối** driver vào DeckAgent.
-- **Không giới hạn Test Design:** Test Design suy ra condition **từ basis item và plan**, không từ function hay fixture có sẵn. Khi Gate 2 cần một function, field hay fixture **chưa có**, contract **được mở rộng**; khi AC cuối khác AC mà ticket dựa vào, ticket **được sửa theo AC cuối**.
+- **Không giới hạn Test Design:** Test Design suy ra condition **từ basis item và plan**, không từ function hay fixture có sẵn. Khi test design cần một function, field hay fixture **chưa có**, contract **được mở rộng**; khi AC cuối khác AC mà ticket dựa vào, ticket **được sửa theo AC cuối**.
 - **Còn mở:** positive control của `fsAudit` (Z-20), function cho **client không được phép** (M18).
-- **Ticket:** **#58** (T0c, test runner) đi tiếp **nếu độc lập** với AC và driver contract; **#59 đến #69 chờ Gate 2**, rồi body được cập nhật theo Test Design đã duyệt.
+- **Ticket:** **#58** (T0c, test runner) đi tiếp **nếu độc lập** với AC và driver contract; **#59 đến #69 chờ AC cuối của vùng mình**, rồi body được cập nhật theo test design.
 - **Ticket GitHub:** body của #58 đến #69 **chưa đổi**; chúng còn trỏ đường dẫn cũ `dev/mvp/builds/UC-013-workspaces-new-chat/testing-plan.md`.
 
 ## Test driver and fixtures
 
-> **Test implementation contract**, không thuộc Gate 1 hay Gate 2; nó được kiểm **theo từng ticket**. Contract **chưa sửa** positive control của `fsAudit` (Z-20) và chưa có function cho **client không được phép** (M18); Gate 2 cập nhật nó.
+> **Test implementation contract**, được kiểm **theo từng ticket**. Contract **chưa sửa** positive control của `fsAudit` (Z-20) và chưa có function cho **client không được phép** (M18); test design cập nhật nó.
 
-Luật chung của driver và fixture nằm ở [test-strategy.md](../../../../development/test-strategy.md) "Test infrastructure rules". Mục này chỉ ghi **phần riêng của build**. **Contract phía test** (function, field, quy tắc dưới đây) và **fixture** được **quyết khi PO duyệt plan này**; **Phase 3 chỉ quyết** cách **nối driver vào interface thật**.
+Luật chung của driver và fixture nằm ở [test-strategy.md](../../../../development/test-strategy.md) "Test infrastructure rules". Mục này chỉ ghi **phần riêng của build**. **Contract phía test** (function, field, quy tắc dưới đây) và **fixture** được **chốt cùng test design**; **Phase 3 chỉ quyết** cách **nối driver vào interface thật**.
 
 Driver nằm ở `tests/acceptance/support/deckagent.ts`. Mọi response **có cấu trúc**; test **assert field**, **không so chữ hiển thị**. Mọi function nhận **interface** làm ngữ cảnh: mặc định là interface đầu tiên; test nhiều interface gọi qua `openInterface()`.
 

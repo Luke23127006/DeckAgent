@@ -9,44 +9,44 @@ created: 08-11-2026
 
 <!-- Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, reference FRs by ID (don't restate the statement), keep the section order below.
      Derived from dev/development/test-strategy.md: risk sets the depth, each kind of requirement picks its technique and coverage criterion. The plan applies the strategy; it does not restate its rules.
-     Planning decisions only, decided at Gate 1 with test-analysis.md. The AC, measures, eval cases and manual checks live in ../design/acceptance-criteria.md (Gate 2); the driver, fixtures and test-stub tickets in ../../implementation/test-implementation.md.
+     Planning decisions only, made with test-analysis.md. The AC, measures, eval cases and manual checks live in ../design/acceptance-criteria.md; the driver, fixtures and test-stub tickets in ../../implementation/test-implementation.md.
      Scope rulings live in the matrix's "Items not tested" and readings of ambiguities in test-analysis.md only; gaps, deviations and the design rulings live in test-design.md only. A ruling's result is written here as current fact. -->
 
 ## At a glance
 
-- **Tài liệu này là gì:** **test plan** của build: **các quyết định Planning** và **design input** chuyển sang Gate 2 (mục 2.3). **AC và measure** nằm ở [acceptance-criteria.md](../design/acceptance-criteria.md); **driver, fixture và test-stub ticket** nằm ở [test-implementation.md](../../implementation/test-implementation.md).
+- **Tài liệu này là gì:** **test plan** của build: **các quyết định Planning** và **design input** chuyển sang test design (mục 2.3). **AC và measure** nằm ở [acceptance-criteria.md](../design/acceptance-criteria.md); **driver, fixture và test-stub ticket** nằm ở [test-implementation.md](../../implementation/test-implementation.md).
 - **Use cases:** UC-013, UC-012
 - **Steps:** all
 - **Alternatives:** all, **trừ** các phần **dời sang build sau** ([traceability-matrix.md](../traceability-matrix.md), mục "Items not tested"). **BR-004, BR-019, BR-020** được test **qua các FR trích dẫn chúng**.
-- **Test analysis (Gate 1):** [test-analysis.md](../analysis/test-analysis.md): basis item, quality risk, test type và automation feasibility của build
+- **Test analysis:** [test-analysis.md](../analysis/test-analysis.md): basis item, quality risk, test type và automation feasibility của build
 - **Spine:** [traceability-matrix.md](../traceability-matrix.md)
-- **Test design (Gate 2):** [test-design.md](../design/test-design.md)
+- **Test design:** [test-design.md](../design/test-design.md)
 - **AC và measure hiện có** là **bản nháp trước STLC** ([acceptance-criteria.md](../design/acceptance-criteria.md)): chúng **chưa qua Test Design** và **không phải bằng chứng coverage**.
 - **Requirement coverage target:** **114 / 114** basis item `to test`; excluded 2, deferred 64 (mục 3.4)
-- **Planned coverage, tiers, checklist C1–C8:** _chờ Gate 2_
+- **Planned coverage, tiers, checklist C1–C8:** _chờ test design_
 
 ## 1. Test objectives
 
 Mỗi objective nói **test của build này dùng để làm gì**. Objective **không phải AC**; AC nằm ở phần Test design.
 
-| ID | Objective | Bằng chứng ở Gate 3 |
+| ID | Objective | Bằng chứng |
 |---|---|---|
-| O1 | **Xác nhận** mỗi basis item `to test` (114 item) qua **acceptance test đã khoá**, viết **từ spec** trước implementation. | Requirement coverage **114 / 114**; pass coverage |
+| O1 | **Xác nhận** mỗi basis item `to test` (114 item) qua **acceptance test**, viết **từ spec** trước implementation. | Requirement coverage **114 / 114**; pass coverage |
 | O2 | **Tìm lỗi** ở các quality risk mức **high** (QR-1, QR-2, QR-3, QR-4, QR-5, QR-7, QR-8, QR-10) bằng **technique mà risk level đòi**. | Test design coverage; mutation score của module high risk |
 | O3 | **Chứng minh** các bất biến "**không đọc file**" và "**không đổi file**" của project folder **phát hiện được vi phạm**, nhờ **positive control**. | Self-test của audit và snapshot **xanh trên CI**; mechanism M3, M9 `verified` |
 | O4 | **Đo** phần **chat** của NFR-008: chat **giữ trạng thái đã lưu** khi DeckAgent bị kill giữa các bước ghi. | Integration test của measure M-1 **pass ở mọi điểm kill** |
-| O5 | **Từ chối** thao tác thay đổi trạng thái từ **client không được phép** (FR-143). | Acceptance test của FR-143 (AC viết ở Gate 2) |
-| O6 | **Giữ** hành vi đã chấp nhận cho **các build sau**: bộ test đã khoá **chặn merge** trên mọi PR. | Step CI `test:acceptance` là **check bắt buộc** |
-| O7 | **Cho PO đủ bằng chứng** để quyết **build verdict** ở Gate 3. | `test-summary.md`: bảng coverage, defect, residual risk, status của mechanism |
+| O5 | **Từ chối** thao tác thay đổi trạng thái từ **client không được phép** (FR-143). | Acceptance test của FR-143 (AC viết ở test design) |
+| O6 | **Giữ** hành vi đã chấp nhận cho **các build sau**: bộ acceptance test **chặn merge** trên mọi PR. | Step CI `test:acceptance` là **check bắt buộc** |
+| O7 | **Cho PO đủ bằng chứng** để **chấp nhận build** (Phase 6). | `test-summary.md`: bảng coverage, defect, residual risk, status của mechanism |
 
-**Acceptance test có hai vai trò** (test-strategy.md "Test levels"). **Theo phạm vi**, chúng chạy **cả DeckAgent server** qua driver, như một system test. **Theo basis và objective**, chúng **xác nhận từng AC** đã duyệt. **Build verdict** ở Gate 3 dựa trên **mọi bằng chứng**, không chỉ trên bộ acceptance test.
+**Acceptance test có hai vai trò** (test-strategy.md "Test levels"). **Theo phạm vi**, chúng chạy **cả DeckAgent server** qua driver, như một system test. **Theo basis và objective**, chúng **xác nhận từng AC**. **Việc chấp nhận build** dựa trên **mọi bằng chứng**, không chỉ trên bộ acceptance test.
 
 **Ngoài objective của build này:**
 - **Performance**: QR-9 là **known risk**; build **không đo** hiệu năng (test-analysis.md mục 2).
 - **Usability**: build **chưa thiết kế giao diện**; nội dung thông báo được kiểm **qua field có cấu trúc**.
 - **Hệ điều hành khác Windows**: build **không tuyên bố** đã kiểm chứng (AM-4).
 - **Browser khác Chromium**: chưa được chọn; Phase 3 chốt framework E2E.
-- **Folder trên ổ không phải NTFS** (USB exFAT, ổ mạng): ID folder có thể **không ổn định** (QR-4); môi trường test **chỉ có NTFS**, và đường dẫn UNC **đã dời** (SR-12). Phạm vi platform **trong spec giữ nguyên**: build **không tuyên bố** DeckAgent chỉ hỗ trợ NTFS, và **không thêm** cam kết hỗ trợ exFAT hay ổ rời. Gate 3 ghi file system khác NTFS là **coverage limitation**: chưa kiểm chứng, không phải ngoài phạm vi sản phẩm.
+- **Folder trên ổ không phải NTFS** (USB exFAT, ổ mạng): ID folder có thể **không ổn định** (QR-4); môi trường test **chỉ có NTFS**, và đường dẫn UNC **đã dời** (SR-12). Phạm vi platform **trong spec giữ nguyên**: build **không tuyên bố** DeckAgent chỉ hỗ trợ NTFS, và **không thêm** cam kết hỗ trợ exFAT hay ổ rời. `test-summary.md` ghi file system khác NTFS là **coverage limitation**: chưa kiểm chứng, không phải ngoài phạm vi sản phẩm.
 
 ## 2. Items, risk và techniques
 
@@ -101,9 +101,9 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 
 ### 2.2 Items
 
-<!-- Một dòng cho mỗi FR và NFR trong scope; PO đặt Risk (test-strategy.md "Risk and depth"; chưa đặt thì là high). Dòng BR và UC lấy risk từ register (../analysis/basis-register.md): BR lấy mức cao nhất của các FR trích nó; flow của UC lấy mức cao nhất của các FR nó dùng. Kinds lấy từ cột Kind của register. Techniques: risk high dùng mọi technique khớp với kind; risk normal dùng use case testing và dòng Catches, technique khác chỉ cho gap PO chỉ định. Coverage criterion là của strategy ("Technique per requirement"). Level: nơi AC hoặc measure của item được kiểm (mục 3.1). Record Gate 2: AC hoặc measure của item (acceptance-criteria.md), và design input (mục 2.3) sẽ giữ condition của item. Mọi FR, NFR, BR và UC của test basis có một dòng. Số coverage item và planned coverage là việc của Gate 2. -->
+<!-- Một dòng cho mỗi FR và NFR trong scope; PO đặt Risk (test-strategy.md "Risk and depth"; chưa đặt thì là high). Dòng BR và UC lấy risk từ register (../analysis/basis-register.md): BR lấy mức cao nhất của các FR trích nó; flow của UC lấy mức cao nhất của các FR nó dùng. Kinds lấy từ cột Kind của register. Techniques: risk high dùng mọi technique khớp với kind; risk normal dùng use case testing và dòng Catches, technique khác chỉ cho gap PO chỉ định. Coverage criterion là của strategy ("Technique per requirement"). Level: nơi AC hoặc measure của item được kiểm (mục 3.1). Record design: AC hoặc measure của item (acceptance-criteria.md), và design input (mục 2.3) sẽ giữ condition của item. Mọi FR, NFR, BR và UC của test basis có một dòng. Số coverage item và planned coverage là việc của test design. -->
 
-| Item | Risk | Basis item to test (deferred, excluded) | Kinds trong register | Techniques | Coverage criterion | Level | Record Gate 2 |
+| Item | Risk | Basis item to test (deferred, excluded) | Kinds trong register | Techniques | Coverage criterion | Level | Record design |
 |---|---|---|---|---|---|---|---|
 | FR-071 | high | 14 (2, 0) | lifecycle, range or format, multi-condition rule, invariant | **state transition**, **EP + BVA**, **decision table**, **invariant check** | mọi event ở mọi state; mọi partition và mỗi biên ở ba giá trị; mọi leaf; assert sau mọi hành động, có positive control | acceptance | AC của FR-071; D1, D2, D4, D5, D6 |
 | FR-072 | normal | 7 (2, 1) | lifecycle, flow, invariant | **use case testing** | mọi step và alternative có end state khác | acceptance | AC của FR-072; D1, D7 |
@@ -136,7 +136,7 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 
 ### 2.3 Design inputs
 
-<!-- Đầu vào của Gate 2 (test-strategy.md "Planning decisions"): một dòng cho mỗi section technique của test-design.md. test-design.md trích mã Dn, không nhắc lại lý do chọn. Design chỉ bắt đầu một section khi cột "Chờ" trống. -->
+<!-- Đầu vào của test design (test-strategy.md "Planning decisions"): một dòng cho mỗi section technique của test-design.md. test-design.md trích mã Dn, không nhắc lại lý do chọn. Design chỉ bắt đầu một section khi cột "Chờ" trống. -->
 
 | Mã | Section technique | Basis item (từ 2.1) | Criterion và tham số độ sâu | Level (luật) | Mechanism | Candidate gap | Chờ |
 |---|---|---|---|---|---|---|---|
@@ -169,7 +169,7 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 
 ### 3.2 Types theo level và approach
 
-<!-- Type và approach đã chọn ở test-analysis.md mục 2 (Gate 1). Bảng này chỉ nói mỗi type được kiểm ở level nào và bằng technique nào. -->
+<!-- Type và approach đã chọn ở test-analysis.md mục 2. Bảng này chỉ nói mỗi type được kiểm ở level nào và bằng technique nào. -->
 
 | Type đã chọn | Basis item (luật P4) | Level | Approach | Technique (design input) |
 |---|---|---|---|---|
@@ -180,9 +180,9 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 | Reliability and recovery | NFR-008.1a, .2a | integration, unit | scripted automated | **fault injection** (D10) |
 | Platform (Windows) | Nguồn của type là QR-1, QR-4, QR-7: FR-071.1, .4, .8, FR-083.5, .7, BR-019.R0, V1 (dạng đường dẫn, độ dài, drive); FR-074, FR-142 (ID folder trên NTFS); BR-020, FR-071.2, .15 (NFC và NFD) | acceptance trên `windows-2022` | scripted automated | **EP + BVA** theo đặc điểm nền tảng: độ dài đường dẫn, tên 8.3, hoa thường, NFC và NFD (D4, D5); state của folder (D1) |
 | Structural | Code mới, không có basis item | unit | scripted automated | **branch coverage**; **mutation** ở Phase 6 |
-| Change-related | Bộ test đã khoá, không có basis item riêng | mọi level đã khoá, trên mọi PR | scripted automated | **retest** sau mỗi lần sửa; **regression** test cho mỗi bug fix |
+| Change-related | Bộ acceptance test, không có basis item riêng | mọi level, trên mọi PR | scripted automated | **retest** sau mỗi lần sửa; **regression** test cho mỗi bug fix |
 
-**Exploratory:** **charter** viết ở Gate 2, **session** chạy ở Phase 6. Exploratory **không tạo test khoá**; phát hiện của nó vào **defect issue** hoặc **ruling**.
+**Exploratory:** **charter** viết ở test design, **session** chạy ở Phase 6. Exploratory **không tự tạo acceptance test**; phát hiện của nó vào **defect issue** hoặc **ruling**.
 
 ### 3.3 Quality risks theo approach
 
@@ -201,14 +201,14 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 
 ### 3.4 Coverage targets
 
-<!-- Năm measure của test-strategy.md "Coverage". Mẫu số lấy từ scope đã duyệt; không dùng số AC hay test case cũ. -->
+<!-- Năm measure của test-strategy.md "Coverage". Mẫu số lấy từ scope đã chốt; không dùng số AC hay test case cũ. -->
 
 | Measure | Mẫu số của build này | Target | Đo ở |
 |---|---|---|---|
-| **Requirement coverage** | **114** basis item `to test` (scope đã duyệt) | **114 / 114**; báo riêng **excluded 2, deferred 64** | Gate 2 (link), Gate 3 |
-| **Test design coverage** (planned coverage) | Coverage item mà technique và risk level đòi; **số này chốt ở Gate 2** | **100 %**; mục thiếu là **deviation** có ruling của PO | Gate 2 |
+| **Requirement coverage** | **114** basis item `to test` (scope đã chốt) | **114 / 114**; báo riêng **excluded 2, deferred 64** | test design (link), Phase 6 |
+| **Test design coverage** (planned coverage) | Coverage item mà technique và risk level đòi; **số này chốt ở test design** | **100 %**; mục thiếu là **deviation** có lý do | test design |
 | **Execution coverage** | Test case, **mỗi biến thể độc lập là một case** | **100 %** chạy | Phase 6 |
-| **Pass coverage** | Test case | **100 %** pass; dòng còn fail **không được tick Verified** (sửa bằng light build, hoặc dời behavior vào spec backlog) | Gate 3 |
+| **Pass coverage** | Test case | **100 %** pass; dòng còn fail **không được tick Verified** (sửa bằng light build, hoặc dời behavior vào spec backlog) | Phase 6 |
 | **Structural coverage** | Branch của code mới | **Ngưỡng PO đặt** ở implementation plan (Phase 3); _chưa đặt_ | Phase 5 |
 
 **Thêm ở Phase 6:** mutation testing trên **module high risk**; mỗi **mutant sống sót** bị **giết bằng test mới** hoặc được PO **ruling là equivalent**.
@@ -226,13 +226,13 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 | Storage | `better-sqlite3` (DEC-011), build native trên runner | M15 |
 | Folder test | Mọi folder tạm dưới `C:\deckagent-test\<runId>`, **mỗi test một folder con** | M10 |
 | Folder của máy | **Folder thay thế** cho folder người dùng, key folder, data folder, system folder; **một test** với system folder **thật** | M12; checklist C7 |
-| Quyền | **Không cần admin**, trừ fixture **symlink** nếu Gate 2 giữ nó | M17, R9 |
+| Quyền | **Không cần admin**, trừ fixture **symlink** nếu test design giữ nó | M17, R9 |
 | E2E | **Playwright với Chromium**, mỗi worker **data folder và port riêng** | M16; Phase 3 chốt framework |
 | Máy dev | Windows 11, NTFS. Fixture **chỉ skip** khi có `DECKAGENT_ALLOW_FIXTURE_SKIP=1` | Checklist C3 |
 
 **Test data:** fixture **tạo mọi folder và file** cần cho test. Test **không dùng file thật** của người dùng. **Không có model và provider** trong build này, nên **không có fixture ghi lại response của model**.
 
-**Environment validation:** **self-test của fixture** (có positive control) chạy **trong mỗi lần chạy suite**; kết quả của nó là **CI result** của ticket T0b, **không có record riêng** (test-strategy.md "Checks that are not gates").
+**Environment validation:** **self-test của fixture** (có positive control) chạy **trong mỗi lần chạy suite**; kết quả của nó là **CI result** của ticket T0b, **không có record riêng** (test-strategy.md "Checks").
 
 ## 5. Dependencies
 
@@ -240,7 +240,7 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 
 | Dependency | Được giải quyết ở | Chặn |
 |---|---|---|
-| **PO duyệt Gate 2** | Phase 2 | AC cuối mà test PR được duyệt theo; ticket **#59 đến #69** |
+| **AC cuối của từng vùng** | Phase 2 | Test PR được review theo AC cuối; ticket **#59 đến #69** |
 | Runner Vitest (M1) | Ticket T0c ([#58](https://github.com/Luke23127006/DeckAgent/issues/58)) | **Mọi ticket test** khác |
 | Driver theo contract (M2, phần phía test) | Ticket T0a ([#59](https://github.com/Luke23127006/DeckAgent/issues/59)) | T1 đến T9 |
 | Fixture Windows và self-test (M4 đến M10) | Ticket T0b ([#60](https://github.com/Luke23127006/DeckAgent/issues/60)) | T1 đến T9 |
@@ -251,19 +251,19 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 | **Framework E2E** (M16) | Implementation plan (Phase 3) | E2E ở mục 8 |
 | **Ticket nối driver** (M2, nối interface thật) | Phase 4 | **Mọi** lần đổi `it.fails` sang `it` |
 | **Ticket preload của fs audit** (M3) | Phase 4 | Đổi `it.fails` sang `it` cho AC dùng `fsAudit` |
-| **Step CI `test:acceptance`** (M11) | Thay đổi riêng, PO duyệt | Bộ test khoá **chặn merge** (O6); phải có **trước PR implementation đầu tiên** của Phase 5 |
+| **Step CI `test:acceptance`** (M11) | Thay đổi riêng, PO duyệt (`.github/`) | Bộ acceptance test **chặn merge** (O6); phải có **trước PR implementation đầu tiên** của Phase 5 |
 | Kênh đẩy sự kiện tới nhiều interface (M14) | Implementation (DEC-012) | AC nhiều interface |
 
 ## 6. Entry và exit criteria
 
-<!-- Exit của Phase 2, 5 và 6 là cột Exit của test-strategy.md "Phases"; bảng này áp dụng chúng cho build. Gate 2 và Gate 3 là gate của PO; entry và exit khác là check, không phải gate. -->
+<!-- Exit của Phase 2, 5 và 6 là cột Exit của test-strategy.md "Phases"; bảng này áp dụng chúng cho build. Entry và exit là check để team tự kiểm, không phải chỗ chờ duyệt. -->
 
 | Activity | Entry | Exit |
 |---|---|---|
-| **Test design** (Gate 2) | Gate 1 **đã duyệt**. **Theo từng design input**: một file evidence chỉ bắt đầu khi dòng của nó ở mục 2.3 **không còn delta chờ**. | Mỗi design input có **file evidence** với **output trung gian** của từng bước theo methodology của technique, **completion check** (mọi coverage item có test case hoặc ruling) và **reconciliation** với AC nháp. **Mọi coverage criterion** của mục 2 **đạt**, hoặc được **ruling là deviation**. **Link rules** của strategy đúng. Mọi mục ở test-design.md mục 2 **có outcome**. CG-1 đến CG-10 **được kiểm bằng technique**. Checklist **C1–C8 đạt** trên AC cuối. **PO duyệt Gate 2**. |
-| **Test implementation** (test-stub ticket) | Gate 2 **đã duyệt**; body của #59 đến #69 **đã cập nhật** theo Test Design đã duyệt. T0c (#58) **đã merge** trước ticket khác; #58 được đi trước Gate 2 **nếu độc lập** với AC và driver contract. | Mọi test ci là **`it.fails`**, **mỗi biến thể độc lập một `it.fails`**, tên test **bắt đầu bằng ID của test case** (acceptance-criteria.md, mục "AC, measure và test case"). **Self-test của fixture xanh trên CI**. Checklist C1–C8 đạt trên mỗi PR. PO **duyệt và khoá** từng test. Mọi DEC trong scope **được ít nhất một test dùng**. |
-| **Execution** (Phase 5) | Implementation plan **đã duyệt**. Step CI `test:acceptance` **đã có**. Ticket nối driver **đã merge** trước lần đổi `it` đầu tiên. | **Commit đầu** của mỗi PR implementation cho thấy test của nó **fail vì assertion**. `it.fails` của PR **đã đổi sang `it`** và **xanh**. **Branch coverage** đạt ngưỡng; branch chưa phủ **được test hoặc giải thích**. Mọi ticket `phase:impl` và `phase:post-impl` **đã đóng**. |
-| **Closure** (Gate 3) | Mọi ticket của Phase 5 **đã đóng**. | **Không còn `it.fails`**. **Mọi mechanism** của một test được tính **là `verified`**. Mutant sống sót **bị giết** hoặc **ruling equivalent**. Exploratory session **đã chạy** và có kết quả. `test-summary.md` **có đủ** bảng coverage, defect, residual risk. **Mọi dòng matrix** được Verified, hoặc behavior **dời vào spec backlog**. |
+| **Test design** | **Theo từng design input**: một file evidence bắt đầu khi dòng của nó ở mục 2.3 **không chờ câu hỏi mở** nào làm đổi expected result. | Mỗi design input có **file evidence** với **output trung gian** của từng bước theo methodology của technique, **completion check** (mọi coverage item có test case hoặc ruling) và **reconciliation** với AC nháp. **Mọi coverage criterion** của mục 2 **đạt**, hoặc được **ruling là deviation**. **Link rules** của strategy đúng. Mọi mục ở test-design.md mục 2 **có outcome**. CG-1 đến CG-10 **được kiểm bằng technique**. Checklist **C1–C8 đạt** trên AC cuối. |
+| **Test implementation** (test-stub ticket) | AC của vùng ticket **đã chốt**; body của #59 đến #69 **đã cập nhật** theo test design. T0c (#58) **đã merge** trước ticket khác; #58 đi trước **nếu độc lập** với AC và driver contract. | Mọi test ci là **`it.fails`**, **mỗi biến thể độc lập một `it.fails`**, tên test **bắt đầu bằng ID của test case** (acceptance-criteria.md, mục "AC, measure và test case"). **Self-test của fixture xanh trên CI**. Checklist C1–C8 đạt trên mỗi PR. Một teammate **review** từng test theo AC. Mọi DEC trong scope **được ít nhất một test dùng**. |
+| **Execution** (Phase 5) | Ranh giới module và LLM **đã chốt**. Step CI `test:acceptance` **đã có**. Ticket nối driver **đã merge** trước lần đổi `it` đầu tiên. | **Commit đầu** của mỗi PR implementation cho thấy test của nó **fail vì assertion**. `it.fails` của PR **đã đổi sang `it`** và **xanh**. **Branch coverage** đạt ngưỡng; branch chưa phủ **được test hoặc giải thích**. Mọi ticket `phase:impl` và `phase:post-impl` **đã đóng**. |
+| **Closure** (Phase 6) | Mọi ticket của Phase 5 **đã đóng**. | **Không còn `it.fails`**. **Mọi mechanism** của một test được tính **là `verified`**. Mutant sống sót **bị giết** hoặc **ruling equivalent**. Exploratory session **đã chạy** và có kết quả. `test-summary.md` **có đủ** bảng coverage, defect, residual risk. **Mọi dòng matrix** được Verified, hoặc behavior **dời vào spec backlog**. |
 
 **Tạm dừng và tiếp tục:**
 - Khi **self-test của một fixture fail trên CI**, test dùng fixture đó **không được tính là bằng chứng**; việc tính **tiếp tục** khi self-test **xanh lại**.
@@ -280,11 +280,11 @@ Mục này **suy ra** technique từ [test-analysis.md](../analysis/test-analysi
 | R3 | **Ticket preload** của fs audit **chưa merge**. | Các AC dùng `fsAudit` **không chứng minh được** chúng fail vì assertion, nên **chưa đổi được** sang `it`. | `fsAudit` throw `AuditNotEnabledError`. Phase 4 có **ticket preload riêng**, và ticket đó chặn việc đổi `it.fails` thành `it` của các AC này. | Implementation plan (Phase 3) |
 | R4 | `denyRead` **không đặt được ACL**, hoặc **không trả lại quyền** sau test. | Test "mất quyền đọc" **pass mà không có folder bị chặn**, hoặc để lại một folder **bị khoá** cho lần chạy sau. | Self-test kiểm `fs.readdir` **thật sự fail**. Quyền được trả lại trong `finally`. Global setup **`icacls /reset`** các folder mà registry của suite ghi lại. | Người viết T0b (#60) |
 | R5 | Hai lần chạy song song **lấy cùng một ký tự ổ** `subst`. | Một test trỏ vào **folder của test khác**, nên kết quả **sai** hoặc **flaky**. | Lấy ký tự ổ **dưới lock** của suite, **thử lại** khi ký tự vừa bị lấy, **gỡ** ổ sau test, và chỉ dọn ổ **có trong registry**. | Người viết T0b (#60) |
-| R6 | **Step CI `test:acceptance` chưa có** trong workflow (một thay đổi riêng, chờ PO duyệt). | Test đã khoá **không chặn merge**: một PR làm hỏng hành vi **vẫn merge được**. | PO duyệt step CI **trước khi PR implementation đầu tiên** của Phase 5 merge. | PO |
-| R7 | **Positive control của `fsAudit` chỉ chứng minh audit thấy một `stat`** (mechanism M3). | Audit có thể không thấy một lệnh đọc file đi qua worker thread, tiến trình con hoặc native module, nên test "không đọc file" **pass mà không chứng minh gì**. | Positive control phải chứng minh (M3) audit **phát hiện được một thao tác đọc file bị cấm**. Nếu không quan sát được các đường đọc liên quan, test này **chưa được dùng làm bằng chứng đạt AC**. Contract ở [test-implementation.md](../../implementation/test-implementation.md) mục "Test driver and fixtures" **vẫn ghi `stat`**, nên phải sửa **trước khi PO duyệt T0a** (Z-20). | Người viết T0a (#59) và ticket preload |
+| R6 | **Step CI `test:acceptance` chưa có** trong workflow (một thay đổi riêng, chờ PO duyệt). | Acceptance test **không chặn merge**: một PR làm hỏng hành vi **vẫn merge được**. | PO duyệt step CI **trước khi PR implementation đầu tiên** của Phase 5 merge. | PO |
+| R7 | **Positive control của `fsAudit` chỉ chứng minh audit thấy một `stat`** (mechanism M3). | Audit có thể không thấy một lệnh đọc file đi qua worker thread, tiến trình con hoặc native module, nên test "không đọc file" **pass mà không chứng minh gì**. | Positive control phải chứng minh (M3) audit **phát hiện được một thao tác đọc file bị cấm**. Nếu không quan sát được các đường đọc liên quan, test này **chưa được dùng làm bằng chứng đạt AC**. Contract ở [test-implementation.md](../../implementation/test-implementation.md) mục "Test driver and fixtures" **vẫn ghi `stat`**, nên phải sửa **trước khi T0a merge** (Z-20). | Người viết T0a (#59) và ticket preload |
 | R8 | **Không có cách xác định để kill đúng giữa hai bước ghi** (mechanism M13). | Measure M-1 **không chạy được ổn định**; yêu cầu reliability rủi ro cao **không có test**. | Phase 3 xác định các điểm chèn lỗi và cách kích hoạt failure một cách xác định được. Build 2 và build 6 thêm điểm chèn riêng cho đường ghi setup, deck và slide. | Implementation plan (Phase 3) |
-| R9 | **CI không tạo được symlink** (mechanism M17). | Một AC cho symlink (CG-7) **bị chặn**, hoặc bị **bỏ qua ngầm**. | Gate 2 nêu phương án thay thế hoặc ghi một deviation; **không skip ngầm**. | PO, ở Gate 2 |
-| R10 | **Ticket #58 đến #69** được tạo **từ AC trước STLC**. | Developer viết và khoá test theo **AC chưa qua Test Design**, ví dụ FR-071 AC-12 **trái** quy tắc NFC (Z-18), nên test **khoá một hành vi sai**. | Test PR **chỉ được duyệt theo AC cuối** của Gate 2. **#59 đến #69 chờ Gate 2**, rồi body được cập nhật theo Test Design đã duyệt; chỉ **#58** đi trước, khi độc lập với AC và driver contract. | PO |
+| R9 | **CI không tạo được symlink** (mechanism M17). | Một AC cho symlink (CG-7) **bị chặn**, hoặc bị **bỏ qua ngầm**. | Test design nêu phương án thay thế hoặc ghi một deviation; **không skip ngầm**. | Người làm test design |
+| R10 | **Ticket #58 đến #69** được tạo **từ AC trước STLC**. | Developer viết test theo **AC chưa qua Test Design**, ví dụ FR-071 AC-12 **trái** quy tắc NFC (Z-18), nên test **giữ một hành vi sai**. | Test PR **được review theo AC cuối** của test design. **#59 đến #69 chờ AC cuối của vùng mình**, rồi body được cập nhật theo test design; chỉ **#58** đi trước, khi độc lập với AC và driver contract. | PO |
 | R11 | **Một người đọc** làm cả basis register và sentence map; con số "0 đơn vị normative chưa có item" là **tự đếm**. | Một mệnh đề bị **bỏ sót** thì **không có test**, và coverage vẫn báo **114 / 114**. | **Error guessing** trên mọi AC; **exploratory session** ở Phase 6; defect thoát được **quay lại record gây ra nó** (test-strategy.md "Going back"). | Agent; PO đọc khác biệt |
 
 ## 8. Post-implementation tests
@@ -306,8 +306,8 @@ E2E chạy qua **interface thật trên browser**: acceptance test kiểm **hàn
 - **một ticket preload của fs audit**; các AC dùng `fsAudit` **chỉ đổi sang `it`** sau ticket này;
 - **một ticket integration** cho NFR-008 M-1 (`phase:post-impl`), cùng **unit test chèn lỗi** của transaction xoá workspace trong implementation ticket của nó.
 
-## 9. Planning deltas cho PO
+## 9. Câu hỏi mở
 
-<!-- Mỗi dòng là một chỗ phần Test planning khác hoặc thêm vào bản Gate 1 đã duyệt, hoặc một chỗ mâu thuẫn với Gate 1, kèm đề xuất. Outcome: kết quả như sự thật hiện tại, hoặc "pending"; delta đã quyết được ghi vào mục nó thay đổi và bỏ khỏi bảng. -->
+<!-- Câu hỏi planning cần PO: scope còn nghi, cách đọc spec, lựa chọn làm đổi thứ được test; mỗi dòng kèm đề xuất. Outcome: kết quả như sự thật hiện tại, hoặc "pending"; câu đã trả lời được ghi vào mục nó thay đổi và bỏ khỏi bảng. -->
 
-Không có delta đang chờ.
+Không có câu hỏi mở.

@@ -7,7 +7,7 @@ created: DD-MM-YYYY
 
 # Sentence map — {scope}
 
-<!-- A record of Gate 1, beside test-analysis.md (dev/development/test-strategy.md "Test basis register"). It lets the PO recount the register: follow any unit to its items, and any item back to its units. The items live in basis-register.md; the totals are copied into test-analysis.md section 1.
+<!-- Part of the test analysis, beside test-analysis.md (dev/development/test-strategy.md "Test basis register"). It lets a reader recount the register: follow any unit to its items, and any item back to its units. The items live in basis-register.md; the totals are copied into test-analysis.md section 1.
      Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, keep the section order below. Its length follows the spec it covers.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 
@@ -25,7 +25,7 @@ created: DD-MM-YYYY
 
 ## Totals
 
-<!-- One row per spec file, counted from its table below. Normative without an item: the N units whose Items cell is empty; it is 0 at Gate 1. -->
+<!-- One row per spec file, counted from its table below. Normative without an item: the N units whose Items cell is empty; it is 0 before planning starts. -->
 
 | Spec file | Units | Normative | Explanatory | Definition | Normative without an item |
 |---|---|---|---|---|---|

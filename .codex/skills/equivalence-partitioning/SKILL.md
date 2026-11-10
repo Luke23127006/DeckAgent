@@ -7,7 +7,7 @@ description: Apply equivalence partitioning to one design input of a build's tes
 
 **Divide each input into classes** that the specification treats **the same way**, so that **one representative** stands for its whole class. The **evidence** is the chain variables → dimensions → classes → representatives → coverage items → test cases; each link is **written down and cites its source**, so the PO can **redo any row by hand**. Filling the tables to fit test cases you already have in mind **is not EP**.
 
-The rules every technique obeys (the chain, step outputs, anti-anchoring, coverage, gates) are in `dev/development/test-strategy.md`; this skill **expands the method** and never overrides them.
+The rules every technique obeys (the chain, step outputs, anti-anchoring, coverage) are in `dev/development/test-strategy.md`; this skill **expands the method** and never overrides them.
 
 ## When to use it
 

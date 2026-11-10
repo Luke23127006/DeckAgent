@@ -7,7 +7,7 @@ created: 09-11-2026
 
 # Sentence map — workspace theo folder và chat mới
 
-<!-- Record của Gate 1, nằm cạnh test-analysis.md (dev/development/test-strategy.md "Test basis register"). File này cho PO đếm lại register: đi từ một đơn vị tới item của nó, và từ một item về đơn vị của nó. Item nằm ở basis-register.md; số tổng được chép vào test-analysis.md mục 1.
+<!-- Một phần của test analysis, nằm cạnh test-analysis.md (dev/development/test-strategy.md "Test basis register"). File này cho người đọc đếm lại register: đi từ một đơn vị tới item của nó, và từ một item về đơn vị của nó. Item nằm ở basis-register.md; số tổng được chép vào test-analysis.md mục 1.
      Build file viết bằng tiếng Việt với thuật ngữ tiếng Anh (dev/mvp/builds/_STYLE.md). -->
 
 ## Contents

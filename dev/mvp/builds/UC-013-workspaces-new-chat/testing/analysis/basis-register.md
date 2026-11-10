@@ -7,7 +7,7 @@ created: 09-11-2026
 
 # Basis register — workspace theo folder và chat mới
 
-<!-- Record của Gate 1, nằm cạnh test-analysis.md (dev/development/test-strategy.md "Test basis register"). File này chỉ giữ các dòng của register; số đếm và ambiguity nằm ở test-analysis.md; scope ruling ở mục "Items not tested" của traceability-matrix.md. Đơn vị spec mà mỗi item được cắt ra nằm ở sentence-map.md.
+<!-- Một phần của test analysis, nằm cạnh test-analysis.md (dev/development/test-strategy.md "Test basis register"). File này chỉ giữ các dòng của register; số đếm và ambiguity nằm ở test-analysis.md; scope ruling ở mục "Items not tested" của traceability-matrix.md. Đơn vị spec mà mỗi item được cắt ra nằm ở sentence-map.md.
      Build file viết bằng tiếng Việt với thuật ngữ tiếng Anh (dev/mvp/builds/_STYLE.md). ID của basis item do register đặt: FR-071.3 là item thứ ba cắt từ FR-071; FR-071.N1 cắt từ mục Notes; UC-013.A2a là phần đầu của luồng phụ A2 (phần sau là A2b). -->
 
 ## Contents
@@ -236,7 +236,7 @@ created: 09-11-2026
 
 ## BR-019 · Folder không thể làm project folder
 
-<!-- Các danh sách đóng (V-2 phần ba folder, V-4 phần năm key folder) là một item mỗi danh sách; phần tử của danh sách là test data. Ở mức rủi ro high, tiêu chí của strategy là mỗi phần tử có một test (test-strategy.md "Closed lists"). V-1 không phải danh sách đóng (AM-8; spec V-1 đã bỏ dòng "Closed list."): root của mọi drive là một lớp giá trị, `C:\` và `D:\` chỉ là ví dụ, và Gate 2 chia lớp theo dạng drive. -->
+<!-- Các danh sách đóng (V-2 phần ba folder, V-4 phần năm key folder) là một item mỗi danh sách; phần tử của danh sách là test data. Ở mức rủi ro high, tiêu chí của strategy là mỗi phần tử có một test (test-strategy.md "Closed lists"). V-1 không phải danh sách đóng (AM-8; spec V-1 đã bỏ dòng "Closed list."): root của mọi drive là một lớp giá trị, `C:\` và `D:\` chỉ là ví dụ, và test design chia lớp theo dạng drive. -->
 
 | ID | Source | Item | Kind | Risk | Ambiguity | Scope | Approval |
 |---|---|---|---|---|---|---|---|

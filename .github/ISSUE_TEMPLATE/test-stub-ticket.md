@@ -14,7 +14,7 @@ labels: phase:test-stubs
 **Acceptance criteria:** dev/mvp/builds/UC-XXX-label/testing/design/acceptance-criteria.md (AC-N); **contract:** dev/mvp/builds/UC-XXX-label/implementation/test-implementation.md
 **Flow tracker:** #N
 
-> The **author of this ticket's test must not implement FR-NNN** (separation rule, dev/mvp/WORKFLOW.md "Phase 4"). The **PO approves the test before it merges**; once merged it is **locked**.
+> The **author of this test** should preferably **not implement FR-NNN** (dev/mvp/WORKFLOW.md "Phase 2"). A teammate **reviews the test against its AC**; a later change to it **says why in its PR**.
 
 ## Test type
 

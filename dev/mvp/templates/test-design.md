@@ -7,15 +7,15 @@ created: DD-MM-YYYY
 
 # Test design — {scope}
 
-<!-- The summary of the Test Design Specification of the build (dev/development/test-strategy.md "Test design specification"), the record of Gate 2. The evidence of each technique lives in techniques/Dn-topic.md (template test-design-technique.md); this file is the index of those files, the coverage counts and the ruling log.
+<!-- The summary of the Test Design Specification of the build (dev/development/test-strategy.md "Test design specification"). The evidence of each technique lives in techniques/Dn-topic.md (template test-design-technique.md); this file is the index of those files, the coverage counts and the ruling log.
      Homes: the basis items live in ../analysis/basis-register.md; the scope rulings in ../traceability-matrix.md "Items not tested"; the readings of ambiguities in ../analysis/test-analysis.md; the selection of each technique and its design input in ../planning/testing-plan.md; the AC and measures in acceptance-criteria.md. This file cites them by ID and does not restate them.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 
 ## At a glance
 
-- **Purpose:** the PO checks at **Gate 2** that the **conditions are complete** and that **each technique was applied as the strategy says**, one evidence file at a time.
+- **Purpose:** a reviewer checks that the **conditions are complete** and that **each technique was applied as the strategy says**, one evidence file at a time.
 - **Basis:** [test-analysis.md](../analysis/test-analysis.md) · **Design inputs:** [testing-plan.md](../planning/testing-plan.md) section 2.3 · **Criteria:** [acceptance-criteria.md](./acceptance-criteria.md) · **Spine:** [traceability-matrix.md](../traceability-matrix.md)
-- **Status:** _N conditions · coverage items N / N with a test case · N gaps, N ruled, N pending_; checklist: _N of 8 pass_; **Gate 2:** _not started_
+- **Status:** _N conditions · coverage items N / N with a test case · N gaps, N ruled, N pending_; checklist: _N of 8 pass_
 
 ## 1. Techniques applied
 

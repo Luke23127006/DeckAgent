@@ -7,13 +7,13 @@ created: DD-MM-YYYY
 
 # Test summary — {scope}
 
-<!-- The record of Gate 3, the build verdict (dev/development/test-strategy.md "Coverage", "Gates"). The agent drafts it in Phase 6; the PO decides the verdict.
+<!-- The evidence for accepting the build (dev/development/test-strategy.md "Coverage"). The agent drafts it in Phase 6; the PO accepts the build from it.
      Document rules (dev/mvp/WORKFLOW.md "Document rules"): front-load the "At a glance" block, keep the section order below.
      Build files are written in Vietnamese prose with English terms (dev/mvp/builds/_STYLE.md). -->
 
 ## At a glance
 
-- **Purpose:** the PO decides at **Gate 3** whether the **evidence is enough to accept the build**.
+- **Purpose:** the PO decides whether the **evidence is enough to accept the build**.
 - **Use case:** UC-XXX
 - **Spine:** [traceability-matrix.md](./traceability-matrix.md)
 - **Records:** [test-analysis.md](./analysis/test-analysis.md), [testing-plan.md](./planning/testing-plan.md), [test-design.md](./design/test-design.md), [acceptance-criteria.md](./design/acceptance-criteria.md)

@@ -9,7 +9,7 @@ created: DD-MM-YYYY
 
 The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR), threading **requirement → basis items → conditions → tier → research/decision → test → implementation ticket → result → verification**.
 
-**No-orphan rule:** every deliverable must have a **consumer downstream**. **No phase gate closes** while a row is **missing a link that phase was responsible for** producing (see dev/mvp/WORKFLOW.md "Traceability"). Other plan documents **link to rows here** **instead of restating requirements** (dev/mvp/WORKFLOW.md "Document rules").
+**No-orphan check:** every deliverable should have a **consumer downstream**; a **missing link** usually means **forgotten work** (see dev/mvp/WORKFLOW.md "Traceability"). Other plan documents **link to rows here** **instead of restating requirements** (dev/mvp/WORKFLOW.md "Document rules").
 
 ## At a glance
 
@@ -47,16 +47,16 @@ The build's **traceability spine**. **One row per in-scope FR/AC** (and per NFR)
 - **RQ** — the **answered research question** for this row (may be empty).
 - **DEC** — the **decision that shaped this row** (may be empty).
 - **Test (ticket)** — the **test-stub ticket that proves the AC**. For a **manual row**, the **check's anchor in `acceptance-criteria.md`**. **Required** for every row after Phase 2.
-- **Test author** — **who wrote the test**. **Must differ from the implementer** (separation rule), **except in a light build**.
+- **Test author** — **who wrote the test**; preferably **not the implementer** (dev/development/test-strategy.md "Test levels").
 - **Impl (ticket / PR)** — the **ticket or PR that makes this row pass**. **Not a function link**.
 - **Result** — the **last run** of the row's tests (`pass`, `fail`) and the **defect issue** if any.
-- **Verified** — `[x]` once the **PO confirms this AC in Phase 6**: **CI green** for `ci`, a **recorded eval run** for `eval`, the **PO's own check** for `manual`.
+- **Verified** — `[x]` once the AC **holds in Phase 6**: **CI green** for `ci`, a **recorded eval run** for `eval`, the **PO's own check** for `manual`.
 
-## Orphan check (run at every gate)
+## Orphan check (end of each phase)
 
 - [ ] **Every in-scope FR and NFR has a row** (Phase 1); **every AC and measure has a row and a tier** (after Phase 2).
 - [ ] **Every row has at least one test** (after Phase 2).
-- [ ] **No implementer is the test author** of the same row (except light builds).
+- [ ] **The test author and the implementer differ**, or the row says why not.
 - [ ] **Every in-scope DEC is consumed** by at least one row (test or impl).
 - [ ] **Every answered RQ leads to a DEC** or a row that uses its result.
 - [ ] **No test or implementation ticket exists without a matrix row**.

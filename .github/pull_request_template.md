@@ -12,8 +12,8 @@ Closes #N
 
 ## Checklist
 
-- [ ] **Only the files listed in the ticket are changed** (at most 3)
-- [ ] **No locked test** (`tests/acceptance/`, `tests/eval/`) **and no spec file is changed** — or this PR is a test-stub / PO PR
-- [ ] I **did not write the tests of the FR this PR implements** (not required for `build:light`)
+- [ ] **The change stays within the ticket**; any extra file is explained below
+- [ ] **No test is weakened**; a change to `tests/acceptance/` or `tests/eval/` **says why** below
+- [ ] **No spec file is changed** (spec changes go through the PO)
 - [ ] **No model call is added** where the ticket's LLM boundary says none
 - [ ] **CI is green**

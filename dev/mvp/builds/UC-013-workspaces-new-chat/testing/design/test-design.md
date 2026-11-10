@@ -9,7 +9,7 @@ created: 08-11-2026
 
 ## At a glance
 
-- **Dùng để làm gì:** **bản tổng hợp** của Test Design Specification ([test-strategy.md](../../../../../development/test-strategy.md) mục "Test design specification"), record của **Gate 2**. File này giữ **mục lục các technique** (mỗi technique một file evidence trong [techniques/](./techniques/)), **số coverage item**, và **gap, deviation đang mở**. **Lý do chọn technique** và **design input** nằm ở [testing-plan.md](../planning/testing-plan.md) mục 2; **scope ruling** ở [traceability-matrix.md](../traceability-matrix.md) mục "Items not tested"; **AC và measure** ở [acceptance-criteria.md](./acceptance-criteria.md).
+- **Dùng để làm gì:** **bản tổng hợp** của Test Design Specification ([test-strategy.md](../../../../../development/test-strategy.md) mục "Test design specification"). File này giữ **mục lục các technique** (mỗi technique một file evidence trong [techniques/](./techniques/)), **số coverage item**, và **gap, deviation đang mở**. **Lý do chọn technique** và **design input** nằm ở [testing-plan.md](../planning/testing-plan.md) mục 2; **scope ruling** ở [traceability-matrix.md](../traceability-matrix.md) mục "Items not tested"; **AC và measure** ở [acceptance-criteria.md](./acceptance-criteria.md).
 - **Thiết kế trước STLC:** [pre-stlc-design.md](./pre-stlc-design.md), **chỉ dùng ở bước reconciliation**.
 - **Status:** _D5 có file evidence, chờ PO review · D1 đến D4, D6 đến D10 chưa bắt đầu · 10 gap và deviation `pending` (mục 2)_
 
@@ -23,7 +23,7 @@ created: 08-11-2026
 | D2 | Decision table: kết quả khi thêm hoặc chọn folder | — | — | chưa bắt đầu |
 | D3 | Decision table: báo folder không đọc được hoặc bị thay | — | — | chưa bắt đầu |
 | D4 | EP + BVA: đường dẫn folder | — | — | chưa bắt đầu |
-| D5 | EP + BVA và decision table: tên workspace | [D5-workspace-name.md](./techniques/D5-workspace-name.md) | EP 36 Covered, 1 Blocked · BVA requirement 37 Covered, 2 Blocked; transformation 3 Blocked; platform 4 (ngoài criterion) · DT 5 / 5 | chờ PO review |
+| D5 | EP + BVA và decision table: tên workspace | [D5-workspace-name.md](./techniques/D5-workspace-name.md) | EP 36 Covered, 1 Blocked · BVA requirement 37 Covered, 2 Blocked; transformation 3 Blocked; platform 4 (ngoài criterion) · DT 5 / 5 | chờ review |
 | D6 | Invariant check | — | — | chưa bắt đầu |
 | D7 | Use case testing | — | — | chưa bắt đầu |
 | D8 | Threat-based | — | — | chưa bắt đầu |

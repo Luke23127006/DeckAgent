@@ -7,13 +7,13 @@ created: 08-11-2026
 
 # Acceptance criteria và measures — workspace theo thư mục và chat mới
 
-<!-- Nơi duy nhất giữ AC, measure, eval case, manual check và exploratory charter của build (dev/mvp/WORKFLOW.md "Spec rules" rule 2). Thuộc Test Design, quyết ở Gate 2. AC và measure được viết hoặc rà SAU KHI technique của test-design.md đã suy ra condition và coverage item từ basis item và plan; AC nháp chỉ được đọc ở bước reconciliation của mỗi technique (test-strategy.md "How a technique is applied"). -->
+<!-- Nơi duy nhất giữ AC, measure, eval case, manual check và exploratory charter của build (dev/mvp/WORKFLOW.md "Spec rules" rule 2). Thuộc Test Design. AC và measure được viết hoặc rà SAU KHI technique của test-design.md đã suy ra condition và coverage item từ basis item và plan; AC nháp chỉ được đọc ở bước reconciliation của mỗi technique (test-strategy.md "How a technique is applied"). -->
 
 ## At a glance
 
-- **Status:** **bản nháp trước STLC**, **chưa qua Gate 2**. Nội dung dưới đây được **chuyển nguyên** từ testing-plan.md, **không sửa** AC, measure hay test case nào.
+- **Status:** **bản nháp trước STLC**, **chưa qua test design**. Nội dung dưới đây được **chuyển nguyên** từ testing-plan.md, **không sửa** AC, measure hay test case nào.
 - **Dùng thế nào:** Test Design **không lấy** các AC này làm đầu vào. Mỗi technique ở [test-design.md](./test-design.md) suy ra condition và coverage item **từ basis item và plan**; AC ở đây chỉ được đọc ở **bước reconciliation** (match, missing, conflict, unsupported). Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage.
-- **Đã biết cần sửa ở Gate 2:** Z-18 (FR-071 AC-12 trái quy tắc NFC), Z-19 (FR-143 chưa có AC), Z-22 (chưa có dòng `Variants`); xem [test-design.md](./test-design.md) mục "Gaps, deviations và rulings".
+- **Đã biết cần sửa ở test design:** Z-18 (FR-071 AC-12 trái quy tắc NFC), Z-19 (FR-143 chưa có AC), Z-22 (chưa có dòng `Variants`); xem [test-design.md](./test-design.md) mục "Gaps, deviations và rulings".
 - **Basis:** [test-analysis.md](../analysis/test-analysis.md) · **Plan:** [testing-plan.md](../planning/testing-plan.md) · **Spine:** [traceability-matrix.md](../traceability-matrix.md) · **Driver, fixture, ticket:** [test-implementation.md](../../implementation/test-implementation.md)
 
 ## AC, measure và test case
@@ -31,11 +31,11 @@ Ba khái niệm **tách nhau**:
 - **ID của test case** là ID của AC hoặc measure **cộng nhãn**: `FR-071 AC-2 V6`, `NFR-008 M-1 V3`. Nhãn **không đánh số lại**.
 - **Tên test trong code** bắt đầu bằng **ID của test case**; mỗi biến thể có **`it.fails` riêng**, ví dụ qua parameterized test.
 - [test-design.md](./test-design.md) nối **mỗi coverage item** với **ID của test case** kiểm nó. Matrix giữ **một dòng cho mỗi AC hoặc measure**; test case truy vết **qua ID** của nó.
-- AC và measure hiện có **chưa có dòng `Variants`**. Gate 2 **thêm nhãn** khi rà từng AC (Z-22); plan **không tính** biến thể nào trước bước đó.
+- AC và measure hiện có **chưa có dòng `Variants`**. Test design **thêm nhãn** khi rà từng AC (Z-22); plan **không tính** biến thể nào trước bước đó.
 
 **Truy vết của measure:**
 
-| Measure | Basis item | Quality risk | Technique và level | Coverage item (biến thể) | Mechanism | Record Gate 2 |
+| Measure | Basis item | Quality risk | Technique và level | Coverage item (biến thể) | Mechanism | Record design |
 |---|---|---|---|---|---|---|
 | NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm do Phase 3 chốt (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (Z-25); dòng của M-1 trong matrix |
 
@@ -44,7 +44,7 @@ Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-0
 
 ## Acceptance criteria
 
-> **Status: bản nháp trước STLC, chưa qua Gate 2.** Các AC dưới đây **được giữ nguyên**, nhưng **không phải đầu vào** của Test Design: chúng chỉ được đọc ở **bước reconciliation** của mỗi technique. Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage; Gate 2 **rà từng AC** theo condition của [test-design.md](./test-design.md) (Z-18 đến Z-25), và **thêm dòng `Serves` và `Variants`** cho mỗi AC và measure (mục "AC, measure và test case" ở trên).
+> **Status: bản nháp trước STLC, chưa qua test design.** Các AC dưới đây **được giữ nguyên**, nhưng **không phải đầu vào** của Test Design: chúng chỉ được đọc ở **bước reconciliation** của mỗi technique. Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage; test design **rà từng AC** theo condition của [test-design.md](./test-design.md) (Z-18 đến Z-25), và **thêm dòng `Serves` và `Variants`** cho mỗi AC và measure (mục "AC, measure và test case" ở trên).
 
 <!-- Given/When/Then/Catches/Check/Tier. "Cùng folder" theo windows-folders.md mục 1: cùng dev:ino; khi không đọc được ID thì cùng đường dẫn realpathSync.native. -->
 
