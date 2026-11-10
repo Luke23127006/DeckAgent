@@ -13,13 +13,13 @@ created: 08-11-2026
 
 - **Status:** **baseline**. Contract phía test và fixture **đã chốt**; Phase 3 **chỉ quyết cách nối** driver vào DeckAgent.
 - **Không giới hạn Test Design:** Test Design suy ra condition **từ basis item và plan**, không từ function hay fixture có sẵn. Khi test design cần một function, field hay fixture **chưa có**, contract **được mở rộng**; khi AC cuối khác AC mà ticket dựa vào, ticket **được sửa theo AC cuối**.
-- **Còn mở:** positive control của `fsAudit` (Z-20), function cho **client không được phép** (M18).
+- **Còn mở:** cách `foreignClient` gửi request **khớp với cơ chế** DeckAgent chọn cho FR-143; chốt **khi implement FR-143**.
 - **Ticket:** **#58** (T0c, test runner) đi tiếp **nếu độc lập** với AC và driver contract; **#59 đến #69 chờ AC cuối của vùng mình**, rồi body được cập nhật theo test design.
 - **Ticket GitHub:** body của #58 đến #69 **chưa đổi**; chúng còn trỏ đường dẫn cũ `dev/mvp/builds/UC-013-workspaces-new-chat/testing-plan.md`.
 
 ## Test driver and fixtures
 
-> **Test implementation contract**, được kiểm **theo từng ticket**. Contract **chưa sửa** positive control của `fsAudit` (Z-20) và chưa có function cho **client không được phép** (M18); test design cập nhật nó.
+> **Test implementation contract**: **điểm khởi đầu** của driver và fixture. Người viết test **mở rộng** nó khi test cần một function, field hay fixture chưa có.
 
 Luật chung của driver và fixture nằm ở [test-strategy.md](../../../../development/test-strategy.md) "Test infrastructure rules". Mục này chỉ ghi **phần riêng của build**. **Contract phía test** (function, field, quy tắc dưới đây) và **fixture** được **chốt cùng test design**; **Phase 3 chỉ quyết** cách **nối driver vào interface thật**.
 
@@ -36,6 +36,7 @@ Driver nằm ở `tests/acceptance/support/deckagent.ts`. Mọi response **có c
 | `newChat()`, `openChat(id)`, `currentChat()`, `setDraft(text)` (trả về khi server **xác nhận đã lưu**), `getDraft(chatId)`, `earlierWork()`, `ungroupedChats()` | FR-053, FR-048, FR-038, FR-073 |
 | `waitForEvent(interface, name, timeoutMs)` | FR-071 AC-10 |
 | `fsAudit(path)` | FR-071 AC-8, FR-074 AC-1, AC-2, FR-083 AC-1, FR-142 AC-1 |
+| `foreignClient(origin)` trả về một client có **cùng các function thay đổi trạng thái** như interface, nhưng request **mang Origin `origin`** và **không mang gì** DeckAgent chỉ cấp cho interface thật; response có `refused: true` khi bị từ chối (M18) | FR-143 AC-1 |
 
 | Field | Meaning |
 |---|---|
@@ -54,7 +55,7 @@ Driver nằm ở `tests/acceptance/support/deckagent.ts`. Mọi response **có c
 
 **Quy tắc riêng của build:**
 - **So đường dẫn** sau `realpathSync.native` ở **cả hai vế**, vì folder tạm có thể là **đường dẫn 8.3**. **Ngoại lệ:** đường dẫn **không còn tồn tại** được so **như chuỗi** với **giá trị DeckAgent đã trả trước đó** (FR-083 AC-6).
-- **fs audit:** chế độ test chạy server với **một module preload** ghi **mọi lệnh `fs`** và đường dẫn của nó. `fsAudit(path)` trả về các lệnh trên đường dẫn **nằm trong `path`**, so sau khi **chuẩn hoá cả hai vế**: `realpathSync.native` khi đường dẫn tồn tại, nếu không thì `path.resolve` và **không phân biệt hoa thường**. Như vậy một lệnh **qua junction hoặc đường dẫn 8.3** vẫn bị bắt. **Được phép:** `stat`, `access`, `opendir` trên **chính project folder**. **Không được phép:** `open`, `readFile`, `createReadStream` trên **bất kỳ file nào bên trong**. **Positive control:** mỗi lần dùng phải thấy **ít nhất một `stat`** trên project folder. Khi preload **chưa bật**, `fsAudit` throw **`AuditNotEnabledError`**. Vì vậy các AC dùng `fsAudit` **chỉ chứng minh được** fail vì assertion, và **chỉ đổi sang `it`**, **sau** khi **implementation ticket của preload** merge.
+- **fs audit:** chế độ test chạy server với **một module preload** ghi **mọi lệnh `fs`** và đường dẫn của nó. `fsAudit(path)` trả về các lệnh trên đường dẫn **nằm trong `path`**, so sau khi **chuẩn hoá cả hai vế**: `realpathSync.native` khi đường dẫn tồn tại, nếu không thì `path.resolve` và **không phân biệt hoa thường**. Như vậy một lệnh **qua junction hoặc đường dẫn 8.3** vẫn bị bắt. **Được phép:** `stat`, `access`, `opendir` trên **chính project folder**. **Không được phép:** `open`, `readFile`, `createReadStream` trên **bất kỳ file nào bên trong**. **Positive control:** một **self-test** của audit cho server **đọc cố ý một file** bên trong một folder fixture (qua một hook **chỉ có ở chế độ test**), rồi `fsAudit` của folder đó **phải chứa** lệnh đọc này; thấy `stat` **không đủ**. Self-test này **chạy trên CI** cùng các AC dùng `fsAudit`. Khi preload **chưa bật**, `fsAudit` throw **`AuditNotEnabledError`**, nên AC dùng nó **chỉ là bằng chứng** khi preload đã bật và self-test **xanh**. **Giới hạn:** lệnh đọc từ worker thread, tiến trình con hoặc native module (SQLite) **không đi qua** preload (M3).
 - **Folder thay thế:** driver khởi động DeckAgent với **folder thay thế** cho **folder của người dùng**, **các key folder**, **data folder** và **system folder**. Chúng là **fixture**: **folder thật trên đĩa**, **không mock** hành vi DeckAgent. **Hai yêu cầu cho Phase 3:** DeckAgent **đọc các đường dẫn này từ cấu hình lúc khởi động**, **không đọc lúc load module**; server **nhận port 0** để chạy **nhiều server song song** ([open-design-earlier-work.md](../../../research/open-design-earlier-work.md) item 12).
 - **Runner:** **Vitest** `4.1.12`, ghim version (DEC-013). Lệnh chạy là `pnpm test:acceptance`.
 - **CI:** test chạy qua **một step `test:acceptance` mới** trong `.github/workflows/workspace.yml`, là **một thay đổi riêng**, **PO duyệt**. Workflow đã **ghim Node `22.19.0`**, **ghim action theo SHA**, lấy **pnpm theo `package.json`**; riêng **image `windows-2022`** **không ghim tuyệt đối**.

@@ -10,18 +10,18 @@ created: 09-11-2026
 <!-- Evidence của design input D5 (testing-plan.md mục 2.3). Phương pháp: skill equivalence-partitioning, boundary-value-analysis và decision-table-testing. Mỗi bước giữ output riêng, theo thứ tự; test case chỉ dùng output của các bước trước; AC nháp chỉ được đọc ở mục "Reconciliation". Trạng thái coverage item và test case theo test-strategy.md "How a technique is applied". -->
 
 - **Design input:** [testing-plan.md](../../planning/testing-plan.md) mục 2.3, dòng **D5**: criterion là **mọi partition** và **mỗi biên ở ba giá trị**, **ở mỗi nguồn tên**, có biến phụ **đơn vị đếm, NFC, trim** (QR-7); **mọi rule** của decision table; leaf từ chối assert **lý do** (QR-10). Mechanism: M1, M2, M10, M19.
-- **Status:** chờ PO review.
+- **Status:** **dùng được**: mỗi test case được **đối chiếu với spec** khi test của nó được viết.
 - **Coverage status:**
 
   | Technique | Covered | Blocked | Uncovered | Infeasible |
   |---|---|---|---|---|
-  | EP (class) | 36 | 1 (EC34, Z-26) | 0 | 1 (EC21) |
-  | BVA, biên requirement | 37 | 2 (Z-28) | 0 | 0 |
-  | BVA, biên transformation | 0 | 3 (BD4, Z-28) | 0 | 0 |
+  | EP (class) | 37 | 0 | 0 | 1 (EC21) |
+  | BVA, biên requirement | 39 | 0 | 0 | 0 |
+  | BVA, biên transformation | 3 | 0 | 0 | 0 |
   | BVA, biên platform (ngoài criterion) | 4 | 0 | 0 | 2 |
   | DT (rule) | 5 | 0 | 0 | 3 tổ hợp |
 
-- **Test case:** **68** bản ghi: **61 Ready**, **7 Blocked** (TC35, TC42, TC53, TC59, TC60, TC61, TC62).
+- **Test case:** **68** bản ghi, **cả 68 Ready**.
 - **Cách kiểm lại phép tính:** `node D5-workspace-name.check.js` trong folder này. File chỉ chứa ký tự ASCII trong code; mọi ký tự đặc biệt viết bằng số code point. Lần chạy ngày 10-11-2026 khớp mọi dòng dưới đây. Đây là bằng chứng **computed**, không phải bằng chứng về hành vi của DeckAgent (mục "Loại bằng chứng").
 - **Giới hạn:** người thiết kế **đã đọc AC cũ** ở các session trước; completion check do **cùng người thiết kế** chạy, và **F-01 đến F-04 do PO tìm ra**, không phải do check.
 
@@ -113,7 +113,7 @@ created: 09-11-2026
 |---|---|---|---|---|---|---|
 | EC21 | DM1 | L = 0 | — | **Infeasible**: RL3 | — | Phủ domain |
 | EC22 | DM1 | 1 ≤ L ≤ 100 (base) | yes | Tên workspace là **dạng NFC** của tên folder, **không cắt**; workspace được thiết lập | BR-020.V2a, FR-071.2, FR-071.15 | Luật V-2, phần nhận |
-| EC23 | DM1 | L ≥ 101 | yes | Tên **còn đúng 100 code point** của dạng NFC; workspace **vẫn được thiết lập**. **Phần nào được giữ: gap Z-28** | BR-020.V2a, FR-071.2 | Luật cắt của FR-071 |
+| EC23 | DM1 | L ≥ 101 | yes | Workspace **vẫn được thiết lập**, với **tên đã cắt** (định nghĩa ở mục "Test cases", nguồn folder). Spec **không nói phần nào được giữ**, nên expected **không chọn phần nào** (AM-11) | BR-020.V2a, FR-071.2 | Luật cắt của FR-071 |
 | EC24 | DM2 | NFC không đổi (base) | yes | Như EC22 | FR-071.15 | Class đối chứng |
 | EC25 | DM2 | NFC đổi, **ngắn đi** | yes | Tên workspace **dạng NFC**; folder **giữ tên gốc** (**ở biên** cho phần đếm) | BR-020.V2c, FR-071.15 | Lưu chuỗi gốc; đổi tên folder |
 | EC26 | DM2 | NFC đổi, **cùng độ dài** | yes | Tên workspace dạng NFC; folder giữ tên gốc | BR-020.V2c, FR-071.15 | Như EC7 |
@@ -124,7 +124,7 @@ created: 09-11-2026
 | EC31 | DM4 | Có chuỗi combining không có dạng ghép | yes | Mỗi code point là một ký tự (**ở biên**) | BR-020.V2b | Đếm grapheme |
 | EC32 | DM5a | Không có ký tự của tập ở hai đầu (base) | yes | Như EC22 | FR-071.15 | Class đối chứng |
 | EC33 | DM5a | Có ký tự của tập ở **cả hai đầu**, còn ký tự khác | yes | DeckAgent **giữ nguyên** mọi ký tự; **không bỏ** khoảng trắng nào | BR-020.V3, FR-071.15 | Trim nhầm nguồn |
-| EC34 | DM5a | **Chỉ gồm** ký tự của tập (ví dụ một U+00A0) | yes | **Blocked, gap Z-26.** Theo DT, tên này rơi vào **DR5** (nhận, giữ nguyên); expected **chưa được dùng** cho đến khi PO xác nhận cách đọc V-1 | BR-020.V1, BR-020.V3, FR-071.2 | V-1 đọc được hai cách |
+| EC34 | DM5a | **Chỉ gồm** ký tự của tập (ví dụ một U+00A0) | yes | Tên **có 1 ký tự** và **được nhận nguyên vẹn** (DR5): V-1 đo sau khi **bỏ khoảng trắng theo V-3**, và V-3 **không bỏ ký tự nào** của tên lấy từ folder (AM-10) | BR-020.V1, BR-020.V3, FR-071.2 | Tên trông như rỗng nhưng spec không từ chối |
 | EC35 | DM6 | Không có khoảng trắng ở giữa (base) | yes | Như EC22 | BR-020.V3 | Class đối chứng |
 | EC36 | DM6 | Có khoảng trắng ở giữa | yes | Giữ nguyên | BR-020.V3, FR-071.15 | Như EC18 |
 | EC37 | DM7 | Không trùng (base) | yes | Như EC22 | FR-141.5 | Class đối chứng |
@@ -152,7 +152,7 @@ Base của nguồn người dùng đặt là `Toán` (U+0054 U+006F U+00E1 U+006
 | EC18 | `Toán học` | L 8 | Một dấu cách ở giữa |
 | EC20 | `Toán`, khi workspace khác tên `Toán` | L 4 | Trùng đúng tên |
 | EC22, EC24, EC28, EC30, EC32, EC35, EC37 | folder `Toán` | L 4 | Base |
-| EC23 | folder `a` lặp 100 lần + `b` lặp 50 lần | L 150 | Giữ **100 đầu** hay **100 cuối** cho **kết quả khác nhau**, nên case này trả lời được Z-28 khi có ruling |
+| EC23 | folder `a` lặp 100 lần + `b` lặp 50 lần | L 150 | Giữ **100 đầu** hay **100 cuối** cho **kết quả khác nhau**, nên case này bắt được DeckAgent **lưu một chuỗi không phải đoạn liền** của tên |
 | EC25 | folder `Toa` + U+0301 + `n` | gốc 5, L 4 | Như EC6 |
 | EC26 | folder U+212B + `x` | L 2 | Như EC7 |
 | EC27 | folder U+0958 + `a` | gốc 2, L 3 | Như EC8 |
@@ -165,7 +165,7 @@ Base của nguồn người dùng đặt là `Toán` (U+0054 U+006F U+00E1 U+006
 
 ## EP-5 · Coverage item của EP
 
-**37** class khả thi (EC1 đến EC20, EC22 đến EC38) và **EC21** infeasible (RL3). Trạng thái sau khi có test case: **36 Covered**, **EC34 Blocked** (Z-26). **Giao cho BVA:** EC6, EC8, EC10, EC12, EC14, EC25, EC27, EC29, EC31.
+**37** class khả thi (EC1 đến EC20, EC22 đến EC38) và **EC21** infeasible (RL3). Trạng thái sau khi có test case: **37 Covered**. **Giao cho BVA:** EC6, EC8, EC10, EC12, EC14, EC25, EC27, EC29, EC31.
 
 ## BVA-1 · Biên
 
@@ -176,7 +176,7 @@ Base của nguồn người dùng đặt là `Toán` (U+0054 U+006F U+00E1 U+006
 | BD1 | requirement | Dưới, người dùng đặt; giữa EC1, EC2 và EC3 | BR-020.V1 | L = 1 là giá trị nhỏ nhất được nhận | DeckAgent nhận nhầm tên rỗng, hoặc từ chối tên một ký tự | có |
 | BD2 | requirement | Trên, người dùng đặt; giữa EC3 và EC4 | BR-020.V2a ("tối đa 100, gồm cả 100") | L = 100 được nhận | Sai một đơn vị ở so sánh, hoặc đo trên đại lượng sai | có |
 | BD3 | requirement | Cắt, folder; giữa EC22 và EC23 | BR-020.V2a, FR-071.2 | L = 100 không cắt; L = 101 cắt | Cắt cả tên vừa đủ 100, hoặc không cắt tên 101 | có |
-| BD4 | transformation | Vị trí của ký tự ngoài BMP so với **điểm cắt**, trong EC23 | FR-071.2, BR-020.V2b | Code point **cuối được giữ** | DeckAgent cắt theo đơn vị UTF-16, để lại surrogate lẻ hoặc tên 99 code point. **Điểm cắt phụ thuộc Z-28**, nên mọi giá trị **Blocked** | có (QR-7) |
+| BD4 | transformation | Vị trí của ký tự ngoài BMP so với **điểm cắt**, trong EC23 | FR-071.2, BR-020.V2b | Code point **cuối được giữ** | DeckAgent cắt theo đơn vị UTF-16, để lại surrogate lẻ hoặc tên 99 code point. **Tên đã cắt** bắt cả hai lỗi, **bất kể phần nào được giữ** | có (QR-7) |
 | BD5 | platform | Mép dưới của domain, folder; EC21 infeasible và EC22 | AS-2 | L = 1 là tên folder ngắn nhất | Tên folder ngắn nhất được nhận nguyên vẹn | không; đếm riêng |
 | BD6 | platform | Mép trên của domain, folder; trong EC23 | AS-2, AS-4 | 255 đơn vị UTF-16 là tên folder dài nhất | Luật cắt vẫn đúng ở tên dài nhất platform cho phép | không; đếm riêng |
 
@@ -220,11 +220,11 @@ Expected của mỗi giá trị là expected của **class nó rơi vào** (EP-3
 
 | Loại biên | Giá trị khả thi | Covered | Blocked | Infeasible |
 |---|---|---|---|---|
-| requirement (BD1, BD1-T, BD2 và 5 variant, BD3 và 4 variant) | 39 | 37 | 2: BD3-N+.trên, BD3-G.trên (Z-28) | 0 |
-| transformation (BD4) | 3 | 0 | 3 (Z-28) | 0 |
+| requirement (BD1, BD1-T, BD2 và 5 variant, BD3 và 4 variant) | 39 | 39 | 0 | 0 |
+| transformation (BD4) | 3 | 3 | 0 | 0 |
 | platform (BD5, BD6), ngoài criterion | 4 | 4 | 0 | 2 |
 
-BD3.trên, BD3-N−.trên và BD3-U.trên là **Covered**: chuỗi của chúng chỉ gồm **một ký tự lặp lại**, nên giữ phần nào thì kết quả **cũng như nhau** (script đã kiểm).
+BD3.trên, BD3-N−.trên và BD3-U.trên có expected **chính xác từng ký tự**: chuỗi của chúng chỉ gồm **một ký tự lặp lại**, nên giữ phần nào thì kết quả **cũng như nhau** (script đã kiểm). Các giá trị cắt còn lại dùng **tên đã cắt**; script kiểm rằng oracle này **nhận cả cắt 100 đầu lẫn 100 cuối**, và **từ chối** cắt theo UTF-16 ở TC56, TC60, TC61.
 
 ## DT-1 · Condition và action
 
@@ -242,7 +242,7 @@ BD3.trên, BD3-N−.trên và BD3-U.trên là **Covered**: chuỗi của chúng 
 - **A6 · nói lý do: value bị vi phạm** (FR-141.8; oracle theo QR-10).
 - **A7 · thiết lập workspace cho folder** (FR-071.2).
 
-**Z-26 không nằm trong condition:** tên folder chỉ gồm khoảng trắng (EC34) có L ≥ 1 theo C2, nên rơi vào **DR5**. Câu hỏi của Z-26 là spec **có một luật từ chối riêng** cho tên đó hay không; câu hỏi đó thuộc **expected của EC34** (Blocked), không làm đổi nghĩa của C2.
+**Tên folder chỉ gồm khoảng trắng** (EC34) có L ≥ 1 theo C2, nên rơi vào **DR5**; spec **không có luật từ chối riêng** cho tên đó (AM-10).
 
 ## DT-2 · Mọi tổ hợp
 
@@ -282,11 +282,11 @@ BD3.trên, BD3-N−.trên và BD3-U.trên là **Covered**: chuỗi của chúng 
 
 ## DT-6 · Coverage item của DT
 
-**5** rule, **3** tổ hợp infeasible. Trạng thái: **5 Covered** (DR4 qua TC47, vì nội dung của TC47 không phụ thuộc Z-28).
+**5** rule, **3** tổ hợp infeasible. Trạng thái: **5 Covered** (DR4 qua TC47).
 
 ## Test cases
 
-Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc BVA-2. "Ready" là mọi phần của expected đều có basis; "Blocked" là có phần chờ ruling, và cột expected ghi cả phần **đã biết**.
+Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc BVA-2. "Ready" là mọi phần của expected đều có basis.
 
 **Nguồn người dùng đặt.** Precondition chung: workspace `W`, không phải default, tên `Cũ`. Action chung: đổi tên `W` thành input. "Đặt tên X": tên của `W` là X và thao tác không bị từ chối. "Từ chối V-n": thao tác bị từ chối, lý do là **BR-020 V-n**, `W` **vẫn tên `Cũ`**.
 
@@ -328,19 +328,19 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 | TC67 | BD1-T.đúng | BD1-T.đúng | đặt tên `T` | BR-020.R, BR-020.V3 | Ready |
 | TC68 | BD1-T.trên | BD1-T.trên | đặt tên `To` | BR-020.R, BR-020.V3 | Ready |
 
-**Nguồn folder.** Precondition chung: folder tạo bằng **M19** (`namedFolder`) dưới root của test, đọc được, chưa là project folder của workspace nào. Action chung: thêm folder. Expected chung của mọi case: **O5**, tức tên folder trên đĩa (đúng chuỗi code point) và path **không đổi** (FR-071.15). "Thiết lập, tên X": workspace mới được thiết lập cho folder, và tên của nó là X.
+**Nguồn folder.** Precondition chung: folder tạo bằng **M19** (`namedFolder`) dưới root của test, đọc được, chưa là project folder của workspace nào. Action chung: thêm folder. Expected chung của mọi case: **O5**, tức tên folder trên đĩa (đúng chuỗi code point) và path **không đổi** (FR-071.15). "Thiết lập, tên X": workspace mới được thiết lập cho folder, và tên của nó là X. "**Tên đã cắt**" là tên có **đúng 100 code point**, **không có surrogate lẻ**, và là **một đoạn liền** của **dạng NFC** của tên folder; test **không assert** đoạn đó nằm ở đâu (AM-11).
 
 | Test case | Input | Coverage items | Expected result | Nguồn | Status |
 |---|---|---|---|---|---|
 | TC34 | đại diện EC22 | EC22, EC24, EC28, EC30, EC32, EC35, EC37, DR5 | thiết lập, tên `Toán` | FR-071.2, FR-071.15 | Ready |
-| TC35 | đại diện EC23 | EC23 | thiết lập, tên **100 code point**; **nội dung** chờ Z-28 | FR-071.2, BR-020.V2a | Blocked (Z-28) |
+| TC35 | đại diện EC23 | EC23 | thiết lập, **tên đã cắt** | FR-071.2, BR-020.V2a | Ready |
 | TC36 | đại diện EC25 | EC25 | thiết lập, tên `Toán` dạng NFC; folder **vẫn tên NFD** | BR-020.V2c, FR-071.15 | Ready |
 | TC37 | đại diện EC26 | EC26 | thiết lập, tên U+00C5 + `x`; folder vẫn tên U+212B + `x` | BR-020.V2c, FR-071.15 | Ready |
 | TC38 | đại diện EC27 | EC27 | thiết lập, tên U+0915 U+093C + `a`; folder vẫn tên U+0958 + `a` | BR-020.V2c, FR-071.15 | Ready |
 | TC39 | đại diện EC29 | EC29 | thiết lập, tên `Toán` + U+1F600 | BR-020.V2b | Ready |
 | TC40 | đại diện EC31 | EC31 | thiết lập, tên `T` + `x` + U+0301 | BR-020.V2b | Ready |
 | TC41 | đại diện EC33 | EC33 | thiết lập, tên **đúng chuỗi** U+00A0 U+FEFF `Toán` U+2028 U+0020 | BR-020.V3, FR-071.15 | Ready |
-| TC42 | đại diện EC34 | EC34 | **chưa dùng expected**: chờ Z-26 (theo DT là DR5: thiết lập, tên U+00A0) | BR-020.V1, BR-020.V3 | Blocked (Z-26) |
+| TC42 | đại diện EC34 | EC34, DR5 | thiết lập, tên **đúng chuỗi** U+00A0 | BR-020.V1, BR-020.V3 | Ready |
 | TC43 | đại diện EC36 | EC36 | thiết lập, tên `Toán học` | BR-020.V3 | Ready |
 | TC44 | đại diện EC38; thêm precondition: workspace `X` tên `Toán` cho một folder khác | EC38 | thiết lập workspace thứ hai, tên `Toán`; `X` vẫn tên `Toán` | FR-141.5 | Ready |
 | TC45 | BD3.dưới | BD3.dưới | thiết lập, tên `a` lặp 99 | FR-071.2 | Ready |
@@ -351,16 +351,16 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 | TC50 | BD3-N−.trên | BD3-N−.trên, EC25 | thiết lập, tên U+00E1 lặp 100 | BR-020.V2c, FR-071.2 | Ready |
 | TC51 | BD3-N+.dưới | BD3-N+.dưới, EC27 | thiết lập, tên U+0915 U+093C lặp 49 + `a` | BR-020.V2c, FR-071.2 | Ready |
 | TC52 | BD3-N+.đúng | BD3-N+.đúng, EC27 | thiết lập, tên U+0915 U+093C lặp 50, không cắt | BR-020.V2c, FR-071.2 | Ready |
-| TC53 | BD3-N+.trên | BD3-N+.trên, EC27 | thiết lập, tên **100 code point**; **nội dung** chờ Z-28 | BR-020.V2c, FR-071.2 | Blocked (Z-28) |
+| TC53 | BD3-N+.trên | BD3-N+.trên, EC27 | thiết lập, **tên đã cắt** | BR-020.V2c, FR-071.2 | Ready |
 | TC54 | BD3-U.dưới | BD3-U.dưới, EC29 | thiết lập, tên U+1F600 lặp 99 | BR-020.V2b | Ready |
 | TC55 | BD3-U.đúng | BD3-U.đúng, EC29 | thiết lập, tên U+1F600 lặp 100, không cắt | BR-020.V2b, FR-071.2 | Ready |
 | TC56 | BD3-U.trên | BD3-U.trên, EC29 | thiết lập, tên U+1F600 lặp 100, **không surrogate lẻ** | BR-020.V2b, FR-071.2 | Ready |
 | TC57 | BD3-G.dưới | BD3-G.dưới, EC31 | thiết lập, tên đúng input (99 code point) | BR-020.V2b | Ready |
 | TC58 | BD3-G.đúng | BD3-G.đúng, EC31 | thiết lập, tên đúng input (100 code point), không cắt | BR-020.V2b, FR-071.2 | Ready |
-| TC59 | BD3-G.trên | BD3-G.trên, EC31 | thiết lập, tên **100 code point**; **nội dung** chờ Z-28 | BR-020.V2b, FR-071.2 | Blocked (Z-28) |
-| TC60 | BD4.dưới | BD4.dưới | thiết lập, tên **100 code point**, **không surrogate lẻ**; nội dung chờ Z-28 | BR-020.V2b, FR-071.2 | Blocked (Z-28) |
-| TC61 | BD4.đúng | BD4.đúng | như TC60 | BR-020.V2b, FR-071.2 | Blocked (Z-28) |
-| TC62 | BD4.trên | BD4.trên | như TC60 | BR-020.V2b, FR-071.2 | Blocked (Z-28) |
+| TC59 | BD3-G.trên | BD3-G.trên, EC31 | thiết lập, **tên đã cắt** | BR-020.V2b, FR-071.2 | Ready |
+| TC60 | BD4.dưới | BD4.dưới | thiết lập, **tên đã cắt** | BR-020.V2b, FR-071.2 | Ready |
+| TC61 | BD4.đúng | BD4.đúng | như TC60 | BR-020.V2b, FR-071.2 | Ready |
+| TC62 | BD4.trên | BD4.trên | như TC60 | BR-020.V2b, FR-071.2 | Ready |
 | TC63 | BD5.đúng: folder `T` | BD5.đúng | thiết lập, tên `T` | FR-071.2 | Ready |
 | TC64 | BD5.trên: folder `To` | BD5.trên | thiết lập, tên `To` | FR-071.2 | Ready |
 | TC65 | BD6.dưới: folder `a` lặp 254 | BD6.dưới | thiết lập, tên `a` lặp 100 | FR-071.2, BR-020.V2a | Ready |
@@ -368,16 +368,16 @@ Mỗi test case một dòng. Input trỏ về **một** dòng của EP-4 hoặc 
 
 ## Completion checks
 
-Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết kế** chạy, nên **vẫn cần PO review**.
+Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết kế** chạy, nên người viết test **đối chiếu lại với spec** từng case mình dùng.
 
 | Check | Kết quả | Loại bằng chứng | Ghi chú |
 |---|---|---|---|
 | EP-C1 · biến | pass | design-checked | O5 có từ FR-071.15 |
 | EP-C2 · cover | pass | design-checked | Mỗi dimension có câu cover |
-| EP-C3 · nguồn | pass | design-checked | EC23 (phần được giữ) và EC34 ghi gap |
+| EP-C3 · nguồn | pass | design-checked | EC23 dựa trên AM-11, EC34 dựa trên AM-10 |
 | EP-C4 · infeasible | pass | design-checked, assumed | EC21 dựa trên RL3, trong đó có AS-2 |
 | EP-C5 · representative | pass | computed | Representative EC23 cho **kết quả khác nhau** khi giữ 100 đầu hay 100 cuối |
-| EP-C6 · coverage | pass | design-checked | EC34 **Blocked**: TC42 chưa có expected (Z-26) |
+| EP-C6 · coverage | pass | design-checked | Mọi class khả thi Covered |
 | EP-C7 · attribution | pass | design-checked | TC2, TC3, TC4: một class invalid, dimension khác ở base |
 | EP-C8 · traceability | pass | design-checked | Mỗi ID một dòng, có status |
 | EP-C9 · giao cho BVA | pass | design-checked | — |
@@ -387,9 +387,9 @@ Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết
 | BVA-C3 · giá trị | pass | computed | — |
 | BVA-C4 · variant | pass | design-checked | Có BD1-T |
 | BVA-C5 · gồm cả biên | pass | design-checked | — |
-| BVA-C6 · coverage | pass | design-checked, computed | 5 giá trị Blocked (Z-28); script xác định giá trị nào **không** phụ thuộc Z-28 |
+| BVA-C6 · coverage | pass | design-checked, computed | Mọi giá trị khả thi Covered; script kiểm oracle **tên đã cắt** trên mọi giá trị cắt |
 | BVA-C7 · tách biệt | pass | design-checked | — |
-| DT-C1 · condition | pass | design-checked | C2 đo theo xử lý của **từng nguồn**; Z-26 là expected của EC34 |
+| DT-C1 · condition | pass | design-checked | C2 đo theo xử lý của **từng nguồn** |
 | DT-C2 · liệt kê | pass | design-checked | 8 tổ hợp |
 | DT-C3 · infeasible | pass | design-checked, assumed | CB6 dựa trên AS-2 |
 | DT-C4 · merge | pass | design-checked | — |
@@ -404,7 +404,7 @@ Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết
 | Loại | Gồm | Không chứng minh |
 |---|---|---|
 | **design-checked** | Mọi bảng EP, BVA, DT; trạng thái coverage; completion check | Cách đọc spec là đúng; không có dimension nào bị bỏ sót |
-| **computed** (script `D5-workspace-name.check.js`) | Độ dài đo được và kết quả theo luật của mọi input; NFC đổi chuỗi hay không; tập `trim()` của runtime; RL5; hiệu ứng của việc cắt theo UTF-16; case nào phụ thuộc Z-28 | DeckAgent làm đúng như vậy; fixture tạo được input |
+| **computed** (script `D5-workspace-name.check.js`) | Độ dài đo được và kết quả theo luật của mọi input; NFC đổi chuỗi hay không; tập `trim()` của runtime; RL5; hiệu ứng của việc cắt theo UTF-16; oracle **tên đã cắt** nhận mọi cách cắt đúng và từ chối cắt theo UTF-16 | DeckAgent làm đúng như vậy; fixture tạo được input |
 | **assumed** | AS-1 đến AS-6 | Chúng đúng; mỗi cái có nơi xác nhận |
 | **awaiting execution** | Mọi expected result về hành vi của DeckAgent; M19 tạo được mọi folder của nguồn folder | Có gì cho đến khi test chạy (Phase 5) |
 
@@ -421,15 +421,15 @@ Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết
 | BD2-N−.đúng | FR-141 AC-6 | match | — |
 | BD1.đúng, BD1-T.đúng | FR-141 AC-7 | match | — |
 | BD3.đúng | FR-071 AC-15 | match | Phần "tên đúng 100 ký tự" |
-| EC23, BD3.trên | FR-071 AC-15 | **conflict** | AC đòi **"100 ký tự đầu"**; spec chỉ nói **cắt còn 100** (Z-28) |
-| EC25 | FR-071 AC-12 | **conflict** | AC đòi tên **giống từng byte** tên folder NFD; spec đòi **dạng NFC** (Z-18) |
+| EC23, BD3.trên | FR-071 AC-15 | match | AC kiểm **tên đã cắt** (AM-11) |
+| EC25 | FR-071 AC-12 | match | AC kiểm tên **dạng NFC** (AM-2) |
 | — | FR-071 AC-12 (hai workspace, trỏ đúng folder) | unsupported trong D5 | Thuộc D2 |
 | EC1, EC4, EC6 (lưu NFC), EC7, EC8, EC10, EC12, EC16, EC18 | — | missing | Chưa AC nào kiểm |
 | EC22, EC24, EC26 đến EC33, EC35 đến EC38, O5 | — | missing | Chưa AC nào kiểm tên folder theo các class này |
 | BD1, BD2, BD2-T, BD2-N+, BD2-U, BD2-G (trừ giá trị đã match) | — | missing | — |
 | BD3-N−, BD3-N+, BD3-U, BD3-G, BD4, BD5, BD6, DR4, DR5 | — | missing | — |
 
-**AC không được sửa** ở bước này: việc viết lại AC đợi outcome của Z-18, Z-26, Z-28 và PO review D5.
+Các dòng **missing** được phủ bằng **test case của D5**, không cần AC mới.
 
 ## Assumption
 
@@ -442,11 +442,6 @@ Loại bằng chứng theo mục kế tiếp. Check do **chính người thiết
 | AS-5 | Một **phần đầu** của chuỗi NFC vẫn là NFC, nên tên đã cắt **vẫn ở dạng NFC** | Một chuỗi mà phần đầu không còn NFC | Script thử mọi chữ cơ sở và hai dấu combining trong U+0300 đến U+036F: **không thấy** phản ví dụ; **không phải chứng minh** |
 | AS-6 | Tập `trim()` của DeckAgent là tập của Node `22.19.0` (Unicode 16.0, 25 ký tự) | DeckAgent chạy trên runtime có phiên bản Unicode khác | Phiên bản Node được **ghim** ở CI (testing-plan.md mục 4) |
 
-## Gaps đang mở
+## Tập khoảng trắng
 
-Đề xuất của mỗi gap nằm ở [test-design.md](../test-design.md) mục 2. Ảnh hưởng lên D5:
-
-- **Z-26 · tên folder chỉ gồm khoảng trắng:** EC34 và TC42 **Blocked**; theo đề xuất, tên U+00A0 **có một ký tự** và **được nhận** (DR5).
-- **Z-27 · tập khoảng trắng:** D5 dùng **toàn bộ** tập `trim()` (25 ký tự), **một representative cho mỗi class** (EP-2, EP-4).
-- **Z-28 · cắt tên folder:** TC35, TC53, TC59, TC60, TC61, TC62 **Blocked**; độ dài 100 vẫn được assert như phần đã biết.
-- **Z-18 · FR-071 AC-12 trái NFC:** conflict EC25 ở reconciliation.
+V-3 định nghĩa khoảng trắng là **các ký tự mà `trim()` bỏ**; bốn ký tự nó nêu **chỉ là ví dụ**. Vì vậy D5 dùng **toàn bộ** tập `trim()` (25 ký tự trên Node `22.19.0`), **một representative cho mỗi class** (EP-2, EP-4).

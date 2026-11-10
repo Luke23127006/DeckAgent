@@ -15,7 +15,7 @@ created: 08-11-2026
 - **Use cases:** **workspace theo folder** (UC-013) and **bắt đầu chat mới** (UC-012), **mọi step và alternative**
 - **NFR:** NFR-008, **chỉ phần chat** ([acceptance-criteria.md](./design/acceptance-criteria.md) M-1)
 - **Research:** [research-checklist.md](../research/research-checklist.md)
-- **Status:** _63 dòng AC + 1 dòng measure + 3 dòng BR · 63 dòng AC có test-stub ticket · 0 đã implement · 0 đã verify_. Cột Test link tới **test-stub ticket** của mỗi dòng; **mã T** của ticket nằm ở [test-implementation.md](../implementation/test-implementation.md) mục "Test-stub tickets".
+- **Status:** _65 dòng AC + 1 dòng measure + 3 dòng BR · 63 dòng AC có test-stub ticket · 0 đã implement · 0 đã verify_. Cột Test link tới **test-stub ticket** của mỗi dòng; **mã T** của ticket nằm ở [test-implementation.md](../implementation/test-implementation.md) mục "Test-stub tickets".
 
 ## Matrix
 
@@ -84,6 +84,8 @@ created: 08-11-2026
 | FR-038 AC-2 · giữ khi tải lại | ci | RQ-12 | DEC-012 | [#68](https://github.com/Luke23127006/DeckAgent/issues/68) | | | [ ] |
 | FR-038 AC-3 · mọi giao diện cùng draft | ci | RQ-12 | DEC-012 | [#63](https://github.com/Luke23127006/DeckAgent/issues/63) | | | [ ] |
 | FR-038 AC-4 · không giữ sau khi DeckAgent dừng | ci | RQ-12 | DEC-012 | [#68](https://github.com/Luke23127006/DeckAgent/issues/68) | | | [ ] |
+| FR-143 AC-1 · từ chối thay đổi từ trang web bên ngoài | ci | — | DEC-010, DEC-012 | — | | | [ ] |
+| FR-143 AC-2 · interface thật vẫn thay đổi được trạng thái | ci | — | DEC-010, DEC-012 | — | | | [ ] |
 | NFR-008 M-1 · chat giữ trạng thái đã lưu khi DeckAgent chết giữa chừng | ci | RQ-10 | DEC-011 | ticket integration ở Phase 4 | | | [ ] |
 | BR-004 · chat nào được giữ | — | RQ-2 | DEC-006, DEC-011 | qua FR-073 AC-2 (V-3); V-1, V-2 ở build 3 | | | [ ] |
 | BR-019 · folder không được làm project folder | — | RQ-3 | | qua FR-071 AC-6, AC-7, FR-083 AC-4 và FR-142 AC-3 | | | [ ] |

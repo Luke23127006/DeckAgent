@@ -19,7 +19,7 @@ created: 08-11-2026
 
 ## 1. Kỹ thuật đã áp dụng và tổng quan (bản cũ)
 
-<!-- Bảng ghi technique đã có section trong file này. Cột basis item và số coverage item chưa điền: đó là việc của test design (Z-23). -->
+<!-- Bảng ghi technique đã có section trong file này. Cột basis item và số coverage item được điền khi D1, D2, D3, D6 được thiết kế (test-design.md). -->
 
 | Technique | Áp dụng cho | Vì sao | Coverage criterion | Coverage items | Section |
 |---|---|---|---|---|---|
@@ -27,9 +27,9 @@ created: 08-11-2026
 | Decision table | FR-071, FR-083, FR-142 với BR-019 (đường dẫn folder); FR-141 với BR-020 (tên workspace) | Luật nhiều điều kiện; risk high | Mỗi leaf một outcome và ít nhất một test | test design pending | 6, 7 |
 | EP + BVA | Đường dẫn folder; tên workspace (BR-020) | Đầu vào có format và giới hạn | Mọi partition; mỗi biên ở ba giá trị | test design pending | 6, 7 |
 | Invariant check | FR-084, FR-071, FR-074, FR-083, FR-142 | Câu "không đọc file", "không đổi folder", "giữ chat" | Assert sau mọi hành động của vùng, có positive control | test design pending | Khung "Luôn đúng" ở 2, 3 |
-| Use case testing | Flow của UC-013 và UC-012 | Testing plan chọn cho mọi FR | Mọi step và alternative có end state khác | test design pending | **Chưa có section** (Z-25) |
-| Threat-based | Security: confidentiality, integrity, authorization (FR-143) | Test type đã chọn ở test analysis | Mỗi threat scenario được giữ có test | test design pending | **Chưa có section** (Z-25) |
-| Fault injection | NFR-008 M-1 | Reliability; risk high | Điểm chèn lỗi × failure mode đã chọn | test design pending | **Chưa có section** (Z-25) |
+| Use case testing | Flow của UC-013 và UC-012 | Testing plan chọn cho mọi FR | Mọi step và alternative có end state khác | test design pending | **Chưa có section**; thiết kế ở D7 |
+| Threat-based | Security: confidentiality, integrity, authorization (FR-143) | Test type đã chọn ở test analysis | Mỗi threat scenario được giữ có test | test design pending | **Chưa có section**; thiết kế ở D8 |
+| Fault injection | NFR-008 M-1 | Reliability; risk high | Điểm chèn lỗi × failure mode đã chọn | test design pending | **Chưa có section**; thiết kế ở D10 |
 
 ```mermaid
 flowchart LR

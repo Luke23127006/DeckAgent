@@ -13,7 +13,7 @@ created: 08-11-2026
 
 - **Status:** **bản nháp trước STLC**, **chưa qua test design**. Nội dung dưới đây được **chuyển nguyên** từ testing-plan.md, **không sửa** AC, measure hay test case nào.
 - **Dùng thế nào:** Test Design **không lấy** các AC này làm đầu vào. Mỗi technique ở [test-design.md](./test-design.md) suy ra condition và coverage item **từ basis item và plan**; AC ở đây chỉ được đọc ở **bước reconciliation** (match, missing, conflict, unsupported). Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage.
-- **Đã biết cần sửa ở test design:** Z-18 (FR-071 AC-12 trái quy tắc NFC), Z-19 (FR-143 chưa có AC), Z-22 (chưa có dòng `Variants`); xem [test-design.md](./test-design.md) mục "Gaps, deviations và rulings".
+- **Đã đối chiếu với spec qua D5:** FR-071 AC-12, AC-15; FR-141 AC-1, AC-3 đến AC-7. **FR-143** có AC-1, AC-2 viết từ spec.
 - **Basis:** [test-analysis.md](../analysis/test-analysis.md) · **Plan:** [testing-plan.md](../planning/testing-plan.md) · **Spine:** [traceability-matrix.md](../traceability-matrix.md) · **Driver, fixture, ticket:** [test-implementation.md](../../implementation/test-implementation.md)
 
 ## AC, measure và test case
@@ -31,20 +31,20 @@ Ba khái niệm **tách nhau**:
 - **ID của test case** là ID của AC hoặc measure **cộng nhãn**: `FR-071 AC-2 V6`, `NFR-008 M-1 V3`. Nhãn **không đánh số lại**.
 - **Tên test trong code** bắt đầu bằng **ID của test case**; mỗi biến thể có **`it.fails` riêng**, ví dụ qua parameterized test.
 - [test-design.md](./test-design.md) nối **mỗi coverage item** với **ID của test case** kiểm nó. Matrix giữ **một dòng cho mỗi AC hoặc measure**; test case truy vết **qua ID** của nó.
-- AC và measure hiện có **chưa có dòng `Variants`**. Test design **thêm nhãn** khi rà từng AC (Z-22); plan **không tính** biến thể nào trước bước đó.
+- Dòng **`Variants`** của một AC được thêm **khi test của AC đó được thiết kế**, trong technique của vùng nó. Một AC **chưa có** dòng này thì **chưa được tính** biến thể nào.
 
 **Truy vết của measure:**
 
 | Measure | Basis item | Quality risk | Technique và level | Coverage item (biến thể) | Mechanism | Record design |
 |---|---|---|---|---|---|---|
-| NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm do Phase 3 chốt (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (Z-25); dòng của M-1 trong matrix |
+| NFR-008 M-1 | NFR-008.1a, NFR-008.2a | QR-5 | **fault injection**; integration, kèm **unit test chèn lỗi** của transaction xoá | **Mỗi điểm kill** của **xác nhận xoá workspace** và **tạo chat mới**, với failure mode **kill tiến trình**; danh sách điểm được chốt **khi implementation có điểm chèn lỗi** (M13), nên **số biến thể chưa biết** | M13 | Dòng `Serves` và `Variants` của M-1; section fault injection (D10); dòng của M-1 trong matrix |
 
 Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-008.3) **không thuộc** M-1; build nhận của chúng ghi ở test-analysis.md (SR-7, SR-8d, SR-9).
 
 
 ## Acceptance criteria
 
-> **Status: bản nháp trước STLC, chưa qua test design.** Các AC dưới đây **được giữ nguyên**, nhưng **không phải đầu vào** của Test Design: chúng chỉ được đọc ở **bước reconciliation** của mỗi technique. Chúng **không phải bằng chứng** cho requirement coverage hay test design coverage; test design **rà từng AC** theo condition của [test-design.md](./test-design.md) (Z-18 đến Z-25), và **thêm dòng `Serves` và `Variants`** cho mỗi AC và measure (mục "AC, measure và test case" ở trên).
+> **Status:** một AC **dùng được** khi người viết test **đã đối chiếu nó với spec**; AC đã đối chiếu qua D5 ghi ở "At a glance". Khi technique của một vùng được thiết kế, nó **rà AC của vùng đó** và **thêm dòng `Serves` và `Variants`** (mục "AC, measure và test case" ở trên).
 
 <!-- Given/When/Then/Catches/Check/Tier. "Cùng folder" theo windows-folders.md mục 1: cùng dev:ino; khi không đọc được ID thì cùng đường dẫn realpathSync.native. -->
 
@@ -176,8 +176,11 @@ Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-0
 - **When:** người dùng thêm folder NFC, rồi folder NFD
 - **Then:** có **hai workspace**
 - **Then:** project folder của mỗi workspace **trỏ đúng folder** đã thêm
-- **Then:** tên mỗi workspace **giống từng byte** tên folder của nó
-- **Catches:** DeckAgent **chuẩn hoá NFC đường dẫn**, nên folder thứ hai **bị coi là folder thứ nhất**, hoặc workspace **trỏ sai folder**
+- **Then:** tên của **cả hai** workspace là `Việt` ở **dạng NFC**
+- **Then:** tên của **cả hai** folder trên đĩa **không đổi**
+- **Catches:** DeckAgent **chuẩn hoá NFC đường dẫn**, nên folder thứ hai **bị coi là folder thứ nhất**
+- **Catches:** DeckAgent cho workspace **trỏ sai folder**
+- **Catches:** DeckAgent **lưu tên ở dạng NFD**, hoặc **đổi tên folder** trên đĩa
 - **Check:** deterministic
 - **Tier:** ci
 
@@ -207,7 +210,7 @@ Basis item **deferred** của NFR-008 (NFR-008.1b, NFR-008.1c, NFR-008.2b, NFR-0
 
 - **Given:** folder đọc được có tên **150 ký tự ASCII**; một folder khác có tên **đúng 100 ký tự**
 - **When:** người dùng thêm từng folder
-- **Then:** workspace của folder 150 ký tự có tên là **100 ký tự đầu** của tên folder
+- **Then:** workspace của folder 150 ký tự có tên **đúng 100 ký tự**, là **một đoạn liền** của tên folder (AM-11: test **không assert** đoạn nào)
 - **Then:** workspace của folder 100 ký tự có tên **đúng bằng** tên folder
 - **Then:** cả hai lần **không có `error`**
 - **Catches:** DeckAgent **từ chối thêm** folder có tên dài, **lưu tên dài hơn 100 ký tự**, hoặc **cắt cả tên vừa đủ 100**
@@ -726,6 +729,34 @@ _"Không gửi gì" **dời sang build 3**: build này **chưa gửi được** 
 - **When:** DeckAgent **dừng rồi khởi động lại**
 - **Then:** draft của `C` **rỗng**
 - **Catches:** DeckAgent **lưu draft vào database**, nên draft **còn sau khi khởi động lại**
+- **Check:** deterministic
+- **Tier:** ci
+
+### FR-143
+
+_Cách DeckAgent **phân biệt client được phép** do implementation chọn (FR-143 Notes). Driver mô phỏng client không được phép bằng `foreignClient(origin)` ([test-implementation.md](../../implementation/test-implementation.md)). Các **threat scenario** khác (ví dụ request không mang Origin) thuộc **D8**._
+
+#### AC-1 · Từ chối thay đổi từ trang web bên ngoài
+
+- **Given:** workspace `W` cho folder `Proj`, đang dùng; chat `C` trong `W` có draft `"abc"`; một workspace khác `X`
+- **When:** `foreignClient("https://example.com")` gửi **một thao tác thay đổi trạng thái** tới server local
+- **Then:** DeckAgent **từ chối** thao tác đó
+- **Then:** danh sách workspace, tên, project folder và workspace đang dùng **không đổi**
+- **Then:** danh sách chat, chat hiện tại của interface thật và draft của `C` **không đổi**
+- **Variants:** mỗi thao tác là một biến thể: `V1` thêm folder, `V2` chuyển sang `X`, `V3` đổi tên `W`, `V4` chọn folder khác cho `W`, `V5` yêu cầu xoá `W`, `V6` xác nhận xoá `W` (thêm precondition: **interface thật đã yêu cầu xoá** `W` và đang chờ xác nhận), `V7` tạo chat mới, `V8` lưu draft của `C`
+- **Catches:** DeckAgent **nhận thao tác từ mọi client** trên máy, nên một trang web **thêm, đổi tên hay xoá** workspace và chat
+- **Catches:** DeckAgent **chỉ kiểm một số thao tác**, nên một thao tác còn lại **lọt qua**
+- **Catches:** DeckAgent **từ chối nhưng vẫn ghi một phần** trạng thái
+- **Check:** deterministic
+- **Tier:** ci
+
+#### AC-2 · Interface thật vẫn thay đổi được trạng thái
+
+- **Given:** như AC-1
+- **When:** **interface thật** của DeckAgent gửi cùng thao tác của từng biến thể ở AC-1
+- **Then:** thao tác **thành công** và trạng thái **đổi đúng** như FR của nó
+- **Variants:** `V1` đến `V8` như AC-1
+- **Catches:** DeckAgent **từ chối cả interface thật**, nên AC-1 pass mà sản phẩm **không dùng được** (positive control của AC-1)
 - **Check:** deterministic
 - **Tier:** ci
 

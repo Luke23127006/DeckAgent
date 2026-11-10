@@ -16,7 +16,7 @@ const TOAN_HOC = TOAN + SP + 'h' + ch(0x1ECD) + 'c';
 
 // User source: NFC, trim, then the empty and longest-name rules (BR-020.R, V-1, V-2, V-3).
 const user = s => { const m = s.normalize('NFC').trim(); const L = cp(m); return { L, out: L === 0 ? 'refuse V-1' : L > 100 ? 'refuse V-2' : 'set', stored: L === 0 || L > 100 ? null : m }; };
-// Folder source: NFC, no trim, cut to 100 code points (FR-071, BR-020.V2). Which 100 are kept is gap Z-28; "first 100" is only the proposal.
+// Folder source: NFC, no trim, cut to 100 code points (FR-071, BR-020.V2). The spec does not say which 100 are kept, so a test asserts only the "cut name" oracle below; first/last are two cuts the oracle must both accept.
 const folder = s => { const n = s.normalize('NFC'); const L = cp(n); const first = L > 100 ? [...n].slice(0, 100).join('') : n; const last = L > 100 ? [...n].slice(-100).join('') : n; return { L, out: L > 100 ? 'cut+set' : 'set', storedLen: cp(first), contentDependsOnZ28: first !== last, units: s.length }; };
 
 const U = {
@@ -43,7 +43,15 @@ const F = {
 };
 
 for (const [k, s] of Object.entries(U)) { const r = user(s); console.log(k, 'user', 'raw', cp(s), 'utf16', s.length, 'L', r.L, r.out, r.stored === null ? '' : 'storedLen ' + cp(r.stored)); }
-for (const [k, s] of Object.entries(F)) { const r = folder(s); console.log(k, 'folder', 'raw', cp(s), 'utf16', r.units, 'L', r.L, r.out, 'storedLen', r.storedLen, r.contentDependsOnZ28 ? 'CONTENT DEPENDS ON Z-28' : ''); }
+for (const [k, s] of Object.entries(F)) { const r = folder(s); console.log(k, 'folder', 'raw', cp(s), 'utf16', r.units, 'L', r.L, r.out, 'storedLen', r.storedLen, r.contentDependsOnZ28 ? 'CONTENT DIFFERS BY CUT (content not asserted)' : ''); }
+
+// "Cut name" oracle (FR-071.2, BR-020.V2): 100 code points, no lone surrogate, one contiguous run of the NFC folder name.
+// It must accept the first-100 cut and the last-100 cut alike, and reject a UTF-16 cut that leaves a lone surrogate or 99 code points.
+const lone = t => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(t);
+const cutOk = (stored, s) => { const n = s.normalize('NFC'); return cp(stored) === 100 && !lone(stored) && n.includes(stored); };
+for (const [k, s] of Object.entries(F)) { const n = s.normalize('NFC'); if (cp(n) <= 100) continue;
+  const first = [...n].slice(0, 100).join(''), last = [...n].slice(-100).join(''), u16 = n.slice(0, 100);
+  console.log(k, 'cut oracle: first', cutOk(first, s), 'last', cutOk(last, s), 'utf16 cut', cutOk(u16, s)); }
 
 // What a cut by UTF-16 units would leave (BD4).
 for (const k of ['TC60', 'TC61', 'TC62']) { const s16 = F[k].slice(0, 100); console.log(k, 'utf16 cut: code points', cp(s16), 'ends with lone high surrogate', /[\uD800-\uDBFF]$/.test(s16)); }
@@ -54,7 +62,7 @@ for (let c = 0; c < 0x10000; c++) { if (c >= 0xD800 && c <= 0xDFFF) continue; co
   for (const x of [x0 + 'a' + x0, SP + x0, x0 + SP, x0 + ACU, SP + ACU + x0]) if (x.trim().normalize('NFC') !== x.normalize('NFC').trim()) diff.add(c); }
 console.log('RL5 trim/NFC order differences:', diff.size);
 
-// Z-27: the trim() set of this runtime, and the whitespace representatives (EC2, EC14, EC33) are unchanged by NFC.
+// Whitespace set (V-3): the trim() set of this runtime, and the whitespace representatives (EC2, EC14, EC33) are unchanged by NFC.
 const trimSet = []; for (let c = 0; c <= 0x10FFFF; c++) { if (c >= 0xD800 && c <= 0xDFFF) continue; const x = ch(c); if ((x + 'a' + x).trim() === 'a') trimSet.push(c); }
 console.log('trim() set size', trimSet.length, 'Unicode', process.versions.unicode, trimSet.map(c => c.toString(16)).join(' '));
 for (const [k, s] of [['TC3', U.TC3], ['TC10', U.TC10], ['TC41', F.TC41]]) console.log(k, 'NFC unchanged', s === s.normalize('NFC'));
