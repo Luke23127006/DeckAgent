@@ -10,6 +10,7 @@ Notable changes to this repository. The newest changes are at the top.
 - The `spec-authoring` skill follows the MVP use case format: the interaction diagram is the source of each step, and the Steps table holds the same steps
 - `docs/AGENTS.md` drops the `Updated at` date rule and the rule that the spec holds no release, which the MVP spec replaces
 - `docs/research/` holds one file per product (open-design, OpenCode, DeepSeek Harness, Claude Slide Design, Napkin AI, the legacy DeckAgent v2 code, folders on Windows), with observed conclusions only; screenshots and recordings sit under `docs/research/evidence/`
+- Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
 - `commit` and `commit-push` skills, which write a conventional commit message and an entry in this file
@@ -22,3 +23,4 @@ Notable changes to this repository. The newest changes are at the top.
 - `docs/versions/` and `docs/design/`: plans, tasks and handoffs live in GitHub Issues
   - The UX prototype regression test and its CI step, which only checked the removed prototype page
 - The research report on EthanGuo2022 OpenDesign, the spec question backlog, and the research plans and handoffs
+- The unused agent guides under `docs/agents/` (domain, issue tracker, triage labels, verification), with their references in `AGENTS.md` and the skill router

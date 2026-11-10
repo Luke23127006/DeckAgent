@@ -1,28 +1,16 @@
 # Skill router
 
-Load the task and acceptance criteria, root `AGENTS.md`, closest contextual rules,
-then affected code, tests, contracts and recorded decisions before this router.
-Select one relevant skill for the current phase; read supporting references only
-when needed. Change skills when the phase changes.
+Load the task and acceptance criteria, root `AGENTS.md`, closest contextual rules, then affected code, tests, contracts and recorded decisions before this router. Select one relevant skill for the current phase; read supporting references only when needed. Change skills when the phase changes.
 
-Task requirements and approved project decisions take precedence over root rules,
-contextual rules, this router, skill instructions, and agent judgment, in that order.
-Skills do not approve architecture choices or expand task authorization.
+Task requirements and approved project decisions take precedence over root rules, contextual rules, this router, skill instructions, and agent judgment, in that order. Skills do not approve architecture choices or expand task authorization.
 
 ## Three context layers
 
-- **Global rules:** root `AGENTS.md`, read for every task; mandatory scope,
-  contract, architecture, verification and secret constraints.
-- **Contextual rules:** the closest applicable nested `AGENTS.md`, read before
-  editing that code area. These extend global rules. Add one only when the area
-  has a stable responsibility and recurring local constraints; none exists yet.
-- **Skills:** optional specialised workflows selected by the task below. Load
-  the relevant `SKILL.md` body and only needed references, not the whole pack.
-  Available skill names/descriptions alone do not mean their full bodies were loaded.
+- **Global rules:** root `AGENTS.md`, read for every task; mandatory scope, contract, architecture, verification and secret constraints.
+- **Contextual rules:** the closest applicable nested `AGENTS.md`, read before editing that code area. These extend global rules. Add one only when the area has a stable responsibility and recurring local constraints; none exists yet.
+- **Skills:** optional specialised workflows selected by the task below. Load the relevant `SKILL.md` body and only needed references, not the whole pack. Available skill names/descriptions alone do not mean their full bodies were loaded.
 
-If instructions conflict with a recorded contract or decision, surface the
-conflict before changing that contract. Missing architecture is not permission
-to invent permanent boundaries.
+If instructions conflict with a recorded contract or decision, surface the conflict before changing that contract. Missing architecture is not permission to invent permanent boundaries.
 
 | Task trigger | Required inputs | Skill | Expected outcome |
 | --- | --- | --- | --- |
@@ -37,35 +25,14 @@ to invent permanent boundaries.
 | Committing changes | The working tree, recent commit messages, `CHANGELOG.md` | [commit](../../.agents/skills/commit/SKILL.md) | One commit with a conventional message and a `CHANGELOG.md` entry, nothing pushed |
 | Committing and pushing changes | The working tree, the current branch and its remote, `CHANGELOG.md` | [commit-push](../../.agents/skills/commit-push/SKILL.md) | One commit with a conventional message and a `CHANGELOG.md` entry, pushed to the remote with no force push |
 
-No specialised workflow is needed for routine edits. Do not load all skills by
-default or invent product concepts, module rules, or architecture during setup.
+No specialised workflow is needed for routine edits. Do not load all skills by default or invent product concepts, module rules, or architecture during setup.
 
 ## Inventory and maintenance
 
-[Manifest](../../.agents/skill-manifest.json) records the source, license,
-source commit, compatibility review and local adaptations. After a reviewed edit
-to canonical skills, record the adaptation in the manifest and review the diff.
-Upstream updates require a fresh source/license/dependency review before changing
-the recorded commit.
+[Manifest](../../.agents/skill-manifest.json) records the source, license, source commit, compatibility review and local adaptations. After a reviewed edit to canonical skills, record the adaptation in the manifest and review the diff. Upstream updates require a fresh source/license/dependency review before changing the recorded commit.
 
-Edit only `.agents/skills/`. How to add, update, remove and sync skills, and where
-shared procedures live, is in [skill maintenance](skill-maintenance.md).
+Edit only `.agents/skills/`. How to add, update, remove and sync skills, and where shared procedures live, is in [skill maintenance](skill-maintenance.md).
 
-The four initial engineering skills come from `mattpocock/skills`. The two
-repository-local Mermaid skills were promoted from the existing
-Claude configuration into the canonical collection. The OpenCodeReview delegation
-skill comes from `alibaba/open-code-review` and is adapted to the repository-local,
-pinned pnpm workspace dependency. The supplied `ComposioHQ/awesome-claude-skills` catalog was
-consulted, but no skill from that catalog was adopted. The manifest records
-reconsideration conditions for `pptx`, `research`, and `webapp-testing`. The optional
-debugging shell template needs Bash (for example Git Bash or WSL); native commands
-or a manual reproduction can be used when Bash is unavailable. OpenCodeReview is a
-development dependency only; no DeckAgent product runtime dependency was added.
+The four initial engineering skills come from `mattpocock/skills`. The two repository-local Mermaid skills were promoted from the existing Claude configuration into the canonical collection. The OpenCodeReview delegation skill comes from `alibaba/open-code-review` and is adapted to the repository-local, pinned pnpm workspace dependency. The supplied `ComposioHQ/awesome-claude-skills` catalog was consulted, but no skill from that catalog was adopted. The manifest records reconsideration conditions for `pptx`, `research`, and `webapp-testing`. The optional debugging shell template needs Bash (for example Git Bash or WSL); native commands or a manual reproduction can be used when Bash is unavailable. OpenCodeReview is a development dependency only; no DeckAgent product runtime dependency was added.
 
-Before adopting another external skill, review its entrypoint, bundled resources,
-scripts, dependencies and license against a concrete DeckAgent task and `AGENTS.md`.
-Record a Keep / Adjust / Reject decision with reasons. Copy only approved skills,
-record the source commit, retain the license, and add a router
-entry only when its trigger and outcome are clear. Do not install entire packs.
-
-For task acceptance checks, see [W-012–W-014 verification](verification.md).
+Before adopting another external skill, review its entrypoint, bundled resources, scripts, dependencies and license against a concrete DeckAgent task and `AGENTS.md`. Record a Keep / Adjust / Reject decision with reasons. Copy only approved skills, record the source commit, retain the license, and add a router entry only when its trigger and outcome are clear. Do not install entire packs.

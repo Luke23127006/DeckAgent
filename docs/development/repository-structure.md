@@ -1,9 +1,6 @@
 # Repository structure
 
-This document defines where code lives and who owns dependencies. Dependencies are
-decided by responsibility and public contracts, not by directory position; the
-invariants (no cycles, no private-implementation imports, no bypassing a contract)
-are in `code-review-criteria.md` CQC-006.
+This document defines where code lives and who owns dependencies. Dependencies are decided by responsibility and public contracts, not by directory position; the invariants (no cycles, no private-implementation imports, no bypassing a contract) are in `code-review-criteria.md` CQC-006.
 
 ## Directory responsibilities
 
@@ -19,22 +16,17 @@ are in `code-review-criteria.md` CQC-006.
 
 ## When to create a new package (proposal)
 
-Prefer extending an existing package when the new code shares its dependency direction
-and public contract. Create a new package only when it needs at least one of:
+Prefer extending an existing package when the new code shares its dependency direction and public contract. Create a new package only when it needs at least one of:
 
-- a dependency direction or data ownership that cannot live in an existing package
-  without a circular dependency, a private-implementation import, or a bypassed
-  contract;
+- a dependency direction or data ownership that cannot live in an existing package without a circular dependency, a private-implementation import, or a bypassed contract;
 - a public API surface that must not be coupled to another package; or
 - a different reuse profile (a test fixture versus a runtime library).
 
-This is a proposal, not an approved architecture decision; a new boundary still needs
-owner sign-off.
+This is a proposal, not an approved architecture decision; a new boundary still needs owner sign-off.
 
 ## Current workspace (reference)
 
-This section describes the current state and changes with the codebase; it is not a
-durable rule.
+This section describes the current state and changes with the codebase; it is not a durable rule.
 
 | Package | Path | Depends on |
 | --- | --- | --- |
@@ -45,11 +37,4 @@ durable rule.
 | `@deckagent/agent-runtime-cli` | `apps/agent-runtime` | runtime, providers, persistence, `@deepseek-ai/cordis` |
 | `@deckagent/cordis-smoke` | `apps/cordis-smoke` | `@deepseek-ai/cordis`, fixture |
 
-Adding a package needs no fixed set of file changes: the build script discovers
-workspace packages through pnpm (so it changes only when a package adds a non-`index`
-entry point), and `pnpm-workspace.yaml`, the root `tsconfig.json`, and
-`tsconfig.base.json` are edited only when a new glob, a root project reference, or a
-workspace path alias is actually required. Package names do
-not always mirror directory paths (`model-providers` in `packages/llm`, `-cli` on
-`apps/agent-runtime`); this drift is recorded as-is and renaming is a separate
-cleanup task.
+Adding a package needs no fixed set of file changes: the build script discovers workspace packages through pnpm (so it changes only when a package adds a non-`index` entry point), and `pnpm-workspace.yaml`, the root `tsconfig.json`, and `tsconfig.base.json` are edited only when a new glob, a root project reference, or a workspace path alias is actually required. Package names do not always mirror directory paths (`model-providers` in `packages/llm`, `-cli` on `apps/agent-runtime`); this drift is recorded as-is and renaming is a separate cleanup task.
