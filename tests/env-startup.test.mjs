@@ -113,7 +113,7 @@ test('Local Web opens the management API with missing or malformed environment k
   for (const value of ['', 'fixture invalid value']) {
     await writeFile(join(dir, '.env'), `DECKAGENT_TEST_TOKEN="${value}"\n`)
     const child = spawn(process.execPath, ['--env-file-if-exists=.env', '--use-system-ca', join(root, 'apps/local-web/lib/cli.js'),
-      '--config', config, '--provider', 'fixture', '--model', 'fixture', '--workspace', join(dir, 'workspace'),
+      '--config', config, '--provider', 'fixture', '--model', 'fixture',
       '--data-dir', join(dir, 'data'), '--no-open'], {
       cwd: dir, windowsHide: true, env: { ...process.env, DECKAGENT_TEST_TOKEN: value }, stdio: ['ignore', 'pipe', 'pipe'],
     })

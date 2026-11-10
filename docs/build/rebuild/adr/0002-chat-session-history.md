@@ -15,7 +15,7 @@ POC `feat/v2-opencode` lại tạo **native session mới cho mỗi send**, chuy
 
 ## Decision
 
-1. **DeckAgent Chat là product identity ổn định.** Chat ID, Request ID, messages, activities, drafts và Deck được lưu ở Application SQLite. UI đọc history từ DeckAgent Host, không đọc trực tiếp OpenCode native files.
+1. **DeckAgent Chat là product identity ổn định.** Chat ID, Request ID, messages, activities và Deck được lưu ở Application SQLite. Draft của mỗi Chat do Host giữ khi DeckAgent đang chạy: còn nguyên khi chuyển Chat hoặc reload UI, mọi UI đang mở thấy cùng draft, và không giữ sau khi DeckAgent dừng (FR-038). UI đọc history từ DeckAgent Host, không đọc trực tiếp OpenCode native files.
 2. **Sử dụng OpenCode native session resume** cho các turn tiếp theo của *cùng Chat*, thông qua `opencode run -s <native-session-id>`. Turn đầu tạo native session do OpenCode cấp; DeckAgent capture ID từ structured events rồi lưu Chat ↔ Session mapping. Giữ `opencode run` là runtime integration đã chọn.
 3. **Resume chỉ dùng khi session còn phù hợp.** Phải kiểm tra ít nhất Chat identity, current model/provider, execution directory/context, và continuity của completed turn. Nếu khác hoặc session không dùng được, khởi tạo native session mới cho Chat; DeckAgent vẫn giữ product history và chỉ seed context cần thiết theo current spec. Không dùng stale session dù OpenCode cho phép resume.
 4. **Không resume một unfinished request sau app restart.** Khi Host khởi động lại, request trước đó còn active được đánh dấu `unfinished/failed` theo lifecycle contract, giữ saved activities và completed artifacts. Không tự gọi lại `opencode run` hoặc replay tool calls.

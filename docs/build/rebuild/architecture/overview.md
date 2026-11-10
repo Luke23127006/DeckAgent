@@ -45,5 +45,6 @@ User project folder: external, **read-only** sources (not app data)
 | Outline/Deck/Slide revisions, source files | [`deck-artifacts.md`](deck-artifacts.md) | [`0005`](../adr/0005-deck-artifacts-revisions.md) |
 | BYOK, model selection, credential security | [`credentials-models.md`](credentials-models.md) | [`0006`](../adr/0006-credentials-models.md) |
 | Built-in/custom Design System and Templates | [`design-system-templates.md`](design-system-templates.md) | [`0007`](../adr/0007-design-system-templates.md) |
+| Package ownership, dependency direction, legacy migration | [`repository-structure.md`](repository-structure.md) | B01–B08 execution boundary |
 
 **Open implementation details:** exact SQL tables, SQLite driver, OS credential-at-rest mechanism, app routes, format-specific artifact serialization. These are assigned to corresponding builds, **not reasons to reopen architecture research**. Product rule values still missing: BR-001/002/003/006/017/018.

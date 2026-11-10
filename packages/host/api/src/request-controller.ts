@@ -24,7 +24,7 @@ export class RequestController {
   private closed = false
   private cleanupFailed = false
 
-  constructor(private readonly openAgent: HostOptions['openAgent'], private readonly finishRequest?: HostOptions['finishRequest'],
+  constructor(private readonly openAgent: NonNullable<HostOptions['openAgent']>, private readonly finishRequest?: HostOptions['finishRequest'],
     private readonly requestState?: HostOptions['requestState']) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {

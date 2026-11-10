@@ -1,9 +1,7 @@
-import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
-import type { ActivityEvent, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
 import { HttpError, validateUserQuestion } from '@deckagent/host-api'
-import type { RequestSnapshot, StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
-import type { SqliteSessionStore, SessionInfo } from '@deckagent/session-persistence'
+import type { StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
+import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 
 export function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -24,13 +22,15 @@ export function selection(value: unknown): ModelSelection {
   return { provider: value.provider, model: value.model }
 }
 
-/** Web-only metadata stays outside the Agent file grant and provider prompt history. */
+/**
+ * Web UI projection and preferences only. Workspaces belong to the Workspace registry and chats to
+ * Session persistence; this file keeps no second registry of either.
+ */
 export class WebState {
   readonly db: DatabaseSync
 
   constructor(
     path: string,
-    private readonly sessions: SqliteSessionStore,
     private readonly settings: () => WebSettings,
   ) {
     this.db = new DatabaseSync(path)
@@ -88,6 +88,25 @@ export class WebState {
     return this.preferences()
   }
 
+  /** FR-053: the most recent choice of a model in any chat, kept across restarts. */
+  rememberSelection(value: ModelSelection): void {
+    this.db
+      .prepare("INSERT INTO preferences (key, value) VALUES ('lastSelection', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+      .run(JSON.stringify({ provider: value.provider, model: value.model }))
+  }
+
+  /** The most recent choice when it is still selectable; otherwise none. No earlier choice is tried. */
+  lastSelection(): ModelSelection | undefined {
+    const row = this.db.prepare("SELECT value FROM preferences WHERE key='lastSelection'").get()
+    if (!row) return undefined
+    try {
+      const value = selection(JSON.parse(String(row.value)))
+      return this.selectable(value) ? value : undefined
+    } catch {
+      return undefined
+    }
+  }
+
   selectable(value: ModelSelection | undefined): boolean {
     return (
       !!value &&
@@ -97,57 +116,20 @@ export class WebState {
     )
   }
 
-  private async project(info: SessionInfo): Promise<WebSession> {
-    const history = await this.sessions.read(info.sessionId)
-    const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
-    const title = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'New chat'
-    return { ...info, title, selectable: this.selectable(info.selection) }
-  }
-
-  async list(): Promise<readonly WebSession[]> {
-    return Promise.all((await this.sessions.list()).map(info => this.project(info)))
-  }
-
-  async create(value: unknown): Promise<WebSession> {
-    if (!record(value) || Object.keys(value).some(key => key !== 'selection'))
-      throw new HttpError(400, 'INVALID_SESSION')
-    const chosen = value.selection === undefined ? undefined : selection(value.selection)
-    if (chosen && !this.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-    const sessionId = `chat-${randomUUID()}`
-    await this.sessions.open(sessionId)
-    if (chosen) await this.sessions.select(sessionId, chosen)
-    return this.project((await this.sessions.getInfo(sessionId))!)
-  }
-
-  async select(id: string, value: unknown): Promise<WebSession> {
-    const chosen = selection(value)
-    if (!this.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-    if (!(await this.sessions.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-    return this.project(await this.sessions.select(id, chosen))
-  }
-
-  saveActivity(sessionId: string, requestId: string, event: ActivityEvent): void {
-    this.db
-      .prepare(`INSERT INTO activities(session_id, request_id, activity_id, payload) VALUES (?, ?, ?, ?)
-      ON CONFLICT(request_id, activity_id) DO UPDATE SET payload=excluded.payload`)
-      .run(sessionId, requestId, event.id, JSON.stringify(event))
-  }
-
-  startRequest(sessionId: string, requestId: string, chosen: ModelSelection, historyStart: number): void {
-    this.db
-      .prepare('INSERT INTO requests(id, session_id, payload) VALUES (?, ?, ?)')
-      .run(requestId, sessionId, JSON.stringify({ requestId, selection: chosen, status: 'running', historyStart }))
-  }
-
-  finishRequest(requestId: string, result: TurnResult, noticeIndex?: number): void {
-    this.db
-      .prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.errorCode', ?, '$.noticeIndex', ?) WHERE id=?")
-      .run(result.status, result.status === 'completed' ? null : result.error.code, noticeIndex ?? null, requestId)
-  }
-
-  requestState(snapshot: RequestSnapshot): void {
-    this.db.prepare("UPDATE requests SET payload=json_set(payload, '$.status', ?, '$.question', json(?)) WHERE id=? AND session_id=?")
-      .run(snapshot.status, JSON.stringify(snapshot.question ?? null), snapshot.requestId, snapshot.sessionId)
+  /** Browser projection of a chat. A chat with no user message yet is shown as a new chat. */
+  project(chat: ChatSummary, hasSlides: boolean): WebSession {
+    return {
+      sessionId: chat.sessionId,
+      createdAt: chat.createdAt,
+      updatedAt: chat.updatedAt,
+      messageCount: chat.messageCount,
+      workspaceId: chat.workspaceId,
+      readable: chat.readable,
+      title: chat.title || 'New chat',
+      hasSlides,
+      selectable: this.selectable(chat.selection),
+      ...(chat.selection ? { selection: chat.selection } : {}),
+    }
   }
 
   requests(id: string): readonly StoredRequest[] {

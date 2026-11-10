@@ -1,8 +1,9 @@
-﻿import assert from 'node:assert/strict'
+import assert from 'node:assert/strict'
 import test from 'node:test'
 import { request as httpRequest } from 'node:http'
 import { AgentRuntime, MemorySessionStore } from '../packages/agent/runtime/lib/index.js'
 import { startHost } from '../packages/host/api/lib/index.js'
+import { RequestController } from '../packages/host/api/lib/types/request-controller.js'
 
 test('a question keeps one request active; replies are bound, idempotent and Stop drains waiting work', async t => {
   const inputs = []
@@ -265,4 +266,44 @@ test('disconnect keeps work running, duplicates are rejected, and Host shutdown 
   assert.equal(history.at(-1).content, 'retained')
   assert.equal(history.at(-1).interrupted, true)
   await host.close()
+})
+
+test('without an Agent runtime the Host refuses every request and starts no work', async t => {
+  const host = await startHost({ readHistory: async () => [] })
+  t.after(() => host.close())
+  const response = await fetch(`${host.origin}/api/requests`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId: 'chat', input: 'Hello' }),
+  })
+  assert.equal(response.status, 503)
+  assert.deepEqual(await response.json(), { error: { code: 'REQUESTS_UNAVAILABLE', message: 'Request could not be completed' } })
+})
+
+// Moved from recovery-editing.test.mjs when the legacy Agent runtime left the Local Web path (B01): RequestController stays.
+test('Stop is idempotent and retains the lock through disposal and finalization', async () => {
+  let releaseDispose, releaseFinalize, disposed
+  const disposalStarted = new Promise(resolve => { disposed = resolve })
+  const disposal = new Promise(resolve => { releaseDispose = resolve })
+  const finalized = new Promise(resolve => { releaseFinalize = resolve })
+  const controller = new RequestController(async () => ({
+    async send(_input, { signal }) {
+      await new Promise(resolve => { if (signal.aborted) resolve(); else signal.addEventListener('abort', resolve, { once: true }) })
+      return { status: 'cancelled', text: '', steps: 0, error: { code: 'TURN_CANCELLED', message: 'Stopped' } }
+    },
+    async dispose() { disposed(); await disposal },
+  }), async () => finalized)
+  const accepted = await controller.submit({ sessionId: 'locked', input: 'work' })
+  assert.equal(controller.stop(accepted.requestId).status, 'running')
+  controller.stop(accepted.requestId)
+  await disposalStarted
+  await assert.rejects(controller.submit({ sessionId: 'locked', input: 'overlap' }), { code: 'SESSION_BUSY' })
+  releaseDispose()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(controller.active('locked'), accepted.requestId)
+  releaseFinalize()
+  await controller.close()
+  assert.equal(controller.stop(accepted.requestId).status, 'cancelled')
+  assert.equal(controller.active('locked'), undefined)
+  assert.throws(() => controller.stop('missing'), { code: 'REQUEST_NOT_FOUND' })
 })

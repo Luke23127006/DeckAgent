@@ -9,10 +9,10 @@
 DeckAgent UI
    | read saved Chat/Request/Activity, subscribe to active status
    v
-DeckAgen
-   |-- Request lifecycle: one active requt Host
+DeckAgent Host
    |-- SQLite: Chat, Request, Message, Activity, Draft, Deck
-   |-- Session mapping: Chat ID -> OpenCode native session ID + guardsest per Chat; Stop/recovery
+   |-- Session mapping: Chat ID -> OpenCode native session ID + guards
+   |-- Request lifecycle: one active request per Chat; Stop/recovery
    |
    +--> CLI Adapter
            |-- First turn: opencode run --format json

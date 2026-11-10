@@ -3,7 +3,7 @@ import { parseArgs } from 'node:util'
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
 import { RuntimeError, ToolRegistry } from '@deckagent/agent-runtime'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import { startAgentRuntime } from './index.ts'
 import { prepareChat } from './setup.ts'
 import { TerminalPrompts } from './terminal.ts'
@@ -42,13 +42,15 @@ type ChatArgsValues = {
 async function main(): Promise<void> {
   let values: ChatArgsValues
   try {
-    values = parseArgs({ options: {
-      config: { type: 'string' }, provider: { type: 'string' }, model: { type: 'string' },
-      prompt: { type: 'string' }, tools: { type: 'boolean' }, help: { type: 'boolean', short: 'h' },
-      session: { type: 'string' }, 'data-dir': { type: 'string' },
-      'list-sessions': { type: 'boolean' }, history: { type: 'boolean' },
-      setup: { type: 'boolean' },
-    } }).values
+    values = parseArgs({
+      options: {
+        config: { type: 'string' }, provider: { type: 'string' }, model: { type: 'string' },
+        prompt: { type: 'string' }, tools: { type: 'boolean' }, help: { type: 'boolean', short: 'h' },
+        session: { type: 'string' }, 'data-dir': { type: 'string' },
+        'list-sessions': { type: 'boolean' }, history: { type: 'boolean' },
+        setup: { type: 'boolean' },
+      }
+    }).values
   } catch { throw new RuntimeError('CLI_CONFIG', 'Unknown or invalid arguments. Use pnpm chat --help') }
   if (values.help) { console.log(help); return }
   if (values.prompt !== undefined && !values.prompt.trim()) throw new RuntimeError('CLI_CONFIG', 'Prompt must not be empty')
@@ -142,6 +144,6 @@ async function main(): Promise<void> {
 
 main().catch(error => {
   // Unexpected exceptions may include request URLs, bodies or credentials: never print them.
-  console.error(error instanceof RuntimeError ? `[${error.code}] ${error.message}` : '[CLI_FAILED] Unable to start or complete chat')
+  console.error(error instanceof RuntimeError || error instanceof SessionError ? `[${error.code}] ${error.message}` : '[CLI_FAILED] Unable to start or complete chat')
   process.exitCode = error instanceof RuntimeError && error.code === 'CLI_CANCELLED' ? 130 : 1
 })

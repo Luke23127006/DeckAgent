@@ -5,13 +5,10 @@
   "type": "module",
   "dependencies": {
     "@deckagent/deck": "workspace:*",
-    "@deckagent/presentation-tools": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deckagent/agent-runtime": "workspace:*",
-    "@deckagent/file-tools": "workspace:*",
     "@deckagent/host-api": "workspace:*",
     "@deckagent/browser-runtime": "workspace:*",
     "@deckagent/model-providers": "workspace:*",
-    "@deckagent/session-persistence": "workspace:*"
+    "@deckagent/session-persistence": "workspace:*",
+    "@deckagent/workspace-registry": "workspace:*"
   }
 }

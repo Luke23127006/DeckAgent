@@ -82,15 +82,15 @@ Không mở lại lựa chọn OpenCode CLI hoặc local-first distribution; nh�
 1. **Research P0 theo nhóm dependency**, ưu tiên đọc code OpenDesign/OpenCode trước và kiểm tra xem hành vi có phù hợp spec DeckAgent hay không.
 2. **Record decision** bằng ADR ngắn: Context → Decision → Why/Reference → Consequences. Đánh dấu `Accepted` chỉ với decision thực sự đã chốt.
 3. **Update architecture** theo tác động thực tế: `data.md`, `runtime.md`, `deck.md` hoặc `overview.md`. Không tạo file trống hay lặp cùng một quyết định ở nhiều nơi.
-4. **Derive Build Roadmap** từ các prerequisites. Chi tiết hóa build gần nhất, chưa cần thiết kế mọi function của những build xa.
+4. **Derive Build Roadmap** từ các prerequisites. B01–B06/B08 có Dev tasks theo contract; không cố định mọi function hay file nội bộ. B07 giữ Draft cho tới khi product values được chốt.
 
 ## 6. Handoff → Build Roadmap (completed)
 
-**TD-01 đến TD-07 đã có ADR cùng architecture documents.** Build Decomposition đã được ghi trong [`../implementation-plan.md`](../implementation-plan.md): B01–B08 theo Dependency Map, không theo số UC. [`../builds/B01.md`](../builds/B01.md) là build đầu tiên đã được chi tiết hóa; B02–B08 giữ ở roadmap level đến khi có evidence từ build trước.
+**TD-01 đến TD-07 đã có ADR cùng architecture documents.** Build Decomposition đã được ghi trong [`../implementation-plan.md`](../implementation-plan.md): B01–B08 theo Dependency Map, không theo số UC. [`../builds/B01.md`](../builds/B01.md)–[`../builds/B08.md`](../builds/B08.md) đều đã có file; B01–B06/B08 là Dev implementation guides, B07 là Draft. Package ownership và dependency rules nằm trong [`../architecture/repository-structure.md`](../architecture/repository-structure.md).
 
 Các gaps cần gắn vào build tương ứng: BR-001/002 (request/attachment bounds), BR-003/017/018 (default design system, theme roles, templates), BR-006 (provider requirements), và OS credential at-rest mechanism (ADR-0006). Không tạo thêm research gate độc lập nếu evidence đủ để implement.
 
-**Chưa làm:** chưa triển khai code, chưa sửa GitHub source, chưa chạy runtime tests. Roadmap và B01 task-level plan đã có; B02–B08 chưa chi tiết hóa.
+**Chưa làm:** chưa triển khai code, chưa sửa GitHub source, chưa chạy runtime tests. Product value gaps BR-001/002/003/006/017/018 còn phải giải quyết trong owning build. Developer unit/integration checks trong build files không thay thế Testing Plan độc lập của tester.
 
 ## References
 

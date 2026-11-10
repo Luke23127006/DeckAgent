@@ -24,7 +24,7 @@ POC `feat/v2-opencode` đã có request-local MCP Bridge, bearer token, allowlis
 
 ## Vì sao chọn
 
-- Reuse MCP Bridge pattern và CLI KWintegration đang có thay vì tự xây một Agent Loop/permission layer trong runtime.
+- Reuse MCP Bridge pattern và CLI integration đang có thay vì tự xây một Agent Loop/permission layer trong runtime.
 - Host thực thi product rules theo spec, không phụ thuộc model có tuân theo prompt hay không.
 - Request-scoped permissions và approval ngắn hạn tránh kéo nhầm quyền khi native session resume qua các turn (ADR-0002).
 - Tách `read project sources` với `write application-owned deck` đáp ứng chính sách Workspace của UC-013.

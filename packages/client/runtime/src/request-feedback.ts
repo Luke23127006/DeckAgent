@@ -1,6 +1,9 @@
 import type { HistoryMessage, StoredActivity, StoredRequest } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  CHAT_UNREADABLE: ['Không mở được chat này', 'Dữ liệu đã lưu của chat không đọc được. Chat vẫn được giữ trong danh sách; chat bạn đang mở không thay đổi.'],
+  SESSION_NOT_FOUND: ['Không tìm thấy chat', 'Chat này không còn trong dữ liệu của DeckAgent. Danh sách chat đã được làm mới.'],
+  REQUESTS_UNAVAILABLE: ['Chưa thể gửi yêu cầu', 'DeckAgent chưa kết nối runtime tạo slide trong bản này. Bản nháp được giữ nguyên.'],
   REQUEST_FAILED: ['Yêu cầu chưa hoàn tất', 'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.'],
   TURN_FAILED: ['Yêu cầu chưa hoàn tất', 'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.'],
   MODEL_PROTOCOL: ['Không sử dụng được phản hồi model', 'Kiểm tra phần đã lưu trước khi gửi yêu cầu khác.'],

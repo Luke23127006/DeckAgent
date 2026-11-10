@@ -88,50 +88,60 @@ To set a key for the current PowerShell session without printing it:
 
 Every chat is saved to SQLite automatically. A session created without `--session` gets a generated ID printed as `Session: chat-<id>`; resume it later with `pnpm.cmd chat --session chat-<id>`. A session records its provider/model and refuses a conflicting selection. Sessions are local-only — do not run two CLIs against the same session concurrently. `--list-sessions` and `--history` read without calling a model.
 
-## Local Web, Models Settings and File Tools
+## Local Web, workspaces and chats
 
-After build, start Web and configure a provider/key/model in Models & settings:
+After build, start Web:
 
 ```powershell
 pnpm.cmd start:local-web
 ```
 
-This opens an authenticated local browser with Conversation, model selection, Settings, History and Activity Log. Settings can be opened before a model is set up. The Agent has workspace `read_file`/`write_file` tools. Default workspace is `.deckagent/workspace`; writes create new files, never overwrite. Host data stays in `.deckagent`: `sessions.sqlite` stores conversations; `web.sqlite` stores Web Settings, encrypted keys and activity/request records. Web key persistence uses Windows CurrentUser DPAPI; the UI never reads a saved key back. Models can change within a chat; active work keeps its captured model and settings until completion.
+This opens an authenticated local browser. No model and no API key are needed to start. You can:
 
-The presentation workflow once the model is ready:
+- work in the default workspace, which has no project folder, or add a workspace for a folder by typing its full path;
+- switch, rename, remove a workspace, or choose another folder for it. Removing a workspace keeps its chats as ungrouped chats;
+- start a new chat, reopen an earlier chat, and find earlier chats by the words in their name or conversation;
+- keep a draft in each chat. The Host keeps the draft while it runs, across reloads; a draft is not kept after the Host stops;
+- set up providers and models in Settings. Web key persistence uses Windows CurrentUser DPAPI; the UI never reads a saved key back.
 
-1. Enter your presentation request, including the topic, language and number of slides, and choose **Create presentation** to start the outline workflow.
-2. Read the proposed outline. Expand or collapse planned-slide details, ask for changes through **Revise outline**, or choose **Cancel outline**.
-3. Choose **Confirm outline** on the current proposal. The confirmed outline becomes read-only, the Canvas opens and slides move from Pending to published as they finish.
-4. Use **History** to reopen a chat. Reloading or restarting with the same data directory preserves conversations, confirmed outlines and published slides.
+Sending a request is not available in this build: the Host refuses `POST /api/requests` with `REQUESTS_UNAVAILABLE`, and the composer says why. The OpenCode runtime connects in a later build. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
 
-**Send request** stays available for ordinary chat and follow-up instructions. If a confirmed deck still has Pending slides after an error, send a request to continue the unfinished slides; do not confirm the same outline again.
+Application Storage is chosen in this order: `--data-dir <folder>`, then the `DECKAGENT_DATA_DIR` environment variable, then the app-data folder of the OS:
 
-With no arguments, `pnpm.cmd start:local-web` uses these paths relative to the repository root:
+| OS | Default data folder |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\DeckAgent` |
+| macOS | `~/Library/Application Support/DeckAgent` |
+| Linux | `$XDG_DATA_HOME/deckagent`, or `~/.local/share/deckagent` |
+
+The data folder holds:
 
 ```text
-.deckagent/
-├── sessions.sqlite   # conversations
-├── web.sqlite        # Web settings, requests and activities
-├── decks.sqlite      # outlines, Deck metadata and published slide content/revisions
-└── workspace/        # files read/created by the Agent; shared by chats
+<data folder>/
+├── db/
+│   ├── workspaces.sqlite  # workspaces, their folder references and the workspace in use
+│   ├── sessions.sqlite    # chats and conversations
+│   ├── decks.sqlite       # outlines, Deck metadata and published slide content/revisions
+│   └── web.sqlite         # Web settings, encrypted keys, request and activity records
+└── files/                 # managed files (empty until a later build)
 ```
 
-Missing directories are created automatically; existing data is reused. To use separate demo data and workspace, run:
+Missing folders are created; existing data is reused. A data folder that is a file, cannot be written, holds a damaged database, or sits inside the project folder of a workspace stops the start with a message that says what to do; no file is reset. Data in the old `.deckagent/` layout of the repository is not moved. To use separate demo data, run:
 
 ```powershell
-pnpm.cmd start:local-web --data-dir .deckagent/demo --workspace .deckagent/demo/workspace
+pnpm.cmd start:local-web --data-dir C:\Temp\deckagent-demo
 ```
 
-Restart with the same arguments to reopen that demo's data. API keys, databases and workspace files stay outside Git.
+Restart with the same arguments to reopen that demo's data. API keys and databases stay outside Git.
 
 To bootstrap the previous environment-based workflow, use `pnpm.cmd start:local-web --provider google --model <model-id>`. This reads `config/models.example.json` and environment credentials (including optional `.env`). Saving that provider in Web Settings makes the saved configuration take precedence on later starts. Web does not use the CLI's saved wizard profile/key. Use `--help` for overrides. Do not share the browser URL. Ctrl+C drains and stops Host. Do not run CLI and Web against the same Session concurrently.
 
 ```powershell
+pnpm.cmd test:local-foundation # workspaces, chats, drafts, search and Application Storage
 pnpm.cmd test:tools-browser  # File policy + API/SSE + client + SQLite integration
-pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM and reload/reconnect
+pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM, workspaces, drafts and reload
 pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
-pnpm.cmd test:local-web     # Settings, DPAPI, model snapshots and activities
+pnpm.cmd test:local-web     # Settings, DPAPI, model selection and preferences
 ```
 
 These checks use local fixtures and require no cloud keys. The contracts, manual acceptance checklist and handoffs that belong to them are in the GitHub Issue of the task.

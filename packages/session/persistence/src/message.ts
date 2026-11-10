@@ -1,5 +1,5 @@
-import { RuntimeError } from '@deckagent/agent-runtime'
-import type { Message } from '@deckagent/agent-runtime'
+import { SessionError } from './contracts.ts'
+import type { Message } from './contracts.ts'
 
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -40,5 +40,30 @@ export function validateMessage(value: unknown): asserts value is Message {
       }
     }
   }
-  if (!valid) throw new RuntimeError('SESSION_MESSAGE', 'Message does not match the supported Session format')
+  if (!valid) throw new SessionError('SESSION_MESSAGE', 'Message does not match the supported Session format')
+}
+
+const titleLength = 64
+
+/** A chat is named from its content: the first user message, on one line, cut to 64 characters. */
+export function chatTitle(messages: readonly Message[]): string {
+  const first = messages.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+  if (!first) return ''
+  const characters = [...first]
+  return characters.length > titleLength ? `${characters.slice(0, titleLength).join('')}…` : first
+}
+
+/** Words are compared after NFC normalization, without case. */
+export function searchWords(value: string): readonly string[] {
+  return value.normalize('NFC').toLocaleLowerCase().split(/\s+/).filter(Boolean)
+}
+
+/** A chat matches when every word appears in its name or in the text of its conversation. */
+export function chatMatches(title: string, messages: readonly Message[], words: readonly string[]): boolean {
+  if (!words.length) return false
+  const text = [title, ...messages.filter(message => message.role === 'user' || message.role === 'assistant').map(message => message.content)]
+    .join('\n')
+    .normalize('NFC')
+    .toLocaleLowerCase()
+  return words.every(word => text.includes(word))
 }
