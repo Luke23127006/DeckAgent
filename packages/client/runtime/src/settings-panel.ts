@@ -9,7 +9,11 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   message.setAttribute('role', 'status')
   const chooser = element('select')
   const providerList = element('section', undefined, 'provider-list')
-  providerList.setAttribute('aria-label', 'Configured providers')
+  providerList.setAttribute('aria-label', 'Provider đã cấu hình')
+  // Rows that start a new provider. They live in the popup's left column beside the saved providers.
+  const addList = element('div', undefined, 'provider-add')
+  const pageTitle = element('h3', '', 'settings-pagetitle')
+  const navButtons = () => dialog.querySelectorAll<HTMLButtonElement>('.provider-list button, .provider-add button')
   const kind = element('select')
   const form = element('form')
   const fields = element('fieldset')
@@ -119,6 +123,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       : 'Chưa lưu key. Nhập key nếu provider yêu cầu.'
     for (const card of providerList.querySelectorAll<HTMLButtonElement>('button[data-provider]'))
       card.setAttribute('aria-pressed', String(card.dataset.provider === value?.id))
+    for (const row of addList.querySelectorAll<HTMLButtonElement>('button[data-offer]'))
+      row.setAttribute('aria-pressed', String(!value && chooser.value === `new:${row.dataset.offer}`))
+    pageTitle.textContent = value?.displayName ?? `Thêm ${template?.displayName ?? 'Custom model API'}`
     baseline = snapshot()
     renderModels()
   }
@@ -162,7 +169,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       offered.append(new Option(template.displayName, `new:${template.id}`))
     offered.append(new Option('Custom model API', 'new:custom'))
     chooser.replaceChildren(saved, offered)
-    providerList.replaceChildren(element('h3', 'Your providers'))
+    providerList.replaceChildren(element('h3', 'Provider đã lưu'))
     if (!providers.length) providerList.append(element('p', 'Chưa có provider. Thêm kết nối bên dưới.'))
     for (const provider of providers) {
       const card = button('', () => {
@@ -175,6 +182,21 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         element('small', `${builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Có key' : provider.hasKey ? 'Key đã lưu không dùng được' : 'Chưa có key'}`),
         element('span', provider.models.length ? provider.models.join(' · ') : 'Chưa thêm model'))
       providerList.append(card)
+    }
+    addList.replaceChildren(element('h3', 'Thêm provider'))
+    const offers: readonly (readonly [string, string])[] = [
+      ...builtIns.filter(template => !providers.some(provider => provider.id === template.id)).map(template => [template.id, template.displayName] as const),
+      ['custom', 'Custom model API'],
+    ]
+    for (const [offer, label] of offers) {
+      const row = button('', () => {
+        if (busy) return
+        chooser.value = `new:${offer}`
+        chooser.dispatchEvent(new Event('change'))
+      })
+      row.dataset.offer = offer
+      row.append(element('strong', label))
+      addList.append(row)
     }
     chooser.value = selectedId || 'new:custom'
     const value = providers.find(provider => provider.id === selectedId)
@@ -191,7 +213,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     fields.disabled = true
     save.disabled = true
     chooser.disabled = true
-    for (const card of providerList.querySelectorAll<HTMLButtonElement>('button')) card.disabled = true
+    for (const card of navButtons()) card.disabled = true
     remove.disabled = true
     close.disabled = true
     cancel.disabled = true
@@ -213,7 +235,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
       fields.disabled = false
       save.disabled = false
       chooser.disabled = false
-      for (const card of providerList.querySelectorAll<HTMLButtonElement>('button')) card.disabled = false
+      for (const card of navButtons()) card.disabled = false
       remove.disabled = !providers.some(provider => provider.id === chooser.value)
       close.disabled = false
       cancel.disabled = false
@@ -252,13 +274,13 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     delete workspace.dataset.view
     return true
   }
-  const close = button('◀', requestClose)
+  const close = button('', requestClose)
   close.className = 'settings-back'
-  close.title = 'Quay lại chat'
-  close.setAttribute('aria-label', 'Quay lại chat')
+  close.title = 'Đóng cài đặt'
+  close.setAttribute('aria-label', 'Đóng cài đặt')
   const cancel = button('Hủy', requestClose)
   const connection = element('section', undefined, 'settings-section')
-  connection.append(element('h3', 'Connection'),
+  connection.append(element('h3', 'Kết nối'),
     field('Provider type', kind),
     field('Provider ID', id),
     field('Display name', name),
@@ -269,7 +291,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   credentials.append(element('h3', 'API key'), element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
     field('API key', key), field('Remove saved key', removeKey))
   const modelSection = element('section', undefined, 'settings-section')
-  modelSection.append(element('h3', 'Models'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
+  modelSection.append(element('h3', 'Model'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
     field('Added model IDs', models),
     loadCatalog,
     field('Model catalog', available),
@@ -293,7 +315,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     modelChips.replaceChildren()
     for (const model of models.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean)) {
       const chip = element('span', undefined, 'model-chip')
-      const remove = button('×', () => {
+      const remove = button('', () => {
         models.value = models.value.split(/\r?\n/).filter(value => value.trim() !== model).join('\n')
         renderModels()
         manual.focus()
@@ -319,7 +341,6 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   providerStep.append(element('h3', '1 · Chọn provider'),
     element('p', 'Key lấy từ tài khoản của bạn với provider. Yêu cầu dùng cấu hình này sẽ được gửi tới provider đó.'),
     field('Provider configuration', chooser), field('Provider type', kind), savedProviders)
-  connection.querySelector('h3')!.textContent = '2 · Thông tin kết nối và tên'
   // Provider selection belongs to step 1, not to the connection form.
   for (const label of [...connection.querySelectorAll('label')]) if (label.querySelector('span')?.textContent === 'Provider type') label.remove()
   const footer = element('footer', undefined, 'settings-footer')
@@ -334,13 +355,26 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   fields.append(providerStep, connection, credentials, modelSection)
   form.append(fields)
   const header = element('header', undefined, 'settings-header')
-  header.append(close, title)
+  header.append(title, close)
   const body = element('div', undefined, 'settings-body')
-  body.append(message, form)
-  dialog.append(header, body, footer)
+  body.append(pageTitle, message, form)
+  // Popup layout: saved providers and "add" rows on the left, the selected provider's form and actions on the right.
+  const nav = element('div', undefined, 'settings-nav')
+  nav.setAttribute('role', 'group')
+  nav.setAttribute('aria-label', 'Provider')
+  nav.append(providerList, addList)
+  const main = element('div', undefined, 'settings-main')
+  main.append(body, footer)
+  const layout = element('div', undefined, 'settings-layout')
+  layout.append(nav, main)
+  dialog.append(header, layout)
+  // Escape and a click on the scrim both go through requestClose, so unsaved changes are still guarded.
   dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose() })
-  dialog.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !wizard) { event.preventDefault(); requestClose() }
+  let pressedScrim = false
+  dialog.addEventListener('pointerdown', event => { pressedScrim = event.target === dialog })
+  dialog.addEventListener('click', event => {
+    if (pressedScrim && event.target === dialog) requestClose()
+    pressedScrim = false
   })
   dialog.addEventListener('close', () => {
     key.value = ''
@@ -350,8 +384,14 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   workspace.append(dialog)
   function renderStep() {
     dialog.classList.toggle('settings-wizard', wizard)
-    title.textContent = wizard ? `Thêm provider · ${step}/3` : 'Cài đặt Provider'
-    providerStep.hidden = wizard && step !== 1
+    title.textContent = wizard ? `Thêm provider · ${step}/3` : 'Cài đặt model'
+    // The popup picks providers from its left column; the step-1 chooser stays in the DOM because the rows drive it.
+    providerStep.hidden = !wizard || step !== 1
+    pageTitle.hidden = wizard
+    connection.querySelector('h3')!.textContent = wizard ? '2 · Thông tin kết nối và tên' : 'Kết nối'
+    modelSection.querySelector('h3')!.textContent = wizard ? '3 · Thêm model' : 'Model'
+    if (wizard && providerList.parentElement !== savedProviders) savedProviders.append(providerList)
+    else if (!wizard && providerList.parentElement !== nav) nav.prepend(providerList)
     connection.hidden = wizard && step !== 2
     credentials.hidden = wizard && step !== 2
     modelSection.hidden = wizard && step !== 3
@@ -390,8 +430,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         await refresh()
         selectedId = chooser.value
         renderStep()
-        if (wizard) dialog.showModal()
-        else { workspace.dataset.view = 'settings'; dialog.show() }
+        // Full settings is a popup too. The attribute only marks that settings is open.
+        if (!wizard) workspace.dataset.view = 'settings'
+        dialog.showModal()
         close.focus()
       } finally { opening = false }
     },

@@ -36,11 +36,12 @@ export class OutlineView {
       viewing.append(button('Mở chi tiết', () => { for (const slide of slides) slide.open = true }),
         button('Thu gọn', () => { for (const slide of slides) slide.open = false }))
       const actions = element('div', undefined, 'outline-actions')
-      const buttons = [button('①  Xác nhận outline và tạo slide', () => this.action?.('confirm', proposal)),
-        button('②  Hủy outline', () => this.action?.('cancel', proposal)),
-        button('Yêu cầu sửa outline', () => this.revise?.())]
-      actions.append(element('strong', 'Bạn muốn làm gì với outline này?'), ...buttons,
-        element('p', 'Hoặc gõ thay đổi bạn muốn ở khung bên dưới. Chọn là gửi ngay; chữ chưa gửi vẫn ở lại khung nhập.'))
+      const buttons = [button('Xác nhận outline và tạo slide', () => this.action?.('confirm', proposal)),
+        button('Yêu cầu sửa outline', () => this.revise?.()),
+        button('Hủy outline', () => this.action?.('cancel', proposal))]
+      actions.append(element('strong', 'Bạn muốn làm gì với outline này?'),
+        element('p', 'Chưa có slide nào được tạo cho đến khi bạn xác nhận.'), ...buttons,
+        element('p', 'Hoặc gõ thay đổi bạn muốn vào khung bên dưới.'))
       node.append(element('h3', 'Đề xuất outline'), status, overview, viewing, ...slides)
       if (!this.dock) node.append(actions)
       card = { node, status, actions, buttons, proposal }
@@ -48,7 +49,7 @@ export class OutlineView {
     }
     card.proposal = proposal
     const label = proposal.status === 'confirmed' ? 'Đã xác nhận · chỉ đọc' : proposal.status === 'current'
-      ? 'Hiện tại · Chưa có slide nào được tạo cho đến khi bạn xác nhận.' : proposal.status === 'cancelled' ? 'Đã hủy' : 'Đề xuất cũ · không còn là hiện tại'
+      ? 'Hiện tại · chờ bạn xác nhận' : proposal.status === 'cancelled' ? 'Đã hủy' : 'Đề xuất cũ · không còn là hiện tại'
     if (card.status.textContent !== label) card.status.textContent = label
     card.node.dataset.status = proposal.status
     card.actions.hidden = proposal.status !== 'current'

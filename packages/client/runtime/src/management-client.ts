@@ -3,6 +3,7 @@ import type {
   ProviderTemplate,
   StoredActivity,
   StoredRequest,
+  WebPreferences,
   WebSession,
   WebSettings,
 } from '@deckagent/host-api'
@@ -128,6 +129,13 @@ export class ManagementClient {
       return { id: item.id, displayName: item.displayName, baseUrl: item.baseUrl, protocol: item.protocol }
     })
     return { providers: data.providers.map(provider), persistentKeys: data.persistentKeys, builtIns }
+  }
+
+  /** Saves the interface theme on the Host, so it survives a change of local port. */
+  async saveTheme(theme: WebPreferences['theme']): Promise<WebPreferences['theme']> {
+    const data = await this.request('preferences', 'PUT', { theme })
+    if (!object(data) || (data.theme !== 'light' && data.theme !== 'dark' && data.theme !== 'system')) invalid()
+    return data.theme
   }
 
   async sessions(): Promise<readonly WebSession[]> {

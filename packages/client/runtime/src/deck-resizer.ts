@@ -4,7 +4,7 @@ import { element } from './dom.ts'
 export function mountDeckResizer(container: HTMLElement, initial: number, save: (width: number) => void): void {
   const divider = element('div', undefined, 'deck-resizer')
   divider.setAttribute('role', 'separator')
-  divider.setAttribute('aria-label', 'Resize presentation')
+  divider.setAttribute('aria-label', 'Đổi kích thước bộ slide')
   divider.setAttribute('aria-orientation', 'vertical')
   divider.title = 'Drag to resize presentation; use Left and Right arrow keys'
   let preferred = initial

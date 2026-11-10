@@ -56,18 +56,15 @@ importers:
 
   apps/local-web:
     dependencies:
-      '@deckagent/deck':
-        specifier: workspace:*
-        version: link:../../packages/presentation/deck
-      '@deckagent/presentation-tools':
-        specifier: workspace:*
-        version: link:../../packages/tools/presentation
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../packages/agent/runtime
       '@deckagent/browser-runtime':
         specifier: workspace:*
         version: link:../../packages/client/runtime
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../packages/presentation/deck
       '@deckagent/file-tools':
         specifier: workspace:*
         version: link:../../packages/tools/filesystem
@@ -77,6 +74,9 @@ importers:
       '@deckagent/model-providers':
         specifier: workspace:*
         version: link:../../packages/llm/providers
+      '@deckagent/presentation-tools':
+        specifier: workspace:*
+        version: link:../../packages/tools/presentation
       '@deckagent/session-persistence':
         specifier: workspace:*
         version: link:../../packages/session/persistence
@@ -98,15 +98,19 @@ importers:
       '@deckagent/host-api':
         specifier: workspace:*
         version: link:../../host/api
+    devDependencies:
+      animejs:
+        specifier: 4.5.0
+        version: 4.5.0
 
   packages/host/api:
     dependencies:
-      '@deckagent/deck':
-        specifier: workspace:*
-        version: link:../../presentation/deck
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../agent/runtime
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../presentation/deck
 
   packages/llm/providers:
     dependencies:
@@ -114,25 +118,13 @@ importers:
         specifier: workspace:*
         version: link:../../agent/runtime
 
+  packages/presentation/deck: {}
+
   packages/session/persistence:
     dependencies:
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../agent/runtime
-
-  packages/presentation/deck: {}
-
-  packages/tools/presentation:
-    dependencies:
-      '@deckagent/agent-runtime':
-        specifier: workspace:*
-        version: link:../../agent/runtime
-      '@deckagent/deck':
-        specifier: workspace:*
-        version: link:../../presentation/deck
-      '@deckagent/file-tools':
-        specifier: workspace:*
-        version: link:../filesystem
 
   packages/testing/cordis-fixture:
     dependencies:
@@ -145,6 +137,18 @@ importers:
       '@deckagent/agent-runtime':
         specifier: workspace:*
         version: link:../../agent/runtime
+
+  packages/tools/presentation:
+    dependencies:
+      '@deckagent/agent-runtime':
+        specifier: workspace:*
+        version: link:../../agent/runtime
+      '@deckagent/deck':
+        specifier: workspace:*
+        version: link:../../presentation/deck
+      '@deckagent/file-tools':
+        specifier: workspace:*
+        version: link:../filesystem
 
   vendor/cordis:
     dependencies:
@@ -581,6 +585,17 @@ packages:
   '@yuku-toolchain/types@0.8.7':
     resolution: {integrity: sha512-2Z53dNxAJL6UvFoIrDZvYf3zlO8s4VJK4O2hhaB4mXVwwpX/7ajtss3cmfqKvamlNLWyt9FSWs4eoYdlbxpnHA==}
 
+  animejs@4.5.0:
+    resolution: {integrity: sha512-NQimYX+lz8WaXonGS9zVVoviCIAjONeJayxacUditaivYLqyXgGjFKjuyl0aUUhFKm5MriX9ty1TGovNzoJQWA==}
+    peerDependencies:
+      '@types/three': '>=0.150.0'
+      three: '>=0.150.0'
+    peerDependenciesMeta:
+      '@types/three':
+        optional: true
+      three:
+        optional: true
+
   ansis@4.4.0:
     resolution: {integrity: sha512-9k3v7xcHwgdO/DruxGIg4HtjvlAZlcnsX/mzqUb1t3NkYnl9kK2UJ+Gq0io+vQf7iT//BD/HB/NBkUR1LWxoeA==}
     engines: {node: '>=14'}
@@ -1006,6 +1021,8 @@ snapshots:
     optional: true
 
   '@yuku-toolchain/types@0.8.7': {}
+
+  animejs@4.5.0: {}
 
   ansis@4.4.0: {}
 

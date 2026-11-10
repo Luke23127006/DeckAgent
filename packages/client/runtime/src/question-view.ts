@@ -16,7 +16,7 @@ export function questionView(answer: (value: RequestReply['answer']) => void) {
       question.options.forEach((label, index) => { choices.append(button(label, () => answer({ type: 'option', index }))) })
       if (question.allowSkip) choices.append(button('Bỏ qua', () => answer({ type: 'skip' })))
       node.replaceChildren(element('strong', question.prompt), choices,
-        element('small', 'Chọn một gợi ý hoặc nhập câu trả lời bên dưới. Yêu cầu đang chờ bạn; bạn có thể dừng.'))
+        element('small', 'Chọn một gợi ý hoặc nhập câu trả lời bên dưới.'))
     }
     for (const item of node.querySelectorAll('button')) item.disabled = busy
   } }

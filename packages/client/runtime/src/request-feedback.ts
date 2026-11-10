@@ -7,13 +7,13 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   TOOL_FAILED: ['Lần gọi công cụ chưa thành công', 'Xem kết quả đã lưu bên dưới. Không coi thay đổi là đã thành công.'],
   CLEANUP_FAILED: ['Không kết thúc được yêu cầu an toàn', 'Kiểm tra phần đã lưu và khởi động lại Host trước khi tiếp tục.'],
   REQUEST_FINALIZATION_FAILED: ['Không lưu được kết quả yêu cầu', 'Kết nối lại để đọc phần đã lưu. Kết quả thao tác cuối chưa được xác nhận.'],
-  PROVIDER_HTTP: ['Yêu cầu tới provider thất bại', 'Kiểm tra kết nối và cấu hình provider rồi gửi yêu cầu mới. Hệ thống không tự thử lại.'],
-  PROVIDER_NETWORK: ['Không kết nối được provider', 'Kiểm tra kết nối và Base URL rồi gửi yêu cầu mới.'],
-  PROVIDER_TIMEOUT: ['Provider phản hồi quá lâu', 'Kiểm tra kết nối rồi gửi yêu cầu mới khi sẵn sàng.'],
-  PROVIDER_TLS: ['Không thiết lập được kết nối bảo mật', 'Kiểm tra URL provider và chứng chỉ hệ thống.'],
-  PROVIDER_AUTH: ['Provider từ chối truy cập', 'Kiểm tra API key và quyền dùng model trong Cài đặt model.'],
+  PROVIDER_HTTP: ['Không gửi được yêu cầu tới nhà cung cấp model', 'Kiểm tra kết nối và cấu hình trong Cài đặt model rồi gửi lại. Hệ thống không tự thử lại.'],
+  PROVIDER_NETWORK: ['Không kết nối được nhà cung cấp model', 'Kiểm tra kết nối và Base URL rồi gửi yêu cầu mới.'],
+  PROVIDER_TIMEOUT: ['Nhà cung cấp model phản hồi quá lâu', 'Kiểm tra kết nối rồi gửi yêu cầu mới khi sẵn sàng.'],
+  PROVIDER_TLS: ['Không thiết lập được kết nối bảo mật', 'Kiểm tra URL của nhà cung cấp và chứng chỉ hệ thống.'],
+  PROVIDER_AUTH: ['Nhà cung cấp model từ chối truy cập', 'Kiểm tra API key và quyền dùng model trong Cài đặt model.'],
   PROVIDER_CREDENTIALS: ['Cần API key', 'Nhập API key hợp lệ trong Cài đặt model.'],
-  PROVIDER_RATE_LIMIT: ['Đã đạt giới hạn sử dụng của provider', 'Chờ hoặc kiểm tra giới hạn tài khoản trước khi gửi yêu cầu mới. Model không tự thay đổi.'],
+  PROVIDER_RATE_LIMIT: ['Đã đạt giới hạn sử dụng của nhà cung cấp', 'Chờ hoặc kiểm tra giới hạn tài khoản trước khi gửi yêu cầu mới. Model không tự thay đổi.'],
   MODEL_NOT_SELECTABLE: ['Model không còn chọn được', 'Chọn model khác trong chat này. Chưa gửi yêu cầu.'],
   AUTH_REQUIRED: ['Kết nối này đã hết hiệu lực', 'Mở lại trình duyệt từ Host đang chạy.'],
   SESSION_BUSY: ['Chat đang có yêu cầu hoạt động', 'Đợi hoàn tất hoặc dừng yêu cầu trước khi gửi yêu cầu khác.'],
@@ -38,6 +38,11 @@ export function failureFeedback(code?: string) {
   return { label: known?.[0] ?? 'Yêu cầu chưa hoàn tất',
     detail: known?.[1] ?? 'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.',
     code: known ? code : undefined }
+}
+
+/** The settings shortcut is offered only when the failure copy itself sends the user to settings or a URL. */
+export function offersSettings(code?: string): boolean {
+  return /cài đặt model|URL/i.test(failureFeedback(code).detail)
 }
 
 export function requestFeedback(state: StoredRequest['status'], errorCode: string | undefined,
@@ -81,5 +86,5 @@ export function requestFeedback(state: StoredRequest['status'], errorCode: strin
     label = failure.label
     detail += `${failure.detail} Phần hoàn tất vẫn được giữ; hệ thống không tự tiếp tục.`
   }
-  return { label, detail, toolErrors }
+  return { label, detail, toolErrors, savedSlideIds: [...saved] }
 }

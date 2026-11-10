@@ -8,7 +8,7 @@ import type { OutlineTarget } from '@deckagent/deck'
 import { HttpError, RequestController } from './request-controller.ts'
 import { requestReply } from './request-reply.ts'
 
-export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebPreferences, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
 export { HttpError } from './request-controller.ts'
 export { validateUserQuestion } from './request-reply.ts'
 export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
@@ -147,6 +147,10 @@ export async function startHost(options: HostOptions) {
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
         json(res, 200, await management.settings()); return
+      }
+      if (url.pathname === '/api/preferences' && management.preferences) {
+        if (req.method === 'GET') { json(res, 200, await management.preferences.get()); return }
+        if (req.method === 'PUT') { json(res, 200, await management.preferences.save(await readJson(req))); return }
       }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {

@@ -9,7 +9,7 @@ export function element<K extends keyof HTMLElementTagNameMap>(
   return node
 }
 
-export function button(text: string, action: () => void): HTMLButtonElement {
+export function button(text: string, action: (event: MouseEvent) => void): HTMLButtonElement {
   const node = element('button', text)
   node.type = 'button'
   node.addEventListener('click', action)

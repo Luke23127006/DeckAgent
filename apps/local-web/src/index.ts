@@ -5,7 +5,7 @@ import type { ModelAdapter, ModelSelection, TurnResult } from '@deckagent/agent-
 import type { ModelConnection } from '@deckagent/model-providers'
 import { startHost } from '@deckagent/host-api'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle } from './ui-assets.ts'
+import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle, motionStyle, themeBootstrap } from './ui-assets.ts'
 import { WebState } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
@@ -59,7 +59,9 @@ export async function startLocalWeb(options: LocalWebOptions) {
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle },
+      // Read per request so the saved choice is applied before first paint, whatever the origin.
+      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences().theme) } },
+      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -88,6 +90,7 @@ export async function startLocalWeb(options: LocalWebOptions) {
       requestState: async snapshot => state.requestState(snapshot),
       readHistory: id => store.read(id),
       management: {
+        preferences: { get: async () => state.preferences(), save: async value => state.savePreferences(value) },
         settings: async () => catalog.snapshot(),
         saveProvider: (id, value) => catalog.save(id, value),
         deleteProvider: id => catalog.remove(id),
