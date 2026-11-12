@@ -11,6 +11,22 @@ export interface AgentRequest {
   readonly input: string
 }
 
+/** Safe history projection, independent of private managed-file metadata. */
+export interface AttachmentView {
+  readonly attachmentId: string
+  readonly name: string
+  readonly state: 'preparing' | 'ready' | 'rejected'
+  readonly byteSize: number
+  readonly detectedType?: string
+  readonly rejectionCode?: string
+  readonly source?: {
+    readonly sourceId: string
+    readonly version: number
+    readonly kind: 'attachment'
+    readonly label: string
+  }
+}
+
 /** Request lifecycle decided by the Host (ADR-0004). `active` and `waiting_approval` hold the chat's one active slot. */
 export type RequestStatus = 'active' | 'waiting_approval' | 'completed' | 'failed' | 'stopped' | 'interrupted'
 export type ActivityStatus = 'running' | 'completed' | 'failed' | 'stopped'
@@ -19,7 +35,13 @@ export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
 /** Sanitized product events. Raw runtime output, provider errors and credentials never become an event. */
 export type RequestEventBody =
   | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
-  | { readonly kind: 'activity'; readonly id: string; readonly label: string; readonly type: 'model' | 'tool'; readonly status: ActivityStatus }
+  | {
+      readonly kind: 'activity'
+      readonly id: string
+      readonly label: string
+      readonly type: 'model' | 'tool'
+      readonly status: ActivityStatus
+    }
   | { readonly kind: 'text'; readonly part: string; readonly text: string }
   | { readonly kind: 'notice'; readonly code: string }
 
@@ -71,7 +93,12 @@ export interface StoredActivity {
 /** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
 export interface RequestStore {
   /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
-  admit(input: { readonly requestId: string; readonly sessionId: string; readonly input: string; readonly selection: ModelSelection }): StoredRequest
+  admit(input: {
+    readonly requestId: string
+    readonly sessionId: string
+    readonly input: string
+    readonly selection: ModelSelection
+  }): StoredRequest
   append(requestId: string, event: RuntimeEvent): RequestEvent
   /** Ends an active request once; `undefined` when it had already ended. */
   finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined
@@ -114,6 +141,7 @@ export interface HostMessage {
   readonly toolCallId?: string
   readonly name?: string
   readonly isError?: boolean
+  readonly attachments?: readonly AttachmentView[]
 }
 
 /** Browser projection deliberately excludes provider protocol metadata and tool arguments. */
@@ -126,6 +154,7 @@ export interface HistoryMessage {
   readonly toolCallId?: string
   readonly name?: string
   readonly isError?: boolean
+  readonly attachments?: readonly AttachmentView[]
 }
 
 export interface HostOptions {
@@ -137,7 +166,9 @@ export interface HostOptions {
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
-  readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
+  readonly assets?: Readonly<
+    Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
+  >
 }
 
 /** API protocols of BR-005 V-4. */

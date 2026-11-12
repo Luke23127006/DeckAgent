@@ -27,6 +27,9 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+- Chat-scoped attachment storage with durable managed files, source identities, draft revisions and atomic message/request associations; schema v4 migrates existing conversations and startup removes unsent staging without deleting committed attachments.
+- Attachment metadata in Host/client history and storage integration checks for restart, isolation, cancellation, failed admission and changed files. Upload endpoints, parsing and attachment UI remain unavailable.
+- The accepted [source, request and approval integration contracts](docs/adr/0001-source-request-contracts.md).
 - The `test:model-requests` script (request lifecycle, OpenCode adapter and model requests with a fake OpenCode CLI) and the opt-in `test:opencode-live` script for the real pinned CLI
 - The `--opencode <path>` flag of Local Web, and `DECKAGENT_OPENCODE`
 - `docs/build/rebuild/adr/` holds seven decision records for the rebuild: local storage and data ownership, chat and session history, tools and permissions, request and event lifecycle, deck artifacts and revisions, credentials and models, and the design system and templates

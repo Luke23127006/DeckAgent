@@ -6,12 +6,42 @@ import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
 
+export type { AttachmentView } from './contracts.ts'
 export type {
-  ActivityStatus, AgentRequest, HistoryMessage, HostMessage, HostOptions, ModelSelection, PreparedRequest, ProviderProtocol, ProviderSettings,
-  ProviderTemplate, RequestEvent, RequestEventBody, RequestRun, RequestRuntime, RequestSnapshot, RequestStatus, RequestStore, RuntimeEvent,
-  RuntimeOutcome, StoredActivity, StoredRequest, TerminalStatus, WebManagement, WebPreferences, WebSession, WebSettings,
+  ActivityStatus,
+  AgentRequest,
+  HistoryMessage,
+  HostMessage,
+  HostOptions,
+  ModelSelection,
+  PreparedRequest,
+  ProviderProtocol,
+  ProviderSettings,
+  ProviderTemplate,
+  RequestEvent,
+  RequestEventBody,
+  RequestRun,
+  RequestRuntime,
+  RequestSnapshot,
+  RequestStatus,
+  RequestStore,
+  RuntimeEvent,
+  RuntimeOutcome,
+  StoredActivity,
+  StoredRequest,
+  TerminalStatus,
+  WebManagement,
+  WebPreferences,
+  WebSession,
+  WebSettings,
 } from './contracts.ts'
-export type { ChatDraft, WorkspaceFolderStatus, WorkspaceList, WorkspaceManagement, WorkspaceView } from './contracts.ts'
+export type {
+  ChatDraft,
+  WorkspaceFolderStatus,
+  WorkspaceList,
+  WorkspaceManagement,
+  WorkspaceView,
+} from './contracts.ts'
 export type { HttpErrorDetail } from './http-error.ts'
 export { HttpError, RequestController } from './request-controller.ts'
 
@@ -75,7 +105,9 @@ function cursor(req: IncomingMessage): number {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = options.requests ? new RequestController(options.requests.store, options.requests.runtime) : undefined
+  const controller = options.requests
+    ? new RequestController(options.requests.store, options.requests.runtime)
+    : undefined
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -94,10 +126,19 @@ export async function startHost(options: HostOptions) {
       }
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
-      const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
+      const outline =
+        deck &&
+        ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
       json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed',
-          ...(known && error.detail ? { detail: error.detail } : {}) },
+        error: {
+          code: known
+            ? error.code
+            : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
+              ? error.code
+              : 'HOST_ERROR',
+          message: 'Request could not be completed',
+          ...(known && error.detail ? { detail: error.detail } : {}),
+        },
       })
     })
   })
@@ -128,7 +169,11 @@ export async function startHost(options: HostOptions) {
       const asset =
         options.assets && Object.hasOwn(options.assets, url.pathname) ? options.assets[url.pathname] : undefined
       if (req.method !== 'GET' || !asset) throw new HttpError(404, 'NOT_FOUND')
-      if (asset.sandboxed) res.setHeader('content-security-policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
+      if (asset.sandboxed)
+        res.setHeader(
+          'content-security-policy',
+          "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+        )
       res.writeHead(200, { 'content-type': asset.contentType })
       res.end(asset.body)
       return
@@ -138,61 +183,105 @@ export async function startHost(options: HostOptions) {
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {
-      json(res, 200, options.outlines.outlineSnapshot(outline[1]!)); return
+      json(res, 200, options.outlines.outlineSnapshot(outline[1]!))
+      return
     }
     const management = options.management
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
-        json(res, 200, await management.settings()); return
+        json(res, 200, await management.settings())
+        return
       }
       if (url.pathname === '/api/preferences' && management.preferences) {
-        if (req.method === 'GET') { json(res, 200, await management.preferences.get()); return }
-        if (req.method === 'PUT') { json(res, 200, await management.preferences.save(await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await management.preferences.get())
+          return
+        }
+        if (req.method === 'PUT') {
+          json(res, 200, await management.preferences.save(await readJson(req)))
+          return
+        }
       }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
         if (req.method === 'PUT') await management.saveProvider(provider[1]!, await readJson(req))
         else await management.deleteProvider(provider[1]!)
-        json(res, 200, { saved: true }); return
+        json(res, 200, { saved: true })
+        return
       }
       const catalog = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(url.pathname)
-      if (catalog && req.method === 'GET') { json(res, 200, await management.catalog(catalog[1]!)); return }
+      if (catalog && req.method === 'GET') {
+        json(res, 200, await management.catalog(catalog[1]!))
+        return
+      }
       if (url.pathname === '/api/sessions') {
-        if (req.method === 'GET') { json(res, 200, await withActive(await management.sessions())); return }
-        if (req.method === 'POST') { json(res, 201, await management.createSession(await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await withActive(await management.sessions()))
+          return
+        }
+        if (req.method === 'POST') {
+          json(res, 201, await management.createSession(await readJson(req)))
+          return
+        }
       }
       const resource = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(url.pathname)
       if (resource?.[2] === 'selection' && req.method === 'PUT') {
-        json(res, 200, await management.selectModel(resource[1]!, await readJson(req))); return
+        json(res, 200, await management.selectModel(resource[1]!, await readJson(req)))
+        return
       }
       if (resource?.[2] === 'activities' && req.method === 'GET') {
-        json(res, 200, await management.activities(resource[1]!)); return
+        json(res, 200, await management.activities(resource[1]!))
+        return
       }
       if (resource?.[2] === 'requests' && req.method === 'GET') {
-        json(res, 200, await management.requests(resource[1]!)); return
+        json(res, 200, await management.requests(resource[1]!))
+        return
       }
       if (url.pathname === '/api/sessions/search' && req.method === 'POST' && management.searchSessions) {
-        json(res, 200, await withActive(await management.searchSessions(await readJson(req)))); return
+        json(res, 200, await withActive(await management.searchSessions(await readJson(req))))
+        return
       }
       const draft = /^\/api\/sessions\/([\w-]{1,100})\/draft$/.exec(url.pathname)
       if (draft && management.drafts) {
-        if (req.method === 'GET') { json(res, 200, await management.drafts.get(draft[1]!)); return }
-        if (req.method === 'PUT') { json(res, 200, await management.drafts.save(draft[1]!, await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await management.drafts.get(draft[1]!))
+          return
+        }
+        if (req.method === 'PUT') {
+          json(res, 200, await management.drafts.save(draft[1]!, await readJson(req)))
+          return
+        }
       }
       const workspaces = management.workspaces
       if (workspaces && url.pathname.startsWith('/api/workspaces')) {
         if (url.pathname === '/api/workspaces') {
-          if (req.method === 'GET') { json(res, 200, await workspaces.list()); return }
-          if (req.method === 'POST') { json(res, 200, await workspaces.add(await readJson(req))); return }
+          if (req.method === 'GET') {
+            json(res, 200, await workspaces.list())
+            return
+          }
+          if (req.method === 'POST') {
+            json(res, 200, await workspaces.add(await readJson(req)))
+            return
+          }
         }
         if (url.pathname === '/api/workspaces/selected' && req.method === 'PUT') {
-          json(res, 200, await workspaces.select(await readJson(req))); return
+          json(res, 200, await workspaces.select(await readJson(req)))
+          return
         }
         const workspace = /^\/api\/workspaces\/([\w-]{1,100})(\/folder)?$/.exec(url.pathname)
         if (workspace && workspace[1] !== 'selected') {
-          if (!workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req))); return }
-          if (!workspace[2] && req.method === 'DELETE') { json(res, 200, await workspaces.remove(workspace[1]!)); return }
-          if (workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req))); return }
+          if (!workspace[2] && req.method === 'PUT') {
+            json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req)))
+            return
+          }
+          if (!workspace[2] && req.method === 'DELETE') {
+            json(res, 200, await workspaces.remove(workspace[1]!))
+            return
+          }
+          if (workspace[2] && req.method === 'PUT') {
+            json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req)))
+            return
+          }
         }
       }
     }
@@ -228,7 +317,10 @@ export async function startHost(options: HostOptions) {
         if (ended || event.sequence <= last || res.destroyed || res.writableEnded) return
         last = event.sequence
         const ready = res.write(`id: ${event.sequence}\nevent: request\ndata: ${JSON.stringify(event)}\n\n`)
-        if ((event.kind === 'status' && !activeStatuses.has(event.status)) || !ready) { ended = true; res.end() }
+        if ((event.kind === 'status' && !activeStatuses.has(event.status)) || !ready) {
+          ended = true
+          res.end()
+        }
       }
       const unsubscribe = controller.subscribe(event => {
         if (event.requestId !== id) return
@@ -252,7 +344,10 @@ export async function startHost(options: HostOptions) {
         for (const event of queued.splice(0)) write(event)
       }
       // A request that ended before the cursor has nothing more to say.
-      if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) { ended = true; res.end() }
+      if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) {
+        ended = true
+        res.end()
+      }
       return
     }
     const session = /^\/api\/sessions\/([A-Za-z0-9_-]{1,100})\/history$/.exec(url.pathname)
@@ -261,9 +356,38 @@ export async function startHost(options: HostOptions) {
       json(
         res,
         200,
-        messages.filter(message => message.role !== 'system').map(message => ({ role: message.role, content: message.content,
-          ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
-          ...(message.role === 'tool' ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true } : {}) })),
+        messages
+          .filter(message => message.role !== 'system')
+          .map(message => ({
+            role: message.role,
+            content: message.content,
+            ...(message.role === 'user' && message.attachments
+              ? {
+                  attachments: message.attachments.map(item => ({
+                    attachmentId: item.attachmentId,
+                    name: item.name,
+                    state: item.state,
+                    byteSize: item.byteSize,
+                    ...(item.detectedType ? { detectedType: item.detectedType } : {}),
+                    ...(item.rejectionCode ? { rejectionCode: item.rejectionCode } : {}),
+                    ...(item.source
+                      ? {
+                          source: {
+                            sourceId: item.source.sourceId,
+                            version: item.source.version,
+                            kind: item.source.kind,
+                            label: item.source.label,
+                          },
+                        }
+                      : {}),
+                  })),
+                }
+              : {}),
+            ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
+            ...(message.role === 'tool'
+              ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true }
+              : {}),
+          })),
       )
       return
     }

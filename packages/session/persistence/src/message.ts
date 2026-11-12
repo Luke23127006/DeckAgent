@@ -4,7 +4,9 @@ import type { Message } from './contracts.ts'
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
-function nonempty(value: unknown): value is string { return typeof value === 'string' && Boolean(value.trim()) }
+function nonempty(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(value.trim())
+}
 function keys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
   return Object.keys(value).every(key => allowed.includes(key))
 }
@@ -25,29 +27,81 @@ function json(value: unknown, parents = new Set<object>()): boolean {
 export function validateMessage(value: unknown): asserts value is Message {
   let valid = false
   if (record(value) && typeof value.content === 'string' && json(value)) {
-    if (value.role === 'user' || value.role === 'system') valid = keys(value, ['role', 'content'])
-    if (value.role === 'tool') valid = keys(value, ['role', 'content', 'toolCallId', 'name', 'isError'])
-      && nonempty(value.toolCallId) && nonempty(value.name) && typeof value.isError === 'boolean'
+    if (value.role === 'system') valid = keys(value, ['role', 'content'])
+    if (value.role === 'user')
+      valid =
+        keys(value, ['role', 'content', 'attachments']) &&
+        (value.attachments === undefined ||
+          (Array.isArray(value.attachments) && value.attachments.length > 0 && value.attachments.every(attachment)))
+    if (value.role === 'tool')
+      valid =
+        keys(value, ['role', 'content', 'toolCallId', 'name', 'isError']) &&
+        nonempty(value.toolCallId) &&
+        nonempty(value.name) &&
+        typeof value.isError === 'boolean'
     if (value.role === 'assistant') {
-      valid = keys(value, ['role', 'content', 'toolCalls', 'interrupted', 'providerState'])
-        && (!('interrupted' in value) || value.interrupted === true)
-        && (!('toolCalls' in value) || (Array.isArray(value.toolCalls) && value.toolCalls.every(call =>
-          record(call) && keys(call, ['id', 'name', 'arguments']) && nonempty(call.id) && nonempty(call.name) && record(call.arguments))))
+      valid =
+        keys(value, ['role', 'content', 'toolCalls', 'interrupted', 'providerState']) &&
+        (!('interrupted' in value) || value.interrupted === true) &&
+        (!('toolCalls' in value) ||
+          (Array.isArray(value.toolCalls) &&
+            value.toolCalls.every(
+              call =>
+                record(call) &&
+                keys(call, ['id', 'name', 'arguments']) &&
+                nonempty(call.id) &&
+                nonempty(call.name) &&
+                record(call.arguments),
+            )))
       if ('providerState' in value) {
         const state = value.providerState
-        valid = valid && record(state) && keys(state, ['provider', 'model', 'data'])
-          && nonempty(state.provider) && nonempty(state.model) && 'data' in state
+        valid =
+          valid &&
+          record(state) &&
+          keys(state, ['provider', 'model', 'data']) &&
+          nonempty(state.provider) &&
+          nonempty(state.model) &&
+          'data' in state
       }
     }
   }
   if (!valid) throw new SessionError('SESSION_MESSAGE', 'Message does not match the supported Session format')
 }
 
+function attachment(value: unknown): boolean {
+  if (
+    !record(value) ||
+    !keys(value, ['attachmentId', 'name', 'state', 'byteSize', 'detectedType', 'fingerprint', 'source'])
+  )
+    return false
+  const source = value.source
+  return (
+    typeof value.attachmentId === 'string' &&
+    /^att-[a-f0-9-]{36}$/.test(value.attachmentId) &&
+    nonempty(value.name) &&
+    value.state === 'ready' &&
+    Number.isSafeInteger(value.byteSize) &&
+    Number(value.byteSize) >= 0 &&
+    nonempty(value.detectedType) &&
+    typeof value.fingerprint === 'string' &&
+    /^[a-f0-9]{64}$/.test(value.fingerprint) &&
+    record(source) &&
+    keys(source, ['sourceId', 'version', 'kind', 'label']) &&
+    nonempty(source.sourceId) &&
+    source.version === 1 &&
+    source.kind === 'attachment' &&
+    nonempty(source.label)
+  )
+}
+
 const titleLength = 64
 
 /** A chat is named from its content: the first user message, on one line, cut to 64 characters. */
 export function chatTitle(messages: readonly Message[]): string {
-  const first = messages.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+  const message = messages.find(message => message.role === 'user')
+  const first = (message?.content.trim() || (message?.role === 'user' ? message.attachments?.[0]?.name : '') || '')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!first) return ''
   const characters = [...first]
   return characters.length > titleLength ? `${characters.slice(0, titleLength).join('')}…` : first
@@ -61,7 +115,12 @@ export function searchWords(value: string): readonly string[] {
 /** A chat matches when every word appears in its name or in the text of its conversation. */
 export function chatMatches(title: string, messages: readonly Message[], words: readonly string[]): boolean {
   if (!words.length) return false
-  const text = [title, ...messages.filter(message => message.role === 'user' || message.role === 'assistant').map(message => message.content)]
+  const text = [
+    title,
+    ...messages
+      .filter(message => message.role === 'user' || message.role === 'assistant')
+      .map(message => message.content),
+  ]
     .join('\n')
     .normalize('NFC')
     .toLocaleLowerCase()

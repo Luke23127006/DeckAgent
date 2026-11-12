@@ -5,7 +5,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
-    "test:local-foundation": "node --test tests/workspace-registry.test.mjs tests/chat-persistence.test.mjs tests/local-foundation.test.mjs",
+    "test:local-foundation": "node --test tests/workspace-registry.test.mjs tests/chat-persistence.test.mjs tests/local-foundation.test.mjs tests/attachment-storage.test.mjs",
     "test:model-requests": "node --test tests/request-lifecycle.test.mjs tests/opencode-adapter.test.mjs tests/model-requests.test.mjs",
     "test:opencode-live": "node --test tests/opencode-live.test.mjs",
     "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-client.test.mjs",

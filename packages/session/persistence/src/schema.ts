@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 3
+const schemaVersion = 4
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 
@@ -28,12 +28,34 @@ const requestTables = `
   ALTER TABLE sessions ADD COLUMN removed_model TEXT;
 `
 
+const attachmentTables = `
+  CREATE TABLE attachments (
+    id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id), name TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('preparing','ready','rejected')),
+    byte_size INTEGER NOT NULL DEFAULT 0 CHECK (byte_size >= 0), fingerprint TEXT,
+    detected_type TEXT, rejection_code TEXT,
+    request_id TEXT REFERENCES requests(id), message_sequence INTEGER,
+    FOREIGN KEY (session_id, message_sequence) REFERENCES messages(session_id, sequence)
+  ) STRICT;
+  CREATE INDEX attachments_session ON attachments(session_id);
+  CREATE TABLE sources (
+    id TEXT NOT NULL, version INTEGER NOT NULL CHECK (version > 0),
+    session_id TEXT NOT NULL REFERENCES sessions(id), attachment_id TEXT NOT NULL REFERENCES attachments(id),
+    fingerprint TEXT NOT NULL, label TEXT NOT NULL,
+    PRIMARY KEY (id, version), UNIQUE (attachment_id)
+  ) STRICT;
+`
+
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
     const version = Number(db.prepare('PRAGMA user_version').get()!.user_version)
     const owner = Number(db.prepare('PRAGMA application_id').get()!.application_id)
-    if (version === 0 && owner === 0 && !db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) {
+    if (
+      version === 0 &&
+      owner === 0 &&
+      !db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
+    ) {
       db.exec(`
         CREATE TABLE sessions (
           id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
@@ -46,29 +68,45 @@ export function initialize(db: DatabaseSync): void {
         ) STRICT;
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
         ${requestTables}
+        ${attachmentTables}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if ((version === 1 || version === 2) && owner === applicationId) {
+    } else if ((version === 1 || version === 2 || version === 3) && owner === applicationId) {
       // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
-      if (version === 1) db.exec(`
+      if (version === 1)
+        db.exec(`
         ALTER TABLE sessions ADD COLUMN workspace_id TEXT;
         UPDATE sessions SET workspace_id = '${defaultWorkspaceId}';
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
       `)
-      db.exec(`${requestTables} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 3) db.exec(requestTables)
+      db.exec(`${attachmentTables} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
-      throw new SessionError('SESSION_SCHEMA', 'Unsupported Session database format. Keep the file and use a compatible version or another data directory')
+      throw new SessionError(
+        'SESSION_SCHEMA',
+        'Unsupported Session database format. Keep the file and use a compatible version or another data directory',
+      )
     }
     // Catch damaged files or incomplete schemas before accepting requests. Never reset them.
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get()) {
       throw new SessionError('SESSION_CORRUPT', 'Session database failed its integrity check')
     }
-    db.prepare('SELECT id, created_at, updated_at, provider, model, workspace_id, removed_provider, removed_model FROM sessions LIMIT 0').all()
+    db.prepare(
+      'SELECT id, created_at, updated_at, provider, model, workspace_id, removed_provider, removed_model FROM sessions LIMIT 0',
+    ).all()
     db.prepare('SELECT session_id, sequence, payload FROM messages LIMIT 0').all()
-    db.prepare('SELECT id, session_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests LIMIT 0').all()
+    db.prepare(
+      'SELECT id, session_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests LIMIT 0',
+    ).all()
     db.prepare('SELECT request_id, sequence, created_at, payload FROM request_events LIMIT 0').all()
-    db.prepare('SELECT session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0').all()
+    db.prepare(
+      'SELECT session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0',
+    ).all()
+    db.prepare(
+      'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence FROM attachments LIMIT 0',
+    ).all()
+    db.prepare('SELECT id, version, session_id, attachment_id, fingerprint, label FROM sources LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

@@ -86,6 +86,10 @@ To set a key for the current PowerShell session without printing it:
 
 ## Session persistence
 
+Local Web stores attachment metadata and source identities in its session database (schema v4) and bytes under `files/attachments/` in Application Storage. Sent attachments belong to their Chat and remain after restart. Unsent attachment staging expires with the Host's in-memory draft; startup removes uncommitted managed files and keeps committed attachments. Missing or modified saved bytes produce an unreadable-attachment error. The storage layer is available for integration; upload UI, parsing and attachment request admission over HTTP are not enabled yet.
+
+Run the storage, migration and isolation checks with `pnpm.cmd test:local-foundation`. The tests use temporary local files and no provider credentials. Schema v4 is an upgrade from v1/v2/v3; an older binary refuses a v4 database. Keep a backup before upgrading if you need to return to an older binary.
+
 Every chat is saved to SQLite automatically. A session created without `--session` gets a generated ID printed as `Session: chat-<id>`; resume it later with `pnpm.cmd chat --session chat-<id>`. A session records its provider/model and refuses a conflicting selection. Sessions are local-only — do not run two CLIs against the same session concurrently. `--list-sessions` and `--history` read without calling a model.
 
 ## Local Web, workspaces and chats
