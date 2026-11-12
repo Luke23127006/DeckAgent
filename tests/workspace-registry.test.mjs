@@ -202,6 +202,26 @@ test('a folder that cannot be read or cannot be a project folder sets up no work
   assert.equal(registry.selectedId(), 'default')
 })
 
+test('folder refusals follow junctions in the configured home and data roots', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const alias = join(dir, 'alias')
+  await symlink(dir, alias, process.platform === 'win32' ? 'junction' : 'dir')
+  const policy = new FolderPolicy({ home: join(alias, 'home'), dataRoot: join(alias, 'data') })
+  await assert.rejects(policy.inspect(home), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'user-folder', allowInside: true },
+  })
+  await mkdir(join(home, '.ssh'))
+  await assert.rejects(policy.inspect(join(home, '.ssh')), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'key-folder', allowInside: false },
+  })
+  await assert.rejects(policy.inspect(dataRoot), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'deckagent-data', allowInside: false },
+  })
+})
+
 test('a moved folder: its workspace becomes unreadable, keeps its chats, and takes the new place when the folder is chosen', async t => {
   const { dir, open } = await setup(t)
   const registry = open()

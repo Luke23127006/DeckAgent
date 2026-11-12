@@ -1,4 +1,4 @@
-import { constants } from 'node:fs'
+import { constants, realpathSync } from 'node:fs'
 import { access, opendir, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { WorkspaceError } from './contracts.ts'
@@ -36,6 +36,24 @@ export class FolderPolicy {
     this.windows = (options.platform ?? process.platform) === 'win32'
     this.paths = this.windows ? path.win32 : path.posix
     this.systemFolders = options.systemFolders ?? (this.windows ? windowsSystemFolders : [])
+    // Compare existing policy roots in the same canonical form as inspected folders.
+    // Missing roots retain their lexical policy (including platform-only policy checks).
+    if ((options.platform ?? process.platform) === process.platform) {
+      this.options = {
+        ...options,
+        home: this.canonicalRoot(options.home),
+        dataRoot: this.canonicalRoot(options.dataRoot),
+      }
+    }
+  }
+
+  private canonicalRoot(folder: string): string {
+    try {
+      return realpathSync(folder)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return folder
+      throw error
+    }
   }
 
   /** Refusal of a canonical folder path, or undefined when the folder may be a project folder. */
