@@ -1,5 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
+import { randomUUID } from 'node:crypto'
+import { ApprovalLog } from './approvals.ts'
 import type { AttachmentLog } from './attachments.ts'
 import type {
   ActivityRecord,
@@ -61,6 +63,26 @@ export function validateEvent(value: unknown): asserts value is RequestEventBody
       valid =
         keys.every(key => ['kind', 'code'].includes(key)) && typeof value.code === 'string' && code.test(value.code)
   }
+  if (record(value) && value.kind === 'approval' && record(value.approval)) {
+    const approval = value.approval
+    valid =
+      Object.keys(value).every(key => ['kind', 'approval'].includes(key)) &&
+      Object.keys(approval).every(key =>
+        ['approvalId', 'requestId', 'operation', 'target', 'reason', 'state'].includes(key),
+      ) &&
+      typeof approval.approvalId === 'string' &&
+      id.test(approval.approvalId) &&
+      typeof approval.requestId === 'string' &&
+      id.test(approval.requestId) &&
+      approval.operation === 'read-file' &&
+      typeof approval.target === 'string' &&
+      approval.target.length > 0 &&
+      approval.target.length <= 4096 &&
+      typeof approval.reason === 'string' &&
+      approval.reason.length > 0 &&
+      approval.reason.length <= 500 &&
+      ['pending', 'allowed', 'refused', 'cancelled'].includes(String(approval.state))
+  }
   if (!valid) throw new SessionError('REQUEST_EVENT', 'Request event does not match the supported format')
 }
 
@@ -81,11 +103,23 @@ interface Access {
  * the Host's request controller writes through here, the browser reads through the Host.
  */
 export class RequestLog {
+  readonly approvals: ApprovalLog
   constructor(
     private readonly db: DatabaseSync,
     private readonly access: Access,
     private readonly attachments: AttachmentLog,
-  ) {}
+  ) {
+    this.approvals = new ApprovalLog(db, {
+      run: operation => this.access.run(operation),
+      transaction: operation => this.access.transaction(operation),
+      assertActive: requestId => {
+        const request = this.require(requestId)
+        if (request.status !== 'active' && request.status !== 'waiting_approval')
+          throw new SessionError('REQUEST_CLOSED', 'The request has ended')
+      },
+      insert: (requestId, event) => this.insert(requestId, event, new Date().toISOString()),
+    })
+  }
 
   /**
    * Admission: the user's message and the active request are saved in one transaction.
@@ -142,7 +176,8 @@ export class RequestLog {
       const request = this.require(requestId)
       if (request.status !== 'active' && request.status !== 'waiting_approval')
         throw new SessionError('REQUEST_CLOSED', 'The request has ended')
-      if (event.kind === 'status') throw new SessionError('REQUEST_EVENT', 'Status changes go through finish()')
+      if (event.kind === 'status' || event.kind === 'approval')
+        throw new SessionError('REQUEST_EVENT', 'Status and approvals are owned by Host operations')
       return this.insert(requestId, event, new Date().toISOString())
     })
   }
@@ -288,7 +323,7 @@ export class RequestLog {
     const request = this.require(requestId)
     if (request.status !== 'active' && request.status !== 'waiting_approval') return undefined
     const now = new Date().toISOString()
-    const written: RequestEvent[] = []
+    const written: RequestEvent[] = [...this.approvals.cancelPending(requestId)]
     const settled: ActivityStatus = status === 'completed' ? 'completed' : status === 'stopped' ? 'stopped' : 'failed'
     const running = new Map<string, Extract<RequestEventBody, { kind: 'activity' }>>()
     for (const event of this.events(requestId)) {
@@ -304,6 +339,19 @@ export class RequestLog {
       else running.delete(event.id)
     }
     for (const activity of running.values()) written.push(this.insert(requestId, { ...activity, status: settled }, now))
+    const refused = this.approvals.refusedTargets(requestId)
+    if (refused.length)
+      written.push(
+        this.insert(
+          requestId,
+          {
+            kind: 'text',
+            part: 'host-refused-work',
+            text: `Không thực hiện vì bạn đã từ chối: ${refused.join('; ')}.`,
+          },
+          now,
+        ),
+      )
     const text = this.assemble(requestId)
     if (text.trim())
       this.access.appendMessages(request.sessionId, [
@@ -316,6 +364,80 @@ export class RequestLog {
       .run(status, now, errorCode ?? null, requestId)
     written.push(this.insert(requestId, { kind: 'status', status, ...(errorCode ? { errorCode } : {}) }, now))
     return written
+  }
+
+  /** Records the exact bytes returned, keeping private origins out of tool results. */
+  sourceCatalogue(sessionId: string) {
+    return this.access.run(() =>
+      this.db
+        .prepare(`SELECT s.source_id, s.version, s.kind, s.label FROM source_reads s
+      WHERE s.session_id = ? AND s.version = (SELECT MAX(v.version) FROM source_reads v WHERE v.session_id = s.session_id AND v.origin = s.origin)
+      ORDER BY s.source_id`)
+        .all(sessionId)
+        .map(row => ({
+          sourceId: String(row.source_id),
+          version: Number(row.version),
+          kind: String(row.kind),
+          label: String(row.label),
+        })),
+    )
+  }
+
+  recordSourceRead(
+    requestId: string,
+    value: {
+      readonly origin: string
+      readonly label: string
+      readonly fingerprint: string
+      readonly lineCount: number
+      readonly kind: 'project-file' | 'approved-file'
+    },
+  ) {
+    return this.access.transaction(() => {
+      const request = this.require(requestId)
+      if (request.status !== 'active') throw new SessionError('REQUEST_CLOSED', 'The request is not executing')
+      if (
+        !value.origin ||
+        value.origin.length > 4096 ||
+        !value.label ||
+        value.label.length > 4096 ||
+        !/^[a-f0-9]{64}$/.test(value.fingerprint) ||
+        !Number.isSafeInteger(value.lineCount) ||
+        value.lineCount < 1 ||
+        (value.kind !== 'project-file' && value.kind !== 'approved-file')
+      )
+        throw new SessionError('INVALID_REQUEST', 'Invalid source receipt')
+      const previous = this.db
+        .prepare('SELECT * FROM source_reads WHERE session_id = ? AND origin = ? ORDER BY version DESC LIMIT 1')
+        .get(request.sessionId, value.origin)
+      const sourceId = previous ? String(previous.source_id) : `src-${randomUUID()}`
+      let version = previous ? Number(previous.version) : 0
+      if (!previous || previous.fingerprint !== value.fingerprint) {
+        version++
+        this.db
+          .prepare(
+            'INSERT INTO source_reads (source_id, version, session_id, origin, label, fingerprint, line_count, kind, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          )
+          .run(
+            sourceId,
+            version,
+            request.sessionId,
+            value.origin,
+            value.label,
+            value.fingerprint,
+            value.lineCount,
+            value.kind,
+            requestId,
+          )
+      }
+      return {
+        sourceId,
+        version,
+        kind: value.kind,
+        label: value.label,
+        location: { kind: 'lines' as const, start: 1, end: value.lineCount },
+      }
+    })
   }
 
   private assemble(requestId: string): string {

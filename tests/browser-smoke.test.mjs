@@ -413,6 +413,52 @@ async function tree(folder) {
   return entries
 }
 
+test('step approval survives reload and chat switching; refusal continues and Stop cancels a pending step', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-approval-'))
+  let app, session
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  const outside = join(dir, 'outside.txt')
+  await writeFile(outside, 'outside browser marker')
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('approval'), openCode: fakeOpenCode(dir) })
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    assert.equal(response.ok, true)
+    return response.json()
+  }
+  const chat = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'approval' } })
+  const other = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'approval' } })
+  const request = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
+  await eventually(async () => (await api(`requests/${request.requestId}`)).pendingApproval, 'Approval was not saved')
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  const visit = async id => {
+    await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+    await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${id}"]')`), 'Chat list missing')
+    await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${id}"]').click(); true`)
+  }
+  await visit(chat.sessionId)
+  const visible = `document.querySelector('.step-approval:not([hidden])')`
+  await eventually(() => evaluate(`!!${visible}`), 'Saved approval did not appear')
+  assert.equal(await evaluate(`${visible}.textContent.includes('outside.txt')`), true)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').hidden`), false)
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!${visible}`), 'Approval leaked into another chat')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!${visible}`), 'Approval lost on chat switch')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!${visible}`), 'Approval lost on reload')
+  await evaluate(`Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Từ chối').click(); true`)
+  await eventually(async () => (await api(`requests/${request.requestId}`)).status === 'completed', 'Refused request did not continue')
+  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Không thực hiện vì bạn đã từ chối')`), 'Refusal missing from saved closing reply')
+  const next = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!${visible}`), 'Next approval missing')
+  await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').click(); true`)
+  await eventually(async () => (await api(`requests/${next.requestId}`)).status === 'stopped', 'Stop failed during approval')
+  await eventually(() => evaluate(`!${visible}`), 'Cancelled approval controls remained visible')
+})
+
 test('real browser boots without a model: workspaces, chats, search, drafts and an unreadable chat', {
   timeout: 60000,
 }, async t => {

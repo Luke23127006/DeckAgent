@@ -1,4 +1,11 @@
-import type { HistoryMessage, RequestSnapshot, RequestStatus, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-api'
+import type {
+  HistoryMessage,
+  RequestSnapshot,
+  RequestStatus,
+  WebSession,
+  WebSettings,
+  WorkspaceList,
+} from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient, HostRequestError, isActive } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -14,17 +21,22 @@ import { failureFeedback } from './request-feedback.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
+import type { ApprovalView } from '@deckagent/host-api'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
-  if (!settings.runtime.available) return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
-    ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
-    : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
+  if (!settings.runtime.available)
+    return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
+      ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
+      : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
   if (!session || session.selectable) return undefined
-  if (!settings.providers.length) return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
-  if (!settings.providers.some(provider => provider.models.length)) return 'Chưa thêm model nào. Thêm model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  if (!settings.providers.length)
+    return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  if (!settings.providers.some(provider => provider.models.length))
+    return 'Chưa thêm model nào. Thêm model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
   const removed = session.removedSelection ?? session.selection
-  if (removed) return `Model ${removed.model} đã bị gỡ; chat này chưa có model. Hãy chọn model khác để gửi. Hệ thống không tự chọn model.`
+  if (removed)
+    return `Model ${removed.model} đã bị gỡ; chat này chưa có model. Hãy chọn model khác để gửi. Hệ thống không tự chọn model.`
   return 'Chat này chưa chọn model. Hãy chọn model để gửi yêu cầu. Bản nháp được giữ nguyên.'
 }
 
@@ -45,8 +57,13 @@ const headerState = element('small', '', 'chat-state')
 headerState.setAttribute('aria-live', 'polite')
 const welcome = element('section', undefined, 'welcome')
 welcome.hidden = true
-welcome.append(element('h2', 'Hãy mô tả deck bạn muốn'),
-  element('p', 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.'))
+welcome.append(
+  element('h2', 'Hãy mô tả deck bạn muốn'),
+  element(
+    'p',
+    'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.',
+  ),
+)
 const model = element('select')
 model.disabled = true
 model.setAttribute('aria-label', 'Model đã chọn')
@@ -59,9 +76,20 @@ const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
 // Outline confirmation and generation arrive with their builds (B04); this build sends generic chat requests only.
 const timeline = new ConversationView(messages, undefined, undefined, outlineDock, {
-  retry: text => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); saveDraft(); controls() },
+  retry: text => {
+    input.value = text
+    input.focus()
+    input.setSelectionRange(text.length, text.length)
+    saveDraft()
+    controls()
+  },
   settings: () => run(settingsUI.open()),
   draft: () => input.value,
+  approve: async (requestId, approvalId, decision) => {
+    await client.decide(requestId, approvalId, decision)
+    const saved = await client.snapshot(requestId)
+    if (current?.sessionId === saved.sessionId) timeline.snapshot(saved)
+  },
 })
 const form = element('form', undefined, 'composer')
 form.noValidate = true
@@ -82,7 +110,17 @@ const stopRequest = button('Dừng', () => {
   stopping.add(id)
   controls()
   // The Host saves the stop at once (NFR-011); the stream then reports it, and this snapshot covers a lost stream.
-  run(client.stop(id).then(snapshot => { timeline.snapshot(snapshot) }).finally(() => { stopping.delete(id); controls() }))
+  run(
+    client
+      .stop(id)
+      .then(snapshot => {
+        timeline.snapshot(snapshot)
+      })
+      .finally(() => {
+        stopping.delete(id)
+        controls()
+      }),
+  )
 })
 stopRequest.className = 'stop-action'
 stopRequest.setAttribute('aria-label', 'Dừng yêu cầu')
@@ -93,7 +131,10 @@ deck.hidden = true
 mountDeckTab(deck)
 const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-sidebar')
 publishedDeck.hidden = true
-const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = true })
+const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => {
+  deck.hidden = true
+  openDeck.hidden = true
+})
 let current: WebSession | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [], runtime: { available: false } }
 const stopping = new Set<string>()
@@ -116,7 +157,10 @@ let chatTitle = 'Chat mới'
 
 function describeHistory(history: readonly HistoryMessage[]) {
   historyPresent = history.length > 0
-  const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
+  const first = history
+    .find(message => message.role === 'user')
+    ?.content.replace(/\s+/g, ' ')
+    .trim()
   chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'Chat mới'
 }
 
@@ -133,14 +177,21 @@ function saveDraft() {
   const id = current.sessionId
   drafts.set(id, input.value)
   clearTimeout(pendingDrafts.get(id))
-  pendingDrafts.set(id, setTimeout(() => { void flushDraft(id) }, 250))
+  pendingDrafts.set(
+    id,
+    setTimeout(() => {
+      void flushDraft(id)
+    }, 250),
+  )
 }
 async function flushDraft(id: string) {
   const timer = pendingDrafts.get(id)
   if (timer === undefined) return
   clearTimeout(timer)
   pendingDrafts.delete(id)
-  try { await management.saveDraft(id, drafts.get(id) ?? '') } catch {
+  try {
+    await management.saveDraft(id, drafts.get(id) ?? '')
+  } catch {
     status.hidden = false
     status.dataset.kind = 'error'
     status.textContent = 'Chưa lưu được bản nháp vào DeckAgent. Kiểm tra kết nối; nội dung vẫn còn trong ô soạn thảo.'
@@ -192,7 +243,10 @@ function controls() {
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
     !!activeId
-  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > requestLimit))
+  submit.setAttribute(
+    'aria-disabled',
+    String(submit.disabled || !input.value.trim() || input.value.length > requestLimit),
+  )
   timeline.setOutlineBusy(true)
   picker.update(settings, !!activeId)
   title.textContent = chatTitle
@@ -203,7 +257,10 @@ function controls() {
   navigationHint.hidden = !activeId || chats.hidden
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
-  openDeck.hidden = (!outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) || !publishedDeck.hidden
+  openDeck.hidden =
+    (!outlineState?.confirmedId &&
+      !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) ||
+    !publishedDeck.hidden
   fitInput()
 }
 function renderModels() {
@@ -219,16 +276,28 @@ function renderModels() {
   controls()
 }
 function chatButton(session: WebSession) {
-  const item = button('', () =>
-    run(open(session)),
-  )
+  const item = button('', () => run(open(session)))
   const updated = element('time')
   updated.dateTime = session.updatedAt
   const date = new Date(session.updatedAt)
   updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
-  const slides = !session.readable ? 'Không mở được chat này' : session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
-  const name = !session.readable ? 'Chat không đọc được' : !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'
-  item.append(element('strong', name), updated, element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
+  const slides = !session.readable
+    ? 'Không mở được chat này'
+    : session.hasSlides === undefined
+      ? 'Chưa rõ slide'
+      : session.hasSlides
+        ? 'Có slide'
+        : 'Chưa có slide'
+  const name = !session.readable
+    ? 'Chat không đọc được'
+    : !session.messageCount
+      ? 'Chat mới'
+      : (session.title ?? 'Chat chưa có tên')
+  item.append(
+    element('strong', name),
+    updated,
+    element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`),
+  )
   item.title = `${name} · ${updated.textContent} · ${slides}`
   item.dataset.sessionId = session.sessionId
   if (!session.readable) item.dataset.unreadable = 'true'
@@ -238,8 +307,14 @@ function chatButton(session: WebSession) {
 }
 function renderChats() {
   chats.replaceChildren()
-  const listed = (session: WebSession) => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides
-    || !session.readable || session.hasDraft || drafts.get(session.sessionId)?.trim()
+  const listed = (session: WebSession) =>
+    session.sessionId === current?.sessionId ||
+    session.messageCount ||
+    session.selection ||
+    session.hasSlides ||
+    !session.readable ||
+    session.hasDraft ||
+    drafts.get(session.sessionId)?.trim()
   const found = searchResults
   const visible = sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
   // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
@@ -256,7 +331,11 @@ function renderChats() {
   }
 }
 async function refresh() {
-  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
+  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([
+    management.settings(),
+    management.sessions(),
+    management.workspaces(),
+  ])
   settings = nextSettings
   sessions = nextSessions
   workspaces = nextWorkspaces
@@ -299,8 +378,17 @@ async function follow(id: string, sessionId: string, expected: number) {
   let errorCode: string | undefined
   let cursor = 0
   let failures = 0
-  const show = () => timeline.snapshot({ requestId: id, sessionId, status: state, text: [...parts.values()].filter(text => text.trim()).join('\n\n'),
-    sequence: cursor, ...(errorCode ? { errorCode } : {}) })
+  let pendingApproval: ApprovalView | null = null
+  const show = () =>
+    timeline.snapshot({
+      requestId: id,
+      sessionId,
+      status: state,
+      text: [...parts.values()].filter(text => text.trim()).join('\n\n'),
+      sequence: cursor,
+      pendingApproval,
+      ...(errorCode ? { errorCode } : {}),
+    })
   while (!control.signal.aborted && generation === expected && isActive(state)) {
     try {
       for await (const event of client.watch(id, control.signal, cursor)) {
@@ -308,8 +396,21 @@ async function follow(id: string, sessionId: string, expected: number) {
         cursor = event.sequence
         failures = 0
         if (event.kind === 'text') parts.set(event.part, event.text)
-        else if (event.kind === 'activity') timeline.activity({ requestId: id, sequence: event.sequence, id: event.id, label: event.label, type: event.type, status: event.status })
-        else if (event.kind === 'status') { state = event.status; errorCode = event.errorCode }
+        else if (event.kind === 'activity')
+          timeline.activity({
+            requestId: id,
+            sequence: event.sequence,
+            id: event.id,
+            label: event.label,
+            type: event.type,
+            status: event.status,
+          })
+        else if (event.kind === 'status') {
+          state = event.status
+          errorCode = event.errorCode
+          if (!isActive(state)) pendingApproval = null
+        } else if (event.kind === 'approval')
+          pendingApproval = event.approval.state === 'pending' ? event.approval : null
         else if (event.kind === 'notice' && event.code === 'CONVERSATION_SUMMARIZED') timeline.summarized(id)
         show()
       }
@@ -322,7 +423,11 @@ async function follow(id: string, sessionId: string, expected: number) {
     }
   }
   if (control.signal.aborted || generation !== expected) return
-  await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
+  await Promise.all([
+    showHistory(sessionId, expected),
+    showActivities(sessionId, expected),
+    showOutlines(sessionId, expected),
+  ])
   await refresh()
   if (current?.sessionId === sessionId && current.activeRequestId === id) {
     const { activeRequestId: _ended, ...rest } = current
@@ -338,14 +443,25 @@ async function open(listed: WebSession) {
   picker.close()
   // Read everything before replacing current state. A failed open leaves the old chat intact.
   const previousGeneration = generation
-  if (current) { saveDraft(); await flushDraft(current.sessionId) }
-  const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
-    management.requests(session.sessionId), outlines.snapshot(session.sessionId), readDraft(session.sessionId)])
+  if (current) {
+    saveDraft()
+    await flushDraft(current.sessionId)
+  }
+  const loaded = await Promise.all([
+    client.history(session.sessionId),
+    management.activities(session.sessionId),
+    management.requests(session.sessionId),
+    outlines.snapshot(session.sessionId),
+    readDraft(session.sessionId),
+  ])
   if (generation !== previousGeneration || (switching && switchingBlocked())) return
   input.value = loaded[4]
   generation++
   watch?.abort()
-  if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
+  if (current?.sessionId !== session.sessionId) {
+    timeline.reset()
+    outlineState = undefined
+  }
   // The saved records say whether a request is active now; the list entry may be older.
   const activeRequestId = loaded[2].find(request => isActive(request.status))?.requestId
   const { activeRequestId: _listedRequest, ...rest } = listed
@@ -359,7 +475,13 @@ async function open(listed: WebSession) {
   renderChats()
   status.hidden = true
   if (session.activeRequestId)
-    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'active', text: '', sequence: 0 })
+    timeline.snapshot({
+      requestId: session.activeRequestId,
+      sessionId: session.sessionId,
+      status: 'active',
+      text: '',
+      sequence: 0,
+    })
   controls()
   timeline.setHistory(loaded[0])
   describeHistory(loaded[0])
@@ -375,7 +497,10 @@ async function newChat() {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
   // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
-  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) { input.focus(); return }
+  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) {
+    input.focus()
+    return
+  }
   creating = true
   controls()
   try {
@@ -383,7 +508,10 @@ async function newChat() {
     const created = await management.create()
     await refresh()
     await open(created)
-  } finally { creating = false; controls() }
+  } finally {
+    creating = false
+    controls()
+  }
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
 const workspaceUI = workspaceView(management, root, async (next, reloadChats) => {
@@ -404,20 +532,37 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 function findChats() {
   const words = searchInput.value.trim()
   searchWords = words
-  if (!words) { searchResults = undefined; renderChats(); return }
-  run(management.search(words).then(found => {
-    // FR-134: keep the words; show only the chats that hold them.
-    if (searchWords !== words) return
-    searchResults = new Set(found.map(session => session.sessionId))
+  if (!words) {
+    searchResults = undefined
     renderChats()
-  }))
+    return
+  }
+  run(
+    management.search(words).then(found => {
+      // FR-134: keep the words; show only the chats that hold them.
+      if (searchWords !== words) return
+      searchResults = new Set(found.map(session => session.sessionId))
+      renderChats()
+    }),
+  )
 }
-searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(findChats, 200) })
-search.addEventListener('submit', event => { event.preventDefault(); clearTimeout(searchTimer); findChats() })
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(findChats, 200)
+})
+search.addEventListener('submit', event => {
+  event.preventDefault()
+  clearTimeout(searchTimer)
+  findChats()
+})
 const requestLimit = 16000
 const unavailable = element('p', '', 'requests-unavailable')
 unavailable.setAttribute('role', 'note')
-const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
+const picker = modelPicker(
+  model,
+  () => run(settingsUI.open()),
+  () => run(settingsUI.open(true)),
+)
 /** Only an open or a send in progress blocks switching. A running request keeps going in the Host (UC-003 A13). */
 function switchingBlocked(): boolean {
   return opening !== undefined || (!!current && sending.has(current.sessionId))
@@ -425,7 +570,11 @@ function switchingBlocked(): boolean {
 const newChatButton = button('Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
-const navigationHint = element('p', 'Yêu cầu vẫn chạy khi bạn mở chat khác; quay lại chat này để xem tiến độ.', 'navigation-hint')
+const navigationHint = element(
+  'p',
+  'Yêu cầu vẫn chạy khi bạn mở chat khác; quay lại chat này để xem tiến độ.',
+  'navigation-hint',
+)
 navigationHint.hidden = true
 const recents = button('Gần đây', () => {
   chats.hidden = !chats.hidden
@@ -436,9 +585,15 @@ recents.className = 'recents-toggle'
 recents.setAttribute('aria-expanded', 'true')
 // On a phone the chat list starts folded so the conversation owns the first screen.
 const compactNavigation = matchMedia('(max-width:720px)')
-const foldRecents = () => { chats.hidden = compactNavigation.matches; recents.setAttribute('aria-expanded', String(!chats.hidden)) }
+const foldRecents = () => {
+  chats.hidden = compactNavigation.matches
+  recents.setAttribute('aria-expanded', String(!chats.hidden))
+}
 foldRecents()
-compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
+compactNavigation.addEventListener('change', () => {
+  foldRecents()
+  controls()
+})
 recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
 // The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
@@ -451,10 +606,19 @@ function setNavigation(collapse: boolean, remember = true) {
   navToggle.setAttribute('aria-expanded', String(!collapse))
   navToggle.setAttribute('aria-label', label)
   navToggle.title = label
-  if (remember) try { localStorage.setItem('deckagent-nav', collapse ? 'collapsed' : 'open') } catch { /* Optional layout preference. */ }
+  if (remember)
+    try {
+      localStorage.setItem('deckagent-nav', collapse ? 'collapsed' : 'open')
+    } catch {
+      /* Optional layout preference. */
+    }
 }
 let storedNavigation: string | null = null
-try { storedNavigation = localStorage.getItem('deckagent-nav') } catch { /* Optional layout preference. */ }
+try {
+  storedNavigation = localStorage.getItem('deckagent-nav')
+} catch {
+  /* Optional layout preference. */
+}
 setNavigation(storedNavigation === 'collapsed', false)
 const navTop = element('div', undefined, 'nav-top')
 navTop.append(element('div', 'DeckAgent', 'wordmark'), navToggle)
@@ -479,8 +643,13 @@ function openAccountMenu() {
   accountMenu.style.width = `${width}px`
   accountMenu.style.left = `${Math.max(8, Math.min(box.left, innerWidth - width - 8))}px`
   accountMenu.dataset.side = box.top > innerHeight / 2 ? 'above' : 'below'
-  if (accountMenu.dataset.side === 'above') { accountMenu.style.top = ''; accountMenu.style.bottom = `${innerHeight - box.top + 8}px` }
-  else { accountMenu.style.bottom = ''; accountMenu.style.top = `${box.bottom + 8}px` }
+  if (accountMenu.dataset.side === 'above') {
+    accountMenu.style.top = ''
+    accountMenu.style.bottom = `${innerHeight - box.top + 8}px`
+  } else {
+    accountMenu.style.bottom = ''
+    accountMenu.style.top = `${box.bottom + 8}px`
+  }
 }
 function closeAccountMenu(restoreFocus = false) {
   if (accountMenu.hidden) return
@@ -489,15 +658,28 @@ function closeAccountMenu(restoreFocus = false) {
   if (restoreFocus) accountTrigger.focus()
 }
 // The menu closes on Escape and on any press outside it, like the model popover.
-document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAccountMenu(true) })
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeAccountMenu(true)
+})
 document.addEventListener('pointerdown', event => {
-  if (!accountMenu.hidden && !accountMenu.contains(event.target as Node) && !accountTrigger.contains(event.target as Node)) closeAccountMenu()
+  if (
+    !accountMenu.hidden &&
+    !accountMenu.contains(event.target as Node) &&
+    !accountTrigger.contains(event.target as Node)
+  )
+    closeAccountMenu()
 })
 const themeSection = element('div', undefined, 'menu-section')
 themeSection.append(element('span', 'Giao diện'), themeControl(management))
 accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
-  Object.assign(button('Cài đặt model', () => { closeAccountMenu(); run(settingsUI.open()) }), { className: 'settings-open', title: 'Cài đặt model' }),
+  Object.assign(
+    button('Cài đặt model', () => {
+      closeAccountMenu()
+      run(settingsUI.open())
+    }),
+    { className: 'settings-open', title: 'Cài đặt model' },
+  ),
   themeSection,
 )
 navigation.append(
@@ -513,7 +695,11 @@ navigation.append(
 )
 const headingText = element('div', undefined, 'chat-heading')
 headingText.append(title, headerState)
-function showDeck() { deck.hidden = true; publishedDeck.hidden = false; openDeck.hidden = true }
+function showDeck() {
+  deck.hidden = true
+  publishedDeck.hidden = false
+  openDeck.hidden = true
+}
 const openDeck = button('Mở deck', showDeck)
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
@@ -551,7 +737,10 @@ const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
 form.append(unavailable, input, composerActions)
-input.addEventListener('input', () => { saveDraft(); controls() })
+input.addEventListener('input', () => {
+  saveDraft()
+  controls()
+})
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
@@ -564,7 +753,9 @@ conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
 initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
-const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
+const navigationSize = new ResizeObserver(() =>
+  root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`),
+)
 navigationSize.observe(navigation)
 model.addEventListener('change', () => {
   if (model.value === '__settings') {
@@ -625,7 +816,10 @@ async function submitRequest(text: string): Promise<void> {
     // A refused send leaves the draft unchanged; only an accepted request empties the composer.
     const accepted: RequestSnapshot = await client.send({ sessionId: id, input: text })
     if (generation === expected && current) {
-      if (input.value === text) { input.value = ''; saveDraft() }
+      if (input.value === text) {
+        input.value = ''
+        saveDraft()
+      }
       current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
       status.hidden = true
@@ -657,7 +851,10 @@ const timer = setInterval(() => {
 window.addEventListener(
   'pagehide',
   () => {
-    if (current) { saveDraft(); void flushDraft(current.sessionId) }
+    if (current) {
+      saveDraft()
+      void flushDraft(current.sessionId)
+    }
     navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
@@ -673,12 +870,17 @@ window.addEventListener('pageshow', event => {
 window.addEventListener('focus', () => {
   const id = current?.sessionId
   if (!id || pendingDrafts.has(id) || document.activeElement === input) return
-  management.draft(id).then(text => {
-    if (current?.sessionId !== id || pendingDrafts.has(id) || input.value === text) return
-    drafts.set(id, text)
-    input.value = text
-    controls()
-  }, () => { /* The draft on screen stays; the next save reports a lost connection. */ })
+  management.draft(id).then(
+    text => {
+      if (current?.sessionId !== id || pendingDrafts.has(id) || input.value === text) return
+      drafts.set(id, text)
+      input.value = text
+      controls()
+    },
+    () => {
+      /* The draft on screen stays; the next save reports a lost connection. */
+    },
+  )
 })
 run(
   (async () => {

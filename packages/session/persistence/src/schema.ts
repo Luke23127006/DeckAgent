@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 4
+const schemaVersion = 5
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 
@@ -46,6 +46,22 @@ const attachmentTables = `
   ) STRICT;
 `
 
+const approvalTables = `
+  CREATE TABLE request_approvals (
+    id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES requests(id), step_key TEXT NOT NULL,
+    operation TEXT NOT NULL CHECK (operation = 'read-file'), target TEXT NOT NULL, reason TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('pending','allowed','refused','cancelled'))
+  ) STRICT;
+  CREATE UNIQUE INDEX approvals_one_pending ON request_approvals(request_id) WHERE state = 'pending';
+  CREATE INDEX approvals_refused ON request_approvals(request_id, step_key, state);
+  CREATE TABLE source_reads (
+    source_id TEXT NOT NULL, version INTEGER NOT NULL, session_id TEXT NOT NULL REFERENCES sessions(id),
+    origin TEXT NOT NULL, label TEXT NOT NULL, fingerprint TEXT NOT NULL, line_count INTEGER NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('project-file','approved-file')), request_id TEXT NOT NULL REFERENCES requests(id),
+    PRIMARY KEY (source_id, version), UNIQUE (session_id, origin, version)
+  ) STRICT;
+`
+
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
@@ -69,10 +85,11 @@ export function initialize(db: DatabaseSync): void {
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
         ${requestTables}
         ${attachmentTables}
+        ${approvalTables}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if ((version === 1 || version === 2 || version === 3) && owner === applicationId) {
+    } else if ((version === 1 || version === 2 || version === 3 || version === 4) && owner === applicationId) {
       // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
       if (version === 1)
         db.exec(`
@@ -81,7 +98,8 @@ export function initialize(db: DatabaseSync): void {
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
       `)
       if (version < 3) db.exec(requestTables)
-      db.exec(`${attachmentTables} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 4) db.exec(attachmentTables)
+      db.exec(`${approvalTables} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError(
         'SESSION_SCHEMA',
@@ -107,6 +125,10 @@ export function initialize(db: DatabaseSync): void {
       'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence FROM attachments LIMIT 0',
     ).all()
     db.prepare('SELECT id, version, session_id, attachment_id, fingerprint, label FROM sources LIMIT 0').all()
+    db.prepare('SELECT id, request_id, step_key, operation, target, reason, state FROM request_approvals LIMIT 0').all()
+    db.prepare(
+      'SELECT source_id, version, session_id, origin, label, fingerprint, line_count, kind, request_id FROM source_reads LIMIT 0',
+    ).all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

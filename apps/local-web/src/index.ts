@@ -30,8 +30,11 @@ import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
 import { ManagedAttachments } from './managed-attachments.ts'
+import { prepareSourceTools } from './source-tools.ts'
 
 export { ManagedAttachments } from './managed-attachments.ts'
+export { prepareSourceTools } from './source-tools.ts'
+export { openToolBridge } from './opencode/mcp-bridge.ts'
 export type { AttachmentUpload } from './managed-attachments.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
@@ -193,7 +196,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     }
     const drafts = new MemoryDraftStore()
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
-    await ManagedAttachments.open(layout.files, store.attachments, drafts)
+    const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
@@ -270,7 +273,19 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       decks: presentation,
       outlines: presentation,
       assets,
-      requests: { store: requestStore, runtime },
+      requests: {
+        store: requestStore,
+        runtime,
+        prepareTools: sessionId =>
+          prepareSourceTools({
+            sessionId,
+            store,
+            registry: workspaces,
+            dataRoot: layout.root,
+            home: options.home ?? homedir(),
+            attachments,
+          }),
+      },
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => chatCall(() => store.read(id)),
       management: {

@@ -4,7 +4,7 @@ status: accepted
 
 # Source, request and approval integration contracts
 
-The Host needs to admit attachments, authorize reads and preserve approval state without giving the runtime control of product state. This decision extends the existing [storage direction](../build/rebuild/adr/0001-local-storage.md), [tool authorization direction](../build/rebuild/adr/0003-tools-permissions.md) and [request lifecycle direction](../build/rebuild/adr/0004-request-events-lifecycle.md). The integration contracts are accepted; their APIs and runtime behavior are not yet implemented. Acceptance and implementation evidence are tracked in the [contract integration issue](https://github.com/Luke23127006/DeckAgent/issues/79).
+The Host needs to admit attachments, authorize reads and preserve approval state without giving the runtime control of product state. This decision extends the existing [storage direction](../build/rebuild/adr/0001-local-storage.md), [tool authorization direction](../build/rebuild/adr/0003-tools-permissions.md) and [request lifecycle direction](../build/rebuild/adr/0004-request-events-lifecycle.md). The integration contracts are accepted. Acceptance and implementation evidence are tracked in the [contract integration issue](https://github.com/Luke23127006/DeckAgent/issues/79).
 
 ## Ownership and identity
 

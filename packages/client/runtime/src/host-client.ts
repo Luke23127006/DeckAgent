@@ -7,6 +7,37 @@ import type {
   RequestStatus,
 } from '@deckagent/host-api'
 
+import type { ApprovalView } from '@deckagent/host-api'
+
+function approvalView(value: unknown): ApprovalView {
+  if (
+    !object(value) ||
+    typeof value.approvalId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.approvalId) ||
+    typeof value.requestId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.requestId) ||
+    value.operation !== 'read-file' ||
+    typeof value.target !== 'string' ||
+    !value.target ||
+    value.target.length > 4096 ||
+    typeof value.reason !== 'string' ||
+    !value.reason ||
+    value.reason.length > 500
+  )
+    throw new Error('INVALID_RESPONSE')
+  const state = value.state
+  if (state !== 'pending' && state !== 'allowed' && state !== 'refused' && state !== 'cancelled')
+    throw new Error('INVALID_RESPONSE')
+  return {
+    approvalId: value.approvalId,
+    requestId: value.requestId,
+    operation: 'read-file',
+    target: value.target,
+    reason: value.reason,
+    state,
+  }
+}
+
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
@@ -91,6 +122,12 @@ function snapshot(value: unknown): RequestSnapshot {
     (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !code.test(value.errorCode)))
   )
     throw new Error('INVALID_RESPONSE')
+  const pending =
+    value.pendingApproval === null || value.pendingApproval === undefined
+      ? value.pendingApproval
+      : approvalView(value.pendingApproval)
+  if (pending && (pending.requestId !== value.requestId || pending.state !== 'pending'))
+    throw new Error('INVALID_RESPONSE')
   return {
     requestId: value.requestId,
     sessionId: value.sessionId,
@@ -98,6 +135,7 @@ function snapshot(value: unknown): RequestSnapshot {
     text: value.text,
     sequence: value.sequence,
     ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
+    ...(pending === undefined ? {} : { pendingApproval: pending }),
   }
 }
 
@@ -143,6 +181,11 @@ export function requestEvent(value: unknown): RequestEvent {
     return { ...base, kind: 'text', part: value.part, text: value.text }
   if (value.kind === 'notice' && typeof value.code === 'string' && code.test(value.code))
     return { ...base, kind: 'notice', code: value.code }
+  if (value.kind === 'approval') {
+    const approval = approvalView(value.approval)
+    if (approval.requestId !== value.requestId) throw new Error('INVALID_RESPONSE')
+    return { ...base, kind: 'approval', approval }
+  }
   throw new Error('INVALID_RESPONSE')
 }
 
@@ -158,6 +201,11 @@ export class HostRequestError extends Error {
 }
 
 const allowed = [
+  'APPROVAL_NOT_FOUND',
+  'APPROVAL_CONFLICT',
+  'REQUEST_CLOSED',
+  'SOURCE_CHANGED',
+  'SOURCE_UNAVAILABLE',
   'AUTH_REQUIRED',
   'SESSION_BUSY',
   'HOST_BUSY',
@@ -179,6 +227,20 @@ const allowed = [
 
 /** Uses fetch for authenticated SSE: credentials never enter query strings or history. */
 export class HostClient {
+  async decide(request: string, approvalId: string, decision: 'allow-once' | 'refuse'): Promise<ApprovalView> {
+    return approvalView(
+      await (
+        await this.request(
+          `/api/requests/${encodeURIComponent(request)}/approvals/${encodeURIComponent(approvalId)}/decision`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ decision }),
+          },
+        )
+      ).json(),
+    )
+  }
   constructor(
     private readonly origin: string,
     private readonly token: string,

@@ -10,6 +10,7 @@ import { RequestLog } from './requests.ts'
 import { AttachmentLog } from './attachments.ts'
 
 export type {
+  ApprovalView,
   ChatSummary,
   JsonValue,
   Message,

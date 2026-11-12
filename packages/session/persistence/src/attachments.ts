@@ -136,6 +136,15 @@ export class AttachmentLog {
     )
   }
 
+  sent(sessionId: string): readonly AttachmentRecord[] {
+    return this.access.run(() =>
+      this.db
+        .prepare('SELECT id FROM attachments WHERE session_id = ? AND request_id IS NOT NULL ORDER BY rowid')
+        .all(sessionId)
+        .map(row => this.get(sessionId, String(row.id))),
+    )
+  }
+
   removeUnsent(sessionId: string, attachmentId: string): void {
     this.access.transaction(() => {
       this.get(sessionId, attachmentId)

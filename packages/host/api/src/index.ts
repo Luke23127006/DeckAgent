@@ -8,6 +8,15 @@ import { HttpError, RequestController } from './request-controller.ts'
 
 export type { AttachmentView } from './contracts.ts'
 export type {
+  ApprovalStep,
+  ApprovalView,
+  PreparedTools,
+  RequestTools,
+  ToolContext,
+  ToolResult,
+  ToolSchema,
+} from './contracts.ts'
+export type {
   ActivityStatus,
   AgentRequest,
   HistoryMessage,
@@ -106,7 +115,7 @@ export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
   const controller = options.requests
-    ? new RequestController(options.requests.store, options.requests.runtime)
+    ? new RequestController(options.requests.store, options.requests.runtime, options.requests.prepareTools)
     : undefined
   const streams = new Set<ServerResponse>()
   let origin = ''
@@ -289,6 +298,22 @@ export async function startHost(options: HostOptions) {
       // No Agent runtime is connected: refuse the request instead of pretending to start work.
       if (!controller) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
       json(res, 202, await controller.submit(await body(req)))
+      return
+    }
+    const approval = /^\/api\/requests\/([\w-]{1,100})\/approvals\/([\w-]{1,100})\/decision$/.exec(url.pathname)
+    if (approval && req.method === 'POST') {
+      if (!controller) throw new HttpError(404, 'APPROVAL_NOT_FOUND')
+      const value = await readJson(req)
+      if (
+        !value ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        !('decision' in value) ||
+        Object.keys(value).some(key => key !== 'decision') ||
+        (value.decision !== 'allow-once' && value.decision !== 'refuse')
+      )
+        throw new HttpError(400, 'INVALID_REQUEST')
+      json(res, 200, controller.decide(approval[1]!, approval[2]!, value.decision))
       return
     }
     const stop = /^\/api\/requests\/([\w-]{1,100})\/stop$/.exec(url.pathname)

@@ -86,11 +86,19 @@ To set a key for the current PowerShell session without printing it:
 
 ## Session persistence
 
-Local Web stores attachment metadata and source identities in its session database (schema v4) and bytes under `files/attachments/` in Application Storage. Sent attachments belong to their Chat and remain after restart. Unsent attachment staging expires with the Host's in-memory draft; startup removes uncommitted managed files and keeps committed attachments. Missing or modified saved bytes produce an unreadable-attachment error. The storage layer is available for integration; upload UI, parsing and attachment request admission over HTTP are not enabled yet.
+Local Web stores attachment metadata, source identities and step approvals in its session database (schema v5) and attachment bytes under `files/attachments/` in Application Storage. Sent attachments belong to their Chat and remain after restart. Unsent attachment staging expires with the Host's in-memory draft; startup removes uncommitted managed files and keeps committed attachments. Missing or modified saved bytes produce an unreadable-attachment error. Upload UI, parsing and attachment request admission over HTTP are not enabled yet.
 
-Run the storage, migration and isolation checks with `pnpm.cmd test:local-foundation`. The tests use temporary local files and no provider credentials. Schema v4 is an upgrade from v1/v2/v3; an older binary refuses a v4 database. Keep a backup before upgrading if you need to return to an older binary.
+Run the storage, migration and isolation checks with `pnpm.cmd test:local-foundation`, and the source/MCP/approval checks with `pnpm.cmd test:source-permissions`. The tests use temporary local files and no provider credentials. Schema v5 upgrades v1/v2/v3/v4; an older binary refuses a newer database. Keep a backup before upgrading if you need to return to an older binary.
 
 Every chat is saved to SQLite automatically. A session created without `--session` gets a generated ID printed as `Session: chat-<id>`; resume it later with `pnpm.cmd chat --session chat-<id>`. A session records its provider/model and refuses a conflicting selection. Sessions are local-only — do not run two CLIs against the same session concurrently. `--list-sessions` and `--history` read without calling a model.
+
+### Source tools and step approvals
+
+The Host exposes read-only project listing, UTF-8 source reads, external file reads and ready text-attachment reads through a request-local MCP bridge. Native shell/file tools and arbitrary MCP servers remain denied. The current source reader has technical budgets of 256 KiB per file and 200 returned directory entries; listings explicitly report truncation, and unsupported or oversized reads report an error. These budgets are not attachment product limits. Broader document extraction remains unavailable.
+
+An external read outside the Chat's project folder waits for **Allow once** or **Refuse** in the conversation. The prompt names the file and reason. A later step asks again; a refused identical step does not ask again within that request. Refusal leaves other authorized work running, and the closing reply names skipped work. Reload or switching Chats keeps the pending decision in the Host. Stop cancels it; restarting the Host records unfinished work without executing it again. Waiting for approval pauses the adapter's model-work timeout. The pinned CLI still has a technical MCP request timeout of at most 2,147,483,647 ms; it is not an approval decision or an OS sandbox.
+
+Project folders, application data, other Workspace folders and configured credential/system roots are checked at the Host boundary. App-data and other Chat data cannot be reached by supplying their paths. Project-folder files are never write targets. Run opt-in CLI smoke with `DECKAGENT_OPENCODE_LIVE=1`, `DECKAGENT_OPENCODE` set to the pinned executable, and `pnpm.cmd test:opencode-live`; its local endpoints need no real provider key. Real-provider smoke additionally needs the documented live-provider environment values in the test file. The [pinned CLI's JSON event loop](https://github.com/anomalyco/opencode/blob/v1.19.5/packages/opencode/src/cli/cmd/run.ts) emits text when a part finishes; a hanging provider stream need not produce partial reply text before Stop.
 
 ## Local Web, workspaces and chats
 

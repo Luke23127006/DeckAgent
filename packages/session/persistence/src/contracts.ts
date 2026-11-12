@@ -89,6 +89,16 @@ export type RequestEventBody =
     }
   | { readonly kind: 'text'; readonly part: string; readonly text: string }
   | { readonly kind: 'notice'; readonly code: string }
+  | { readonly kind: 'approval'; readonly approval: ApprovalView }
+
+export interface ApprovalView {
+  readonly approvalId: string
+  readonly requestId: string
+  readonly operation: 'read-file'
+  readonly target: string
+  readonly reason: string
+  readonly state: 'pending' | 'allowed' | 'refused' | 'cancelled'
+}
 
 export type RequestEvent = RequestEventBody & {
   readonly requestId: string

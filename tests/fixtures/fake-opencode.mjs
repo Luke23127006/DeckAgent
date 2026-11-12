@@ -23,7 +23,8 @@ if (args[0] === '--version') {
 
 if (args[0] === 'debug' && args[1] === 'config') {
   // The real CLI substitutes {env:...} references before parsing; so does this fixture.
-  const resolved = JSON.parse(content.replaceAll('{env:DECKAGENT_PROVIDER_KEY}', key ?? ''))
+  const resolved = JSON.parse(content.replaceAll('{env:DECKAGENT_PROVIDER_KEY}', key ?? '').replaceAll('{env:DECKAGENT_MCP_TOKEN}', process.env.DECKAGENT_MCP_TOKEN ?? ''))
+  if (resolved.mcp?.deckagent) resolved.mcp.deckagent.headers.Authorization = '***'
   if (mode.unsafe) resolved.permission = { '*': 'allow' }
   log({ command: 'debug-config', keySha: key ? createHash('sha256').update(key).digest('hex') : null })
   process.stdout.write(JSON.stringify(resolved, null, 2))
@@ -83,6 +84,21 @@ if (has('overflow') || has('overflow-fail')) {
   process.exit(1)
 }
 event('step_start', { id: 'prt_step1', type: 'step-start' })
+if (has('mcp-read') || has('mcp-external') || has('mcp-twice') || has('mcp-forbidden')) {
+  const config = JSON.parse(content.replaceAll('{env:DECKAGENT_PROVIDER_KEY}', key ?? '').replaceAll('{env:DECKAGENT_MCP_TOKEN}', process.env.DECKAGENT_MCP_TOKEN ?? ''))
+  const bridge = config.mcp?.deckagent
+  if (!bridge) process.exit(3)
+  const external = has('mcp-external') || has('mcp-twice')
+  const markerName = has('mcp-twice') ? '[mcp-twice]' : '[mcp-external]'
+  const path = external ? marker.slice(marker.lastIndexOf(markerName) + markerName.length).trim().split('\n')[0] : 'notes.txt'
+  for (let i = 0; i < (has('mcp-twice') ? 3 : 1); i++) {
+    const name = has('mcp-forbidden') ? 'write_file' : external ? 'read_external' : 'read_source'
+    const response = await fetch(bridge.url, { method: 'POST', headers: { ...bridge.headers, 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: i + 1, method: 'tools/call', params: { name, arguments: { path } } }) })
+    const result = await response.json()
+    event('text', { id: `prt_mcp_${i}`, type: 'text', text: result.result?.content?.[0]?.text ?? 'TOOL_FAILED' })
+  }
+}
 if (has('auth')) {
   out({ type: 'error', timestamp: Date.now(), sessionID, error: { name: 'APIError', data: { message: `bad key ${key}`, statusCode: 401 } } })
   process.exit(1)

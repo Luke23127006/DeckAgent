@@ -1,4 +1,14 @@
 import type { DeckReader, OutlineReader } from '@deckagent/deck'
+import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools } from './tool-contracts.ts'
+export type {
+  ApprovalStep,
+  ApprovalView,
+  PreparedTools,
+  RequestTools,
+  ToolContext,
+  ToolResult,
+  ToolSchema,
+} from './tool-contracts.ts'
 
 export interface ModelSelection {
   readonly provider: string
@@ -44,9 +54,10 @@ export type RequestEventBody =
     }
   | { readonly kind: 'text'; readonly part: string; readonly text: string }
   | { readonly kind: 'notice'; readonly code: string }
+  | { readonly kind: 'approval'; readonly approval: ApprovalView }
 
 /** What a runtime may report; the Host alone writes status events. */
-export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' }>
+export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' | 'approval' }>
 
 export type RequestEvent = RequestEventBody & {
   readonly requestId: string
@@ -64,6 +75,7 @@ export interface RequestSnapshot {
   /** Assistant text saved so far. */
   readonly text: string
   readonly sequence: number
+  readonly pendingApproval?: ApprovalView | null
 }
 
 export interface StoredRequest {
@@ -92,6 +104,18 @@ export interface StoredActivity {
 
 /** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
 export interface RequestStore {
+  readonly approvals?: {
+    create(
+      requestId: string,
+      step: ApprovalStep,
+    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
+    decide(
+      requestId: string,
+      approvalId: string,
+      decision: 'allow-once' | 'refuse',
+    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
+    pending(requestId: string): ApprovalView | undefined
+  }
   /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
   admit(input: {
     readonly requestId: string
@@ -115,9 +139,11 @@ export interface PreparedRequest {
 }
 
 export interface RequestRun {
+  readonly tools?: RequestTools
+  onApprovalWait?(listener: (waiting: boolean) => void): () => void
   readonly requestId: string
   readonly sessionId: string
-  /** Aborted by Stop, Host shutdown or a refused write. */
+  /** Aborted at terminal state, including Stop, Host shutdown or a refused write. */
   readonly signal: AbortSignal
   /** Persists, then publishes. Rejects once the request has ended, so late work cannot write. */
   emit(event: RuntimeEvent): Promise<void>
@@ -159,7 +185,11 @@ export interface HistoryMessage {
 
 export interface HostOptions {
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
-  readonly requests?: { readonly store: RequestStore; readonly runtime: RequestRuntime }
+  readonly requests?: {
+    readonly store: RequestStore
+    readonly runtime: RequestRuntime
+    readonly prepareTools?: (sessionId: string) => Promise<PreparedTools>
+  }
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
   readonly management?: WebManagement

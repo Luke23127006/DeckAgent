@@ -112,6 +112,11 @@ jobs:
         timeout-minutes: 4
         run: pnpm test:model-requests
 
+      - name: Sources, request-scoped MCP and one-step approval (local fixtures)
+        id: source_permissions
+        timeout-minutes: 3
+        run: pnpm test:source-permissions
+
       - name: Real browser workspaces, chats, drafts and deck canvas smoke (Chrome headless, local fixtures)
         id: browser
         timeout-minutes: 2
@@ -150,6 +155,7 @@ jobs:
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
           MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
+          SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -168,6 +174,7 @@ jobs:
           - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Local foundation / workspaces / chats / storage: $env:LOCAL_FOUNDATION_RESULT
           - Models / requests / fake OpenCode CLI (no real CLI or provider): $env:MODEL_REQUESTS_RESULT
+          - Sources / request-scoped MCP / one-step approval (local fixtures): $env:SOURCE_PERMISSIONS_RESULT
           - Real browser workspaces / chats / drafts / deck canvas: $env:BROWSER_RESULT
           - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
