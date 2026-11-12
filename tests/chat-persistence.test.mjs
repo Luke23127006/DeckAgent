@@ -26,7 +26,7 @@ function storeIn(t, dir) {
   return store
 }
 
-test('a v1 Session database migrates to v2 in place: chats join the default workspace and keep their history', async t => {
+test('a v1 Session database migrates in place: chats join the default workspace and keep their history', async t => {
   const dir = await directory(t)
   const path = join(dir, 'sessions.sqlite')
   // The exact v1 schema shipped before workspaces existed.
@@ -49,7 +49,8 @@ test('a v1 Session database migrates to v2 in place: chats join the default work
   assert.deepEqual(await store.read('old'), [{ role: 'user', content: 'Bài cũ' }])
   store.close()
   const check = new DatabaseSync(path)
-  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 2)
+  // B02 schema v3 adds request tables; a v1 file passes through the v2 step and keeps every row.
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 3)
   check.close()
 })
 

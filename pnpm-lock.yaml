@@ -65,9 +65,6 @@ importers:
       '@deckagent/host-api':
         specifier: workspace:*
         version: link:../../packages/host/api
-      '@deckagent/model-providers':
-        specifier: workspace:*
-        version: link:../../packages/llm/providers
       '@deckagent/session-persistence':
         specifier: workspace:*
         version: link:../../packages/session/persistence
@@ -96,9 +93,6 @@ importers:
 
   packages/host/api:
     dependencies:
-      '@deckagent/agent-runtime':
-        specifier: workspace:*
-        version: link:../../agent/runtime
       '@deckagent/deck':
         specifier: workspace:*
         version: link:../../presentation/deck

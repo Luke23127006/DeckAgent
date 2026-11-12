@@ -1,4 +1,5 @@
 import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
+import { ManagementError } from './management-client.ts'
 import type { ManagementClient } from './management-client.ts'
 import { button, element, field } from './dom.ts'
 
@@ -25,7 +26,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   name.required = true
   name.maxLength = 100
   const protocol = element('select')
-  for (const value of ['chat-completions', 'anthropic-messages', 'gemini']) protocol.append(new Option(value, value))
+  // BR-005 V-4: the API protocols of a custom model API.
+  for (const [value, label] of [['chat-completions', 'OpenAI Chat Completions'], ['responses', 'OpenAI Responses'],
+    ['anthropic-messages', 'Anthropic Messages'], ['gemini', 'Google Gemini']] as const) protocol.append(new Option(label, value))
   const url = element('input')
   url.type = 'url'
   url.required = true
@@ -205,7 +208,28 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     selectedKind = kind.value
     fill(value)
     if (!settings.persistentKeys)
-      message.textContent = 'Lưu key cần Windows. Kết nối đã có từ biến môi trường vẫn dùng được.'
+      message.textContent = 'Máy này chưa có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ (hiện chỉ Windows), nên không lưu được key. Custom model API không cần key vẫn dùng được.'
+  }
+  /** What failed and what to do next. Provider messages are never shown (they can echo a key). */
+  function saveFailure(error: unknown): string {
+    const code = error instanceof Error ? error.message : ''
+    const detail = error instanceof ManagementError ? error.detail : {}
+    if (code === 'PROVIDER_ID_TAKEN')
+      return `Provider ID này đã thuộc về ${typeof detail.provider === 'string' ? detail.provider : 'một cấu hình khác'}${detail.builtIn ? ' (provider có sẵn)' : ''}. Hãy chọn provider ID khác. Chưa lưu gì.`
+    if (code === 'PROVIDER_KEY_REQUIRED') return 'Provider này cần key. Nhập key của tài khoản bạn. Chưa lưu gì.'
+    if (code === 'PROVIDER_KEY_REFUSED') return 'Provider từ chối key hoặc quyền truy cập. Kiểm tra key rồi lưu lại. Chưa lưu gì; key đã lưu trước đó được giữ.'
+    if (code === 'PROVIDER_NO_ANSWER')
+      return `Provider không trả lời${detail.reason === 'certificate' ? ' (chứng chỉ bảo mật không hợp lệ)' : ''}. Kiểm tra Base URL và kết nối mạng. Chưa lưu gì.`
+    if (code === 'PROVIDER_CHECK_FAILED')
+      return `Provider không chấp nhận lần kiểm tra${detail.reason === 'rate-limit' ? ' (đã đạt giới hạn sử dụng)' : typeof detail.reason === 'string' && detail.reason.startsWith('http-') ? ` (HTTP ${detail.reason.slice(5)})` : ''}. Kiểm tra Base URL và API protocol. Chưa lưu gì.`
+    if (code === 'CREDENTIAL_STORE_UNAVAILABLE') return 'Máy này không có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ. Key không được lưu dạng văn bản thường. Chưa lưu gì.'
+    if (code === 'CREDENTIAL_NOT_SAVED') return 'Không lưu được key vào nơi lưu key của máy. Chưa lưu gì; thử lại.'
+    if (code === 'PROVIDER_BUSY') return 'Provider đang được sử dụng. Đợi yêu cầu kết thúc trước khi xóa.'
+    if (code === 'NEW_ENDPOINT_REQUIRES_KEY') return 'Nhập key cho Base URL mới hoặc chọn gỡ key đã lưu. Key cũ không được gửi tới địa chỉ mới.'
+    if (code === 'PROVIDER_NAME_EXISTS') return 'Hãy chọn tên hiển thị không trùng.'
+    if (code === 'PROTOCOL_IMMUTABLE') return 'Không đổi được API protocol của cấu hình đã lưu. Hãy tạo cấu hình mới.'
+    if (code === 'INVALID_PROVIDER') return 'Thông tin chưa hợp lệ. Base URL phải là HTTPS, hoặc HTTP tới chính máy này. Chưa lưu gì.'
+    return 'Không lưu được cài đặt. Kiểm tra các trường và quyền của Host.'
   }
   async function perform(action: () => Promise<void>) {
     if (busy) return
@@ -221,15 +245,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     try {
       await action()
     } catch (error) {
-      const code = error instanceof Error ? error.message : ''
-      message.textContent =
-        code === 'PROVIDER_BUSY'
-          ? 'Provider đang được sử dụng. Đợi yêu cầu kết thúc trước khi xóa.'
-          : code === 'NEW_ENDPOINT_REQUIRES_KEY'
-            ? 'Nhập key cho endpoint mới hoặc chọn gỡ key đã lưu.'
-            : code === 'PROVIDER_NAME_EXISTS'
-              ? 'Hãy chọn tên hiển thị không trùng.'
-              : 'Không lưu được cài đặt. Kiểm tra các trường và quyền của Host.'
+      message.textContent = saveFailure(error)
     } finally {
       busy = false
       fields.disabled = false
@@ -255,6 +271,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         .map(value => value.trim())
         .filter(Boolean),
       ...(removeKey.checked ? { key: '' } : credential ? { key: credential } : {}),
+      // A new configuration never replaces a saved one with the same provider ID (BR-008).
+      ...(providers.some(provider => provider.id === id.value) ? {} : { new: true }),
     }
     perform(async () => {
       await client.save(id.value, value)

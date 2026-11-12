@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite'
-import { HttpError, validateUserQuestion } from '@deckagent/host-api'
-import type { StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
+import { HttpError } from '@deckagent/host-api'
+import type { WebPreferences, WebSession } from '@deckagent/host-api'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 
 export function record(value: unknown): value is Record<string, unknown> {
@@ -23,15 +23,15 @@ export function selection(value: unknown): ModelSelection {
 }
 
 /**
- * Web UI projection and preferences only. Workspaces belong to the Workspace registry and chats to
- * Session persistence; this file keeps no second registry of either.
+ * Web UI projection, preferences and the provider metadata table. Workspaces belong to the Workspace registry;
+ * chats, requests and their events to Session persistence; this file keeps no second registry of any of them.
  */
 export class WebState {
   readonly db: DatabaseSync
 
   constructor(
     path: string,
-    private readonly settings: () => WebSettings,
+    private readonly isSelectable: (selection: ModelSelection) => boolean,
   ) {
     this.db = new DatabaseSync(path)
     try {
@@ -43,30 +43,13 @@ export class WebState {
         !this.db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
       if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new HttpError(500, 'SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
+      // Requests and activities moved to Session persistence (B02); older files keep their unused tables unchanged.
       if (fresh) this.db.exec(`
         CREATE TABLE providers (id TEXT PRIMARY KEY, payload TEXT NOT NULL) STRICT;
-        CREATE TABLE activities (
-          sequence INTEGER PRIMARY KEY, session_id TEXT NOT NULL, request_id TEXT NOT NULL,
-          activity_id TEXT NOT NULL, payload TEXT NOT NULL, UNIQUE(request_id, activity_id)
-        ) STRICT;
-        CREATE TABLE requests (sequence INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, session_id TEXT NOT NULL, payload TEXT NOT NULL) STRICT;
         PRAGMA application_id=1145132866; PRAGMA user_version=1;`)
       // Added after schema version 1 shipped: created on demand so existing data files keep working.
       this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
       this.db.prepare('SELECT id, payload FROM providers LIMIT 0').all()
-      this.db.prepare('SELECT sequence, session_id, request_id, activity_id, payload FROM activities LIMIT 0').all()
-      this.db.prepare('SELECT sequence, id, session_id, payload FROM requests LIMIT 0').all()
-      // No work is replayed after restart. Preserve uncertainty instead of inventing success.
-      this.db
-        .prepare(
-          "UPDATE activities SET payload=json_set(payload, '$.status', 'unknown') WHERE json_extract(payload, '$.status')='running'",
-        )
-        .run()
-      this.db
-        .prepare(
-          "UPDATE requests SET payload=json_set(payload, '$.status', 'unknown') WHERE json_extract(payload, '$.status') IN ('running','awaiting_user')",
-        )
-        .run()
       if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
         throw new HttpError(500, 'SETTINGS_STORAGE')
       this.db.exec('COMMIT')
@@ -108,12 +91,7 @@ export class WebState {
   }
 
   selectable(value: ModelSelection | undefined): boolean {
-    return (
-      !!value &&
-      this.settings().providers.some(
-        provider => provider.id === value.provider && provider.models.includes(value.model),
-      )
-    )
+    return !!value && this.isSelectable(value)
   }
 
   /** Browser projection of a chat. A chat with no user message yet is shown as a new chat. */
@@ -129,72 +107,8 @@ export class WebState {
       hasSlides,
       selectable: this.selectable(chat.selection),
       ...(chat.selection ? { selection: chat.selection } : {}),
+      ...(chat.removedSelection ? { removedSelection: chat.removedSelection } : {}),
     }
-  }
-
-  requests(id: string): readonly StoredRequest[] {
-    return this.db
-      .prepare('SELECT payload FROM requests WHERE session_id=? ORDER BY sequence')
-      .all(id)
-      .map(row => {
-        const value: unknown = JSON.parse(String(row.payload))
-        if (
-          !record(value) ||
-          typeof value.requestId !== 'string' ||
-          !record(value.selection) ||
-          typeof value.selection.provider !== 'string' ||
-          typeof value.selection.model !== 'string' ||
-          (value.status !== 'running' &&
-            value.status !== 'awaiting_user' &&
-            value.status !== 'completed' &&
-            value.status !== 'failed' &&
-            value.status !== 'cancelled' &&
-            value.status !== 'unknown') ||
-          (value.errorCode != null && (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-          (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
-          (value.noticeIndex != null && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
-        )
-          throw new HttpError(500, 'ACTIVITY_STORAGE')
-        if (value.status === 'awaiting_user' && value.question == null) throw new HttpError(500, 'ACTIVITY_STORAGE')
-        return {
-          requestId: value.requestId,
-          selection: { provider: value.selection.provider, model: value.selection.model },
-          status: value.status,
-          ...(value.question == null ? {} : { question: validateUserQuestion(value.question) }),
-          ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
-          ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
-          ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
-        }
-      })
-  }
-
-  activities(id: string): readonly StoredActivity[] {
-    return this.db
-      .prepare('SELECT sequence, request_id, payload FROM activities WHERE session_id=? ORDER BY sequence')
-      .all(id)
-      .map(row => {
-        const event: unknown = JSON.parse(String(row.payload))
-        if (
-          !record(event) ||
-          typeof event.id !== 'string' ||
-          typeof event.label !== 'string' ||
-          (event.kind !== 'model' && event.kind !== 'tool') ||
-          (event.status !== 'running' &&
-            event.status !== 'completed' &&
-            event.status !== 'failed' &&
-            event.status !== 'stopped' &&
-            event.status !== 'unknown')
-        )
-          throw new HttpError(500, 'ACTIVITY_STORAGE')
-        return {
-          id: event.id,
-          label: event.label,
-          kind: event.kind,
-          status: event.status,
-          requestId: String(row.request_id),
-          sequence: Number(row.sequence),
-        }
-      })
   }
 
   close(): void {

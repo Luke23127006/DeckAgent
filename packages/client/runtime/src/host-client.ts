@@ -1,61 +1,65 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot } from '@deckagent/host-api'
-import { userQuestion } from './user-question.ts'
+import type { AgentRequest, HistoryMessage, RequestEvent, RequestSnapshot, RequestStatus } from '@deckagent/host-api'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+const statuses: readonly RequestStatus[] = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
+const code = /^[A-Z][A-Z0-9_]{0,63}$/
+const requestId = /^[\w-]{1,100}$/
+
+/** Whether a request still holds its chat's active slot. */
+export function isActive(status: RequestStatus): boolean {
+  return status === 'active' || status === 'waiting_approval'
+}
+
+function status(value: unknown): RequestStatus {
+  const found = statuses.find(item => item === value)
+  if (!found) throw new Error('INVALID_RESPONSE')
+  return found
+}
+
 function snapshot(value: unknown): RequestSnapshot {
-  if (
-    !object(value) ||
-    typeof value.requestId !== 'string' ||
-    !/^[\w-]+$/.test(value.requestId) ||
-    typeof value.sessionId !== 'string' ||
-    !/^[\w-]{1,100}$/.test(value.sessionId) ||
-    !['running', 'awaiting_user', 'completed', 'failed', 'cancelled'].includes(String(value.status))
-  )
+  if (!object(value) || typeof value.requestId !== 'string' || !requestId.test(value.requestId) ||
+    typeof value.sessionId !== 'string' || !/^[\w-]{1,100}$/.test(value.sessionId) || typeof value.text !== 'string' ||
+    typeof value.sequence !== 'number' || !Number.isSafeInteger(value.sequence) || value.sequence < 0 ||
+    (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !code.test(value.errorCode))))
     throw new Error('INVALID_RESPONSE')
-  const result = value.result
-  if (value.status !== 'awaiting_user' && value.question !== undefined) throw new Error('INVALID_RESPONSE')
-  if (value.status === 'awaiting_user') {
-    if (result !== undefined) throw new Error('INVALID_RESPONSE')
-    return { requestId: value.requestId, sessionId: value.sessionId, status: 'awaiting_user', question: userQuestion(value.question) }
+  return { requestId: value.requestId, sessionId: value.sessionId, status: status(value.status), text: value.text, sequence: value.sequence,
+    ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}) }
+}
+
+/** Only the documented event shapes; anything else is a broken stream, never rendered. */
+export function requestEvent(value: unknown): RequestEvent {
+  if (!object(value) || typeof value.requestId !== 'string' || !requestId.test(value.requestId) ||
+    typeof value.sequence !== 'number' || !Number.isSafeInteger(value.sequence) || value.sequence < 1 || typeof value.timestamp !== 'string')
+    throw new Error('INVALID_RESPONSE')
+  const base = { requestId: value.requestId, sequence: value.sequence, timestamp: value.timestamp }
+  if (value.kind === 'status') {
+    if (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !code.test(value.errorCode))) throw new Error('INVALID_RESPONSE')
+    return { ...base, kind: 'status', status: status(value.status), ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}) }
   }
-  if (value.status === 'running') {
-    if (result !== undefined) throw new Error('INVALID_RESPONSE')
-    return { requestId: value.requestId, sessionId: value.sessionId, status: 'running' }
-  }
-  if (
-    !object(result) ||
-    result.status !== value.status ||
-    typeof result.text !== 'string' ||
-    typeof result.steps !== 'number' ||
-    !Number.isSafeInteger(result.steps) ||
-    result.steps < 0
-  )
-    throw new Error('INVALID_RESPONSE')
-  const base = { requestId: value.requestId, sessionId: value.sessionId }
-  if (result.status === 'completed')
-    return { ...base, status: 'completed', result: { status: 'completed', text: result.text, steps: result.steps } }
-  if (
-    (result.status !== 'failed' && result.status !== 'cancelled') ||
-    !object(result.error) ||
-    typeof result.error.code !== 'string' ||
-    !/^[A-Z_]{1,64}$/.test(result.error.code) ||
-    typeof result.error.message !== 'string'
-  )
-    throw new Error('INVALID_RESPONSE')
-  return {
-    ...base,
-    status: result.status,
-    result: {
-      status: result.status,
-      text: result.text,
-      steps: result.steps,
-      error: { code: result.error.code, message: result.error.message },
-    },
+  if (value.kind === 'activity' && typeof value.id === 'string' && typeof value.label === 'string' &&
+    (value.type === 'model' || value.type === 'tool') && ['running', 'completed', 'failed', 'stopped'].includes(String(value.status)))
+    return { ...base, kind: 'activity', id: value.id, label: value.label, type: value.type,
+      status: value.status as 'running' | 'completed' | 'failed' | 'stopped' }
+  if (value.kind === 'text' && typeof value.part === 'string' && typeof value.text === 'string')
+    return { ...base, kind: 'text', part: value.part, text: value.text }
+  if (value.kind === 'notice' && typeof value.code === 'string' && code.test(value.code)) return { ...base, kind: 'notice', code: value.code }
+  throw new Error('INVALID_RESPONSE')
+}
+
+/** A refused Host call: `message` is the stable code; `detail` holds only safe facts such as a reason word. */
+export class HostRequestError extends Error {
+  constructor(code: string, readonly detail: Readonly<Record<string, string | boolean>> = {}) {
+    super(code)
+    this.name = 'HostRequestError'
   }
 }
+
+const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'HOST_BUSY', 'HOST_CLOSED', 'MODEL_NOT_SELECTABLE', 'NO_SELECTABLE_MODEL', 'PROVIDER_KEY_UNAVAILABLE',
+  'RUNTIME_UNAVAILABLE', 'RUNTIME_VERSION_UNSUPPORTED', 'REQUEST_NOT_FOUND', 'REQUEST_NOT_SAVED', 'REQUEST_TEXT_TOO_LONG', 'CHAT_UNREADABLE',
+  'SESSION_NOT_FOUND', 'SESSION_UNAVAILABLE', 'REQUESTS_UNAVAILABLE', 'INVALID_REQUEST']
 
 /** Uses fetch for authenticated SSE: credentials never enter query strings or history. */
 export class HostClient {
@@ -72,35 +76,25 @@ export class HostClient {
       headers: { ...init.headers, authorization: `Bearer ${this.token}` },
     })
     if (!response.ok) {
-      const data: unknown = await response.json()
-      const allowed = ['AUTH_REQUIRED', 'SESSION_BUSY', 'MODEL_NOT_SELECTABLE', 'PROVIDER_CREDENTIALS', 'SESSION_UNAVAILABLE', 'REQUEST_NOT_FOUND', 'OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT', 'REPLY_STALE', 'REPLY_CONFLICT', 'INVALID_REPLY', 'CHAT_UNREADABLE', 'SESSION_NOT_FOUND', 'REQUESTS_UNAVAILABLE']
-      const code = object(data) && object(data.error) && typeof data.error.code === 'string' && allowed.includes(data.error.code)
-        ? data.error.code : response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'
-      throw new Error(code)
+      const data: unknown = await response.json().catch(() => undefined)
+      const error = object(data) && object(data.error) ? data.error : undefined
+      const known = error && typeof error.code === 'string' && allowed.includes(error.code) ? error.code : undefined
+      const detail: Record<string, string | boolean> = {}
+      if (known && error && object(error.detail))
+        for (const [key, item] of Object.entries(error.detail)) if (typeof item === 'string' || typeof item === 'boolean') detail[key] = item
+      throw new HostRequestError(known ?? (response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'), detail)
     }
     return response
   }
 
   async send(request: AgentRequest): Promise<RequestSnapshot> {
-    return snapshot(
-      await (
-        await this.request('/api/requests', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(request),
-        })
-      ).json(),
-    )
+    return snapshot(await (await this.request('/api/requests', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request),
+    })).json())
   }
 
   async snapshot(id: string): Promise<RequestSnapshot> {
     return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
-  }
-
-  async reply(id: string, reply: RequestReply): Promise<RequestSnapshot> {
-    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}/reply`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(reply),
-    })).json())
   }
 
   async stop(id: string): Promise<RequestSnapshot> {
@@ -115,46 +109,56 @@ export class HostClient {
         !object(message) ||
         (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'tool') ||
         typeof message.content !== 'string' ||
+        (message.interrupted !== undefined && (message.role !== 'assistant' || message.interrupted !== true)) ||
         (message.toolCallId !== undefined && (message.role !== 'tool' || typeof message.toolCallId !== 'string' || !message.toolCallId || message.toolCallId.length > 2000)) ||
         (message.name !== undefined && (message.role !== 'tool' || typeof message.name !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(message.name))) ||
         (message.isError !== undefined && (message.role !== 'tool' || typeof message.isError !== 'boolean'))
       )
         throw new Error('INVALID_RESPONSE')
       return { role: message.role, content: message.content,
+        ...(message.interrupted === true ? { interrupted: true as const } : {}),
         ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
         ...(typeof message.name === 'string' ? { name: message.name } : {}),
         ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}) }
     })
   }
 
-  /** Each connection starts with the current snapshot; reconnect does not replay work. */
-  async *watch(id: string, signal?: AbortSignal): AsyncIterable<RequestSnapshot> {
-    const response = await this.request(`/api/requests/${encodeURIComponent(id)}/events`, signal ? { signal } : {})
+  /**
+   * Saved events after `after`, then live ones, until the request ends. A dropped connection throws
+   * `CONNECTION_LOST`; calling again with the last sequence continues with no gap and no repeat.
+   */
+  async *watch(id: string, signal?: AbortSignal, after = 0): AsyncIterable<RequestEvent> {
+    const response = await this.request(`/api/requests/${encodeURIComponent(id)}/events`, {
+      headers: after ? { 'last-event-id': String(after) } : {}, ...(signal ? { signal } : {}),
+    })
     if (!response.body || !response.headers.get('content-type')?.startsWith('text/event-stream'))
       throw new Error('INVALID_RESPONSE')
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let last = after
     try {
       while (true) {
         const part = await reader.read()
-        if (part.done) throw new Error('CONNECTION_LOST')
+        if (part.done) {
+          // The Host ends the stream after a terminal status or under back-pressure; only the first is an end.
+          throw new Error('CONNECTION_LOST')
+        }
         buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
-        if (buffer.length > 1024 * 1024) throw new Error('INVALID_RESPONSE')
+        if (buffer.length > 4 * 1024 * 1024) throw new Error('INVALID_RESPONSE')
         let boundary = buffer.indexOf('\n\n')
         while (boundary >= 0) {
           const frame = buffer.slice(0, boundary)
           buffer = buffer.slice(boundary + 2)
-          if (frame.startsWith('event: snapshot\n')) {
-            const data = frame
-              .split('\n')
-              .filter(line => line.startsWith('data: '))
-              .map(line => line.slice(6))
-              .join('\n')
-            const value = snapshot(JSON.parse(data))
-            if (value.requestId !== id) throw new Error('INVALID_RESPONSE')
-            yield value
-            if (value.status !== 'running' && value.status !== 'awaiting_user') return
+          if (frame.split('\n').includes('event: request')) {
+            const data = frame.split('\n').filter(line => line.startsWith('data: ')).map(line => line.slice(6)).join('\n')
+            const event = requestEvent(JSON.parse(data))
+            if (event.requestId !== id) throw new Error('INVALID_RESPONSE')
+            if (event.sequence > last) {
+              last = event.sequence
+              yield event
+              if (event.kind === 'status' && !isActive(event.status)) return
+            }
           }
           boundary = buffer.indexOf('\n\n')
         }

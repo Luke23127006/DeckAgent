@@ -31,7 +31,7 @@ Scope: 9 active UCs từ `clean-main/docs/spec/`: UC-001, UC-002, UC-003, UC-005
 | Build | Dev deliverable có thể chạy/demo | Main UC | Upstream dependency | Status |
 |---|---|---|---|---|
 | [B01](builds/B01.md) Local Foundation | Local Host/Web UI, Workspace, Chat, local persistence/reopen | UC-013, UC-012, UC-006 (không có active run) | Baseline | Implemented — Pending Independent Testing |
-| [B02](builds/B02.md) Models & Requests | Provider/model, CLI requests, native session, events, Stop/reconnect | UC-005, UC-003 core | B01 IDs/storage/Host API | Detailed |
+| [B02](builds/B02.md) Models & Requests | Provider/model, CLI requests, native session, events, Stop/reconnect | UC-005, UC-003 core | B01 IDs/storage/Host API | Implemented, including FR-079; checked with a fake OpenCode CLI — real CLI smoke not run, BR-006 V-1 not set |
 | [B03](builds/B03.md) Sources & Tool Boundary | Attachments, protected folder reads, MCP tools, step approval | UC-003 + UC-001 inputs | B01 storage, B02 CLI/MCP contract | Detailed |
 | [B04](builds/B04.md) Outline → First HTML Deck | Interview, brief/outline, confirmation, first published HTML deck | UC-001 main path | B02+B03 + visual contract | Detailed; blocked values listed |
 | [B05](builds/B05.md) Complete Generation | Multi-slide, progressive publish, recover, sources/images, quality gates | UC-001 remaining | B04 Deck/Preview contracts | Detailed |

@@ -1,51 +1,127 @@
-import type { ActivityEvent, AgentHandle, Message, ModelSelection, TurnResult } from '@deckagent/agent-runtime'
-import type { DeckReader, OutlineReader, OutlineTarget } from '@deckagent/deck'
+import type { DeckReader, OutlineReader } from '@deckagent/deck'
 
+export interface ModelSelection {
+  readonly provider: string
+  readonly model: string
+}
+
+/** A generic chat request (B02). Generation entries arrive with their own builds. */
 export interface AgentRequest {
   readonly sessionId: string
   readonly input: string
-  /** Explicit presentation entry preserves generic chat/file requests. */
-  readonly presentation?: true
-  readonly outlineTarget?: OutlineTarget
-  readonly outlineAction?: OutlineTarget & { readonly type: 'confirm' | 'cancel' }
 }
 
+/** Request lifecycle decided by the Host (ADR-0004). `active` and `waiting_approval` hold the chat's one active slot. */
+export type RequestStatus = 'active' | 'waiting_approval' | 'completed' | 'failed' | 'stopped' | 'interrupted'
+export type ActivityStatus = 'running' | 'completed' | 'failed' | 'stopped'
+export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
+
+/** Sanitized product events. Raw runtime output, provider errors and credentials never become an event. */
+export type RequestEventBody =
+  | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
+  | { readonly kind: 'activity'; readonly id: string; readonly label: string; readonly type: 'model' | 'tool'; readonly status: ActivityStatus }
+  | { readonly kind: 'text'; readonly part: string; readonly text: string }
+  | { readonly kind: 'notice'; readonly code: string }
+
+/** What a runtime may report; the Host alone writes status events. */
+export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' }>
+
+export type RequestEvent = RequestEventBody & {
+  readonly requestId: string
+  /** Monotonic within the request; the reconnect cursor. */
+  readonly sequence: number
+  readonly timestamp: string
+}
+
+/** Current state of one request, read from saved records. `sequence` is the newest saved event. */
 export interface RequestSnapshot {
   readonly requestId: string
   readonly sessionId: string
-  readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled'
-  readonly question?: UserQuestion
-  readonly result?: TurnResult
+  readonly status: RequestStatus
+  readonly errorCode?: string
+  /** Assistant text saved so far. */
+  readonly text: string
+  readonly sequence: number
 }
 
-export interface QuestionDraft {
-  readonly prompt: string
-  readonly options: readonly string[]
-  readonly allowSkip: boolean
-}
-
-export interface UserQuestion extends QuestionDraft {
-  readonly questionId: string
-  readonly version: number
-}
-
-export interface RequestReply {
+export interface StoredRequest {
+  readonly requestId: string
   readonly sessionId: string
-  readonly questionId: string
-  readonly version: number
-  readonly replyId: string
-  readonly answer: { readonly type: 'text'; readonly text: string } | { readonly type: 'option'; readonly index: number } | { readonly type: 'skip' }
+  readonly status: RequestStatus
+  readonly selection: ModelSelection
+  /** Index of the request's user message in the public history. */
+  readonly historyStart: number
+  readonly startedAt: string
+  readonly endedAt?: string
+  readonly errorCode?: string
+  readonly lastSequence: number
+  /** FR-079: the conversation before this request was summarized for the model; the summary starts here. */
+  readonly summarized?: true
 }
 
-/** Application wrapper releases each model turn before exposing a pending question. */
-export interface RequestAgent extends AgentHandle {
-  question?(): QuestionDraft | undefined
+export interface StoredActivity {
+  readonly requestId: string
+  readonly sequence: number
+  readonly id: string
+  readonly label: string
+  readonly type: 'model' | 'tool'
+  readonly status: ActivityStatus
+}
+
+/** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
+export interface RequestStore {
+  /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
+  admit(input: { readonly requestId: string; readonly sessionId: string; readonly input: string; readonly selection: ModelSelection }): StoredRequest
+  append(requestId: string, event: RuntimeEvent): RequestEvent
+  /** Ends an active request once; `undefined` when it had already ended. */
+  finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined
+  get(requestId: string): StoredRequest | undefined
+  events(requestId: string, after?: number): readonly RequestEvent[]
+  text(requestId: string): string
+  activeFor(sessionId: string): string | undefined
+}
+
+/** A request the runtime accepted: its settings are frozen at admission (FR-042). Holds no secret visible to the Host API. */
+export interface PreparedRequest {
+  readonly selection: ModelSelection
+  start(run: RequestRun): Promise<RuntimeOutcome>
+}
+
+export interface RequestRun {
+  readonly requestId: string
+  readonly sessionId: string
+  /** Aborted by Stop, Host shutdown or a refused write. */
+  readonly signal: AbortSignal
+  /** Persists, then publishes. Rejects once the request has ended, so late work cannot write. */
+  emit(event: RuntimeEvent): Promise<void>
+}
+
+/** Runtime evidence only; the Host decides the request status. `commit` runs after a completed request is saved. */
+export type RuntimeOutcome =
+  | { readonly status: 'completed'; commit?(): void }
+  | { readonly status: 'failed'; readonly errorCode: string }
+
+export interface RequestRuntime {
+  /** Validates the chat, its selected model and the runtime, and freezes the settings. Throws HttpError with the reason. */
+  prepare(request: AgentRequest): Promise<PreparedRequest>
+}
+
+/** Saved conversation message as the Host reads it. */
+export interface HostMessage {
+  readonly role: 'system' | 'user' | 'assistant' | 'tool'
+  readonly content: string
+  readonly interrupted?: boolean
+  readonly toolCallId?: string
+  readonly name?: string
+  readonly isError?: boolean
 }
 
 /** Browser projection deliberately excludes provider protocol metadata and tool arguments. */
 export interface HistoryMessage {
   readonly role: 'user' | 'assistant' | 'tool'
   readonly content: string
+  /** An assistant reply of a request that did not finish: the part saved before it ended. */
+  readonly interrupted?: true
   /** Optional tool identity for matching output to its Activity; no tool arguments. */
   readonly toolCallId?: string
   readonly name?: string
@@ -53,16 +129,9 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
-  /**
-   * Host owns the returned handle until the turn and disposal finish.
-   * Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`.
-   */
-  readonly openAgent?: (sessionId: string, requestId: string, request: AgentRequest) => Promise<RequestAgent>
-  /** Persist an active transition before it becomes visible or starts more model work. */
-  readonly requestState?: (snapshot: RequestSnapshot) => Promise<void>
-  /** Runs after handle disposal and before terminal snapshot/Session lock release. */
-  readonly finishRequest?: (request: AgentRequest, requestId: string, result: TurnResult) => Promise<void>
-  readonly readHistory: (sessionId: string) => Promise<readonly Message[]>
+  /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
+  readonly requests?: { readonly store: RequestStore; readonly runtime: RequestRuntime }
+  readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
   readonly management?: WebManagement
   readonly decks?: DeckReader
@@ -71,27 +140,38 @@ export interface HostOptions {
   readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
 }
 
+/** API protocols of BR-005 V-4. */
+export type ProviderProtocol = 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
+
 export interface ProviderSettings {
   readonly id: string
   readonly displayName: string
-  readonly protocol: 'chat-completions' | 'anthropic-messages' | 'gemini'
+  readonly protocol: ProviderProtocol
   readonly baseUrl: string
   readonly models: readonly string[]
+  /** Whether a key is saved. No part of a key is ever returned (FR-040). */
   readonly hasKey: boolean
+  /** The saved key can be read on this computer and account. */
   readonly keyAvailable: boolean
+  readonly builtIn: boolean
 }
 
 export interface WebSettings {
   readonly providers: readonly ProviderSettings[]
+  /** The credential store of this computer can keep keys. */
   readonly persistentKeys: boolean
   readonly builtIns: readonly ProviderTemplate[]
+  /** Whether the Agent runtime can run requests, and why not. */
+  readonly runtime: { readonly available: boolean; readonly reason?: string }
 }
 
 export interface ProviderTemplate {
   readonly id: string
   readonly displayName: string
-  readonly protocol: ProviderSettings['protocol']
+  readonly protocol: ProviderProtocol
   readonly baseUrl: string
+  /** What the user gives for this provider (BR-006). */
+  readonly needs: readonly ('key' | 'baseUrl')[]
 }
 
 export interface WebSession {
@@ -104,6 +184,8 @@ export interface WebSession {
   readonly updatedAt: string
   readonly messageCount: number
   readonly selection?: ModelSelection
+  /** The selected model was removed; the chat has no selected model (FR-065). */
+  readonly removedSelection?: ModelSelection
   readonly selectable: boolean
   readonly activeRequestId?: string
   /** Workspace of the chat; `null` for an ungrouped chat. */
@@ -134,23 +216,6 @@ export interface WorkspaceList {
 export interface ChatDraft {
   readonly sessionId: string
   readonly text: string
-}
-
-export interface StoredActivity extends ActivityEvent {
-  readonly requestId: string
-  readonly sequence: number
-}
-
-export interface StoredRequest {
-  readonly requestId: string
-  readonly selection: ModelSelection
-  readonly status: 'running' | 'awaiting_user' | 'completed' | 'failed' | 'cancelled' | 'unknown'
-  readonly question?: UserQuestion
-  readonly errorCode?: string
-  /** Index before this turn in the public (non-system) history. Absent on older records. */
-  readonly historyStart?: number
-  /** Public history index of a Host-authored recovery notice, when saved. */
-  readonly noticeIndex?: number
 }
 
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */

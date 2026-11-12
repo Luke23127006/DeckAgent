@@ -3,19 +3,22 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DeckError } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
-import type { AgentRequest, HostOptions, RequestSnapshot, WebSession } from './contracts.ts'
-import type { OutlineTarget } from '@deckagent/deck'
+import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
-import { requestReply } from './request-reply.ts'
 
-export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebPreferences, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export type {
+  ActivityStatus, AgentRequest, HistoryMessage, HostMessage, HostOptions, ModelSelection, PreparedRequest, ProviderProtocol, ProviderSettings,
+  ProviderTemplate, RequestEvent, RequestEventBody, RequestRun, RequestRuntime, RequestSnapshot, RequestStatus, RequestStore, RuntimeEvent,
+  RuntimeOutcome, StoredActivity, StoredRequest, TerminalStatus, WebManagement, WebPreferences, WebSession, WebSettings,
+} from './contracts.ts'
 export type { ChatDraft, WorkspaceFolderStatus, WorkspaceList, WorkspaceManagement, WorkspaceView } from './contracts.ts'
 export type { HttpErrorDetail } from './http-error.ts'
-export { HttpError } from './request-controller.ts'
-export { validateUserQuestion } from './request-reply.ts'
-export type { QuestionDraft, UserQuestion, RequestReply, RequestAgent } from './contracts.ts'
+export { HttpError, RequestController } from './request-controller.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
+/** Transport limit of one request text; BR-002 sets the product maximum when it is decided. */
+export const requestTextLimit = 16000
+const activeStatuses = new Set(['active', 'waiting_approval'])
 
 function json(res: ServerResponse, status: number, value: unknown) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
@@ -40,13 +43,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return value
 }
 
-function outlineTarget(value: unknown): OutlineTarget {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || !('outlineId' in value) || typeof value.outlineId !== 'string' ||
-    !idPattern.test(value.outlineId) || !('version' in value) || typeof value.version !== 'number' ||
-    !Number.isSafeInteger(value.version) || value.version < 1) throw new HttpError(400, 'INVALID_REQUEST')
-  return { outlineId: value.outlineId, version: value.version }
-}
-
+/** A generic chat request. Generation entries (presentation, outline actions) are not accepted in this build. */
 async function body(req: IncomingMessage): Promise<AgentRequest> {
   const value = await readJson(req)
   if (
@@ -59,41 +56,26 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
     !('input' in value) ||
     typeof value.input !== 'string' ||
     !value.input.trim() ||
-    value.input.length > 16000 ||
-    Object.keys(value).some(key => !['sessionId', 'input', 'presentation', 'outlineTarget', 'outlineAction'].includes(key))
+    Object.keys(value).some(key => !['sessionId', 'input'].includes(key))
   )
     throw new HttpError(400, 'INVALID_REQUEST')
-  if ('presentation' in value && value.presentation !== true) throw new HttpError(400, 'INVALID_REQUEST')
-  const request: AgentRequest = { sessionId: value.sessionId, input: value.input,
-    ...('presentation' in value ? { presentation: true as const } : {}) }
-  let target: OutlineTarget | undefined
-  if ('outlineTarget' in value) {
-    const reference = value.outlineTarget
-    if (!reference || typeof reference !== 'object' || Array.isArray(reference) ||
-      Object.keys(reference).some(key => !['outlineId', 'version'].includes(key)))
-      throw new HttpError(400, 'INVALID_REQUEST')
-    target = outlineTarget(reference)
-  }
-  if ('outlineAction' in value) {
-    const action = value.outlineAction
-    const ref = outlineTarget(action)
-    if (!action || typeof action !== 'object' || !('type' in action) || (action.type !== 'confirm' && action.type !== 'cancel') ||
-      Object.keys(action).some(key => !['type', 'outlineId', 'version'].includes(key))) throw new HttpError(400, 'INVALID_REQUEST')
-    return { ...request, ...(target ? { outlineTarget: target } : {}), outlineAction: { ...ref, type: action.type } }
-  }
-  return { ...request, ...(target ? { outlineTarget: target } : {}) }
+  if (value.input.length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
+  return { sessionId: value.sessionId, input: value.input }
 }
 
-/** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a turn. */
+/** Last-Event-ID is the reconnect cursor: the stream resumes after it with no gap and no repeat. */
+function cursor(req: IncomingMessage): number {
+  const raw = req.headers['last-event-id']
+  if (raw === undefined) return 0
+  if (typeof raw !== 'string' || !/^\d{1,15}$/.test(raw)) throw new HttpError(400, 'INVALID_REQUEST')
+  return Number(raw)
+}
+
+/** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a request. */
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const openAgent = options.openAgent
-  const controller = new RequestController(
-    openAgent ?? (async () => { throw new HttpError(503, 'REQUESTS_UNAVAILABLE') }),
-    options.finishRequest,
-    options.requestState,
-  )
+  const controller = options.requests ? new RequestController(options.requests.store, options.requests.runtime) : undefined
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -127,7 +109,7 @@ export async function startHost(options: HostOptions) {
 
   async function withActive(sessions: readonly WebSession[]): Promise<readonly WebSession[]> {
     return sessions.map(session => {
-      const activeRequestId = controller.active(session.sessionId)
+      const activeRequestId = controller?.active(session.sessionId)
       return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
     })
   }
@@ -216,44 +198,61 @@ export async function startHost(options: HostOptions) {
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       // No Agent runtime is connected: refuse the request instead of pretending to start work.
-      if (!openAgent) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
+      if (!controller) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
       json(res, 202, await controller.submit(await body(req)))
       return
     }
-    const reply = /^\/api\/requests\/([\w-]+)\/reply$/.exec(url.pathname)
-    if (reply && req.method === 'POST') {
-      json(res, 202, controller.reply(reply[1]!, requestReply(await readJson(req)))); return
-    }
-    const stop = /^\/api\/requests\/([\w-]+)\/stop$/.exec(url.pathname)
+    const stop = /^\/api\/requests\/([\w-]{1,100})\/stop$/.exec(url.pathname)
     if (stop && req.method === 'POST') {
+      if (!controller) throw new HttpError(404, 'REQUEST_NOT_FOUND')
       json(res, 200, controller.stop(stop[1]!))
       return
     }
-    const request = /^\/api\/requests\/([\w-]+)(\/events)?$/.exec(url.pathname)
+    const request = /^\/api\/requests\/([\w-]{1,100})(\/events)?$/.exec(url.pathname)
     if (request && req.method === 'GET') {
-      const snapshot = controller.get(request[1]!)
+      if (!controller) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+      const id = request[1]!
+      const snapshot = controller.get(id)
       if (!request[2]) {
         json(res, 200, snapshot)
         return
       }
+      const after = cursor(req)
       if (streams.size >= 64) throw new HttpError(429, 'TOO_MANY_STREAMS')
+      // Subscribe before reading saved events, so nothing published in between is lost; the cursor drops repeats.
+      let last = after
+      let ended = false
+      const queued: RequestEvent[] = []
+      let replaying = true
+      const write = (event: RequestEvent) => {
+        if (ended || event.sequence <= last || res.destroyed || res.writableEnded) return
+        last = event.sequence
+        const ready = res.write(`id: ${event.sequence}\nevent: request\ndata: ${JSON.stringify(event)}\n\n`)
+        if ((event.kind === 'status' && !activeStatuses.has(event.status)) || !ready) { ended = true; res.end() }
+      }
+      const unsubscribe = controller.subscribe(event => {
+        if (event.requestId !== id) return
+        if (replaying) queued.push(event)
+        else write(event)
+      })
       res.writeHead(200, { 'content-type': 'text/event-stream', 'x-accel-buffering': 'no' })
       streams.add(res)
-      const send = (value: RequestSnapshot) => {
-        if (value.requestId !== snapshot.requestId || res.destroyed || res.writableEnded) return
-        const ready = res.write(`event: snapshot\ndata: ${JSON.stringify(value)}\n\n`)
-        if ((value.status !== 'running' && value.status !== 'awaiting_user') || !ready) res.end()
-      }
-      const unsubscribe = controller.subscribe(send)
       const heartbeat = setInterval(() => {
-        if (!res.write(': heartbeat\n\n')) res.end()
+        if (!res.writableEnded && !res.write(': heartbeat\n\n')) res.end()
       }, 15000)
       res.on('close', () => {
         clearInterval(heartbeat)
         unsubscribe()
         streams.delete(res)
       })
-      send(snapshot)
+      try {
+        for (const event of controller.events(id, after)) write(event)
+      } finally {
+        replaying = false
+        for (const event of queued.splice(0)) write(event)
+      }
+      // A request that ended before the cursor has nothing more to say.
+      if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) { ended = true; res.end() }
       return
     }
     const session = /^\/api\/sessions\/([A-Za-z0-9_-]{1,100})\/history$/.exec(url.pathname)
@@ -263,6 +262,7 @@ export async function startHost(options: HostOptions) {
         res,
         200,
         messages.filter(message => message.role !== 'system').map(message => ({ role: message.role, content: message.content,
+          ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
           ...(message.role === 'tool' ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true } : {}) })),
       )
       return
@@ -296,7 +296,7 @@ export async function startHost(options: HostOptions) {
         )
         for (const stream of streams) stream.end()
         server.closeAllConnections()
-        await Promise.all([stopped, controller.close()])
+        await Promise.all([stopped, controller?.close()])
       })()
       return closing
     },
