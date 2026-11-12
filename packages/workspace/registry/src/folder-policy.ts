@@ -1,8 +1,8 @@
 import { constants, realpathSync } from 'node:fs'
 import { access, opendir, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { WorkspaceError } from './contracts.ts'
 import type { FolderRefusal } from './contracts.ts'
+import { WorkspaceError } from './contracts.ts'
 
 export interface FolderPolicyOptions {
   /** The user's own folder (BR-019 V-3, V-4). */
@@ -49,7 +49,8 @@ export class FolderPolicy {
 
   private canonicalRoot(folder: string): string {
     try {
-      return realpathSync(folder)
+      // promises.realpath uses the native resolver too; Windows short names must expand identically.
+      return realpathSync.native(folder)
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return folder
       throw error
