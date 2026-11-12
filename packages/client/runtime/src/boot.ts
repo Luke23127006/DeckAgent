@@ -1,6 +1,6 @@
-import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-api'
+import type { HistoryMessage, RequestSnapshot, RequestStatus, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
-import { HostClient } from './host-client.ts'
+import { HostClient, HostRequestError, isActive } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
 import { button, element } from './dom.ts'
 import { modelPicker } from './model-picker.ts'
@@ -11,17 +11,22 @@ import { DeckClient } from './deck-client.ts'
 import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
-import { questionView } from './question-view.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
 
-/**
- * No Agent runtime is connected in this build (B01): the Host refuses every request, so the composer
- * keeps drafts but offers no send. The OpenCode runtime connects in B02.
- */
-const requestsAvailable = false
-const requestsUnavailableText = 'Chưa thể gửi yêu cầu trong bản này: DeckAgent chưa kết nối runtime tạo slide. Bạn vẫn soạn được bản nháp, tạo và mở lại chat.'
+/** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
+function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
+  if (!settings.runtime.available) return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
+    ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
+    : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
+  if (!session || session.selectable) return undefined
+  if (!settings.providers.length) return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  if (!settings.providers.some(provider => provider.models.length)) return 'Chưa thêm model nào. Thêm model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  const removed = session.removedSelection ?? session.selection
+  if (removed) return `Model ${removed.model} đã bị gỡ; chat này chưa có model. Hãy chọn model khác để gửi. Hệ thống không tự chọn model.`
+  return 'Chat này chưa chọn model. Hãy chọn model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+}
 
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
@@ -52,20 +57,11 @@ const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Hội thoại')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
-const questionUI = questionView(answer => run(replyToQuestion(answer)))
-const timeline = new ConversationView(messages, (type, proposal) => {
-  run(submitRequest(type === 'confirm' ? 'Xác nhận outline' : 'Hủy outline', {
-    outlineAction: { type, outlineId: proposal.outlineId, version: proposal.version },
-  }))
-}, () => {
-  if (!input.value) input.value = 'Sửa outline: '
-  input.focus()
-  input.setSelectionRange(input.value.length, input.value.length)
-}, outlineDock, {
+// Outline confirmation and generation arrive with their builds (B04); this build sends generic chat requests only.
+const timeline = new ConversationView(messages, undefined, undefined, outlineDock, {
   retry: text => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); saveDraft(); controls() },
   settings: () => run(settingsUI.open()),
   draft: () => input.value,
-  viewSlide: slideId => { showDeck(); deckModel.select(slideId) },
 })
 const form = element('form', undefined, 'composer')
 form.noValidate = true
@@ -80,12 +76,13 @@ submit.setAttribute('aria-label', 'Gửi yêu cầu')
 submit.title = 'Gửi yêu cầu (Enter)'
 submit.type = 'submit'
 submit.disabled = true
-const createPresentation = button('Đề xuất outline', () => {
-  if (input.reportValidity()) run(submitRequest(input.value, { presentation: true }))
-})
-createPresentation.disabled = true
 const stopRequest = button('Dừng', () => {
-  if (current?.activeRequestId) run(client.stop(current.activeRequestId).then(() => {}))
+  const id = current?.activeRequestId
+  if (!id || stopping.has(id)) return
+  stopping.add(id)
+  controls()
+  // The Host saves the stop at once (NFR-011); the stream then reports it, and this snapshot covers a lost stream.
+  run(client.stop(id).then(snapshot => { timeline.snapshot(snapshot) }).finally(() => { stopping.delete(id); controls() }))
 })
 stopRequest.className = 'stop-action'
 stopRequest.setAttribute('aria-label', 'Dừng yêu cầu')
@@ -98,9 +95,8 @@ const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-s
 publishedDeck.hidden = true
 const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = true })
 let current: WebSession | undefined
-let waiting: RequestSnapshot | undefined
-let pendingReply: { key: string; value: RequestReply } | undefined
-let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [] }
+let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [], runtime: { available: false } }
+const stopping = new Set<string>()
 let sessions: readonly WebSession[] = []
 let workspaces: WorkspaceList = { workspaces: [], selectedId: 'default' }
 let searchWords = ''
@@ -175,52 +171,40 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
-  const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
-  stopRequest.hidden = !current?.activeRequestId
-  submit.hidden = !!current?.activeRequestId && !question
+  const activeId = current?.activeRequestId
+  stopRequest.hidden = !activeId
+  stopRequest.disabled = !!activeId && stopping.has(activeId)
+  submit.hidden = !!activeId
   for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
   model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
   workspaceUI.setBusy(opening !== undefined || creating)
-  unavailable.hidden = requestsAvailable
+  // A chat without a selectable model keeps its draft and says why it cannot send (FR-046).
+  const blocked = sendBlocked(current, settings)
+  unavailable.hidden = !blocked || !!activeId
+  if (blocked && unavailable.textContent !== blocked) unavailable.textContent = blocked
   submit.disabled =
-    !requestsAvailable ||
+    !!blocked ||
     !current ||
     creating ||
     reconnecting ||
     opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
-    (!!current.activeRequestId && !question) ||
-    (!current.selectable && !question)
-  createPresentation.disabled = submit.disabled
-  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > 16000))
-  createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
-  timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
-  questionUI.update(question, submit.disabled)
-  timeline.setQuestion(question?.prompt)
-  input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
-  picker.update(settings, !!current?.activeRequestId)
+    !!activeId
+  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > requestLimit))
+  timeline.setOutlineBusy(true)
+  picker.update(settings, !!activeId)
   title.textContent = chatTitle
   title.title = chatTitle
-  const active = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
-  headerState.textContent = question ? 'Đang chờ bạn trả lời' : current?.activeRequestId ? 'Đang làm việc' : active ? 'Đang gửi…'
-    : outlineState?.proposals.some(proposal => proposal.status === 'current') ? 'Chờ xác nhận outline' : ''
-  const outlinePending = !!outlineState?.proposals.some(proposal => proposal.status === 'current')
-  headerState.dataset.waiting = String(!!question || (!active && outlinePending))
-  navigationHint.hidden = !active || chats.hidden
+  const active = !!activeId || (!!current && sending.has(current.sessionId))
+  headerState.textContent = activeId ? 'Đang làm việc' : active ? 'Đang gửi…' : ''
+  headerState.dataset.waiting = 'false'
+  navigationHint.hidden = !activeId || chats.hidden
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
   openDeck.hidden = (!outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) || !publishedDeck.hidden
   fitInput()
-  // Only a saved model that can no longer be used needs a notice; with no model chosen yet the picker already says so.
-  if (!current?.selectable && !current?.activeRequestId && current?.selection) {
-    status.hidden = false
-    status.dataset.kind = 'setup'
-    status.textContent = `Model ${current.selection.model} không còn chọn được. Hãy chọn model khác.`
-  } else if (status.dataset.kind === 'setup') {
-    status.hidden = true
-  }
 }
 function renderModels() {
   model.replaceChildren(new Option('Chọn model', ''))
@@ -302,34 +286,52 @@ async function showOutlines(id: string, expected: number) {
   timeline.setOutlines(next)
   controls()
 }
+/**
+ * Follows a request through the Host's saved events: the first connection replays from the start, a reconnect
+ * continues after the last sequence, so nothing is missed or counted twice (FR-068). Leaving stops nothing.
+ */
 async function follow(id: string, sessionId: string, expected: number) {
   watch?.abort()
   const control = new AbortController()
   watch = control
-  try {
-    for await (const snapshot of client.watch(id, control.signal)) {
-      if (generation !== expected) return
-      timeline.snapshot(snapshot)
-      waiting = snapshot.status === 'awaiting_user' ? snapshot : undefined
-      controls()
-      status.hidden = true
-      if (snapshot.status !== 'running') {
-        await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
-        await refresh()
+  const parts = new Map<string, string>()
+  let state: RequestStatus = 'active'
+  let errorCode: string | undefined
+  let cursor = 0
+  let failures = 0
+  const show = () => timeline.snapshot({ requestId: id, sessionId, status: state, text: [...parts.values()].filter(text => text.trim()).join('\n\n'),
+    sequence: cursor, ...(errorCode ? { errorCode } : {}) })
+  while (!control.signal.aborted && generation === expected && isActive(state)) {
+    try {
+      for await (const event of client.watch(id, control.signal, cursor)) {
+        if (generation !== expected) return
+        cursor = event.sequence
+        failures = 0
+        if (event.kind === 'text') parts.set(event.part, event.text)
+        else if (event.kind === 'activity') timeline.activity({ requestId: id, sequence: event.sequence, id: event.id, label: event.label, type: event.type, status: event.status })
+        else if (event.kind === 'status') { state = event.status; errorCode = event.errorCode }
+        else if (event.kind === 'notice' && event.code === 'CONVERSATION_SUMMARIZED') timeline.summarized(id)
+        show()
       }
-    }
-  } catch {
-    if (!control.signal.aborted && generation === expected) {
+    } catch (error) {
+      if (control.signal.aborted || generation !== expected) return
+      if (error instanceof HostRequestError && error.message === 'REQUEST_NOT_FOUND') return
       timeline.connectionLost(id)
-      try {
-        await Promise.all([refresh(), showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
-      } catch {
-        // The inline record keeps the last known outcome and offers reconnect; no work is replayed.
-      }
+      failures++
+      await new Promise(resolve => setTimeout(resolve, Math.min(5000, 500 * failures)))
     }
   }
+  if (control.signal.aborted || generation !== expected) return
+  await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
+  await refresh()
+  if (current?.sessionId === sessionId && current.activeRequestId === id) {
+    const { activeRequestId: _ended, ...rest } = current
+    current = rest
+  }
+  controls()
 }
-async function open(session: WebSession) {
+async function open(listed: WebSession) {
+  let session = listed
   const switching = current?.sessionId !== session.sessionId
   if (switching && switchingBlocked()) return
   if (switching && !settingsUI.leave()) return
@@ -344,9 +346,11 @@ async function open(session: WebSession) {
   generation++
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
+  // The saved records say whether a request is active now; the list entry may be older.
+  const activeRequestId = loaded[2].find(request => isActive(request.status))?.requestId
+  const { activeRequestId: _listedRequest, ...rest } = listed
+  session = { ...rest, ...(activeRequestId ? { activeRequestId } : {}) }
   current = session
-  const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
-  waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
   deckModel.open(session.sessionId)
   remember(session.sessionId)
   const expected = generation
@@ -355,7 +359,7 @@ async function open(session: WebSession) {
   renderChats()
   status.hidden = true
   if (session.activeRequestId)
-    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'running' })
+    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'active', text: '', sequence: 0 })
   controls()
   timeline.setHistory(loaded[0])
   describeHistory(loaded[0])
@@ -410,16 +414,18 @@ function findChats() {
 }
 searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(findChats, 200) })
 search.addEventListener('submit', event => { event.preventDefault(); clearTimeout(searchTimer); findChats() })
-const unavailable = element('p', requestsUnavailableText, 'requests-unavailable')
+const requestLimit = 16000
+const unavailable = element('p', '', 'requests-unavailable')
 unavailable.setAttribute('role', 'note')
 const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
+/** Only an open or a send in progress blocks switching. A running request keeps going in the Host (UC-003 A13). */
 function switchingBlocked(): boolean {
-  return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
+  return opening !== undefined || (!!current && sending.has(current.sessionId))
 }
 const newChatButton = button('Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
-const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
+const navigationHint = element('p', 'Yêu cầu vẫn chạy khi bạn mở chat khác; quay lại chat này để xem tiến độ.', 'navigation-hint')
 navigationHint.hidden = true
 const recents = button('Gần đây', () => {
   chats.hidden = !chats.hidden
@@ -540,7 +546,7 @@ attachment.disabled = true
 attachment.className = 'attachment-action'
 attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
 attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
-composerControls.append(attachment, createPresentation)
+composerControls.append(attachment)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
@@ -553,7 +559,7 @@ input.addEventListener('keydown', event => {
   }
 })
 const dock = element('div', undefined, 'composer-dock')
-dock.append(questionUI.node, outlineDock, form)
+dock.append(outlineDock, form)
 conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
 initMotion(root)
@@ -599,68 +605,38 @@ form.addEventListener('submit', event => {
   event.preventDefault()
   run(submitRequest(input.value))
 })
-async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
+async function submitRequest(text: string): Promise<void> {
   if (submit.disabled || !current) return
   if (!text.trim()) return
-  if (text.length > 16000) {
+  if (text.length > requestLimit) {
     status.hidden = false
     status.dataset.kind = 'error'
-    status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi.'
-    return
-  }
-  if (waiting?.question && current.activeRequestId === waiting.requestId) {
-    if (!extra.outlineAction) await replyToQuestion({ type: 'text', text })
+    status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi. Bản nháp được giữ nguyên.'
     return
   }
   const id = current.sessionId,
     expected = generation
-  const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
   controls()
   status.textContent = 'Đang gửi'
   status.hidden = false
   status.dataset.kind = 'sending'
   try {
-    const accepted = await client.send({ sessionId: id, input: text,
-      ...(target && !extra.outlineAction ? { outlineTarget: { outlineId: target.outlineId, version: target.version } } : {}),
-      ...extra })
+    // A refused send leaves the draft unchanged; only an accepted request empties the composer.
+    const accepted: RequestSnapshot = await client.send({ sessionId: id, input: text })
     if (generation === expected && current) {
-      if (!extra.outlineAction && input.value === text) { input.value = ''; saveDraft() }
+      if (input.value === text) { input.value = ''; saveDraft() }
       current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
       status.hidden = true
       controls()
     }
-    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected), showOutlines(id, expected)])
+    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
     if (generation === expected) run(follow(accepted.requestId, id, expected))
-  } catch (error) {
-    try { await showOutlines(id, expected) } catch { /* Keep the last saved outline if reconnect also fails. */ }
-    throw error
   } finally {
     sending.delete(id)
     controls()
   }
-}
-
-async function replyToQuestion(answer: RequestReply['answer']): Promise<void> {
-  if (!current || !waiting?.question || submit.disabled || waiting.sessionId !== current.sessionId) return
-  const id = current.sessionId, expected = generation, snapshot = waiting, question = waiting.question
-  const key = JSON.stringify([id, question.questionId, question.version, answer])
-  if (pendingReply?.key !== key) pendingReply = { key, value: { sessionId: id, questionId: question.questionId,
-    version: question.version, replyId: crypto.randomUUID(), answer } }
-  sending.add(id)
-  controls()
-  try {
-    const accepted = await client.reply(snapshot.requestId, pendingReply.value)
-    if (generation !== expected) return
-    pendingReply = undefined
-    waiting = undefined
-    timeline.snapshot(accepted)
-    if (answer.type === 'text' && input.value === answer.text) { input.value = ''; saveDraft() }
-    controls()
-    await Promise.all([refresh(), showHistory(id, expected), showActivities(id, expected)])
-    if (generation === expected) run(follow(accepted.requestId, id, expected))
-  } finally { sending.delete(id); controls() }
 }
 const timer = setInterval(() => {
   if (!current?.activeRequestId || polling || disposed) return

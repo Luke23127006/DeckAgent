@@ -8,9 +8,6 @@
     "src"
   ],
   "references": [
-    { "path": "../../presentation/deck" },
-    {
-      "path": "../../agent/runtime"
-    }
+    { "path": "../../presentation/deck" }
   ]
 }

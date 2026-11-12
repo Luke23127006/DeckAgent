@@ -1,22 +1,26 @@
 import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import { parseArgs, promisify } from 'node:util'
-import { ModelProviders } from '@deckagent/model-providers'
-import type { ModelConnection } from '@deckagent/model-providers'
 import { StorageError, resolveStorageRoot, startLocalWeb } from './index.ts'
-import type { LocalWebOptions } from './index.ts'
+import type { LocalWebOptions, ProviderConnection } from './index.ts'
+import { protocols } from './provider-settings.ts'
+import { validBaseUrl } from './provider-catalog.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
-function connection(value: unknown): ModelConnection {
+/** A startup connection of the models config file. Tuning fields of older files are accepted and not used. */
+function connection(value: unknown): ProviderConnection {
   if (
     !object(value) ||
     typeof value.id !== 'string' ||
+    !/^[\w.-]{1,100}$/.test(value.id) ||
     typeof value.baseUrl !== 'string' ||
-    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'anthropic-messages') ||
-    (value.apiKeyEnv !== undefined && typeof value.apiKeyEnv !== 'string') ||
+    !validBaseUrl(value.baseUrl) ||
+    !protocols.some(protocol => protocol === value.protocol) ||
+    (value.apiKeyEnv !== undefined && (typeof value.apiKeyEnv !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.apiKeyEnv))) ||
     (value.timeoutMs !== undefined && typeof value.timeoutMs !== 'number') ||
     (value.maxOutputTokens !== undefined && typeof value.maxOutputTokens !== 'number') ||
     (value.temperature !== undefined && typeof value.temperature !== 'number') ||
@@ -41,12 +45,8 @@ function connection(value: unknown): ModelConnection {
   return {
     id: value.id,
     baseUrl: value.baseUrl,
-    protocol: value.protocol,
-    ...(value.apiKeyEnv === undefined ? {} : { apiKeyEnv: value.apiKeyEnv }),
-    ...(value.timeoutMs === undefined ? {} : { timeoutMs: value.timeoutMs }),
-    ...(value.maxOutputTokens === undefined ? {} : { maxOutputTokens: value.maxOutputTokens }),
-    ...(value.temperature === undefined ? {} : { temperature: value.temperature }),
-    ...(value.tokenLimitField === undefined ? {} : { tokenLimitField: value.tokenLimitField }),
+    protocol: protocols.find(protocol => protocol === value.protocol)!,
+    ...(typeof value.apiKeyEnv === 'string' ? { apiKeyEnv: value.apiKeyEnv } : {}),
   }
 }
 
@@ -61,24 +61,24 @@ async function main() {
       help: { type: 'boolean' },
       'no-open': { type: 'boolean' },
       'confirmed-deck': { type: 'string' },
+      opencode: { type: 'string' },
     },
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--port 0] [--no-open]\nRuns without a model: workspaces and chats work, sending a request is not available yet. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--opencode <path-to-opencode-executable>] [--port 0] [--no-open]\nRequests run with the OpenCode CLI (pinned version), found by --opencode, else DECKAGENT_OPENCODE, else opencode on PATH. Without it, workspaces and chats still work and sending says why it is unavailable. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
     )
     return
   }
   const provider = values.provider ?? process.env.DECKAGENT_PROVIDER
   const model = values.model ?? process.env.DECKAGENT_MODEL
   if (!!provider !== !!model) throw new Error('Supply provider and model together')
-  let connections: ModelConnection[] = []
+  let connections: ProviderConnection[] = []
   if (provider && model) {
     const config: unknown = JSON.parse(await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'))
     if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections')) throw new Error('Invalid config')
     connections = config.connections.map(connection)
     if (!connections.some(entry => entry.id === provider)) throw new Error('Unknown provider')
-    new ModelProviders(connections)
   }
   const port = Number(values.port ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
@@ -97,6 +97,7 @@ async function main() {
     connections,
     ...(provider && model ? { selection: { provider, model } } : {}),
     dataDir: resolveStorageRoot({ flag: values['data-dir'] }),
+    ...(values.opencode ? { openCode: { executable: path.resolve(values.opencode) } } : {}),
     port,
   })
   const stop = () => {

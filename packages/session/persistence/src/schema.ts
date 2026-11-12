@@ -2,9 +2,31 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 2
+const schemaVersion = 3
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
+
+/** Requests, their ordered events and the native session binding of each chat (schema v3, B02). */
+const requestTables = `
+  CREATE TABLE requests (
+    id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id),
+    status TEXT NOT NULL CHECK (status IN ('active','waiting_approval','completed','failed','stopped','interrupted')),
+    provider TEXT NOT NULL, model TEXT NOT NULL, history_start INTEGER NOT NULL CHECK (history_start >= 0),
+    started_at TEXT NOT NULL, ended_at TEXT, error_code TEXT
+  ) STRICT;
+  CREATE INDEX requests_session ON requests(session_id);
+  CREATE UNIQUE INDEX requests_one_active ON requests(session_id) WHERE status IN ('active','waiting_approval');
+  CREATE TABLE request_events (
+    request_id TEXT NOT NULL REFERENCES requests(id), sequence INTEGER NOT NULL CHECK (sequence > 0),
+    created_at TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (request_id, sequence)
+  ) STRICT;
+  CREATE TABLE runtime_bindings (
+    session_id TEXT PRIMARY KEY REFERENCES sessions(id), native_session_id TEXT NOT NULL,
+    provider TEXT NOT NULL, model TEXT NOT NULL, context TEXT NOT NULL, last_request_id TEXT NOT NULL, updated_at TEXT NOT NULL
+  ) STRICT;
+  ALTER TABLE sessions ADD COLUMN removed_provider TEXT;
+  ALTER TABLE sessions ADD COLUMN removed_model TEXT;
+`
 
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
@@ -23,17 +45,18 @@ export function initialize(db: DatabaseSync): void {
           payload TEXT NOT NULL, PRIMARY KEY (session_id, sequence)
         ) STRICT;
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
+        ${requestTables}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if (version === 1 && owner === applicationId) {
-      // v1 -> v2: chats gain a workspace. Rows are kept; none is reset.
-      db.exec(`
+    } else if ((version === 1 || version === 2) && owner === applicationId) {
+      // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
+      if (version === 1) db.exec(`
         ALTER TABLE sessions ADD COLUMN workspace_id TEXT;
         UPDATE sessions SET workspace_id = '${defaultWorkspaceId}';
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
-        PRAGMA user_version = ${schemaVersion};
       `)
+      db.exec(`${requestTables} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError('SESSION_SCHEMA', 'Unsupported Session database format. Keep the file and use a compatible version or another data directory')
     }
@@ -41,8 +64,11 @@ export function initialize(db: DatabaseSync): void {
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get()) {
       throw new SessionError('SESSION_CORRUPT', 'Session database failed its integrity check')
     }
-    db.prepare('SELECT id, created_at, updated_at, provider, model, workspace_id FROM sessions LIMIT 0').all()
+    db.prepare('SELECT id, created_at, updated_at, provider, model, workspace_id, removed_provider, removed_model FROM sessions LIMIT 0').all()
     db.prepare('SELECT session_id, sequence, payload FROM messages LIMIT 0').all()
+    db.prepare('SELECT id, session_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests LIMIT 0').all()
+    db.prepare('SELECT request_id, sequence, created_at, payload FROM request_events LIMIT 0').all()
+    db.prepare('SELECT session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

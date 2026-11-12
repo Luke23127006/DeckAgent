@@ -2,46 +2,22 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { AgentRuntime, MemorySessionStore } from '../packages/agent/runtime/lib/index.js'
 import { startHost } from '../packages/host/api/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 
-test('waiting snapshots require a valid question and an SSE stream continues through reply to completion', async t => {
-  const question = { questionId: 'question', version: 1, prompt: 'Chủ đề?', options: ['Tái chế'], allowSkip: true }
-  const waiting = { requestId: 'waiting', sessionId: 'chat', status: 'awaiting_user', question }
-  let payload = waiting
-  const server = createServer((req, res) => {
-    if (req.url.endsWith('/events')) {
-      res.writeHead(200, { 'content-type': 'text/event-stream' })
-      res.end([waiting, { requestId: 'waiting', sessionId: 'chat', status: 'running' },
-        { requestId: 'waiting', sessionId: 'chat', status: 'completed', result: { status: 'completed', text: 'Outline ready', steps: 2 } }]
-        .map(value => `event: snapshot\ndata: ${JSON.stringify(value)}\n\n`).join(''))
-    } else res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(payload))
-  })
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) }))
-  const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture')
-  assert.deepEqual(await client.snapshot('waiting'), waiting)
-  const states = []
-  for await (const value of client.watch('waiting')) states.push(value.status)
-  assert.deepEqual(states, ['awaiting_user', 'running', 'completed'])
-  for (const bad of [undefined, { ...question, version: 0 }, { ...question, options: [3] }, { ...question, allowSkip: 'yes' }]) {
-    payload = { ...waiting, question: bad }
-    await assert.rejects(client.snapshot('waiting'), /INVALID_RESPONSE/)
-  }
-  payload = { ...waiting, status: 'running' }
-  await assert.rejects(client.snapshot('waiting'), /INVALID_RESPONSE/)
-})
+// B02: the in-request question/reply contract was removed (ADR-0004: a question ends its request, the reply is a new
+// request), so its waiting-snapshot case is gone. The browser follows saved request events instead of snapshots.
 
 test('history exposes tool identity for Activity without exposing internal fields or arguments', async t => {
   const host = await startHost({
-    openAgent: async () => { throw new Error('No work should start') },
     readHistory: async () => [{ role: 'tool', content: 'Saved output', toolCallId: 'call-one', name: 'read_file', isError: false,
-      arguments: { internal: 'private-fixture-marker' }, providerState: { private: 'private-fixture-marker' } }],
+      arguments: { internal: 'private-fixture-marker' }, providerState: { private: 'private-fixture-marker' } },
+    { role: 'assistant', content: 'Half', interrupted: true }],
   })
   t.after(() => host.close())
   const history = await new HostClient(host.origin, host.token).history('chat')
-  assert.deepEqual(history, [{ role: 'tool', content: 'Saved output', toolCallId: 'call-one', name: 'read_file', isError: false }])
+  assert.deepEqual(history, [{ role: 'tool', content: 'Saved output', toolCallId: 'call-one', name: 'read_file', isError: false },
+    { role: 'assistant', content: 'Half', interrupted: true }])
   assert.equal(JSON.stringify(history).includes('private-fixture-marker'), false)
 })
 
@@ -53,75 +29,89 @@ test('history accepts legacy tool output and rejects malformed optional Activity
   t.after(() => new Promise(resolve => server.close(resolve)))
   const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture')
   assert.deepEqual(await client.history('chat'), payload)
-  for (const field of [{ toolCallId: 3 }, { name: '<script>' }, { isError: 'false' }]) {
+  for (const field of [{ toolCallId: 3 }, { name: '<script>' }, { isError: 'false' }, { interrupted: true }]) {
     payload = [{ role: 'tool', content: 'Earlier output', ...field }]
     await assert.rejects(client.history('chat'), /INVALID_RESPONSE/)
   }
 })
 
-test('browser connection submits a request, follows snapshots and restores history', async t => {
-  const sessions = new MemorySessionStore()
-  const runtime = new AgentRuntime({
-    sessions,
-    model: {
-      async *stream() {
-        yield { type: 'text-delta', text: 'Browser connected' }
-        yield { type: 'finish', reason: 'stop' }
-      },
+test('browser connection submits a request, follows saved events and restores history', async t => {
+  const messages = new Map()
+  const events = []
+  const store = {
+    admit({ requestId, sessionId, input, selection }) {
+      messages.set(sessionId, [{ role: 'user', content: input }])
+      events.push({ kind: 'status', status: 'active', requestId, sequence: 1, timestamp: 't' })
+      this.request = { requestId, sessionId, status: 'active', selection, historyStart: 0, startedAt: 't', lastSequence: 1 }
+      return this.request
     },
-  })
-  const host = await startHost({
-    openAgent: id => runtime.createAgent({ sessionId: id, selection: { provider: 'test', model: 'fixture' } }),
-    readHistory: id => sessions.read(id),
-  })
-  t.after(async () => {
-    await host.close()
-    await runtime.dispose()
-  })
+    append(requestId, event) {
+      const saved = { ...event, requestId, sequence: events.length + 1, timestamp: 't' }
+      events.push(saved)
+      return saved
+    },
+    finish(requestId, status) {
+      messages.get(this.request.sessionId).push({ role: 'assistant', content: 'Browser connected' })
+      this.request = { ...this.request, status }
+      const saved = { kind: 'status', status, requestId, sequence: events.length + 1, timestamp: 't' }
+      events.push(saved)
+      return [saved]
+    },
+    get() { return this.request && { ...this.request, lastSequence: events.length } },
+    events: (_id, after = 0) => events.filter(event => event.sequence > after),
+    text: () => events.filter(event => event.kind === 'text').map(event => event.text).join(''),
+    activeFor() { return this.request?.status === 'active' ? this.request.requestId : undefined },
+  }
+  const runtime = {
+    async prepare() {
+      return { selection: { provider: 'test', model: 'fixture' }, async start(run) {
+        await run.emit({ kind: 'text', part: 'p', text: 'Browser connected' })
+        return { status: 'completed' }
+      } }
+    },
+  }
+  const host = await startHost({ requests: { store, runtime }, readHistory: async id => messages.get(id) ?? [] })
+  t.after(() => host.close())
   const client = new HostClient(host.origin, host.token)
   const accepted = await client.send({ sessionId: 'browser-test', input: 'Hello' })
-  const snapshots = []
-  for await (const value of client.watch(accepted.requestId)) snapshots.push(value)
-  assert.equal(snapshots.at(-1).status, 'completed')
-  assert.equal(snapshots.at(-1).result.text, 'Browser connected')
+  const received = []
+  for await (const value of client.watch(accepted.requestId)) received.push(value)
+  assert.deepEqual(received.map(event => event.kind), ['status', 'text', 'status'])
+  assert.equal(received.at(-1).status, 'completed')
   assert.deepEqual(await client.history('browser-test'), [
     { role: 'user', content: 'Hello' },
     { role: 'assistant', content: 'Browser connected' },
   ])
-  assert.equal((await client.snapshot(accepted.requestId)).status, 'completed')
+  const snapshot = await client.snapshot(accepted.requestId)
+  assert.deepEqual([snapshot.status, snapshot.text], ['completed', 'Browser connected'])
   await assert.rejects(new HostClient(host.origin, 'wrong').history('browser-test'), /AUTH_REQUIRED/)
 })
 
-test('client works against a mock SSE server with fragmented UTF-8 and rejects malformed snapshots', async t => {
+test('client reads fragmented UTF-8 event frames, skips repeats below its cursor and rejects malformed events', async t => {
   const server = createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'text/event-stream' })
-    const value = req.url.includes('malformed')
-      ? { requestId: 'malformed', sessionId: 'mock', status: 'completed' }
-      : {
-          requestId: 'mock',
-          sessionId: 'mock',
-          status: 'completed',
-          result: { status: 'completed', text: 'Xin chào 🌿', steps: 1 },
-        }
-    const bytes = Buffer.from(`: heartbeat\n\nevent: snapshot\ndata: ${JSON.stringify(value)}\n\n`)
-    // Split inside a multibyte character, not just between complete JSON frames.
-    const split = bytes.indexOf(Buffer.from('🌿')) + 2
+    const frames = req.url.includes('malformed')
+      ? [{ requestId: 'malformed', sequence: 1, timestamp: 't', kind: 'status', status: 'done' }]
+      : [
+          { requestId: 'mock', sequence: 1, timestamp: 't', kind: 'status', status: 'active' },
+          { requestId: 'mock', sequence: 2, timestamp: 't', kind: 'text', part: 'p', text: 'Xin chào 🌿' },
+          { requestId: 'mock', sequence: 2, timestamp: 't', kind: 'text', part: 'p', text: 'Xin chào 🌿' },
+          { requestId: 'mock', sequence: 3, timestamp: 't', kind: 'status', status: 'completed' },
+        ]
+    const bytes = Buffer.from(`: heartbeat\n\n${frames.map(value => `id: ${value.sequence}\nevent: request\ndata: ${JSON.stringify(value)}\n\n`).join('')}`)
+    // Split inside a multibyte character, not just between complete frames.
+    const split = Math.max(1, bytes.indexOf(Buffer.from('🌿')) + 2)
     res.write(bytes.subarray(0, split))
     setImmediate(() => res.end(bytes.subarray(split)))
   })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
-  t.after(
-    () =>
-      new Promise(resolve => {
-        server.close(resolve)
-        server.closeAllConnections()
-      }),
-  )
+  t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections() }))
   const client = new HostClient(`http://127.0.0.1:${server.address().port}`, 'fixture-token')
   const received = []
   for await (const value of client.watch('mock')) received.push(value)
-  assert.equal(received.at(-1).result.text, 'Xin chào 🌿')
+  assert.deepEqual(received.map(event => event.sequence), [1, 2, 3])
+  assert.equal(received[1].text, 'Xin chào 🌿')
   await assert.rejects(async () => {
     for await (const _value of client.watch('malformed')) {
       /* Invalid wire data must reject before yielding. */

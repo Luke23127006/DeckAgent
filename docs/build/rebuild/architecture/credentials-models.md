@@ -49,7 +49,7 @@ Local Web UI                         DeckAgent Host
 ## 4. Security boundary and limitations
 
 - Local Web communicates with the trusted Host API; saved keys are write-only from the UI perspective. Settings responses expose `hasKey` only.
-- Dedicated credential store must be outside project folders, exports, logs and generated artifacts, with restricted local OS access. **Exact at-rest encryption/keychain mechanism is not yet selected**; the credentials build must select and test it before storing live keys.
+- Dedicated credential store must be outside project folders, exports, logs and generated artifacts, with restricted local OS access. **At-rest mechanism (B02): Windows CurrentUser DPAPI**, one encrypted file per key under `credentials/` in Application Storage; SQLite holds only an opaque reference. **Platform limitation:** the MVP stores keys on Windows only. On macOS and Linux a key is refused with `CREDENTIAL_STORE_UNAVAILABLE` and never kept in plain text; a custom model API without a key still works. A keychain adapter for those systems needs its own build evidence.
 - Even when a key is provided through a process environment, the child process and the machine's privileged users may be able to read it. Do not call this method isolation against a compromised OS or hostile local administrator.
 - Validate custom base URL/protocol, allowed provider packages and credential routing; user-supplied provider ID must not cause arbitrary package loading.
 - No raw OpenCode stderr, resolved config, environment dump or credential-bearing exception should be exposed to UI/SQLite.

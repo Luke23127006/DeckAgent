@@ -6,16 +6,23 @@ import { SessionError } from './contracts.ts'
 import type { ChatSummary, Message, ModelSelection, SessionInfo } from './contracts.ts'
 import { chatMatches, chatTitle, searchWords, validateMessage } from './message.ts'
 import { defaultWorkspaceId, initialize } from './schema.ts'
+import { RequestLog } from './requests.ts'
 
 export type { ChatSummary, JsonValue, Message, ModelSelection, ProviderState, SessionInfo, ToolCall } from './contracts.ts'
+export type {
+  ActivityRecord, ActivityStatus, RequestEvent, RequestEventBody, RequestRecord, RequestStatus, RuntimeBinding, TerminalStatus,
+} from './contracts.ts'
 export { SessionError } from './contracts.ts'
 export { chatTitle } from './message.ts'
 export { MemoryDraftStore, draftLimit } from './draft-store.ts'
+export { RequestLog, summarizedNotice, validateEvent } from './requests.ts'
 
 /** Local durable storage of chats and their conversations. The application owns close(). */
 export class SqliteSessionStore {
   private readonly db: DatabaseSync
   private closed = false
+  /** Requests, events and native session bindings of these chats (same database, one owner). */
+  readonly requests: RequestLog
 
   constructor(path: string) {
     let db: DatabaseSync | undefined
@@ -25,6 +32,12 @@ export class SqliteSessionStore {
       db = new DatabaseSync(path)
       initialize(db)
       this.db = db
+      this.requests = new RequestLog(db, {
+        run: operation => this.access(operation),
+        transaction: operation => this.access(() => this.transaction(operation)),
+        appendMessages: (sessionId, messages) => this.insertMessages(sessionId, messages),
+        messageCount: sessionId => Number(this.db.prepare('SELECT COUNT(*) AS count FROM messages WHERE session_id = ?').get(sessionId)!.count),
+      })
     } catch (error) {
       db?.close()
       if (error instanceof SessionError) throw error
@@ -72,7 +85,8 @@ export class SqliteSessionStore {
     return this.access(() => this.transaction(() => {
       this.requireSession(sessionId)
       this.validateSelection(selection)
-      this.db.prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?').run(selection.provider, selection.model, sessionId)
+      this.db.prepare('UPDATE sessions SET provider = ?, model = ?, removed_provider = NULL, removed_model = NULL WHERE id = ?')
+        .run(selection.provider, selection.model, sessionId)
       return this.info(sessionId)!
     }))
   }
@@ -141,15 +155,34 @@ export class SqliteSessionStore {
   async append(sessionId: string, messages: readonly Message[]): Promise<void> {
     this.access(() => this.transaction(() => {
       this.requireSession(sessionId)
-      const row = this.db.prepare('SELECT COALESCE(MAX(sequence), 0) AS last FROM messages WHERE session_id = ?').get(sessionId)!
-      let sequence = Number(row.last)
-      const insert = this.db.prepare('INSERT INTO messages (session_id, sequence, payload) VALUES (?, ?, ?)')
-      for (const message of messages) {
-        validateMessage(message)
-        insert.run(sessionId, ++sequence, JSON.stringify(message))
-      }
-      if (messages.length) this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId)
+      this.insertMessages(sessionId, messages)
     }))
+  }
+
+  /**
+   * Removed models (FR-059, FR-063): each chat that selected one has no selected model afterwards,
+   * remembers which one was removed so it can say so (FR-065), and gets no other model by itself.
+   * `models` undefined means every model of the provider configuration.
+   */
+  async clearSelections(provider: string, models?: readonly string[]): Promise<readonly string[]> {
+    return this.access(() => this.transaction(() => {
+      const rows = this.db.prepare('SELECT id, model FROM sessions WHERE provider = ?').all(provider)
+        .filter(row => !models || models.includes(String(row.model)))
+      const update = this.db.prepare('UPDATE sessions SET provider = NULL, model = NULL, removed_provider = ?, removed_model = ? WHERE id = ?')
+      for (const row of rows) update.run(provider, String(row.model), String(row.id))
+      return rows.map(row => String(row.id))
+    }))
+  }
+
+  private insertMessages(sessionId: string, messages: readonly Message[]): void {
+    const row = this.db.prepare('SELECT COALESCE(MAX(sequence), 0) AS last FROM messages WHERE session_id = ?').get(sessionId)!
+    let sequence = Number(row.last)
+    const insert = this.db.prepare('INSERT INTO messages (session_id, sequence, payload) VALUES (?, ?, ?)')
+    for (const message of messages) {
+      validateMessage(message)
+      insert.run(sessionId, ++sequence, JSON.stringify(message))
+    }
+    if (messages.length) this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId)
   }
 
   close(): void {
@@ -218,6 +251,8 @@ export class SqliteSessionStore {
       sessionId: String(row.id), createdAt: String(row.created_at), updatedAt: String(row.updated_at), messageCount: Number(row.message_count),
       workspaceId: row.workspace_id === null ? null : String(row.workspace_id),
       ...(row.provider !== null ? { selection: { provider: String(row.provider), model: String(row.model) } } : {}),
+      ...(row.provider === null && row.removed_provider !== null
+        ? { removedSelection: { provider: String(row.removed_provider), model: String(row.removed_model) } } : {}),
     }
   }
 }

@@ -7,7 +7,6 @@
     "@deckagent/deck": "workspace:*",
     "@deckagent/host-api": "workspace:*",
     "@deckagent/browser-runtime": "workspace:*",
-    "@deckagent/model-providers": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
     "@deckagent/workspace-registry": "workspace:*"
   }

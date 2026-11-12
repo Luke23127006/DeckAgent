@@ -102,9 +102,17 @@ This opens an authenticated local browser. No model and no API key are needed to
 - switch, rename, remove a workspace, or choose another folder for it. Removing a workspace keeps its chats as ungrouped chats;
 - start a new chat, reopen an earlier chat, and find earlier chats by the words in their name or conversation;
 - keep a draft in each chat. The Host keeps the draft while it runs, across reloads; a draft is not kept after the Host stops;
-- set up providers and models in Settings. Web key persistence uses Windows CurrentUser DPAPI; the UI never reads a saved key back.
+- set up providers and models in Settings. DeckAgent checks the key and the connection with the provider before it saves. A key is kept in the credential store of the data folder, encrypted with Windows CurrentUser DPAPI; SQLite keeps only a reference, and the UI never reads a saved key back. On macOS and Linux, DeckAgent has no supported key store yet, so it refuses to save a key and never keeps one in plain text; a custom model API without a key still works;
+- choose a model for a chat, send a request, follow its status and activities, and stop it. A reload, or going to another chat, does not stop the request. A request that is still running when the Host stops is shown as not finished and is never started again;
+- keep a long chat going. When the provider says the conversation is too long for the model, OpenCode summarizes it and the request goes on. The chat marks where the summary starts, and every earlier message stays readable. If the summary cannot be written, the request does not finish and the conversation stays as it was.
 
-Sending a request is not available in this build: the Host refuses `POST /api/requests` with `REQUESTS_UNAVAILABLE`, and the composer says why. The OpenCode runtime connects in a later build. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
+Requests run through the OpenCode CLI, version 1.19.5 (`opencode run --format json`). Install it, then point DeckAgent at the executable (on Windows, `opencode.exe`, not the `.cmd` shim):
+
+```powershell
+pnpm.cmd start:local-web --opencode C:\path\to\opencode.exe
+```
+
+Without `--opencode`, DeckAgent uses `DECKAGENT_OPENCODE`, then `opencode` on `PATH`. If it finds no executable, or the version differs, the composer says why it cannot send. Each request runs in an isolated OpenCode configuration that denies every native tool and uses only the selected provider and model. The run works in a folder under `files/runtime/opencode/`, never in a project folder. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
 
 Application Storage is chosen in this order: `--data-dir <folder>`, then the `DECKAGENT_DATA_DIR` environment variable, then the app-data folder of the OS:
 
@@ -120,10 +128,12 @@ The data folder holds:
 <data folder>/
 ├── db/
 │   ├── workspaces.sqlite  # workspaces, their folder references and the workspace in use
-│   ├── sessions.sqlite    # chats and conversations
+│   ├── sessions.sqlite    # chats, conversations, requests, their events and native session bindings
 │   ├── decks.sqlite       # outlines, Deck metadata and published slide content/revisions
-│   └── web.sqlite         # Web settings, encrypted keys, request and activity records
-└── files/                 # managed files (empty until a later build)
+│   └── web.sqlite         # Web settings and provider configurations (no key bytes)
+├── credentials/           # provider keys, one DPAPI-encrypted file each (Windows)
+└── files/
+    └── runtime/opencode/  # OpenCode configuration, cache, native sessions and working folders, per chat
 ```
 
 Missing folders are created; existing data is reused. A data folder that is a file, cannot be written, holds a damaged database, or sits inside the project folder of a workspace stops the start with a message that says what to do; no file is reset. Data in the old `.deckagent/` layout of the repository is not moved. To use separate demo data, run:
@@ -138,6 +148,7 @@ To bootstrap the previous environment-based workflow, use `pnpm.cmd start:local-
 
 ```powershell
 pnpm.cmd test:local-foundation # workspaces, chats, drafts, search and Application Storage
+pnpm.cmd test:model-requests # providers, requests, events, Stop, restart and resume with a fake OpenCode CLI
 pnpm.cmd test:tools-browser  # File policy + API/SSE + client + SQLite integration
 pnpm.cmd test:browser-smoke # installed Chrome/Edge, real DOM, workspaces, drafts and reload
 pnpm.cmd test:env-startup   # dotenv, terminal precedence and repairable Web startup
@@ -145,6 +156,13 @@ pnpm.cmd test:local-web     # Settings, DPAPI, model selection and preferences
 ```
 
 These checks use local fixtures and require no cloud keys. The contracts, manual acceptance checklist and handoffs that belong to them are in the GitHub Issue of the task.
+
+The real OpenCode CLI check is opt-in. It runs the real CLI against a local Chat Completions endpoint, so it needs no provider account. It checks the run configuration, the key reference, events, native resume, Stop and the conversation summary. It also sends one real provider request when the four `DECKAGENT_LIVE_*` variables are set (base URL, protocol, model and key):
+
+```powershell
+$env:DECKAGENT_OPENCODE_LIVE = '1'; $env:DECKAGENT_OPENCODE = 'C:\path\to\opencode.exe'
+pnpm.cmd test:opencode-live
+```
 
 ## Tests
 

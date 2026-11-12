@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -62,8 +62,11 @@ test('empty Web opens Settings without a model and can create an empty chat; sen
     headers,
     body: JSON.stringify({ sessionId: session.sessionId, input: 'Hello' }),
   })
-  assert.equal(denied.status, 503)
-  assert.equal((await denied.json()).error.code, 'REQUESTS_UNAVAILABLE')
+  // B02: requests run, but a chat with no selectable model sends nothing and says why (FR-046).
+  assert.equal(denied.status, 409)
+  const refusal = (await denied.json()).error
+  assert.equal(refusal.code, 'NO_SELECTABLE_MODEL')
+  assert.deepEqual(refusal.detail, { reason: 'no-provider' })
   assert.deepEqual(await (await fetch(`${app.origin}/api/sessions/${session.sessionId}/history`, { headers })).json(), [],
     'A refused request appends nothing to the conversation')
 })
@@ -91,12 +94,18 @@ test('deleting an environment-bootstrapped provider persists across restart with
   assert.deepEqual(settings.providers, [])
 })
 
+// B02: the key lives in the credential store (Windows DPAPI files), not in web.sqlite, and every save is checked
+// with the provider first (FR-041); the fixture endpoint answers the check.
 test('settings persist encrypted keys, keep the chat selection across restart, and open for repair of a damaged key', {
-  timeout: 30000,
+  timeout: 60000, skip: process.platform !== 'win32',
 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-model-snapshot-'))
   let app
-  const server = createServer((_req, res) => { res.writeHead(500); res.end() })
+  const server = createServer((req, res) => {
+    if (req.url === '/models' && /^Bearer fixture-key-/.test(req.headers.authorization ?? '')) {
+      res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"a"}]}')
+    } else res.writeHead(401).end()
+  })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
   t.after(async () => {
@@ -125,6 +134,7 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
     key: 'fixture-key-one',
   }
   assert.equal((await api('providers/fixture', 'PUT', provider)).status, 200)
+  assert.equal((await api('providers/other', 'PUT', { ...provider, displayName: 'Other', key: 'wrong' })).data.error.code, 'PROVIDER_KEY_REFUSED')
   assert.equal(
     (await api('providers/fixture', 'PUT', { ...provider, key: undefined, baseUrl: 'http://127.0.0.1:1' })).data.error
       .code,
@@ -145,6 +155,11 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
   const storedBytes = await readFile(join(dir, 'data', 'db', 'web.sqlite'))
   assert.equal(storedBytes.includes(Buffer.from('fixture-key-one')), false)
   assert.equal(storedBytes.includes(Buffer.from('fixture-key-two')), false)
+  const stored = new DatabaseSync(join(dir, 'data', 'db', 'web.sqlite'))
+  const payload = JSON.parse(stored.prepare("SELECT payload FROM providers WHERE id='fixture'").get().payload)
+  stored.close()
+  assert.match(payload.credentialRef, /^cred-/, 'SQLite keeps only a reference')
+  assert.equal(payload.encryptedKey, undefined)
   app = await startLocalWeb(options)
   const settings = (await api('settings')).data
   assert.equal(settings.providers[0].hasKey, true)
@@ -152,11 +167,7 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
   assert.equal((await api('sessions')).data[0].selection.model, 'b')
   await app.close()
   // Deliberately damaged on-disk credential fixture: Settings must still open for repair.
-  const damaged = new DatabaseSync(join(dir, 'data', 'db', 'web.sqlite'))
-  damaged
-    .prepare("UPDATE providers SET payload=json_set(payload, '$.encryptedKey', 'not-a-dpapi-blob') WHERE id='fixture'")
-    .run()
-  damaged.close()
+  await writeFile(join(dir, 'data', 'credentials', `${payload.credentialRef}.key`), 'bm90LWEtZHBhcGktYmxvYg==')
   app = await startLocalWeb(options)
   const unavailable = (await api('settings')).data.providers[0]
   assert.equal(unavailable.hasKey, true)

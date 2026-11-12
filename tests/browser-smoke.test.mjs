@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { access, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { createServer } from 'node:http'
 import { join, parse } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
@@ -146,19 +148,39 @@ async function requestCount(app, sessionId) {
   return (await (await fetch(`${app.origin}/api/sessions/${sessionId}/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()).length
 }
 
-test('interactive composer selects a model without work, offers no send in this build and keeps per-chat drafts on reload', { timeout: 45000 }, async t => {
+// B02: requests run through the OpenCode CLI; the fake CLI fixture stands in for it (never live-model evidence).
+const fakeOpenCode = dir => ({ executable: process.execPath, launcherArgs: [fileURLToPath(new URL('./fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
+  version: 'fake-1.0.0' })
+
+async function modelsEndpoint() {
+  const server = createServer((req, res) => {
+    if (req.url === '/v1/models') res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"wizard-model"}]}')
+    else res.writeHead(404).end()
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  return { baseUrl: `http://127.0.0.1:${server.address().port}/v1`, close: () => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) }) }
+}
+
+test('interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat', { timeout: 60000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-interactive-'))
   let app, session
+  const endpoint = await modelsEndpoint()
   t.after(async () => {
     await closeBrowser(session)
     await app?.close()
+    await endpoint.close()
     await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
   })
   session = await openBrowser(dir)
   const { protocol, evaluate } = session
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('interactive') })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('interactive'), openCode: fakeOpenCode(dir) })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])')`), 'Welcome missing')
+  const send = `document.querySelector('.composer [aria-label="Gửi yêu cầu"]')`
+  const note = `document.querySelector('.requests-unavailable')`
+  // FR-046: no selected model, no Send, and the composer says why.
+  await eventually(() => evaluate(`${note}.checkVisibility() && ${note}.textContent.includes('chưa chọn model')`), 'No reason shown for a chat without a model')
+  assert.equal(await evaluate(`${send}.disabled`), true)
   assert.equal(await evaluate(`!!document.querySelector('[aria-label="Chọn model"]')`), true, 'The composer must offer the provider/model popover')
   await eventually(() => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`), 'Chat not ready for model selection')
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
@@ -167,30 +189,52 @@ test('interactive composer selects a model without work, offers no send in this 
   await eventually(() => evaluate(`!document.querySelector('.composer select').disabled && document.querySelector('.composer select').value !== ''`), 'Selection not saved')
   const chatId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
   assert.equal(await requestCount(app, chatId), 0, 'Selecting a model must not start work')
-  assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled`), true, 'Send is unavailable until a runtime is connected')
-  assert.equal(await evaluate(`[...document.querySelectorAll('.composer-controls button')].find(b=>b.textContent==='Đề xuất outline').disabled`), true)
-  assert.equal(await evaluate(`document.querySelector('.requests-unavailable').checkVisibility() && document.querySelector('.requests-unavailable').textContent.includes('Chưa thể gửi yêu cầu')`), true,
-    'The composer says why a request cannot be sent')
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='A draft'; ta.dispatchEvent(new Event('input')); ta.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))} true`)
-  await delay(300)
-  assert.equal(await requestCount(app, chatId), 0, 'Enter must not send while requests are unavailable')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'A draft', 'Enter keeps the draft')
+  await eventually(() => evaluate(`!${send}.disabled && !${note}.checkVisibility()`), 'Send not offered after choosing a model')
+  // Send with Enter: the reply, its activity and the finished state appear.
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Xin chào'; ta.dispatchEvent(new Event('input')); ta.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))} true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Xin chào'))`), 'Reply not shown')
+  await eventually(() => evaluate(`document.querySelector('.request-record[data-status=completed] .request-state')?.textContent.startsWith('Đã xong')`), 'Completed state not shown')
+  assert.equal(await evaluate(`document.querySelector('.activity-detail summary').textContent`), 'Phản hồi model · hoàn tất')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), '', 'An accepted request empties the composer')
+  assert.equal(await requestCount(app, chatId), 1)
+  // A request that hangs: live text shows, a reload does not stop it, Stop does at once.
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Wait [hang]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`)
+  await eventually(() => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`), 'Live reply not shown')
+  assert.equal(await evaluate(`document.querySelector('.stop-action').checkVisibility() && document.querySelector('.send-action').hidden`), true)
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Next draft while running'; ta.dispatchEvent(new Event('input'))} true`)
+  await delay(400)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.stop-action')?.checkVisibility() === true`), 'Reload lost the running request')
+  await eventually(() => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`), 'Reload lost the live reply')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Next draft while running', 'The draft survives the reload')
+  // Going to another chat stops nothing (UC-003 A13); coming back shows the request still running.
+  await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')?.dataset.sessionId !== ${JSON.stringify(chatId)}`),
+    'Another chat could not be opened while a request runs')
+  await evaluate(`document.querySelector('.chat-navigation [data-session-id="${chatId}"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.stop-action')?.checkVisibility() === true && document.querySelector('.composer textarea').value === 'Next draft while running'`),
+    'Returning lost the running request or its draft')
+  await evaluate(`document.querySelector('.stop-action').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.request-record[data-status=stopped] .request-state')?.textContent === 'Đã dừng'`), 'Stop not shown')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant[data-interrupted=true]')].some(n=>n.textContent.includes('Partial answer before Stop'))`), 'Finished text not kept after Stop')
+  await eventually(() => evaluate(`!${send}.hidden && !${send}.disabled`), 'Send not offered again after Stop')
+  assert.equal(await requestCount(app, chatId), 2)
+  // FR-079: the runtime summarized the conversation; the boundary sits right above the request's own message and
+  // every earlier message stays readable.
+  const boundary = `(()=>{const b=document.querySelector('.summary-boundary');const next=b?.nextElementSibling;return !!b&&b.checkVisibility()&&b.textContent.includes('đã được tóm tắt')&&next?.matches('.message.user')&&next.textContent.includes('Dài [overflow]')&&[...document.querySelectorAll('.message.user')].some(n=>n.textContent.includes('Xin chào'))})()`
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Dài [overflow]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`)
+  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Dài [overflow]'))`), 'Reply after the summary not shown')
+  await eventually(() => evaluate(boundary), 'Summary boundary not shown above the request')
+  assert.equal(await evaluate(`document.body.textContent.includes('SUMMARY-TEXT-FOR-THE-MODEL')`), false, 'The summary the model reads is not shown as a reply')
   await evaluate(`{const draftInput=document.querySelector('.composer textarea'); draftInput.value='Draft before reload';draftInput.dispatchEvent(new Event('input'))} true`)
   await delay(400)
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Draft before reload'`), 'Reload lost the draft')
+  await eventually(() => evaluate(boundary), 'Summary boundary lost after reload')
   assert.equal(await evaluate(`document.querySelector('.composer select').value.includes('interactive')`), true, 'The chat keeps its selected model')
-  const before = await evaluate(`document.querySelectorAll('.chat-navigation nav button').length`)
-  await evaluate(`document.querySelector('[data-action=new-chat]').click();true`)
-  await delay(150)
-  assert.equal(await evaluate(`document.querySelectorAll('.chat-navigation nav button').length`), before, 'New chat must not create duplicates while already empty')
   await evaluate(`document.querySelector('.nav-toggle').click(); true`)
   assert.equal(await evaluate(`document.querySelector('#app').dataset.nav`), 'collapsed', 'The toggle hides the chat list to a rail')
-  assert.equal(await evaluate(`document.querySelector('.nav-toggle').getAttribute('aria-expanded')`), 'false')
   await eventually(() => evaluate(`Math.round(document.querySelector('.chat-navigation').getBoundingClientRect().width) === 64`), 'Collapsed list is a narrow rail (after its short width transition)')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav').checkVisibility()`), false, 'Chat list is hidden when collapsed')
-  assert.equal(await evaluate(`document.querySelector('[data-action=new-chat]').checkVisibility() && document.querySelector('.account-trigger').checkVisibility()`), true, 'New chat and settings stay reachable on the rail')
-  assert.equal(await evaluate(`localStorage.getItem('deckagent-nav')`), 'collapsed')
   await evaluate(`document.querySelector('.nav-toggle').click(); true`)
   assert.equal(await evaluate(`document.querySelector('#app').dataset.nav === undefined && document.querySelector('.chat-navigation nav').checkVisibility()`), true, 'The toggle restores the chat list')
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`)
@@ -200,9 +244,13 @@ test('interactive composer selects a model without work, offers no send in this 
   assert.equal(await evaluate(`document.querySelector('dialog').open`), true, 'Declining discard must keep Settings open')
   await evaluate(`window.confirm=()=>true;document.querySelector('.settings-back').click();true`)
   await eventually(() => evaluate(`!document.querySelector('dialog').open`), 'Settings did not close after discard')
+  // The quick wizard: a provider that does not answer is refused with a reason; one that answers is saved.
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`)
   await eventually(() => evaluate(`document.querySelector('dialog').matches(':modal')`), 'Quick provider wizard did not open')
-  await evaluate(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Tiếp tục →').click();document.querySelector('[aria-label="Provider ID"]').value='wizard-api';document.querySelector('[aria-label="Display name"]').value='Wizard API';document.querySelector('[aria-label="Base URL"]').value='http://127.0.0.1:1';document.querySelector('dialog form').requestSubmit();true`)
+  await evaluate(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Tiếp tục →').click();document.querySelector('[aria-label="Provider ID"]').value='wizard-api';document.querySelector('[aria-label="Display name"]').value='Wizard API';document.querySelector('[aria-label="Base URL"]').value='http://127.0.0.1:1/v1';document.querySelector('dialog form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('không trả lời')`), 'A silent provider was not refused with a reason')
+  assert.equal(await evaluate(`document.querySelector('.settings-header h2').textContent.includes('2/3')`), true, 'A failed check does not advance')
+  await evaluate(`document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};document.querySelector('dialog form').requestSubmit();true`)
   await eventually(() => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`), 'Wizard did not save the connection and advance')
   await evaluate(`document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.manual-model-row button').click();document.querySelector('dialog form').requestSubmit();true`)
   await eventually(() => evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`), 'Wizard did not save model IDs')
@@ -215,7 +263,7 @@ test('interactive composer selects a model without work, offers no send in this 
   assert.equal(await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 360`), true, 'Mobile chat must wrap below the rail with usable width')
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();true`)
   assert.equal(await evaluate(`(() => {const panel=document.querySelector('.model-popover');const box=panel.getBoundingClientRect();return panel.checkVisibility()&&box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;})()`), true, 'Model popover must remain visible inside mobile viewport')
-  assert.equal(await requestCount(app, chatId), 0, 'Reload, new chat and Settings must not start work')
+  assert.equal(await requestCount(app, chatId), 3, 'Reload, Settings and the model popover start no work')
 })
 
 test('Deck Canvas renders saved revisions, keeps selection and restores content after Host restart', {

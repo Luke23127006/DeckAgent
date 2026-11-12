@@ -5,6 +5,14 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Changed
+- Local Web sends chat requests through the OpenCode CLI 1.19.5 (B02); Send no longer answers `503 REQUESTS_UNAVAILABLE`
+  - Each request runs `opencode run --format json` without a shell, in an isolated configuration that denies every native tool and uses only the selected provider and model; the effective configuration is checked before any model work
+  - One active request per chat; events are saved before they are shown and replay after a reload or reconnect; Stop ends the run at once; a Host restart marks running requests as not finished and starts nothing again
+  - The native session of a chat is resumed only when its guard holds; otherwise a new one starts, seeded with the whole saved conversation
+  - When the provider says the conversation is too long, OpenCode summarizes it and the request goes on; the chat marks where the summary starts and keeps every message readable, and a summary that fails ends the request as `CONTEXT_SUMMARY_FAILED` (FR-079)
+  - A workspace with an active request is not removed or moved (UC-013 A5)
+- Provider setup checks the key and the connection with the provider before saving; keys are stored with Windows DPAPI under `credentials/`, SQLite keeps only a reference, and other systems refuse a key instead of storing it in plain text
+- The chat database moves to schema version 3 with requests, their events and native session bindings
 - Local Web runs the B01 local foundation without a model or a provider key
   - App data lives in the OS app-data folder, or in the folder that `--data-dir` or `DECKAGENT_DATA_DIR` names, with databases in `db/` and files in `files/`; a damaged, unwritable or misplaced data folder stops startup with the next step to take, and nothing is reset
   - Each chat belongs to a workspace, and a chat whose workspace is removed is listed as ungrouped; the chat list has search, marks a chat that cannot be read, and the Host keeps each chat's draft until DeckAgent stops
@@ -19,6 +27,8 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+- The `test:model-requests` script (request lifecycle, OpenCode adapter and model requests with a fake OpenCode CLI) and the opt-in `test:opencode-live` script for the real pinned CLI
+- The `--opencode <path>` flag of Local Web, and `DECKAGENT_OPENCODE`
 - `docs/build/rebuild/adr/` holds seven decision records for the rebuild: local storage and data ownership, chat and session history, tools and permissions, request and event lifecycle, deck artifacts and revisions, credentials and models, and the design system and templates
 - `docs/build/rebuild/architecture/` states the contracts those decisions imply, one file per area: data, session, events, tools and permissions, credentials and models, and the design system and templates, with `overview.md` as the entry point
 - `docs/build/rebuild/planning/` maps each product behavior family to the minimum prerequisites it needs and lists the technical gaps that no decision covers yet
@@ -34,6 +44,8 @@ Notable changes to this repository. The newest changes are at the top.
 - A GitHub conventions section in `AGENTS.md`: no agent is named as author or co-author
 
 ### Removed
+- The in-request question and reply path of the Host API and the UI; a question now ends its request (ADR-0004)
+- The `agent-runtime` dependency of `host-api` and the `model-providers` dependency of `local-web`
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag
   - The tests that checked only that legacy path (`outline-workflow`, `recovery-editing`, their fixtures and the `test:recovery-editing` script and CI step); tests of behavior that B01 keeps were adapted
 - `docs/build/rebuild/research/`: its conclusions now live in the decision records, the architecture notes and the implementation plan

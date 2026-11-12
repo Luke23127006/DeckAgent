@@ -9,13 +9,24 @@ import type {
   WorkspaceList,
   WorkspaceView,
 } from '@deckagent/host-api'
-import { userQuestion } from './user-question.ts'
+import type { ProviderProtocol, RequestStatus } from '@deckagent/host-api'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 function invalid(): never {
   throw new Error('INVALID_RESPONSE')
+}
+
+const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
+const requestStatuses: readonly RequestStatus[] = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
+function protocol(value: unknown): ProviderProtocol {
+  return protocols.find(item => item === value) ?? invalid()
+}
+function selection(value: unknown): { provider: string; model: string } | undefined {
+  if (value === undefined) return undefined
+  if (!object(value) || typeof value.provider !== 'string' || typeof value.model !== 'string') invalid()
+  return { provider: value.provider, model: value.model }
 }
 
 function provider(value: unknown): ProviderSettings {
@@ -26,8 +37,8 @@ function provider(value: unknown): ProviderSettings {
     typeof value.baseUrl !== 'string' ||
     typeof value.hasKey !== 'boolean' ||
     typeof value.keyAvailable !== 'boolean' ||
-    !Array.isArray(value.models) ||
-    (value.protocol !== 'gemini' && value.protocol !== 'chat-completions' && value.protocol !== 'anthropic-messages')
+    typeof value.builtIn !== 'boolean' ||
+    !Array.isArray(value.models)
   )
     invalid()
   return {
@@ -36,7 +47,8 @@ function provider(value: unknown): ProviderSettings {
     baseUrl: value.baseUrl,
     hasKey: value.hasKey,
     keyAvailable: value.keyAvailable,
-    protocol: value.protocol,
+    builtIn: value.builtIn,
+    protocol: protocol(value.protocol),
     models: value.models.map(item => (typeof item === 'string' ? item : invalid())),
   }
 }
@@ -62,7 +74,9 @@ function session(value: unknown): WebSession {
     (!object(chosen) || typeof chosen.provider !== 'string' || typeof chosen.model !== 'string')
   )
     invalid()
+  const removed = selection(value.removedSelection)
   return {
+    ...(removed ? { removedSelection: removed } : {}),
     sessionId: value.sessionId,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
@@ -120,6 +134,16 @@ export class ManagementError extends Error {
 
 const allowedCodes = [
   'INVALID_PROVIDER',
+  'PROVIDER_ID_TAKEN',
+  'PROVIDER_KEY_REQUIRED',
+  'PROVIDER_KEY_REFUSED',
+  'PROVIDER_NO_ANSWER',
+  'PROVIDER_CHECK_FAILED',
+  'PROVIDER_NOT_FOUND',
+  'CREDENTIAL_STORE_UNAVAILABLE',
+  'CREDENTIAL_NOT_SAVED',
+  'CATALOG_UNAVAILABLE',
+  'WORKSPACE_REQUEST_ACTIVE',
   'MODEL_NOT_SELECTABLE',
   'PROVIDER_NAME_EXISTS',
   'PROTOCOL_IMMUTABLE',
@@ -174,7 +198,10 @@ export class ManagementClient {
       !object(data) ||
       !Array.isArray(data.providers) ||
       !Array.isArray(data.builtIns) ||
-      typeof data.persistentKeys !== 'boolean'
+      typeof data.persistentKeys !== 'boolean' ||
+      !object(data.runtime) ||
+      typeof data.runtime.available !== 'boolean' ||
+      (data.runtime.reason !== undefined && typeof data.runtime.reason !== 'string')
     )
       invalid()
     const builtIns = data.builtIns.map((item: unknown): ProviderTemplate => {
@@ -183,12 +210,15 @@ export class ManagementClient {
         typeof item.id !== 'string' ||
         typeof item.displayName !== 'string' ||
         typeof item.baseUrl !== 'string' ||
-        (item.protocol !== 'gemini' && item.protocol !== 'chat-completions' && item.protocol !== 'anthropic-messages')
+        !Array.isArray(item.needs) ||
+        item.needs.some(need => need !== 'key' && need !== 'baseUrl')
       )
         invalid()
-      return { id: item.id, displayName: item.displayName, baseUrl: item.baseUrl, protocol: item.protocol }
+      return { id: item.id, displayName: item.displayName, baseUrl: item.baseUrl, protocol: protocol(item.protocol),
+        needs: item.needs.map(need => (need === 'key' ? 'key' : 'baseUrl')) }
     })
-    return { providers: data.providers.map(provider), persistentKeys: data.persistentKeys, builtIns }
+    return { providers: data.providers.map(provider), persistentKeys: data.persistentKeys, builtIns,
+      runtime: { available: data.runtime.available, ...(typeof data.runtime.reason === 'string' ? { reason: data.runtime.reason } : {}) } }
   }
 
   /** Saves the interface theme on the Host, so it survives a change of local port. */
@@ -255,7 +285,7 @@ export class ManagementClient {
 
   async save(
     id: string,
-    value: { displayName: string; protocol: string; baseUrl: string; models: readonly string[]; key?: string },
+    value: { displayName: string; protocol: string; baseUrl: string; models: readonly string[]; key?: string; new?: boolean },
   ): Promise<void> {
     await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', value)
   }
@@ -273,63 +303,49 @@ export class ManagementClient {
   async activities(id: string): Promise<readonly StoredActivity[]> {
     const data = await this.request(`sessions/${encodeURIComponent(id)}/activities`)
     if (!Array.isArray(data)) invalid()
-    return data.map((item: unknown) => {
+    return data.map((item: unknown): StoredActivity => {
       if (
         !object(item) ||
         typeof item.id !== 'string' ||
         typeof item.label !== 'string' ||
         typeof item.requestId !== 'string' ||
         typeof item.sequence !== 'number' ||
-        (item.kind !== 'model' && item.kind !== 'tool') ||
-        (item.status !== 'running' &&
-          item.status !== 'completed' &&
-          item.status !== 'failed' &&
-          item.status !== 'stopped' &&
-          item.status !== 'unknown')
+        (item.type !== 'model' && item.type !== 'tool') ||
+        (item.status !== 'running' && item.status !== 'completed' && item.status !== 'failed' && item.status !== 'stopped')
       )
         invalid()
-      return {
-        id: item.id,
-        label: item.label,
-        requestId: item.requestId,
-        sequence: item.sequence,
-        kind: item.kind,
-        status: item.status,
-      }
+      return { id: item.id, label: item.label, requestId: item.requestId, sequence: item.sequence, type: item.type, status: item.status }
     })
   }
 
   async requests(id: string): Promise<readonly StoredRequest[]> {
     const data = await this.request(`sessions/${encodeURIComponent(id)}/requests`)
     if (!Array.isArray(data)) invalid()
-    return data.map((value: unknown) => {
+    return data.map((value: unknown): StoredRequest => {
       if (
         !object(value) ||
         typeof value.requestId !== 'string' ||
-        !object(value.selection) ||
-        typeof value.selection.provider !== 'string' ||
-        typeof value.selection.model !== 'string' ||
-        (value.status !== 'running' &&
-          value.status !== 'awaiting_user' &&
-          value.status !== 'completed' &&
-          value.status !== 'failed' &&
-          value.status !== 'cancelled' &&
-          value.status !== 'unknown') ||
-        (value.errorCode !== undefined &&
-          (typeof value.errorCode !== 'string' || !/^[A-Z_]{1,64}$/.test(value.errorCode))) ||
-        (value.historyStart !== undefined && (typeof value.historyStart !== 'number' || !Number.isSafeInteger(value.historyStart) || value.historyStart < 0)) ||
-        (value.noticeIndex !== undefined && (typeof value.noticeIndex !== 'number' || !Number.isSafeInteger(value.noticeIndex) || value.noticeIndex < 0))
+        typeof value.sessionId !== 'string' ||
+        typeof value.startedAt !== 'string' ||
+        (value.endedAt !== undefined && typeof value.endedAt !== 'string') ||
+        typeof value.lastSequence !== 'number' ||
+        (value.summarized !== undefined && value.summarized !== true) ||
+        !Number.isSafeInteger(value.historyStart) ||
+        (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !/^[A-Z][A-Z0-9_]{0,63}$/.test(value.errorCode)))
       )
         invalid()
-      if (value.status === 'awaiting_user' && value.question === undefined) invalid()
+      const status = requestStatuses.find(item => item === value.status) ?? invalid()
       return {
         requestId: value.requestId,
-        selection: { provider: value.selection.provider, model: value.selection.model },
-        status: value.status,
-        ...(value.question === undefined ? {} : { question: userQuestion(value.question) }),
+        sessionId: value.sessionId,
+        status,
+        selection: selection(value.selection) ?? invalid(),
+        historyStart: Number(value.historyStart),
+        startedAt: value.startedAt,
+        lastSequence: value.lastSequence,
+        ...(typeof value.endedAt === 'string' ? { endedAt: value.endedAt } : {}),
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
-        ...(typeof value.historyStart === 'number' ? { historyStart: value.historyStart } : {}),
-        ...(typeof value.noticeIndex === 'number' ? { noticeIndex: value.noticeIndex } : {}),
+        ...(value.summarized === true ? { summarized: true as const } : {}),
       }
     })
   }

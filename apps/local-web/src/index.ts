@@ -2,9 +2,8 @@ import { readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { ModelConnection } from '@deckagent/model-providers'
 import { HttpError, startHost } from '@deckagent/host-api'
-import type { WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
+import type { RequestStore, WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
 import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 import { WorkspaceError, WorkspaceRegistry } from '@deckagent/workspace-registry'
@@ -13,23 +12,40 @@ import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle, motionStyle, themeBootstrap } from './ui-assets.ts'
 import { WebState, record, selection } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
+import type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
+import { defaultCredentialStore } from './credential-store.ts'
+import type { CredentialStore } from './credential-store.ts'
+import { OpenCodeRuntime, findExecutable } from './opencode/runtime.ts'
+import type { OpenCodeOptions } from './opencode/runtime.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
+export { CredentialError, ProtectedFileCredentialStore, UnavailableCredentialStore, defaultCredentialStore } from './credential-store.ts'
+export type { CredentialStore } from './credential-store.ts'
+export type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
+export { pinnedVersion } from './opencode/config.ts'
+export type { OpenCodeOptions } from './opencode/runtime.ts'
 
 export interface LocalWebOptions {
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
   readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly selection?: ModelSelection
-  readonly connections?: readonly ModelConnection[]
+  /** Startup connections (CLI flags). Their keys stay in environment variables and are never saved. */
+  readonly connections?: readonly ProviderConnection[]
   /** Application Storage root. Defaults to `resolveStorageRoot()`. */
   readonly dataDir?: string
   readonly port?: number
   /** The user's own folder for the project-folder rules (BR-019). Defaults to the OS home folder. */
   readonly home?: string
+  /** The OpenCode CLI. Defaults: `DECKAGENT_OPENCODE`, else `opencode` on PATH; pinned version. */
+  readonly openCode?: OpenCodeOptions
+  /** Defaults to the protected store of this OS. Tests may give their own. */
+  readonly credentials?: CredentialStore
+  /** Tests replace the provider check and catalog lookup; production calls the provider. */
+  readonly providerAccess?: Pick<ProviderStoreOptions, 'check' | 'catalog'>
 }
 
 const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
@@ -79,7 +95,7 @@ function body(value: unknown, key: string): unknown {
 
 /**
  * Composition owns startup and cleanup: Application Storage, Workspace registry, chats, decks,
- * settings, then the Host. No Agent runtime is started: requests are refused until one is connected.
+ * settings, the OpenCode runtime adapter, then the Host. No model runs at startup; a request starts one OpenCode run.
  */
 export async function startLocalWeb(options: LocalWebOptions = {}) {
   const initial = options.selection ? { ...options.selection } : undefined
@@ -100,7 +116,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     try {
       sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'))
       decks = new DeckService(join(layout.databases, 'decks.sqlite'))
-      web = new WebState(join(layout.databases, 'web.sqlite'), (): WebSettings => catalog.snapshot())
+      web = new WebState(join(layout.databases, 'web.sqlite'), value => catalog.selectable(value))
     } catch {
       // A damaged or foreign file is kept unchanged; nothing is reset or recreated in its place.
       throw new StorageError('STORAGE_CORRUPT')
@@ -109,6 +125,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     const store = sessions
     const presentation = decks
     const state: WebState = web
+    // A request that was active when DeckAgent stopped did not finish; it is shown so and never started again (FR-019).
+    store.requests.interruptActive()
     // A remove interrupted between the registry and the chats is completed here: no chat is lost or hidden.
     await store.ungroupExcept(workspaces.activeIds())
     for (const plan of options.confirmedDecks ?? []) {
@@ -118,9 +136,24 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       }
       presentation.confirm(plan.sessionId, plan)
     }
-    const catalog: ProviderStore = new ProviderStore(state.db)
+    const catalog: ProviderStore = new ProviderStore(state.db, options.credentials ?? defaultCredentialStore(layout.root), {
+      ...options.providerAccess,
+      modelsRemoved: async (provider, models) => { await store.clearSelections(provider, models) },
+    })
     providers = catalog
     await catalog.load(options.connections, initial)
+    const runtime = new OpenCodeRuntime(
+      await findExecutable(options.openCode?.executable ?? process.env.DECKAGENT_OPENCODE?.trim() ?? undefined),
+      join(layout.files, 'runtime', 'opencode'), store, catalog, options.openCode,
+    )
+    const settings = (): WebSettings => ({ providers: catalog.providerSettings(), persistentKeys: catalog.persistentKeys,
+      builtIns: catalog.builtIns, runtime: runtime.availability() })
+    const requestStore: RequestStore = store.requests
+    // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
+    const requireNoActiveRequest = async (workspaceId: string) => {
+      const chats = (await store.list()).filter(chat => chat.workspaceId === workspaceId)
+      if (chats.some(chat => store.requests.activeFor(chat.sessionId))) throw new HttpError(409, 'WORKSPACE_REQUEST_ACTIVE')
+    }
     const drafts = new MemoryDraftStore()
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
@@ -157,9 +190,13 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         return listWorkspaces()
       }),
       rename: (id, value) => workspaceCall(async () => { workspaces.rename(id, body(value, 'name')); return listWorkspaces() }),
-      relink: (id, value) => workspaceCall(async () => { await workspaces.relink(id, body(value, 'folder')); return listWorkspaces() }),
+      relink: (id, value) => workspaceCall(async () => {
+        await requireNoActiveRequest(id)
+        await workspaces.relink(id, body(value, 'folder'))
+        return listWorkspaces()
+      }),
       remove: id => workspaceCall(async () => {
-        // The active-request gate of UC-013 A5 arrives with requests (B02); B01 has no active request.
+        await requireNoActiveRequest(id)
         workspaces.remove(id)
         await store.ungroup(id)
         return listWorkspaces()
@@ -169,11 +206,12 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       decks: presentation,
       outlines: presentation,
       assets,
+      requests: { store: requestStore, runtime },
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => chatCall(() => store.read(id)),
       management: {
         preferences: { get: async () => state.preferences(), save: async value => state.savePreferences(value) },
-        settings: async () => catalog.snapshot(),
+        settings: async () => settings(),
         saveProvider: (id, value) => catalog.save(id, value),
         deleteProvider: id => catalog.remove(id),
         catalog: id => catalog.catalog(id),
@@ -193,8 +231,14 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           state.rememberSelection(chosen)
           return chat(id)
         },
-        activities: async id => state.activities(id),
-        requests: async id => state.requests(id),
+        activities: id => chatCall(async () => {
+          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+          return store.requests.activities(id)
+        }),
+        requests: id => chatCall(async () => {
+          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+          return store.requests.list(id)
+        }),
         workspaces: workspaceManagement,
         async searchSessions(value) {
           const words = body(value, 'words')

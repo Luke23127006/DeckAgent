@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readdir, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, realpath, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, parse, sep } from 'node:path'
 import test from 'node:test'
 import {
   FolderPolicy,
-  WorkspaceRegistry,
   nameFromFolder,
   nameFromUser,
+  WorkspaceRegistry,
 } from '../packages/workspace/registry/lib/index.js'
 
 async function tree(folder) {
@@ -200,6 +200,51 @@ test('a folder that cannot be read or cannot be a project folder sets up no work
   )
   assert.equal((await registry.list()).length, 1)
   assert.equal(registry.selectedId(), 'default')
+})
+
+test('folder refusals follow junctions in the configured home and data roots', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const alias = join(dir, 'alias')
+  await symlink(dir, alias, process.platform === 'win32' ? 'junction' : 'dir')
+  const policy = new FolderPolicy({ home: join(alias, 'home'), dataRoot: join(alias, 'data') })
+  await assert.rejects(policy.inspect(home), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'user-folder', allowInside: true },
+  })
+  await mkdir(join(home, '.ssh'))
+  await assert.rejects(policy.inspect(join(home, '.ssh')), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'key-folder', allowInside: false },
+  })
+  await assert.rejects(policy.inspect(dataRoot), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'deckagent-data', allowInside: false },
+  })
+})
+
+test('folder refusals expand Windows short names like asynchronous realpath', {
+  skip: process.platform !== 'win32',
+}, async t => {
+  const { dataRoot } = await setup(t)
+  const shortHome = join(parse(process.env.SystemRoot ?? 'C:\\Windows').root, 'PROGRA~1')
+  let home
+  try {
+    home = await realpath(shortHome)
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+    t.skip('The system drive has no PROGRA~1 short name')
+    return
+  }
+  const policy = new FolderPolicy({ home: shortHome, dataRoot, systemFolders: [] })
+  await assert.rejects(policy.inspect(home), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'user-folder', allowInside: true },
+  })
+  const dataPolicy = new FolderPolicy({ home: dataRoot, dataRoot: shortHome, systemFolders: [] })
+  await assert.rejects(dataPolicy.inspect(home), {
+    code: 'WORKSPACE_FOLDER_REFUSED',
+    detail: { reason: 'deckagent-data', allowInside: false },
+  })
 })
 
 test('a moved folder: its workspace becomes unreadable, keeps its chats, and takes the new place when the folder is chosen', async t => {
