@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Record the accepted initial visual catalog and review/generation/publication contracts for B04, including product defaults and theme roles. Dependent runtime implementation remains separate.
+
 - Attachment preparation receipts and parsed-content fingerprints use session schema v6; migrations keep existing source identities, approvals and conversations. Request text limits count Unicode code points independently of JSON transport bytes.
 
 - The chat database moves to schema version 5, preserving source versions and approval history while migrating existing attachments and conversations.
