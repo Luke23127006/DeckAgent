@@ -5,18 +5,59 @@ import { DeckError } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
+import { receiveAttachment } from './multipart.ts'
 
+export type { AttachmentView } from './contracts.ts'
+export type { AttachmentManagement } from './contracts.ts'
 export type {
-  ActivityStatus, AgentRequest, HistoryMessage, HostMessage, HostOptions, ModelSelection, PreparedRequest, ProviderProtocol, ProviderSettings,
-  ProviderTemplate, RequestEvent, RequestEventBody, RequestRun, RequestRuntime, RequestSnapshot, RequestStatus, RequestStore, RuntimeEvent,
-  RuntimeOutcome, StoredActivity, StoredRequest, TerminalStatus, WebManagement, WebPreferences, WebSession, WebSettings,
+  ApprovalStep,
+  ApprovalView,
+  PreparedTools,
+  RequestTools,
+  ToolContext,
+  ToolResult,
+  ToolSchema,
 } from './contracts.ts'
-export type { ChatDraft, WorkspaceFolderStatus, WorkspaceList, WorkspaceManagement, WorkspaceView } from './contracts.ts'
+export type {
+  ActivityStatus,
+  AgentRequest,
+  HistoryMessage,
+  HostMessage,
+  HostOptions,
+  ModelSelection,
+  PreparedRequest,
+  ProviderProtocol,
+  ProviderSettings,
+  ProviderTemplate,
+  RequestEvent,
+  RequestEventBody,
+  RequestRun,
+  RequestRuntime,
+  RequestSnapshot,
+  RequestStatus,
+  RequestStore,
+  RuntimeEvent,
+  RuntimeOutcome,
+  StoredActivity,
+  StoredRequest,
+  TerminalStatus,
+  WebManagement,
+  WebPreferences,
+  WebSession,
+  WebSettings,
+} from './contracts.ts'
+export type {
+  ChatDraft,
+  WorkspaceFolderStatus,
+  WorkspaceList,
+  WorkspaceManagement,
+  WorkspaceView,
+} from './contracts.ts'
 export type { HttpErrorDetail } from './http-error.ts'
 export { HttpError, RequestController } from './request-controller.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
-/** Transport limit of one request text; BR-002 sets the product maximum when it is decided. */
+/** Product maximum in Unicode code points; the JSON transport has a separate byte bound. */
 export const requestTextLimit = 16000
 const activeStatuses = new Set(['active', 'waiting_approval'])
 
@@ -31,7 +72,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
   for await (const chunk of req) {
     bytes += chunk.length
-    if (bytes > 20 * 1024) throw new HttpError(413, 'REQUEST_TOO_LARGE')
+    if (bytes > 256 * 1024) throw new HttpError(413, 'REQUEST_TOO_LARGE')
     chunks.push(chunk)
   }
   let value: unknown
@@ -44,7 +85,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 }
 
 /** A generic chat request. Generation entries (presentation, outline actions) are not accepted in this build. */
-async function body(req: IncomingMessage): Promise<AgentRequest> {
+async function body(req: IncomingMessage, maxAttachments: number): Promise<AgentRequest> {
   const value = await readJson(req)
   if (
     !value ||
@@ -55,12 +96,34 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
     !idPattern.test(value.sessionId) ||
     !('input' in value) ||
     typeof value.input !== 'string' ||
-    !value.input.trim() ||
-    Object.keys(value).some(key => !['sessionId', 'input'].includes(key))
+    Object.keys(value).some(
+      key => !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch'].includes(key),
+    ) ||
+    ('publicResearch' in value && typeof value.publicResearch !== 'boolean')
   )
     throw new HttpError(400, 'INVALID_REQUEST')
-  if (value.input.length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
-  return { sessionId: value.sessionId, input: value.input }
+  const ids = 'attachmentIds' in value ? value.attachmentIds : undefined
+  const revision = 'draftRevision' in value ? value.draftRevision : undefined
+  if (
+    ids !== undefined &&
+    (!Array.isArray(ids) ||
+      ids.length > maxAttachments ||
+      new Set(ids).size !== ids.length ||
+      ids.some(id => typeof id !== 'string' || !/^att-[a-f0-9-]{36}$/.test(id)))
+  )
+    throw new HttpError(400, 'INVALID_REQUEST')
+  if (revision !== undefined && (!Number.isSafeInteger(revision) || Number(revision) < 0))
+    throw new HttpError(400, 'INVALID_REQUEST')
+  if (!value.input.trim() && !(Array.isArray(ids) && ids.length)) throw new HttpError(400, 'REQUEST_EMPTY')
+  if ([...value.input].length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
+  if (!value.input.isWellFormed()) throw new HttpError(400, 'INVALID_REQUEST')
+  return {
+    sessionId: value.sessionId,
+    input: value.input,
+    ...('publicResearch' in value ? { publicResearch: value.publicResearch as boolean } : {}),
+    ...(Array.isArray(ids) ? { attachmentIds: ids } : {}),
+    ...(typeof revision === 'number' ? { draftRevision: revision } : {}),
+  }
 }
 
 /** Last-Event-ID is the reconnect cursor: the stream resumes after it with no gap and no repeat. */
@@ -75,7 +138,9 @@ function cursor(req: IncomingMessage): number {
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
-  const controller = options.requests ? new RequestController(options.requests.store, options.requests.runtime) : undefined
+  const controller = options.requests
+    ? new RequestController(options.requests.store, options.requests.runtime, options.requests.prepareTools)
+    : undefined
   const streams = new Set<ServerResponse>()
   let origin = ''
   let closing: Promise<void> | undefined
@@ -85,7 +150,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -94,10 +159,19 @@ export async function startHost(options: HostOptions) {
       }
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
-      const outline = deck && ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
+      const outline =
+        deck &&
+        ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
       json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: { code: known ? error.code : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND') ? error.code : 'HOST_ERROR', message: 'Request could not be completed',
-          ...(known && error.detail ? { detail: error.detail } : {}) },
+        error: {
+          code: known
+            ? error.code
+            : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
+              ? error.code
+              : 'HOST_ERROR',
+          message: 'Request could not be completed',
+          ...(known && error.detail ? { detail: error.detail } : {}),
+        },
       })
     })
   })
@@ -128,7 +202,11 @@ export async function startHost(options: HostOptions) {
       const asset =
         options.assets && Object.hasOwn(options.assets, url.pathname) ? options.assets[url.pathname] : undefined
       if (req.method !== 'GET' || !asset) throw new HttpError(404, 'NOT_FOUND')
-      if (asset.sandboxed) res.setHeader('content-security-policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'")
+      if (asset.sandboxed)
+        res.setHeader(
+          'content-security-policy',
+          "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+        )
       res.writeHead(200, { 'content-type': asset.contentType })
       res.end(asset.body)
       return
@@ -138,68 +216,183 @@ export async function startHost(options: HostOptions) {
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {
-      json(res, 200, options.outlines.outlineSnapshot(outline[1]!)); return
+      json(res, 200, options.outlines.outlineSnapshot(outline[1]!))
+      return
     }
     const management = options.management
+    const attachment = /^\/api\/sessions\/([\w-]{1,100})\/attachments(?:\/([\w-]{1,100})(\/preview)?)?$/.exec(
+      url.pathname,
+    )
+    if (attachment && options.attachments) {
+      const sessionId = attachment[1]!
+      const id = attachment[2]
+      if (!id && req.method === 'POST') {
+        json(res, 202, await receiveAttachment(req, sessionId, options.attachments))
+        return
+      }
+      if (id && !attachment[3] && req.method === 'GET') {
+        json(res, 200, await options.attachments.get(sessionId, id))
+        return
+      }
+      if (id && !attachment[3] && req.method === 'DELETE') {
+        const value = await readJson(req)
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          !('expectedRevision' in value) ||
+          !Number.isSafeInteger(value.expectedRevision) ||
+          Number(value.expectedRevision) < 0 ||
+          Object.keys(value).some(key => key !== 'expectedRevision')
+        )
+          throw new HttpError(400, 'INVALID_REQUEST')
+        json(res, 200, await options.attachments.remove(sessionId, id, Number(value.expectedRevision)))
+        return
+      }
+      if (id && attachment[3] && req.method === 'GET') {
+        const abort = new AbortController()
+        res.once('close', () => abort.abort())
+        const preview = await options.attachments.preview(sessionId, id, abort.signal)
+        res.setHeader('content-security-policy', "sandbox; default-src 'none'; frame-ancestors 'none'")
+        res.writeHead(200, { 'content-type': preview.contentType, 'content-length': preview.body.length })
+        res.end(preview.body)
+        return
+      }
+    }
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
-        json(res, 200, await management.settings()); return
+        json(res, 200, await management.settings())
+        return
+      }
+      if (url.pathname === '/api/research' && management.research) {
+        if (req.method === 'PUT') {
+          await management.research.save(await readJson(req))
+          json(res, 200, { ok: true })
+          return
+        }
+        if (req.method === 'DELETE') {
+          await management.research.remove()
+          json(res, 200, { ok: true })
+          return
+        }
+      }
+      const researchSources = /^\/api\/sessions\/([\w-]{1,100})\/research-sources$/.exec(url.pathname)
+      if (researchSources && management.research && req.method === 'GET') {
+        json(res, 200, await management.research.sources(researchSources[1]!))
+        return
       }
       if (url.pathname === '/api/preferences' && management.preferences) {
-        if (req.method === 'GET') { json(res, 200, await management.preferences.get()); return }
-        if (req.method === 'PUT') { json(res, 200, await management.preferences.save(await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await management.preferences.get())
+          return
+        }
+        if (req.method === 'PUT') {
+          json(res, 200, await management.preferences.save(await readJson(req)))
+          return
+        }
       }
       const provider = /^\/api\/providers\/([\w.-]{1,100})$/.exec(url.pathname)
       if (provider && (req.method === 'PUT' || req.method === 'DELETE')) {
         if (req.method === 'PUT') await management.saveProvider(provider[1]!, await readJson(req))
         else await management.deleteProvider(provider[1]!)
-        json(res, 200, { saved: true }); return
+        json(res, 200, { saved: true })
+        return
       }
       const catalog = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(url.pathname)
-      if (catalog && req.method === 'GET') { json(res, 200, await management.catalog(catalog[1]!)); return }
+      if (catalog && req.method === 'GET') {
+        json(res, 200, await management.catalog(catalog[1]!))
+        return
+      }
       if (url.pathname === '/api/sessions') {
-        if (req.method === 'GET') { json(res, 200, await withActive(await management.sessions())); return }
-        if (req.method === 'POST') { json(res, 201, await management.createSession(await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await withActive(await management.sessions()))
+          return
+        }
+        if (req.method === 'POST') {
+          json(res, 201, await management.createSession(await readJson(req)))
+          return
+        }
       }
       const resource = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(url.pathname)
       if (resource?.[2] === 'selection' && req.method === 'PUT') {
-        json(res, 200, await management.selectModel(resource[1]!, await readJson(req))); return
+        json(res, 200, await management.selectModel(resource[1]!, await readJson(req)))
+        return
       }
       if (resource?.[2] === 'activities' && req.method === 'GET') {
-        json(res, 200, await management.activities(resource[1]!)); return
+        json(res, 200, await management.activities(resource[1]!))
+        return
       }
       if (resource?.[2] === 'requests' && req.method === 'GET') {
-        json(res, 200, await management.requests(resource[1]!)); return
+        json(res, 200, await management.requests(resource[1]!))
+        return
       }
       if (url.pathname === '/api/sessions/search' && req.method === 'POST' && management.searchSessions) {
-        json(res, 200, await withActive(await management.searchSessions(await readJson(req)))); return
+        json(res, 200, await withActive(await management.searchSessions(await readJson(req))))
+        return
       }
       const draft = /^\/api\/sessions\/([\w-]{1,100})\/draft$/.exec(url.pathname)
       if (draft && management.drafts) {
-        if (req.method === 'GET') { json(res, 200, await management.drafts.get(draft[1]!)); return }
-        if (req.method === 'PUT') { json(res, 200, await management.drafts.save(draft[1]!, await readJson(req))); return }
+        if (req.method === 'GET') {
+          json(res, 200, await management.drafts.get(draft[1]!))
+          return
+        }
+        if (req.method === 'PUT') {
+          json(res, 200, await management.drafts.save(draft[1]!, await readJson(req)))
+          return
+        }
       }
       const workspaces = management.workspaces
       if (workspaces && url.pathname.startsWith('/api/workspaces')) {
         if (url.pathname === '/api/workspaces') {
-          if (req.method === 'GET') { json(res, 200, await workspaces.list()); return }
-          if (req.method === 'POST') { json(res, 200, await workspaces.add(await readJson(req))); return }
+          if (req.method === 'GET') {
+            json(res, 200, await workspaces.list())
+            return
+          }
+          if (req.method === 'POST') {
+            json(res, 200, await workspaces.add(await readJson(req)))
+            return
+          }
         }
         if (url.pathname === '/api/workspaces/selected' && req.method === 'PUT') {
-          json(res, 200, await workspaces.select(await readJson(req))); return
+          json(res, 200, await workspaces.select(await readJson(req)))
+          return
         }
         const workspace = /^\/api\/workspaces\/([\w-]{1,100})(\/folder)?$/.exec(url.pathname)
         if (workspace && workspace[1] !== 'selected') {
-          if (!workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req))); return }
-          if (!workspace[2] && req.method === 'DELETE') { json(res, 200, await workspaces.remove(workspace[1]!)); return }
-          if (workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req))); return }
+          if (!workspace[2] && req.method === 'PUT') {
+            json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req)))
+            return
+          }
+          if (!workspace[2] && req.method === 'DELETE') {
+            json(res, 200, await workspaces.remove(workspace[1]!))
+            return
+          }
+          if (workspace[2] && req.method === 'PUT') {
+            json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req)))
+            return
+          }
         }
       }
     }
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       // No Agent runtime is connected: refuse the request instead of pretending to start work.
       if (!controller) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
-      json(res, 202, await controller.submit(await body(req)))
+      json(res, 202, await controller.submit(await body(req, options.attachments?.maxFiles ?? 0)))
+      return
+    }
+    const approval = /^\/api\/requests\/([\w-]{1,100})\/approvals\/([\w-]{1,100})\/decision$/.exec(url.pathname)
+    if (approval && req.method === 'POST') {
+      if (!controller) throw new HttpError(404, 'APPROVAL_NOT_FOUND')
+      const value = await readJson(req)
+      if (
+        !value ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        !('decision' in value) ||
+        Object.keys(value).some(key => key !== 'decision') ||
+        (value.decision !== 'allow-once' && value.decision !== 'refuse')
+      )
+        throw new HttpError(400, 'INVALID_REQUEST')
+      json(res, 200, controller.decide(approval[1]!, approval[2]!, value.decision))
       return
     }
     const stop = /^\/api\/requests\/([\w-]{1,100})\/stop$/.exec(url.pathname)
@@ -228,7 +421,10 @@ export async function startHost(options: HostOptions) {
         if (ended || event.sequence <= last || res.destroyed || res.writableEnded) return
         last = event.sequence
         const ready = res.write(`id: ${event.sequence}\nevent: request\ndata: ${JSON.stringify(event)}\n\n`)
-        if ((event.kind === 'status' && !activeStatuses.has(event.status)) || !ready) { ended = true; res.end() }
+        if ((event.kind === 'status' && !activeStatuses.has(event.status)) || !ready) {
+          ended = true
+          res.end()
+        }
       }
       const unsubscribe = controller.subscribe(event => {
         if (event.requestId !== id) return
@@ -252,7 +448,10 @@ export async function startHost(options: HostOptions) {
         for (const event of queued.splice(0)) write(event)
       }
       // A request that ended before the cursor has nothing more to say.
-      if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) { ended = true; res.end() }
+      if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) {
+        ended = true
+        res.end()
+      }
       return
     }
     const session = /^\/api\/sessions\/([A-Za-z0-9_-]{1,100})\/history$/.exec(url.pathname)
@@ -261,9 +460,39 @@ export async function startHost(options: HostOptions) {
       json(
         res,
         200,
-        messages.filter(message => message.role !== 'system').map(message => ({ role: message.role, content: message.content,
-          ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
-          ...(message.role === 'tool' ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true } : {}) })),
+        messages
+          .filter(message => message.role !== 'system')
+          .map(message => ({
+            role: message.role,
+            content: message.content,
+            ...(message.role === 'user' && message.attachments
+              ? {
+                  attachments: message.attachments.map(item => ({
+                    attachmentId: item.attachmentId,
+                    name: item.name,
+                    state: item.state,
+                    byteSize: item.byteSize,
+                    ...(item.detectedType ? { detectedType: item.detectedType } : {}),
+                    ...(item.rejectionCode ? { rejectionCode: item.rejectionCode } : {}),
+                    ...(item.preparation ? { preparation: item.preparation } : {}),
+                    ...(item.source
+                      ? {
+                          source: {
+                            sourceId: item.source.sourceId,
+                            version: item.source.version,
+                            kind: item.source.kind,
+                            label: item.source.label,
+                          },
+                        }
+                      : {}),
+                  })),
+                }
+              : {}),
+            ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
+            ...(message.role === 'tool'
+              ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true }
+              : {}),
+          })),
       )
       return
     }

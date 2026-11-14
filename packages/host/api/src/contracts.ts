@@ -1,4 +1,14 @@
 import type { DeckReader, OutlineReader } from '@deckagent/deck'
+import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools } from './tool-contracts.ts'
+export type {
+  ApprovalStep,
+  ApprovalView,
+  PreparedTools,
+  RequestTools,
+  ToolContext,
+  ToolResult,
+  ToolSchema,
+} from './tool-contracts.ts'
 
 export interface ModelSelection {
   readonly provider: string
@@ -7,8 +17,33 @@ export interface ModelSelection {
 
 /** A generic chat request (B02). Generation entries arrive with their own builds. */
 export interface AgentRequest {
+  readonly publicResearch?: boolean
   readonly sessionId: string
   readonly input: string
+  readonly attachmentIds?: readonly string[]
+  readonly draftRevision?: number
+}
+
+/** Safe history projection, independent of private managed-file metadata. */
+export interface AttachmentView {
+  readonly attachmentId: string
+  readonly name: string
+  readonly state: 'preparing' | 'ready' | 'rejected'
+  readonly byteSize: number
+  readonly detectedType?: string
+  readonly rejectionCode?: string
+  readonly preparation?: {
+    readonly parserVersion: string
+    readonly capabilities: readonly string[]
+    readonly completeness: 'complete' | 'partial'
+    readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+  }
+  readonly source?: {
+    readonly sourceId: string
+    readonly version: number
+    readonly kind: 'attachment'
+    readonly label: string
+  }
 }
 
 /** Request lifecycle decided by the Host (ADR-0004). `active` and `waiting_approval` hold the chat's one active slot. */
@@ -19,12 +54,19 @@ export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
 /** Sanitized product events. Raw runtime output, provider errors and credentials never become an event. */
 export type RequestEventBody =
   | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
-  | { readonly kind: 'activity'; readonly id: string; readonly label: string; readonly type: 'model' | 'tool'; readonly status: ActivityStatus }
+  | {
+      readonly kind: 'activity'
+      readonly id: string
+      readonly label: string
+      readonly type: 'model' | 'tool'
+      readonly status: ActivityStatus
+    }
   | { readonly kind: 'text'; readonly part: string; readonly text: string }
   | { readonly kind: 'notice'; readonly code: string }
+  | { readonly kind: 'approval'; readonly approval: ApprovalView }
 
 /** What a runtime may report; the Host alone writes status events. */
-export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' }>
+export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' | 'approval' }>
 
 export type RequestEvent = RequestEventBody & {
   readonly requestId: string
@@ -42,9 +84,11 @@ export interface RequestSnapshot {
   /** Assistant text saved so far. */
   readonly text: string
   readonly sequence: number
+  readonly pendingApproval?: ApprovalView | null
 }
 
 export interface StoredRequest {
+  readonly publicResearch?: boolean
   readonly requestId: string
   readonly sessionId: string
   readonly status: RequestStatus
@@ -70,8 +114,28 @@ export interface StoredActivity {
 
 /** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
 export interface RequestStore {
+  readonly approvals?: {
+    create(
+      requestId: string,
+      step: ApprovalStep,
+    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
+    decide(
+      requestId: string,
+      approvalId: string,
+      decision: 'allow-once' | 'refuse',
+    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
+    pending(requestId: string): ApprovalView | undefined
+  }
   /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
-  admit(input: { readonly requestId: string; readonly sessionId: string; readonly input: string; readonly selection: ModelSelection }): StoredRequest
+  admit(input: {
+    readonly publicResearch?: boolean
+    readonly requestId: string
+    readonly sessionId: string
+    readonly input: string
+    readonly selection: ModelSelection
+    readonly attachmentIds?: readonly string[]
+    readonly draftRevision?: number
+  }): StoredRequest
   append(requestId: string, event: RuntimeEvent): RequestEvent
   /** Ends an active request once; `undefined` when it had already ended. */
   finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined
@@ -88,9 +152,11 @@ export interface PreparedRequest {
 }
 
 export interface RequestRun {
+  readonly tools?: RequestTools
+  onApprovalWait?(listener: (waiting: boolean) => void): () => void
   readonly requestId: string
   readonly sessionId: string
-  /** Aborted by Stop, Host shutdown or a refused write. */
+  /** Aborted at terminal state, including Stop, Host shutdown or a refused write. */
   readonly signal: AbortSignal
   /** Persists, then publishes. Rejects once the request has ended, so late work cannot write. */
   emit(event: RuntimeEvent): Promise<void>
@@ -114,6 +180,7 @@ export interface HostMessage {
   readonly toolCallId?: string
   readonly name?: string
   readonly isError?: boolean
+  readonly attachments?: readonly AttachmentView[]
 }
 
 /** Browser projection deliberately excludes provider protocol metadata and tool arguments. */
@@ -126,18 +193,30 @@ export interface HistoryMessage {
   readonly toolCallId?: string
   readonly name?: string
   readonly isError?: boolean
+  readonly attachments?: readonly AttachmentView[]
 }
 
 export interface HostOptions {
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
-  readonly requests?: { readonly store: RequestStore; readonly runtime: RequestRuntime }
+  readonly requests?: {
+    readonly store: RequestStore
+    readonly runtime: RequestRuntime
+    readonly prepareTools?: (
+      sessionId: string,
+      attachmentIds?: readonly string[],
+      publicResearch?: boolean,
+    ) => Promise<PreparedTools>
+  }
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
   readonly management?: WebManagement
+  readonly attachments?: AttachmentManagement
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
-  readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
+  readonly assets?: Readonly<
+    Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
+  >
 }
 
 /** API protocols of BR-005 V-4. */
@@ -157,6 +236,12 @@ export interface ProviderSettings {
 }
 
 export interface WebSettings {
+  readonly research?: {
+    readonly provider: 'tavily'
+    readonly configured: boolean
+    readonly environmentKey: boolean
+    readonly freeOnly: true
+  }
   readonly providers: readonly ProviderSettings[]
   /** The credential store of this computer can keep keys. */
   readonly persistentKeys: boolean
@@ -216,6 +301,29 @@ export interface WorkspaceList {
 export interface ChatDraft {
   readonly sessionId: string
   readonly text: string
+  readonly attachmentIds?: readonly string[]
+  readonly revision?: number
+  readonly attachments?: readonly AttachmentView[]
+}
+
+export interface AttachmentManagement {
+  readonly maxBytes: number
+  readonly maxFiles: number
+  upload(input: {
+    readonly sessionId: string
+    readonly name: string
+    readonly expectedRevision: number
+    readonly bytes: AsyncIterable<Uint8Array>
+    readonly signal: AbortSignal
+    readonly complete?: Promise<void>
+  }): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }>
+  get(sessionId: string, attachmentId: string): Promise<AttachmentView>
+  remove(sessionId: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft>
+  preview(
+    sessionId: string,
+    attachmentId: string,
+    signal: AbortSignal,
+  ): Promise<{ readonly body: Uint8Array; readonly contentType: string }>
 }
 
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
@@ -225,6 +333,11 @@ export interface WebPreferences {
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
+  readonly research?: {
+    save(value: unknown): Promise<void>
+    remove(): Promise<void>
+    sources(sessionId: string): Promise<unknown>
+  }
   /** Optional: an older application without it simply has no `/api/preferences`. */
   readonly preferences?: {
     get(): Promise<WebPreferences>

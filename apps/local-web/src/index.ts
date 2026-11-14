@@ -3,13 +3,22 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HttpError, startHost } from '@deckagent/host-api'
-import type { RequestStore, WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
+import type { WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
 import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 import { WorkspaceError, WorkspaceRegistry } from '@deckagent/workspace-registry'
 import { DeckService } from '@deckagent/deck'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
-import { page, style, deckResizeStyle, composerStyle, presentationStyle, activityStyle, motionStyle, themeBootstrap } from './ui-assets.ts'
+import {
+  page,
+  style,
+  deckResizeStyle,
+  composerStyle,
+  presentationStyle,
+  activityStyle,
+  motionStyle,
+  themeBootstrap,
+} from './ui-assets.ts'
 import { WebState, record, selection } from './web-state.ts'
 import { ProviderStore } from './provider-settings.ts'
 import type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
@@ -20,10 +29,27 @@ import type { OpenCodeOptions } from './opencode/runtime.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
+import { ManagedAttachments } from './managed-attachments.ts'
+import { prepareSourceTools } from './source-tools.ts'
+import { AttachmentService } from './attachment-service.ts'
+import { attachmentStyle } from './attachment-style.ts'
+import { ResearchService } from './research-service.ts'
+import { researchStyle } from './research-style.ts'
+
+export { ManagedAttachments } from './managed-attachments.ts'
+export { TavilyClient } from './tavily.ts'
+export { prepareSourceTools } from './source-tools.ts'
+export { openToolBridge } from './opencode/mcp-bridge.ts'
+export type { AttachmentUpload } from './managed-attachments.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
-export { CredentialError, ProtectedFileCredentialStore, UnavailableCredentialStore, defaultCredentialStore } from './credential-store.ts'
+export {
+  CredentialError,
+  ProtectedFileCredentialStore,
+  UnavailableCredentialStore,
+  defaultCredentialStore,
+} from './credential-store.ts'
 export type { CredentialStore } from './credential-store.ts'
 export type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
 export { pinnedVersion } from './opencode/config.ts'
@@ -46,6 +72,8 @@ export interface LocalWebOptions {
   readonly credentials?: CredentialStore
   /** Tests replace the provider check and catalog lookup; production calls the provider. */
   readonly providerAccess?: Pick<ProviderStoreOptions, 'check' | 'catalog'>
+  /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
+  readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
 
 const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
@@ -81,7 +109,8 @@ async function chatCall<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
   } catch (error) {
-    if (error instanceof SessionError && error.code === 'SESSION_NOT_FOUND') throw new HttpError(404, 'SESSION_NOT_FOUND')
+    if (error instanceof SessionError && error.code === 'SESSION_NOT_FOUND')
+      throw new HttpError(404, 'SESSION_NOT_FOUND')
     if (error instanceof SessionError && error.code === 'SESSION_CORRUPT') throw new HttpError(409, 'CHAT_UNREADABLE')
     if (error instanceof SessionError && error.code === 'DRAFT_TOO_LARGE') throw new HttpError(413, 'DRAFT_TOO_LARGE')
     throw error
@@ -105,9 +134,14 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   let decks: DeckService | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
+  let preparation: AttachmentService | undefined
   try {
     try {
-      registry = new WorkspaceRegistry({ path: join(layout.databases, 'workspaces.sqlite'), home: options.home ?? homedir(), dataRoot: layout.root })
+      registry = new WorkspaceRegistry({
+        path: join(layout.databases, 'workspaces.sqlite'),
+        home: options.home ?? homedir(),
+        dataRoot: layout.root,
+      })
     } catch {
       throw new StorageError('STORAGE_CORRUPT')
     }
@@ -136,31 +170,74 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       }
       presentation.confirm(plan.sessionId, plan)
     }
-    const catalog: ProviderStore = new ProviderStore(state.db, options.credentials ?? defaultCredentialStore(layout.root), {
-      ...options.providerAccess,
-      modelsRemoved: async (provider, models) => { await store.clearSelections(provider, models) },
-    })
+    const catalog: ProviderStore = new ProviderStore(
+      state.db,
+      options.credentials ?? defaultCredentialStore(layout.root),
+      {
+        ...options.providerAccess,
+        modelsRemoved: async (provider, models) => {
+          await store.clearSelections(provider, models)
+        },
+      },
+    )
     providers = catalog
     await catalog.load(options.connections, initial)
     const runtime = new OpenCodeRuntime(
       await findExecutable(options.openCode?.executable ?? process.env.DECKAGENT_OPENCODE?.trim() ?? undefined),
-      join(layout.files, 'runtime', 'opencode'), store, catalog, options.openCode,
+      join(layout.files, 'runtime', 'opencode'),
+      store,
+      catalog,
+      options.openCode,
     )
-    const settings = (): WebSettings => ({ providers: catalog.providerSettings(), persistentKeys: catalog.persistentKeys,
-      builtIns: catalog.builtIns, runtime: runtime.availability() })
-    const requestStore: RequestStore = store.requests
+    const settings = (): WebSettings => ({
+      research: research.settings(),
+      providers: catalog.providerSettings(),
+      persistentKeys: catalog.persistentKeys,
+      builtIns: catalog.builtIns,
+      runtime: runtime.availability(),
+    })
     // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
     const requireNoActiveRequest = async (workspaceId: string) => {
       const chats = (await store.list()).filter(chat => chat.workspaceId === workspaceId)
-      if (chats.some(chat => store.requests.activeFor(chat.sessionId))) throw new HttpError(409, 'WORKSPACE_REQUEST_ACTIVE')
+      if (chats.some(chat => store.requests.activeFor(chat.sessionId)))
+        throw new HttpError(409, 'WORKSPACE_REQUEST_ACTIVE')
     }
     const drafts = new MemoryDraftStore()
+    const research = new ResearchService(
+      state.db,
+      options.credentials ?? defaultCredentialStore(layout.root),
+      store,
+      options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
+      options.researchAccess?.fetch,
+    )
+    // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
+    const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
+    const inputs = new AttachmentService(store, drafts, attachments)
+    preparation = inputs
+    const requestStore = inputs.requestStore()
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
       // Read per request so the saved choice is applied before first paint, whatever the origin.
-      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences().theme) } },
-      '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle },
+      '/theme.js': {
+        contentType: 'text/javascript; charset=utf-8',
+        get body() {
+          return themeBootstrap(state.preferences().theme)
+        },
+      },
+      '/style.css': {
+        contentType: 'text/css; charset=utf-8',
+        body:
+          style +
+          outlineStyle +
+          deckResizeStyle +
+          composerStyle +
+          presentationStyle +
+          activityStyle +
+          motionStyle +
+          attachmentStyle +
+          researchStyle,
+      },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
     for (const name of await readdir(clientDir)) {
@@ -171,45 +248,86 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         }
     }
     const project = (chat: ChatSummary): WebSession => ({
-      ...state.project(chat, chat.readable && presentation.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0)),
-      hasDraft: drafts.get(chat.sessionId).trim() !== '',
+      ...state.project(
+        chat,
+        chat.readable && presentation.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0),
+      ),
+      hasDraft: drafts.get(chat.sessionId).trim() !== '' || drafts.snapshot(chat.sessionId).attachmentIds.length > 0,
     })
     const chat = async (id: string): Promise<WebSession> => {
       const found = (await store.chats()).find(item => item.sessionId === id)
       if (!found) throw new HttpError(404, 'SESSION_NOT_FOUND')
       return project(found)
     }
-    const listWorkspaces = async (): Promise<WorkspaceList> => ({ workspaces: await workspaces.list(), selectedId: workspaces.selectedId() })
+    const listWorkspaces = async (): Promise<WorkspaceList> => ({
+      workspaces: await workspaces.list(),
+      selectedId: workspaces.selectedId(),
+    })
     const workspaceManagement: WorkspaceManagement = {
       list: () => workspaceCall(listWorkspaces),
-      add: value => workspaceCall(async () => { await workspaces.add(body(value, 'folder')); return listWorkspaces() }),
-      select: value => workspaceCall(async () => {
-        const id = body(value, 'id')
-        if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-        workspaces.select(id)
-        return listWorkspaces()
-      }),
-      rename: (id, value) => workspaceCall(async () => { workspaces.rename(id, body(value, 'name')); return listWorkspaces() }),
-      relink: (id, value) => workspaceCall(async () => {
-        await requireNoActiveRequest(id)
-        await workspaces.relink(id, body(value, 'folder'))
-        return listWorkspaces()
-      }),
-      remove: id => workspaceCall(async () => {
-        await requireNoActiveRequest(id)
-        workspaces.remove(id)
-        await store.ungroup(id)
-        return listWorkspaces()
-      }),
+      add: value =>
+        workspaceCall(async () => {
+          await workspaces.add(body(value, 'folder'))
+          return listWorkspaces()
+        }),
+      select: value =>
+        workspaceCall(async () => {
+          const id = body(value, 'id')
+          if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
+          workspaces.select(id)
+          return listWorkspaces()
+        }),
+      rename: (id, value) =>
+        workspaceCall(async () => {
+          workspaces.rename(id, body(value, 'name'))
+          return listWorkspaces()
+        }),
+      relink: (id, value) =>
+        workspaceCall(async () => {
+          await requireNoActiveRequest(id)
+          await workspaces.relink(id, body(value, 'folder'))
+          return listWorkspaces()
+        }),
+      remove: id =>
+        workspaceCall(async () => {
+          await requireNoActiveRequest(id)
+          workspaces.remove(id)
+          await store.ungroup(id)
+          return listWorkspaces()
+        }),
     }
     const host = await startHost({
       decks: presentation,
       outlines: presentation,
       assets,
-      requests: { store: requestStore, runtime },
+      requests: {
+        store: requestStore,
+        runtime,
+        prepareTools: async (sessionId, attachmentIds, publicResearch) =>
+          prepareSourceTools({
+            sessionId,
+            store,
+            registry: workspaces,
+            dataRoot: layout.root,
+            home: options.home ?? homedir(),
+            attachments,
+            research: await research.prepare(publicResearch === true),
+            ...(attachmentIds === undefined ? {} : { attachmentIds }),
+          }),
+      },
+      attachments: inputs,
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => chatCall(() => store.read(id)),
       management: {
+        research: {
+          save: value => research.save(value),
+          remove: () => research.remove(),
+          sources: id =>
+            chatCall(async () => {
+              await chat(id)
+              return store.requests.researchSources(id)
+            }),
+        },
         preferences: { get: async () => state.preferences(), save: async value => state.savePreferences(value) },
         settings: async () => settings(),
         saveProvider: (id, value) => catalog.save(id, value),
@@ -217,7 +335,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         catalog: id => catalog.catalog(id),
         sessions: async () => (await store.chats()).map(project),
         async createSession(value) {
-          if (!record(value) || Object.keys(value).some(key => key !== 'selection')) throw new HttpError(400, 'INVALID_SESSION')
+          if (!record(value) || Object.keys(value).some(key => key !== 'selection'))
+            throw new HttpError(400, 'INVALID_SESSION')
           // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
           const chosen = value.selection === undefined ? state.lastSelection() : selection(value.selection)
           if (chosen && !state.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
@@ -231,33 +350,32 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           state.rememberSelection(chosen)
           return chat(id)
         },
-        activities: id => chatCall(async () => {
-          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-          return store.requests.activities(id)
-        }),
-        requests: id => chatCall(async () => {
-          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-          return store.requests.list(id)
-        }),
+        activities: id =>
+          chatCall(async () => {
+            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+            return store.requests.activities(id)
+          }),
+        requests: id =>
+          chatCall(async () => {
+            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+            return store.requests.list(id)
+          }),
         workspaces: workspaceManagement,
         async searchSessions(value) {
           const words = body(value, 'words')
           if (typeof words !== 'string' || words.length > 500) throw new HttpError(400, 'INVALID_REQUEST')
           const chats = await store.chats()
-          const found = new Set(await store.search(words, chats.map(item => item.sessionId)))
+          const found = new Set(
+            await store.search(
+              words,
+              chats.map(item => item.sessionId),
+            ),
+          )
           return chats.filter(item => found.has(item.sessionId)).map(project)
         },
         drafts: {
-          get: id => chatCall(async () => {
-            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-            return { sessionId: id, text: drafts.get(id) }
-          }),
-          save: (id, value) => chatCall(async () => {
-            const text = body(value, 'text')
-            if (typeof text !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-            return { sessionId: id, text: drafts.set(id, text) }
-          }),
+          get: id => inputs.draft(id),
+          save: (id, value) => inputs.save(id, value),
         },
       },
     })
@@ -272,10 +390,23 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           try {
             await host.close()
           } finally {
+            await inputs.close()
             try {
               await catalog.close()
             } finally {
-              try { presentation.close() } finally { try { state.close() } finally { try { store.close() } finally { workspaces.close() } } }
+              try {
+                presentation.close()
+              } finally {
+                try {
+                  state.close()
+                } finally {
+                  try {
+                    store.close()
+                  } finally {
+                    workspaces.close()
+                  }
+                }
+              }
             }
           }
         })()
@@ -283,10 +414,23 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
     }
   } catch (error) {
+    await preparation?.close()
     try {
       await providers?.close()
     } finally {
-      try { decks?.close() } finally { try { web?.close() } finally { try { sessions?.close() } finally { registry?.close() } } }
+      try {
+        decks?.close()
+      } finally {
+        try {
+          web?.close()
+        } finally {
+          try {
+            sessions?.close()
+          } finally {
+            registry?.close()
+          }
+        }
+      }
     }
     throw error
   }

@@ -5,6 +5,7 @@ import { OutlineView } from './outline-view.ts'
 import type { OutlineAction } from './outline-view.ts'
 import { isActive } from './host-client.ts'
 import { failureFeedback, offersSettings, requestFeedback } from './request-feedback.ts'
+import type { ApprovalView } from '@deckagent/host-api'
 
 interface ActivityRow {
   readonly node: HTMLDetailsElement
@@ -12,12 +13,26 @@ interface ActivityRow {
   readonly detail: HTMLElement
 }
 
-const outcomes: Readonly<Record<string, string>> = { running: 'đang chạy', completed: 'hoàn tất', failed: 'thất bại', stopped: 'đã dừng' }
+const outcomes: Readonly<Record<string, string>> = {
+  running: 'đang chạy',
+  completed: 'hoàn tất',
+  failed: 'thất bại',
+  stopped: 'đã dừng',
+}
 
-const activityNames: Readonly<Record<string, string>> = { 'Model response': 'Phản hồi model', 'Conversation summary': 'Tóm tắt hội thoại' }
+const activityNames: Readonly<Record<string, string>> = {
+  'Model response': 'Phản hồi model',
+  'Conversation summary': 'Tóm tắt hội thoại',
+  list_sources: 'Liệt kê nguồn project',
+  read_source: 'Đọc nguồn project',
+  read_external: 'Đọc file ngoài phạm vi',
+  read_attachment: 'Đọc tệp đính kèm',
+  research_public: 'Tìm nguồn công khai',
+}
 
 /** FR-079: where the summary the model reads starts. Every message above it stays readable here. */
-const summaryBoundary = 'Hội thoại phía trên đã được tóm tắt vì dài hơn ngữ cảnh của model. Từ đây, model đọc bản tóm tắt thay cho các tin nhắn phía trên; bạn vẫn đọc được toàn bộ.'
+const summaryBoundary =
+  'Hội thoại phía trên đã được tóm tắt vì dài hơn ngữ cảnh của model. Từ đây, model đọc bản tóm tắt thay cho các tin nhắn phía trên; bạn vẫn đọc được toàn bộ.'
 
 interface RequestRow {
   readonly node: HTMLDetailsElement
@@ -34,6 +49,8 @@ interface RequestRow {
   readonly activities: Map<string, ActivityRow>
   readonly actions: HTMLElement
   actionsKey: string
+  readonly approval: HTMLElement
+  approvalKey: string
 }
 
 /** Owns one scrollable conversation. Stable DOM nodes preserve focus and expansion during updates. */
@@ -50,8 +67,19 @@ export class ConversationView {
   private outlines: OutlineSnapshot | undefined
   private readonly outlineView: OutlineView
 
-  constructor(private readonly container: HTMLElement, action?: OutlineAction, revise?: () => void, private readonly dock?: HTMLElement,
-    private readonly hooks?: { retry(text: string): void; settings(): void; draft(): string }) {
+  constructor(
+    private readonly container: HTMLElement,
+    action?: OutlineAction,
+    revise?: () => void,
+    private readonly dock?: HTMLElement,
+    private readonly hooks?: {
+      retry(text: string): void
+      settings(): void
+      draft(): string
+      approve?(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): Promise<void>
+      previewAttachment?(item: NonNullable<HistoryMessage['attachments']>[number]): void
+    },
+  ) {
     this.outlineView = new OutlineView(action, revise, dock)
   }
 
@@ -62,7 +90,9 @@ export class ConversationView {
     this.render()
   }
 
-  setOutlineBusy(busy: boolean): void { this.outlineView.setBusy(busy) }
+  setOutlineBusy(busy: boolean): void {
+    this.outlineView.setBusy(busy)
+  }
 
   reset(): void {
     this.history = []
@@ -76,7 +106,10 @@ export class ConversationView {
     this.boundaries.clear()
     this.outlines = undefined
     this.outlineView.reset()
-    if (this.dock) { this.dock.replaceChildren(); this.dock.hidden = true }
+    if (this.dock) {
+      this.dock.replaceChildren()
+      this.dock.hidden = true
+    }
     this.container.replaceChildren()
   }
 
@@ -90,23 +123,27 @@ export class ConversationView {
     const knownRequests = new Map(this.requests.map(request => [request.requestId, request]))
     for (const request of requests) {
       const previous = knownRequests.get(request.requestId)
-      if (!previous || isActive(previous.status) || !isActive(request.status)) knownRequests.set(request.requestId, request)
+      if (!previous || isActive(previous.status) || !isActive(request.status))
+        knownRequests.set(request.requestId, request)
     }
     this.requests = [...knownRequests.values()]
     const knownActivities = new Map(this.activities.map(activity => [`${activity.requestId}/${activity.id}`, activity]))
     for (const activity of activities) {
       const key = `${activity.requestId}/${activity.id}`
       const previous = knownActivities.get(key)
-      if (!previous || previous.status === 'running' || activity.status !== 'running') knownActivities.set(key, { ...activity, sequence: previous?.sequence ?? activity.sequence })
+      if (!previous || previous.status === 'running' || activity.status !== 'running')
+        knownActivities.set(key, { ...activity, sequence: previous?.sequence ?? activity.sequence })
     }
-    this.activities = [...knownActivities.values()].sort((a, b) => a.requestId === b.requestId ? a.sequence - b.sequence : a.requestId < b.requestId ? -1 : 1)
+    this.activities = [...knownActivities.values()].sort((a, b) =>
+      a.requestId === b.requestId ? a.sequence - b.sequence : a.requestId < b.requestId ? -1 : 1,
+    )
     this.render()
   }
 
   /** Live state of a request from the Host's event stream. */
   snapshot(value: RequestSnapshot): void {
     const previous = this.live.get(value.requestId)
-    if (previous && (!isActive(previous.status) && isActive(value.status))) return
+    if (previous && !isActive(previous.status) && isActive(value.status)) return
     if (previous && previous.sequence > value.sequence) return
     this.live.set(value.requestId, value)
     this.disconnected.delete(value.requestId)
@@ -165,8 +202,28 @@ export class ConversationView {
     const list = element('div', undefined, 'activity-list')
     const actions = element('div', undefined, 'request-actions')
     actions.hidden = true
-    node.append(summary, feedback, actions, model, diagnostic, empty, list)
-    row = { node, revision, status, count, model, feedback, diagnostic, diagnosticCode, reply, empty, list, activities: new Map(), actions, actionsKey: '' }
+    const approval = element('section', undefined, 'step-approval')
+    approval.hidden = true
+    approval.setAttribute('aria-label', 'Cấp quyền cho một bước')
+    node.append(summary, feedback, approval, actions, model, diagnostic, empty, list)
+    row = {
+      node,
+      revision,
+      status,
+      count,
+      model,
+      feedback,
+      diagnostic,
+      diagnosticCode,
+      reply,
+      empty,
+      list,
+      activities: new Map(),
+      actions,
+      actionsKey: '',
+      approval,
+      approvalKey: '',
+    }
     this.rows.set(id, row)
     return row
   }
@@ -183,7 +240,7 @@ export class ConversationView {
     const row = this.requestRow(id)
     const live = this.live.get(id)
     const state = this.state(id, stored)
-    const errorCode = live && !isActive(live.status) ? live.errorCode : stored?.errorCode ?? live?.errorCode
+    const errorCode = live && !isActive(live.status) ? live.errorCode : (stored?.errorCode ?? live?.errorCode)
     const records = this.activities.filter(activity => activity.requestId === id)
     const feedback = requestFeedback(state, errorCode, records, this.disconnected.has(id))
     if (row.feedback.textContent !== feedback.detail) row.feedback.textContent = feedback.detail
@@ -193,11 +250,17 @@ export class ConversationView {
     if (diagnostic) row.diagnosticCode.textContent = `Mã lỗi: ${diagnostic}`
     if (row.status.textContent !== feedback.label) row.status.textContent = feedback.label
     row.node.dataset.status = state
+    this.updateApproval(row, live?.pendingApproval ?? null, isActive(state))
     // Live steps: open while the request runs, closed again as soon as it ends.
-    if (isActive(state) && row.node.dataset.live !== '1') { row.node.dataset.live = '1'; row.node.open = true }
-    else if (!isActive(state) && row.node.dataset.live === '1') { delete row.node.dataset.live; row.node.open = false }
+    if (isActive(state) && row.node.dataset.live !== '1') {
+      row.node.dataset.live = '1'
+      row.node.open = true
+    } else if (!isActive(state) && row.node.dataset.live === '1') {
+      delete row.node.dataset.live
+      row.node.open = false
+    }
     // The reply as it arrives; once the request ends, the saved conversation shows it instead.
-    const partial = isActive(state) ? live?.text ?? '' : ''
+    const partial = isActive(state) ? (live?.text ?? '') : ''
     row.reply.hidden = !partial
     if (row.reply.textContent !== partial) row.reply.textContent = partial
     const actionsKey = `${state}|${errorCode ?? ''}|${stored?.historyStart ?? ''}`
@@ -207,22 +270,25 @@ export class ConversationView {
       const controls: HTMLElement[] = []
       const note = element('p', undefined, 'request-action-note')
       note.setAttribute('role', 'status')
-      if ((state === 'failed' || state === 'interrupted') && offersSettings(errorCode)) controls.push(button('Mở Cài đặt model', () => this.hooks?.settings()))
+      if ((state === 'failed' || state === 'interrupted') && offersSettings(errorCode))
+        controls.push(button('Mở Cài đặt model', () => this.hooks?.settings()))
       if ((state === 'failed' || state === 'interrupted') && original?.role === 'user' && original.content) {
         const text = original.content
         // A draft in the composer is never replaced by one click: the first click asks, the second (same draft) replaces.
         let askedAbout: string | undefined
-        controls.push(button('Đưa lại yêu cầu vào ô nhập', () => {
-          const draft = this.hooks?.draft().trim() ?? ''
-          if (draft && draft !== text.trim() && askedAbout !== draft) {
-            askedAbout = draft
-            note.textContent = 'Ô nhập đang có bản nháp. Bấm lại để thay bằng yêu cầu này.'
-            return
-          }
-          askedAbout = undefined
-          this.hooks?.retry(text)
-          note.textContent = 'Đã đưa vào ô nhập. Nhấn Enter để gửi.'
-        }))
+        controls.push(
+          button('Đưa lại yêu cầu vào ô nhập', () => {
+            const draft = this.hooks?.draft().trim() ?? ''
+            if (draft && draft !== text.trim() && askedAbout !== draft) {
+              askedAbout = draft
+              note.textContent = 'Ô nhập đang có bản nháp. Bấm lại để thay bằng yêu cầu này.'
+              return
+            }
+            askedAbout = undefined
+            this.hooks?.retry(text)
+            note.textContent = 'Đã đưa vào ô nhập. Nhấn Enter để gửi.'
+          }),
+        )
       }
       row.actions.replaceChildren(...controls, ...(controls.length ? [note] : []))
       row.actions.hidden = controls.length === 0
@@ -252,26 +318,98 @@ export class ConversationView {
       const name = activityNames[entry.label] ?? entry.label
       const text = `${name} · ${outcome}`
       if (activity.summary.textContent !== text) activity.summary.textContent = text
-      const detail = entry.type === 'tool'
-        ? `Công cụ ${entry.label} · ${outcome}.${entry.status === 'failed' ? ' Bước này không được thực hiện; yêu cầu vẫn tiếp tục.' : ''}`
-        : `${name} · ${outcome}.`
+      const detail =
+        entry.type === 'tool'
+          ? `${name} · ${outcome}.${entry.status === 'failed' ? ' Bước này không được thực hiện; yêu cầu vẫn tiếp tục.' : ''}`
+          : `${name} · ${outcome}.`
       if (activity.detail.textContent !== detail) activity.detail.textContent = detail
     }
     return row
   }
 
+  private updateApproval(row: RequestRow, pending: ApprovalView | null, active: boolean): void {
+    if (!active || !pending || pending.state !== 'pending') {
+      row.approval.hidden = true
+      row.approvalKey = ''
+      row.approval.replaceChildren()
+      return
+    }
+    row.approval.hidden = false
+    if (row.approvalKey === pending.approvalId) return
+    row.approvalKey = pending.approvalId
+    row.approval.dataset.approvalId = pending.approvalId
+    const feedback = element('p')
+    feedback.setAttribute('role', 'status')
+    const decide = async (decision: 'allow-once' | 'refuse') => {
+      allow.disabled = true
+      refuse.disabled = true
+      feedback.textContent = 'Đang lưu quyết định…'
+      try {
+        if (!this.hooks?.approve) throw new Error('APPROVAL_UNAVAILABLE')
+        await this.hooks.approve(pending.requestId, pending.approvalId, decision)
+      } catch {
+        feedback.textContent =
+          'Chưa xác nhận được kết quả. Kiểm tra kết nối hoặc trạng thái yêu cầu rồi thử lại; bạn vẫn có thể dừng.'
+        allow.disabled = false
+        refuse.disabled = false
+      }
+    }
+    const allow = button('Cho phép một lần', () => {
+      void decide('allow-once')
+    })
+    const refuse = button('Từ chối', () => {
+      void decide('refuse')
+    })
+    row.approval.replaceChildren(
+      element('strong', 'Đang chờ bạn cấp quyền'),
+      element('p', 'Bước: đọc một file'),
+      element('p', pending.target, 'approval-target'),
+      element('p', pending.reason),
+      allow,
+      refuse,
+      feedback,
+    )
+  }
+
   private message(index: number, value: HistoryMessage): HTMLElement | undefined {
     if (value.role === 'assistant' && !value.content) return undefined
-    if (value.role === 'tool' && value.toolCallId && this.activities.some(entry => entry.id === `tool-${value.toolCallId}` && entry.label === value.name)) return undefined
+    if (
+      value.role === 'tool' &&
+      value.toolCallId &&
+      this.activities.some(entry => entry.id === `tool-${value.toolCallId}` && entry.label === value.name)
+    )
+      return undefined
     let item = this.messages.get(index)
-    if (!item || item.value.role !== value.role || item.value.content !== value.content || item.value.interrupted !== value.interrupted) {
-      const node = value.role === 'tool' ? element('details', undefined, 'unassigned-tool-output') : element('article', undefined, `message ${value.role}`)
-      if (value.role === 'tool') node.append(element('summary', 'Kết quả công cụ · chưa xác định được yêu cầu'), element('pre', value.content, 'activity-output'))
+    if (
+      !item ||
+      item.value.role !== value.role ||
+      item.value.content !== value.content ||
+      JSON.stringify(item.value.attachments) !== JSON.stringify(value.attachments) ||
+      item.value.interrupted !== value.interrupted
+    ) {
+      const node =
+        value.role === 'tool'
+          ? element('details', undefined, 'unassigned-tool-output')
+          : element('article', undefined, `message ${value.role}`)
+      if (value.role === 'tool')
+        node.append(
+          element('summary', 'Kết quả công cụ · chưa xác định được yêu cầu'),
+          element('pre', value.content, 'activity-output'),
+        )
       else {
         node.setAttribute('aria-label', value.role === 'assistant' ? 'DeckAgent' : 'Bạn')
         node.append(element('p', value.content))
+        if (value.role === 'user' && value.attachments?.length) {
+          const attachments = element('div', undefined, 'message-attachments')
+          for (const attachment of value.attachments)
+            attachments.append(button(attachment.name, () => this.hooks?.previewAttachment?.(attachment)))
+          node.append(attachments)
+        }
         // FR-019: a reply of a request that did not finish is kept, and says so.
-        if (value.interrupted) { node.dataset.interrupted = 'true'; node.append(element('small', 'Phần trả lời chưa xong', 'message-note')) }
+        if (value.interrupted) {
+          node.dataset.interrupted = 'true'
+          node.append(element('small', 'Phần trả lời chưa xong', 'message-note'))
+        }
       }
       item = { value, node }
       this.messages.set(index, item)
@@ -290,10 +428,14 @@ export class ConversationView {
       const request = stored.get(id)
       const start = request?.historyStart
       // A live request not yet saved in the list shows after the conversation.
-      const position = start === undefined ? this.history.length
-        : Math.min(start + (this.history[start]?.role === 'user' ? 1 : 0), this.history.length)
+      const position =
+        start === undefined
+          ? this.history.length
+          : Math.min(start + (this.history[start]?.role === 'user' ? 1 : 0), this.history.length)
       const items = positions.get(position) ?? []
       const row = this.updateRequest(id, request)
+      row.node.dataset.publicResearch = String(request?.publicResearch === true)
+      row.node.title = request?.publicResearch ? 'Yêu cầu cho phép tìm nguồn công khai qua Tavily' : ''
       const number = String(ids.indexOf(id) + 1)
       if (row.revision.textContent !== number) {
         row.revision.textContent = number
@@ -312,7 +454,11 @@ export class ConversationView {
     }
     // The newest request that did not finish opens once so its explanation and next step are visible.
     const newest = ids.at(-1) === undefined ? undefined : this.rows.get(ids.at(-1)!)
-    if (newest && (newest.node.dataset.status === 'failed' || newest.node.dataset.status === 'interrupted') && newest.node.dataset.opened !== newest.node.dataset.status) {
+    if (
+      newest &&
+      (newest.node.dataset.status === 'failed' || newest.node.dataset.status === 'interrupted') &&
+      newest.node.dataset.opened !== newest.node.dataset.status
+    ) {
       newest.node.dataset.opened = newest.node.dataset.status
       newest.node.open = true
     }

@@ -1,6 +1,40 @@
 /** Chat contracts owned by DeckAgent persistence. No runtime or transport types cross this seam. */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
+export interface SourceRef {
+  readonly sourceId: string
+  readonly version: number
+  readonly kind: 'attachment'
+  readonly label: string
+}
+
+/** Metadata only. Physical storage locations never cross this interface. */
+export interface AttachmentRecord {
+  readonly attachmentId: string
+  readonly name: string
+  readonly state: 'preparing' | 'ready' | 'rejected'
+  readonly byteSize: number
+  readonly detectedType?: string
+  readonly rejectionCode?: string
+  readonly fingerprint?: string
+  readonly source?: SourceRef
+  readonly preparation?: AttachmentPreparation
+  readonly parsedFingerprint?: string
+}
+
+export interface AttachmentPreparation {
+  readonly parserVersion: string
+  readonly capabilities: readonly string[]
+  readonly completeness: 'complete' | 'partial'
+  readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+}
+
+export interface DraftSnapshot {
+  readonly text: string
+  readonly attachmentIds: readonly string[]
+  readonly revision: number
+}
+
 export interface ToolCall {
   readonly id: string
   readonly name: string
@@ -18,7 +52,8 @@ export interface ProviderState extends ModelSelection {
 }
 
 export type Message =
-  | { readonly role: 'system' | 'user'; readonly content: string }
+  | { readonly role: 'system'; readonly content: string }
+  | { readonly role: 'user'; readonly content: string; readonly attachments?: readonly AttachmentRecord[] }
   | {
       readonly role: 'assistant'
       readonly content: string
@@ -54,9 +89,25 @@ export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
 /** A sanitized product event. Raw runtime output, provider errors and credentials never become an event. */
 export type RequestEventBody =
   | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
-  | { readonly kind: 'activity'; readonly id: string; readonly label: string; readonly type: 'model' | 'tool'; readonly status: ActivityStatus }
+  | {
+      readonly kind: 'activity'
+      readonly id: string
+      readonly label: string
+      readonly type: 'model' | 'tool'
+      readonly status: ActivityStatus
+    }
   | { readonly kind: 'text'; readonly part: string; readonly text: string }
   | { readonly kind: 'notice'; readonly code: string }
+  | { readonly kind: 'approval'; readonly approval: ApprovalView }
+
+export interface ApprovalView {
+  readonly approvalId: string
+  readonly requestId: string
+  readonly operation: 'read-file'
+  readonly target: string
+  readonly reason: string
+  readonly state: 'pending' | 'allowed' | 'refused' | 'cancelled'
+}
 
 export type RequestEvent = RequestEventBody & {
   readonly requestId: string
@@ -65,7 +116,24 @@ export type RequestEvent = RequestEventBody & {
   readonly timestamp: string
 }
 
+export interface ResearchSource {
+  readonly sourceId: string
+  readonly version: 1
+  readonly kind: 'research'
+  readonly provider: 'tavily'
+  readonly query: string
+  readonly title: string
+  readonly url: string
+  readonly content: string
+  readonly partial: true
+  readonly fingerprint: string
+  readonly retrievedAt: string
+  readonly providerRequestId?: string
+  readonly location: { readonly kind: 'research-result'; readonly start: 0; readonly end: number }
+}
+
 export interface RequestRecord {
+  readonly publicResearch?: boolean
   readonly requestId: string
   readonly sessionId: string
   readonly status: RequestStatus

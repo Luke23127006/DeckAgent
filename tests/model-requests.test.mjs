@@ -113,18 +113,20 @@ test('generic requests through the OpenCode CLI: admission, events, native resum
   assert.deepEqual(requests.map(item => [item.status, item.selection.model, item.historyStart]), [['completed', 'model-a', 0]])
   const [run1] = runs(log)
   assert.equal(run1.resume, null)
-  assert.equal(run1.prompt, 'hello')
+  assert.ok(run1.prompt.startsWith('Current Host source manifest (data, not permissions):'))
+  assert.ok(run1.prompt.endsWith('\n\nhello'))
   assert.equal(run1.configHasKeyReference, true)
   assert.equal(run1.configHasLiteralKey, false, 'The key reaches the run through its environment only')
   assert.ok(run1.keySha)
   assert.ok(run1.cwd.startsWith(join(app.dataDir, 'files', 'runtime')), 'The run works in a managed folder, never a project folder')
 
-  // Same chat, same model: the native session is resumed with only the new text.
+  // Same chat and scope: resume with the current source manifest and new text, without replaying history.
   const second = await client.send({ sessionId: chat.sessionId, input: 'again' })
   await finished(client, second.requestId)
   const run2 = runs(log)[1]
   assert.ok(run2.resume?.startsWith('ses_'))
-  assert.equal(run2.prompt, 'again')
+  assert.ok(run2.prompt.endsWith('\n\nagain'))
+  assert.equal(run2.prompt.includes('Earlier conversation of this chat'), false)
   assert.equal((await client.history(chat.sessionId)).at(-1).content, 'Echo 2: again')
 
   // Another chat never shares the native session.

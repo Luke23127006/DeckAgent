@@ -351,6 +351,9 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px', 'Pointer release must commit the final position without a preceding move')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   // Fullscreen needs a real user gesture; a scripted click() carries no activation.
+  // A CDP-created background tab can reject fullscreen as 'not granted' even after a real click.
+  await protocol.call('Page.bringToFront')
+  assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
   const presentButton = await evaluate(`(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Trình chiếu').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`)
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', ...presentButton })
   await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', ...presentButton, button: 'left', buttons: 1, clickCount: 1 })
@@ -412,6 +415,145 @@ async function tree(folder) {
   }
   return entries
 }
+
+test('public research is explicit, config checks the free key and stored excerpts remain safe after reload', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-research-'))
+  let app, session, searches = 0
+  const sourceText = 'Research marker 482 <script>window.researchInjected=true</script>'
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('research'), openCode: fakeOpenCode(dir), researchAccess: { key: 'browser-research-secret', fetch: async url => {
+    if (url.endsWith('/usage')) return Response.json({ key: { usage: 0, limit: null }, account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null } })
+    searches++
+    return Response.json({ results: [{ title: 'Public report', url: 'https://example.org/report', content: sourceText }] })
+  } } })
+  const created = await fetch(`${app.origin}/api/sessions`, { method: 'POST', headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, body: JSON.stringify({ selection: { provider: 'fixture', model: 'research' } }) })
+  assert.equal(created.ok, true)
+  const researchChat = await created.json()
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]')`), 'Research Chat not listed')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.public-research-choice') && !document.querySelector('.public-research-choice').disabled`), 'Research choice not ready')
+  await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Research model not ready')
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false)
+  await evaluate(`document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.request-record[data-status=completed]')`), 'Unselected request did not finish')
+  assert.equal(searches, 0)
+  await eventually(() => evaluate(`!document.querySelector('.public-research-choice').disabled && !document.querySelector('.send-action').disabled`), 'Composer did not release the completed request')
+  await evaluate(`document.querySelector('.public-research-choice').click(); document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => searches === 1, 'Selected research did not execute')
+  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2`), 'Research request did not finish')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!document.querySelector('.public-research-choice')`), 'Reload did not boot')
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false, 'A new interface must not implicitly authorize outside research')
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.research-dialog pre')?.textContent.includes('Research marker 482')`), 'Saved excerpts not visible after reload')
+  assert.equal(await evaluate(`window.researchInjected === true`), false)
+  assert.equal(await evaluate(`document.querySelector('.research-dialog input[type=password]').value`), '')
+  assert.equal(await evaluate(`document.querySelector('.research-dialog a').href`), 'https://example.org/report')
+  await evaluate(`document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra key từ .env').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.research-dialog [role=status]').textContent.includes('Key môi trường hợp lệ')`), 'Free environment key check not shown')
+})
+
+test('attachments survive reload and Chat switching, preview safely, reject invalid input and send without text', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-attachments-'))
+  let app, session
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('attachments'), openCode: fakeOpenCode(dir) })
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    assert.equal(response.ok, true)
+    return response.json()
+  }
+  const chat = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'attachments' } })
+  const other = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'attachments' } })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]')`), 'Chat list missing')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation button[aria-current=true]')?.dataset.sessionId === '${chat.sessionId}' && !document.querySelector('.composer select').disabled`), 'Selected attachment Chat did not finish opening')
+  await eventually(() => evaluate(`!document.querySelector('.attachment-action').disabled`), 'Attachment action unavailable')
+  const add = async (name, content) => evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(new File([${content}], ${JSON.stringify(name)})); const picker = document.querySelector('.composer input[type=file]'); picker.files = transfer.files; picker.dispatchEvent(new Event('change', {bubbles:true})); return true; })()`)
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='Retained draft';input.dispatchEvent(new Event('input'));} true`)
+  await add('safe.md', JSON.stringify('<script>window.attachmentExecuted=true</script>\nsource evidence'))
+  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready'`), 'Uploaded file did not become ready')
+  await evaluate(`document.querySelector('.attachment-row button').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-preview[open] pre')`), 'Preview not shown')
+  assert.equal(await evaluate(`document.querySelector('.attachment-preview pre').textContent.includes('<script>') && !window.attachmentExecuted`), true)
+  await evaluate(`document.querySelector('.attachment-preview button').click(); true`)
+  const documentNode = await protocol.call('DOM.getDocument')
+  const pickerNode = await protocol.call('DOM.querySelector', { nodeId: documentNode.root.nodeId, selector: '.composer input[type=file]' })
+  await protocol.call('DOM.setFileInputFiles', { nodeId: pickerNode.nodeId, files: [fileURLToPath(new URL('./fixtures/attachments/sample.png', import.meta.url))] })
+  await eventually(() => evaluate(`[...document.querySelectorAll('.attachment-row')].some(row=>row.querySelector('.attachment-name').textContent==='sample.png'&&row.dataset.state==='ready')`), 'Image attachment not ready')
+  await evaluate(`[...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelector('button').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.attachment-preview img')?.naturalWidth > 0`), 'Normalized image preview did not render')
+  await evaluate(`document.querySelector('.attachment-preview button').click(); [...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelectorAll('button')[1].click(); true`)
+  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length===1&&!document.querySelector('.attachment-action').disabled`), 'Image removal did not settle')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready' && document.querySelector('.composer textarea').value === 'Retained draft'`), 'Reload lost attachment or text')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!document.querySelector('.attachment-row')`), 'Attachment leaked to another Chat')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-row')`), 'Switch lost attachment')
+  await add('bad.txt', 'new Uint8Array([0,1,2])')
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-row[data-state=rejected]')`), 'Rejected file not shown')
+  assert.equal(await evaluate(`document.querySelector('.send-action').disabled`), true)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Retained draft')
+  await evaluate(`Array.from(document.querySelector('.attachment-row[data-state=rejected]').querySelectorAll('button')).at(-1).click(); true`)
+  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length === 1 && !document.querySelector('.send-action').disabled`), 'Remove did not restore a valid draft')
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();} true`)
+  await eventually(async () => (await api(`sessions/${chat.sessionId}/requests`)).some(request => request.status === 'completed'), 'Attachment-only request did not finish')
+  await eventually(() => evaluate(`document.querySelector('.message-attachments')?.textContent.includes('safe.md')`), 'Saved attachment not rendered in conversation')
+  assert.deepEqual((await api(`sessions/${chat.sessionId}/draft`)).attachmentIds, [])
+})
+
+test('step approval survives reload and chat switching; refusal continues and Stop cancels a pending step', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-approval-'))
+  let app, session
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  const outside = join(dir, 'outside.txt')
+  await writeFile(outside, 'outside browser marker')
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('approval'), openCode: fakeOpenCode(dir) })
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    assert.equal(response.ok, true)
+    return response.json()
+  }
+  const chat = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'approval' } })
+  const other = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'approval' } })
+  const request = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
+  await eventually(async () => (await api(`requests/${request.requestId}`)).pendingApproval, 'Approval was not saved')
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  const visit = async id => {
+    await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+    await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${id}"]')`), 'Chat list missing')
+    await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${id}"]').click(); true`)
+  }
+  await visit(chat.sessionId)
+  const visible = `document.querySelector('.step-approval:not([hidden])')`
+  await eventually(() => evaluate(`!!${visible}`), 'Saved approval did not appear')
+  assert.equal(await evaluate(`${visible}.textContent.includes('outside.txt')`), true)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').hidden`), false)
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!${visible}`), 'Approval leaked into another chat')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!${visible}`), 'Approval lost on chat switch')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!${visible}`), 'Approval lost on reload')
+  await evaluate(`Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Từ chối').click(); true`)
+  await eventually(async () => (await api(`requests/${request.requestId}`)).status === 'completed', 'Refused request did not continue')
+  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Không thực hiện vì bạn đã từ chối')`), 'Refusal missing from saved closing reply')
+  const next = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!${visible}`), 'Next approval missing')
+  await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').click(); true`)
+  await eventually(async () => (await api(`requests/${next.requestId}`)).status === 'stopped', 'Stop failed during approval')
+  await eventually(() => evaluate(`!${visible}`), 'Cancelled approval controls remained visible')
+})
 
 test('real browser boots without a model: workspaces, chats, search, drafts and an unreadable chat', {
   timeout: 60000,

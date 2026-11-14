@@ -82,7 +82,10 @@ test(`real OpenCode CLI ${pinnedVersion}: isolated run, key by reference, events
     'The resumed native session carries the first turn without DeckAgent resending it as quoted text')
   assert.equal(sent.some(text => text.includes('Earlier conversation of this chat')), false)
   const hung = await client.send({ sessionId: chat.sessionId, input: 'Wait [hang]' })
-  await waitFor(async () => (await client.snapshot(hung.requestId)).text, 60000)
+  // The pinned CLI emits text only when a part ends. Confirm the actual hanging provider call rather than
+  // waiting for partial text the JSON CLI does not emit. Stop must still end that unresponsive call.
+  await waitFor(() => endpoint.requests.some(request => JSON.stringify(request.body.messages.at(-1)).includes('[hang]')), 60000)
+  assert.equal((await client.snapshot(hung.requestId)).status, 'active')
   const stopped = await client.stop(hung.requestId)
   assert.equal(stopped.status, 'stopped')
   const next = await client.send({ sessionId: chat.sessionId, input: 'After stop' })

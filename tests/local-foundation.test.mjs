@@ -346,14 +346,19 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
       'runtimePlugin',
       'AgentRuntime',
       'ToolRegistry',
-      '@deckagent/file-tools',
       '@deckagent/presentation-tools',
     ])
       assert.equal(bundle.includes(legacy), false, `${name} must not reference ${legacy}`)
   }
   const manifest = JSON.parse(await readFile(join(root, 'apps', 'local-web', 'package.json'), 'utf8'))
   assert.deepEqual(
-    Object.keys(manifest.dependencies).filter(name => /cordis|agent-runtime|file-tools|presentation-tools/.test(name)),
+    Object.keys(manifest.dependencies).filter(name => /cordis|agent-runtime|presentation-tools/.test(name)),
     [],
   )
+  // B03 uses the filesystem owner's read interface. Its built entry must not load the legacy runtime.
+  const sourceBundle = await readFile(join(root, 'packages', 'tools', 'filesystem', 'lib', 'index.js'), 'utf8')
+  assert.equal(sourceBundle.includes('@deckagent/agent-runtime'), false)
+  assert.equal(sourceBundle.includes('@deepseek-ai/cordis'), false)
+  const sourceComposition = await readFile(join(root, 'apps', 'local-web', 'src', 'source-tools.ts'), 'utf8')
+  assert.equal(sourceComposition.includes('registerFileTools'), false, 'Production must not register the legacy write tools')
 })

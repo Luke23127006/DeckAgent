@@ -52,6 +52,9 @@ export function providerConfiguration(settings: ProviderRunSettings) {
           id: settings.model,
           name: settings.model,
           tool_call: true,
+          // Permit image transport from Host MCP tools. This does not verify the remote model's vision capability;
+          // the selected provider may refuse the input, and no model or source is substituted.
+          modalities: { input: ['text', 'image'], output: ['text'] },
           temperature: false,
           reasoning: false,
           limit: { context: 0, output: settings.protocol === 'anthropic-messages' ? 4096 : 32000 },

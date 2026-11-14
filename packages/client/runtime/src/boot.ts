@@ -1,4 +1,11 @@
-import type { HistoryMessage, RequestSnapshot, RequestStatus, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-api'
+import type {
+  HistoryMessage,
+  RequestSnapshot,
+  RequestStatus,
+  WebSession,
+  WebSettings,
+  WorkspaceList,
+} from '@deckagent/host-api'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient, HostRequestError, isActive } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
@@ -14,17 +21,25 @@ import { failureFeedback } from './request-feedback.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
+import type { ApprovalView } from '@deckagent/host-api'
+import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
+import { AttachmentDraftView } from './attachment-view.ts'
+import { researchView } from './research-view.ts'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
-  if (!settings.runtime.available) return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
-    ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
-    : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
+  if (!settings.runtime.available)
+    return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
+      ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
+      : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
   if (!session || session.selectable) return undefined
-  if (!settings.providers.length) return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
-  if (!settings.providers.some(provider => provider.models.length)) return 'Chưa thêm model nào. Thêm model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  if (!settings.providers.length)
+    return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
+  if (!settings.providers.some(provider => provider.models.length))
+    return 'Chưa thêm model nào. Thêm model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'
   const removed = session.removedSelection ?? session.selection
-  if (removed) return `Model ${removed.model} đã bị gỡ; chat này chưa có model. Hãy chọn model khác để gửi. Hệ thống không tự chọn model.`
+  if (removed)
+    return `Model ${removed.model} đã bị gỡ; chat này chưa có model. Hãy chọn model khác để gửi. Hệ thống không tự chọn model.`
   return 'Chat này chưa chọn model. Hãy chọn model để gửi yêu cầu. Bản nháp được giữ nguyên.'
 }
 
@@ -45,8 +60,13 @@ const headerState = element('small', '', 'chat-state')
 headerState.setAttribute('aria-live', 'polite')
 const welcome = element('section', undefined, 'welcome')
 welcome.hidden = true
-welcome.append(element('h2', 'Hãy mô tả deck bạn muốn'),
-  element('p', 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.'))
+welcome.append(
+  element('h2', 'Hãy mô tả deck bạn muốn'),
+  element(
+    'p',
+    'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.',
+  ),
+)
 const model = element('select')
 model.disabled = true
 model.setAttribute('aria-label', 'Model đã chọn')
@@ -59,9 +79,21 @@ const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
 // Outline confirmation and generation arrive with their builds (B04); this build sends generic chat requests only.
 const timeline = new ConversationView(messages, undefined, undefined, outlineDock, {
-  retry: text => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); saveDraft(); controls() },
+  retry: text => {
+    input.value = text
+    input.focus()
+    input.setSelectionRange(text.length, text.length)
+    saveDraft()
+    controls()
+  },
   settings: () => run(settingsUI.open()),
   draft: () => input.value,
+  previewAttachment: item => run(previewAttachment(item)),
+  approve: async (requestId, approvalId, decision) => {
+    await client.decide(requestId, approvalId, decision)
+    const saved = await client.snapshot(requestId)
+    if (current?.sessionId === saved.sessionId) timeline.snapshot(saved)
+  },
 })
 const form = element('form', undefined, 'composer')
 form.noValidate = true
@@ -82,7 +114,17 @@ const stopRequest = button('Dừng', () => {
   stopping.add(id)
   controls()
   // The Host saves the stop at once (NFR-011); the stream then reports it, and this snapshot covers a lost stream.
-  run(client.stop(id).then(snapshot => { timeline.snapshot(snapshot) }).finally(() => { stopping.delete(id); controls() }))
+  run(
+    client
+      .stop(id)
+      .then(snapshot => {
+        timeline.snapshot(snapshot)
+      })
+      .finally(() => {
+        stopping.delete(id)
+        controls()
+      }),
+  )
 })
 stopRequest.className = 'stop-action'
 stopRequest.setAttribute('aria-label', 'Dừng yêu cầu')
@@ -93,7 +135,10 @@ deck.hidden = true
 mountDeckTab(deck)
 const publishedDeck = element('aside', undefined, 'deck-sidebar published-deck-sidebar')
 publishedDeck.hidden = true
-const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => { deck.hidden = true; openDeck.hidden = true })
+const deckModel = mountDeckCanvas(publishedDeck, new DeckClient(location.origin, token), () => {
+  deck.hidden = true
+  openDeck.hidden = true
+})
 let current: WebSession | undefined
 let settings: WebSettings = { providers: [], persistentKeys: false, builtIns: [], runtime: { available: false } }
 const stopping = new Set<string>()
@@ -106,6 +151,42 @@ let generation = 0
 const sending = new Set<string>()
 const selecting = new Set<string>()
 const drafts = new Map<string, string>()
+const draftStates = new Map<string, ChatDraft>()
+const draftWork = new Map<string, Promise<void>>()
+const attachmentBusy = new Set<string>()
+let attachmentUI: AttachmentDraftView | undefined
+let researchUI: ReturnType<typeof researchView> | undefined
+
+function enqueueDraft<T>(id: string, action: () => Promise<T>): Promise<T> {
+  const work = (draftWork.get(id) ?? Promise.resolve()).then(action)
+  draftWork.set(
+    id,
+    work.then(
+      () => {},
+      () => {},
+    ),
+  )
+  return work
+}
+
+function receiveDraft(draft: ChatDraft, acknowledgedText = false): void {
+  const before = draftStates.get(draft.sessionId)
+  if (before?.revision !== undefined && draft.revision !== undefined && draft.revision < before.revision) return
+  if (!acknowledgedText && before && draft.text !== before.text && draft.text !== drafts.get(draft.sessionId)) {
+    // Polling must not acquire a newer revision while silently retaining older text in the editor.
+    status.hidden = false
+    status.dataset.kind = 'error'
+    status.textContent =
+      'Bản nháp đã đổi ở giao diện khác. Giữ nội dung đang soạn và mở lại chat để đối chiếu trước khi lưu hoặc gửi.'
+    return
+  }
+  const attachments = draft.attachments?.map(item => {
+    const known = before?.attachments?.find(previous => previous.attachmentId === item.attachmentId)
+    return known && known.state !== 'preparing' && item.state === 'preparing' ? known : item
+  })
+  draftStates.set(draft.sessionId, { ...draft, ...(attachments ? { attachments } : {}) })
+  if (current?.sessionId === draft.sessionId) controls()
+}
 let polling = false
 let disposed = false
 let reconnecting = false
@@ -116,8 +197,13 @@ let chatTitle = 'Chat mới'
 
 function describeHistory(history: readonly HistoryMessage[]) {
   historyPresent = history.length > 0
-  const first = history.find(message => message.role === 'user')?.content.replace(/\s+/g, ' ').trim()
-  chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'Chat mới'
+  const first = history
+    .find(message => message.role === 'user')
+    ?.content.replace(/\s+/g, ' ')
+    .trim()
+  const attachmentTitle = history.find(message => message.role === 'user')?.attachments?.[0]?.name
+  const displayTitle = first || attachmentTitle
+  chatTitle = displayTitle ? (displayTitle.length > 64 ? `${displayTitle.slice(0, 64)}…` : displayTitle) : 'Chat mới'
 }
 
 function fitInput() {
@@ -133,22 +219,40 @@ function saveDraft() {
   const id = current.sessionId
   drafts.set(id, input.value)
   clearTimeout(pendingDrafts.get(id))
-  pendingDrafts.set(id, setTimeout(() => { void flushDraft(id) }, 250))
+  pendingDrafts.set(
+    id,
+    setTimeout(() => {
+      void flushDraft(id)
+    }, 250),
+  )
 }
 async function flushDraft(id: string) {
   const timer = pendingDrafts.get(id)
-  if (timer === undefined) return
+  if (timer === undefined) {
+    await draftWork.get(id)
+    return true
+  }
   clearTimeout(timer)
   pendingDrafts.delete(id)
-  try { await management.saveDraft(id, drafts.get(id) ?? '') } catch {
+  try {
+    const text = drafts.get(id) ?? ''
+    await enqueueDraft(id, async () => {
+      const draft = await management.saveDraftState(id, text, draftStates.get(id)?.revision)
+      receiveDraft(draft, true)
+    })
+    return true
+  } catch {
     status.hidden = false
     status.dataset.kind = 'error'
     status.textContent = 'Chưa lưu được bản nháp vào DeckAgent. Kiểm tra kết nối; nội dung vẫn còn trong ô soạn thảo.'
+    return false
   }
 }
 async function readDraft(id: string): Promise<string> {
-  await flushDraft(id)
-  const text = await management.draft(id)
+  if (!(await flushDraft(id))) throw new Error('DRAFT_NOT_SAVED')
+  const draft = await management.draftState(id)
+  receiveDraft(draft, true)
+  const text = draft.text
   drafts.set(id, text)
   return text
 }
@@ -159,6 +263,89 @@ function remember(id: string) {
   } catch {
     /* Session can still be selected from History. */
   }
+}
+
+async function uploadAttachments(files: File[]): Promise<void> {
+  const id = current?.sessionId
+  if (!id || attachmentBusy.has(id)) return
+  attachmentBusy.add(id)
+  controls()
+  try {
+    if (!(await flushDraft(id))) return
+    for (const file of files)
+      await enqueueDraft(id, async () => {
+        const draft = draftStates.get(id)
+        if (draft?.revision === undefined) throw new Error('DRAFT_CONFLICT')
+        const uploaded = await management.uploadAttachment(id, file, draft.revision)
+        receiveDraft(uploaded.draft)
+      })
+    await refresh()
+  } catch (error) {
+    receiveDraft(await management.draftState(id))
+    throw error
+  } finally {
+    attachmentBusy.delete(id)
+    controls()
+  }
+}
+
+async function removeAttachment(attachmentId: string): Promise<void> {
+  const id = current?.sessionId
+  if (!id || attachmentBusy.has(id)) return
+  attachmentBusy.add(id)
+  controls()
+  try {
+    if (!(await flushDraft(id))) return
+    await enqueueDraft(id, async () => {
+      const draft = draftStates.get(id)
+      if (draft?.revision === undefined) throw new Error('DRAFT_CONFLICT')
+      receiveDraft(await management.removeAttachment(id, attachmentId, draft.revision))
+    })
+    await refresh()
+  } finally {
+    attachmentBusy.delete(id)
+    controls()
+  }
+}
+
+let previewDialog: HTMLDialogElement | undefined
+let previewUrl: string | undefined
+function closePreview(): void {
+  previewDialog?.remove()
+  previewDialog = undefined
+  if (previewUrl) URL.revokeObjectURL(previewUrl)
+  previewUrl = undefined
+}
+
+async function previewAttachment(item: AttachmentView): Promise<void> {
+  const id = current?.sessionId
+  if (!id) return
+  const preview = await management.previewAttachment(id, item.attachmentId)
+  if (current?.sessionId !== id) return
+  closePreview()
+  const dialog = element('dialog', undefined, 'attachment-preview')
+  dialog.append(
+    element('h2', item.name),
+    element('p', 'Bản xem trước có giới hạn; phần chưa đọc hoặc đã thu nhỏ được báo trong trạng thái tệp.'),
+  )
+  if (typeof preview === 'string') dialog.append(element('pre', preview))
+  else {
+    previewUrl = URL.createObjectURL(preview)
+    const image = element('img')
+    image.src = previewUrl
+    image.alt = item.name
+    dialog.append(image)
+  }
+  dialog.append(
+    button('Đóng xem trước', () => {
+      dialog.close()
+      closePreview()
+    }),
+  )
+  dialog.addEventListener('close', closePreview, { once: true })
+  document.body.append(dialog)
+  previewDialog = dialog
+  dialog.showModal()
 }
 function run(work: Promise<void>) {
   work.catch(error => {
@@ -171,6 +358,7 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  researchUI?.update(settings, !!current?.activeRequestId)
   const activeId = current?.activeRequestId
   stopRequest.hidden = !activeId
   stopRequest.disabled = !!activeId && stopping.has(activeId)
@@ -181,6 +369,10 @@ function controls() {
   workspaceUI.setBusy(opening !== undefined || creating)
   // A chat without a selectable model keeps its draft and says why it cannot send (FR-046).
   const blocked = sendBlocked(current, settings)
+  const draft = current ? draftStates.get(current.sessionId) : undefined
+  const busy = !!current && attachmentBusy.has(current.sessionId)
+  const invalidAttachments = draft?.attachments?.some(item => item.state !== 'ready') ?? false
+  attachmentUI?.render(draft, busy)
   unavailable.hidden = !blocked || !!activeId
   if (blocked && unavailable.textContent !== blocked) unavailable.textContent = blocked
   submit.disabled =
@@ -191,8 +383,15 @@ function controls() {
     opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
+    busy ||
+    invalidAttachments ||
     !!activeId
-  submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > requestLimit))
+  submit.setAttribute(
+    'aria-disabled',
+    String(
+      submit.disabled || (!input.value.trim() && !draft?.attachments?.length) || [...input.value].length > requestLimit,
+    ),
+  )
   timeline.setOutlineBusy(true)
   picker.update(settings, !!activeId)
   title.textContent = chatTitle
@@ -203,7 +402,10 @@ function controls() {
   navigationHint.hidden = !activeId || chats.hidden
   welcome.hidden = historyPresent || active || !current || opening !== undefined
   messages.hidden = !welcome.hidden
-  openDeck.hidden = (!outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) || !publishedDeck.hidden
+  openDeck.hidden =
+    (!outlineState?.confirmedId &&
+      !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) ||
+    !publishedDeck.hidden
   fitInput()
 }
 function renderModels() {
@@ -219,16 +421,28 @@ function renderModels() {
   controls()
 }
 function chatButton(session: WebSession) {
-  const item = button('', () =>
-    run(open(session)),
-  )
+  const item = button('', () => run(open(session)))
   const updated = element('time')
   updated.dateTime = session.updatedAt
   const date = new Date(session.updatedAt)
   updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
-  const slides = !session.readable ? 'Không mở được chat này' : session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
-  const name = !session.readable ? 'Chat không đọc được' : !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'
-  item.append(element('strong', name), updated, element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
+  const slides = !session.readable
+    ? 'Không mở được chat này'
+    : session.hasSlides === undefined
+      ? 'Chưa rõ slide'
+      : session.hasSlides
+        ? 'Có slide'
+        : 'Chưa có slide'
+  const name = !session.readable
+    ? 'Chat không đọc được'
+    : !session.messageCount
+      ? 'Chat mới'
+      : (session.title ?? 'Chat chưa có tên')
+  item.append(
+    element('strong', name),
+    updated,
+    element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`),
+  )
   item.title = `${name} · ${updated.textContent} · ${slides}`
   item.dataset.sessionId = session.sessionId
   if (!session.readable) item.dataset.unreadable = 'true'
@@ -238,8 +452,14 @@ function chatButton(session: WebSession) {
 }
 function renderChats() {
   chats.replaceChildren()
-  const listed = (session: WebSession) => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides
-    || !session.readable || session.hasDraft || drafts.get(session.sessionId)?.trim()
+  const listed = (session: WebSession) =>
+    session.sessionId === current?.sessionId ||
+    session.messageCount ||
+    session.selection ||
+    session.hasSlides ||
+    !session.readable ||
+    session.hasDraft ||
+    drafts.get(session.sessionId)?.trim()
   const found = searchResults
   const visible = sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
   // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
@@ -256,7 +476,11 @@ function renderChats() {
   }
 }
 async function refresh() {
-  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
+  const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([
+    management.settings(),
+    management.sessions(),
+    management.workspaces(),
+  ])
   settings = nextSettings
   sessions = nextSessions
   workspaces = nextWorkspaces
@@ -299,8 +523,17 @@ async function follow(id: string, sessionId: string, expected: number) {
   let errorCode: string | undefined
   let cursor = 0
   let failures = 0
-  const show = () => timeline.snapshot({ requestId: id, sessionId, status: state, text: [...parts.values()].filter(text => text.trim()).join('\n\n'),
-    sequence: cursor, ...(errorCode ? { errorCode } : {}) })
+  let pendingApproval: ApprovalView | null = null
+  const show = () =>
+    timeline.snapshot({
+      requestId: id,
+      sessionId,
+      status: state,
+      text: [...parts.values()].filter(text => text.trim()).join('\n\n'),
+      sequence: cursor,
+      pendingApproval,
+      ...(errorCode ? { errorCode } : {}),
+    })
   while (!control.signal.aborted && generation === expected && isActive(state)) {
     try {
       for await (const event of client.watch(id, control.signal, cursor)) {
@@ -308,8 +541,21 @@ async function follow(id: string, sessionId: string, expected: number) {
         cursor = event.sequence
         failures = 0
         if (event.kind === 'text') parts.set(event.part, event.text)
-        else if (event.kind === 'activity') timeline.activity({ requestId: id, sequence: event.sequence, id: event.id, label: event.label, type: event.type, status: event.status })
-        else if (event.kind === 'status') { state = event.status; errorCode = event.errorCode }
+        else if (event.kind === 'activity')
+          timeline.activity({
+            requestId: id,
+            sequence: event.sequence,
+            id: event.id,
+            label: event.label,
+            type: event.type,
+            status: event.status,
+          })
+        else if (event.kind === 'status') {
+          state = event.status
+          errorCode = event.errorCode
+          if (!isActive(state)) pendingApproval = null
+        } else if (event.kind === 'approval')
+          pendingApproval = event.approval.state === 'pending' ? event.approval : null
         else if (event.kind === 'notice' && event.code === 'CONVERSATION_SUMMARIZED') timeline.summarized(id)
         show()
       }
@@ -322,7 +568,11 @@ async function follow(id: string, sessionId: string, expected: number) {
     }
   }
   if (control.signal.aborted || generation !== expected) return
-  await Promise.all([showHistory(sessionId, expected), showActivities(sessionId, expected), showOutlines(sessionId, expected)])
+  await Promise.all([
+    showHistory(sessionId, expected),
+    showActivities(sessionId, expected),
+    showOutlines(sessionId, expected),
+  ])
   await refresh()
   if (current?.sessionId === sessionId && current.activeRequestId === id) {
     const { activeRequestId: _ended, ...rest } = current
@@ -331,6 +581,7 @@ async function follow(id: string, sessionId: string, expected: number) {
   controls()
 }
 async function open(listed: WebSession) {
+  closePreview()
   let session = listed
   const switching = current?.sessionId !== session.sessionId
   if (switching && switchingBlocked()) return
@@ -338,14 +589,25 @@ async function open(listed: WebSession) {
   picker.close()
   // Read everything before replacing current state. A failed open leaves the old chat intact.
   const previousGeneration = generation
-  if (current) { saveDraft(); await flushDraft(current.sessionId) }
-  const loaded = await Promise.all([client.history(session.sessionId), management.activities(session.sessionId),
-    management.requests(session.sessionId), outlines.snapshot(session.sessionId), readDraft(session.sessionId)])
+  if (current) {
+    saveDraft()
+    await flushDraft(current.sessionId)
+  }
+  const loaded = await Promise.all([
+    client.history(session.sessionId),
+    management.activities(session.sessionId),
+    management.requests(session.sessionId),
+    outlines.snapshot(session.sessionId),
+    readDraft(session.sessionId),
+  ])
   if (generation !== previousGeneration || (switching && switchingBlocked())) return
   input.value = loaded[4]
   generation++
   watch?.abort()
-  if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
+  if (current?.sessionId !== session.sessionId) {
+    timeline.reset()
+    outlineState = undefined
+  }
   // The saved records say whether a request is active now; the list entry may be older.
   const activeRequestId = loaded[2].find(request => isActive(request.status))?.requestId
   const { activeRequestId: _listedRequest, ...rest } = listed
@@ -359,7 +621,13 @@ async function open(listed: WebSession) {
   renderChats()
   status.hidden = true
   if (session.activeRequestId)
-    timeline.snapshot({ requestId: session.activeRequestId, sessionId: session.sessionId, status: 'active', text: '', sequence: 0 })
+    timeline.snapshot({
+      requestId: session.activeRequestId,
+      sessionId: session.sessionId,
+      status: 'active',
+      text: '',
+      sequence: 0,
+    })
   controls()
   timeline.setHistory(loaded[0])
   describeHistory(loaded[0])
@@ -375,7 +643,10 @@ async function newChat() {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
   // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
-  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) { input.focus(); return }
+  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) {
+    input.focus()
+    return
+  }
   creating = true
   controls()
   try {
@@ -383,7 +654,10 @@ async function newChat() {
     const created = await management.create()
     await refresh()
     await open(created)
-  } finally { creating = false; controls() }
+  } finally {
+    creating = false
+    controls()
+  }
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
 const workspaceUI = workspaceView(management, root, async (next, reloadChats) => {
@@ -404,20 +678,37 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 function findChats() {
   const words = searchInput.value.trim()
   searchWords = words
-  if (!words) { searchResults = undefined; renderChats(); return }
-  run(management.search(words).then(found => {
-    // FR-134: keep the words; show only the chats that hold them.
-    if (searchWords !== words) return
-    searchResults = new Set(found.map(session => session.sessionId))
+  if (!words) {
+    searchResults = undefined
     renderChats()
-  }))
+    return
+  }
+  run(
+    management.search(words).then(found => {
+      // FR-134: keep the words; show only the chats that hold them.
+      if (searchWords !== words) return
+      searchResults = new Set(found.map(session => session.sessionId))
+      renderChats()
+    }),
+  )
 }
-searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(findChats, 200) })
-search.addEventListener('submit', event => { event.preventDefault(); clearTimeout(searchTimer); findChats() })
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(findChats, 200)
+})
+search.addEventListener('submit', event => {
+  event.preventDefault()
+  clearTimeout(searchTimer)
+  findChats()
+})
 const requestLimit = 16000
 const unavailable = element('p', '', 'requests-unavailable')
 unavailable.setAttribute('role', 'note')
-const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settingsUI.open(true)))
+const picker = modelPicker(
+  model,
+  () => run(settingsUI.open()),
+  () => run(settingsUI.open(true)),
+)
 /** Only an open or a send in progress blocks switching. A running request keeps going in the Host (UC-003 A13). */
 function switchingBlocked(): boolean {
   return opening !== undefined || (!!current && sending.has(current.sessionId))
@@ -425,7 +716,11 @@ function switchingBlocked(): boolean {
 const newChatButton = button('Chat mới', () => run(newChat()))
 newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
-const navigationHint = element('p', 'Yêu cầu vẫn chạy khi bạn mở chat khác; quay lại chat này để xem tiến độ.', 'navigation-hint')
+const navigationHint = element(
+  'p',
+  'Yêu cầu vẫn chạy khi bạn mở chat khác; quay lại chat này để xem tiến độ.',
+  'navigation-hint',
+)
 navigationHint.hidden = true
 const recents = button('Gần đây', () => {
   chats.hidden = !chats.hidden
@@ -436,9 +731,15 @@ recents.className = 'recents-toggle'
 recents.setAttribute('aria-expanded', 'true')
 // On a phone the chat list starts folded so the conversation owns the first screen.
 const compactNavigation = matchMedia('(max-width:720px)')
-const foldRecents = () => { chats.hidden = compactNavigation.matches; recents.setAttribute('aria-expanded', String(!chats.hidden)) }
+const foldRecents = () => {
+  chats.hidden = compactNavigation.matches
+  recents.setAttribute('aria-expanded', String(!chats.hidden))
+}
 foldRecents()
-compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
+compactNavigation.addEventListener('change', () => {
+  foldRecents()
+  controls()
+})
 recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
 // The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
@@ -451,10 +752,19 @@ function setNavigation(collapse: boolean, remember = true) {
   navToggle.setAttribute('aria-expanded', String(!collapse))
   navToggle.setAttribute('aria-label', label)
   navToggle.title = label
-  if (remember) try { localStorage.setItem('deckagent-nav', collapse ? 'collapsed' : 'open') } catch { /* Optional layout preference. */ }
+  if (remember)
+    try {
+      localStorage.setItem('deckagent-nav', collapse ? 'collapsed' : 'open')
+    } catch {
+      /* Optional layout preference. */
+    }
 }
 let storedNavigation: string | null = null
-try { storedNavigation = localStorage.getItem('deckagent-nav') } catch { /* Optional layout preference. */ }
+try {
+  storedNavigation = localStorage.getItem('deckagent-nav')
+} catch {
+  /* Optional layout preference. */
+}
 setNavigation(storedNavigation === 'collapsed', false)
 const navTop = element('div', undefined, 'nav-top')
 navTop.append(element('div', 'DeckAgent', 'wordmark'), navToggle)
@@ -479,8 +789,13 @@ function openAccountMenu() {
   accountMenu.style.width = `${width}px`
   accountMenu.style.left = `${Math.max(8, Math.min(box.left, innerWidth - width - 8))}px`
   accountMenu.dataset.side = box.top > innerHeight / 2 ? 'above' : 'below'
-  if (accountMenu.dataset.side === 'above') { accountMenu.style.top = ''; accountMenu.style.bottom = `${innerHeight - box.top + 8}px` }
-  else { accountMenu.style.bottom = ''; accountMenu.style.top = `${box.bottom + 8}px` }
+  if (accountMenu.dataset.side === 'above') {
+    accountMenu.style.top = ''
+    accountMenu.style.bottom = `${innerHeight - box.top + 8}px`
+  } else {
+    accountMenu.style.bottom = ''
+    accountMenu.style.top = `${box.bottom + 8}px`
+  }
 }
 function closeAccountMenu(restoreFocus = false) {
   if (accountMenu.hidden) return
@@ -489,16 +804,39 @@ function closeAccountMenu(restoreFocus = false) {
   if (restoreFocus) accountTrigger.focus()
 }
 // The menu closes on Escape and on any press outside it, like the model popover.
-document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAccountMenu(true) })
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeAccountMenu(true)
+})
 document.addEventListener('pointerdown', event => {
-  if (!accountMenu.hidden && !accountMenu.contains(event.target as Node) && !accountTrigger.contains(event.target as Node)) closeAccountMenu()
+  if (
+    !accountMenu.hidden &&
+    !accountMenu.contains(event.target as Node) &&
+    !accountTrigger.contains(event.target as Node)
+  )
+    closeAccountMenu()
 })
 const themeSection = element('div', undefined, 'menu-section')
+researchUI = researchView(
+  management,
+  root,
+  async () => {
+    await refresh()
+    controls()
+  },
+  () => current?.sessionId,
+)
 themeSection.append(element('span', 'Giao diện'), themeControl(management))
 accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
-  Object.assign(button('Cài đặt model', () => { closeAccountMenu(); run(settingsUI.open()) }), { className: 'settings-open', title: 'Cài đặt model' }),
+  Object.assign(
+    button('Cài đặt model', () => {
+      closeAccountMenu()
+      run(settingsUI.open())
+    }),
+    { className: 'settings-open', title: 'Cài đặt model' },
+  ),
   themeSection,
+  researchUI.settings,
 )
 navigation.append(
   navTop,
@@ -513,7 +851,11 @@ navigation.append(
 )
 const headingText = element('div', undefined, 'chat-heading')
 headingText.append(title, headerState)
-function showDeck() { deck.hidden = true; publishedDeck.hidden = false; openDeck.hidden = true }
+function showDeck() {
+  deck.hidden = true
+  publishedDeck.hidden = false
+  openDeck.hidden = true
+}
 const openDeck = button('Mở deck', showDeck)
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
@@ -541,21 +883,27 @@ reconnect.id = 'reconnect'
 accountMenu.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
-const attachment = button('+', () => {})
-attachment.disabled = true
-attachment.className = 'attachment-action'
-attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
-attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
+attachmentUI = new AttachmentDraftView({
+  upload: files => run(uploadAttachments(files)),
+  remove: id => run(removeAttachment(id)),
+  preview: item => run(previewAttachment(item)),
+})
+const attachment = attachmentUI.trigger
 composerControls.append(attachment)
+composerControls.append(researchUI.label, researchUI.sources)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
-form.append(unavailable, input, composerActions)
-input.addEventListener('input', () => { saveDraft(); controls() })
+form.append(unavailable, attachmentUI.node, attachmentUI.picker, input, composerActions)
+input.addEventListener('input', () => {
+  saveDraft()
+  controls()
+})
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
-    if (!submit.disabled && input.value.trim()) form.requestSubmit()
+    if (!submit.disabled && (input.value.trim() || draftStates.get(current?.sessionId ?? '')?.attachments?.length))
+      form.requestSubmit()
   }
 })
 const dock = element('div', undefined, 'composer-dock')
@@ -564,7 +912,9 @@ conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
 initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
-const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
+const navigationSize = new ResizeObserver(() =>
+  root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`),
+)
 navigationSize.observe(navigation)
 model.addEventListener('change', () => {
   if (model.value === '__settings') {
@@ -607,8 +957,8 @@ form.addEventListener('submit', event => {
 })
 async function submitRequest(text: string): Promise<void> {
   if (submit.disabled || !current) return
-  if (!text.trim()) return
-  if (text.length > requestLimit) {
+  if (!text.trim() && !draftStates.get(current.sessionId)?.attachments?.length) return
+  if ([...text].length > requestLimit) {
     status.hidden = false
     status.dataset.kind = 'error'
     status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi. Bản nháp được giữ nguyên.'
@@ -616,6 +966,7 @@ async function submitRequest(text: string): Promise<void> {
   }
   const id = current.sessionId,
     expected = generation
+  const publicResearch = researchUI?.enabled(id) === true
   sending.add(id)
   controls()
   status.textContent = 'Đang gửi'
@@ -623,9 +974,29 @@ async function submitRequest(text: string): Promise<void> {
   status.dataset.kind = 'sending'
   try {
     // A refused send leaves the draft unchanged; only an accepted request empties the composer.
-    const accepted: RequestSnapshot = await client.send({ sessionId: id, input: text })
+    if (!(await flushDraft(id))) return
+    const accepted: RequestSnapshot = await enqueueDraft(id, async () => {
+      const draft = draftStates.get(id)
+      const accepted = await client.send({
+        sessionId: id,
+        input: text,
+        publicResearch,
+        ...(draft?.revision === undefined
+          ? {}
+          : { draftRevision: draft.revision, attachmentIds: draft.attachmentIds ?? [] }),
+      })
+      if (draft?.revision !== undefined)
+        receiveDraft(
+          { sessionId: id, text: '', revision: draft.revision + 1, attachmentIds: [], attachments: [] },
+          true,
+        )
+      return accepted
+    })
     if (generation === expected && current) {
-      if (input.value === text) { input.value = ''; saveDraft() }
+      if (input.value === text) {
+        input.value = ''
+        drafts.set(id, '')
+      }
       current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
       status.hidden = true
@@ -654,13 +1025,38 @@ const timer = setInterval(() => {
       }),
   )
 }, 750)
+let checkingAttachments = false
+const attachmentTimer = setInterval(() => {
+  const id = current?.sessionId
+  if (
+    !id ||
+    disposed ||
+    checkingAttachments ||
+    attachmentBusy.has(id) ||
+    pendingDrafts.has(id) ||
+    !draftStates.get(id)?.attachments?.some(item => item.state === 'preparing')
+  )
+    return
+  checkingAttachments = true
+  void management
+    .draftState(id)
+    .then(receiveDraft, () => {})
+    .finally(() => {
+      checkingAttachments = false
+    })
+}, 500)
 window.addEventListener(
   'pagehide',
   () => {
-    if (current) { saveDraft(); void flushDraft(current.sessionId) }
+    if (current) {
+      saveDraft()
+      void flushDraft(current.sessionId)
+    }
     navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
+    clearInterval(attachmentTimer)
+    closePreview()
     deckModel.close()
     watch?.abort()
   },
@@ -673,12 +1069,20 @@ window.addEventListener('pageshow', event => {
 window.addEventListener('focus', () => {
   const id = current?.sessionId
   if (!id || pendingDrafts.has(id) || document.activeElement === input) return
-  management.draft(id).then(text => {
-    if (current?.sessionId !== id || pendingDrafts.has(id) || input.value === text) return
-    drafts.set(id, text)
-    input.value = text
-    controls()
-  }, () => { /* The draft on screen stays; the next save reports a lost connection. */ })
+  management.draftState(id).then(
+    draft => {
+      const text = draft.text
+      if (current?.sessionId !== id || pendingDrafts.has(id)) return
+      receiveDraft(draft, true)
+      if (input.value === text) return
+      drafts.set(id, text)
+      input.value = text
+      controls()
+    },
+    () => {
+      /* The draft on screen stays; the next save reports a lost connection. */
+    },
+  )
 })
 run(
   (async () => {

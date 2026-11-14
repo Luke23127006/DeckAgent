@@ -49,8 +49,8 @@ test('a v1 Session database migrates in place: chats join the default workspace 
   assert.deepEqual(await store.read('old'), [{ role: 'user', content: 'Bài cũ' }])
   store.close()
   const check = new DatabaseSync(path)
-  // B02 schema v3 adds request tables; a v1 file passes through the v2 step and keeps every row.
-  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 3)
+  // The attachment migration follows workspace and request migrations without changing existing messages.
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 7)
   check.close()
 })
 

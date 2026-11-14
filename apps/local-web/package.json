@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@deckagent/deck": "workspace:*",
-    "@deckagent/host-api": "workspace:*",
     "@deckagent/browser-runtime": "workspace:*",
+    "@deckagent/deck": "workspace:*",
+    "@deckagent/file-tools": "workspace:*",
+    "@deckagent/host-api": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
-    "@deckagent/workspace-registry": "workspace:*"
+    "@deckagent/workspace-registry": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.26.0"
   }
 }

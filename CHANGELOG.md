@@ -5,6 +5,11 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Changed
+
+- Attachment preparation receipts and parsed-content fingerprints use session schema v6; migrations keep existing source identities, approvals and conversations. Request text limits count Unicode code points independently of JSON transport bytes.
+
+- The chat database moves to schema version 5, preserving source versions and approval history while migrating existing attachments and conversations.
+- Local Web exposes only request-scoped read tools through an authenticated loopback MCP bridge; native OpenCode tools stay denied and source changes invalidate native session reuse.
 - Local Web sends chat requests through the OpenCode CLI 1.19.5 (B02); Send no longer answers `503 REQUESTS_UNAVAILABLE`
   - Each request runs `opencode run --format json` without a shell, in an isolated configuration that denies every native tool and uses only the selected provider and model; the effective configuration is checked before any model work
   - One active request per chat; events are saved before they are shown and replay after a reload or reconnect; Stop ends the run at once; a Host restart marks running requests as not finished and starts nothing again
@@ -27,6 +32,18 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+
+- Opt-in Tavily public research with free-account checks, request search budgets, protected or environment credentials, durable source excerpts and a safe source viewer. Session schema v7 preserves existing conversations and input records.
+
+- Bounded preparation for text, PDF, Office documents, images and ZIP attachments, with immutable parsed sidecars, real source locations, explicit omissions and isolated cancellable parsers.
+- Revisioned streaming uploads, safe previews, attachment-only admission and attachment controls in the Composer and conversation history, with parser/Host/browser checks and opt-in real CLI image transport smoke.
+
+- Safe project and attachment reads, with file identity checks and Host approval for each read outside the project folder.
+- Saved approval prompts with allow-once and refuse actions, reconnect recovery, Stop cancellation and tool activity in the chat UI; model timeouts pause while an approval is pending.
+- Source permission regression checks and opt-in OpenCode CLI smoke tests against a local test provider, including approval, refusal and native tool bypass attempts.
+- Chat-scoped attachment storage with durable managed files, source identities, draft revisions and atomic message/request associations; schema v4 migrates existing conversations and startup removes unsent staging without deleting committed attachments.
+- Attachment metadata in Host/client history and storage integration checks for restart, isolation, cancellation, failed admission and changed files. Upload endpoints, parsing and attachment UI remain unavailable.
+- The accepted [source, request and approval integration contracts](docs/adr/0001-source-request-contracts.md).
 - The `test:model-requests` script (request lifecycle, OpenCode adapter and model requests with a fake OpenCode CLI) and the opt-in `test:opencode-live` script for the real pinned CLI
 - The `--opencode <path>` flag of Local Web, and `DECKAGENT_OPENCODE`
 - `docs/build/rebuild/adr/` holds seven decision records for the rebuild: local storage and data ownership, chat and session history, tools and permissions, request and event lifecycle, deck artifacts and revisions, credentials and models, and the design system and templates
@@ -43,7 +60,12 @@ Notable changes to this repository. The newest changes are at the top.
 - `docs/research/_STYLE.md`: how a research note is written
 - A GitHub conventions section in `AGENTS.md`: no agent is named as author or co-author
 
+### Fixed
+
+- Browser fullscreen smoke brings the CDP tab to the foreground before presenting Deck Canvas, retaining the full presentation assertions.
+
 ### Removed
+
 - The in-request question and reply path of the Host API and the UI; a question now ends its request (ADR-0004)
 - The `agent-runtime` dependency of `host-api` and the `model-providers` dependency of `local-web`
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag
