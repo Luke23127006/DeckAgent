@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HttpError, startHost } from '@deckagent/host-api'
-import type { RequestStore, WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
+import type { WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
 import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 import { WorkspaceError, WorkspaceRegistry } from '@deckagent/workspace-registry'
@@ -31,6 +31,8 @@ import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
 import { ManagedAttachments } from './managed-attachments.ts'
 import { prepareSourceTools } from './source-tools.ts'
+import { AttachmentService } from './attachment-service.ts'
+import { attachmentStyle } from './attachment-style.ts'
 
 export { ManagedAttachments } from './managed-attachments.ts'
 export { prepareSourceTools } from './source-tools.ts'
@@ -127,6 +129,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   let decks: DeckService | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
+  let preparation: AttachmentService | undefined
   try {
     try {
       registry = new WorkspaceRegistry({
@@ -187,7 +190,6 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       builtIns: catalog.builtIns,
       runtime: runtime.availability(),
     })
-    const requestStore: RequestStore = store.requests
     // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
     const requireNoActiveRequest = async (workspaceId: string) => {
       const chats = (await store.list()).filter(chat => chat.workspaceId === workspaceId)
@@ -197,6 +199,9 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     const drafts = new MemoryDraftStore()
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
     const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
+    const inputs = new AttachmentService(store, drafts, attachments)
+    preparation = inputs
+    const requestStore = inputs.requestStore()
     const assets: Record<string, { contentType: string; body: string }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
@@ -209,7 +214,15 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
       '/style.css': {
         contentType: 'text/css; charset=utf-8',
-        body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle,
+        body:
+          style +
+          outlineStyle +
+          deckResizeStyle +
+          composerStyle +
+          presentationStyle +
+          activityStyle +
+          motionStyle +
+          attachmentStyle,
       },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
@@ -225,7 +238,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         chat,
         chat.readable && presentation.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0),
       ),
-      hasDraft: drafts.get(chat.sessionId).trim() !== '',
+      hasDraft: drafts.get(chat.sessionId).trim() !== '' || drafts.snapshot(chat.sessionId).attachmentIds.length > 0,
     })
     const chat = async (id: string): Promise<WebSession> => {
       const found = (await store.chats()).find(item => item.sessionId === id)
@@ -276,7 +289,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       requests: {
         store: requestStore,
         runtime,
-        prepareTools: sessionId =>
+        prepareTools: (sessionId, attachmentIds) =>
           prepareSourceTools({
             sessionId,
             store,
@@ -284,8 +297,10 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
             dataRoot: layout.root,
             home: options.home ?? homedir(),
             attachments,
+            ...(attachmentIds === undefined ? {} : { attachmentIds }),
           }),
       },
+      attachments: inputs,
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => chatCall(() => store.read(id)),
       management: {
@@ -335,18 +350,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           return chats.filter(item => found.has(item.sessionId)).map(project)
         },
         drafts: {
-          get: id =>
-            chatCall(async () => {
-              if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-              return { sessionId: id, text: drafts.get(id) }
-            }),
-          save: (id, value) =>
-            chatCall(async () => {
-              const text = body(value, 'text')
-              if (typeof text !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-              if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-              return { sessionId: id, text: drafts.set(id, text) }
-            }),
+          get: id => inputs.draft(id),
+          save: (id, value) => inputs.save(id, value),
         },
       },
     })
@@ -361,6 +366,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           try {
             await host.close()
           } finally {
+            await inputs.close()
             try {
               await catalog.close()
             } finally {
@@ -384,6 +390,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
     }
   } catch (error) {
+    await preparation?.close()
     try {
       await providers?.close()
     } finally {

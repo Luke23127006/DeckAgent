@@ -19,6 +19,8 @@ export interface ModelSelection {
 export interface AgentRequest {
   readonly sessionId: string
   readonly input: string
+  readonly attachmentIds?: readonly string[]
+  readonly draftRevision?: number
 }
 
 /** Safe history projection, independent of private managed-file metadata. */
@@ -29,6 +31,12 @@ export interface AttachmentView {
   readonly byteSize: number
   readonly detectedType?: string
   readonly rejectionCode?: string
+  readonly preparation?: {
+    readonly parserVersion: string
+    readonly capabilities: readonly string[]
+    readonly completeness: 'complete' | 'partial'
+    readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+  }
   readonly source?: {
     readonly sourceId: string
     readonly version: number
@@ -122,6 +130,8 @@ export interface RequestStore {
     readonly sessionId: string
     readonly input: string
     readonly selection: ModelSelection
+    readonly attachmentIds?: readonly string[]
+    readonly draftRevision?: number
   }): StoredRequest
   append(requestId: string, event: RuntimeEvent): RequestEvent
   /** Ends an active request once; `undefined` when it had already ended. */
@@ -188,11 +198,12 @@ export interface HostOptions {
   readonly requests?: {
     readonly store: RequestStore
     readonly runtime: RequestRuntime
-    readonly prepareTools?: (sessionId: string) => Promise<PreparedTools>
+    readonly prepareTools?: (sessionId: string, attachmentIds?: readonly string[]) => Promise<PreparedTools>
   }
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
   readonly management?: WebManagement
+  readonly attachments?: AttachmentManagement
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
@@ -277,6 +288,29 @@ export interface WorkspaceList {
 export interface ChatDraft {
   readonly sessionId: string
   readonly text: string
+  readonly attachmentIds?: readonly string[]
+  readonly revision?: number
+  readonly attachments?: readonly AttachmentView[]
+}
+
+export interface AttachmentManagement {
+  readonly maxBytes: number
+  readonly maxFiles: number
+  upload(input: {
+    readonly sessionId: string
+    readonly name: string
+    readonly expectedRevision: number
+    readonly bytes: AsyncIterable<Uint8Array>
+    readonly signal: AbortSignal
+    readonly complete?: Promise<void>
+  }): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }>
+  get(sessionId: string, attachmentId: string): Promise<AttachmentView>
+  remove(sessionId: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft>
+  preview(
+    sessionId: string,
+    attachmentId: string,
+    signal: AbortSignal,
+  ): Promise<{ readonly body: Uint8Array; readonly contentType: string }>
 }
 
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */

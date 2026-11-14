@@ -53,7 +53,7 @@ const statuses: readonly RequestStatus[] = [
 const code = /^[A-Z][A-Z0-9_]{0,63}$/
 const requestId = /^[\w-]{1,100}$/
 
-function historyAttachment(value: unknown): AttachmentView {
+export function decodeAttachment(value: unknown): AttachmentView {
   if (
     !object(value) ||
     typeof value.attachmentId !== 'string' ||
@@ -71,6 +71,35 @@ function historyAttachment(value: unknown): AttachmentView {
   const state = value.state
   if (state !== 'preparing' && state !== 'ready' && state !== 'rejected') throw new Error('INVALID_RESPONSE')
   let source: AttachmentView['source']
+  let preparation: AttachmentView['preparation']
+  if (value.preparation !== undefined) {
+    const prepared = value.preparation
+    if (
+      !object(prepared) ||
+      typeof prepared.parserVersion !== 'string' ||
+      !Array.isArray(prepared.capabilities) ||
+      prepared.capabilities.some(item => typeof item !== 'string') ||
+      (prepared.completeness !== 'complete' && prepared.completeness !== 'partial') ||
+      !Array.isArray(prepared.omitted)
+    )
+      throw new Error('INVALID_RESPONSE')
+    const omitted = prepared.omitted.map((item: unknown) => {
+      if (
+        !object(item) ||
+        typeof item.code !== 'string' ||
+        !code.test(item.code) ||
+        (item.entry !== undefined && typeof item.entry !== 'string')
+      )
+        throw new Error('INVALID_RESPONSE')
+      return { code: item.code, ...(typeof item.entry === 'string' ? { entry: item.entry } : {}) }
+    })
+    preparation = {
+      parserVersion: prepared.parserVersion,
+      capabilities: prepared.capabilities.map(item => String(item)),
+      completeness: prepared.completeness,
+      omitted,
+    }
+  }
   if (value.source !== undefined) {
     const item = value.source
     if (
@@ -94,6 +123,7 @@ function historyAttachment(value: unknown): AttachmentView {
     ...(typeof value.detectedType === 'string' ? { detectedType: value.detectedType } : {}),
     ...(typeof value.rejectionCode === 'string' ? { rejectionCode: value.rejectionCode } : {}),
     ...(source ? { source } : {}),
+    ...(preparation ? { preparation } : {}),
   }
 }
 
@@ -201,6 +231,13 @@ export class HostRequestError extends Error {
 }
 
 const allowed = [
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_NOT_FOUND',
+  'ATTACHMENT_NOT_READY',
+  'ATTACHMENT_REJECTED',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'ATTACHMENT_TOO_LARGE',
+  'REQUEST_EMPTY',
   'APPROVAL_NOT_FOUND',
   'APPROVAL_CONFLICT',
   'REQUEST_CLOSED',
@@ -314,7 +351,7 @@ export class HostClient {
       return {
         role: message.role,
         content: message.content,
-        ...(Array.isArray(message.attachments) ? { attachments: message.attachments.map(historyAttachment) } : {}),
+        ...(Array.isArray(message.attachments) ? { attachments: message.attachments.map(decodeAttachment) } : {}),
         ...(message.interrupted === true ? { interrupted: true as const } : {}),
         ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
         ...(typeof message.name === 'string' ? { name: message.name } : {}),

@@ -4,6 +4,8 @@ import { link, lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/pro
 import { join } from 'node:path'
 import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentLog, AttachmentRecord, MemoryDraftStore } from '@deckagent/session-persistence'
+import { attachmentLimits, isParsedAttachment } from '@deckagent/file-tools'
+import type { ParsedAttachment } from '@deckagent/file-tools'
 
 export interface AttachmentUpload {
   readonly sessionId: string
@@ -16,6 +18,8 @@ export interface AttachmentUpload {
 }
 
 const fileId = /^att-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/
+type Extension = 'part' | 'bin' | 'parsed' | 'parsed-part'
+const parsedByteLimit = 96 * 1024 * 1024
 
 function nextChunk(iterator: AsyncIterator<Uint8Array>, signal: AbortSignal): Promise<IteratorResult<Uint8Array>> {
   return new Promise((resolve, reject) => {
@@ -145,11 +149,80 @@ export class ManagedAttachments {
     const item = this.log.get(sessionId, attachmentId)
     if (!item.fingerprint || item.state === 'rejected')
       throw new SessionError('ATTACHMENT_UNREADABLE', 'Attachment bytes are unavailable')
+    return this.readStored(attachmentId, 'bin', item.fingerprint, attachmentLimits.bytes, signal, item.byteSize)
+  }
+
+  async savePrepared(
+    sessionId: string,
+    attachmentId: string,
+    value: ParsedAttachment,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const item = this.log.get(sessionId, attachmentId)
+    if (item.state !== 'preparing' || !item.fingerprint || !isParsedAttachment(value))
+      throw new SessionError('ATTACHMENT_NOT_READY', 'Preparation is no longer pending')
+    await this.read(sessionId, attachmentId, signal)
+    const bytes = Buffer.from(JSON.stringify(value))
+    if (bytes.length > parsedByteLimit)
+      throw new SessionError('PARSING_LIMIT_EXCEEDED', 'Prepared content exceeds its storage budget')
+    await this.checkRoot()
+    signal.throwIfAborted()
+    const stage = this.path(attachmentId, 'parsed-part')
+    const file = await open(stage, 'wx', 0o600)
+    try {
+      await file.writeFile(bytes, { signal })
+      await file.sync()
+    } finally {
+      await file.close()
+    }
+    signal.throwIfAborted()
+    await this.checkRoot()
+    await link(stage, this.path(attachmentId, 'parsed'))
+    await unlink(stage)
+    signal.throwIfAborted()
+    return createHash('sha256').update(bytes).digest('hex')
+  }
+
+  async prepared(sessionId: string, attachmentId: string, signal: AbortSignal): Promise<ParsedAttachment> {
+    const item = this.log.get(sessionId, attachmentId)
+    if (item.state !== 'ready' || !item.parsedFingerprint || !item.preparation)
+      throw new SessionError('ATTACHMENT_UNREADABLE', 'No saved preparation is available')
+    await this.read(sessionId, attachmentId, signal)
+    const bytes = await this.readStored(attachmentId, 'parsed', item.parsedFingerprint, parsedByteLimit, signal)
+    let value: unknown
+    try {
+      value = JSON.parse(bytes.toString('utf8'))
+    } catch {
+      throw new SessionError('ATTACHMENT_UNREADABLE', 'Saved preparation cannot be read')
+    }
+    if (
+      !isParsedAttachment(value) ||
+      value.parserVersion !== item.preparation.parserVersion ||
+      value.mediaType !== item.detectedType
+    )
+      throw new SessionError('ATTACHMENT_UNREADABLE', 'Saved preparation does not match its receipt')
+    return value
+  }
+
+  private async readStored(
+    attachmentId: string,
+    extension: Extension,
+    fingerprint: string,
+    limit: number,
+    signal: AbortSignal,
+    expectedSize?: number,
+  ): Promise<Buffer> {
     try {
       await this.checkRoot()
-      const path = this.path(attachmentId, 'bin')
+      const path = this.path(attachmentId, extension)
       const before = await lstat(path)
-      if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size !== item.byteSize)
+      if (
+        !before.isFile() ||
+        before.isSymbolicLink() ||
+        before.nlink !== 1 ||
+        before.size > limit ||
+        (expectedSize !== undefined && before.size !== expectedSize)
+      )
         throw new Error('Invalid managed file')
       const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
       try {
@@ -158,10 +231,10 @@ export class ManagedAttachments {
           current.dev !== before.dev ||
           current.ino !== before.ino ||
           current.nlink !== 1 ||
-          current.size !== item.byteSize
+          current.size !== before.size
         )
           throw new Error('Managed file changed')
-        const bytes = Buffer.alloc(item.byteSize)
+        const bytes = Buffer.alloc(before.size)
         let offset = 0
         while (offset < bytes.length) {
           signal.throwIfAborted()
@@ -171,8 +244,8 @@ export class ManagedAttachments {
         }
         signal.throwIfAborted()
         if (
-          (await file.stat()).size !== item.byteSize ||
-          createHash('sha256').update(bytes).digest('hex') !== item.fingerprint
+          (await file.stat()).size !== before.size ||
+          createHash('sha256').update(bytes).digest('hex') !== fingerprint
         )
           throw new Error('Managed content changed')
         return bytes
@@ -213,7 +286,15 @@ export class ManagedAttachments {
     await this.erase(attachmentId)
   }
 
-  private path(id: string, extension: 'part' | 'bin'): string {
+  /** A conditional draft save already removed membership; historical objects still refuse deletion. */
+  async discardUnsent(sessionId: string, attachmentId: string): Promise<void> {
+    if (this.drafts.snapshot(sessionId).attachmentIds.includes(attachmentId))
+      throw new SessionError('ATTACHMENT_CONFLICT', 'Remove draft membership first')
+    this.log.removeUnsent(sessionId, attachmentId)
+    await this.erase(attachmentId)
+  }
+
+  private path(id: string, extension: Extension): string {
     if (!fileId.test(id)) throw new SessionError('ATTACHMENT_NOT_FOUND', 'Attachment is unavailable')
     return join(this.root, `${id}.${extension}`)
   }
@@ -229,7 +310,7 @@ export class ManagedAttachments {
 
   private async erase(id: string): Promise<void> {
     await this.checkRoot()
-    for (const extension of ['part', 'bin'] as const) {
+    for (const extension of ['part', 'bin', 'parsed', 'parsed-part'] as const) {
       await unlink(this.path(id, extension)).catch(error => {
         if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error
       })
@@ -244,8 +325,12 @@ export class ManagedAttachments {
     }
     const retained = new Set(this.log.retainedIds())
     for (const name of await readdir(this.root)) {
-      const match = /^(att-[a-f0-9-]{36})\.(part|bin)$/.exec(name)
-      if (match && fileId.test(match[1]!) && (!retained.has(match[1]!) || match[2] === 'part')) {
+      const match = /^(att-[a-f0-9-]{36})\.(part|bin|parsed|parsed-part)$/.exec(name)
+      if (
+        match &&
+        fileId.test(match[1]!) &&
+        (!retained.has(match[1]!) || match[2] === 'part' || match[2] === 'parsed-part')
+      ) {
         await this.checkRoot()
         await unlink(join(this.root, name))
       }

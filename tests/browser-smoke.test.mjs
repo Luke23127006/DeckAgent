@@ -413,6 +413,59 @@ async function tree(folder) {
   return entries
 }
 
+test('attachments survive reload and Chat switching, preview safely, reject invalid input and send without text', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-attachments-'))
+  let app, session
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('attachments'), openCode: fakeOpenCode(dir) })
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    assert.equal(response.ok, true)
+    return response.json()
+  }
+  const chat = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'attachments' } })
+  const other = await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'attachments' } })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]')`), 'Chat list missing')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.chat-navigation button[aria-current=true]')?.dataset.sessionId === '${chat.sessionId}' && !document.querySelector('.composer select').disabled`), 'Selected attachment Chat did not finish opening')
+  await eventually(() => evaluate(`!document.querySelector('.attachment-action').disabled`), 'Attachment action unavailable')
+  const add = async (name, content) => evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(new File([${content}], ${JSON.stringify(name)})); const picker = document.querySelector('.composer input[type=file]'); picker.files = transfer.files; picker.dispatchEvent(new Event('change', {bubbles:true})); return true; })()`)
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='Retained draft';input.dispatchEvent(new Event('input'));} true`)
+  await add('safe.md', JSON.stringify('<script>window.attachmentExecuted=true</script>\nsource evidence'))
+  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready'`), 'Uploaded file did not become ready')
+  await evaluate(`document.querySelector('.attachment-row button').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-preview[open] pre')`), 'Preview not shown')
+  assert.equal(await evaluate(`document.querySelector('.attachment-preview pre').textContent.includes('<script>') && !window.attachmentExecuted`), true)
+  await evaluate(`document.querySelector('.attachment-preview button').click(); true`)
+  const documentNode = await protocol.call('DOM.getDocument')
+  const pickerNode = await protocol.call('DOM.querySelector', { nodeId: documentNode.root.nodeId, selector: '.composer input[type=file]' })
+  await protocol.call('DOM.setFileInputFiles', { nodeId: pickerNode.nodeId, files: [fileURLToPath(new URL('./fixtures/attachments/sample.png', import.meta.url))] })
+  await eventually(() => evaluate(`[...document.querySelectorAll('.attachment-row')].some(row=>row.querySelector('.attachment-name').textContent==='sample.png'&&row.dataset.state==='ready')`), 'Image attachment not ready')
+  await evaluate(`[...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelector('button').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.attachment-preview img')?.naturalWidth > 0`), 'Normalized image preview did not render')
+  await evaluate(`document.querySelector('.attachment-preview button').click(); [...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelectorAll('button')[1].click(); true`)
+  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length===1&&!document.querySelector('.attachment-action').disabled`), 'Image removal did not settle')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready' && document.querySelector('.composer textarea').value === 'Retained draft'`), 'Reload lost attachment or text')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!document.querySelector('.attachment-row')`), 'Attachment leaked to another Chat')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-row')`), 'Switch lost attachment')
+  await add('bad.txt', 'new Uint8Array([0,1,2])')
+  await eventually(() => evaluate(`!!document.querySelector('.attachment-row[data-state=rejected]')`), 'Rejected file not shown')
+  assert.equal(await evaluate(`document.querySelector('.send-action').disabled`), true)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Retained draft')
+  await evaluate(`Array.from(document.querySelector('.attachment-row[data-state=rejected]').querySelectorAll('button')).at(-1).click(); true`)
+  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length === 1 && !document.querySelector('.send-action').disabled`), 'Remove did not restore a valid draft')
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();} true`)
+  await eventually(async () => (await api(`sessions/${chat.sessionId}/requests`)).some(request => request.status === 'completed'), 'Attachment-only request did not finish')
+  await eventually(() => evaluate(`document.querySelector('.message-attachments')?.textContent.includes('safe.md')`), 'Saved attachment not rendered in conversation')
+  assert.deepEqual((await api(`sessions/${chat.sessionId}/draft`)).attachmentIds, [])
+})
+
 test('step approval survives reload and chat switching; refusal continues and Stop cancels a pending step', { timeout: 60000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-approval-'))
   let app, session

@@ -26,7 +26,7 @@ An immutable version identifies the content actually read, not whatever later oc
 
 Extend `ChatDraft` with `attachmentIds` and a monotonic Host-lifetime `revision`. Draft text and membership remain shared Host memory, survive interface reload, and expire at Host stop as required by the [draft requirement](../spec/03-requirements/fr/FR-038.md). Attachment bytes may be staged on disk, but unsent uploads are not restored as a draft on restart. Sent attachments remain durable. Startup cleanup removes only managed staging data with no committed message/request reference.
 
-Upload creates a draft attachment with `preparing` before content becomes available to the model. Validate type, approved limits and parsing capability before `ready`; an unusable file remains `rejected` until removed. Interrupted uploads become rejected while the Host lives. Never load a whole unbounded HTTP body or parse an unbounded archive. Numeric limits and OCR capabilities remain unset until a product decision establishes them.
+Upload creates a draft attachment with `preparing` before content becomes available to the model. Validate type, approved limits and parsing capability before `ready`; an unusable file remains `rejected` until removed. Interrupted allocated uploads become rejected while the Host lives. Never load a whole unbounded HTTP body or parse an unbounded archive. Input values and extraction coverage follow the [bounded preparation decision](0002-attachment-preparation.md).
 
 | HTTP surface | Input and result |
 |---|---|
@@ -85,7 +85,7 @@ Tool results use the same safe codes, not HTTP exceptions containing raw provide
 
 Persistence adds attachment/source versions, message/request associations and approval records through versioned transactions. The attachment storage increment moves schema v3 to v4; later persisted additions, including approval records, require a further schema version rather than changing an already shipped v4 schema in place. Existing message JSON and request event sequences remain readable; absent new fields mean no attachments. Interrupted old requests keep the existing recovery rule. Historical bindings with the old boundary fail the new context guard without deleting history. Test fresh databases and v1/v2/v3 upgrade chains. A v3 binary must refuse a v4 database without resetting it; document upgrade and backup rather than claiming downgrade support.
 
-Roll out storage, API, client and runtime together before enabling attachment/approval controls. Keep the current B02 text transport guard until the request-length rule is decided; its 16,000 JavaScript code-unit limit and 20 KiB JSON envelope are existing technical bounds, not approved product limits. Upload has its own bounded transport. Do not carry the JSON limit into an accidental file-size rule.
+Roll out storage, API, client and runtime together before enabling attachment/approval controls. The [bounded preparation decision](0002-attachment-preparation.md) establishes the text counting unit and product maximum. JSON and upload have separate bounded transports; the JSON limit does not become an accidental file-size rule.
 
 ## Alternatives and validation
 
@@ -93,4 +93,4 @@ Using absolute managed paths as model-visible identities makes authorization and
 
 Implementation verification requires producer/consumer tests for attachment-only and legacy text requests; revision races; file/DB failure and restart recovery; cross-Chat source isolation; source changes; approval duplicate/conflicting/late decisions; timeout while waiting; Stop during read; session resume with fresh grants; v3 migration; bounded parsing and unavailable research. Effective permissions still require real CLI tests. This decision record alone proves no runtime behavior.
 
-Input sizes, text counting units, OCR, extraction coverage, parser resource values and research provider selection remain separate product decisions. They do not block agreeing the reference, ownership and approval contracts, but affected input/service behavior must remain disabled until decided.
+The [attachment preparation decision](0002-attachment-preparation.md) establishes the initial input values, text counting unit, OCR scope, extraction coverage and parser budgets. It replaces the provisional text transport guards above. Research provider selection remains a separate decision; affected service behavior remains disabled until decided.

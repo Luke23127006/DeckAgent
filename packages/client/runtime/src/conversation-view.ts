@@ -76,6 +76,7 @@ export class ConversationView {
       settings(): void
       draft(): string
       approve?(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): Promise<void>
+      previewAttachment?(item: NonNullable<HistoryMessage['attachments']>[number]): void
     },
   ) {
     this.outlineView = new OutlineView(action, revise, dock)
@@ -382,6 +383,7 @@ export class ConversationView {
       !item ||
       item.value.role !== value.role ||
       item.value.content !== value.content ||
+      JSON.stringify(item.value.attachments) !== JSON.stringify(value.attachments) ||
       item.value.interrupted !== value.interrupted
     ) {
       const node =
@@ -396,6 +398,12 @@ export class ConversationView {
       else {
         node.setAttribute('aria-label', value.role === 'assistant' ? 'DeckAgent' : 'Bạn')
         node.append(element('p', value.content))
+        if (value.role === 'user' && value.attachments?.length) {
+          const attachments = element('div', undefined, 'message-attachments')
+          for (const attachment of value.attachments)
+            attachments.append(button(attachment.name, () => this.hooks?.previewAttachment?.(attachment)))
+          node.append(attachments)
+        }
         // FR-019: a reply of a request that did not finish is kept, and says so.
         if (value.interrupted) {
           node.dataset.interrupted = 'true'

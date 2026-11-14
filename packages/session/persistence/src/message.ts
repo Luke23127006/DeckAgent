@@ -1,5 +1,6 @@
 import { SessionError } from './contracts.ts'
 import type { Message } from './contracts.ts'
+import { isAttachmentPreparation } from './attachments.ts'
 
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -71,7 +72,17 @@ export function validateMessage(value: unknown): asserts value is Message {
 function attachment(value: unknown): boolean {
   if (
     !record(value) ||
-    !keys(value, ['attachmentId', 'name', 'state', 'byteSize', 'detectedType', 'fingerprint', 'source'])
+    !keys(value, [
+      'attachmentId',
+      'name',
+      'state',
+      'byteSize',
+      'detectedType',
+      'fingerprint',
+      'source',
+      'preparation',
+      'parsedFingerprint',
+    ])
   )
     return false
   const source = value.source
@@ -85,6 +96,9 @@ function attachment(value: unknown): boolean {
     nonempty(value.detectedType) &&
     typeof value.fingerprint === 'string' &&
     /^[a-f0-9]{64}$/.test(value.fingerprint) &&
+    (value.preparation === undefined || isAttachmentPreparation(value.preparation)) &&
+    (value.parsedFingerprint === undefined ||
+      (typeof value.parsedFingerprint === 'string' && /^[a-f0-9]{64}$/.test(value.parsedFingerprint))) &&
     record(source) &&
     keys(source, ['sourceId', 'version', 'kind', 'label']) &&
     nonempty(source.sourceId) &&

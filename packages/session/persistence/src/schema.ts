@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 5
+const schemaVersion = 6
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 
@@ -62,6 +62,11 @@ const approvalTables = `
   ) STRICT;
 `
 
+const preparationColumns = `
+  ALTER TABLE attachments ADD COLUMN preparation TEXT;
+  ALTER TABLE attachments ADD COLUMN parsed_fingerprint TEXT;
+`
+
 export function initialize(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
@@ -86,10 +91,11 @@ export function initialize(db: DatabaseSync): void {
         ${requestTables}
         ${attachmentTables}
         ${approvalTables}
+        ${preparationColumns}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if ((version === 1 || version === 2 || version === 3 || version === 4) && owner === applicationId) {
+    } else if (version >= 1 && version <= 5 && owner === applicationId) {
       // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
       if (version === 1)
         db.exec(`
@@ -99,7 +105,8 @@ export function initialize(db: DatabaseSync): void {
       `)
       if (version < 3) db.exec(requestTables)
       if (version < 4) db.exec(attachmentTables)
-      db.exec(`${approvalTables} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 5) db.exec(approvalTables)
+      db.exec(`${preparationColumns} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError(
         'SESSION_SCHEMA',
@@ -122,7 +129,7 @@ export function initialize(db: DatabaseSync): void {
       'SELECT session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0',
     ).all()
     db.prepare(
-      'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence FROM attachments LIMIT 0',
+      'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence, preparation, parsed_fingerprint FROM attachments LIMIT 0',
     ).all()
     db.prepare('SELECT id, version, session_id, attachment_id, fingerprint, label FROM sources LIMIT 0').all()
     db.prepare('SELECT id, request_id, step_key, operation, target, reason, state FROM request_approvals LIMIT 0').all()

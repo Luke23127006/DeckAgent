@@ -1,6 +1,38 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  IMAGE_INPUT_UNAVAILABLE: [
+    'Model hoặc kết nối không nhận nội dung ảnh',
+    'Tệp đã gửi được giữ. Chọn model nhận ảnh hoặc cung cấp bản có chữ rồi gửi yêu cầu mới; hệ thống không tự chạy OCR hay đổi model.',
+  ],
+  DRAFT_CONFLICT: [
+    'Bản nháp đã thay đổi',
+    'Giữ nội dung đang soạn, mở lại chat để đối chiếu bản mới nhất rồi gửi lại.',
+  ],
+  DRAFT_NOT_SAVED: ['Chưa lưu được bản nháp', 'Kiểm tra kết nối. Nội dung đang soạn được giữ để thử lại.'],
+  ATTACHMENT_NOT_FOUND: [
+    'Không tìm thấy tệp trong chat này',
+    'Mở lại chat để đọc trạng thái mới nhất; thêm lại tệp khi cần.',
+  ],
+  ATTACHMENT_NOT_READY: ['Tệp đang được chuẩn bị', 'Chờ tệp sẵn sàng hoặc bỏ tệp khỏi bản nháp.'],
+  ATTACHMENT_REJECTED: ['Bản nháp có tệp chưa dùng được', 'Xem lý do tại tệp, rồi bỏ hoặc thay tệp trước khi gửi.'],
+  ATTACHMENT_COUNT_EXCEEDED: [
+    'Quá nhiều tệp trong bản nháp',
+    'Mỗi yêu cầu nhận tối đa 10 tệp mới. Bỏ bớt tệp rồi thử lại.',
+  ],
+  ATTACHMENT_TOO_LARGE: ['Tệp quá lớn', 'Mỗi tệp nhận tối đa 20 MiB. Giảm dung lượng rồi thêm lại.'],
+  ATTACHMENT_UNREADABLE: [
+    'Không đọc được tệp',
+    'Kiểm tra tài liệu hoặc cung cấp bản có lớp chữ; bản này chưa chạy OCR riêng.',
+  ],
+  ATTACHMENT_TYPE_UNSUPPORTED: ['Định dạng tệp chưa được nhận', 'Dùng TXT, MD, PDF, DOCX, PNG, JPEG, PPTX hoặc ZIP.'],
+  ATTACHMENT_NOT_SAVED: [
+    'Chưa lưu được tệp',
+    'Kiểm tra thư mục dữ liệu và kết nối. Các phần khác của bản nháp được giữ.',
+  ],
+  PARSING_LIMIT_EXCEEDED: ['Tệp vượt giới hạn đọc an toàn', 'Chia tài liệu thành phần nhỏ hơn rồi thêm lại.'],
+  UPLOAD_CANCELLED: ['Việc tải tệp đã dừng', 'Bỏ tệp chưa hoàn tất rồi thêm lại khi cần.'],
+  REQUEST_EMPTY: ['Chưa có nội dung để gửi', 'Nhập yêu cầu hoặc thêm ít nhất một tệp sẵn sàng.'],
   APPROVAL_NOT_FOUND: [
     'Không tìm thấy bước cần cấp quyền',
     'Mở lại chat để đọc trạng thái mới nhất; không có quyền mới nào được cấp.',

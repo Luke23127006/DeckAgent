@@ -1,7 +1,39 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
-import type { AttachmentRecord } from './contracts.ts'
+import type { AttachmentRecord, AttachmentPreparation } from './contracts.ts'
+
+export function isAttachmentPreparation(value: unknown): value is AttachmentPreparation {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('parserVersion' in value) ||
+    typeof value.parserVersion !== 'string' ||
+    !/^[a-zA-Z0-9_.-]{1,80}$/.test(value.parserVersion)
+  )
+    return false
+  if (
+    !('capabilities' in value) ||
+    !Array.isArray(value.capabilities) ||
+    value.capabilities.length > 32 ||
+    !value.capabilities.every(item => typeof item === 'string' && /^[a-z0-9-]{1,80}$/.test(item))
+  )
+    return false
+  if (!('completeness' in value) || !['complete', 'partial'].includes(String(value.completeness))) return false
+  return (
+    'omitted' in value &&
+    Array.isArray(value.omitted) &&
+    value.omitted.length <= 1000 &&
+    value.omitted.every(
+      item =>
+        item &&
+        typeof item === 'object' &&
+        typeof item.code === 'string' &&
+        /^[A-Z_]{1,64}$/.test(item.code) &&
+        (item.entry === undefined || (typeof item.entry === 'string' && item.entry.length <= 512)),
+    )
+  )
+}
 
 interface Access {
   run<T>(operation: () => T): T
@@ -46,11 +78,21 @@ export class AttachmentLog {
       const state = row.state
       if (state !== 'preparing' && state !== 'ready' && state !== 'rejected')
         throw new SessionError('SESSION_CORRUPT', 'Attachment state is unreadable')
+      let prepared: unknown
+      try {
+        prepared = row.preparation === null ? undefined : JSON.parse(String(row.preparation))
+      } catch {
+        throw new SessionError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
+      }
+      if (prepared !== undefined && !isAttachmentPreparation(prepared))
+        throw new SessionError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
       return {
         attachmentId,
         name: String(row.name),
         state,
         byteSize: Number(row.byte_size),
+        ...(prepared === undefined ? {} : { preparation: prepared }),
+        ...(row.parsed_fingerprint === null ? {} : { parsedFingerprint: String(row.parsed_fingerprint) }),
         ...(row.detected_type === null ? {} : { detectedType: String(row.detected_type) }),
         ...(row.rejection_code === null ? {} : { rejectionCode: String(row.rejection_code) }),
         ...(row.fingerprint === null ? {} : { fingerprint: String(row.fingerprint) }),
@@ -86,16 +128,29 @@ export class AttachmentLog {
   }
 
   /** Trusted parser admission only: this operation does not validate file types or product limits. */
-  ready(sessionId: string, attachmentId: string, detectedType: string): AttachmentRecord {
+  ready(
+    sessionId: string,
+    attachmentId: string,
+    detectedType: string,
+    prepared?: AttachmentPreparation & { readonly parsedFingerprint: string },
+  ): AttachmentRecord {
     return this.access.transaction(() => {
       const item = this.get(sessionId, attachmentId)
       if (item.state !== 'preparing' || !item.fingerprint)
         throw new SessionError('ATTACHMENT_NOT_READY', 'Attachment bytes must be saved before admission')
       if (typeof detectedType !== 'string' || !/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(detectedType))
         throw new SessionError('INVALID_REQUEST', 'A detected media type is required')
+      if (prepared && (!isAttachmentPreparation(prepared) || !/^[a-f0-9]{64}$/.test(prepared.parsedFingerprint)))
+        throw new SessionError('INVALID_REQUEST', 'Invalid preparation receipt')
       this.db
         .prepare("UPDATE attachments SET state = 'ready', detected_type = ? WHERE id = ?")
         .run(detectedType, attachmentId)
+      if (prepared) {
+        const { parsedFingerprint, ...summary } = prepared
+        this.db
+          .prepare('UPDATE attachments SET preparation = ?, parsed_fingerprint = ? WHERE id = ?')
+          .run(JSON.stringify(summary), parsedFingerprint, attachmentId)
+      }
       this.db
         .prepare(
           'INSERT INTO sources (id, version, session_id, attachment_id, fingerprint, label) VALUES (?, 1, ?, ?, ?, ?)',

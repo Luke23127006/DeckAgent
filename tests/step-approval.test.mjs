@@ -71,9 +71,9 @@ test('v4 attachment associations survive the approval migration and existing wor
   store.requests.admit({ requestId: 'req-v4', sessionId: 'chat', input: '', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
   store.requests.finish('req-v4', 'completed')
   store.close()
-  // The common tables are the shipped v4 schema; remove only v5 additions to construct the upgrade fixture.
+  // Reconstruct the shipped v4 schema, excluding both approval and preparation additions.
   const v4 = new DatabaseSync(join(dir, 'sessions.sqlite'))
-  v4.exec('DROP TABLE request_approvals; DROP TABLE source_reads; PRAGMA user_version = 4;')
+  v4.exec('DROP TABLE request_approvals; DROP TABLE source_reads; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 4;')
   v4.close()
   const upgraded = open()
   assert.deepEqual(upgraded.attachments.get('chat', item.attachmentId), ready)

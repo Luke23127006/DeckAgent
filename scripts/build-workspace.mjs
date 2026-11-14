@@ -32,6 +32,7 @@ function discoverWorkspacePackages() {
 // are build-time conventions not declared by the manifests (apps are private with
 // no exports), so they are listed explicitly rather than derived from a manifest.
 const extraEntries = {
+  '@deckagent/file-tools': ['lib/types/parser-worker.js'],
   '@deckagent/cordis-fixture': ['lib/types/consumer.js'],
   '@deckagent/cordis-smoke': ['lib/types/cli.js'],
   '@deckagent/agent-runtime-cli': ['lib/types/chat.js'],

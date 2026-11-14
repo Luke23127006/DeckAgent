@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Attachment preparation receipts and parsed-content fingerprints use session schema v6; migrations keep existing source identities, approvals and conversations. Request text limits count Unicode code points independently of JSON transport bytes.
+
 - The chat database moves to schema version 5, preserving source versions and approval history while migrating existing attachments and conversations.
 - Local Web exposes only request-scoped read tools through an authenticated loopback MCP bridge; native OpenCode tools stay denied and source changes invalidate native session reuse.
 - Local Web sends chat requests through the OpenCode CLI 1.19.5 (B02); Send no longer answers `503 REQUESTS_UNAVAILABLE`
@@ -30,6 +32,9 @@ Notable changes to this repository. The newest changes are at the top.
 - Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
 
 ### Added
+
+- Bounded preparation for text, PDF, Office documents, images and ZIP attachments, with immutable parsed sidecars, real source locations, explicit omissions and isolated cancellable parsers.
+- Revisioned streaming uploads, safe previews, attachment-only admission and attachment controls in the Composer and conversation history, with parser/Host/browser checks and opt-in real CLI image transport smoke.
 
 - Safe project and attachment reads, with file identity checks and Host approval for each read outside the project folder.
 - Saved approval prompts with allow-once and refuse actions, reconnect recovery, Stop cancellation and tool activity in the chat UI; model timeouts pause while an approval is pending.

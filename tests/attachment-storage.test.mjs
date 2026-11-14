@@ -6,6 +6,7 @@ import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import { MemoryDraftStore, SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import * as local from '../apps/local-web/lib/index.js'
+import { AttachmentParser } from '../packages/tools/filesystem/lib/index.js'
 
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-attachments-'))
@@ -14,6 +15,49 @@ async function fixture(t) {
   t.after(async () => { for (const store of stores) store.close(); await rm(dir, { recursive: true, force: true }) })
   return { dir, open }
 }
+
+test('versioned prepared content survives committed restart and foreign Chat reads remain unavailable', async t => {
+  const { dir, open } = await fixture(t)
+  const store = open()
+  await store.open('a')
+  await store.open('b')
+  const drafts = new MemoryDraftStore()
+  const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const bytes = Buffer.from('Saved source\nsecond line')
+  const item = await files.receive({ sessionId: 'a', name: 'notes.txt', expectedRevision: 0, bytes: (async function* () { yield bytes })(), maxBytes: 100, signal: new AbortController().signal })
+  const parser = new AttachmentParser()
+  t.after(() => parser.close())
+  const parsed = await parser.parse({ name: item.name, bytes, signal: new AbortController().signal })
+  const parsedFingerprint = await files.savePrepared('a', item.attachmentId, parsed, new AbortController().signal)
+  store.attachments.ready('a', item.attachmentId, parsed.mediaType, { parserVersion: parsed.parserVersion, capabilities: parsed.capabilities, completeness: parsed.completeness, omitted: parsed.omitted, parsedFingerprint })
+  store.requests.admit({ requestId: 'req-parsed', sessionId: 'a', input: '', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
+  store.requests.finish('req-parsed', 'completed')
+  store.close()
+  const reopened = open()
+  const restored = await local.ManagedAttachments.open(join(dir, 'files'), reopened.attachments, new MemoryDraftStore())
+  assert.deepEqual(await restored.prepared('a', item.attachmentId, new AbortController().signal), parsed)
+  await assert.rejects(restored.prepared('b', item.attachmentId, new AbortController().signal), { code: 'ATTACHMENT_NOT_FOUND' })
+})
+
+test('v5 source identities and approval records survive preparation migration without inventing parsed content', async t => {
+  const { dir, open } = await fixture(t)
+  const store = open()
+  await store.open('a')
+  const item = store.attachments.create('a', 'legacy.txt')
+  store.attachments.received('a', item.attachmentId, { byteSize: 5, fingerprint: 'a'.repeat(64) })
+  const ready = store.attachments.ready('a', item.attachmentId, 'text/plain')
+  store.requests.admit({ requestId: 'req-v5', sessionId: 'a', input: 'legacy request', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
+  const approval = store.requests.approvals.create('req-v5', { key: 'a'.repeat(64), operation: 'read-file', target: 'outside.txt', reason: 'Read outside source' }).approval
+  store.close()
+  const v5 = new DatabaseSync(join(dir, 'sessions.sqlite'))
+  v5.exec('ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 5;')
+  v5.close()
+  const upgraded = open()
+  assert.deepEqual(upgraded.attachments.get('a', item.attachmentId), ready)
+  assert.equal(upgraded.attachments.get('a', item.attachmentId).preparation, undefined)
+  assert.equal(upgraded.requests.approvals.pending('req-v5').approvalId, approval.approvalId)
+  assert.equal((await upgraded.read('a'))[0].attachments[0].source.sourceId, ready.source.sourceId)
+})
 
 test('attachment metadata belongs to its Chat and a ready source keeps its identity after reopening', async t => {
   const { open } = await fixture(t)

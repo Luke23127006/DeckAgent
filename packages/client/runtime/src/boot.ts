@@ -22,6 +22,8 @@ import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
 import type { ApprovalView } from '@deckagent/host-api'
+import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
+import { AttachmentDraftView } from './attachment-view.ts'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
@@ -85,6 +87,7 @@ const timeline = new ConversationView(messages, undefined, undefined, outlineDoc
   },
   settings: () => run(settingsUI.open()),
   draft: () => input.value,
+  previewAttachment: item => run(previewAttachment(item)),
   approve: async (requestId, approvalId, decision) => {
     await client.decide(requestId, approvalId, decision)
     const saved = await client.snapshot(requestId)
@@ -147,6 +150,41 @@ let generation = 0
 const sending = new Set<string>()
 const selecting = new Set<string>()
 const drafts = new Map<string, string>()
+const draftStates = new Map<string, ChatDraft>()
+const draftWork = new Map<string, Promise<void>>()
+const attachmentBusy = new Set<string>()
+let attachmentUI: AttachmentDraftView | undefined
+
+function enqueueDraft<T>(id: string, action: () => Promise<T>): Promise<T> {
+  const work = (draftWork.get(id) ?? Promise.resolve()).then(action)
+  draftWork.set(
+    id,
+    work.then(
+      () => {},
+      () => {},
+    ),
+  )
+  return work
+}
+
+function receiveDraft(draft: ChatDraft, acknowledgedText = false): void {
+  const before = draftStates.get(draft.sessionId)
+  if (before?.revision !== undefined && draft.revision !== undefined && draft.revision < before.revision) return
+  if (!acknowledgedText && before && draft.text !== before.text && draft.text !== drafts.get(draft.sessionId)) {
+    // Polling must not acquire a newer revision while silently retaining older text in the editor.
+    status.hidden = false
+    status.dataset.kind = 'error'
+    status.textContent =
+      'Bản nháp đã đổi ở giao diện khác. Giữ nội dung đang soạn và mở lại chat để đối chiếu trước khi lưu hoặc gửi.'
+    return
+  }
+  const attachments = draft.attachments?.map(item => {
+    const known = before?.attachments?.find(previous => previous.attachmentId === item.attachmentId)
+    return known && known.state !== 'preparing' && item.state === 'preparing' ? known : item
+  })
+  draftStates.set(draft.sessionId, { ...draft, ...(attachments ? { attachments } : {}) })
+  if (current?.sessionId === draft.sessionId) controls()
+}
 let polling = false
 let disposed = false
 let reconnecting = false
@@ -161,7 +199,9 @@ function describeHistory(history: readonly HistoryMessage[]) {
     .find(message => message.role === 'user')
     ?.content.replace(/\s+/g, ' ')
     .trim()
-  chatTitle = first ? (first.length > 64 ? `${first.slice(0, 64)}…` : first) : 'Chat mới'
+  const attachmentTitle = history.find(message => message.role === 'user')?.attachments?.[0]?.name
+  const displayTitle = first || attachmentTitle
+  chatTitle = displayTitle ? (displayTitle.length > 64 ? `${displayTitle.slice(0, 64)}…` : displayTitle) : 'Chat mới'
 }
 
 function fitInput() {
@@ -186,20 +226,31 @@ function saveDraft() {
 }
 async function flushDraft(id: string) {
   const timer = pendingDrafts.get(id)
-  if (timer === undefined) return
+  if (timer === undefined) {
+    await draftWork.get(id)
+    return true
+  }
   clearTimeout(timer)
   pendingDrafts.delete(id)
   try {
-    await management.saveDraft(id, drafts.get(id) ?? '')
+    const text = drafts.get(id) ?? ''
+    await enqueueDraft(id, async () => {
+      const draft = await management.saveDraftState(id, text, draftStates.get(id)?.revision)
+      receiveDraft(draft, true)
+    })
+    return true
   } catch {
     status.hidden = false
     status.dataset.kind = 'error'
     status.textContent = 'Chưa lưu được bản nháp vào DeckAgent. Kiểm tra kết nối; nội dung vẫn còn trong ô soạn thảo.'
+    return false
   }
 }
 async function readDraft(id: string): Promise<string> {
-  await flushDraft(id)
-  const text = await management.draft(id)
+  if (!(await flushDraft(id))) throw new Error('DRAFT_NOT_SAVED')
+  const draft = await management.draftState(id)
+  receiveDraft(draft, true)
+  const text = draft.text
   drafts.set(id, text)
   return text
 }
@@ -210,6 +261,89 @@ function remember(id: string) {
   } catch {
     /* Session can still be selected from History. */
   }
+}
+
+async function uploadAttachments(files: File[]): Promise<void> {
+  const id = current?.sessionId
+  if (!id || attachmentBusy.has(id)) return
+  attachmentBusy.add(id)
+  controls()
+  try {
+    if (!(await flushDraft(id))) return
+    for (const file of files)
+      await enqueueDraft(id, async () => {
+        const draft = draftStates.get(id)
+        if (draft?.revision === undefined) throw new Error('DRAFT_CONFLICT')
+        const uploaded = await management.uploadAttachment(id, file, draft.revision)
+        receiveDraft(uploaded.draft)
+      })
+    await refresh()
+  } catch (error) {
+    receiveDraft(await management.draftState(id))
+    throw error
+  } finally {
+    attachmentBusy.delete(id)
+    controls()
+  }
+}
+
+async function removeAttachment(attachmentId: string): Promise<void> {
+  const id = current?.sessionId
+  if (!id || attachmentBusy.has(id)) return
+  attachmentBusy.add(id)
+  controls()
+  try {
+    if (!(await flushDraft(id))) return
+    await enqueueDraft(id, async () => {
+      const draft = draftStates.get(id)
+      if (draft?.revision === undefined) throw new Error('DRAFT_CONFLICT')
+      receiveDraft(await management.removeAttachment(id, attachmentId, draft.revision))
+    })
+    await refresh()
+  } finally {
+    attachmentBusy.delete(id)
+    controls()
+  }
+}
+
+let previewDialog: HTMLDialogElement | undefined
+let previewUrl: string | undefined
+function closePreview(): void {
+  previewDialog?.remove()
+  previewDialog = undefined
+  if (previewUrl) URL.revokeObjectURL(previewUrl)
+  previewUrl = undefined
+}
+
+async function previewAttachment(item: AttachmentView): Promise<void> {
+  const id = current?.sessionId
+  if (!id) return
+  const preview = await management.previewAttachment(id, item.attachmentId)
+  if (current?.sessionId !== id) return
+  closePreview()
+  const dialog = element('dialog', undefined, 'attachment-preview')
+  dialog.append(
+    element('h2', item.name),
+    element('p', 'Bản xem trước có giới hạn; phần chưa đọc hoặc đã thu nhỏ được báo trong trạng thái tệp.'),
+  )
+  if (typeof preview === 'string') dialog.append(element('pre', preview))
+  else {
+    previewUrl = URL.createObjectURL(preview)
+    const image = element('img')
+    image.src = previewUrl
+    image.alt = item.name
+    dialog.append(image)
+  }
+  dialog.append(
+    button('Đóng xem trước', () => {
+      dialog.close()
+      closePreview()
+    }),
+  )
+  dialog.addEventListener('close', closePreview, { once: true })
+  document.body.append(dialog)
+  previewDialog = dialog
+  dialog.showModal()
 }
 function run(work: Promise<void>) {
   work.catch(error => {
@@ -232,6 +366,10 @@ function controls() {
   workspaceUI.setBusy(opening !== undefined || creating)
   // A chat without a selectable model keeps its draft and says why it cannot send (FR-046).
   const blocked = sendBlocked(current, settings)
+  const draft = current ? draftStates.get(current.sessionId) : undefined
+  const busy = !!current && attachmentBusy.has(current.sessionId)
+  const invalidAttachments = draft?.attachments?.some(item => item.state !== 'ready') ?? false
+  attachmentUI?.render(draft, busy)
   unavailable.hidden = !blocked || !!activeId
   if (blocked && unavailable.textContent !== blocked) unavailable.textContent = blocked
   submit.disabled =
@@ -242,10 +380,14 @@ function controls() {
     opening !== undefined ||
     sending.has(current.sessionId) ||
     selecting.has(current.sessionId) ||
+    busy ||
+    invalidAttachments ||
     !!activeId
   submit.setAttribute(
     'aria-disabled',
-    String(submit.disabled || !input.value.trim() || input.value.length > requestLimit),
+    String(
+      submit.disabled || (!input.value.trim() && !draft?.attachments?.length) || [...input.value].length > requestLimit,
+    ),
   )
   timeline.setOutlineBusy(true)
   picker.update(settings, !!activeId)
@@ -436,6 +578,7 @@ async function follow(id: string, sessionId: string, expected: number) {
   controls()
 }
 async function open(listed: WebSession) {
+  closePreview()
   let session = listed
   const switching = current?.sessionId !== session.sessionId
   if (switching && switchingBlocked()) return
@@ -727,16 +870,17 @@ reconnect.id = 'reconnect'
 accountMenu.append(reconnect)
 const composerActions = element('div', undefined, 'composer-actions')
 const composerControls = element('div', undefined, 'composer-controls')
-const attachment = button('+', () => {})
-attachment.disabled = true
-attachment.className = 'attachment-action'
-attachment.title = 'Đính kèm tệp chưa được hỗ trợ trong bản này'
-attachment.setAttribute('aria-label', 'Đính kèm tệp chưa được hỗ trợ')
+attachmentUI = new AttachmentDraftView({
+  upload: files => run(uploadAttachments(files)),
+  remove: id => run(removeAttachment(id)),
+  preview: item => run(previewAttachment(item)),
+})
+const attachment = attachmentUI.trigger
 composerControls.append(attachment)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
-form.append(unavailable, input, composerActions)
+form.append(unavailable, attachmentUI.node, attachmentUI.picker, input, composerActions)
 input.addEventListener('input', () => {
   saveDraft()
   controls()
@@ -744,7 +888,8 @@ input.addEventListener('input', () => {
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
-    if (!submit.disabled && input.value.trim()) form.requestSubmit()
+    if (!submit.disabled && (input.value.trim() || draftStates.get(current?.sessionId ?? '')?.attachments?.length))
+      form.requestSubmit()
   }
 })
 const dock = element('div', undefined, 'composer-dock')
@@ -798,8 +943,8 @@ form.addEventListener('submit', event => {
 })
 async function submitRequest(text: string): Promise<void> {
   if (submit.disabled || !current) return
-  if (!text.trim()) return
-  if (text.length > requestLimit) {
+  if (!text.trim() && !draftStates.get(current.sessionId)?.attachments?.length) return
+  if ([...text].length > requestLimit) {
     status.hidden = false
     status.dataset.kind = 'error'
     status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi. Bản nháp được giữ nguyên.'
@@ -814,11 +959,27 @@ async function submitRequest(text: string): Promise<void> {
   status.dataset.kind = 'sending'
   try {
     // A refused send leaves the draft unchanged; only an accepted request empties the composer.
-    const accepted: RequestSnapshot = await client.send({ sessionId: id, input: text })
+    if (!(await flushDraft(id))) return
+    const accepted: RequestSnapshot = await enqueueDraft(id, async () => {
+      const draft = draftStates.get(id)
+      const accepted = await client.send({
+        sessionId: id,
+        input: text,
+        ...(draft?.revision === undefined
+          ? {}
+          : { draftRevision: draft.revision, attachmentIds: draft.attachmentIds ?? [] }),
+      })
+      if (draft?.revision !== undefined)
+        receiveDraft(
+          { sessionId: id, text: '', revision: draft.revision + 1, attachmentIds: [], attachments: [] },
+          true,
+        )
+      return accepted
+    })
     if (generation === expected && current) {
       if (input.value === text) {
         input.value = ''
-        saveDraft()
+        drafts.set(id, '')
       }
       current = { ...current, activeRequestId: accepted.requestId }
       timeline.snapshot(accepted)
@@ -848,6 +1009,26 @@ const timer = setInterval(() => {
       }),
   )
 }, 750)
+let checkingAttachments = false
+const attachmentTimer = setInterval(() => {
+  const id = current?.sessionId
+  if (
+    !id ||
+    disposed ||
+    checkingAttachments ||
+    attachmentBusy.has(id) ||
+    pendingDrafts.has(id) ||
+    !draftStates.get(id)?.attachments?.some(item => item.state === 'preparing')
+  )
+    return
+  checkingAttachments = true
+  void management
+    .draftState(id)
+    .then(receiveDraft, () => {})
+    .finally(() => {
+      checkingAttachments = false
+    })
+}, 500)
 window.addEventListener(
   'pagehide',
   () => {
@@ -858,6 +1039,8 @@ window.addEventListener(
     navigationSize.disconnect()
     disposed = true
     clearInterval(timer)
+    clearInterval(attachmentTimer)
+    closePreview()
     deckModel.close()
     watch?.abort()
   },
@@ -870,9 +1053,12 @@ window.addEventListener('pageshow', event => {
 window.addEventListener('focus', () => {
   const id = current?.sessionId
   if (!id || pendingDrafts.has(id) || document.activeElement === input) return
-  management.draft(id).then(
-    text => {
-      if (current?.sessionId !== id || pendingDrafts.has(id) || input.value === text) return
+  management.draftState(id).then(
+    draft => {
+      const text = draft.text
+      if (current?.sessionId !== id || pendingDrafts.has(id)) return
+      receiveDraft(draft, true)
+      if (input.value === text) return
       drafts.set(id, text)
       input.value = text
       controls()

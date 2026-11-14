@@ -50,7 +50,7 @@ test('a v1 Session database migrates in place: chats join the default workspace 
   store.close()
   const check = new DatabaseSync(path)
   // The attachment migration follows workspace and request migrations without changing existing messages.
-  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 5)
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 6)
   check.close()
 })
 

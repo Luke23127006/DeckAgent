@@ -10,6 +10,8 @@ import type {
   WorkspaceView,
 } from '@deckagent/host-api'
 import type { ProviderProtocol, RequestStatus } from '@deckagent/host-api'
+import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
+import { decodeAttachment } from './host-client.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -19,7 +21,14 @@ function invalid(): never {
 }
 
 const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
-const requestStatuses: readonly RequestStatus[] = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
+const requestStatuses: readonly RequestStatus[] = [
+  'active',
+  'waiting_approval',
+  'completed',
+  'failed',
+  'stopped',
+  'interrupted',
+]
 function protocol(value: unknown): ProviderProtocol {
   return protocols.find(item => item === value) ?? invalid()
 }
@@ -133,6 +142,19 @@ export class ManagementError extends Error {
 }
 
 const allowedCodes = [
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_NOT_FOUND',
+  'ATTACHMENT_CONFLICT',
+  'ATTACHMENT_NOT_READY',
+  'ATTACHMENT_REJECTED',
+  'ATTACHMENT_TOO_LARGE',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'ATTACHMENT_TYPE_UNSUPPORTED',
+  'ATTACHMENT_UNREADABLE',
+  'ATTACHMENT_NOT_SAVED',
+  'PARSING_LIMIT_EXCEEDED',
+  'UPLOAD_CANCELLED',
+  'HOST_BUSY',
   'INVALID_PROVIDER',
   'PROVIDER_ID_TAKEN',
   'PROVIDER_KEY_REQUIRED',
@@ -182,7 +204,10 @@ export class ManagementClient {
     if (!response.ok) {
       const data: unknown = await response.json().catch(() => undefined)
       const error = object(data) && object(data.error) ? data.error : undefined
-      const code = error && typeof error.code === 'string' && allowedCodes.includes(error.code) ? error.code : 'SETTINGS_REQUEST_FAILED'
+      const code =
+        error && typeof error.code === 'string' && allowedCodes.includes(error.code)
+          ? error.code
+          : 'SETTINGS_REQUEST_FAILED'
       const detail: Record<string, string | boolean> = {}
       if (error && object(error.detail) && code !== 'SETTINGS_REQUEST_FAILED')
         for (const [key, item] of Object.entries(error.detail))
@@ -214,11 +239,23 @@ export class ManagementClient {
         item.needs.some(need => need !== 'key' && need !== 'baseUrl')
       )
         invalid()
-      return { id: item.id, displayName: item.displayName, baseUrl: item.baseUrl, protocol: protocol(item.protocol),
-        needs: item.needs.map(need => (need === 'key' ? 'key' : 'baseUrl')) }
+      return {
+        id: item.id,
+        displayName: item.displayName,
+        baseUrl: item.baseUrl,
+        protocol: protocol(item.protocol),
+        needs: item.needs.map(need => (need === 'key' ? 'key' : 'baseUrl')),
+      }
     })
-    return { providers: data.providers.map(provider), persistentKeys: data.persistentKeys, builtIns,
-      runtime: { available: data.runtime.available, ...(typeof data.runtime.reason === 'string' ? { reason: data.runtime.reason } : {}) } }
+    return {
+      providers: data.providers.map(provider),
+      persistentKeys: data.persistentKeys,
+      builtIns,
+      runtime: {
+        available: data.runtime.available,
+        ...(typeof data.runtime.reason === 'string' ? { reason: data.runtime.reason } : {}),
+      },
+    }
   }
 
   /** Saves the interface theme on the Host, so it survives a change of local port. */
@@ -255,6 +292,82 @@ export class ManagementClient {
     return data.text
   }
 
+  async draftState(id: string): Promise<ChatDraft> {
+    return decodeDraft(await this.request(`sessions/${encodeURIComponent(id)}/draft`), id)
+  }
+
+  async saveDraftState(id: string, text: string, expectedRevision?: number): Promise<ChatDraft> {
+    return decodeDraft(
+      await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', {
+        text,
+        ...(expectedRevision === undefined ? {} : { expectedRevision }),
+      }),
+      id,
+    )
+  }
+
+  private async attachmentRequest(path: string, init: RequestInit = {}): Promise<Response> {
+    const response = await fetch(`${this.origin}/api/${path}`, {
+      ...init,
+      credentials: 'omit',
+      redirect: 'error',
+      headers: { ...init.headers, authorization: `Bearer ${this.token}` },
+    })
+    if (!response.ok) {
+      const value: unknown = await response.json().catch(() => undefined)
+      const error = object(value) && object(value.error) ? value.error : undefined
+      throw new ManagementError(
+        error && typeof error.code === 'string' && allowedCodes.includes(error.code)
+          ? error.code
+          : 'SETTINGS_REQUEST_FAILED',
+      )
+    }
+    return response
+  }
+
+  async uploadAttachment(
+    id: string,
+    file: File,
+    expectedRevision: number,
+  ): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }> {
+    const body = new FormData()
+    body.append('expectedRevision', String(expectedRevision))
+    body.append('file', file)
+    const response = await this.attachmentRequest(`sessions/${encodeURIComponent(id)}/attachments`, {
+      method: 'POST',
+      body,
+    })
+    const value: unknown = await response.json()
+    if (!object(value)) invalid()
+    return { attachment: decodeAttachment(value.attachment), draft: decodeDraft(value.draft, id) }
+  }
+
+  async removeAttachment(id: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft> {
+    return decodeDraft(
+      await (
+        await this.attachmentRequest(
+          `sessions/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`,
+          {
+            method: 'DELETE',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ expectedRevision }),
+          },
+        )
+      ).json(),
+      id,
+    )
+  }
+
+  async previewAttachment(id: string, attachmentId: string): Promise<Blob | string> {
+    const response = await this.attachmentRequest(
+      `sessions/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/preview`,
+    )
+    if (response.headers.get('content-type') === 'image/png') return response.blob()
+    const value: unknown = await response.json()
+    if (!object(value) || typeof value.text !== 'string') invalid()
+    return value.text
+  }
+
   async saveDraft(id: string, text: string): Promise<void> {
     await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', { text })
   }
@@ -285,7 +398,14 @@ export class ManagementClient {
 
   async save(
     id: string,
-    value: { displayName: string; protocol: string; baseUrl: string; models: readonly string[]; key?: string; new?: boolean },
+    value: {
+      displayName: string
+      protocol: string
+      baseUrl: string
+      models: readonly string[]
+      key?: string
+      new?: boolean
+    },
   ): Promise<void> {
     await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', value)
   }
@@ -311,10 +431,20 @@ export class ManagementClient {
         typeof item.requestId !== 'string' ||
         typeof item.sequence !== 'number' ||
         (item.type !== 'model' && item.type !== 'tool') ||
-        (item.status !== 'running' && item.status !== 'completed' && item.status !== 'failed' && item.status !== 'stopped')
+        (item.status !== 'running' &&
+          item.status !== 'completed' &&
+          item.status !== 'failed' &&
+          item.status !== 'stopped')
       )
         invalid()
-      return { id: item.id, label: item.label, requestId: item.requestId, sequence: item.sequence, type: item.type, status: item.status }
+      return {
+        id: item.id,
+        label: item.label,
+        requestId: item.requestId,
+        sequence: item.sequence,
+        type: item.type,
+        status: item.status,
+      }
     })
   }
 
@@ -331,7 +461,8 @@ export class ManagementClient {
         typeof value.lastSequence !== 'number' ||
         (value.summarized !== undefined && value.summarized !== true) ||
         !Number.isSafeInteger(value.historyStart) ||
-        (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !/^[A-Z][A-Z0-9_]{0,63}$/.test(value.errorCode)))
+        (value.errorCode !== undefined &&
+          (typeof value.errorCode !== 'string' || !/^[A-Z][A-Z0-9_]{0,63}$/.test(value.errorCode)))
       )
         invalid()
       const status = requestStatuses.find(item => item === value.status) ?? invalid()
@@ -349,4 +480,27 @@ export class ManagementClient {
       }
     })
   }
+}
+
+function decodeDraft(value: unknown, id: string): ChatDraft {
+  if (!object(value) || value.sessionId !== id || typeof value.text !== 'string') invalid()
+  if (value.revision === undefined && value.attachmentIds === undefined && value.attachments === undefined)
+    return { sessionId: id, text: value.text }
+  if (
+    typeof value.revision !== 'number' ||
+    !Number.isSafeInteger(value.revision) ||
+    value.revision < 0 ||
+    !Array.isArray(value.attachmentIds) ||
+    !Array.isArray(value.attachments)
+  )
+    invalid()
+  const attachments = value.attachments.map(decodeAttachment)
+  const ids = value.attachmentIds.map((item: unknown) => (typeof item === 'string' ? item : invalid()))
+  if (
+    new Set(ids).size !== ids.length ||
+    ids.length !== attachments.length ||
+    ids.some((item, index) => item !== attachments[index]?.attachmentId)
+  )
+    invalid()
+  return { sessionId: id, text: value.text, revision: value.revision, attachmentIds: ids, attachments }
 }

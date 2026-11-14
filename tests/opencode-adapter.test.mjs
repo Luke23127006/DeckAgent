@@ -11,6 +11,12 @@ import { runProcess } from '../apps/local-web/lib/types/opencode/process.js'
 
 const settings = { provider: 'fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1/', model: 'model-a', key: 'sk-test-SECRET-1' }
 
+test('image input refusal becomes an actionable safe code without retaining provider error text', () => {
+  const event = parseEvent({ type: 'error', error: { name: 'APIError', data: { statusCode: 400, message: 'This model does not support image input; private-provider-marker' } } })
+  assert.equal(errorCode(event), 'IMAGE_INPUT_UNAVAILABLE')
+  assert.equal(JSON.stringify(event).includes('private-provider-marker'), false)
+})
+
 test('OpenCode events: known shapes are read, everything else is ignored, provider text is never copied', () => {
   assert.deepEqual(parseEvent({ type: 'step_start', sessionID: 'ses_1', part: {} }), { type: 'step_start', sessionId: 'ses_1' })
   assert.deepEqual(parseEvent({ type: 'text', sessionID: 'ses_1', part: { id: 'prt_1', text: 'Hi' } }),

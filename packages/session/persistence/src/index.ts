@@ -19,7 +19,7 @@ export type {
   SessionInfo,
   ToolCall,
 } from './contracts.ts'
-export type { AttachmentRecord, DraftSnapshot, SourceRef } from './contracts.ts'
+export type { AttachmentRecord, AttachmentPreparation, DraftSnapshot, SourceRef } from './contracts.ts'
 export { AttachmentLog } from './attachments.ts'
 export type {
   ActivityRecord,

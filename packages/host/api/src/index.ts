@@ -5,8 +5,10 @@ import { DeckError } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
+import { receiveAttachment } from './multipart.ts'
 
 export type { AttachmentView } from './contracts.ts'
+export type { AttachmentManagement } from './contracts.ts'
 export type {
   ApprovalStep,
   ApprovalView,
@@ -55,7 +57,7 @@ export type { HttpErrorDetail } from './http-error.ts'
 export { HttpError, RequestController } from './request-controller.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
-/** Transport limit of one request text; BR-002 sets the product maximum when it is decided. */
+/** Product maximum in Unicode code points; the JSON transport has a separate byte bound. */
 export const requestTextLimit = 16000
 const activeStatuses = new Set(['active', 'waiting_approval'])
 
@@ -70,7 +72,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
   for await (const chunk of req) {
     bytes += chunk.length
-    if (bytes > 20 * 1024) throw new HttpError(413, 'REQUEST_TOO_LARGE')
+    if (bytes > 256 * 1024) throw new HttpError(413, 'REQUEST_TOO_LARGE')
     chunks.push(chunk)
   }
   let value: unknown
@@ -83,7 +85,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 }
 
 /** A generic chat request. Generation entries (presentation, outline actions) are not accepted in this build. */
-async function body(req: IncomingMessage): Promise<AgentRequest> {
+async function body(req: IncomingMessage, maxAttachments: number): Promise<AgentRequest> {
   const value = await readJson(req)
   if (
     !value ||
@@ -94,12 +96,30 @@ async function body(req: IncomingMessage): Promise<AgentRequest> {
     !idPattern.test(value.sessionId) ||
     !('input' in value) ||
     typeof value.input !== 'string' ||
-    !value.input.trim() ||
-    Object.keys(value).some(key => !['sessionId', 'input'].includes(key))
+    Object.keys(value).some(key => !['sessionId', 'input', 'attachmentIds', 'draftRevision'].includes(key))
   )
     throw new HttpError(400, 'INVALID_REQUEST')
-  if (value.input.length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
-  return { sessionId: value.sessionId, input: value.input }
+  const ids = 'attachmentIds' in value ? value.attachmentIds : undefined
+  const revision = 'draftRevision' in value ? value.draftRevision : undefined
+  if (
+    ids !== undefined &&
+    (!Array.isArray(ids) ||
+      ids.length > maxAttachments ||
+      new Set(ids).size !== ids.length ||
+      ids.some(id => typeof id !== 'string' || !/^att-[a-f0-9-]{36}$/.test(id)))
+  )
+    throw new HttpError(400, 'INVALID_REQUEST')
+  if (revision !== undefined && (!Number.isSafeInteger(revision) || Number(revision) < 0))
+    throw new HttpError(400, 'INVALID_REQUEST')
+  if (!value.input.trim() && !(Array.isArray(ids) && ids.length)) throw new HttpError(400, 'REQUEST_EMPTY')
+  if ([...value.input].length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
+  if (!value.input.isWellFormed()) throw new HttpError(400, 'INVALID_REQUEST')
+  return {
+    sessionId: value.sessionId,
+    input: value.input,
+    ...(Array.isArray(ids) ? { attachmentIds: ids } : {}),
+    ...(typeof revision === 'number' ? { draftRevision: revision } : {}),
+  }
 }
 
 /** Last-Event-ID is the reconnect cursor: the stream resumes after it with no gap and no repeat. */
@@ -126,7 +146,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -196,6 +216,44 @@ export async function startHost(options: HostOptions) {
       return
     }
     const management = options.management
+    const attachment = /^\/api\/sessions\/([\w-]{1,100})\/attachments(?:\/([\w-]{1,100})(\/preview)?)?$/.exec(
+      url.pathname,
+    )
+    if (attachment && options.attachments) {
+      const sessionId = attachment[1]!
+      const id = attachment[2]
+      if (!id && req.method === 'POST') {
+        json(res, 202, await receiveAttachment(req, sessionId, options.attachments))
+        return
+      }
+      if (id && !attachment[3] && req.method === 'GET') {
+        json(res, 200, await options.attachments.get(sessionId, id))
+        return
+      }
+      if (id && !attachment[3] && req.method === 'DELETE') {
+        const value = await readJson(req)
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          !('expectedRevision' in value) ||
+          !Number.isSafeInteger(value.expectedRevision) ||
+          Number(value.expectedRevision) < 0 ||
+          Object.keys(value).some(key => key !== 'expectedRevision')
+        )
+          throw new HttpError(400, 'INVALID_REQUEST')
+        json(res, 200, await options.attachments.remove(sessionId, id, Number(value.expectedRevision)))
+        return
+      }
+      if (id && attachment[3] && req.method === 'GET') {
+        const abort = new AbortController()
+        res.once('close', () => abort.abort())
+        const preview = await options.attachments.preview(sessionId, id, abort.signal)
+        res.setHeader('content-security-policy', "sandbox; default-src 'none'; frame-ancestors 'none'")
+        res.writeHead(200, { 'content-type': preview.contentType, 'content-length': preview.body.length })
+        res.end(preview.body)
+        return
+      }
+    }
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
         json(res, 200, await management.settings())
@@ -297,7 +355,7 @@ export async function startHost(options: HostOptions) {
     if (url.pathname === '/api/requests' && req.method === 'POST') {
       // No Agent runtime is connected: refuse the request instead of pretending to start work.
       if (!controller) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
-      json(res, 202, await controller.submit(await body(req)))
+      json(res, 202, await controller.submit(await body(req, options.attachments?.maxFiles ?? 0)))
       return
     }
     const approval = /^\/api\/requests\/([\w-]{1,100})\/approvals\/([\w-]{1,100})\/decision$/.exec(url.pathname)
@@ -395,6 +453,7 @@ export async function startHost(options: HostOptions) {
                     byteSize: item.byteSize,
                     ...(item.detectedType ? { detectedType: item.detectedType } : {}),
                     ...(item.rejectionCode ? { rejectionCode: item.rejectionCode } : {}),
+                    ...(item.preparation ? { preparation: item.preparation } : {}),
                     ...(item.source
                       ? {
                           source: {

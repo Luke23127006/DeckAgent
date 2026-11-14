@@ -8,6 +8,7 @@
     "test:local-foundation": "node --test tests/workspace-registry.test.mjs tests/chat-persistence.test.mjs tests/local-foundation.test.mjs tests/attachment-storage.test.mjs",
     "test:model-requests": "node --test tests/request-lifecycle.test.mjs tests/opencode-adapter.test.mjs tests/model-requests.test.mjs",
     "test:source-permissions": "node --test tests/source-access.test.mjs tests/mcp-bridge.test.mjs tests/step-approval.test.mjs tests/source-requests.test.mjs",
+    "test:attachments": "node --test tests/attachment-parser.test.mjs tests/attachment-storage.test.mjs tests/attachment-admission.test.mjs",
     "test:opencode-live": "node --test tests/opencode-live.test.mjs tests/opencode-source-live.test.mjs",
     "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-client.test.mjs",
     "test:slide-pipeline": "node --test tests/deck-service.test.mjs tests/publish-slide.test.mjs tests/deck-pipeline.test.mjs tests/deck-model.test.mjs tests/deck-client.test.mjs",

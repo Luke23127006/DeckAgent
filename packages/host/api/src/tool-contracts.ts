@@ -27,7 +27,10 @@ export interface ToolSchema {
 
 export interface ToolResult {
   readonly isError: boolean
-  readonly content: readonly { readonly type: 'text'; readonly text: string }[]
+  readonly content: readonly (
+    | { readonly type: 'text'; readonly text: string }
+    | { readonly type: 'image'; readonly data: string; readonly mimeType: string }
+  )[]
 }
 
 export interface ToolContext {

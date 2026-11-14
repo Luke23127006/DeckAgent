@@ -7,7 +7,7 @@ import { keyPlaceholder, keyVariable, providerConfiguration, selector } from './
 export const pinnedVersion = '1.19.5'
 
 /** Tool boundary of this build: every native tool is denied; B03 adds Host-authorized MCP tools. */
-export const toolBoundary = 'b03-host-read-tools-v1'
+export const toolBoundary = 'b03-host-read-tools-v2'
 const mcpPlaceholder = `__DECKAGENT_MCP_${randomBytes(16).toString('hex')}__`
 
 export const systemPrompt = [

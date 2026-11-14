@@ -18,6 +18,15 @@ export interface AttachmentRecord {
   readonly rejectionCode?: string
   readonly fingerprint?: string
   readonly source?: SourceRef
+  readonly preparation?: AttachmentPreparation
+  readonly parsedFingerprint?: string
+}
+
+export interface AttachmentPreparation {
+  readonly parserVersion: string
+  readonly capabilities: readonly string[]
+  readonly completeness: 'complete' | 'partial'
+  readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
 }
 
 export interface DraftSnapshot {
