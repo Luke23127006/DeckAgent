@@ -84,16 +84,16 @@ if (has('overflow') || has('overflow-fail')) {
   process.exit(1)
 }
 event('step_start', { id: 'prt_step1', type: 'step-start' })
-if (has('mcp-read') || has('mcp-external') || has('mcp-twice') || has('mcp-forbidden') || has('mcp-attachment')) {
+if (has('mcp-read') || has('mcp-external') || has('mcp-twice') || has('mcp-forbidden') || has('mcp-attachment') || has('mcp-research') || has('mcp-research-read')) {
   const config = JSON.parse(content.replaceAll('{env:DECKAGENT_PROVIDER_KEY}', key ?? '').replaceAll('{env:DECKAGENT_MCP_TOKEN}', process.env.DECKAGENT_MCP_TOKEN ?? ''))
   const bridge = config.mcp?.deckagent
   if (!bridge) process.exit(3)
   const external = has('mcp-external') || has('mcp-twice')
   const markerName = has('mcp-twice') ? '[mcp-twice]' : '[mcp-external]'
   const path = external ? marker.slice(marker.lastIndexOf(markerName) + markerName.length).trim().split('\n')[0] : 'notes.txt'
-  for (let i = 0; i < (has('mcp-twice') ? 3 : 1); i++) {
-    const name = has('mcp-attachment') ? 'read_attachment' : has('mcp-forbidden') ? 'write_file' : external ? 'read_external' : 'read_source'
-    const toolArguments = has('mcp-attachment') ? { attachmentId: marker.match(/att-[a-f0-9-]{36}/)?.[0] } : { path }
+  for (let i = 0; i < (has('research-budget') ? 4 : has('mcp-twice') ? 3 : 1); i++) {
+    const name = has('mcp-research-read') ? 'read_research' : has('mcp-research') ? 'research_public' : has('mcp-attachment') ? 'read_attachment' : has('mcp-forbidden') ? 'write_file' : external ? 'read_external' : 'read_source'
+    const toolArguments = has('mcp-research-read') ? { sourceId: marker.match(/src-[a-f0-9-]{36}/)?.[0] } : has('mcp-research') ? { query: 'public fixture facts' } : has('mcp-attachment') ? { attachmentId: marker.match(/att-[a-f0-9-]{36}/)?.[0] } : { path }
     const response = await fetch(bridge.url, { method: 'POST', headers: { ...bridge.headers, 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
       body: JSON.stringify({ jsonrpc: '2.0', id: i + 1, method: 'tools/call', params: { name, arguments: toolArguments } }) })
     const result = await response.json()

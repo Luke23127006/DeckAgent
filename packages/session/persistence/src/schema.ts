@@ -2,7 +2,18 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 6
+const schemaVersion = 7
+const researchTables = `
+  CREATE TABLE request_research (
+    request_id TEXT PRIMARY KEY REFERENCES requests(id), selected INTEGER NOT NULL CHECK(selected IN (0,1)),
+    attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 3)
+  ) STRICT;
+  CREATE TABLE research_sources (
+    id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES requests(id),
+    session_id TEXT NOT NULL REFERENCES sessions(id), payload TEXT NOT NULL
+  ) STRICT;
+  CREATE INDEX research_sources_chat ON research_sources(session_id);
+`
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 
@@ -92,10 +103,11 @@ export function initialize(db: DatabaseSync): void {
         ${attachmentTables}
         ${approvalTables}
         ${preparationColumns}
+        ${researchTables}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if (version >= 1 && version <= 5 && owner === applicationId) {
+    } else if (version >= 1 && version <= 6 && owner === applicationId) {
       // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
       if (version === 1)
         db.exec(`
@@ -106,7 +118,8 @@ export function initialize(db: DatabaseSync): void {
       if (version < 3) db.exec(requestTables)
       if (version < 4) db.exec(attachmentTables)
       if (version < 5) db.exec(approvalTables)
-      db.exec(`${preparationColumns} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 6) db.exec(preparationColumns)
+      db.exec(`${researchTables} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError(
         'SESSION_SCHEMA',
@@ -132,6 +145,8 @@ export function initialize(db: DatabaseSync): void {
       'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence, preparation, parsed_fingerprint FROM attachments LIMIT 0',
     ).all()
     db.prepare('SELECT id, version, session_id, attachment_id, fingerprint, label FROM sources LIMIT 0').all()
+    db.prepare('SELECT request_id, selected, attempts FROM request_research LIMIT 0').all()
+    db.prepare('SELECT id, request_id, session_id, payload FROM research_sources LIMIT 0').all()
     db.prepare('SELECT id, request_id, step_key, operation, target, reason, state FROM request_approvals LIMIT 0').all()
     db.prepare(
       'SELECT source_id, version, session_id, origin, label, fingerprint, line_count, kind, request_id FROM source_reads LIMIT 0',

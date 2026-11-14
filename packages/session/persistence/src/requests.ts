@@ -1,6 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 import { randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { ApprovalLog } from './approvals.ts'
 import type { AttachmentLog } from './attachments.ts'
 import type {
@@ -12,6 +13,7 @@ import type {
   RequestEventBody,
   RequestRecord,
   RequestStatus,
+  ResearchSource,
   RuntimeBinding,
   TerminalStatus,
 } from './contracts.ts'
@@ -126,6 +128,7 @@ export class RequestLog {
    * A chat that already has an active request refuses a second one (FR-014).
    */
   admit(input: {
+    readonly publicResearch?: boolean
     readonly requestId: string
     readonly sessionId: string
     readonly input: string
@@ -160,6 +163,9 @@ export class RequestLog {
         )
         .run(input.requestId, input.sessionId, input.selection.provider, input.selection.model, historyStart, now)
       const sequence = this.access.messageCount(input.sessionId)
+      this.db
+        .prepare('INSERT INTO request_research (request_id, selected) VALUES (?, ?)')
+        .run(input.requestId, input.publicResearch === true ? 1 : 0)
       for (const attachmentId of ids)
         this.db
           .prepare('UPDATE attachments SET request_id = ?, message_sequence = ? WHERE id = ?')
@@ -440,6 +446,77 @@ export class RequestLog {
     })
   }
 
+  /** Counts an attempt before any network I/O; ended or unselected requests cannot reserve one. */
+  reserveResearch(requestId: string, sessionId: string): void {
+    this.access.transaction(() => {
+      const request = this.require(requestId)
+      if (request.sessionId !== sessionId || request.status !== 'active')
+        throw new SessionError('REQUEST_CLOSED', 'Request is not active')
+      const row = this.db.prepare('SELECT selected, attempts FROM request_research WHERE request_id = ?').get(requestId)
+      if (!row || row.selected !== 1)
+        throw new SessionError('RESEARCH_NOT_SELECTED', 'Public research was not selected')
+      if (Number(row.attempts) >= 3) throw new SessionError('RESEARCH_BUDGET_EXHAUSTED', 'Search budget reached')
+      this.db.prepare('UPDATE request_research SET attempts = attempts + 1 WHERE request_id = ?').run(requestId)
+    })
+  }
+
+  recordResearch(
+    requestId: string,
+    sessionId: string,
+    query: string,
+    result: {
+      readonly requestId?: string
+      readonly results: readonly { readonly title: string; readonly url: string; readonly content: string }[]
+    },
+  ): readonly ResearchSource[] {
+    return this.access.transaction(() => {
+      const request = this.require(requestId)
+      const row = this.db.prepare('SELECT selected, attempts FROM request_research WHERE request_id = ?').get(requestId)
+      if (
+        request.sessionId !== sessionId ||
+        request.status !== 'active' ||
+        row?.selected !== 1 ||
+        Number(row.attempts) < 1
+      )
+        throw new SessionError('REQUEST_CLOSED', 'Research is not authorized')
+      if (
+        !query.trim() ||
+        query.length > 1000 ||
+        result.results.length > 5 ||
+        result.results.some(item => item.title.length > 300 || item.url.length > 2048 || item.content.length > 6000)
+      )
+        throw new SessionError('INVALID_REQUEST', 'Invalid research result')
+      return result.results.map(item => {
+        const source: ResearchSource = {
+          ...item,
+          sourceId: `src-${randomUUID()}`,
+          version: 1,
+          kind: 'research',
+          provider: 'tavily',
+          query,
+          partial: true,
+          fingerprint: createHash('sha256').update(item.content).digest('hex'),
+          retrievedAt: new Date().toISOString(),
+          ...(result.requestId ? { providerRequestId: result.requestId } : {}),
+          location: { kind: 'research-result', start: 0, end: item.content.length },
+        }
+        this.db
+          .prepare('INSERT INTO research_sources (id, request_id, session_id, payload) VALUES (?, ?, ?, ?)')
+          .run(source.sourceId, requestId, sessionId, JSON.stringify(source))
+        return source
+      })
+    })
+  }
+
+  researchSources(sessionId: string): readonly ResearchSource[] {
+    return this.access.run(() =>
+      this.db
+        .prepare('SELECT payload FROM research_sources WHERE session_id = ? ORDER BY rowid')
+        .all(sessionId)
+        .map(row => JSON.parse(String(row.payload)) as ResearchSource),
+    )
+  }
+
   private assemble(requestId: string): string {
     const parts = new Map<string, string>()
     for (const event of this.events(requestId)) if (event.kind === 'text') parts.set(event.part, event.text)
@@ -486,6 +563,8 @@ export class RequestLog {
     if (!statuses.includes(status)) throw new SessionError('SESSION_CORRUPT', 'Stored request has an unknown status')
     return {
       requestId: String(row.id),
+      publicResearch:
+        this.db.prepare('SELECT selected FROM request_research WHERE request_id = ?').get(requestId)?.selected === 1,
       sessionId: String(row.session_id),
       status,
       selection: { provider: String(row.provider), model: String(row.model) },

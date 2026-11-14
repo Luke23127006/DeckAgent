@@ -24,6 +24,7 @@ import { workspaceView } from './workspace-view.ts'
 import type { ApprovalView } from '@deckagent/host-api'
 import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
 import { AttachmentDraftView } from './attachment-view.ts'
+import { researchView } from './research-view.ts'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
@@ -154,6 +155,7 @@ const draftStates = new Map<string, ChatDraft>()
 const draftWork = new Map<string, Promise<void>>()
 const attachmentBusy = new Set<string>()
 let attachmentUI: AttachmentDraftView | undefined
+let researchUI: ReturnType<typeof researchView> | undefined
 
 function enqueueDraft<T>(id: string, action: () => Promise<T>): Promise<T> {
   const work = (draftWork.get(id) ?? Promise.resolve()).then(action)
@@ -356,6 +358,7 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
+  researchUI?.update(settings, !!current?.activeRequestId)
   const activeId = current?.activeRequestId
   stopRequest.hidden = !activeId
   stopRequest.disabled = !!activeId && stopping.has(activeId)
@@ -813,6 +816,15 @@ document.addEventListener('pointerdown', event => {
     closeAccountMenu()
 })
 const themeSection = element('div', undefined, 'menu-section')
+researchUI = researchView(
+  management,
+  root,
+  async () => {
+    await refresh()
+    controls()
+  },
+  () => current?.sessionId,
+)
 themeSection.append(element('span', 'Giao diện'), themeControl(management))
 accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
@@ -824,6 +836,7 @@ accountMenu.append(
     { className: 'settings-open', title: 'Cài đặt model' },
   ),
   themeSection,
+  researchUI.settings,
 )
 navigation.append(
   navTop,
@@ -877,6 +890,7 @@ attachmentUI = new AttachmentDraftView({
 })
 const attachment = attachmentUI.trigger
 composerControls.append(attachment)
+composerControls.append(researchUI.label, researchUI.sources)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
@@ -952,6 +966,7 @@ async function submitRequest(text: string): Promise<void> {
   }
   const id = current.sessionId,
     expected = generation
+  const publicResearch = researchUI?.enabled(id) === true
   sending.add(id)
   controls()
   status.textContent = 'Đang gửi'
@@ -965,6 +980,7 @@ async function submitRequest(text: string): Promise<void> {
       const accepted = await client.send({
         sessionId: id,
         input: text,
+        publicResearch,
         ...(draft?.revision === undefined
           ? {}
           : { draftRevision: draft.revision, attachmentIds: draft.attachmentIds ?? [] }),

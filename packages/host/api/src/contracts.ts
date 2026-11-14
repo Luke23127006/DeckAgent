@@ -17,6 +17,7 @@ export interface ModelSelection {
 
 /** A generic chat request (B02). Generation entries arrive with their own builds. */
 export interface AgentRequest {
+  readonly publicResearch?: boolean
   readonly sessionId: string
   readonly input: string
   readonly attachmentIds?: readonly string[]
@@ -87,6 +88,7 @@ export interface RequestSnapshot {
 }
 
 export interface StoredRequest {
+  readonly publicResearch?: boolean
   readonly requestId: string
   readonly sessionId: string
   readonly status: RequestStatus
@@ -126,6 +128,7 @@ export interface RequestStore {
   }
   /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
   admit(input: {
+    readonly publicResearch?: boolean
     readonly requestId: string
     readonly sessionId: string
     readonly input: string
@@ -198,7 +201,11 @@ export interface HostOptions {
   readonly requests?: {
     readonly store: RequestStore
     readonly runtime: RequestRuntime
-    readonly prepareTools?: (sessionId: string, attachmentIds?: readonly string[]) => Promise<PreparedTools>
+    readonly prepareTools?: (
+      sessionId: string,
+      attachmentIds?: readonly string[],
+      publicResearch?: boolean,
+    ) => Promise<PreparedTools>
   }
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
@@ -229,6 +236,12 @@ export interface ProviderSettings {
 }
 
 export interface WebSettings {
+  readonly research?: {
+    readonly provider: 'tavily'
+    readonly configured: boolean
+    readonly environmentKey: boolean
+    readonly freeOnly: true
+  }
   readonly providers: readonly ProviderSettings[]
   /** The credential store of this computer can keep keys. */
   readonly persistentKeys: boolean
@@ -320,6 +333,11 @@ export interface WebPreferences {
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
+  readonly research?: {
+    save(value: unknown): Promise<void>
+    remove(): Promise<void>
+    sources(sessionId: string): Promise<unknown>
+  }
   /** Optional: an older application without it simply has no `/api/preferences`. */
   readonly preferences?: {
     get(): Promise<WebPreferences>

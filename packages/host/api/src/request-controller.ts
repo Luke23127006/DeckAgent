@@ -48,7 +48,11 @@ export class RequestController {
   constructor(
     private readonly store: RequestStore,
     private readonly runtime: RequestRuntime,
-    private readonly prepareTools?: (sessionId: string, attachmentIds?: readonly string[]) => Promise<PreparedTools>,
+    private readonly prepareTools?: (
+      sessionId: string,
+      attachmentIds?: readonly string[],
+      publicResearch?: boolean,
+    ) => Promise<PreparedTools>,
   ) {}
 
   async submit(request: AgentRequest): Promise<RequestSnapshot> {
@@ -65,7 +69,7 @@ export class RequestController {
       if (this.store.activeFor(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
       if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
       const prepared = await this.runtime.prepare(request)
-      const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds)
+      const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds, request.publicResearch)
       if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
       const requestId = `req-${randomUUID()}`
       let admitted: StoredRequest
@@ -75,6 +79,7 @@ export class RequestController {
           sessionId: request.sessionId,
           input: request.input,
           selection: prepared.selection,
+          ...(request.publicResearch === undefined ? {} : { publicResearch: request.publicResearch }),
           ...(request.attachmentIds === undefined ? {} : { attachmentIds: request.attachmentIds }),
           ...(request.draftRevision === undefined ? {} : { draftRevision: request.draftRevision }),
         })

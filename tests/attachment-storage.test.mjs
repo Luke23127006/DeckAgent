@@ -50,7 +50,7 @@ test('v5 source identities and approval records survive preparation migration wi
   const approval = store.requests.approvals.create('req-v5', { key: 'a'.repeat(64), operation: 'read-file', target: 'outside.txt', reason: 'Read outside source' }).approval
   store.close()
   const v5 = new DatabaseSync(join(dir, 'sessions.sqlite'))
-  v5.exec('ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 5;')
+  v5.exec('DROP TABLE research_sources; DROP TABLE request_research; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 5;')
   v5.close()
   const upgraded = open()
   assert.deepEqual(upgraded.attachments.get('a', item.attachmentId), ready)

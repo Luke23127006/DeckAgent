@@ -116,7 +116,24 @@ export type RequestEvent = RequestEventBody & {
   readonly timestamp: string
 }
 
+export interface ResearchSource {
+  readonly sourceId: string
+  readonly version: 1
+  readonly kind: 'research'
+  readonly provider: 'tavily'
+  readonly query: string
+  readonly title: string
+  readonly url: string
+  readonly content: string
+  readonly partial: true
+  readonly fingerprint: string
+  readonly retrievedAt: string
+  readonly providerRequestId?: string
+  readonly location: { readonly kind: 'research-result'; readonly start: 0; readonly end: number }
+}
+
 export interface RequestRecord {
+  readonly publicResearch?: boolean
   readonly requestId: string
   readonly sessionId: string
   readonly status: RequestStatus

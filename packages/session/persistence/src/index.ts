@@ -35,6 +35,7 @@ export { SessionError } from './contracts.ts'
 export { chatTitle } from './message.ts'
 export { MemoryDraftStore, draftLimit } from './draft-store.ts'
 export { RequestLog, summarizedNotice, validateEvent } from './requests.ts'
+export type { ResearchSource } from './contracts.ts'
 
 /** Local durable storage of chats and their conversations. The application owns close(). */
 export class SqliteSessionStore {

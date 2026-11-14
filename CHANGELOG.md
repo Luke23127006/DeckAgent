@@ -33,6 +33,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Opt-in Tavily public research with free-account checks, request search budgets, protected or environment credentials, durable source excerpts and a safe source viewer. Session schema v7 preserves existing conversations and input records.
+
 - Bounded preparation for text, PDF, Office documents, images and ZIP attachments, with immutable parsed sidecars, real source locations, explicit omissions and isolated cancellable parsers.
 - Revisioned streaming uploads, safe previews, attachment-only admission and attachment controls in the Composer and conversation history, with parser/Host/browser checks and opt-in real CLI image transport smoke.
 
@@ -58,7 +60,12 @@ Notable changes to this repository. The newest changes are at the top.
 - `docs/research/_STYLE.md`: how a research note is written
 - A GitHub conventions section in `AGENTS.md`: no agent is named as author or co-author
 
+### Fixed
+
+- Browser fullscreen smoke brings the CDP tab to the foreground before presenting Deck Canvas, retaining the full presentation assertions.
+
 ### Removed
+
 - The in-request question and reply path of the Host API and the UI; a question now ends its request (ADR-0004)
 - The `agent-runtime` dependency of `host-api` and the `model-providers` dependency of `local-web`
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag

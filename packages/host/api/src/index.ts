@@ -96,7 +96,10 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
     !idPattern.test(value.sessionId) ||
     !('input' in value) ||
     typeof value.input !== 'string' ||
-    Object.keys(value).some(key => !['sessionId', 'input', 'attachmentIds', 'draftRevision'].includes(key))
+    Object.keys(value).some(
+      key => !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch'].includes(key),
+    ) ||
+    ('publicResearch' in value && typeof value.publicResearch !== 'boolean')
   )
     throw new HttpError(400, 'INVALID_REQUEST')
   const ids = 'attachmentIds' in value ? value.attachmentIds : undefined
@@ -117,6 +120,7 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
   return {
     sessionId: value.sessionId,
     input: value.input,
+    ...('publicResearch' in value ? { publicResearch: value.publicResearch as boolean } : {}),
     ...(Array.isArray(ids) ? { attachmentIds: ids } : {}),
     ...(typeof revision === 'number' ? { draftRevision: revision } : {}),
   }
@@ -257,6 +261,23 @@ export async function startHost(options: HostOptions) {
     if (management) {
       if (url.pathname === '/api/settings' && req.method === 'GET') {
         json(res, 200, await management.settings())
+        return
+      }
+      if (url.pathname === '/api/research' && management.research) {
+        if (req.method === 'PUT') {
+          await management.research.save(await readJson(req))
+          json(res, 200, { ok: true })
+          return
+        }
+        if (req.method === 'DELETE') {
+          await management.research.remove()
+          json(res, 200, { ok: true })
+          return
+        }
+      }
+      const researchSources = /^\/api\/sessions\/([\w-]{1,100})\/research-sources$/.exec(url.pathname)
+      if (researchSources && management.research && req.method === 'GET') {
+        json(res, 200, await management.research.sources(researchSources[1]!))
         return
       }
       if (url.pathname === '/api/preferences' && management.preferences) {

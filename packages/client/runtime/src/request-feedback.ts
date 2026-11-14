@@ -1,6 +1,20 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  RESEARCH_UNAVAILABLE: [
+    'Chưa dùng được research',
+    'Kiểm tra cấu hình Tavily hoặc bỏ chọn nguồn công khai rồi gửi lại. Bản nháp được giữ.',
+  ],
+  RESEARCH_KEY_UNAVAILABLE: ['Chưa đọc được key research', 'Cấu hình Tavily trong Cài đặt tìm kiếm rồi thử lại.'],
+  RESEARCH_KEY_REJECTED: ['Tavily từ chối key', 'Kiểm tra key trong Cài đặt tìm kiếm rồi thử lại.'],
+  RESEARCH_FREE_ONLY: [
+    'Research chỉ nhận gói miễn phí',
+    'Giữ Tavily ở gói Researcher, tắt PAYG; ứng dụng không tự nâng cấp.',
+  ],
+  RESEARCH_QUOTA_EXHAUSTED: [
+    'Không còn quota miễn phí',
+    'Chờ quota mới hoặc bỏ chọn research. Không chuyển sang dịch vụ trả phí.',
+  ],
   IMAGE_INPUT_UNAVAILABLE: [
     'Model hoặc kết nối không nhận nội dung ảnh',
     'Tệp đã gửi được giữ. Chọn model nhận ảnh hoặc cung cấp bản có chữ rồi gửi yêu cầu mới; hệ thống không tự chạy OCR hay đổi model.',

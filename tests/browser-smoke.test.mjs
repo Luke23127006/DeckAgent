@@ -351,6 +351,9 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px', 'Pointer release must commit the final position without a preceding move')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   // Fullscreen needs a real user gesture; a scripted click() carries no activation.
+  // A CDP-created background tab can reject fullscreen as 'not granted' even after a real click.
+  await protocol.call('Page.bringToFront')
+  assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
   const presentButton = await evaluate(`(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Trình chiếu').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`)
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', ...presentButton })
   await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', ...presentButton, button: 'left', buttons: 1, clickCount: 1 })
@@ -412,6 +415,46 @@ async function tree(folder) {
   }
   return entries
 }
+
+test('public research is explicit, config checks the free key and stored excerpts remain safe after reload', { timeout: 60000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-research-'))
+  let app, session, searches = 0
+  const sourceText = 'Research marker 482 <script>window.researchInjected=true</script>'
+  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('research'), openCode: fakeOpenCode(dir), researchAccess: { key: 'browser-research-secret', fetch: async url => {
+    if (url.endsWith('/usage')) return Response.json({ key: { usage: 0, limit: null }, account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null } })
+    searches++
+    return Response.json({ results: [{ title: 'Public report', url: 'https://example.org/report', content: sourceText }] })
+  } } })
+  const created = await fetch(`${app.origin}/api/sessions`, { method: 'POST', headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, body: JSON.stringify({ selection: { provider: 'fixture', model: 'research' } }) })
+  assert.equal(created.ok, true)
+  const researchChat = await created.json()
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]')`), 'Research Chat not listed')
+  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.public-research-choice') && !document.querySelector('.public-research-choice').disabled`), 'Research choice not ready')
+  await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Research model not ready')
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false)
+  await evaluate(`document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.request-record[data-status=completed]')`), 'Unselected request did not finish')
+  assert.equal(searches, 0)
+  await eventually(() => evaluate(`!document.querySelector('.public-research-choice').disabled && !document.querySelector('.send-action').disabled`), 'Composer did not release the completed request')
+  await evaluate(`document.querySelector('.public-research-choice').click(); document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(() => searches === 1, 'Selected research did not execute')
+  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2`), 'Research request did not finish')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`!!document.querySelector('.public-research-choice')`), 'Reload did not boot')
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false, 'A new interface must not implicitly authorize outside research')
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.research-dialog pre')?.textContent.includes('Research marker 482')`), 'Saved excerpts not visible after reload')
+  assert.equal(await evaluate(`window.researchInjected === true`), false)
+  assert.equal(await evaluate(`document.querySelector('.research-dialog input[type=password]').value`), '')
+  assert.equal(await evaluate(`document.querySelector('.research-dialog a').href`), 'https://example.org/report')
+  await evaluate(`document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra key từ .env').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.research-dialog [role=status]').textContent.includes('Key môi trường hợp lệ')`), 'Free environment key check not shown')
+})
 
 test('attachments survive reload and Chat switching, preview safely, reject invalid input and send without text', { timeout: 60000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-attachments-'))

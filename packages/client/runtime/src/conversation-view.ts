@@ -27,6 +27,7 @@ const activityNames: Readonly<Record<string, string>> = {
   read_source: 'Đọc nguồn project',
   read_external: 'Đọc file ngoài phạm vi',
   read_attachment: 'Đọc tệp đính kèm',
+  research_public: 'Tìm nguồn công khai',
 }
 
 /** FR-079: where the summary the model reads starts. Every message above it stays readable here. */
@@ -433,6 +434,8 @@ export class ConversationView {
           : Math.min(start + (this.history[start]?.role === 'user' ? 1 : 0), this.history.length)
       const items = positions.get(position) ?? []
       const row = this.updateRequest(id, request)
+      row.node.dataset.publicResearch = String(request?.publicResearch === true)
+      row.node.title = request?.publicResearch ? 'Yêu cầu cho phép tìm nguồn công khai qua Tavily' : ''
       const number = String(ids.indexOf(id) + 1)
       if (row.revision.textContent !== number) {
         row.revision.textContent = number

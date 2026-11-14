@@ -33,8 +33,11 @@ import { ManagedAttachments } from './managed-attachments.ts'
 import { prepareSourceTools } from './source-tools.ts'
 import { AttachmentService } from './attachment-service.ts'
 import { attachmentStyle } from './attachment-style.ts'
+import { ResearchService } from './research-service.ts'
+import { researchStyle } from './research-style.ts'
 
 export { ManagedAttachments } from './managed-attachments.ts'
+export { TavilyClient } from './tavily.ts'
 export { prepareSourceTools } from './source-tools.ts'
 export { openToolBridge } from './opencode/mcp-bridge.ts'
 export type { AttachmentUpload } from './managed-attachments.ts'
@@ -69,6 +72,8 @@ export interface LocalWebOptions {
   readonly credentials?: CredentialStore
   /** Tests replace the provider check and catalog lookup; production calls the provider. */
   readonly providerAccess?: Pick<ProviderStoreOptions, 'check' | 'catalog'>
+  /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
+  readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
 
 const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
@@ -185,6 +190,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       options.openCode,
     )
     const settings = (): WebSettings => ({
+      research: research.settings(),
       providers: catalog.providerSettings(),
       persistentKeys: catalog.persistentKeys,
       builtIns: catalog.builtIns,
@@ -197,6 +203,13 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         throw new HttpError(409, 'WORKSPACE_REQUEST_ACTIVE')
     }
     const drafts = new MemoryDraftStore()
+    const research = new ResearchService(
+      state.db,
+      options.credentials ?? defaultCredentialStore(layout.root),
+      store,
+      options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
+      options.researchAccess?.fetch,
+    )
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
     const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
     const inputs = new AttachmentService(store, drafts, attachments)
@@ -222,7 +235,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           presentationStyle +
           activityStyle +
           motionStyle +
-          attachmentStyle,
+          attachmentStyle +
+          researchStyle,
       },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
@@ -289,7 +303,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       requests: {
         store: requestStore,
         runtime,
-        prepareTools: (sessionId, attachmentIds) =>
+        prepareTools: async (sessionId, attachmentIds, publicResearch) =>
           prepareSourceTools({
             sessionId,
             store,
@@ -297,6 +311,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
             dataRoot: layout.root,
             home: options.home ?? homedir(),
             attachments,
+            research: await research.prepare(publicResearch === true),
             ...(attachmentIds === undefined ? {} : { attachmentIds }),
           }),
       },
@@ -304,6 +319,15 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => chatCall(() => store.read(id)),
       management: {
+        research: {
+          save: value => research.save(value),
+          remove: () => research.remove(),
+          sources: id =>
+            chatCall(async () => {
+              await chat(id)
+              return store.requests.researchSources(id)
+            }),
+        },
         preferences: { get: async () => state.preferences(), save: async value => state.savePreferences(value) },
         settings: async () => settings(),
         saveProvider: (id, value) => catalog.save(id, value),

@@ -20,6 +20,18 @@ function invalid(): never {
   throw new Error('INVALID_RESPONSE')
 }
 
+function decodeResearchSettings(value: unknown): NonNullable<WebSettings['research']> {
+  if (
+    !object(value) ||
+    value.provider !== 'tavily' ||
+    typeof value.configured !== 'boolean' ||
+    typeof value.environmentKey !== 'boolean' ||
+    value.freeOnly !== true
+  )
+    invalid()
+  return { provider: 'tavily', configured: value.configured, environmentKey: value.environmentKey, freeOnly: true }
+}
+
 const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
 const requestStatuses: readonly RequestStatus[] = [
   'active',
@@ -142,6 +154,12 @@ export class ManagementError extends Error {
 }
 
 const allowedCodes = [
+  'RESEARCH_UNAVAILABLE',
+  'RESEARCH_KEY_UNAVAILABLE',
+  'RESEARCH_KEY_REJECTED',
+  'RESEARCH_FREE_ONLY',
+  'RESEARCH_QUOTA_EXHAUSTED',
+  'RESEARCH_NOT_SAVED',
   'DRAFT_CONFLICT',
   'ATTACHMENT_NOT_FOUND',
   'ATTACHMENT_CONFLICT',
@@ -249,6 +267,7 @@ export class ManagementClient {
     })
     return {
       providers: data.providers.map(provider),
+      ...(data.research === undefined ? {} : { research: decodeResearchSettings(data.research) }),
       persistentKeys: data.persistentKeys,
       builtIns,
       runtime: {
@@ -259,6 +278,40 @@ export class ManagementClient {
   }
 
   /** Saves the interface theme on the Host, so it survives a change of local port. */
+  async saveResearch(value: { readonly key: string } | { readonly useEnvironment: true }): Promise<void> {
+    await this.request('research', 'PUT', value)
+  }
+
+  async removeResearch(): Promise<void> {
+    await this.request('research', 'DELETE')
+  }
+
+  async researchSources(
+    id: string,
+  ): Promise<readonly { title: string; url: string; content: string; sourceId: string; retrievedAt: string }[]> {
+    const data = await this.request(`sessions/${encodeURIComponent(id)}/research-sources`)
+    if (!Array.isArray(data)) invalid()
+    return data.map(item => {
+      if (
+        !object(item) ||
+        typeof item.title !== 'string' ||
+        typeof item.url !== 'string' ||
+        typeof item.content !== 'string' ||
+        typeof item.sourceId !== 'string' ||
+        typeof item.retrievedAt !== 'string' ||
+        !/^https?:\/\//.test(item.url)
+      )
+        invalid()
+      return {
+        title: item.title,
+        url: item.url,
+        content: item.content,
+        sourceId: item.sourceId,
+        retrievedAt: item.retrievedAt,
+      }
+    })
+  }
+
   async saveTheme(theme: WebPreferences['theme']): Promise<WebPreferences['theme']> {
     const data = await this.request('preferences', 'PUT', { theme })
     if (!object(data) || (data.theme !== 'light' && data.theme !== 'dark' && data.theme !== 'system')) invalid()
@@ -460,6 +513,7 @@ export class ManagementClient {
         (value.endedAt !== undefined && typeof value.endedAt !== 'string') ||
         typeof value.lastSequence !== 'number' ||
         (value.summarized !== undefined && value.summarized !== true) ||
+        (value.publicResearch !== undefined && typeof value.publicResearch !== 'boolean') ||
         !Number.isSafeInteger(value.historyStart) ||
         (value.errorCode !== undefined &&
           (typeof value.errorCode !== 'string' || !/^[A-Z][A-Z0-9_]{0,63}$/.test(value.errorCode)))
@@ -473,6 +527,7 @@ export class ManagementClient {
         selection: selection(value.selection) ?? invalid(),
         historyStart: Number(value.historyStart),
         startedAt: value.startedAt,
+        ...(typeof value.publicResearch === 'boolean' ? { publicResearch: value.publicResearch } : {}),
         lastSequence: value.lastSequence,
         ...(typeof value.endedAt === 'string' ? { endedAt: value.endedAt } : {}),
         ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
