@@ -9,7 +9,7 @@ const PREVIEW_CONCURRENCY = 3
 const IDLE_MS = 2500
 // Published content never joins the application DOM. Empty sandbox => opaque origin.
 // srcdoc inherits Host CSP; its leading CSP further disallows every network source.
-const SLIDE_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">`
+const SLIDE_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">`
 
 /** Canvas layout: a filmstrip of real slide previews beside a letterboxed stage, with a presentation mode
  * that fills the screen. Only the stage reads from DeckModel; previews use the same public client.

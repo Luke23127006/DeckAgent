@@ -10,6 +10,7 @@ import type {
   RuntimeOutcome,
   StoredRequest,
   TerminalStatus,
+  RequestAdmission,
 } from './contracts.ts'
 import { HttpError } from './http-error.ts'
 import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools, ToolResult } from './tool-contracts.ts'
@@ -55,8 +56,13 @@ export class RequestController {
     ) => Promise<PreparedTools>,
   ) {}
 
-  async submit(request: AgentRequest): Promise<RequestSnapshot> {
+  async submit(request: AgentRequest, admission?: RequestAdmission): Promise<RequestSnapshot> {
     if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (admission && this.store.get(admission.requestId)) {
+      const saved = this.store.get(admission.requestId)!
+      if (saved.sessionId !== request.sessionId) throw new HttpError(409, 'GENERATION_LINK_CONFLICT')
+      return this.get(admission.requestId)
+    }
     if (this.admitting.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
     this.admitting.add(request.sessionId)
     try {
@@ -68,10 +74,10 @@ export class RequestController {
       if (this.busy.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
       if (this.store.activeFor(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
       if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
-      const prepared = await this.runtime.prepare(request)
+      const prepared = admission?.prepared ?? (await this.runtime.prepare(request))
       const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds, request.publicResearch)
       if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
-      const requestId = `req-${randomUUID()}`
+      const requestId = admission?.requestId ?? `req-${randomUUID()}`
       let admitted: StoredRequest
       try {
         admitted = this.store.admit({
@@ -89,6 +95,12 @@ export class RequestController {
         if (code === 'REQUEST_ACTIVE') throw new HttpError(409, 'SESSION_BUSY')
         if (code === 'SESSION_NOT_FOUND') throw new HttpError(404, 'SESSION_NOT_FOUND')
         throw new HttpError(500, 'REQUEST_NOT_SAVED')
+      }
+      try {
+        admission?.admitted()
+      } catch {
+        this.store.finish(requestId, 'failed', 'GENERATION_LINK_FAILED')
+        throw new HttpError(500, 'GENERATION_LINK_FAILED')
       }
       const execution: Execution = {
         requestId,

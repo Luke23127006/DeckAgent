@@ -37,6 +37,9 @@ import { ResearchService } from './research-service.ts'
 import { researchStyle } from './research-style.ts'
 import { BriefService } from './brief-service.ts'
 import { DeckWorkflow } from './deck-workflow.ts'
+import { ConfirmationService } from './confirmation-service.ts'
+import { artifactRenderer } from './artifact-renderer.ts'
+import type { RequestRuntime } from '@deckagent/host-api'
 
 export { ManagedAttachments } from './managed-attachments.ts'
 export { TavilyClient } from './tavily.ts'
@@ -58,6 +61,8 @@ export { pinnedVersion } from './opencode/config.ts'
 export type { OpenCodeOptions } from './opencode/runtime.ts'
 
 export interface LocalWebOptions {
+  /** Composition seam for the generation runtime; absent until generation tools are connected. */
+  readonly generationRuntime?: RequestRuntime
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
   readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly selection?: ModelSelection
@@ -137,6 +142,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   let web: WebState | undefined
   let providers: ProviderStore | undefined
   let preparation: AttachmentService | undefined
+  let artifactAttachments: ManagedAttachments | undefined
   try {
     try {
       registry = new WorkspaceRegistry({
@@ -151,7 +157,37 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     if (registry.overlapsFolder(layout.root)) throw new StorageError('STORAGE_INSIDE_WORKSPACE')
     try {
       sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'))
-      decks = new DeckService(join(layout.databases, 'decks.sqlite'))
+      const sessionStore = sessions
+      decks = new DeckService(join(layout.databases, 'decks.sqlite'), {
+        artifactRoot: join(layout.files, 'decks'),
+        renderCheck: artifactRenderer(join(layout.files, 'runtime', 'artifact-check')),
+        preparedImage: async (id, attachmentId, signal) => {
+          const item = sessionStore.attachments.get(id, attachmentId)
+          if (
+            !artifactAttachments ||
+            !item.source ||
+            !item.fingerprint ||
+            !item.parsedFingerprint ||
+            !item.detectedType?.startsWith('image/') ||
+            !sessionStore.attachments.sent(id).some(a => a.attachmentId === attachmentId)
+          )
+            throw new SessionError('ATTACHMENT_UNREADABLE', 'The selected image is unavailable')
+          const parsed = await artifactAttachments.prepared(id, attachmentId, signal)
+          const part = parsed.parts.find(p => p.type === 'image')
+          if (!part || part.type !== 'image')
+            throw new SessionError('ATTACHMENT_UNREADABLE', 'The selected image has no prepared pixels')
+          return {
+            bytes: Buffer.from(part.data, 'base64'),
+            source: item.source,
+            originalDigest: item.fingerprint,
+            parsedDigest: item.parsedFingerprint,
+          }
+        },
+        activeRequest: (id, requestId) => {
+          const request = sessionStore.requests.get(requestId)
+          return request?.sessionId === id && ['active', 'waiting_approval'].includes(request.status)
+        },
+      })
       web = new WebState(join(layout.databases, 'web.sqlite'), value => catalog.selectable(value))
     } catch {
       // A damaged or foreign file is kept unchanged; nothing is reset or recreated in its place.
@@ -163,6 +199,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     const state: WebState = web
     // A request that was active when DeckAgent stopped did not finish; it is shown so and never started again (FR-019).
     store.requests.interruptActive()
+    presentation.reconcileGenerations((id, requestId) => store.requests.get(requestId)?.sessionId === id)
     // A remove interrupted between the registry and the chats is completed here: no chat is lost or hidden.
     await store.ungroupExcept(workspaces.activeIds())
     for (const plan of options.confirmedDecks ?? []) {
@@ -214,6 +251,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     )
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
     const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
+    artifactAttachments = attachments
     const inputs = new AttachmentService(store, drafts, attachments)
     preparation = inputs
     const requestStore = inputs.requestStore()
@@ -300,6 +338,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     }
     const briefs = new BriefService(presentation, store)
     const host = await startHost({
+      confirmations: new ConfirmationService(presentation, store, briefs, options.generationRuntime),
       briefs,
       decks: presentation,
       outlines: presentation,

@@ -15,6 +15,7 @@
     "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-client.test.mjs",
     "test:brief-foundation": "node --test tests/design-catalog.test.mjs tests/deck-brief.test.mjs tests/brief-host.test.mjs tests/brief-client.test.mjs",
     "test:deck-review": "node --test tests/interview-policy.test.mjs tests/interview-workflow.test.mjs tests/bound-outline.test.mjs tests/outline-client.test.mjs",
+    "test:generation-publication": "node --test tests/generation-confirmation.test.mjs tests/confirmation-host.test.mjs tests/artifact-publication.test.mjs tests/artifact-rendering.test.mjs",
     "test:slide-pipeline": "node --test tests/deck-service.test.mjs tests/publish-slide.test.mjs tests/deck-pipeline.test.mjs tests/deck-model.test.mjs tests/deck-client.test.mjs",
     "ocr": "ocr",
     "ocr:preview": "ocr delegate preview --format json",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@alibaba-group/open-code-review": "1.12.7",
     "@biomejs/biome": "^2.5.15",
+    "@types/css-tree": "2.3.11",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.1",
     "@types/semver": "^7.8.0",

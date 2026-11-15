@@ -25,7 +25,7 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id=1145128004;
         PRAGMA user_version=1;
       `)
-    } else if (owner !== 1145128004 || ![1, 2, 3, 4].includes(version)) throw new DeckError('DECK_SCHEMA')
+    } else if (owner !== 1145128004 || ![1, 2, 3, 4, 5, 6].includes(version)) throw new DeckError('DECK_SCHEMA')
     if (version < 2) {
       db.exec(`
         CREATE TABLE outline_heads(session_id TEXT PRIMARY KEY,version INTEGER NOT NULL,
@@ -51,6 +51,19 @@ export function initialize(db: DatabaseSync): void {
         FOREIGN KEY(brief_id,version) REFERENCES brief_versions(brief_id,version)) STRICT;
       PRAGMA user_version=4;
     `)
+    if (version < 5)
+      db.exec(`
+      CREATE TABLE generation_intents(session_id TEXT PRIMARY KEY REFERENCES decks(session_id),intent_id TEXT NOT NULL UNIQUE,
+        request_id TEXT NOT NULL UNIQUE,state TEXT NOT NULL CHECK(state IN ('pending','admitted','generating','generated','incomplete')),started_at TEXT,payload TEXT NOT NULL) STRICT;
+      PRAGMA user_version=5;
+    `)
+    if (version < 6)
+      db.exec(`
+      CREATE TABLE artifact_revisions(session_id TEXT NOT NULL,slide_id TEXT NOT NULL,revision INTEGER NOT NULL,
+        artifact_id TEXT NOT NULL UNIQUE,digest TEXT NOT NULL,manifest TEXT NOT NULL,
+        PRIMARY KEY(session_id,slide_id,revision),FOREIGN KEY(session_id,slide_id,revision) REFERENCES revisions(session_id,slide_id,revision)) STRICT;
+      PRAGMA user_version=6;
+    `)
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
       throw new DeckError('DECK_CORRUPT')
     db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()
@@ -65,6 +78,8 @@ export function initialize(db: DatabaseSync): void {
     db.prepare('SELECT brief_id,version,session_id,payload,design,created_at FROM brief_versions LIMIT 0').all()
     db.prepare('SELECT session_id,outline_id,payload FROM outline_details LIMIT 0').all()
     db.prepare('SELECT request_id,session_id,brief_id,version,fingerprint FROM brief_request_receipts LIMIT 0').all()
+    db.prepare('SELECT session_id,intent_id,request_id,state,started_at,payload FROM generation_intents LIMIT 0').all()
+    db.prepare('SELECT session_id,slide_id,revision,artifact_id,digest,manifest FROM artifact_revisions LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

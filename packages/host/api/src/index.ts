@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { DeckError } from '@deckagent/deck'
+import { DeckError, deckFailureMessage } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError, RequestController } from './request-controller.ts'
@@ -9,6 +9,7 @@ import { receiveAttachment } from './multipart.ts'
 
 export type { AttachmentView } from './contracts.ts'
 export type { DeckRequest } from './contracts.ts'
+export type { RequestAdmission, ConfirmationResult } from './contracts.ts'
 export type { BriefManagement, BriefView, BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef } from './contracts.ts'
 export type { AttachmentManagement } from './contracts.ts'
 export type {
@@ -222,7 +223,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src blob: data:; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {
@@ -241,7 +242,7 @@ export async function startHost(options: HostOptions) {
             : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
               ? error.code
               : 'HOST_ERROR',
-          message: 'Request could not be completed',
+          message: deckFailureMessage(known || deck ? error.code : '') ?? 'Request could not be completed',
           ...(known && error.detail ? { detail: error.detail } : {}),
         },
       })
@@ -285,6 +286,17 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const confirmation = /^\/api\/sessions\/([\w-]{1,100})\/deck\/confirm$/.exec(url.pathname)
+    if (confirmation && req.method === 'POST' && options.confirmations && controller) {
+      json(
+        res,
+        200,
+        await options.confirmations.confirm(confirmation[1]!, await readJson(req), (request, settings) =>
+          controller.submit(request, settings),
+        ),
+      )
+      return
+    }
     const interview = /^\/api\/sessions\/([\w-]{1,100})\/interview$/.exec(url.pathname)
     if (interview && options.briefs?.interview && req.method === 'GET') {
       json(res, 200, await options.briefs.interview(interview[1]!))

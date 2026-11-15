@@ -5,6 +5,15 @@
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
-  "exports": { ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" } },
-  "dependencies": { "@deckagent/design": "workspace:*" }
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "dependencies": {
+    "@deckagent/design": "workspace:*",
+    "css-tree": "3.1.0",
+    "parse5": "8.0.0"
+  }
 }

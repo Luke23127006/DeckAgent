@@ -50,7 +50,7 @@ function theme(v: unknown, partial = false): boolean {
         : typeof value === 'number' && Number.isFinite(value) && value > 0,
   )
 }
-function design(v: unknown): v is DesignSnapshot {
+export function isDesignSnapshot(v: unknown): v is DesignSnapshot {
   return (
     object(v) &&
     only(v, ['format', 'designSystem', 'template', 'theme', 'rules', 'brandAssets', 'viewport', 'fingerprint']) &&
@@ -173,7 +173,7 @@ export function decodeBriefView(v: unknown, sessionId: string): BriefView {
     typeof c.createdAt !== 'string' ||
     !Number.isFinite(Date.parse(c.createdAt)) ||
     !draft(c.draft) ||
-    (c.design !== null && !design(c.design)) ||
+    (c.design !== null && !isDesignSnapshot(c.design)) ||
     (c.draft.generationFormat === 'html') !== (c.design !== null)
   )
     return invalid()

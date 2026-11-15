@@ -1,4 +1,5 @@
 import type { DeckChange, DeckSnapshot, SlideContent } from '@deckagent/deck'
+import { decodeGeneration } from './confirmation-client.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -45,7 +46,7 @@ export class DeckClient {
       !object(value) ||
       (value.outlineId !== null && !id(value.outlineId)) ||
       !Array.isArray(value.slides) ||
-      value.slides.length > 100
+      (value.generation === undefined && value.slides.length > 100)
     )
       invalid()
     const slides = value.slides.map((slide: unknown, position: number) => {
@@ -54,7 +55,7 @@ export class DeckClient {
         !id(slide.slideId) ||
         typeof slide.title !== 'string' ||
         !slide.title.trim() ||
-        slide.title.length > 300 ||
+        (value.generation === undefined && slide.title.length > 300) ||
         slide.order !== position ||
         !integer(slide.revision) ||
         slide.status !== (slide.revision ? 'published' : 'pending')
@@ -73,7 +74,9 @@ export class DeckClient {
       (base.version === 0 ? value.outlineId !== null || slides.length > 0 : value.outlineId === null || !slides.length)
     )
       invalid()
-    return { ...base, outlineId: value.outlineId, slides }
+    const generation = value.generation === undefined ? undefined : decodeGeneration(value.generation, sessionId)
+    if (generation && generation.receipt.outlineId !== value.outlineId) invalid()
+    return { ...base, outlineId: value.outlineId, slides, ...(generation ? { generation } : {}) }
   }
 
   async content(sessionId: string, slideId: string, revision: number, signal?: AbortSignal): Promise<SlideContent> {
@@ -87,7 +90,7 @@ export class DeckClient {
       value.slideId !== slideId ||
       value.revision !== revision ||
       typeof value.html !== 'string' ||
-      value.html.length > 262144
+      value.html.length > 4 * 1024 * 1024
     )
       invalid()
     return { sessionId, slideId, revision, html: value.html }

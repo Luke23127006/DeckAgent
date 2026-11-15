@@ -87,11 +87,89 @@ export interface DeckSlide {
 
 /** Full metadata only: HTML is fetched separately for an immutable revision. */
 export interface DeckSnapshot {
+  readonly generation?: GenerationSnapshot
   readonly sessionId: string
   readonly deckId: string
   readonly outlineId: string | null
   readonly version: number
   readonly slides: readonly DeckSlide[]
+}
+
+export interface ConfirmationTarget {
+  readonly confirmationId: string
+  readonly outlineId: string
+  readonly outlineVersion: number
+  readonly briefId: string
+  readonly briefVersion: number
+}
+export interface ConfirmationReceipt extends ConfirmationTarget {
+  readonly sessionId: string
+  readonly deckId: string
+  readonly intentId: string
+  readonly requestId: string
+  readonly fingerprint: string
+  readonly createdAt: string
+}
+export interface GenerationSnapshot {
+  readonly receipt: ConfirmationReceipt
+  readonly state: 'pending' | 'admitted' | 'generating' | 'generated' | 'incomplete'
+  readonly startedAt: string | null
+  readonly formatLocked: boolean
+  readonly format: 'html'
+  readonly design: DesignSnapshot
+  readonly selection: { readonly provider: string; readonly model: string }
+}
+/** An object identity issued by DeckService, never a model-supplied grant or a persisted credential. */
+export interface GenerationGrant {
+  readonly intentId: string
+  readonly requestId: string
+  readonly sessionId: string
+}
+export interface DeckOptions {
+  readonly activeRequest?: (sessionId: string, requestId: string) => boolean
+  readonly artifactRoot?: string
+  readonly renderCheck?: (html: string, requiredText: readonly string[], signal: AbortSignal) => Promise<void>
+  readonly preparedImage?: (sessionId: string, attachmentId: string, signal: AbortSignal) => Promise<PreparedImageAsset>
+}
+export interface PreparedImageAsset {
+  readonly bytes: Uint8Array
+  readonly source: BriefSourceRef
+  readonly originalDigest: string
+  readonly parsedDigest: string
+}
+export interface StageStatus {
+  readonly stageId: string
+  readonly nextSequence: number
+  readonly finalized: boolean
+  readonly digest: string | null
+}
+export interface StageChunk {
+  readonly sequence: number
+  readonly text: string
+  readonly final: boolean
+}
+export interface ArtifactPublication {
+  readonly stageId: string
+  readonly slideId: string
+  readonly expectedRevision: number
+  readonly publicationId: string
+}
+export interface ArtifactAsset {
+  readonly assetId: string
+  readonly source: BriefSourceRef
+  readonly attachmentId: string
+  readonly digest: string
+  readonly originalDigest: string
+  readonly parsedDigest: string
+  readonly byteSize: number
+}
+export interface GenerationCapability {
+  plan(): { readonly generation: GenerationSnapshot; readonly outline: OutlineProposal }
+  begin(slideId: string, layoutId: string): StageStatus
+  append(stageId: string, chunk: StageChunk): StageStatus
+  discard(stageId: string): void
+  image(stageId: string, slideId: string, attachmentId: string): Promise<ArtifactAsset>
+  publish(input: ArtifactPublication): Promise<PublishedSlide>
 }
 
 export interface DeckChange {
@@ -216,9 +294,43 @@ export interface OutlineReader {
 
 export class DeckError extends Error {
   constructor(public readonly code: string) {
-    super(code)
+    super(deckFailureMessage(code) ? `${code}: ${deckFailureMessage(code)}` : code)
     this.name = 'DeckError'
   }
+}
+
+const failureMessages: Readonly<Record<string, string>> = {
+  CONFIRMATION_INVALID: 'Confirm exactly the displayed Outline and Brief. Refresh the proposal and try again.',
+  CONFIRMATION_CONFLICT:
+    'This confirmation targets different saved content. Reload the current proposal before confirming.',
+  BRIEF_STALE: 'The Brief changed. Reload it and review the current Outline before confirming.',
+  GENERATION_UNAVAILABLE:
+    'Generation is not connected. Keep the saved proposal and retry when generation is available.',
+  GENERATION_MODEL_CHANGED: 'Select the model used by this confirmation before retrying admission.',
+  GENERATION_REQUEST_INACTIVE: 'This generation request has ended. Read the saved Deck; no further writes are allowed.',
+  STAGE_LIMIT: 'Two stages are open. Publish or discard one before opening another.',
+  STAGE_CHUNK_INVALID:
+    'Send a nonempty, well-formed UTF-8 chunk of at most 8 KiB with its expected sequence and final flag.',
+  STAGE_SOURCE_TOO_LARGE:
+    'The slide source exceeds 256 KiB. Revise it explicitly and resubmit; no content was truncated.',
+  STAGE_CHUNK_CONFLICT:
+    'This sequence already has different bytes. Retry identical content or start a corrected stage.',
+  STAGE_INCOMPLETE: 'Complete the staged source before publication.',
+  ARTIFACT_UNSAFE_HTML:
+    'Use supported static HTML. Remove active content, embeds and non-managed references, then resubmit.',
+  ARTIFACT_UNSAFE_CSS:
+    'Use supported layout declarations and named theme roles. Remove imports, URLs and unsupported declarations.',
+  ARTIFACT_THEME_MISMATCH: 'Use the supplied effective theme variables instead of adding colours, fonts or type sizes.',
+  ARTIFACT_RENDERER_UNAVAILABLE:
+    'Install a supported local Chrome or Edge browser before publishing. The current revision was kept.',
+  ARTIFACT_OVERFLOW: 'Content exceeds the 1280 by 720 slide. Revise the layout and resubmit.',
+  ARTIFACT_REQUIRED_CONTENT_MISSING: 'Include all planned headings and content visibly before publishing.',
+  ARTIFACT_UNREADABLE: 'Some content is invisible or unreadable. Revise its layout or theme use and resubmit.',
+  ARTIFACT_CORRUPT:
+    'Published bytes are missing or changed. Keep a backup of the data folder and restore a known-good copy.',
+}
+export function deckFailureMessage(code: string): string | undefined {
+  return failureMessages[code]
 }
 
 export function validId(value: unknown): value is string {

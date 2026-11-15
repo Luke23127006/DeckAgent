@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add explicit Host confirmation receipts and durable generation intents, exact Brief/Outline binding, idempotent admission retry and visual snapshot locks that survive Stop or restart.
+- Stage bounded HTML chunks and normalized attachment images in Application Storage, validate parsed HTML/CSS and real browser output, and atomically publish immutable artifact pointers with recovery that preserves last-good revisions. Deck schema v6 retains legacy HTML; generation model tools and end-user controls remain separate integrations.
+
 - Add Host-owned deck interview requests with grouped missing-topic questions, explicit source choices, skip assumptions and request-local proposal staging; failed or stopped models cannot commit staged results.
 - Bind structured Outline revisions to immutable Brief versions, retain slide identities through edits/reordering, compute full changes and restore earlier proposals into new versions. Deck schema v4 keeps legacy history and adds atomic request receipts; generation and its UI remain separate.
 

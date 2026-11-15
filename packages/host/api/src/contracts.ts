@@ -167,6 +167,8 @@ export interface PreparedRequest {
 }
 
 export interface RequestRun {
+  readonly presentation?: import('@deckagent/deck').GenerationCapability
+  readonly generation?: import('@deckagent/deck').GenerationGrant
   /** Trusted Host phase policy, never read from model output or source content. */
   readonly instructions?: string
   readonly tools?: RequestTools
@@ -214,6 +216,13 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly confirmations?: {
+    confirm(
+      sessionId: string,
+      value: unknown,
+      submit: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>,
+    ): Promise<ConfirmationResult>
+  }
   readonly briefs?: BriefManagement
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
   readonly requests?: {
@@ -235,6 +244,16 @@ export interface HostOptions {
   readonly assets?: Readonly<
     Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
   >
+}
+/** Host-only admission settings. HTTP and model inputs cannot supply these callbacks or IDs. */
+export interface RequestAdmission {
+  readonly requestId: string
+  readonly prepared: PreparedRequest
+  admitted(): void
+}
+export interface ConfirmationResult {
+  readonly receipt: import('@deckagent/deck').ConfirmationReceipt
+  readonly request: RequestSnapshot
 }
 
 export interface BriefView extends BriefSnapshot {

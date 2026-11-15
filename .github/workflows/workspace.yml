@@ -152,6 +152,11 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:deck-review
 
+      - name: Generation confirmation and durable artifacts (local browser and fixtures)
+        id: generation_publication
+        timeout-minutes: 2
+        run: pnpm test:generation-publication
+
       - name: Record verification evidence
         if: always()
         env:
@@ -175,6 +180,7 @@ jobs:
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
           BRIEF_FOUNDATION_RESULT: ${{ steps.brief_foundation.outcome }}
           DECK_REVIEW_RESULT: ${{ steps.deck_review.outcome }}
+          GENERATION_PUBLICATION_RESULT: ${{ steps.generation_publication.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
           MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
           SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
@@ -208,6 +214,7 @@ jobs:
           - Outline state / client: $env:OUTLINE_WORKFLOW_RESULT
           - Design catalog / Brief versions / source ownership / API and client: $env:BRIEF_FOUNDATION_RESULT
           - Interview / versioned Outline review / restart and atomic receipts: $env:DECK_REVIEW_RESULT
+          - Generation confirmation / admission faults / artifact safety and real rendering: $env:GENERATION_PUBLICATION_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on
