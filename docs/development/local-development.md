@@ -86,6 +86,8 @@ To set a key for the current PowerShell session without printing it:
 
 ## Session persistence
 
+Briefs use the separate Deck database, schema v3. The [Brief and design reference](brief-and-design.md) describes versioned storage, migration, source-receipt semantics and authenticated API/client interfaces. Run `pnpm.cmd test:brief-foundation` after building; it uses local fixtures without provider credentials.
+
 Local Web stores attachment metadata, source identities, preparation receipts and step approvals in its session database (schema v7). Original bytes and immutable parsed sidecars live under `files/attachments/` in Application Storage. Sent attachments belong to their Chat and remain after restart. Unsent staging expires with the Host's in-memory draft; startup removes uncommitted managed files and keeps committed attachments. Missing or modified originals or sidecars produce an unreadable-attachment error. Preparation receipts retain parser version, capabilities and omissions; historical attachments are never silently reparsed.
 
 Run parsing/upload/admission/storage checks with `pnpm.cmd test:attachments`, storage/foundation checks with `pnpm.cmd test:local-foundation`, and source/MCP/approval checks with `pnpm.cmd test:source-permissions`. The tests use temporary local files and no real provider credentials. Schema v7 upgrades v1 through v6; an older binary refuses a newer database. Keep a backup before upgrading if you need to return to an older binary.

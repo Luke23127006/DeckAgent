@@ -62,6 +62,9 @@ importers:
       '@deckagent/deck':
         specifier: workspace:*
         version: link:../../packages/presentation/deck
+      '@deckagent/design':
+        specifier: workspace:*
+        version: link:../../packages/presentation/design
       '@deckagent/file-tools':
         specifier: workspace:*
         version: link:../../packages/tools/filesystem
@@ -116,7 +119,13 @@ importers:
         specifier: workspace:*
         version: link:../../agent/runtime
 
-  packages/presentation/deck: {}
+  packages/presentation/deck:
+    dependencies:
+      '@deckagent/design':
+        specifier: workspace:*
+        version: link:../design
+
+  packages/presentation/design: {}
 
   packages/session/persistence: {}
 

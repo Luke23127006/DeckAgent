@@ -4,6 +4,11 @@ Notable changes to this repository. The newest changes are at the top.
 
 ## [Unreleased]
 
+### Added
+
+- Add an offline versioned design catalog, validated effective theme snapshots and content-based layout candidates with guarded custom-layout fallback.
+- Persist immutable Brief versions and explicit source choices per Chat in Deck schema v3; expose authenticated Host reads/writes and a browser-safe client decoder. Existing Decks, Outlines and Chat history remain intact. Interview and generation integration remain separate.
+
 ### Changed
 
 - Record the accepted initial visual catalog and review/generation/publication contracts for B04, including product defaults and theme roles. Dependent runtime implementation remains separate.

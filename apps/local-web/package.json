@@ -6,6 +6,7 @@
   "dependencies": {
     "@deckagent/browser-runtime": "workspace:*",
     "@deckagent/deck": "workspace:*",
+    "@deckagent/design": "workspace:*",
     "@deckagent/file-tools": "workspace:*",
     "@deckagent/host-api": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",

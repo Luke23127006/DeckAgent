@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { DesignError } from '@deckagent/design'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -16,6 +17,19 @@ import type {
 import { validateSlideHtml } from './html-policy.ts'
 import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
+import { BriefStorage } from './brief-store.ts'
+import type { BriefRecord, BriefSnapshot } from './contracts.ts'
+export { validateBriefDraft } from './brief-store.ts'
+export type {
+  BriefDraft,
+  BriefRecord,
+  BriefSnapshot,
+  BriefSourceRef,
+  InterviewTopic,
+  DesignSnapshot,
+  CatalogRef,
+  ThemeValues,
+} from './contracts.ts'
 import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
 
 export { DeckError } from './contracts.ts'
@@ -39,6 +53,7 @@ export type {
 export class DeckService implements DeckReader, DeckPublisher {
   private readonly db: DatabaseSync
   private readonly outlines: OutlineStorage
+  private readonly briefs: BriefStorage
   private closed = false
   private readonly listeners = new Map<string, Set<(change: DeckChange) => void>>()
 
@@ -51,6 +66,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       initialize(db)
       this.db = db
       this.outlines = new OutlineStorage(db)
+      this.briefs = new BriefStorage(db)
     } catch (error) {
       db?.close()
       throw error instanceof DeckError ? error : new DeckError('DECK_STORAGE')
@@ -79,20 +95,58 @@ export class DeckService implements DeckReader, DeckPublisher {
   }
 
   outlineSnapshot(sessionId: string): OutlineSnapshot {
-    return this.access(() => { this.id(sessionId); return this.outlines.snapshot(sessionId) })
+    return this.access(() => {
+      this.id(sessionId)
+      return this.outlines.snapshot(sessionId)
+    })
+  }
+
+  briefSnapshot(sessionId: string): BriefSnapshot {
+    return this.access(() => {
+      this.id(sessionId)
+      return this.briefs.snapshot(sessionId)
+    })
+  }
+
+  briefVersion(sessionId: string, briefId: string, version: number): BriefRecord {
+    return this.access(() => {
+      this.id(sessionId)
+      this.id(briefId)
+      if (!Number.isSafeInteger(version) || version < 1) throw new DeckError('BRIEF_NOT_FOUND')
+      return this.briefs.version(sessionId, briefId, version)
+    })
+  }
+
+  saveBrief(sessionId: string, input: { readonly expectedVersion: number; readonly draft: unknown }): BriefRecord {
+    return this.access(() => {
+      this.id(sessionId)
+      return this.transaction(() => this.briefs.save(sessionId, input))
+    })
   }
 
   beginOutline(sessionId: string): void {
-    this.access(() => { this.id(sessionId); this.outlines.begin(sessionId) })
+    this.access(() => {
+      this.id(sessionId)
+      this.outlines.begin(sessionId)
+    })
   }
 
   /** Called by Host only after a successful completed response, never by a model tool. */
-  proposeOutline(sessionId: string, input: { readonly requestId: string; readonly responseIndex: number; readonly draft: OutlineDraft }): OutlineProposal {
-    return this.access(() => { this.id(sessionId); return this.transaction(() => this.outlines.propose(sessionId, input)) })
+  proposeOutline(
+    sessionId: string,
+    input: { readonly requestId: string; readonly responseIndex: number; readonly draft: OutlineDraft },
+  ): OutlineProposal {
+    return this.access(() => {
+      this.id(sessionId)
+      return this.transaction(() => this.outlines.propose(sessionId, input))
+    })
   }
 
   currentOutline(sessionId: string, target: OutlineTarget): OutlineProposal {
-    return this.access(() => { this.id(sessionId); return this.outlines.current(sessionId, target) })
+    return this.access(() => {
+      this.id(sessionId)
+      return this.outlines.current(sessionId, target)
+    })
   }
 
   confirmOutline(sessionId: string, target: OutlineTarget): void {
@@ -108,12 +162,17 @@ export class DeckService implements DeckReader, DeckPublisher {
   }
 
   cancelOutline(sessionId: string, target: OutlineTarget): void {
-    this.access(() => { this.id(sessionId); this.transaction(() => this.outlines.cancel(sessionId, target)) })
+    this.access(() => {
+      this.id(sessionId)
+      this.transaction(() => this.outlines.cancel(sessionId, target))
+    })
   }
 
   private insertPlan(sessionId: string, plan: ConfirmedDeckPlan): boolean {
-    const normalized = JSON.stringify({ outlineId: plan.outlineId,
-      slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })) })
+    const normalized = JSON.stringify({
+      outlineId: plan.outlineId,
+      slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })),
+    })
     const existing = this.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
     if (existing) {
       if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
@@ -121,7 +180,9 @@ export class DeckService implements DeckReader, DeckPublisher {
     }
     this.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
     const insert = this.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
-    plan.slides.forEach((s, i) => { insert.run(sessionId, s.slideId, s.title, i) })
+    plan.slides.forEach((s, i) => {
+      insert.run(sessionId, s.slideId, s.title, i)
+    })
     return true
   }
 
@@ -277,6 +338,7 @@ export class DeckService implements DeckReader, DeckPublisher {
     try {
       return operation()
     } catch (error) {
+      if (error instanceof DesignError) throw new DeckError(error.code)
       throw error instanceof DeckError || (error instanceof Error && error.name === 'AbortError')
         ? error
         : new DeckError('DECK_STORAGE')

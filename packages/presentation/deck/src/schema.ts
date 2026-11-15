@@ -25,7 +25,7 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id=1145128004;
         PRAGMA user_version=1;
       `)
-    } else if (owner !== 1145128004 || ![1, 2].includes(version)) throw new DeckError('DECK_SCHEMA')
+    } else if (owner !== 1145128004 || ![1, 2, 3].includes(version)) throw new DeckError('DECK_SCHEMA')
     if (version < 2) {
       db.exec(`
         CREATE TABLE outline_heads(session_id TEXT PRIMARY KEY,version INTEGER NOT NULL,
@@ -36,6 +36,13 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA user_version=2;
       `)
     }
+    if (version < 3)
+      db.exec(`
+      CREATE TABLE brief_heads(session_id TEXT PRIMARY KEY, brief_id TEXT NOT NULL UNIQUE, version INTEGER NOT NULL CHECK(version>0)) STRICT;
+      CREATE TABLE brief_versions(brief_id TEXT NOT NULL REFERENCES brief_heads(brief_id), version INTEGER NOT NULL CHECK(version>0),
+        session_id TEXT NOT NULL, payload TEXT NOT NULL, design TEXT, created_at TEXT NOT NULL, PRIMARY KEY(brief_id,version)) STRICT;
+      PRAGMA user_version=3;
+    `)
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
       throw new DeckError('DECK_CORRUPT')
     db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()
@@ -43,7 +50,11 @@ export function initialize(db: DatabaseSync): void {
     db.prepare('SELECT session_id,slide_id,revision,html FROM revisions LIMIT 0').all()
     db.prepare('SELECT session_id,publication_id,fingerprint,receipt FROM publications LIMIT 0').all()
     db.prepare('SELECT session_id,version,current_id,confirmed_id FROM outline_heads LIMIT 0').all()
-    db.prepare('SELECT session_id,outline_id,version,request_id,response_index,payload,cancelled FROM outline_proposals LIMIT 0').all()
+    db.prepare(
+      'SELECT session_id,outline_id,version,request_id,response_index,payload,cancelled FROM outline_proposals LIMIT 0',
+    ).all()
+    db.prepare('SELECT session_id,brief_id,version FROM brief_heads LIMIT 0').all()
+    db.prepare('SELECT brief_id,version,session_id,payload,design,created_at FROM brief_versions LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

@@ -8,6 +8,7 @@ import { HttpError, RequestController } from './request-controller.ts'
 import { receiveAttachment } from './multipart.ts'
 
 export type { AttachmentView } from './contracts.ts'
+export type { BriefManagement, BriefView, BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef } from './contracts.ts'
 export type { AttachmentManagement } from './contracts.ts'
 export type {
   ApprovalStep,
@@ -213,6 +214,17 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const brief = /^\/api\/sessions\/([\w-]{1,100})\/brief(?:\/versions\/(\d{1,10}))?$/.exec(url.pathname)
+    if (brief && options.briefs) {
+      if (req.method === 'GET') {
+        json(res, 200, await options.briefs.get(brief[1]!, brief[2] === undefined ? undefined : Number(brief[2])))
+        return
+      }
+      if (req.method === 'PUT' && brief[2] === undefined) {
+        json(res, 200, await options.briefs.save(brief[1]!, await readJson(req)))
+        return
+      }
+    }
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {

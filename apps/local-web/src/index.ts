@@ -35,6 +35,7 @@ import { AttachmentService } from './attachment-service.ts'
 import { attachmentStyle } from './attachment-style.ts'
 import { ResearchService } from './research-service.ts'
 import { researchStyle } from './research-style.ts'
+import { BriefService } from './brief-service.ts'
 
 export { ManagedAttachments } from './managed-attachments.ts'
 export { TavilyClient } from './tavily.ts'
@@ -297,6 +298,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         }),
     }
     const host = await startHost({
+      briefs: new BriefService(presentation, store),
       decks: presentation,
       outlines: presentation,
       assets,

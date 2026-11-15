@@ -1,4 +1,5 @@
-import type { DeckReader, OutlineReader } from '@deckagent/deck'
+import type { BriefSnapshot, BriefSourceRef, DeckReader, OutlineReader } from '@deckagent/deck'
+export type { BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef } from '@deckagent/deck'
 import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools } from './tool-contracts.ts'
 export type {
   ApprovalStep,
@@ -197,6 +198,7 @@ export interface HistoryMessage {
 }
 
 export interface HostOptions {
+  readonly briefs?: BriefManagement
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
   readonly requests?: {
     readonly store: RequestStore
@@ -217,6 +219,16 @@ export interface HostOptions {
   readonly assets?: Readonly<
     Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
   >
+}
+
+export interface BriefView extends BriefSnapshot {
+  /** A receipt is not proof that the source bytes can still be read. Reads recheck B03 permissions. */
+  readonly sourceStates: readonly { readonly source: BriefSourceRef; readonly status: 'recorded' | 'unavailable' }[]
+}
+
+export interface BriefManagement {
+  get(sessionId: string, version?: number): Promise<BriefView>
+  save(sessionId: string, value: unknown): Promise<BriefView>
 }
 
 /** API protocols of BR-005 V-4. */

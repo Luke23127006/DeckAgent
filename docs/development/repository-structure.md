@@ -34,6 +34,8 @@ This section describes the current state and changes with the codebase; it is no
 | `@deckagent/model-providers` | `packages/llm/providers` | `@deckagent/agent-runtime` |
 | `@deckagent/session-persistence` | `packages/session/persistence` | none |
 | `@deckagent/workspace-registry` | `packages/workspace/registry` | none |
+| `@deckagent/design` | `packages/presentation/design` | none |
+| `@deckagent/deck` | `packages/presentation/deck` | design |
 | `@deckagent/local-web` | `apps/local-web` | deck, host-api, browser-runtime, model-providers, session-persistence, workspace-registry |
 | `@deckagent/cordis-fixture` | `packages/testing/cordis-fixture` | `@deepseek-ai/cordis` |
 | `@deckagent/agent-runtime-cli` | `apps/agent-runtime` | runtime, providers, persistence, `@deepseek-ai/cordis` |

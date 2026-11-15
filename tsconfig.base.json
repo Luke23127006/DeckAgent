@@ -24,6 +24,7 @@
       "node"
     ],
     "paths": {
+      "@deckagent/design": ["./packages/presentation/design/src/index.ts"],
       "@deckagent/presentation-tools": ["./packages/tools/presentation/src/index.ts"],
       "@deckagent/deck": ["./packages/presentation/deck/src/index.ts"],
       "@deckagent/workspace-registry": [

@@ -142,6 +142,11 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:outline-workflow
 
+      - name: Design catalog and Brief storage/API/client (local fixtures)
+        id: brief_foundation
+        timeout-minutes: 2
+        run: pnpm test:brief-foundation
+
       - name: Record verification evidence
         if: always()
         env:
@@ -163,6 +168,7 @@ jobs:
           LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
           SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
+          BRIEF_FOUNDATION_RESULT: ${{ steps.brief_foundation.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
           MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
           SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
@@ -194,6 +200,7 @@ jobs:
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
           - Outline state / client: $env:OUTLINE_WORKFLOW_RESULT
+          - Design catalog / Brief versions / source ownership / API and client: $env:BRIEF_FOUNDATION_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on

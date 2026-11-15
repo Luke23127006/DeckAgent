@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "packages/presentation/design" },
     { "path": "packages/tools/presentation" },
     { "path": "packages/presentation/deck" },
     {

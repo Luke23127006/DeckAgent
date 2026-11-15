@@ -1,3 +1,64 @@
+import type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
+export type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
+
+export interface BriefSourceRef {
+  readonly sourceId: string
+  readonly version: number
+  readonly kind: 'attachment' | 'project-file' | 'approved-file' | 'research'
+}
+export type InterviewTopic =
+  | 'topic'
+  | 'audience'
+  | 'duration'
+  | 'purpose'
+  | 'sources'
+  | 'language'
+  | 'images'
+  | 'format'
+  | 'template'
+  | 'design-system'
+export interface BriefDraft {
+  readonly topic?: string
+  readonly audience?: string
+  readonly durationMinutes?: number
+  readonly purpose?: string
+  readonly language?: string
+  readonly requirements: readonly string[]
+  readonly answers: readonly { readonly topic: InterviewTopic; readonly value: string }[]
+  readonly assumptions: readonly string[]
+  readonly sources: {
+    readonly material: boolean
+    readonly modelKnowledge: boolean
+    readonly publicResearch: boolean
+    readonly refs: readonly BriefSourceRef[]
+  }
+  readonly images: {
+    readonly mode: 'none' | 'attachments' | 'unavailable'
+    readonly attachmentIds: readonly string[]
+    readonly unmetRequirements: readonly string[]
+  }
+  readonly proposedSlideCount?: number
+  readonly requestedFormat?: string
+  readonly generationFormat?: 'html'
+  readonly template?: CatalogRef
+  readonly designSystem?: CatalogRef
+  readonly themeOverrides?: Partial<ThemeValues>
+}
+export interface BriefRecord {
+  readonly sessionId: string
+  readonly briefId: string
+  readonly version: number
+  readonly createdAt: string
+  readonly draft: BriefDraft
+  readonly design: DesignSnapshot | null
+}
+export interface BriefSnapshot {
+  readonly sessionId: string
+  readonly version: number
+  readonly current: BriefRecord | null
+  readonly locked: boolean
+}
+
 /** Trusted Host input. Model tools cannot confirm or replace a plan. */
 export interface ConfirmedDeckPlan {
   readonly outlineId: string
