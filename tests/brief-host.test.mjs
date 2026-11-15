@@ -151,6 +151,11 @@ test('Brief source receipts require owning Chat and expose superseded versions w
   await read()
   const stale = (await f.call(path)).data
   assert.equal(stale.sourceStates[0].status, 'unavailable')
+  assert.ok(
+    (await new BriefClient(f.app.origin, f.app.token).interview(id)).state.blockers.some(
+      b => b.code === 'SOURCE_UNAVAILABLE',
+    ),
+  )
   assert.deepEqual(stale.current, saved.data.current)
   assert.equal((await f.call(path, 'PUT', { expectedVersion: 1, draft })).status, 404)
   draft.sources.refs[0].version = 2

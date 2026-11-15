@@ -18,8 +18,17 @@ import { validateSlideHtml } from './html-policy.ts'
 import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
 import { BriefStorage } from './brief-store.ts'
+import { saveBoundOutline } from './bound-outline.ts'
+import type { BoundOutlineInput } from './contracts.ts'
+import type { BriefProposalInput } from './contracts.ts'
+export { validateBoundOutline } from './bound-outline.ts'
+export type { BoundOutlineDraft, BoundOutlineInput, OutlineChanges } from './contracts.ts'
+export type { BriefProposalInput } from './contracts.ts'
+export type { ContentBlock } from './contracts.ts'
 import type { BriefRecord, BriefSnapshot } from './contracts.ts'
 export { validateBriefDraft } from './brief-store.ts'
+export { interviewState, skipInterview } from './interview.ts'
+export type { InterviewState } from './contracts.ts'
 export type {
   BriefDraft,
   BriefRecord,
@@ -124,6 +133,64 @@ export class DeckService implements DeckReader, DeckPublisher {
     })
   }
 
+  proposeBoundOutline(sessionId: string, input: BoundOutlineInput): OutlineProposal {
+    return this.access(() => {
+      this.id(sessionId)
+      return this.transaction(() => {
+        const brief = this.briefs.snapshot(sessionId).current
+        if (!brief) throw new DeckError('BRIEF_INCOMPLETE')
+        return saveBoundOutline(this.db, sessionId, input, brief, this.outlines.snapshot(sessionId))
+      })
+    })
+  }
+
+  /** Atomically saves a completed request's staged Brief/Outline before Session terminal status. */
+  commitBriefProposal(sessionId: string, input: BriefProposalInput): BriefRecord {
+    return this.access(() => {
+      this.id(sessionId)
+      this.id(input.requestId)
+      return this.transaction(() => {
+        const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex')
+        const receipt = this.db.prepare('SELECT * FROM brief_request_receipts WHERE request_id=?').get(input.requestId)
+        if (receipt) {
+          if (receipt.session_id !== sessionId || receipt.fingerprint !== fingerprint)
+            throw new DeckError('BRIEF_REQUEST_CONFLICT')
+          return this.briefs.version(sessionId, String(receipt.brief_id), Number(receipt.version))
+        }
+        const state = this.outlines.snapshot(sessionId)
+        const current = state.proposals.find(p => p.outlineId === state.currentId)
+        if (
+          input.expectedOutline === null
+            ? !!current
+            : !current ||
+              current.outlineId !== input.expectedOutline.outlineId ||
+              current.version !== input.expectedOutline.version
+        )
+          throw new DeckError('OUTLINE_STALE')
+        const brief = this.briefs.save(sessionId, { expectedVersion: input.expectedBriefVersion, draft: input.draft })
+        if (input.outline !== undefined)
+          saveBoundOutline(
+            this.db,
+            sessionId,
+            {
+              requestId: input.requestId,
+              responseIndex: input.responseIndex,
+              expectedOutline: input.expectedOutline,
+              expectedBrief: { briefId: brief.briefId, version: brief.version },
+              draft: input.outline,
+              ...(input.restoredFrom ? { restoredFrom: input.restoredFrom } : {}),
+            },
+            brief,
+            state,
+          )
+        this.db
+          .prepare('INSERT INTO brief_request_receipts VALUES(?,?,?,?,?)')
+          .run(input.requestId, sessionId, brief.briefId, brief.version, fingerprint)
+        return brief
+      })
+    })
+  }
+
   beginOutline(sessionId: string): void {
     this.access(() => {
       this.id(sessionId)
@@ -154,6 +221,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       this.id(sessionId)
       this.transaction(() => {
         const proposal = this.outlines.current(sessionId, target)
+        if (proposal.brief) throw new DeckError('DECK_CONFIRMATION_REQUIRED')
         this.insertPlan(sessionId, proposal)
         this.outlines.confirm(sessionId, target)
       })

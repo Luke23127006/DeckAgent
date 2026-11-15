@@ -1,5 +1,5 @@
 import type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
-export type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
+export type { CatalogRef, ContentBlock, DesignSnapshot, ThemeValues } from '@deckagent/design'
 
 export interface BriefSourceRef {
   readonly sourceId: string
@@ -51,6 +51,18 @@ export interface BriefRecord {
   readonly createdAt: string
   readonly draft: BriefDraft
   readonly design: DesignSnapshot | null
+}
+export interface InterviewState {
+  readonly questions: readonly {
+    readonly topic: InterviewTopic
+    readonly prompt: string
+    readonly suggestions: readonly string[]
+    readonly required: boolean
+  }[]
+  readonly blockers: readonly { readonly code: string; readonly message: string }[]
+  readonly readyForOutline: boolean
+  readonly skipAllowed: boolean
+  readonly notice: string
 }
 export interface BriefSnapshot {
   readonly sessionId: string
@@ -131,12 +143,61 @@ export interface OutlineTarget {
 }
 
 export interface OutlineProposal extends OutlineTarget {
+  readonly brief?: BriefRecord
+  readonly revisionSuggestions?: readonly string[]
+  readonly previousOutlineId?: string
+  readonly restoredFrom?: string
+  readonly changes?: OutlineChanges
   readonly requestId: string
   /** Index of the completed assistant response in the public, non-system history. */
   readonly responseIndex: number
   readonly overview: string
-  readonly slides: readonly { readonly slideId: string; readonly title: string; readonly content: string }[]
+  readonly slides: readonly {
+    readonly slideId: string
+    readonly title: string
+    readonly content: string
+    readonly blocks?: readonly import('@deckagent/design').ContentBlock[]
+    readonly sources?: readonly BriefSourceRef[]
+  }[]
   readonly status: 'current' | 'superseded' | 'cancelled' | 'confirmed'
+}
+
+export interface OutlineChanges {
+  readonly overviewChanged: boolean
+  readonly suggestionsChanged: boolean
+  readonly briefFields: readonly string[]
+  readonly added: readonly string[]
+  readonly removed: readonly string[]
+  readonly changed: readonly string[]
+  readonly orderChanged: boolean
+}
+export interface BoundOutlineDraft {
+  readonly overview: string
+  readonly revisionSuggestions: readonly string[]
+  readonly slides: readonly {
+    readonly slideId?: string
+    readonly title: string
+    readonly content: string
+    readonly blocks: readonly import('@deckagent/design').ContentBlock[]
+    readonly sources: readonly BriefSourceRef[]
+  }[]
+}
+export interface BoundOutlineInput {
+  readonly requestId: string
+  readonly responseIndex: number
+  readonly expectedOutline: OutlineTarget | null
+  readonly expectedBrief: { readonly briefId: string; readonly version: number }
+  readonly draft: unknown
+  readonly restoredFrom?: string
+}
+export interface BriefProposalInput {
+  readonly requestId: string
+  readonly responseIndex: number
+  readonly expectedBriefVersion: number
+  readonly expectedOutline: OutlineTarget | null
+  readonly draft: unknown
+  readonly outline?: unknown
+  readonly restoredFrom?: string
 }
 
 export interface OutlineSnapshot {

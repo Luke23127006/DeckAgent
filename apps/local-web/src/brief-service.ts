@@ -1,4 +1,4 @@
-import { DeckError, validateBriefDraft } from '@deckagent/deck'
+import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
 import type { DeckService, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
@@ -24,7 +24,7 @@ export class BriefService implements BriefManagement {
     ]
   }
 
-  private verify(id: string, draft: BriefDraft) {
+  verify(id: string, draft: BriefDraft) {
     const known = this.sources(id)
     for (const ref of draft.sources.refs)
       if (!known.some(item => item.sourceId === ref.sourceId && item.version === ref.version && item.kind === ref.kind))
@@ -43,6 +43,24 @@ export class BriefService implements BriefManagement {
         )
       )
         throw new HttpError(404, 'SOURCE_NOT_FOUND')
+    }
+  }
+
+  async interview(id: string) {
+    const brief = await this.get(id)
+    const draft = brief.current?.draft ?? {
+      requirements: [],
+      answers: [],
+      assumptions: [],
+      sources: { material: false, modelKnowledge: false, publicResearch: false, refs: [] },
+      images: { mode: 'none' as const, attachmentIds: [], unmetRequirements: [] },
+    }
+    return {
+      brief,
+      state: interviewState(
+        draft,
+        brief.sourceStates.some(s => s.status === 'unavailable'),
+      ),
     }
   }
 

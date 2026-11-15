@@ -36,6 +36,7 @@ import { attachmentStyle } from './attachment-style.ts'
 import { ResearchService } from './research-service.ts'
 import { researchStyle } from './research-style.ts'
 import { BriefService } from './brief-service.ts'
+import { DeckWorkflow } from './deck-workflow.ts'
 
 export { ManagedAttachments } from './managed-attachments.ts'
 export { TavilyClient } from './tavily.ts'
@@ -297,14 +298,15 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           return listWorkspaces()
         }),
     }
+    const briefs = new BriefService(presentation, store)
     const host = await startHost({
-      briefs: new BriefService(presentation, store),
+      briefs,
       decks: presentation,
       outlines: presentation,
       assets,
       requests: {
         store: requestStore,
-        runtime,
+        runtime: new DeckWorkflow(runtime, presentation, store, briefs),
         prepareTools: async (sessionId, attachmentIds, publicResearch) =>
           prepareSourceTools({
             sessionId,

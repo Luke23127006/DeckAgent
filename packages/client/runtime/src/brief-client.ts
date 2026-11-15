@@ -268,4 +268,58 @@ export class BriefClient {
   save(sessionId: string, expectedVersion: number, draft: BriefDraft): Promise<BriefView> {
     return this.request(sessionId, undefined, { expectedVersion, draft })
   }
+
+  async interview(sessionId: string): Promise<{ brief: BriefView; state: import('@deckagent/deck').InterviewState }> {
+    const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/interview`, {
+      headers: { authorization: `Bearer ${this.token}` },
+      credentials: 'omit',
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'BRIEF_UNAVAILABLE')
+    const value: unknown = await response.json()
+    if (!object(value) || !object(value.state)) throw new Error('INVALID_RESPONSE')
+    const s = value.state
+    if (
+      !Array.isArray(s.questions) ||
+      !Array.isArray(s.blockers) ||
+      typeof s.readyForOutline !== 'boolean' ||
+      typeof s.skipAllowed !== 'boolean' ||
+      !text(s.notice)
+    )
+      throw new Error('INVALID_RESPONSE')
+    const questions = s.questions.map((q: unknown) => {
+      if (!object(q) || !text(q.prompt) || !strings(q.suggestions) || typeof q.required !== 'boolean')
+        throw new Error('INVALID_RESPONSE')
+      const topic = (
+        [
+          'topic',
+          'audience',
+          'duration',
+          'purpose',
+          'sources',
+          'language',
+          'images',
+          'format',
+          'template',
+          'design-system',
+        ] as const
+      ).find(t => t === q.topic)
+      if (!topic) throw new Error('INVALID_RESPONSE')
+      return { topic, prompt: q.prompt, suggestions: q.suggestions, required: q.required }
+    })
+    const blockers = s.blockers.map((b: unknown) => {
+      if (!object(b) || !text(b.code) || !text(b.message)) throw new Error('INVALID_RESPONSE')
+      return { code: b.code, message: b.message }
+    })
+    if (
+      (s.readyForOutline && (questions.length || blockers.length)) ||
+      new Set(questions.map(q => q.topic)).size !== questions.length
+    )
+      throw new Error('INVALID_RESPONSE')
+    return {
+      brief: decodeBriefView(value.brief, sessionId),
+      state: { questions, blockers, readyForOutline: s.readyForOutline, skipAllowed: s.skipAllowed, notice: s.notice },
+    }
+  }
 }

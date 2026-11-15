@@ -175,7 +175,11 @@ export class OpenCodeRuntime implements RequestRuntime {
     run: RequestRun,
   ): Promise<RuntimeOutcome> {
     const folders = await this.folders(request.sessionId)
-    const context = `${folders.work}|${toolBoundary}|${run.tools?.context ?? 'no-source-capability'}`
+    const context = `${folders.work}|${toolBoundary}|${run.tools?.context ?? 'no-source-capability'}|${createHash(
+      'sha256',
+    )
+      .update(run.instructions ?? '')
+      .digest('hex')}`
     const log = this.sessions.requests
     const binding = log.binding(request.sessionId)
     const earlier = log.list(request.sessionId).filter(item => item.requestId !== run.requestId)
@@ -239,6 +243,7 @@ export class OpenCodeRuntime implements RequestRuntime {
       config = runtimeConfiguration(
         settings,
         bridge && run.tools ? { url: bridge.url, names: run.tools.schemas.map(tool => tool.name) } : undefined,
+        run.instructions,
       )
     } catch (error) {
       await bridge?.close()

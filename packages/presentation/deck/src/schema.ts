@@ -25,7 +25,7 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id=1145128004;
         PRAGMA user_version=1;
       `)
-    } else if (owner !== 1145128004 || ![1, 2, 3].includes(version)) throw new DeckError('DECK_SCHEMA')
+    } else if (owner !== 1145128004 || ![1, 2, 3, 4].includes(version)) throw new DeckError('DECK_SCHEMA')
     if (version < 2) {
       db.exec(`
         CREATE TABLE outline_heads(session_id TEXT PRIMARY KEY,version INTEGER NOT NULL,
@@ -43,6 +43,14 @@ export function initialize(db: DatabaseSync): void {
         session_id TEXT NOT NULL, payload TEXT NOT NULL, design TEXT, created_at TEXT NOT NULL, PRIMARY KEY(brief_id,version)) STRICT;
       PRAGMA user_version=3;
     `)
+    if (version < 4)
+      db.exec(`
+      CREATE TABLE outline_details(session_id TEXT NOT NULL,outline_id TEXT NOT NULL,payload TEXT NOT NULL,
+        PRIMARY KEY(session_id,outline_id),FOREIGN KEY(session_id,outline_id) REFERENCES outline_proposals(session_id,outline_id)) STRICT;
+      CREATE TABLE brief_request_receipts(request_id TEXT PRIMARY KEY,session_id TEXT NOT NULL,brief_id TEXT NOT NULL,version INTEGER NOT NULL,fingerprint TEXT NOT NULL,
+        FOREIGN KEY(brief_id,version) REFERENCES brief_versions(brief_id,version)) STRICT;
+      PRAGMA user_version=4;
+    `)
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
       throw new DeckError('DECK_CORRUPT')
     db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()
@@ -55,6 +63,8 @@ export function initialize(db: DatabaseSync): void {
     ).all()
     db.prepare('SELECT session_id,brief_id,version FROM brief_heads LIMIT 0').all()
     db.prepare('SELECT brief_id,version,session_id,payload,design,created_at FROM brief_versions LIMIT 0').all()
+    db.prepare('SELECT session_id,outline_id,payload FROM outline_details LIMIT 0').all()
+    db.prepare('SELECT request_id,session_id,brief_id,version,fingerprint FROM brief_request_receipts LIMIT 0').all()
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

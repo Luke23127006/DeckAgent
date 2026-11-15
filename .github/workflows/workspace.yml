@@ -147,6 +147,11 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:brief-foundation
 
+      - name: Interview and versioned Outline review (local fixtures)
+        id: deck_review
+        timeout-minutes: 2
+        run: pnpm test:deck-review
+
       - name: Record verification evidence
         if: always()
         env:
@@ -169,6 +174,7 @@ jobs:
           SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
           BRIEF_FOUNDATION_RESULT: ${{ steps.brief_foundation.outcome }}
+          DECK_REVIEW_RESULT: ${{ steps.deck_review.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
           MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
           SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
@@ -201,6 +207,7 @@ jobs:
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
           - Outline state / client: $env:OUTLINE_WORKFLOW_RESULT
           - Design catalog / Brief versions / source ownership / API and client: $env:BRIEF_FOUNDATION_RESULT
+          - Interview / versioned Outline review / restart and atomic receipts: $env:DECK_REVIEW_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on

@@ -18,11 +18,25 @@ export interface ModelSelection {
 
 /** A generic chat request (B02). Generation entries arrive with their own builds. */
 export interface AgentRequest {
+  readonly deck?: DeckRequest
   readonly publicResearch?: boolean
   readonly sessionId: string
   readonly input: string
   readonly attachmentIds?: readonly string[]
   readonly draftRevision?: number
+}
+export interface DeckRequest {
+  readonly action: 'collect' | 'skip' | 'revise' | 'question' | 'clarify' | 'restore'
+  readonly expectedBriefVersion: number
+  readonly expectedOutline: { readonly outlineId: string; readonly version: number } | null
+  readonly restoreOutlineId?: string
+  readonly formatChoice?: 'html'
+  readonly imageChoice?: 'none' | 'attachments'
+  readonly sourceChoice?: {
+    readonly material: boolean
+    readonly modelKnowledge: boolean
+    readonly publicResearch: boolean
+  }
 }
 
 /** Safe history projection, independent of private managed-file metadata. */
@@ -153,6 +167,8 @@ export interface PreparedRequest {
 }
 
 export interface RequestRun {
+  /** Trusted Host phase policy, never read from model output or source content. */
+  readonly instructions?: string
   readonly tools?: RequestTools
   onApprovalWait?(listener: (waiting: boolean) => void): () => void
   readonly requestId: string
@@ -227,6 +243,9 @@ export interface BriefView extends BriefSnapshot {
 }
 
 export interface BriefManagement {
+  interview?(
+    sessionId: string,
+  ): Promise<{ readonly brief: BriefView; readonly state: import('@deckagent/deck').InterviewState }>
   get(sessionId: string, version?: number): Promise<BriefView>
   save(sessionId: string, value: unknown): Promise<BriefView>
 }

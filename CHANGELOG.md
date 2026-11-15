@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add Host-owned deck interview requests with grouped missing-topic questions, explicit source choices, skip assumptions and request-local proposal staging; failed or stopped models cannot commit staged results.
+- Bind structured Outline revisions to immutable Brief versions, retain slide identities through edits/reordering, compute full changes and restore earlier proposals into new versions. Deck schema v4 keeps legacy history and adds atomic request receipts; generation and its UI remain separate.
+
 - Add an offline versioned design catalog, validated effective theme snapshots and content-based layout candidates with guarded custom-layout fallback.
 - Persist immutable Brief versions and explicit source choices per Chat in Deck schema v3; expose authenticated Host reads/writes and a browser-safe client decoder. Existing Decks, Outlines and Chat history remain intact. Interview and generation integration remain separate.
 

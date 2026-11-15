@@ -8,6 +8,7 @@ import { HttpError, RequestController } from './request-controller.ts'
 import { receiveAttachment } from './multipart.ts'
 
 export type { AttachmentView } from './contracts.ts'
+export type { DeckRequest } from './contracts.ts'
 export type { BriefManagement, BriefView, BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef } from './contracts.ts'
 export type { AttachmentManagement } from './contracts.ts'
 export type {
@@ -98,12 +99,81 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
     !('input' in value) ||
     typeof value.input !== 'string' ||
     Object.keys(value).some(
-      key => !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch'].includes(key),
+      key => !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch', 'deck'].includes(key),
     ) ||
     ('publicResearch' in value && typeof value.publicResearch !== 'boolean')
   )
     throw new HttpError(400, 'INVALID_REQUEST')
   const ids = 'attachmentIds' in value ? value.attachmentIds : undefined
+  const deck = 'deck' in value ? value.deck : undefined
+  const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+  let workflow: import('./contracts.ts').DeckRequest | undefined
+  if (deck !== undefined) {
+    const actions = ['collect', 'skip', 'revise', 'question', 'clarify', 'restore'] as const
+    const action = object(deck) ? actions.find(a => a === deck.action) : undefined
+    if (
+      !object(deck) ||
+      !action ||
+      Object.keys(deck).some(
+        k =>
+          ![
+            'action',
+            'expectedBriefVersion',
+            'expectedOutline',
+            'restoreOutlineId',
+            'sourceChoice',
+            'formatChoice',
+            'imageChoice',
+          ].includes(k),
+      ) ||
+      !Number.isSafeInteger(deck.expectedBriefVersion) ||
+      Number(deck.expectedBriefVersion) < 0 ||
+      (deck.formatChoice !== undefined && deck.formatChoice !== 'html') ||
+      (deck.imageChoice !== undefined && deck.imageChoice !== 'none' && deck.imageChoice !== 'attachments')
+    )
+      throw new HttpError(400, 'INVALID_REQUEST')
+    const target = deck.expectedOutline
+    if (
+      target !== null &&
+      (!object(target) ||
+        Object.keys(target).some(k => !['outlineId', 'version'].includes(k)) ||
+        !idPattern.test(String(target.outlineId)) ||
+        !Number.isSafeInteger(target.version) ||
+        Number(target.version) < 1)
+    )
+      throw new HttpError(400, 'INVALID_REQUEST')
+    if (
+      deck.restoreOutlineId !== undefined &&
+      (action !== 'restore' || typeof deck.restoreOutlineId !== 'string' || !idPattern.test(deck.restoreOutlineId))
+    )
+      throw new HttpError(400, 'INVALID_REQUEST')
+    const choice = deck.sourceChoice
+    if (
+      choice !== undefined &&
+      (!object(choice) ||
+        Object.keys(choice).some(k => !['material', 'modelKnowledge', 'publicResearch'].includes(k)) ||
+        ['material', 'modelKnowledge', 'publicResearch'].some(k => typeof choice[k] !== 'boolean'))
+    )
+      throw new HttpError(400, 'INVALID_REQUEST')
+    workflow = {
+      action,
+      expectedBriefVersion: Number(deck.expectedBriefVersion),
+      expectedOutline:
+        target === null ? null : { outlineId: String(target!.outlineId), version: Number(target!.version) },
+      ...(deck.formatChoice === 'html' ? { formatChoice: 'html' } : {}),
+      ...(deck.imageChoice === 'none' || deck.imageChoice === 'attachments' ? { imageChoice: deck.imageChoice } : {}),
+      ...(typeof deck.restoreOutlineId === 'string' ? { restoreOutlineId: deck.restoreOutlineId } : {}),
+      ...(object(choice)
+        ? {
+            sourceChoice: {
+              material: choice.material === true,
+              modelKnowledge: choice.modelKnowledge === true,
+              publicResearch: choice.publicResearch === true,
+            },
+          }
+        : {}),
+    }
+  }
   const revision = 'draftRevision' in value ? value.draftRevision : undefined
   if (
     ids !== undefined &&
@@ -119,6 +189,7 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
   if ([...value.input].length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
   if (!value.input.isWellFormed()) throw new HttpError(400, 'INVALID_REQUEST')
   return {
+    ...(workflow ? { deck: workflow } : {}),
     sessionId: value.sessionId,
     input: value.input,
     ...('publicResearch' in value ? { publicResearch: value.publicResearch as boolean } : {}),
@@ -214,6 +285,11 @@ export async function startHost(options: HostOptions) {
     }
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
+    const interview = /^\/api\/sessions\/([\w-]{1,100})\/interview$/.exec(url.pathname)
+    if (interview && options.briefs?.interview && req.method === 'GET') {
+      json(res, 200, await options.briefs.interview(interview[1]!))
+      return
+    }
     const brief = /^\/api\/sessions\/([\w-]{1,100})\/brief(?:\/versions\/(\d{1,10}))?$/.exec(url.pathname)
     if (brief && options.briefs) {
       if (req.method === 'GET') {
