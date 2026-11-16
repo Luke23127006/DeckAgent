@@ -29,6 +29,12 @@ const trashIcon = [
   'M14 11v6',
 ]
 
+const folderPlusIcon = [
+  'M12 10v6',
+  'M9 13h6',
+  'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
+]
+
 const refusals: Readonly<Record<string, string>> = {
   'drive-root': 'đây là thư mục gốc của ổ đĩa',
   system: 'đây là thư mục hệ thống của Windows, hoặc chứa thư mục đó',
@@ -174,7 +180,7 @@ export function workspaceView(
   let list: WorkspaceList = { workspaces: [], selectedId: 'default' }
   let busy = false
   let outside = false
-  let mode: { kind: 'add' } | { kind: 'relink' | 'rename'; id: string } = { kind: 'add' }
+  let mode: { kind: 'add' | 'create' } | { kind: 'relink' | 'rename'; id: string } = { kind: 'add' }
   let showAll = false
   /** True while the folder dialog of the system is open. */
   let picking = false
@@ -248,10 +254,11 @@ export function workspaceView(
       const choice = element('button', undefined, 'workspace-row')
       choice.type = 'button'
       choice.dataset.workspaceId = item.id
-      choice.title = item.folder ?? 'Workspace mặc định, không có thư mục dự án'
+      choice.title =
+        item.folder ?? (item.isDefault ? 'Workspace mặc định, không có thư mục dự án' : 'Chưa gắn thư mục dự án')
       // Not `aria-current`: the chat list uses that for the open chat, and other code looks for it.
       choice.setAttribute('aria-pressed', String(item.id === list.selectedId))
-      const needsCheck = !item.isDefault && item.folderStatus !== 'available'
+      const needsCheck = item.folderStatus === 'unreadable' || item.folderStatus === 'different-folder'
       choice.append(icon(folderIcon), element('span', item.name, 'workspace-name'))
       if (needsCheck) choice.append(element('span', 'cần kiểm tra', 'workspace-flag'))
       choice.disabled = busy || outside
@@ -314,11 +321,15 @@ export function workspaceView(
           if (above !== undefined) reorder(item.id, above)
         } else if (index >= 0 && index < ids.length - 1) reorder(item.id, ids[index + 2] ?? null)
       })
-      row.append(choice, tools)
+      // The row and its buttons are one line: the buttons and the gray belong to that line, not to the chats below it.
+      const line = element('div', undefined, 'workspace-line')
+      line.append(choice, tools)
+      row.append(line)
       const group = open ? chatGroup(item.id, chatsOf(item.id)) : undefined
       if (group) row.append(group)
       return row
     })
+    // Chats that belong to no workspace: the ones that the `Chat mới` button starts, and those of a deleted workspace.
     if (ungrouped.length) {
       const row = element('li', undefined, 'chat-group')
       row.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
@@ -480,15 +491,26 @@ export function workspaceView(
   function begin(next: typeof mode) {
     if (busy || outside) return
     mode = next
-    const selected = next.kind === 'add' ? undefined : list.workspaces.find(item => item.id === next.id)
+    const targetId = 'id' in next ? next.id : undefined
+    const selected = targetId === undefined ? undefined : list.workspaces.find(item => item.id === targetId)
     dialogError.textContent = ''
     if (next.kind === 'rename') {
       heading.textContent = 'Đổi tên workspace'
       help.textContent = 'Tên dài tối đa 100 ký tự. Đổi tên giữ nguyên thư mục dự án và các chat.'
       label.textContent = 'Tên workspace'
       value.value = selected?.name ?? ''
+    } else if (next.kind === 'create') {
+      heading.textContent = 'Tạo workspace mới'
+      help.textContent = 'Workspace chưa có thư mục. Bạn có thể chọn thư mục cho nó sau.'
+      label.textContent = 'Tên workspace'
+      value.value = ''
     } else {
-      heading.textContent = next.kind === 'add' ? 'Thêm workspace cho một thư mục' : 'Chọn thư mục khác cho workspace'
+      heading.textContent =
+        next.kind === 'add'
+          ? 'Thêm workspace cho một thư mục'
+          : selected?.folder
+            ? 'Chọn thư mục khác cho workspace'
+            : 'Chọn thư mục cho workspace'
       help.textContent = ''
       label.textContent = 'Đường dẫn thư mục'
       value.value = next.kind === 'relink' ? (selected?.folder ?? '') : ''
@@ -533,21 +555,70 @@ export function workspaceView(
       false,
     )
   }
-  const add = iconButton('Thêm workspace', ['M5 12h14', 'M12 5v14'], () => chooseFolder({ kind: 'add' }))
+  // The plus button offers two ways: a workspace with a name only, or a folder that exists.
+  const addMenu = element('div', undefined, 'workspace-menu')
+  addMenu.setAttribute('role', 'menu')
+  addMenu.hidden = true
+  const newWorkspace = button('Workspace mới…', () => {
+    closeAddMenu()
+    begin({ kind: 'create' })
+  })
+  newWorkspace.dataset.action = 'new-workspace'
+  newWorkspace.prepend(icon(folderPlusIcon))
+  const addFolder = button('Thêm thư mục có sẵn…', () => {
+    closeAddMenu()
+    chooseFolder({ kind: 'add' })
+  })
+  addFolder.dataset.action = 'add-folder-workspace'
+  addFolder.prepend(icon(folderIcon))
+  for (const item of [newWorkspace, addFolder]) item.setAttribute('role', 'menuitem')
+  addMenu.append(newWorkspace, addFolder)
+  const add = iconButton('Thêm workspace', ['M5 12h14', 'M12 5v14'], () =>
+    addMenu.hidden ? openAddMenu() : closeAddMenu(true),
+  )
   add.dataset.action = 'add-workspace'
   add.className = 'nav-icon'
-  tooltip(add, 'Thêm workspace cho một thư mục')
+  add.setAttribute('aria-haspopup', 'menu')
+  add.setAttribute('aria-expanded', 'false')
+  tooltip(add, 'Thêm workspace')
+  function openAddMenu() {
+    if (busy || outside || picking) return
+    closeMenu()
+    addMenu.hidden = false
+    add.setAttribute('aria-expanded', 'true')
+    const box = add.getBoundingClientRect()
+    const width = addMenu.offsetWidth
+    addMenu.style.top = `${box.bottom + 6}px`
+    addMenu.style.left = `${Math.max(8, Math.min(box.right - width, innerWidth - width - 8))}px`
+    newWorkspace.focus()
+  }
+  function closeAddMenu(restoreFocus = false) {
+    if (addMenu.hidden) return
+    addMenu.hidden = true
+    add.setAttribute('aria-expanded', 'false')
+    if (restoreFocus) add.focus()
+  }
+  document.addEventListener('pointerdown', event => {
+    if (!addMenu.hidden && !addMenu.contains(event.target as Node) && !add.contains(event.target as Node))
+      closeAddMenu()
+  })
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !addMenu.hidden) closeAddMenu(true)
+  })
+  root.append(addMenu)
   const rename = button('Đặt lại tên workspace', () => {
     const id = subject?.id
     closeMenu()
     if (id) begin({ kind: 'rename', id })
   })
   rename.dataset.action = 'rename-workspace'
-  const relink = button('Đổi thư mục', () => {
+  const relink = button('', () => {
     const id = subject?.id
     closeMenu()
     if (id) chooseFolder({ kind: 'relink', id })
   })
+  const relinkText = element('span', 'Đổi thư mục')
+  relink.append(relinkText)
   relink.dataset.action = 'relink-workspace'
   // Deleting asks first, in a dialog that states what stays. It cannot be dismissed while the request runs.
   let removing: WorkspaceView | undefined
@@ -616,7 +687,9 @@ export function workspaceView(
           ? management.renameWorkspace(target.id, text)
           : target.kind === 'relink'
             ? management.relinkWorkspace(target.id, text.trim())
-            : management.addWorkspace(text.trim()),
+            : target.kind === 'create'
+              ? management.createWorkspace(text)
+              : management.addWorkspace(text.trim()),
       false,
       () => dialog.close(),
       dialogError,
@@ -635,6 +708,8 @@ export function workspaceView(
     if (busy || outside) return
     closeMenu()
     subject = target
+    // A workspace that has no folder yet is given one; another one changes its folder.
+    relinkText.textContent = target.folder === null && !target.isDefault ? 'Chọn thư mục' : 'Đổi thư mục'
     menuRow = row
     row.dataset.menu = 'open'
     controls()

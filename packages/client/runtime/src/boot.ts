@@ -371,16 +371,16 @@ async function open(session: WebSession) {
   if (session.activeRequestId && generation === expected)
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
-async function newChat() {
+async function newChat(options: { ungrouped?: boolean } = {}) {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
   // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
-  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) { input.focus(); return }
+  if (current && !historyPresent && current.workspaceId === (options.ungrouped ? null : workspaces.selectedId)) { input.focus(); return }
   creating = true
   controls()
   try {
     // FR-053: the Host gives the new chat the most recent model choice of any chat, when still selectable.
-    const created = await management.create()
+    const created = await management.create(undefined, options.ungrouped ? { ungrouped: true } : {})
     await refresh()
     await open(created)
   } finally { creating = false; controls() }
@@ -444,7 +444,8 @@ const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settin
 function switchingBlocked(): boolean {
   return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
 }
-const newChatButton = button('Chat mới', () => run(newChat()))
+// Like ChatGPT, the `Chat mới` button starts a chat that belongs to no workspace; the button of a workspace row starts one in it.
+const newChatButton = button('Chat mới', () => run(newChat({ ungrouped: true })))
 newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
 const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
@@ -454,7 +455,7 @@ newChatButton.setAttribute('aria-keyshortcuts', 'Control+Shift+O')
 document.addEventListener('keydown', event => {
   if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
     event.preventDefault()
-    if (!newChatButton.disabled) run(newChat())
+    if (!newChatButton.disabled) run(newChat({ ungrouped: true }))
   }
 })
 chats.id = 'recent-chats'

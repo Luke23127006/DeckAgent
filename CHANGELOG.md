@@ -21,6 +21,9 @@ Notable changes to this repository. The newest changes are at the top.
   - The row `Gần đây` is gone, since the tree replaces the list of earlier chats
 - Adding a workspace and choosing another folder for it start in the folder dialog of Windows; the box that asks for a full path opens only when no dialog opens
 - A row of the sidebar has no gray background when it is selected; the selected workspace and the open chat show in bolder text, and a row turns gray when the pointer is over it
+- `Chat mới` and `Ctrl+Shift+O` start a chat that belongs to no workspace and lists under `Chat chưa nhóm`, like the new chat of ChatGPT; the button on a workspace row starts a chat in that workspace
+  - This departs from the rule of the earlier chat use case (UC-012) that a new chat joins the workspace in use
+- The plus of `Chat mới` and the icon of Settings show no blue circle behind them; the buttons of a workspace row belong to its own line, so hovering one of its chats no longer turns the row gray
 - The browser smoke test follows the new workspace list and checks that changing the folder of a workspace keeps its ID, name and chats
 - ADR-0002 and `builds/B01.md` state the draft rule of FR-038: the Host keeps drafts while DeckAgent runs, not in SQLite
 - `docs/spec/` now holds the MVP spec: use cases, requirements, business rules and a backlog of behaviors left for later
@@ -66,6 +69,7 @@ Notable changes to this repository. The newest changes are at the top.
   - The width is kept in the browser, so it survives a reload and not a restart of DeckAgent, whose local port changes
 - Deleting a workspace asks in a dialog that states what stays: the folder and its files, and the chats, which become ungrouped; the dialog cannot be closed while the request runs
 - A workspace row is dragged, or moved with `Alt` and the up or down arrow, to place it before another one
+- The plus button of the workspace list offers `Workspace mới…`, which asks for a name only, and `Thêm thư mục có sẵn…`, which opens the folder dialog; a workspace without a folder offers `Chọn thư mục` in its menu and asks for no check
 - A workspace can be set up with a name and no folder: `POST /api/workspaces/named` takes `{ name }`, makes the workspace the one in use and reads and writes nothing on disk
   - A folder can be chosen for it later with the route that changes the folder of a workspace; the default workspace still takes none
   - This departs from the rule of the workspace use case (UC-013 A9) that sets up no workspace until a folder is chosen, and it is a proposal until a decision record approves it
