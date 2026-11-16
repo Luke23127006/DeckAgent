@@ -198,6 +198,13 @@ export class ManagementClient {
     return data.theme
   }
 
+  /** Saves the backdrop choice on the Host. The theme is not sent, so it stays as it is. */
+  async saveBackground(background: WebPreferences['background']): Promise<WebPreferences['background']> {
+    const data = await this.request('preferences', 'PUT', { background })
+    if (!object(data) || data.background !== background) invalid()
+    return background
+  }
+
   async sessions(): Promise<readonly WebSession[]> {
     const data = await this.request('sessions')
     if (!Array.isArray(data)) invalid()

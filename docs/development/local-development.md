@@ -99,9 +99,10 @@ pnpm.cmd start:local-web
 This opens an authenticated local browser. No model and no API key are needed to start. You can:
 
 - work in the default workspace, which has no project folder, or add a workspace for a folder by typing its full path;
-- switch, rename, remove a workspace, or choose another folder for it. Removing a workspace keeps its chats as ungrouped chats;
+- switch, rename or delete a workspace. A workspace row shows a "new chat" button and a menu when you hover it. Deleting a workspace keeps its chats as ungrouped chats and leaves the project folder as it is. When the folder of a workspace is replaced by another folder, the workspace offers to use the new folder;
 - start a new chat, reopen an earlier chat, and find earlier chats by the words in their name or conversation;
 - keep a draft in each chat. The Host keeps the draft while it runs, across reloads; a draft is not kept after the Host stops;
+- choose light, dark or system theme, and a background, in the Settings menu at the bottom of the sidebar. The backgrounds are Default (the static gradient), Koi pond, Night rain, Firefly forest, Starry sky and Cherry blossom. They are drawn in code and follow the theme. The Host keeps both choices. Default runs no animation, and the other backgrounds stop when the tab is hidden or the system asks for reduced motion;
 - set up providers and models in Settings. Web key persistence uses Windows CurrentUser DPAPI; the UI never reads a saved key back.
 
 Sending a request is not available in this build: the Host refuses `POST /api/requests` with `REQUESTS_UNAVAILABLE`, and the composer says why. The OpenCode runtime connects in a later build. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.

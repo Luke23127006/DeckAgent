@@ -10,6 +10,12 @@ Notable changes to this repository. The newest changes are at the top.
   - Each chat belongs to a workspace, and a chat whose workspace is removed is listed as ungrouped; the chat list has search, marks a chat that cannot be read, and the Host keeps each chat's draft until DeckAgent stops
   - The chat database moves to schema version 2 and migrates version 1 files in place
   - Send is unavailable until B02 connects OpenCode: the Host answers `503 REQUESTS_UNAVAILABLE` and the UI says why
+- The workspace section of the Local Web sidebar is a list of rows with a folder icon, below the new chat button
+  - Hovering a row shows a button that starts a chat in that workspace, and a menu to rename the workspace, change its folder or delete it
+  - The list shows five workspaces and `Hiển thị thêm` for the rest, and always shows the workspace in use
+  - The dialog that adds a workspace no longer shows the note on what DeckAgent reads and writes
+  - The workspace in use carries `aria-pressed` and not `aria-current`, which marks the open chat
+- The browser smoke test follows the new workspace list and checks that changing the folder of a workspace keeps its ID, name and chats
 - ADR-0002 and `builds/B01.md` state the draft rule of FR-038: the Host keeps drafts while DeckAgent runs, not in SQLite
 - `docs/spec/` now holds the MVP spec: use cases, requirements, business rules and a backlog of behaviors left for later
   - The spec states each design choice as its result, or `pending` while it is open, and links no decision record or research note
@@ -36,6 +42,12 @@ Notable changes to this repository. The newest changes are at the top.
   - `GET` and `PUT /api/preferences` carry `background` next to `theme`; a request may send one of the two, and the other keeps its value
   - `/theme.js` sets `data-background` before the first paint; a stored value outside the list is read as `none`
   - A client that sends only `theme` keeps working
+- Local Web can draw an animated background behind the glass window: koi pond, night rain, firefly forest, starry sky and cherry blossom, each with a light and a dark design
+  - The Settings menu lists them under the theme switch; the default keeps the static gradient and runs no animation
+  - An animated background pauses when the tab is hidden, draws one still frame when the system asks for reduced motion, and runs at about 30 frames a second
+  - The glass window blurs 6 px over an animated background, so the background stays visible; menus and dialogs keep their blur
+- A search icon in the sidebar header opens the chat search as a field that grows out of the icon; pressing the icon again closes it and clears the words
+- Icon buttons in the sidebar show a tooltip; `Ctrl+Shift+O` starts a new chat
 
 ### Removed
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag

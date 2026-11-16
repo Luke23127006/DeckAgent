@@ -2,7 +2,7 @@ import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSe
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
-import { button, element } from './dom.ts'
+import { button, element, iconButton } from './dom.ts'
 import { modelPicker } from './model-picker.ts'
 import { settingsPanel } from './settings-panel.ts'
 import { mountDeckTab } from './deck-tab.ts'
@@ -12,7 +12,10 @@ import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
+import { backgroundControl } from './background-control.ts'
+import { backgroundFrom, createBackdrop } from './background.ts'
 import { themeControl } from './theme.ts'
+import { tooltip } from './tooltip.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
 
@@ -382,20 +385,41 @@ async function newChat() {
   } finally { creating = false; controls() }
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
-const workspaceUI = workspaceView(management, root, async (next, reloadChats) => {
-  // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
-  workspaces = next
-  if (reloadChats) await refresh()
-  else renderChats()
-  controls()
-})
+/** The "new chat" button of a workspace row: the workspace becomes the one in use, then the chat joins it. */
+async function newChatIn(id: string) {
+  if (switchingBlocked() || creating) return
+  if (id !== workspaces.selectedId) {
+    workspaces = await management.selectWorkspace(id)
+    workspaceUI.update(workspaces)
+    renderChats()
+    controls()
+  }
+  await newChat()
+}
+const workspaceUI = workspaceView(
+  management,
+  root,
+  async (next, reloadChats) => {
+    // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
+    workspaces = next
+    if (reloadChats) await refresh()
+    else renderChats()
+    controls()
+  },
+  id => run(newChatIn(id)),
+)
 const search = element('form', undefined, 'chat-search')
 search.setAttribute('role', 'search')
 const searchInput = element('input')
 searchInput.type = 'search'
 searchInput.placeholder = 'Tìm chat theo từ…'
 searchInput.setAttribute('aria-label', 'Tìm chat trước theo từ')
-search.append(searchInput)
+// The field grows out of the search icon in the sidebar header (see `searchButton`); it is closed until then.
+// The icon inside the open field sits where the header icon was; pressing it again closes the field.
+const searchToggle = iconButton('Đóng tìm kiếm', ['M3 11a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'm21 21-4.34-4.34'], () => closeSearch(true))
+searchToggle.className = 'nav-icon search-toggle'
+search.dataset.open = 'false'
+search.append(searchInput, searchToggle)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 function findChats() {
   const words = searchInput.value.trim()
@@ -427,6 +451,14 @@ const recents = button('Gần đây', () => {
   controls()
 })
 recents.className = 'recents-toggle'
+// The shortcut works without being shown.
+newChatButton.setAttribute('aria-keyshortcuts', 'Control+Shift+O')
+document.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+    event.preventDefault()
+    if (!newChatButton.disabled) run(newChat())
+  }
+})
 recents.setAttribute('aria-expanded', 'true')
 // On a phone the chat list starts folded so the conversation owns the first screen.
 const compactNavigation = matchMedia('(max-width:720px)')
@@ -451,7 +483,42 @@ let storedNavigation: string | null = null
 try { storedNavigation = localStorage.getItem('deckagent-nav') } catch { /* Optional layout preference. */ }
 setNavigation(storedNavigation === 'collapsed', false)
 const navTop = element('div', undefined, 'nav-top')
-navTop.append(element('div', 'DeckAgent', 'wordmark'), navToggle)
+// The search icon opens a field that grows out of it. The chat list opens too, so the matches show.
+const searchButton = iconButton('Tìm chat', ['M3 11a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'm21 21-4.34-4.34'], () => openSearch())
+searchButton.setAttribute('aria-expanded', 'false')
+searchButton.setAttribute('aria-controls', 'chat-search')
+search.id = 'chat-search'
+function openSearch() {
+  if (root.dataset.nav === 'collapsed') setNavigation(false)
+  if (chats.hidden) {
+    chats.hidden = false
+    recents.setAttribute('aria-expanded', 'true')
+    controls()
+  }
+  search.dataset.open = 'true'
+  searchButton.setAttribute('aria-expanded', 'true')
+  searchInput.focus()
+}
+/** Closing clears the words, so the list never stays filtered by a field that is out of sight. */
+function closeSearch(restoreFocus: boolean) {
+  search.dataset.open = 'false'
+  searchButton.setAttribute('aria-expanded', 'false')
+  if (searchInput.value) {
+    searchInput.value = ''
+    clearTimeout(searchTimer)
+    findChats()
+  }
+  if (restoreFocus) searchButton.focus()
+}
+searchInput.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); closeSearch(true) } })
+search.addEventListener('focusout', event => {
+  if (!search.contains(event.relatedTarget as Node | null) && !searchInput.value.trim()) closeSearch(false)
+})
+searchButton.className = 'nav-icon nav-search'
+tooltip(searchButton, 'Tìm chat')
+const navActions = element('div', undefined, 'nav-actions')
+navActions.append(searchButton, navToggle)
+navTop.append(element('div', 'DeckAgent', 'wordmark'), navActions, search)
 // Settings, theme, reconnect and developer tools live in one menu at the bottom of the sidebar, like the Claude app.
 const accountMenu = element('div', undefined, 'account-menu')
 accountMenu.id = 'account-menu'
@@ -489,18 +556,24 @@ document.addEventListener('pointerdown', event => {
 })
 const themeSection = element('div', undefined, 'menu-section')
 themeSection.append(element('span', 'Giao diện'), themeControl(management))
+const backdrop = createBackdrop()
+// `/theme.js` already set the saved choice before first paint; this draws it.
+const initialBackground = backgroundFrom(document.documentElement.dataset.background)
+backdrop.set(initialBackground)
+const backgroundSection = element('div', undefined, 'menu-section')
+backgroundSection.append(element('span', 'Nền'), backgroundControl(management, backdrop, initialBackground))
 accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
   Object.assign(button('Cài đặt model', () => { closeAccountMenu(); run(settingsUI.open()) }), { className: 'settings-open', title: 'Cài đặt model' }),
   themeSection,
+  backgroundSection,
 )
 navigation.append(
   navTop,
-  workspaceUI.node,
   newChatButton,
+  workspaceUI.node,
   navigationHint,
   recents,
-  search,
   chats,
   accountTrigger,
   accountMenu,
