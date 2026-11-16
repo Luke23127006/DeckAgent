@@ -60,6 +60,8 @@ export function workspaceFailure(reason: unknown): string {
         : 'Một workspace khác đang dùng thư mục này. Hãy chọn workspace đó, hoặc chọn thư mục khác.'
     case 'WORKSPACE_DEFAULT':
       return 'Workspace mặc định không có thư mục dự án và không gỡ được.'
+    case 'FOLDER_PICKER_BUSY':
+      return 'Hộp chọn thư mục đang mở. Hãy chọn thư mục trong hộp đó, hoặc đóng nó.'
     case 'WORKSPACE_NAME_EMPTY':
       return 'Tên workspace cần ít nhất một ký tự. Tên cũ được giữ nguyên.'
     case 'WORKSPACE_NAME_TOO_LONG':
@@ -80,6 +82,27 @@ export function folderNotice(workspace: WorkspaceView | undefined): string {
   return ''
 }
 
+/** The chats that the tree shows under each workspace. `null` is the group of ungrouped chats. */
+export interface ChatTree {
+  /** The chat rows of one group, newest first, already narrowed by the chat search. */
+  rows(workspaceId: string | null): HTMLElement[]
+  /** True while the chat search has words: every group unfolds and a group without a match is left out. */
+  searching(): boolean
+}
+
+const closedKey = 'deckagent-workspaces-closed'
+/** Chats a group shows before `Hiển thị thêm`. */
+const chatLimit = 5
+
+function storedClosed(): Set<string> {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(closedKey) ?? '[]')
+    return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [])
+  } catch {
+    return new Set() // Optional layout preference.
+  }
+}
+
 export interface WorkspaceControls {
   readonly node: HTMLElement
   /** Disabled while a chat is opening or created. */
@@ -98,9 +121,18 @@ export function workspaceView(
   root: HTMLElement,
   changed: (list: WorkspaceList, reloadChats: boolean) => Promise<void>,
   newChatIn: (workspaceId: string) => void,
-): WorkspaceControls & { update(list: WorkspaceList): void } {
+  chats: ChatTree,
+): WorkspaceControls & { update(list: WorkspaceList): void; refresh(): void } {
   const container = element('section', undefined, 'workspace-controls')
   const rows = element('ul', undefined, 'workspace-list')
+  const emptyNote = element('p', 'Không có chat nào khớp với các từ đã nhập.', 'workspace-empty')
+  emptyNote.hidden = true
+  const body = element('div', undefined, 'workspace-body')
+  body.append(rows, emptyNote)
+  // Folded workspaces, kept per browser like the width of the sidebar. A workspace is open unless it is listed here.
+  const closed = storedClosed()
+  /** Groups whose chats show in full: a workspace id, or `ungrouped`. */
+  const unfolded = new Set<string>()
   const more = button('Hiển thị thêm', () => {
     showAll = !showAll
     renderRows()
@@ -144,6 +176,13 @@ export function workspaceView(
   let outside = false
   let mode: { kind: 'add' } | { kind: 'relink' | 'rename'; id: string } = { kind: 'add' }
   let showAll = false
+  /** True while the folder dialog of the system is open. */
+  let picking = false
+  /** Moves that are not saved yet, and the chain that saves them in order. */
+  let pendingMoves = 0
+  let saving: Promise<void> = Promise.resolve()
+  /** The workspace being dragged. */
+  let dragging: string | undefined
   /** The workspace the open menu acts on. */
   let subject: WorkspaceView | undefined
   /** The row whose menu is open, kept visible while the pointer is elsewhere. */
@@ -154,51 +193,231 @@ export function workspaceView(
   function current(): WorkspaceView | undefined {
     return list.workspaces.find(item => item.id === list.selectedId)
   }
+  function saveClosed(): void {
+    try {
+      localStorage.setItem(closedKey, JSON.stringify([...closed]))
+    } catch {
+      /* Optional layout preference. */
+    }
+  }
+  /** The chats of one group: five, or all of them when the group is unfolded or a search is on. */
+  function chatGroup(key: string, all: HTMLElement[]): HTMLElement | undefined {
+    if (all.length === 0) return undefined
+    const folded = !chats.searching() && !unfolded.has(key) && all.length > chatLimit
+    // The open chat stays in view even when it is past the fifth.
+    const shown = folded
+      ? all.filter((chat, index) => index < chatLimit || chat.getAttribute('aria-current') === 'true')
+      : all
+    const group = element('div', undefined, 'workspace-chat-group')
+    const items = element('ul', undefined, 'workspace-chats')
+    for (const chat of shown) {
+      const item = element('li')
+      item.append(chat)
+      items.append(item)
+    }
+    group.append(items)
+    if (!chats.searching() && all.length > chatLimit) {
+      const toggleMore = button(folded ? 'Hiển thị thêm' : 'Thu gọn', () => {
+        if (unfolded.has(key)) unfolded.delete(key)
+        else unfolded.add(key)
+        renderRows()
+      })
+      toggleMore.className = 'workspace-more workspace-more-chats'
+      group.append(toggleMore)
+    }
+    return group
+  }
   function renderRows() {
+    const searching = chats.searching()
+    const cache = new Map<string | null, HTMLElement[]>()
+    const chatsOf = (id: string | null): HTMLElement[] => {
+      let found = cache.get(id)
+      if (!found) {
+        found = chats.rows(id)
+        cache.set(id, found)
+      }
+      return found
+    }
     const items = list.workspaces
-    const shown = showAll ? items : items.filter((item, index) => index < visibleLimit || item.id === list.selectedId)
-    rows.replaceChildren(
-      ...shown.map(item => {
-        const row = element('li')
-        const choice = element('button', undefined, 'workspace-row')
-        choice.type = 'button'
-        choice.dataset.workspaceId = item.id
-        choice.title = item.folder ?? 'Workspace mặc định, không có thư mục dự án'
-        // Not `aria-current`: the chat list uses that for the open chat, and other code looks for it.
-        choice.setAttribute('aria-pressed', String(item.id === list.selectedId))
-        const needsCheck = !item.isDefault && item.folderStatus !== 'available'
-        choice.append(icon(folderIcon), element('span', item.name, 'workspace-name'))
-        if (needsCheck) choice.append(element('span', 'cần kiểm tra', 'workspace-flag'))
-        choice.disabled = busy || outside
-        choice.addEventListener('click', () => {
-          if (item.id !== list.selectedId) change(() => management.selectWorkspace(item.id), false)
-        })
-        choice.addEventListener('contextmenu', event => {
-          event.preventDefault()
-          const box = choice.getBoundingClientRect()
-          // The context-menu key reports no pointer position: open under the row instead.
-          const fromKeyboard = event.clientX === 0 && event.clientY === 0
-          openMenu(item, row, fromKeyboard ? box.left + 24 : event.clientX, fromKeyboard ? box.bottom : event.clientY)
-        })
-        // Shown only while the row is hovered, focused or has its menu open.
-        const more = iconButton(`Tùy chọn của workspace ${item.name}`, ellipsisIcon, () => {
-          const box = more.getBoundingClientRect()
-          openMenu(item, row, box.left, box.bottom + 6)
-        })
-        more.className = 'nav-icon workspace-options'
-        more.setAttribute('aria-haspopup', 'menu')
-        const fresh = iconButton(`Chat mới trong workspace ${item.name}`, composeIcon, () => newChatIn(item.id))
-        fresh.className = 'nav-icon workspace-new-chat'
-        tooltip(fresh, 'Chat mới')
-        const tools = element('span', undefined, 'workspace-tools')
-        tools.append(more, fresh)
-        row.className = 'workspace-item'
-        row.append(choice, tools)
-        return row
-      }),
-    )
-    more.hidden = items.length <= visibleLimit
+    const base =
+      searching || showAll ? items : items.filter((item, index) => index < visibleLimit || item.id === list.selectedId)
+    const shown = base.filter(item => !searching || chatsOf(item.id).length > 0)
+    const ungrouped = chatsOf(null)
+    const groups: HTMLElement[] = shown.map(item => {
+      const row = element('li')
+      const choice = element('button', undefined, 'workspace-row')
+      choice.type = 'button'
+      choice.dataset.workspaceId = item.id
+      choice.title = item.folder ?? 'Workspace mặc định, không có thư mục dự án'
+      // Not `aria-current`: the chat list uses that for the open chat, and other code looks for it.
+      choice.setAttribute('aria-pressed', String(item.id === list.selectedId))
+      const needsCheck = !item.isDefault && item.folderStatus !== 'available'
+      choice.append(icon(folderIcon), element('span', item.name, 'workspace-name'))
+      if (needsCheck) choice.append(element('span', 'cần kiểm tra', 'workspace-flag'))
+      choice.disabled = busy || outside
+      const open = searching || !closed.has(item.id)
+      choice.setAttribute('aria-expanded', String(open))
+      // A workspace that is not in use becomes the one in use, and opens. The one in use folds or unfolds.
+      choice.addEventListener('click', () => {
+        if (item.id !== list.selectedId) {
+          closed.delete(item.id)
+          saveClosed()
+          change(() => management.selectWorkspace(item.id), false)
+          return
+        }
+        if (closed.has(item.id)) closed.delete(item.id)
+        else closed.add(item.id)
+        saveClosed()
+        renderRows()
+      })
+      choice.addEventListener('contextmenu', event => {
+        event.preventDefault()
+        const box = choice.getBoundingClientRect()
+        // The context-menu key reports no pointer position: open under the row instead.
+        const fromKeyboard = event.clientX === 0 && event.clientY === 0
+        openMenu(item, row, fromKeyboard ? box.left + 24 : event.clientX, fromKeyboard ? box.bottom : event.clientY)
+      })
+      // Shown only while the row is hovered, focused or has its menu open.
+      const more = iconButton(`Tùy chọn của workspace ${item.name}`, ellipsisIcon, () => {
+        const box = more.getBoundingClientRect()
+        openMenu(item, row, box.left, box.bottom + 6)
+      })
+      more.className = 'nav-icon workspace-options'
+      more.setAttribute('aria-haspopup', 'menu')
+      const fresh = iconButton(`Chat mới trong workspace ${item.name}`, composeIcon, () => newChatIn(item.id))
+      fresh.className = 'nav-icon workspace-new-chat'
+      tooltip(fresh, 'Chat mới')
+      const tools = element('span', undefined, 'workspace-tools')
+      tools.append(more, fresh)
+      row.className = 'workspace-item'
+      row.dataset.workspaceId = item.id
+      // Order: drag the row, or press Alt with the up or down arrow on it.
+      row.draggable = !(busy || outside)
+      row.addEventListener('dragstart', event => {
+        closeMenu()
+        dragging = item.id
+        row.classList.add('dragging')
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move'
+          event.dataTransfer.setData('text/plain', item.id)
+        }
+      })
+      row.addEventListener('dragend', endDrag)
+      choice.setAttribute('aria-keyshortcuts', 'Alt+ArrowUp Alt+ArrowDown')
+      choice.addEventListener('keydown', event => {
+        if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+        event.preventDefault()
+        const ids = list.workspaces.map(workspace => workspace.id)
+        const index = ids.indexOf(item.id)
+        if (event.key === 'ArrowUp') {
+          const above = ids[index - 1]
+          if (above !== undefined) reorder(item.id, above)
+        } else if (index >= 0 && index < ids.length - 1) reorder(item.id, ids[index + 2] ?? null)
+      })
+      row.append(choice, tools)
+      const group = open ? chatGroup(item.id, chatsOf(item.id)) : undefined
+      if (group) row.append(group)
+      return row
+    })
+    if (ungrouped.length) {
+      const row = element('li', undefined, 'chat-group')
+      row.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
+      const group = chatGroup('ungrouped', ungrouped)
+      if (group) row.append(group)
+      groups.push(row)
+    }
+    rows.replaceChildren(...groups)
+    emptyNote.hidden = !(searching && groups.length === 0)
+    more.hidden = searching || items.length <= visibleLimit
     more.textContent = showAll ? 'Thu gọn' : 'Hiển thị thêm'
+  }
+  function focusRow(id: string): void {
+    for (const choice of rows.querySelectorAll<HTMLElement>('.workspace-row'))
+      if (choice.dataset.workspaceId === id) choice.focus()
+  }
+  /** Where a drop at height `y` goes: before the first row whose middle is below it, otherwise last. */
+  function dropTarget(y: number): { before: string | null; mark: HTMLElement | undefined; side: 'before' | 'after' } {
+    const items = [...rows.querySelectorAll<HTMLElement>('.workspace-item')]
+    for (const item of items) {
+      const box = item.getBoundingClientRect()
+      if (y < box.top + box.height / 2) return { before: item.dataset.workspaceId ?? null, mark: item, side: 'before' }
+    }
+    // Rows folded away come after the last one that shows.
+    const shown = new Set(items.map(item => item.dataset.workspaceId))
+    const hidden = list.workspaces.find(workspace => !shown.has(workspace.id))
+    return { before: hidden?.id ?? null, mark: items[items.length - 1], side: 'after' }
+  }
+  function clearMarks(): void {
+    for (const item of rows.querySelectorAll<HTMLElement>('.workspace-item')) {
+      delete item.dataset.drop
+      item.classList.remove('dragging')
+    }
+  }
+  function endDrag(): void {
+    dragging = undefined
+    clearMarks()
+  }
+  rows.addEventListener('dragover', event => {
+    if (!dragging) return
+    event.preventDefault()
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+    const target = dropTarget(event.clientY)
+    for (const item of rows.querySelectorAll<HTMLElement>('.workspace-item')) delete item.dataset.drop
+    if (target.mark) target.mark.dataset.drop = target.side
+  })
+  rows.addEventListener('drop', event => {
+    if (!dragging) return
+    event.preventDefault()
+    const id = dragging
+    const target = dropTarget(event.clientY)
+    endDrag()
+    reorder(id, target.before)
+  })
+  /**
+   * Places a workspace before another one, or last. The new order shows at once and the moves are saved one
+   * after the other. If a move cannot be saved, the list is read again from the Host.
+   */
+  function reorder(id: string, before: string | null): void {
+    if (busy || outside || before === id) return
+    const ids = list.workspaces.map(workspace => workspace.id)
+    const rest = ids.filter(item => item !== id)
+    const at = before === null ? rest.length : rest.indexOf(before)
+    if (at < 0 || !ids.includes(id)) return
+    const next = [...rest.slice(0, at), id, ...rest.slice(at)]
+    if (next.every((item, index) => item === ids[index])) return
+    const byId = new Map(list.workspaces.map(workspace => [workspace.id, workspace]))
+    list = { ...list, workspaces: next.flatMap(item => byId.get(item) ?? []) }
+    error.hidden = true
+    show(id)
+    pendingMoves++
+    saving = saving.then(async () => {
+      try {
+        const saved = await management.moveWorkspace(id, before)
+        pendingMoves--
+        // A newer move that is still on its way owns the order on screen.
+        if (pendingMoves === 0) {
+          list = saved
+          show(id)
+          await changed(saved, false)
+        }
+      } catch (reason) {
+        pendingMoves--
+        error.hidden = false
+        error.textContent = workspaceFailure(reason)
+        try {
+          list = await management.workspaces()
+        } catch {
+          // The list stays as shown; the error says the order was not saved.
+        }
+        show(id)
+      }
+    })
+  }
+  /** Draws the rows again and keeps the keyboard focus on a row that had it. */
+  function show(id: string): void {
+    const focused = rows.contains(document.activeElement)
+    renderRows()
+    if (focused) focusRow(id)
   }
   function render() {
     closeMenu()
@@ -210,14 +429,18 @@ export function workspaceView(
     controls()
   }
   function controls() {
-    const locked = busy || outside
+    const locked = busy || outside || picking
     const target = subject
-    for (const choice of rows.querySelectorAll('button')) choice.disabled = locked
+    for (const choice of rows.querySelectorAll<HTMLButtonElement>('.workspace-row, .workspace-tools button'))
+      choice.disabled = locked
+    for (const item of rows.querySelectorAll<HTMLElement>('.workspace-item')) item.draggable = !locked
     add.disabled = locked
     rename.disabled = locked || !target
     relink.disabled = locked || !target || target.isDefault
     remove.disabled = locked || !target || target.isDefault
     adopt.disabled = locked
+    confirmCancel.disabled = busy
+    confirmDelete.disabled = busy
   }
   function change(
     work: () => Promise<WorkspaceList>,
@@ -275,7 +498,42 @@ export function workspaceView(
     dialog.showModal()
     value.focus()
   }
-  const add = iconButton('Thêm workspace', ['M5 12h14', 'M12 5v14'], () => begin({ kind: 'add' }))
+  /**
+   * Adding a workspace, or choosing another folder for one, starts in the folder dialog of the system. Closing the
+   * dialog sets nothing up (UC-013 A9). If no dialog opens, the user types the full path of the folder instead.
+   */
+  async function chooseFolder(next: { kind: 'add' } | { kind: 'relink'; id: string }): Promise<void> {
+    if (busy || outside || picking) return
+    picking = true
+    error.hidden = true
+    controls()
+    let folder: string | null
+    try {
+      folder = await management.pickWorkspaceFolder()
+    } catch (reason) {
+      picking = false
+      controls()
+      const code = reason instanceof Error ? reason.message : ''
+      if (code === 'FOLDER_PICKER_UNAVAILABLE' || code === 'FOLDER_PICKER_FAILED') {
+        begin(next)
+        if (code === 'FOLDER_PICKER_FAILED')
+          dialogError.textContent = 'Không mở được hộp chọn thư mục. Hãy nhập đường dẫn đầy đủ của thư mục.'
+      } else if (code !== 'FOLDER_PICKER_CANCELLED') {
+        error.hidden = false
+        error.textContent = workspaceFailure(reason)
+      }
+      return
+    }
+    picking = false
+    controls()
+    if (folder === null) return
+    const chosen = folder
+    change(
+      () => (next.kind === 'add' ? management.addWorkspace(chosen) : management.relinkWorkspace(next.id, chosen)),
+      false,
+    )
+  }
+  const add = iconButton('Thêm workspace', ['M5 12h14', 'M12 5v14'], () => chooseFolder({ kind: 'add' }))
   add.dataset.action = 'add-workspace'
   add.className = 'nav-icon'
   tooltip(add, 'Thêm workspace cho một thư mục')
@@ -288,20 +546,58 @@ export function workspaceView(
   const relink = button('Đổi thư mục', () => {
     const id = subject?.id
     closeMenu()
-    if (id) begin({ kind: 'relink', id })
+    if (id) chooseFolder({ kind: 'relink', id })
   })
   relink.dataset.action = 'relink-workspace'
+  // Deleting asks first, in a dialog that states what stays. It cannot be dismissed while the request runs.
+  let removing: WorkspaceView | undefined
+  const confirmDialog = element('dialog', undefined, 'workspace-dialog workspace-confirm')
+  const confirmHeading = element('h2')
+  const confirmList = element('ul', undefined, 'workspace-consequences')
+  for (const text of [
+    'Workspace rời khỏi danh sách.',
+    'Thư mục dự án và mọi file trong đó được giữ nguyên.',
+    'Các chat của workspace được giữ lại trong nhóm “Chat chưa nhóm”, cùng hội thoại, deck và model đã chọn.',
+  ])
+    confirmList.append(element('li', text))
+  const confirmError = element('p', '', 'workspace-error')
+  confirmError.setAttribute('role', 'alert')
+  const confirmCancel = button('Hủy', () => confirmDialog.close())
+  const confirmDelete = button('Xóa workspace', () => {
+    const target = removing
+    if (!target || busy) return
+    change(
+      () => management.removeWorkspace(target.id),
+      true,
+      () => confirmDialog.close(),
+      confirmError,
+    )
+  })
+  confirmDelete.className = 'danger'
+  confirmDelete.dataset.action = 'confirm-remove-workspace'
+  const confirmActions = element('div', undefined, 'workspace-dialog-actions')
+  confirmActions.append(confirmCancel, confirmDelete)
+  const confirmForm = element('form')
+  confirmForm.append(confirmHeading, confirmList, confirmError, confirmActions)
+  confirmForm.addEventListener('submit', event => event.preventDefault())
+  confirmDialog.append(confirmForm)
+  confirmDialog.addEventListener('cancel', event => {
+    if (busy) event.preventDefault()
+  })
+  // `close` arrives after the dialog closed, possibly after it opened again for another workspace.
+  confirmDialog.addEventListener('close', () => {
+    if (!confirmDialog.open) confirmError.textContent = ''
+  })
+  root.append(confirmDialog)
   const remove = button('Xóa workspace', () => {
     const selected = subject
     closeMenu()
     if (!selected || selected.isDefault || busy) return
-    if (
-      !confirm(
-        `Xóa workspace “${selected.name}”? Thư mục dự án và mọi file trong đó được giữ nguyên. Các chat của workspace được giữ lại trong nhóm “Chat chưa nhóm”, cùng hội thoại, deck và model đã chọn.`,
-      )
-    )
-      return
-    change(() => management.removeWorkspace(selected.id), true)
+    removing = selected
+    confirmHeading.textContent = `Xóa workspace “${selected.name}”?`
+    confirmError.textContent = ''
+    confirmDialog.showModal()
+    confirmCancel.focus()
   })
   remove.dataset.action = 'remove-workspace'
   remove.className = 'danger'
@@ -365,9 +661,9 @@ export function workspaceView(
   })
   root.append(menu)
   const toggle = button('Workspace', () => {
-    const open = rows.hidden
-    rows.hidden = !open
-    more.hidden = !open || list.workspaces.length <= visibleLimit
+    const open = body.hidden
+    body.hidden = !open
+    more.hidden = !open || chats.searching() || list.workspaces.length <= visibleLimit
     toggle.setAttribute('aria-expanded', String(open))
   })
   toggle.className = 'workspace-toggle'
@@ -375,7 +671,7 @@ export function workspaceView(
   toggle.append(icon(['m6 9 6 6 6-6']))
   const head = element('div', undefined, 'workspace-head')
   head.append(toggle, add)
-  container.append(head, rows, more, notice, adopt, error)
+  container.append(head, body, more, notice, adopt, error)
   container.append(
     element(
       'style',
@@ -388,6 +684,7 @@ export function workspaceView(
       .workspace-dialog h2,.workspace-dialog p{margin:0}.workspace-dialog label{display:grid;gap:6px}
       .workspace-dialog input{box-sizing:border-box;width:100%;min-width:0;padding:10px}
       .workspace-dialog-actions{display:flex;gap:8px;justify-content:flex-end}
+      .workspace-consequences{margin:0;padding-left:20px;display:grid;gap:6px}.workspace-dialog button.danger{color:var(--danger,#b42318)}
       .requests-unavailable{font-size:12px;margin:0 0 6px;opacity:.85}`,
     ),
   )
@@ -396,6 +693,11 @@ export function workspaceView(
     update(next) {
       list = next
       render()
+    },
+    /** The chats changed: draw the groups again. */
+    refresh() {
+      renderRows()
+      controls()
     },
     setBusy(value) {
       outside = value

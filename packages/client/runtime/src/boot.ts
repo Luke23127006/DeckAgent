@@ -14,6 +14,7 @@ import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
 import { backgroundControl } from './background-control.ts'
 import { backgroundFrom, createBackdrop } from './background.ts'
+import { mountNavResizer } from './nav-resizer.ts'
 import { themeControl } from './theme.ts'
 import { tooltip } from './tooltip.ts'
 import { initMotion } from './motion.ts'
@@ -181,7 +182,7 @@ function controls() {
   const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
   submit.hidden = !!current?.activeRequestId && !question
-  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
+  for (const item of chats.querySelectorAll<HTMLButtonElement>('button[data-session-id]')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
   model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
   workspaceUI.setBusy(opening !== undefined || creating)
@@ -255,24 +256,24 @@ function chatButton(session: WebSession) {
   item.disabled = switchingBlocked()
   return item
 }
-function renderChats() {
-  chats.replaceChildren()
+/** The chats the tree can show: the open one, and those with a conversation, a model, slides or a draft; or the matches of a search. */
+function visibleChats(): WebSession[] {
   const listed = (session: WebSession) => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides
     || !session.readable || session.hasDraft || drafts.get(session.sessionId)?.trim()
   const found = searchResults
   const visible = sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
   // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
   visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId))
-  // UC-006 S1: the chats of the workspace in use, and the ungrouped chats apart from them, whichever workspace is in use.
-  const grouped = visible.filter(session => session.workspaceId === workspaces.selectedId)
-  const ungrouped = visible.filter(session => session.workspaceId === null)
-  if (!grouped.length && !ungrouped.length)
-    chats.append(element('p', found ? 'Không có chat nào khớp với các từ đã nhập.' : 'Chưa có chat trước.'))
-  for (const session of grouped) chats.append(chatButton(session))
-  if (ungrouped.length) {
-    chats.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
-    for (const session of ungrouped) chats.append(chatButton(session))
-  }
+  return visible
+}
+/** One group of the tree: the chats of a workspace, or the ungrouped chats for `null`. */
+function chatRows(workspaceId: string | null): HTMLElement[] {
+  return visibleChats()
+    .filter(session => session.workspaceId === workspaceId)
+    .map(chatButton)
+}
+function renderChats() {
+  workspaceUI.refresh()
 }
 async function refresh() {
   const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
@@ -407,7 +408,10 @@ const workspaceUI = workspaceView(
     controls()
   },
   id => run(newChatIn(id)),
+  { rows: chatRows, searching: () => searchResults !== undefined },
 )
+// The tree of workspaces with their chats fills the list area of the sidebar.
+chats.append(workspaceUI.node)
 const search = element('form', undefined, 'chat-search')
 search.setAttribute('role', 'search')
 const searchInput = element('input')
@@ -445,12 +449,6 @@ newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
 const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
 navigationHint.hidden = true
-const recents = button('Gần đây', () => {
-  chats.hidden = !chats.hidden
-  recents.setAttribute('aria-expanded', String(!chats.hidden))
-  controls()
-})
-recents.className = 'recents-toggle'
 // The shortcut works without being shown.
 newChatButton.setAttribute('aria-keyshortcuts', 'Control+Shift+O')
 document.addEventListener('keydown', event => {
@@ -459,13 +457,6 @@ document.addEventListener('keydown', event => {
     if (!newChatButton.disabled) run(newChat())
   }
 })
-recents.setAttribute('aria-expanded', 'true')
-// On a phone the chat list starts folded so the conversation owns the first screen.
-const compactNavigation = matchMedia('(max-width:720px)')
-const foldRecents = () => { chats.hidden = compactNavigation.matches; recents.setAttribute('aria-expanded', String(!chats.hidden)) }
-foldRecents()
-compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
-recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
 // The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
 const navToggle = button('', () => setNavigation(root.dataset.nav !== 'collapsed'))
@@ -490,11 +481,6 @@ searchButton.setAttribute('aria-controls', 'chat-search')
 search.id = 'chat-search'
 function openSearch() {
   if (root.dataset.nav === 'collapsed') setNavigation(false)
-  if (chats.hidden) {
-    chats.hidden = false
-    recents.setAttribute('aria-expanded', 'true')
-    controls()
-  }
   search.dataset.open = 'true'
   searchButton.setAttribute('aria-expanded', 'true')
   searchInput.focus()
@@ -571,9 +557,7 @@ accountMenu.append(
 navigation.append(
   navTop,
   newChatButton,
-  workspaceUI.node,
   navigationHint,
-  recents,
   chats,
   accountTrigger,
   accountMenu,
@@ -629,6 +613,7 @@ const dock = element('div', undefined, 'composer-dock')
 dock.append(questionUI.node, outlineDock, form)
 conversation.append(heading, status, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
+mountNavResizer(navigation, root)
 initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
 const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))

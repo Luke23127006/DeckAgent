@@ -98,7 +98,8 @@ pnpm.cmd start:local-web
 
 This opens an authenticated local browser. No model and no API key are needed to start. You can:
 
-- work in the default workspace, which has no project folder, or add a workspace for a folder by typing its full path;
+- work in the default workspace, which has no project folder, or add a workspace for a folder that you choose in the folder dialog of Windows. `pnpm.cmd start:local-web` opens that dialog. When no dialog opens, for example on another system, or in a test that starts the Host without one, the box asks for the full path of the folder instead;
+- drag a workspace row to place it before another one, or press Alt with the up or down arrow on a row. The Host keeps the order;
 - switch, rename or delete a workspace. A workspace row shows a "new chat" button and a menu when you hover it. Deleting a workspace keeps its chats as ungrouped chats and leaves the project folder as it is. When the folder of a workspace is replaced by another folder, the workspace offers to use the new folder;
 - start a new chat, reopen an earlier chat, and find earlier chats by the words in their name or conversation;
 - keep a draft in each chat. The Host keeps the draft while it runs, across reloads; a draft is not kept after the Host stops;

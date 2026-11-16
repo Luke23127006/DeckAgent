@@ -15,6 +15,12 @@ Notable changes to this repository. The newest changes are at the top.
   - The list shows five workspaces and `Hiển thị thêm` for the rest, and always shows the workspace in use
   - The dialog that adds a workspace no longer shows the note on what DeckAgent reads and writes
   - The workspace in use carries `aria-pressed` and not `aria-current`, which marks the open chat
+- The sidebar lists the chats under their own workspace, as a tree: each workspace row holds its chats, five of them and `Hiển thị thêm` for the rest, and the ungrouped chats form a group of their own
+  - This departs from the chat list rule of the earlier chat use case (UC-006), which listed only the chats of the workspace in use; the workspace in use still receives a new chat
+  - A click on a workspace that is not in use makes it the workspace in use and opens it; a click on the one in use folds it or unfolds it, and the folded state is kept in the browser
+  - The row `Gần đây` is gone, since the tree replaces the list of earlier chats
+- Adding a workspace and choosing another folder for it start in the folder dialog of Windows; the box that asks for a full path opens only when no dialog opens
+- A row of the sidebar has no gray background when it is selected; the selected workspace and the open chat show in bolder text, and a row turns gray when the pointer is over it
 - The browser smoke test follows the new workspace list and checks that changing the folder of a workspace keeps its ID, name and chats
 - ADR-0002 and `builds/B01.md` state the draft rule of FR-038: the Host keeps drafts while DeckAgent runs, not in SQLite
 - `docs/spec/` now holds the MVP spec: use cases, requirements, business rules and a backlog of behaviors left for later
@@ -56,6 +62,10 @@ Notable changes to this repository. The newest changes are at the top.
   - Only the command line gives the Host the dialog; a caller that gives none gets `501 FOLDER_PICKER_UNAVAILABLE`, and the interface asks for the path instead
   - One dialog opens at a time (`409 FOLDER_PICKER_BUSY`), the dialog closes when the request ends, and a failure answers `502 FOLDER_PICKER_FAILED` without repeating its text
   - This route is a proposal until a decision record approves it
+- The sidebar of Local Web can be dragged wider, up to a quarter of the window, and no narrower than 200 px; the arrow keys, `Home` and `End` do the same on the divider, and a double press restores the normal width
+  - The width is kept in the browser, so it survives a reload and not a restart of DeckAgent, whose local port changes
+- Deleting a workspace asks in a dialog that states what stays: the folder and its files, and the chats, which become ungrouped; the dialog cannot be closed while the request runs
+- A workspace row is dragged, or moved with `Alt` and the up or down arrow, to place it before another one
 
 ### Removed
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag
