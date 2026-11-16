@@ -48,6 +48,14 @@ Notable changes to this repository. The newest changes are at the top.
   - The glass window blurs 6 px over an animated background, so the background stays visible; menus and dialogs keep their blur
 - A search icon in the sidebar header opens the chat search as a field that grows out of the icon; pressing the icon again closes it and clears the words
 - Icon buttons in the sidebar show a tooltip; `Ctrl+Shift+O` starts a new chat
+- The workspace registry keeps the order of the workspaces, and the Host and its client place a workspace before another one
+  - `PUT /api/workspaces/order` takes `{ id, before }`, with `before` set to `null` to place the workspace last, and answers with the whole list; the default workspace is placed like any other
+  - The order lives in the registry state, so the database format does not change; a workspace that was never placed comes after the placed ones, and a stored order that cannot be read counts as no order
+  - This route is a proposal until a decision record approves it
+- The Host opens the folder dialog of Windows for the interface: `POST /api/workspaces/pick` answers with the folder or `null` when the dialog is closed
+  - Only the command line gives the Host the dialog; a caller that gives none gets `501 FOLDER_PICKER_UNAVAILABLE`, and the interface asks for the path instead
+  - One dialog opens at a time (`409 FOLDER_PICKER_BUSY`), the dialog closes when the request ends, and a failure answers `502 FOLDER_PICKER_FAILED` without repeating its text
+  - This route is a proposal until a decision record approves it
 
 ### Removed
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag

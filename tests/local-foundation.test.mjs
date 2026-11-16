@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { StorageError, resolveStorageRoot, startLocalWeb } from '../apps/local-web/lib/index.js'
+import { FolderPickerUnavailableError, StorageError, resolveStorageRoot, startLocalWeb } from '../apps/local-web/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -356,4 +356,97 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
     Object.keys(manifest.dependencies).filter(name => /cordis|agent-runtime|file-tools|presentation-tools/.test(name)),
     [],
   )
+})
+
+test('PUT /api/workspaces/order places a workspace, refuses bad input and keeps the order after a restart', async t => {
+  const { start, project } = await area(t)
+  let app = await start()
+  let call = api(app)
+  const first = (await call('workspaces', 'POST', { folder: await project('one') })).data.selectedId
+  const second = (await call('workspaces', 'POST', { folder: await project('two') })).data.selectedId
+  const order = async () => (await call('workspaces')).data.workspaces.map(item => item.id)
+  assert.deepEqual(await order(), ['default', first, second])
+  const moved = await call('workspaces/order', 'PUT', { id: second, before: first })
+  assert.equal(moved.status, 200)
+  assert.deepEqual(moved.data.workspaces.map(item => item.id), ['default', second, first], 'The answer is the whole list in its new order')
+  assert.equal(moved.data.selectedId, second, 'Placing a workspace does not change the one in use')
+  assert.deepEqual((await call('workspaces/order', 'PUT', { id: 'default', before: null })).data.workspaces.map(item => item.id), [second, first, 'default'], 'A null `before` places the workspace last')
+  for (const body of [{}, { id: second, extra: 1 }, { id: 7, before: null }, { id: second, before: 7 }, [], 'x']) {
+    const refused = await call('workspaces/order', 'PUT', body)
+    assert.equal(refused.status, 400, JSON.stringify(body))
+  }
+  const unknown = await call('workspaces/order', 'PUT', { id: 'missing', before: null })
+  assert.deepEqual([unknown.status, unknown.data.error.code], [404, 'WORKSPACE_NOT_FOUND'])
+  assert.deepEqual(await order(), [second, first, 'default'], 'Refused requests change nothing')
+  await app.close()
+  app = await start()
+  call = api(app)
+  assert.deepEqual(await order(), [second, first, 'default'], 'The order survives a restart')
+})
+
+test('POST /api/workspaces/pick opens one folder dialog at a time, answers with the folder or null, and closes it with the request', async t => {
+  const { start, project } = await area(t)
+  const chosen = await project('chosen')
+  let answer = chosen
+  let opened = 0
+  let aborted = false
+  let release
+  const app = await start({
+    pickDirectory: async signal => {
+      opened++
+      if (answer === 'hold') {
+        await new Promise((resolve, reject) => {
+          release = resolve
+          signal.addEventListener('abort', () => { aborted = true; reject(new Error('stopped')) })
+        })
+        return null
+      }
+      if (answer === 'unavailable') throw new FolderPickerUnavailableError()
+      if (answer === 'broken') throw new Error('C:\\secret\\path')
+      return answer
+    },
+  })
+  const call = api(app)
+  const picked = await call('workspaces/pick', 'POST')
+  assert.deepEqual([picked.status, picked.data], [200, { folder: chosen }])
+  answer = null
+  assert.deepEqual((await call('workspaces/pick', 'POST')).data, { folder: null }, 'Closing the dialog answers null and sets nothing up')
+  assert.equal((await call('workspaces')).data.workspaces.length, 1, 'The dialog alone sets up no workspace')
+  answer = 'unavailable'
+  const unavailable = await call('workspaces/pick', 'POST')
+  assert.deepEqual([unavailable.status, unavailable.data.error.code], [501, 'FOLDER_PICKER_UNAVAILABLE'])
+  answer = 'broken'
+  const failed = await call('workspaces/pick', 'POST')
+  assert.deepEqual([failed.status, failed.data.error.code], [502, 'FOLDER_PICKER_FAILED'])
+  assert.equal(failed.text.includes('secret'), false, 'The answer never repeats the text of the failure')
+
+  answer = 'hold'
+  const first = call('workspaces/pick', 'POST')
+  while (opened < 5) await new Promise(resolve => setTimeout(resolve, 20))
+  const second = await call('workspaces/pick', 'POST')
+  assert.deepEqual([second.status, second.data.error.code], [409, 'FOLDER_PICKER_BUSY'], 'A second request does not open a second dialog')
+  release()
+  assert.equal((await first).status, 200)
+
+  // A client that gives up closes the dialog.
+  const control = new AbortController()
+  const waiting = fetch(`${app.origin}/api/workspaces/pick`, { method: 'POST', headers: { authorization: `Bearer ${app.token}` }, signal: control.signal }).catch(() => undefined)
+  while (opened < 6) await new Promise(resolve => setTimeout(resolve, 20))
+  control.abort()
+  await waiting
+  for (let i = 0; i < 100 && !aborted; i++) await new Promise(resolve => setTimeout(resolve, 20))
+  assert.equal(aborted, true, 'The dialog is told to close when the request ends')
+  answer = chosen
+  let next = await call('workspaces/pick', 'POST')
+  for (let i = 0; i < 50 && next.status !== 200; i++) {
+    await new Promise(resolve => setTimeout(resolve, 20))
+    next = await call('workspaces/pick', 'POST')
+  }
+  assert.equal(next.status, 200, 'The next dialog opens once the earlier one closed')
+
+  // Without a dialog on this computer the Host says so and the folder is typed.
+  const plain = await area(t)
+  const typed = await plain.start()
+  const none = await api(typed)('workspaces/pick', 'POST')
+  assert.deepEqual([none.status, none.data.error.code], [501, 'FOLDER_PICKER_UNAVAILABLE'])
 })

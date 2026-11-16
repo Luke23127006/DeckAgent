@@ -198,6 +198,14 @@ export interface WorkspaceManagement {
   add(value: unknown): Promise<WorkspaceList>
   /** Body: `{ id }`. */
   select(value: unknown): Promise<WorkspaceList>
+  /**
+   * Opens the folder dialog of the operating system on this computer and answers with the folder the user chose,
+   * or `null` when the user closed the dialog. Absent when no dialog is available. `signal` aborts when the
+   * request ends. Proposal.
+   */
+  pick?(signal: AbortSignal): Promise<{ readonly folder: string | null }>
+  /** Body: `{ id, before }`. Places the workspace before `before`, or last when `before` is `null`. Proposal. */
+  move(value: unknown): Promise<WorkspaceList>
   /** Body: `{ name }`. */
   rename(id: string, value: unknown): Promise<WorkspaceList>
   /** Body: `{ folder }`. */

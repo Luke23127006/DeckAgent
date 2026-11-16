@@ -138,6 +138,10 @@ const allowedCodes = [
   'WORKSPACE_FOLDER_IN_USE',
   'WORKSPACE_NAME_EMPTY',
   'WORKSPACE_NAME_TOO_LONG',
+  'FOLDER_PICKER_UNAVAILABLE',
+  'FOLDER_PICKER_FAILED',
+  'FOLDER_PICKER_BUSY',
+  'FOLDER_PICKER_CANCELLED',
 ]
 
 /** Validates management responses separately from request streaming. */
@@ -246,6 +250,21 @@ export class ManagementClient {
 
   async selectWorkspace(id: string): Promise<WorkspaceList> {
     return workspaceList(await this.request('workspaces/selected', 'PUT', { id }))
+  }
+
+  /**
+   * Opens the folder dialog of the operating system on the computer that runs DeckAgent. Answers `null` when the
+   * user closes it. The Host refuses with `FOLDER_PICKER_UNAVAILABLE` or `FOLDER_PICKER_FAILED` when no dialog opens.
+   */
+  async pickWorkspaceFolder(): Promise<string | null> {
+    const data = await this.request('workspaces/pick', 'POST')
+    if (!object(data) || (data.folder !== null && typeof data.folder !== 'string')) invalid()
+    return data.folder
+  }
+
+  /** Places a workspace before another one, or last when `before` is `null`. */
+  async moveWorkspace(id: string, before: string | null): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces/order', 'PUT', { id, before }))
   }
 
   async renameWorkspace(id: string, name: string): Promise<WorkspaceList> {

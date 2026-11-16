@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, mkdtemp, readdir, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, parse, sep } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import {
   FolderPolicy,
@@ -301,4 +302,40 @@ test('a damaged or foreign Workspace database is refused without being reset', a
   await writeFile(path, 'not a database at all')
   assert.throws(() => new WorkspaceRegistry({ path, home: dataRoot, dataRoot }), { code: 'WORKSPACE_STORAGE' })
   assert.equal((await stat(path)).size, 'not a database at all'.length)
+})
+
+test('the user can place workspaces before one another; the order survives a restart and ignores removed workspaces', async t => {
+  const { dir, dataRoot, open } = await setup(t)
+  let registry = open()
+  for (const name of ['a', 'b', 'c']) await registry.add(await folder(dir, name))
+  const ids = async () => (await registry.list()).map(item => item.id)
+  const first = await ids()
+  assert.deepEqual(first, ['default', first[1], first[2], first[3]], 'Without a placement the default workspace is first, then the order set up')
+  const [, one, two, three] = first
+  registry.move(three, one)
+  assert.deepEqual(await ids(), ['default', three, one, two], 'A workspace goes before another one')
+  registry.move('default')
+  assert.deepEqual(await ids(), [three, one, two, 'default'], 'Leaving out the other workspace places it last; the default workspace is placed like any other')
+  registry.move(one, one)
+  registry.move(one, two)
+  assert.deepEqual(await ids(), [three, one, two, 'default'], 'Placing a workspace on itself or where it is changes nothing')
+  assert.throws(() => registry.move('missing', one), { code: 'WORKSPACE_NOT_FOUND' })
+  assert.throws(() => registry.move(one, 'missing'), { code: 'WORKSPACE_NOT_FOUND' })
+  assert.throws(() => registry.move('../x'), { code: 'WORKSPACE_NOT_FOUND' })
+  assert.deepEqual(await ids(), [three, one, two, 'default'], 'A refused placement changes nothing')
+
+  registry.close()
+  registry = open()
+  assert.deepEqual(await ids(), [three, one, two, 'default'], 'The order survives a restart')
+  const fourth = (await registry.add(await folder(dir, 'd'))).workspace.id
+  assert.deepEqual(await ids(), [three, one, two, 'default', fourth], 'A new workspace comes after the placed ones')
+  registry.remove(one)
+  assert.deepEqual(await ids(), [three, two, 'default', fourth], 'A removed workspace leaves the order')
+
+  registry.close()
+  const db = new DatabaseSync(join(dataRoot, 'db', 'workspaces.sqlite'))
+  db.prepare("UPDATE registry_state SET value = '{broken' WHERE key = 'order'").run()
+  db.close()
+  registry = open()
+  assert.deepEqual(await ids(), ['default', two, three, fourth], 'A damaged stored order reads as no order, so the default workspace is first and the rest follow the order set up; nothing else is lost')
 })

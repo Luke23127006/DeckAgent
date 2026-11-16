@@ -208,8 +208,18 @@ export async function startHost(options: HostOptions) {
         if (url.pathname === '/api/workspaces/selected' && req.method === 'PUT') {
           json(res, 200, await workspaces.select(await readJson(req))); return
         }
+        if (url.pathname === '/api/workspaces/pick' && req.method === 'POST') {
+          if (!workspaces.pick) throw new HttpError(501, 'FOLDER_PICKER_UNAVAILABLE')
+          // The dialog closes with the request: a page that reloads or a client that gives up leaves nothing open.
+          const control = new AbortController()
+          res.once('close', () => control.abort())
+          json(res, 200, await workspaces.pick(control.signal)); return
+        }
+        if (url.pathname === '/api/workspaces/order' && req.method === 'PUT') {
+          json(res, 200, await workspaces.move(await readJson(req))); return
+        }
         const workspace = /^\/api\/workspaces\/([\w-]{1,100})(\/folder)?$/.exec(url.pathname)
-        if (workspace && workspace[1] !== 'selected') {
+        if (workspace && workspace[1] !== 'selected' && workspace[1] !== 'order' && workspace[1] !== 'pick') {
           if (!workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.rename(workspace[1]!, await readJson(req))); return }
           if (!workspace[2] && req.method === 'DELETE') { json(res, 200, await workspaces.remove(workspace[1]!)); return }
           if (workspace[2] && req.method === 'PUT') { json(res, 200, await workspaces.relink(workspace[1]!, await readJson(req))); return }

@@ -52,14 +52,37 @@ export class WorkspaceRegistry {
     }
   }
 
-  /** Every workspace that is set up: the default workspace first, then in the order they were set up. */
+  /**
+   * Every workspace that is set up, in the order the user gave with `move`. A workspace the user never placed
+   * comes after the placed ones: the default workspace first, then in the order they were set up.
+   */
   async list(): Promise<readonly WorkspaceState[]> {
-    const rows = this.access(() =>
-      this.db
-        .prepare('SELECT * FROM workspaces WHERE removed_at IS NULL ORDER BY is_default DESC, created_at, id')
-        .all(),
-    )
+    const rows = this.access(() => this.orderedRows())
     return Promise.all(rows.map(async row => ({ ...this.workspace(row), folderStatus: await this.status(row) })))
+  }
+
+  /**
+   * Places a workspace before another one, or last when `beforeId` is left out. Keeps no folder or chat unchanged.
+   * The default workspace can be placed like any other.
+   */
+  move(id: string, beforeId?: string | null): void {
+    this.access(() =>
+      this.transaction(() => {
+        this.row(id)
+        if (beforeId !== undefined && beforeId !== null) this.row(beforeId)
+        if (beforeId === id) return
+        const current = this.orderedRows().map(row => String(row.id))
+        const rest = current.filter(item => item !== id)
+        const at = beforeId === undefined || beforeId === null ? rest.length : rest.indexOf(beforeId)
+        const next = [...rest.slice(0, at), id, ...rest.slice(at)]
+        if (next.every((item, index) => item === current[index])) return
+        this.db
+          .prepare(
+            "INSERT INTO registry_state (key, value) VALUES ('order', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+          )
+          .run(JSON.stringify(next))
+      }),
+    )
   }
 
   async get(id: string): Promise<WorkspaceState> {
@@ -221,6 +244,24 @@ export class WorkspaceRegistry {
     if (this.closed) return
     this.db.close()
     this.closed = true
+  }
+
+  /** The rows that are set up in display order. A damaged stored order reads as no order. */
+  private orderedRows(): Row[] {
+    const rows = this.db
+      .prepare('SELECT * FROM workspaces WHERE removed_at IS NULL ORDER BY is_default DESC, created_at, id')
+      .all()
+    const stored = this.db.prepare("SELECT value FROM registry_state WHERE key = 'order'").get()
+    let ids: unknown
+    try {
+      ids = stored ? JSON.parse(String(stored.value)) : []
+    } catch {
+      ids = []
+    }
+    const rank = new Map<string, number>()
+    if (Array.isArray(ids))
+      for (const item of ids) if (typeof item === 'string' && !rank.has(item)) rank.set(item, rank.size)
+    return rows.sort((a, b) => (rank.get(String(a.id)) ?? rank.size) - (rank.get(String(b.id)) ?? rank.size))
   }
 
   private async status(row: Row): Promise<FolderStatus> {

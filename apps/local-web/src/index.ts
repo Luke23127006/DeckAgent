@@ -16,9 +16,13 @@ import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
+import { FolderPickerUnavailableError } from './folder-picker.ts'
+import type { PickDirectory } from './folder-picker.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
+export { FolderPickerUnavailableError } from './folder-picker.ts'
+export type { PickDirectory } from './folder-picker.ts'
 
 export interface LocalWebOptions {
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -30,6 +34,11 @@ export interface LocalWebOptions {
   readonly port?: number
   /** The user's own folder for the project-folder rules (BR-019). Defaults to the OS home folder. */
   readonly home?: string
+  /**
+   * Opens the folder dialog of the operating system. The command line passes the Windows dialog; tests and any
+   * other caller pass a fake, so that no dialog opens by accident. Without it, the folder is typed as a path.
+   */
+  readonly pickDirectory?: PickDirectory
 }
 
 const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
@@ -147,6 +156,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       return project(found)
     }
     const listWorkspaces = async (): Promise<WorkspaceList> => ({ workspaces: await workspaces.list(), selectedId: workspaces.selectedId() })
+    let picking = false
     const workspaceManagement: WorkspaceManagement = {
       list: () => workspaceCall(listWorkspaces),
       add: value => workspaceCall(async () => { await workspaces.add(body(value, 'folder')); return listWorkspaces() }),
@@ -154,6 +164,31 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         const id = body(value, 'id')
         if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
         workspaces.select(id)
+        return listWorkspaces()
+      }),
+      ...(options.pickDirectory
+        ? {
+            pick: async (signal: AbortSignal) => {
+              // One dialog at a time: a second request would open a second dialog behind the first.
+              if (picking) throw new HttpError(409, 'FOLDER_PICKER_BUSY')
+              picking = true
+              try {
+                return { folder: await options.pickDirectory!(signal) }
+              } catch (error) {
+                if (signal.aborted) throw new HttpError(408, 'FOLDER_PICKER_CANCELLED')
+                if (error instanceof FolderPickerUnavailableError) throw new HttpError(501, 'FOLDER_PICKER_UNAVAILABLE')
+                throw new HttpError(502, 'FOLDER_PICKER_FAILED')
+              } finally {
+                picking = false
+              }
+            },
+          }
+        : {}),
+      move: value => workspaceCall(async () => {
+        if (!record(value) || Object.keys(value).some(name => name !== 'id' && name !== 'before')) throw new HttpError(400, 'INVALID_REQUEST')
+        const { id, before } = value
+        if (typeof id !== 'string' || (before !== null && before !== undefined && typeof before !== 'string')) throw new HttpError(400, 'INVALID_REQUEST')
+        workspaces.move(id, before)
         return listWorkspaces()
       }),
       rename: (id, value) => workspaceCall(async () => { workspaces.rename(id, body(value, 'name')); return listWorkspaces() }),
