@@ -37,10 +37,13 @@ export class SqliteSessionStore {
     this.access(() => this.ensure(sessionId, defaultWorkspaceId))
   }
 
-  /** A new chat: its own ID, no conversation, in the given workspace. Takes nothing from another chat. */
-  async create(workspaceId: string, selection?: ModelSelection): Promise<SessionInfo> {
+  /**
+   * A new chat: its own ID, no conversation, in the given workspace, or in none when `workspaceId` is `null`
+   * (an ungrouped chat). Takes nothing from another chat.
+   */
+  async create(workspaceId: string | null, selection?: ModelSelection): Promise<SessionInfo> {
     return this.access(() => this.transaction(() => {
-      if (!workspaceId.trim()) throw new SessionError('SESSION_CONFIG', 'Workspace ID must not be empty')
+      if (workspaceId !== null && !workspaceId.trim()) throw new SessionError('SESSION_CONFIG', 'Workspace ID must not be empty')
       if (selection) this.validateSelection(selection)
       const sessionId = `chat-${randomUUID()}`
       this.ensure(sessionId, workspaceId)
@@ -198,7 +201,7 @@ export class SqliteSessionStore {
     if (typeof sessionId !== 'string' || !sessionId.trim()) throw new SessionError('SESSION_CONFIG', 'Session ID must not be empty')
   }
 
-  private ensure(sessionId: string, workspaceId: string): void {
+  private ensure(sessionId: string, workspaceId: string | null): void {
     this.validateId(sessionId)
     const now = new Date().toISOString()
     this.db.prepare('INSERT INTO sessions (id, created_at, updated_at, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING')

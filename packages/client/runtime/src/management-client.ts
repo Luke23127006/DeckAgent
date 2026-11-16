@@ -215,8 +215,14 @@ export class ManagementClient {
     return data.map(session)
   }
 
-  async create(selection?: { provider: string; model: string }): Promise<WebSession> {
-    return session(await this.request('sessions', 'POST', selection ? { selection } : {}))
+  /** A new chat in the workspace in use, or in none when `ungrouped` is true. */
+  async create(selection?: { provider: string; model: string }, options: { ungrouped?: boolean } = {}): Promise<WebSession> {
+    return session(
+      await this.request('sessions', 'POST', {
+        ...(selection ? { selection } : {}),
+        ...(options.ungrouped ? { ungrouped: true } : {}),
+      }),
+    )
   }
 
   async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
@@ -260,6 +266,11 @@ export class ManagementClient {
     const data = await this.request('workspaces/pick', 'POST')
     if (!object(data) || (data.folder !== null && typeof data.folder !== 'string')) invalid()
     return data.folder
+  }
+
+  /** Sets up a workspace with a name and no folder, and makes it the workspace in use. */
+  async createWorkspace(name: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces/named', 'POST', { name }))
   }
 
   /** Places a workspace before another one, or last when `before` is `null`. */

@@ -66,6 +66,11 @@ Notable changes to this repository. The newest changes are at the top.
   - The width is kept in the browser, so it survives a reload and not a restart of DeckAgent, whose local port changes
 - Deleting a workspace asks in a dialog that states what stays: the folder and its files, and the chats, which become ungrouped; the dialog cannot be closed while the request runs
 - A workspace row is dragged, or moved with `Alt` and the up or down arrow, to place it before another one
+- A workspace can be set up with a name and no folder: `POST /api/workspaces/named` takes `{ name }`, makes the workspace the one in use and reads and writes nothing on disk
+  - A folder can be chosen for it later with the route that changes the folder of a workspace; the default workspace still takes none
+  - This departs from the rule of the workspace use case (UC-013 A9) that sets up no workspace until a folder is chosen, and it is a proposal until a decision record approves it
+- A chat can be created that belongs to no workspace: `POST /api/sessions` takes `ungrouped: true`, and the chat database accepts a chat without a workspace
+  - Such a chat stays ungrouped after a restart; this is a proposal until a decision record approves it
 
 ### Removed
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag

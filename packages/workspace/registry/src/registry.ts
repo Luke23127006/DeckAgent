@@ -129,6 +129,28 @@ export class WorkspaceRegistry {
     })
   }
 
+  /**
+   * Set up a workspace that has a name and no project folder yet, and make it the workspace in use. It reads and
+   * writes nothing on disk. A folder can be chosen for it later with `relink`. Proposal: UC-013 A9 sets up no
+   * workspace until a folder is chosen.
+   */
+  create(name: unknown): Workspace {
+    const value = nameFromUser(name)
+    const id = `workspace-${randomUUID()}`
+    return this.access(() =>
+      this.transaction(
+        () => {
+          this.db
+            .prepare('INSERT INTO workspaces (id, name, created_at) VALUES (?, ?, ?)')
+            .run(id, value, new Date().toISOString())
+          this.setSelected(id)
+          return this.row(id)
+        },
+        row => this.workspace(row),
+      ),
+    )
+  }
+
   /** Set up a workspace for a readable folder and make it the workspace in use (UC-013 S2, A1, FR-071). */
   async add(folder: unknown): Promise<AddResult> {
     const identity = await this.policy.inspect(folder)

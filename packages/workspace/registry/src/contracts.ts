@@ -2,7 +2,7 @@
 export const defaultWorkspaceId = 'default'
 
 /**
- * - `none`: no project folder (the default workspace).
+ * - `none`: no project folder: the default workspace, and a workspace that has a name and has not been given a folder yet.
  * - `available`: the folder the user chose is at its place and can be read.
  * - `unreadable`: nothing readable is at the place, for example it was moved or access was taken away (FR-074).
  * - `different-folder`: the place holds a folder that is not the one the user chose (FR-142).

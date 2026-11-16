@@ -176,7 +176,10 @@ export interface WebManagement {
   deleteProvider(id: string): Promise<void>
   catalog(id: string): Promise<readonly string[]>
   sessions(): Promise<readonly WebSession[]>
-  /** Creates the chat in the workspace in use. */
+  /**
+   * Creates the chat in the workspace in use. Body: `{ selection?, ungrouped? }`; `ungrouped: true` creates a chat
+   * that belongs to no workspace. Proposal.
+   */
   createSession(value: unknown): Promise<WebSession>
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
@@ -196,6 +199,8 @@ export interface WorkspaceManagement {
   list(): Promise<WorkspaceList>
   /** Body: `{ folder }`. Sets up a workspace, or finds the one of that folder, and makes it the workspace in use. */
   add(value: unknown): Promise<WorkspaceList>
+  /** Body: `{ name }`. Sets up a workspace with a name and no folder, and makes it the workspace in use. Proposal. */
+  create(value: unknown): Promise<WorkspaceList>
   /** Body: `{ id }`. */
   select(value: unknown): Promise<WorkspaceList>
   /**

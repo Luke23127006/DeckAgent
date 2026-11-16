@@ -184,6 +184,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
             },
           }
         : {}),
+      create: value => workspaceCall(async () => { workspaces.create(body(value, 'name')); return listWorkspaces() }),
       move: value => workspaceCall(async () => {
         if (!record(value) || Object.keys(value).some(name => name !== 'id' && name !== 'before')) throw new HttpError(400, 'INVALID_REQUEST')
         const { id, before } = value
@@ -214,11 +215,12 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         catalog: id => catalog.catalog(id),
         sessions: async () => (await store.chats()).map(project),
         async createSession(value) {
-          if (!record(value) || Object.keys(value).some(key => key !== 'selection')) throw new HttpError(400, 'INVALID_SESSION')
+          if (!record(value) || Object.keys(value).some(key => key !== 'selection' && key !== 'ungrouped')) throw new HttpError(400, 'INVALID_SESSION')
+          if (value.ungrouped !== undefined && typeof value.ungrouped !== 'boolean') throw new HttpError(400, 'INVALID_SESSION')
           // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
           const chosen = value.selection === undefined ? state.lastSelection() : selection(value.selection)
           if (chosen && !state.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-          const created = await store.create(workspaces.selectedId(), chosen)
+          const created = await store.create(value.ungrouped === true ? null : workspaces.selectedId(), chosen)
           return chat(created.sessionId)
         },
         async selectModel(id, value) {

@@ -450,3 +450,35 @@ test('POST /api/workspaces/pick opens one folder dialog at a time, answers with 
   const none = await api(typed)('workspaces/pick', 'POST')
   assert.deepEqual([none.status, none.data.error.code], [501, 'FOLDER_PICKER_UNAVAILABLE'])
 })
+
+test('a workspace can be created by name without a folder, and a chat can be created in no workspace', async t => {
+  const { start, project } = await area(t)
+  let app = await start()
+  let call = api(app)
+  const created = await call('workspaces/named', 'POST', { name: 'Dự án mới' })
+  assert.equal(created.status, 200)
+  const made = created.data.workspaces.find(item => item.name === 'Dự án mới')
+  assert.deepEqual([made.folder, made.isDefault, made.folderStatus, created.data.selectedId], [null, false, 'none', made.id])
+  for (const body of [{}, { name: 5 }, { name: 'x', extra: 1 }, []]) assert.equal((await call('workspaces/named', 'POST', body)).status, 400, JSON.stringify(body))
+  const empty = await call('workspaces/named', 'POST', { name: '  ' })
+  assert.deepEqual([empty.status, empty.data.error.code], [400, 'WORKSPACE_NAME_EMPTY'])
+  assert.equal((await call('workspaces')).data.workspaces.length, 2, 'A refused name sets nothing up')
+
+  const inWorkspace = (await call('sessions', 'POST', {})).data
+  assert.equal(inWorkspace.workspaceId, made.id, 'A chat still joins the workspace in use')
+  const alone = (await call('sessions', 'POST', { ungrouped: true })).data
+  assert.equal(alone.workspaceId, null, 'An ungrouped chat joins no workspace')
+  assert.equal((await call('sessions', 'POST', { ungrouped: 'yes' })).status, 400)
+  assert.equal((await call('workspaces')).data.selectedId, made.id, 'Creating an ungrouped chat keeps the workspace in use')
+
+  const folder = await project('later')
+  const linked = (await call(`workspaces/${made.id}/folder`, 'PUT', { folder })).data
+  assert.equal(linked.workspaces.find(item => item.id === made.id).folder.endsWith('later'), true, 'A folder can be chosen later')
+
+  await app.close()
+  app = await start()
+  call = api(app)
+  const chats = (await call('sessions')).data
+  assert.equal(chats.find(item => item.sessionId === alone.sessionId).workspaceId, null, 'The ungrouped chat stays ungrouped after a restart')
+  assert.equal(chats.find(item => item.sessionId === inWorkspace.sessionId).workspaceId, made.id)
+})
