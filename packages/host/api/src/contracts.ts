@@ -156,7 +156,13 @@ export interface StoredRequest {
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
 export interface WebPreferences {
   readonly theme: 'light' | 'dark' | 'system'
+  /** Animated backdrop behind the glass window. `none` keeps the static gradient and runs no animation. */
+  readonly background: BackgroundId
 }
+
+/** Backdrops the user can choose. The Host validates against this list; the client draws each one. */
+export const backgroundIds = ['none', 'koi', 'rain', 'forest', 'stars', 'sakura'] as const
+export type BackgroundId = (typeof backgroundIds)[number]
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {

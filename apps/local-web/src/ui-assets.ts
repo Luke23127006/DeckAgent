@@ -1,12 +1,18 @@
+import type { WebPreferences } from '@deckagent/host-api'
+
 export const page = `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>DeckAgent</title><script src="/theme.js"></script><link rel="stylesheet" href="/style.css"></head>
 <body><main id="app"><section data-slot="request"><h1>DeckAgent</h1><p>Đang mở không gian làm việc…</p></section></main>
 <script type="module" src="/client/boot.js"></script></body></html>`
 
-// Applies the Host-saved light/dark choice before first paint. "system" sets nothing, so the media query decides.
-export function themeBootstrap(theme: 'light' | 'dark' | 'system'): string {
-  return theme === 'system' ? '' : `document.documentElement.dataset.theme='${theme}'`
+// Applies the Host-saved light/dark and backdrop choices before first paint. "system" and "none" set nothing,
+// so the media query and the static gradient decide. Both values come from fixed lists, never from user text.
+export function themeBootstrap(preferences: WebPreferences): string {
+  const lines: string[] = []
+  if (preferences.theme !== 'system') lines.push(`document.documentElement.dataset.theme='${preferences.theme}'`)
+  if (preferences.background !== 'none') lines.push(`document.documentElement.dataset.background='${preferences.background}'`)
+  return lines.join(';')
 }
 
 const darkTokens = `--canvas:radial-gradient(circle 16rem at 8% 14%,#8a2fb0 0 92%,transparent 100%),radial-gradient(circle 20rem at 92% 12%,#2358e0 0 92%,transparent 100%),radial-gradient(circle 14rem at 18% 88%,#0f8f8f 0 92%,transparent 100%),radial-gradient(circle 22rem at 84% 86%,#c0306a 0 92%,transparent 100%),radial-gradient(circle 12rem at 50% 40%,#d4691f 0 92%,transparent 100%),radial-gradient(circle 10rem at 66% 62%,#3b3bd6 0 92%,transparent 100%),#0b0b10;

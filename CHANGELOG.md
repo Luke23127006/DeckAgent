@@ -32,6 +32,10 @@ Notable changes to this repository. The newest changes are at the top.
 - `docs/development/writing-documents.md`: living documents and records, outcomes and not the conversation, one line per paragraph, clickable links, no bare ID
 - `docs/research/_STYLE.md`: how a research note is written
 - A GitHub conventions section in `AGENTS.md`: no agent is named as author or co-author
+- The interface preferences also keep the background behind the glass window: `none`, `koi`, `rain`, `forest`, `stars` or `sakura`
+  - `GET` and `PUT /api/preferences` carry `background` next to `theme`; a request may send one of the two, and the other keeps its value
+  - `/theme.js` sets `data-background` before the first paint; a stored value outside the list is read as `none`
+  - A client that sends only `theme` keeps working
 
 ### Removed
 - The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag

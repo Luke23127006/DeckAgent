@@ -126,7 +126,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
       // Read per request so the saved choice is applied before first paint, whatever the origin.
-      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences().theme) } },
+      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences()) } },
       '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))

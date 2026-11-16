@@ -9,6 +9,8 @@ import { HttpError, RequestController } from './request-controller.ts'
 import { requestReply } from './request-reply.ts'
 
 export type { AgentRequest, HistoryMessage, HostOptions, RequestSnapshot, ProviderSettings, ProviderTemplate, WebSettings, WebPreferences, WebSession, StoredActivity, StoredRequest, WebManagement } from './contracts.ts'
+export { backgroundIds } from './contracts.ts'
+export type { BackgroundId } from './contracts.ts'
 export type { ChatDraft, WorkspaceFolderStatus, WorkspaceList, WorkspaceManagement, WorkspaceView } from './contracts.ts'
 export type { HttpErrorDetail } from './http-error.ts'
 export { HttpError } from './request-controller.ts'
