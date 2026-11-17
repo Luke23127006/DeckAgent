@@ -4,7 +4,7 @@ import { ManagementError } from './management-client.ts'
 import type { ManagementClient } from './management-client.ts'
 import { tooltip } from './tooltip.ts'
 
-const folderIcon = [
+export const folderIcon = [
   'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
 ]
 
@@ -12,7 +12,7 @@ const composeIcon = [
   'M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7',
   'M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z',
 ]
-const ellipsisIcon = [
+export const ellipsisIcon = [
   'M5 12m-1.4 0a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0-2.8 0',
   'M12 12m-1.4 0a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0-2.8 0',
   'M19 12m-1.4 0a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0-2.8 0',
@@ -128,13 +128,39 @@ export function workspaceView(
   changed: (list: WorkspaceList, reloadChats: boolean) => Promise<void>,
   newChatIn: (workspaceId: string) => void,
   chats: ChatTree,
-): WorkspaceControls & { update(list: WorkspaceList): void; refresh(): void } {
+  /** A workspace was set up, by name or for a folder: the main view goes to a new chat of it, with no chat made yet. */
+  landed: (workspaceId: string) => void,
+): WorkspaceControls & {
+  update(list: WorkspaceList): void
+  refresh(): void
+  /** The workspace whose page shows in the main view, or `undefined` while a chat shows. */
+  setHome(id: string | undefined): void
+  /** Opens the menu of a workspace at a point, for the page of the workspace. */
+  menuFor(id: string, x: number, y: number): void
+} {
   const container = element('section', undefined, 'workspace-controls')
   const rows = element('ul', undefined, 'workspace-list')
   const emptyNote = element('p', 'Không có chat nào khớp với các từ đã nhập.', 'workspace-empty')
   emptyNote.hidden = true
   const body = element('div', undefined, 'workspace-body')
-  body.append(rows, emptyNote)
+  body.append(rows)
+  // Chats of no workspace have a section of their own, a peer of the workspaces, like the Chats list of ChatGPT.
+  // Folding the workspaces never hides them.
+  const chatSection = element('section', undefined, 'chat-group')
+  chatSection.hidden = true
+  const chatBody = element('div', undefined, 'chat-group-body')
+  const chatToggle = button('Chat', () => {
+    chatsClosed = !chatsClosed
+    renderRows()
+  })
+  chatToggle.className = 'workspace-toggle'
+  chatToggle.setAttribute('aria-expanded', 'true')
+  chatToggle.append(icon(['m6 9 6 6 6-6']))
+  const chatHeading = element('h3', undefined, 'chat-group-heading')
+  chatHeading.append(chatToggle)
+  chatSection.append(chatHeading, chatBody)
+  /** True while the user keeps the section of chats of no workspace folded. A search unfolds it. */
+  let chatsClosed = false
   // Folded workspaces, kept per browser like the width of the sidebar. A workspace is open unless it is listed here.
   const closed = storedClosed()
   /** Groups whose chats show in full: a workspace id, or `ungrouped`. */
@@ -193,6 +219,8 @@ export function workspaceView(
   let subject: WorkspaceView | undefined
   /** The row whose menu is open, kept visible while the pointer is elsewhere. */
   let menuRow: HTMLElement | undefined
+  /** The workspace whose page shows in the main view, if any. */
+  let homeId: string | undefined
   /** Rows shown before "Hiển thị thêm"; the workspace in use always shows. */
   const visibleLimit = 5
 
@@ -262,14 +290,17 @@ export function workspaceView(
       choice.append(icon(folderIcon), element('span', item.name, 'workspace-name'))
       if (needsCheck) choice.append(element('span', 'cần kiểm tra', 'workspace-flag'))
       choice.disabled = busy || outside
+      // The workspace whose page shows, like the open project of ChatGPT.
+      choice.dataset.home = String(item.id === homeId)
       const open = searching || !closed.has(item.id)
       choice.setAttribute('aria-expanded', String(open))
-      // A workspace that is not in use becomes the one in use, and opens. The one in use folds or unfolds.
+      // A workspace whose page does not show becomes the one in use, unfolds, and shows its page. The one whose page
+      // shows folds or unfolds.
       choice.addEventListener('click', () => {
-        if (item.id !== list.selectedId) {
+        if (item.id !== homeId) {
           closed.delete(item.id)
           saveClosed()
-          change(() => management.selectWorkspace(item.id), false)
+          newChatIn(item.id)
           return
         }
         if (closed.has(item.id)) closed.delete(item.id)
@@ -330,15 +361,14 @@ export function workspaceView(
       return row
     })
     // Chats that belong to no workspace: the ones that the `Chat mới` button starts, and those of a deleted workspace.
-    if (ungrouped.length) {
-      const row = element('li', undefined, 'chat-group')
-      row.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
-      const group = chatGroup('ungrouped', ungrouped)
-      if (group) row.append(group)
-      groups.push(row)
-    }
+    const loose = chatGroup('ungrouped', ungrouped)
+    chatBody.replaceChildren(...(loose ? [loose] : []))
+    chatSection.hidden = !loose
+    const chatsOpen = searching || !chatsClosed
+    chatBody.hidden = !chatsOpen
+    chatToggle.setAttribute('aria-expanded', String(chatsOpen))
     rows.replaceChildren(...groups)
-    emptyNote.hidden = !(searching && groups.length === 0)
+    emptyNote.hidden = !(searching && groups.length === 0 && !loose)
     more.hidden = searching || items.length <= visibleLimit
     more.textContent = showAll ? 'Thu gọn' : 'Hiển thị thêm'
   }
@@ -456,7 +486,7 @@ export function workspaceView(
   function change(
     work: () => Promise<WorkspaceList>,
     reloadChats: boolean,
-    done?: () => void,
+    done?: (next: WorkspaceList) => void,
     target: HTMLElement = error,
   ) {
     if (busy) return
@@ -469,7 +499,7 @@ export function workspaceView(
         list = next
         render()
         await changed(next, reloadChats)
-        done?.()
+        done?.(next)
       })
       .catch(reason => {
         target.hidden = false
@@ -550,10 +580,14 @@ export function workspaceView(
     controls()
     if (folder === null) return
     const chosen = folder
-    change(
-      () => (next.kind === 'add' ? management.addWorkspace(chosen) : management.relinkWorkspace(next.id, chosen)),
-      false,
-    )
+    if (next.kind === 'add')
+      change(
+        () => management.addWorkspace(chosen),
+        false,
+        // A folder that already has a workspace makes that one the workspace in use, so the view goes to it (FR-071).
+        added => landed(added.selectedId),
+      )
+    else change(() => management.relinkWorkspace(next.id, chosen), false)
   }
   // The plus button offers two ways: a workspace with a name only, or a folder that exists.
   const addMenu = element('div', undefined, 'workspace-menu')
@@ -628,7 +662,7 @@ export function workspaceView(
   for (const text of [
     'Workspace rời khỏi danh sách.',
     'Thư mục dự án và mọi file trong đó được giữ nguyên.',
-    'Các chat của workspace được giữ lại trong nhóm “Chat chưa nhóm”, cùng hội thoại, deck và model đã chọn.',
+    'Các chat của workspace được giữ lại trong nhóm “Chat”, cùng hội thoại, deck và model đã chọn.',
   ])
     confirmList.append(element('li', text))
   const confirmError = element('p', '', 'workspace-error')
@@ -691,7 +725,11 @@ export function workspaceView(
               ? management.createWorkspace(text)
               : management.addWorkspace(text.trim()),
       false,
-      () => dialog.close(),
+      next => {
+        dialog.close()
+        // Setting up a workspace opens a new chat of it; renaming or changing a folder keeps the view as it is.
+        if (target.kind === 'add' || target.kind === 'create') landed(next.selectedId)
+      },
       dialogError,
     )
   })
@@ -704,14 +742,14 @@ export function workspaceView(
   remove.prepend(icon(trashIcon))
   for (const item of [rename, relink, remove]) item.setAttribute('role', 'menuitem')
   menu.append(rename, relink, remove)
-  function openMenu(target: WorkspaceView, row: HTMLElement, x: number, y: number) {
+  function openMenu(target: WorkspaceView, row: HTMLElement | undefined, x: number, y: number) {
     if (busy || outside) return
     closeMenu()
     subject = target
     // A workspace that has no folder yet is given one; another one changes its folder.
     relinkText.textContent = target.folder === null && !target.isDefault ? 'Chọn thư mục' : 'Đổi thư mục'
     menuRow = row
-    row.dataset.menu = 'open'
+    if (row) row.dataset.menu = 'open'
     controls()
     menu.hidden = false
     const { offsetWidth: width, offsetHeight: height } = menu
@@ -746,14 +784,13 @@ export function workspaceView(
   toggle.append(icon(['m6 9 6 6 6-6']))
   const head = element('div', undefined, 'workspace-head')
   head.append(toggle, add)
-  container.append(head, body, more, notice, adopt, error)
+  container.append(head, body, more, notice, adopt, error, chatSection, emptyNote)
   container.append(
     element(
       'style',
       `.workspace-controls{display:grid;gap:2px;min-width:0;margin:4px 0 8px}
       .workspace-controls>button{font-size:12px;padding:4px 8px}
       .workspace-notice,.workspace-error{font-size:12px;overflow-wrap:anywhere;margin:0}.workspace-error{color:var(--danger,#b42318)}
-      .chat-group-heading{font-size:12px;margin:10px 0 4px;opacity:.8}
       .workspace-dialog{max-width:min(520px,calc(100vw - 32px));box-sizing:border-box;border-radius:12px;padding:20px}
       .workspace-dialog::backdrop{background:#0005}.workspace-dialog form{display:grid;gap:12px}
       .workspace-dialog h2,.workspace-dialog p{margin:0}.workspace-dialog label{display:grid;gap:6px}
@@ -777,6 +814,20 @@ export function workspaceView(
     setBusy(value) {
       outside = value
       controls()
+    },
+    setHome(id) {
+      if (homeId === id) return
+      homeId = id
+      renderRows()
+      controls()
+    },
+    menuFor(id, x, y) {
+      const target = list.workspaces.find(item => item.id === id)
+      if (!target) return
+      const row = [...rows.querySelectorAll<HTMLElement>('.workspace-item')].find(
+        item => item.dataset.workspaceId === id,
+      )
+      openMenu(target, row, x, y)
     },
   }
 }

@@ -5,6 +5,17 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Changed
+- A new chat is made at the first character of its draft, like ChatGPT: `Chat mới`, `Ctrl+Shift+O`, the start of the interface and the page of a workspace show a new chat that the Host has not made and the sidebar does not list
+  - Choosing a model first also makes the chat, with that model; text typed while the Host makes it stays in the composer and becomes its draft
+  - A new chat that waits for a workspace that is removed, or no longer in use, joins the workspace in use
+  - This departs from FR-053, where a new chat exists at once with an empty draft
+- Each workspace has a page, like a project page of ChatGPT: its name and folder, a `…` button for its menu, a composer for a new chat of it, and its chats with their slide state, draft and date
+  - Pressing a workspace row, or setting up a workspace by name or for a folder, shows its page; pressing the row whose page shows folds or unfolds its chats
+  - The page stays while the user types; opening a chat shows its conversation, and so will sending once requests are available
+  - This departs from FR-071 and UC-013 A7, where adding or switching a workspace keeps the open chat on screen; that chat and its draft stay on the Host and in the sidebar
+- Chats of no workspace form a sidebar section `Chat` of their own, apart from the workspaces, so folding the workspaces no longer hides them; the chats of a workspace hang from a line under its folder icon
+- The header of a chat of a workspace names the workspace before the title, and the welcome of such a chat names it too
+- The browser smoke test checks that a new chat is made only at its first character, the page of a workspace, and the two sidebar sections
 - Local Web runs the B01 local foundation without a model or a provider key
   - App data lives in the OS app-data folder, or in the folder that `--data-dir` or `DECKAGENT_DATA_DIR` names, with databases in `db/` and files in `files/`; a damaged, unwritable or misplaced data folder stops startup with the next step to take, and nothing is reset
   - Each chat belongs to a workspace, and a chat whose workspace is removed is listed as ungrouped; the chat list has search, marks a chat that cannot be read, and the Host keeps each chat's draft until DeckAgent stops
