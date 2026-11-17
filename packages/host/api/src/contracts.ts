@@ -156,7 +156,13 @@ export interface StoredRequest {
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
 export interface WebPreferences {
   readonly theme: 'light' | 'dark' | 'system'
+  /** Animated backdrop behind the glass window. `none` keeps the static gradient and runs no animation. */
+  readonly background: BackgroundId
 }
+
+/** Backdrops the user can choose. The Host validates against this list; the client draws each one. */
+export const backgroundIds = ['none', 'koi', 'rain', 'forest', 'stars', 'sakura'] as const
+export type BackgroundId = (typeof backgroundIds)[number]
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
@@ -170,7 +176,10 @@ export interface WebManagement {
   deleteProvider(id: string): Promise<void>
   catalog(id: string): Promise<readonly string[]>
   sessions(): Promise<readonly WebSession[]>
-  /** Creates the chat in the workspace in use. */
+  /**
+   * Creates the chat in the workspace in use. Body: `{ selection?, ungrouped? }`; `ungrouped: true` creates a chat
+   * that belongs to no workspace. Proposal.
+   */
   createSession(value: unknown): Promise<WebSession>
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
@@ -190,8 +199,18 @@ export interface WorkspaceManagement {
   list(): Promise<WorkspaceList>
   /** Body: `{ folder }`. Sets up a workspace, or finds the one of that folder, and makes it the workspace in use. */
   add(value: unknown): Promise<WorkspaceList>
+  /** Body: `{ name }`. Sets up a workspace with a name and no folder, and makes it the workspace in use. Proposal. */
+  create(value: unknown): Promise<WorkspaceList>
   /** Body: `{ id }`. */
   select(value: unknown): Promise<WorkspaceList>
+  /**
+   * Opens the folder dialog of the operating system on this computer and answers with the folder the user chose,
+   * or `null` when the user closed the dialog. Absent when no dialog is available. `signal` aborts when the
+   * request ends. Proposal.
+   */
+  pick?(signal: AbortSignal): Promise<{ readonly folder: string | null }>
+  /** Body: `{ id, before }`. Places the workspace before `before`, or last when `before` is `null`. Proposal. */
+  move(value: unknown): Promise<WorkspaceList>
   /** Body: `{ name }`. */
   rename(id: string, value: unknown): Promise<WorkspaceList>
   /** Body: `{ folder }`. */

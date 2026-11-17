@@ -1,10 +1,14 @@
 import { DatabaseSync } from 'node:sqlite'
-import { HttpError, validateUserQuestion } from '@deckagent/host-api'
-import type { StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
+import { HttpError, backgroundIds, validateUserQuestion } from '@deckagent/host-api'
+import type { BackgroundId, StoredActivity, StoredRequest, WebPreferences, WebSession, WebSettings } from '@deckagent/host-api'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 
 export function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isBackground(value: unknown): value is BackgroundId {
+  return typeof value === 'string' && (backgroundIds as readonly string[]).includes(value)
 }
 
 export function selection(value: unknown): ModelSelection {
@@ -77,14 +81,40 @@ export class WebState {
   }
 
   preferences(): WebPreferences {
-    const row = this.db.prepare("SELECT value FROM preferences WHERE key='theme'").get()
-    return { theme: row?.value === 'light' || row?.value === 'dark' ? row.value : 'system' }
+    const rows = this.db.prepare("SELECT key, value FROM preferences WHERE key IN ('theme', 'background')").all()
+    const stored = (key: string): unknown => rows.find(row => row.key === key)?.value
+    const theme = stored('theme')
+    const background = stored('background')
+    return {
+      theme: theme === 'light' || theme === 'dark' ? theme : 'system',
+      // A stored value outside the list is never returned: `/theme.js` writes it into the page.
+      background: isBackground(background) ? background : 'none',
+    }
   }
 
+  /** Saves the keys that are sent and leaves the others as they are. */
   savePreferences(value: unknown): WebPreferences {
-    if (!record(value) || Object.keys(value).some(key => key !== 'theme') || (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system'))
+    if (!record(value)) throw new HttpError(400, 'INVALID_REQUEST')
+    const keys = Object.keys(value)
+    const themeOk = value.theme === 'light' || value.theme === 'dark' || value.theme === 'system'
+    if (
+      keys.length === 0 ||
+      keys.some(key => key !== 'theme' && key !== 'background') ||
+      ('theme' in value && !themeOk) ||
+      ('background' in value && !isBackground(value.background))
+    )
       throw new HttpError(400, 'INVALID_REQUEST')
-    this.db.prepare("INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(value.theme)
+    const save = this.db.prepare(
+      'INSERT INTO preferences (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+    )
+    this.db.exec('BEGIN')
+    try {
+      for (const key of keys) save.run(key, String(value[key]))
+      this.db.exec('COMMIT')
+    } catch (error) {
+      this.db.exec('ROLLBACK')
+      throw error
+    }
     return this.preferences()
   }
 

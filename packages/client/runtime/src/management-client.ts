@@ -138,6 +138,10 @@ const allowedCodes = [
   'WORKSPACE_FOLDER_IN_USE',
   'WORKSPACE_NAME_EMPTY',
   'WORKSPACE_NAME_TOO_LONG',
+  'FOLDER_PICKER_UNAVAILABLE',
+  'FOLDER_PICKER_FAILED',
+  'FOLDER_PICKER_BUSY',
+  'FOLDER_PICKER_CANCELLED',
 ]
 
 /** Validates management responses separately from request streaming. */
@@ -198,14 +202,27 @@ export class ManagementClient {
     return data.theme
   }
 
+  /** Saves the backdrop choice on the Host. The theme is not sent, so it stays as it is. */
+  async saveBackground(background: WebPreferences['background']): Promise<WebPreferences['background']> {
+    const data = await this.request('preferences', 'PUT', { background })
+    if (!object(data) || data.background !== background) invalid()
+    return background
+  }
+
   async sessions(): Promise<readonly WebSession[]> {
     const data = await this.request('sessions')
     if (!Array.isArray(data)) invalid()
     return data.map(session)
   }
 
-  async create(selection?: { provider: string; model: string }): Promise<WebSession> {
-    return session(await this.request('sessions', 'POST', selection ? { selection } : {}))
+  /** A new chat in the workspace in use, or in none when `ungrouped` is true. */
+  async create(selection?: { provider: string; model: string }, options: { ungrouped?: boolean } = {}): Promise<WebSession> {
+    return session(
+      await this.request('sessions', 'POST', {
+        ...(selection ? { selection } : {}),
+        ...(options.ungrouped ? { ungrouped: true } : {}),
+      }),
+    )
   }
 
   async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
@@ -239,6 +256,26 @@ export class ManagementClient {
 
   async selectWorkspace(id: string): Promise<WorkspaceList> {
     return workspaceList(await this.request('workspaces/selected', 'PUT', { id }))
+  }
+
+  /**
+   * Opens the folder dialog of the operating system on the computer that runs DeckAgent. Answers `null` when the
+   * user closes it. The Host refuses with `FOLDER_PICKER_UNAVAILABLE` or `FOLDER_PICKER_FAILED` when no dialog opens.
+   */
+  async pickWorkspaceFolder(): Promise<string | null> {
+    const data = await this.request('workspaces/pick', 'POST')
+    if (!object(data) || (data.folder !== null && typeof data.folder !== 'string')) invalid()
+    return data.folder
+  }
+
+  /** Sets up a workspace with a name and no folder, and makes it the workspace in use. */
+  async createWorkspace(name: string): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces/named', 'POST', { name }))
+  }
+
+  /** Places a workspace before another one, or last when `before` is `null`. */
+  async moveWorkspace(id: string, before: string | null): Promise<WorkspaceList> {
+    return workspaceList(await this.request('workspaces/order', 'PUT', { id, before }))
   }
 
   async renameWorkspace(id: string, name: string): Promise<WorkspaceList> {

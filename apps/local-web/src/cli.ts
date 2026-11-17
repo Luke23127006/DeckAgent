@@ -5,6 +5,7 @@ import { ModelProviders } from '@deckagent/model-providers'
 import type { ModelConnection } from '@deckagent/model-providers'
 import { StorageError, resolveStorageRoot, startLocalWeb } from './index.ts'
 import type { LocalWebOptions } from './index.ts'
+import { windowsFolderPicker } from './folder-picker.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -98,6 +99,8 @@ async function main() {
     ...(provider && model ? { selection: { provider, model } } : {}),
     dataDir: resolveStorageRoot({ flag: values['data-dir'] }),
     port,
+    // Only the command line opens a real dialog. Tests and other callers pass a fake, or none.
+    ...(process.platform === 'win32' ? { pickDirectory: windowsFolderPicker() } : {}),
   })
   const stop = () => {
     app.close().then(
