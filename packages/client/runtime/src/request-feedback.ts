@@ -1,6 +1,21 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  BRIEF_STALE: ['Brief đã thay đổi', 'Mở lại chat để đọc Brief hiện tại trước khi gửi lại. Bản nháp được giữ.'],
+  OUTLINE_STALE: ['Outline đã thay đổi', 'Đọc đề xuất hiện tại trước khi sửa hoặc xác nhận lại.'],
+  CONFIRMATION_CONFLICT: [
+    'Lần xác nhận không khớp đề xuất hiện tại',
+    'Mở lại chat để đọc Outline và kết quả đã lưu trước khi thử lại.',
+  ],
+  BRIEF_LOCKED: ['Brief đã khóa cho deck đã xác nhận', 'Xem các slide đã lưu. Tạo chat mới nếu cần một deck khác.'],
+  GENERATION_INCOMPLETE: [
+    'Deck chưa hoàn tất',
+    'Xem các slide đã lưu trong Preview và phần lỗi của yêu cầu. Hệ thống không tự chạy tiếp.',
+  ],
+  GENERATION_FAILED: [
+    'Chưa tạo xong deck',
+    'Kiểm tra hoạt động công cụ và các slide đã lưu. Hệ thống không tự chạy tiếp.',
+  ],
   RESEARCH_UNAVAILABLE: [
     'Chưa dùng được research',
     'Kiểm tra cấu hình Tavily hoặc bỏ chọn nguồn công khai rồi gửi lại. Bản nháp được giữ.',

@@ -117,6 +117,87 @@ if (has('overflow') || has('overflow-fail')) {
   process.exit(1)
 }
 event('step_start', { id: 'prt_step1', type: 'step-start' })
+if (existsSync(`${logFile}.generation.json`)) {
+  const config = JSON.parse(
+    content
+      .replaceAll('{env:DECKAGENT_PROVIDER_KEY}', key ?? '')
+      .replaceAll('{env:DECKAGENT_MCP_TOKEN}', process.env.DECKAGENT_MCP_TOKEN ?? ''),
+  )
+  const bridge = config.mcp?.deckagent
+  if (config.permission.deckagent_publish_slide === 'allow') {
+    const call = async (name, value, raw = false) => {
+      const response = await fetch(bridge.url, {
+        method: 'POST',
+        headers: {
+          ...bridge.headers,
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: name,
+          method: 'tools/call',
+          params: { name, arguments: raw ? value : { json: JSON.stringify(value) } },
+        }),
+      })
+      const responseBody = await response.json()
+      const tool = responseBody.result
+      if (!tool || tool.isError) throw new Error(tool?.content?.[0]?.text ?? 'TOOL_FAILED')
+      return JSON.parse(tool.content[0].text)
+    }
+    const plan = await call('read_generation_plan', {})
+    if (plan.sources.length) {
+      const source = await call('read_source', { path: plan.sources[0].label }, true)
+      if (!source.text.includes('project marker')) throw new Error('Selected source not readable')
+      let denied = false
+      try {
+        await call('read_source', { path: 'secret.txt' }, true)
+      } catch {
+        denied = true
+      }
+      if (!denied) throw new Error('Unselected source was exposed')
+      event('text', { id: 'prt_sources', type: 'text', text: 'Selected source readable; unselected source refused' })
+    }
+    const fixture = JSON.parse(readFileSync(`${logFile}.generation.json`, 'utf8'))
+    if (fixture.negative) {
+      for (const [name, value] of [
+        ['stage_brief', {}],
+        ['stage_outline', {}],
+        ['confirm_outline', {}],
+        ['begin_slide', { slideId: 'foreign-slide', layoutId: 'title-body' }],
+        ['read_source', { path: 'secret.txt' }],
+      ]) {
+        let rejected = false
+        try {
+          await call(name, value)
+        } catch {
+          rejected = true
+        }
+        if (!rejected) throw new Error(`Unexpected generation permission: ${name}`)
+      }
+      event('text', { id: 'prt_negative', type: 'text', text: 'Generation phase escalation and foreign scope refused' })
+    }
+    const escapeHtml = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    for (const slide of plan.slides) {
+      const stage = await call('begin_slide', { slideId: slide.slideId, layoutId: slide.candidates[0].id })
+      const html = `<h1>${escapeHtml(slide.title)}</h1><ul>${slide.blocks
+        .flatMap(b => b.items ?? [])
+        .map(text => `<li>${escapeHtml(text)}</li>`)
+        .join('')}</ul>`
+      await call('append_slide', { stageId: stage.stageId, sequence: 0, text: html, final: true })
+      await call('publish_slide', {
+        stageId: stage.stageId,
+        slideId: slide.slideId,
+        expectedRevision: 0,
+        publicationId: `pub-${slide.slideId}`,
+      })
+      if (fixture.stopAfterFirst) {
+        event('text', { id: 'prt_partial', type: 'text', text: 'First published; waiting for Stop' })
+        await sleep(10 * 60 * 1000)
+      }
+    }
+  }
+}
 if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
   const workflow = JSON.parse(readFileSync(`${logFile}.workflow.json`, 'utf8'))
   const config = JSON.parse(
@@ -125,6 +206,11 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
       .replaceAll('{env:DECKAGENT_MCP_TOKEN}', process.env.DECKAGENT_MCP_TOKEN ?? ''),
   )
   const bridge = config.mcp.deckagent
+  if (
+    workflow.expectedImageChoice &&
+    !config.agent.deckagent.prompt.includes(`"imageChoice":"${workflow.expectedImageChoice}"`)
+  )
+    throw new Error('Host image choice missing from workflow context')
   for (const [name, value] of [
     ['stage_brief', workflow.brief],
     ['stage_outline', workflow.outline],

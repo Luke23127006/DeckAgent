@@ -11,6 +11,7 @@ import test from 'node:test'
 import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
+import { brief } from './fixtures/brief.mjs'
 async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
   for (let i = 0; i < retries; i++) {
     const value = await operation()
@@ -21,10 +22,18 @@ async function eventually(operation, message, { retries = 200, intervalMs = 50 }
 }
 
 async function waitForBrowserPort(profile, browser) {
-  return eventually(async () => {
-    if (browser.exitCode !== null) throw new Error(`Browser exited before startup (exit ${browser.exitCode})`)
-    try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0] } catch { return undefined }
-  }, 'Browser did not start', { retries: 600 })
+  return eventually(
+    async () => {
+      if (browser.exitCode !== null) throw new Error(`Browser exited before startup (exit ${browser.exitCode})`)
+      try {
+        return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]
+      } catch {
+        return undefined
+      }
+    },
+    'Browser did not start',
+    { retries: 600 },
+  )
 }
 
 async function browserPath() {
@@ -59,20 +68,63 @@ async function resizeDeck(protocol, evaluate, selector, width, { releaseOnly = f
     // Register before pointerdown installs the resizer's window listener. Move the native mouse
     // normally, but omit that DOM move from the resizer; teleporting CDP mouseReleased across
     // an out-of-process iframe can lose pointerup before it reaches the page.
-    await evaluate(`window.addEventListener('pointermove', event => event.stopImmediatePropagation(), {capture: true, once: true})`)
+    await evaluate(
+      `window.addEventListener('pointermove', event => event.stopImmediatePropagation(), {capture: true, once: true})`,
+    )
   }
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', buttons: 1, clickCount: 1 })
-  assert.equal(await evaluate(`document.querySelector('.deck-resize-overlay') !== null`), true, `Divider must capture drag at ${JSON.stringify(start)}`)
+  await protocol.call('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: start.x,
+    y: start.y,
+    button: 'left',
+    buttons: 1,
+    clickCount: 1,
+  })
+  assert.equal(
+    await evaluate(`document.querySelector('.deck-resize-overlay') !== null`),
+    true,
+    `Divider must capture drag at ${JSON.stringify(start)}`,
+  )
   await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
-  assert.equal(await evaluate(`document.elementFromPoint(Math.max(1,Math.min(${end},innerWidth-1)),${start.y})?.classList.contains('deck-resize-overlay')`), true, 'Overlay must cover slide iframe hit targets')
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: end, y: start.y, button: 'left', buttons: 1 })
+  assert.equal(
+    await evaluate(
+      `document.elementFromPoint(Math.max(1,Math.min(${end},innerWidth-1)),${start.y})?.classList.contains('deck-resize-overlay')`,
+    ),
+    true,
+    'Overlay must cover slide iframe hit targets',
+  )
+  await protocol.call('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: end,
+    y: start.y,
+    button: 'left',
+    buttons: 1,
+  })
   await evaluate(`new Promise(resolve=>requestAnimationFrame(resolve))`)
   if (releaseOnly) {
-    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect().width`), start.width, 'Omitted move must not resize before pointerup')
+    assert.equal(
+      await evaluate(`document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect().width`),
+      start.width,
+      'Omitted move must not resize before pointerup',
+    )
   }
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: end, y: start.y, button: 'left', buttons: 0, clickCount: 1 })
-  await eventually(() => evaluate(`document.querySelector('.deck-resize-overlay') === null`), `Resize overlay must be removed after dragging (${JSON.stringify({ start, end, releaseOnly })})`)
-  assert.equal(await evaluate(`document.body.classList.contains('deck-resizing')`), false, 'Dragging must restore the cursor and iframe interaction')
+  await protocol.call('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: end,
+    y: start.y,
+    button: 'left',
+    buttons: 0,
+    clickCount: 1,
+  })
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-resize-overlay') === null`),
+    `Resize overlay must be removed after dragging (${JSON.stringify({ start, end, releaseOnly })})`,
+  )
+  assert.equal(
+    await evaluate(`document.body.classList.contains('deck-resizing')`),
+    false,
+    'Dragging must restore the cursor and iframe interaction',
+  )
 }
 
 async function connect(url) {
@@ -115,16 +167,33 @@ async function connect(url) {
   }
 }
 
-
 async function openBrowser(dir, width = 1600, height = 1000) {
   const profile = join(dir, 'chrome')
-  const browser = spawn(await browserPath(), ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
+  const browser = spawn(
+    await browserPath(),
+    [
+      '--headless=new',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-background-networking',
+      '--remote-debugging-port=0',
+      `--user-data-dir=${profile}`,
+      'about:blank',
+    ],
+    { stdio: 'ignore', windowsHide: true },
+  )
   const port = await waitForBrowserPort(profile, browser)
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   const protocol = await connect(target.webSocketDebuggerUrl)
   await protocol.call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
   const evaluate = async expression => {
-    const result = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    const result = await protocol.call('Runtime.evaluate', {
+      expression,
+      awaitPromise: true,
+      returnByValue: true,
+      userGesture: true,
+    })
     if (result.exceptionDetails) throw new Error(`Browser script failed: ${JSON.stringify(result.exceptionDetails)}`)
     return result.result.value
   }
@@ -145,23 +214,256 @@ const fixtureProvider = model => ({
 })
 
 async function requestCount(app, sessionId) {
-  return (await (await fetch(`${app.origin}/api/sessions/${sessionId}/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()).length
+  return (
+    await (
+      await fetch(`${app.origin}/api/sessions/${sessionId}/requests`, {
+        headers: { authorization: `Bearer ${app.token}` },
+      })
+    ).json()
+  ).length
 }
 
 // B02: requests run through the OpenCode CLI; the fake CLI fixture stands in for it (never live-model evidence).
-const fakeOpenCode = dir => ({ executable: process.execPath, launcherArgs: [fileURLToPath(new URL('./fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
-  version: 'fake-1.0.0' })
+const fakeOpenCode = dir => ({
+  executable: process.execPath,
+  launcherArgs: [fileURLToPath(new URL('./fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
+  version: 'fake-1.0.0',
+})
+
+test('Create deck UI collects missing answers, revises, confirms once, previews and reopens published slides', {
+  timeout: 90000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deck-workflow-ui-'))
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const draft = {
+    ...brief(),
+    purpose: 'Explain',
+    proposedSlideCount: 3,
+    answers: [{ topic: 'images', value: 'None' }],
+    sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
+  }
+  const incomplete = { ...draft }
+  delete incomplete.purpose
+  const log = join(dir, 'opencode.log')
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: incomplete }))
+  await writeFile(`${log}.generation.json`, '{}')
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir) })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.composer textarea') && !document.querySelector('[aria-label="Chọn model"]').disabled`,
+      ),
+    'Composer missing',
+  )
+  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.model-options button:not(:disabled)')`), 'Model missing')
+  await evaluate(`document.querySelector('.model-options button:not(:disabled)').click(); true`)
+  await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Model not ready').catch(
+    async error => {
+      throw new Error(`${error.message}: ${await evaluate('document.body.innerText')}`)
+    },
+  )
+  await evaluate(
+    `{const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
+  )
+  const send = async text => {
+    await evaluate(
+      `{const ta=document.querySelector('.composer textarea');ta.value=${JSON.stringify(text)};ta.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit()} true`,
+    )
+    await eventually(
+      () =>
+        evaluate(
+          `document.querySelector('.composer textarea').value==='' && !document.querySelector('.send-action').hidden && !document.querySelector('.send-action').disabled`,
+        ),
+      'Request did not finish',
+    )
+  }
+  await send('Tạo bài giới thiệu [workflow]')
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-workflow').textContent.includes('sau bài trình bày')`),
+    'Missing interview questions',
+  )
+  assert.equal(await evaluate(`document.querySelectorAll('.outline-proposal').length`), 0)
+  assert.equal(
+    await evaluate(`document.querySelectorAll('.outline-dock button').length`),
+    0,
+    'Incomplete Brief must not offer confirmation',
+  )
+  const plan = {
+    overview: 'Three slides',
+    revisionSuggestions: ['Clarify next steps'],
+    slides: ['Purpose', 'Approach', 'Next steps'].map(title => ({
+      title,
+      content: 'Explain',
+      blocks: [{ kind: 'bullets', items: ['Explain'] }],
+      sources: [],
+    })),
+  }
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan }))
+  await send('Giải thích cho người mới [workflow]')
+  await eventually(
+    () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
+    'Outline not shown',
+  )
+  assert.equal(
+    await evaluate(`[...document.querySelectorAll('.outline-actions button')].some(b=>b.textContent==='Hủy outline')`),
+    false,
+  )
+  const old = await evaluate(`document.querySelector('.outline-proposal[data-status=current]').dataset.outlineId`)
+  await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value='question'; true`)
+  await send('Vì sao chia thành ba phần? [workflow]')
+  assert.equal(
+    await evaluate(`document.querySelector('.outline-proposal[data-status=current]').dataset.outlineId`),
+    old,
+    'A pure question must keep the proposal',
+  )
+  await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value='revise'; true`)
+  await writeFile(
+    `${log}.workflow.json`,
+    JSON.stringify({ brief: draft, outline: { ...plan, overview: 'Revised three slides' } }),
+  )
+  await send('Đồng ý nhưng sửa phần giới thiệu [workflow]')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.outline-proposal[data-status=current]')?.dataset.outlineId !== ${JSON.stringify(old)}`,
+      ),
+    'Revision not shown',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('[data-outline-id="${old}"] .outline-actions button')?.disabled ?? true`),
+    true,
+    'A superseded proposal cannot be confirmed',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar iframe')?.hasAttribute('srcdoc') ?? false`),
+    false,
+  )
+  // A mixed unsent draft cannot be silently discarded by confirmation.
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea');ta.value='Thêm một slide nữa';ta.dispatchEvent(new Event('input'));[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click()} true`,
+  )
+  assert.equal(await evaluate(`document.querySelector('.request-status').textContent.includes('chưa gửi')`), true)
+  await evaluate(
+    `{const original=window.fetch;window.__lostConfirmation=false;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).endsWith('/deck/confirm')&&!window.__lostConfirmation){window.__lostConfirmation=true;throw new TypeError('Simulated lost confirmation response')}return response}} true`,
+  )
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea');ta.value='';ta.dispatchEvent(new Event('input'));const confirm=[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận'));confirm.click();confirm.click()} true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('3/3')`),
+    'Full deck not published',
+  )
+  assert.equal(
+    await evaluate(`window.__lostConfirmation`),
+    true,
+    'The saved generation must remain discoverable after a lost confirmation response',
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.published-deck-sidebar iframe[srcdoc]')`),
+    'Preview missing',
+  )
+  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar iframe').getAttribute('sandbox')`), '')
+  await protocol.call('Page.reload')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.deck-progress')?.textContent.includes('3/3') && document.querySelector('.deck-workflow').textContent.includes('Brief đã khóa')`,
+      ),
+    'Reload lost confirmed output',
+  )
+  const savedChat = await evaluate(`sessionStorage.getItem('deckagent-session')`)
+  await app.close()
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir) })
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.chat-navigation nav button[data-session-id="${savedChat}"]:not(:disabled)')`,
+      ),
+    'History missing after restart',
+  )
+  await evaluate(`document.querySelector('.chat-navigation nav button[data-session-id="${savedChat}"]').click(); true`)
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('3/3')`),
+    'Restart lost output',
+  )
+  const runs = (await readFile(log, 'utf8'))
+    .split('\n')
+    .filter(Boolean)
+    .map(JSON.parse)
+    .filter(r => r.command === 'run')
+  assert.equal(runs.length, 5, 'Duplicate confirmation, restart and reload must not replay generation')
+  await writeFile(`${log}.generation.json`, JSON.stringify({ stopAfterFirst: true }))
+  await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
+  await eventually(
+    () =>
+      evaluate(
+        `!document.querySelector('.send-action').disabled && !document.querySelector('.outline-proposal[data-status=current]')`,
+      ),
+    'New chat not ready',
+  )
+  await evaluate(
+    `{const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
+  )
+  await send('Tạo deck mới [workflow]')
+  await eventually(
+    () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
+    'Second Outline not shown',
+  )
+  await evaluate(
+    `[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.deck-progress')?.textContent.includes('1/3') && !document.querySelector('.stop-action').hidden`,
+      ),
+    'Partial published slide missing',
+  )
+  await evaluate(`document.querySelector('.stop-action').click(); true`)
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('Chưa hoàn tất')`),
+    'Stopped deck not marked incomplete',
+  )
+  await protocol.call('Page.reload')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.deck-progress')?.textContent.includes('1/3') && document.querySelector('.deck-progress')?.textContent.includes('Chưa hoàn tất')`,
+      ),
+    'Reload lost the last published slide after Stop',
+  )
+})
 
 async function modelsEndpoint() {
   const server = createServer((req, res) => {
-    if (req.url === '/v1/models') res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"wizard-model"}]}')
+    if (req.url === '/v1/models')
+      res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"wizard-model"}]}')
     else res.writeHead(404).end()
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  return { baseUrl: `http://127.0.0.1:${server.address().port}/v1`, close: () => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) }) }
+  return {
+    baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
+    close: () =>
+      new Promise(resolve => {
+        server.closeAllConnections()
+        server.close(resolve)
+      }),
+  }
 }
 
-test('interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat', { timeout: 60000 }, async t => {
+test('interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat', {
+  timeout: 60000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-interactive-'))
   let app, session
   const endpoint = await modelsEndpoint()
@@ -173,96 +475,279 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   })
   session = await openBrowser(dir)
   const { protocol, evaluate } = session
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('interactive'), openCode: fakeOpenCode(dir) })
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    ...fixtureProvider('interactive'),
+    openCode: fakeOpenCode(dir),
+  })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])')`), 'Welcome missing')
   const send = `document.querySelector('.composer [aria-label="Gửi yêu cầu"]')`
   const note = `document.querySelector('.requests-unavailable')`
   // FR-046: no selected model, no Send, and the composer says why.
-  await eventually(() => evaluate(`${note}.checkVisibility() && ${note}.textContent.includes('chưa chọn model')`), 'No reason shown for a chat without a model')
+  await eventually(
+    () => evaluate(`${note}.checkVisibility() && ${note}.textContent.includes('chưa chọn model')`),
+    'No reason shown for a chat without a model',
+  )
   assert.equal(await evaluate(`${send}.disabled`), true)
-  assert.equal(await evaluate(`!!document.querySelector('[aria-label="Chọn model"]')`), true, 'The composer must offer the provider/model popover')
-  await eventually(() => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`), 'Chat not ready for model selection')
+  assert.equal(
+    await evaluate(`!!document.querySelector('[aria-label="Chọn model"]')`),
+    true,
+    'The composer must offer the provider/model popover',
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`),
+    'Chat not ready for model selection',
+  )
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.model-options button')`), 'Model popover empty')
   await evaluate(`document.querySelector('.model-options button').click(); true`)
-  await eventually(() => evaluate(`!document.querySelector('.composer select').disabled && document.querySelector('.composer select').value !== ''`), 'Selection not saved')
-  const chatId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  await eventually(
+    () =>
+      evaluate(
+        `!document.querySelector('.composer select').disabled && document.querySelector('.composer select').value !== ''`,
+      ),
+    'Selection not saved',
+  )
+  const chatId = await evaluate(
+    `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`,
+  )
   assert.equal(await requestCount(app, chatId), 0, 'Selecting a model must not start work')
-  await eventually(() => evaluate(`!${send}.disabled && !${note}.checkVisibility()`), 'Send not offered after choosing a model')
+  await eventually(
+    () => evaluate(`!${send}.disabled && !${note}.checkVisibility()`),
+    'Send not offered after choosing a model',
+  )
   // Send with Enter: the reply, its activity and the finished state appear.
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Xin chào'; ta.dispatchEvent(new Event('input')); ta.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))} true`)
-  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Xin chào'))`), 'Reply not shown')
-  await eventually(() => evaluate(`document.querySelector('.request-record[data-status=completed] .request-state')?.textContent.startsWith('Đã xong')`), 'Completed state not shown')
-  assert.equal(await evaluate(`document.querySelector('.activity-detail summary').textContent`), 'Phản hồi model · hoàn tất')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), '', 'An accepted request empties the composer')
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Xin chào'; ta.dispatchEvent(new Event('input')); ta.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))} true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Xin chào'))`,
+      ),
+    'Reply not shown',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.request-record[data-status=completed] .request-state')?.textContent.startsWith('Đã xong')`,
+      ),
+    'Completed state not shown',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.activity-detail summary').textContent`),
+    'Phản hồi model · hoàn tất',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    '',
+    'An accepted request empties the composer',
+  )
   assert.equal(await requestCount(app, chatId), 1)
   // A request that hangs: live text shows, a reload does not stop it, Stop does at once.
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Wait [hang]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`)
-  await eventually(() => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`), 'Live reply not shown')
-  assert.equal(await evaluate(`document.querySelector('.stop-action').checkVisibility() && document.querySelector('.send-action').hidden`), true)
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Next draft while running'; ta.dispatchEvent(new Event('input'))} true`)
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Wait [hang]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`),
+    'Live reply not shown',
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.stop-action').checkVisibility() && document.querySelector('.send-action').hidden`,
+    ),
+    true,
+  )
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Next draft while running'; ta.dispatchEvent(new Event('input'))} true`,
+  )
   await delay(400)
   await protocol.call('Page.reload')
-  await eventually(() => evaluate(`document.querySelector('.stop-action')?.checkVisibility() === true`), 'Reload lost the running request')
-  await eventually(() => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`), 'Reload lost the live reply')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Next draft while running', 'The draft survives the reload')
+  await eventually(
+    () => evaluate(`document.querySelector('.stop-action')?.checkVisibility() === true`),
+    'Reload lost the running request',
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.request-live-reply')?.textContent === 'Partial answer before Stop'`),
+    'Reload lost the live reply',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    'Next draft while running',
+    'The draft survives the reload',
+  )
   // Going to another chat stops nothing (UC-003 A13); coming back shows the request still running.
   await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')?.dataset.sessionId !== ${JSON.stringify(chatId)}`),
-    'Another chat could not be opened while a request runs')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.chat-navigation nav button[aria-current=true]')?.dataset.sessionId !== ${JSON.stringify(chatId)}`,
+      ),
+    'Another chat could not be opened while a request runs',
+  )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${chatId}"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.stop-action')?.checkVisibility() === true && document.querySelector('.composer textarea').value === 'Next draft while running'`),
-    'Returning lost the running request or its draft')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.stop-action')?.checkVisibility() === true && document.querySelector('.composer textarea').value === 'Next draft while running'`,
+      ),
+    'Returning lost the running request or its draft',
+  )
   await evaluate(`document.querySelector('.stop-action').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.request-record[data-status=stopped] .request-state')?.textContent === 'Đã dừng'`), 'Stop not shown')
-  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant[data-interrupted=true]')].some(n=>n.textContent.includes('Partial answer before Stop'))`), 'Finished text not kept after Stop')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.request-record[data-status=stopped] .request-state')?.textContent === 'Đã dừng'`,
+      ),
+    'Stop not shown',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.message.assistant[data-interrupted=true]')].some(n=>n.textContent.includes('Partial answer before Stop'))`,
+      ),
+    'Finished text not kept after Stop',
+  )
   await eventually(() => evaluate(`!${send}.hidden && !${send}.disabled`), 'Send not offered again after Stop')
   assert.equal(await requestCount(app, chatId), 2)
   // FR-079: the runtime summarized the conversation; the boundary sits right above the request's own message and
   // every earlier message stays readable.
   const boundary = `(()=>{const b=document.querySelector('.summary-boundary');const next=b?.nextElementSibling;return !!b&&b.checkVisibility()&&b.textContent.includes('đã được tóm tắt')&&next?.matches('.message.user')&&next.textContent.includes('Dài [overflow]')&&[...document.querySelectorAll('.message.user')].some(n=>n.textContent.includes('Xin chào'))})()`
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Dài [overflow]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`)
-  await eventually(() => evaluate(`[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Dài [overflow]'))`), 'Reply after the summary not shown')
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Dài [overflow]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.message.assistant')].some(n=>n.textContent.includes('Echo 1: Dài [overflow]'))`,
+      ),
+    'Reply after the summary not shown',
+  )
   await eventually(() => evaluate(boundary), 'Summary boundary not shown above the request')
-  assert.equal(await evaluate(`document.body.textContent.includes('SUMMARY-TEXT-FOR-THE-MODEL')`), false, 'The summary the model reads is not shown as a reply')
-  await evaluate(`{const draftInput=document.querySelector('.composer textarea'); draftInput.value='Draft before reload';draftInput.dispatchEvent(new Event('input'))} true`)
+  assert.equal(
+    await evaluate(`document.body.textContent.includes('SUMMARY-TEXT-FOR-THE-MODEL')`),
+    false,
+    'The summary the model reads is not shown as a reply',
+  )
+  await evaluate(
+    `{const draftInput=document.querySelector('.composer textarea'); draftInput.value='Draft before reload';draftInput.dispatchEvent(new Event('input'))} true`,
+  )
   await delay(400)
   await protocol.call('Page.reload')
-  await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Draft before reload'`), 'Reload lost the draft')
+  await eventually(
+    () => evaluate(`document.querySelector('.composer textarea')?.value === 'Draft before reload'`),
+    'Reload lost the draft',
+  )
   await eventually(() => evaluate(boundary), 'Summary boundary lost after reload')
-  assert.equal(await evaluate(`document.querySelector('.composer select').value.includes('interactive')`), true, 'The chat keeps its selected model')
+  assert.equal(
+    await evaluate(`document.querySelector('.composer select').value.includes('interactive')`),
+    true,
+    'The chat keeps its selected model',
+  )
   await evaluate(`document.querySelector('.nav-toggle').click(); true`)
-  assert.equal(await evaluate(`document.querySelector('#app').dataset.nav`), 'collapsed', 'The toggle hides the chat list to a rail')
-  await eventually(() => evaluate(`Math.round(document.querySelector('.chat-navigation').getBoundingClientRect().width) === 64`), 'Collapsed list is a narrow rail (after its short width transition)')
+  assert.equal(
+    await evaluate(`document.querySelector('#app').dataset.nav`),
+    'collapsed',
+    'The toggle hides the chat list to a rail',
+  )
+  await eventually(
+    () => evaluate(`Math.round(document.querySelector('.chat-navigation').getBoundingClientRect().width) === 64`),
+    'Collapsed list is a narrow rail (after its short width transition)',
+  )
   await evaluate(`document.querySelector('.nav-toggle').click(); true`)
-  assert.equal(await evaluate(`document.querySelector('#app').dataset.nav === undefined && document.querySelector('.chat-navigation nav').checkVisibility()`), true, 'The toggle restores the chat list')
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`)
+  assert.equal(
+    await evaluate(
+      `document.querySelector('#app').dataset.nav === undefined && document.querySelector('.chat-navigation nav').checkVisibility()`,
+    ),
+    true,
+    'The toggle restores the chat list',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`,
+  )
   await eventually(() => evaluate(`document.querySelector('dialog').open`), 'Settings missing')
-  assert.equal(await evaluate(`document.querySelector('dialog').matches(':modal')`), true, 'Settings is a popup over the chat')
-  await evaluate(`document.querySelector('[aria-label="Display name"]').value='Unsaved';document.querySelector('[aria-label="Display name"]').dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;document.querySelector('.settings-back').click();true`)
-  assert.equal(await evaluate(`document.querySelector('dialog').open`), true, 'Declining discard must keep Settings open')
+  assert.equal(
+    await evaluate(`document.querySelector('dialog').matches(':modal')`),
+    true,
+    'Settings is a popup over the chat',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Display name"]').value='Unsaved';document.querySelector('[aria-label="Display name"]').dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;document.querySelector('.settings-back').click();true`,
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('dialog').open`),
+    true,
+    'Declining discard must keep Settings open',
+  )
   await evaluate(`window.confirm=()=>true;document.querySelector('.settings-back').click();true`)
   await eventually(() => evaluate(`!document.querySelector('dialog').open`), 'Settings did not close after discard')
   // The quick wizard: a provider that does not answer is refused with a reason; one that answers is saved.
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`)
-  await eventually(() => evaluate(`document.querySelector('dialog').matches(':modal')`), 'Quick provider wizard did not open')
-  await evaluate(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Tiếp tục →').click();document.querySelector('[aria-label="Provider ID"]').value='wizard-api';document.querySelector('[aria-label="Display name"]').value='Wizard API';document.querySelector('[aria-label="Base URL"]').value='http://127.0.0.1:1/v1';document.querySelector('dialog form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('không trả lời')`), 'A silent provider was not refused with a reason')
-  assert.equal(await evaluate(`document.querySelector('.settings-header h2').textContent.includes('2/3')`), true, 'A failed check does not advance')
-  await evaluate(`document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};document.querySelector('dialog form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`), 'Wizard did not save the connection and advance')
-  await evaluate(`document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.manual-model-row button').click();document.querySelector('dialog form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`), 'Wizard did not save model IDs')
+  await evaluate(
+    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('dialog').matches(':modal')`),
+    'Quick provider wizard did not open',
+  )
+  await evaluate(
+    `[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Tiếp tục →').click();document.querySelector('[aria-label="Provider ID"]').value='wizard-api';document.querySelector('[aria-label="Display name"]').value='Wizard API';document.querySelector('[aria-label="Base URL"]').value='http://127.0.0.1:1/v1';document.querySelector('dialog form').requestSubmit();true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('không trả lời')`),
+    'A silent provider was not refused with a reason',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.settings-header h2').textContent.includes('2/3')`),
+    true,
+    'A failed check does not advance',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};document.querySelector('dialog form').requestSubmit();true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`),
+    'Wizard did not save the connection and advance',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.manual-model-row button').click();document.querySelector('dialog form').requestSubmit();true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`),
+    'Wizard did not save model IDs',
+  )
   await evaluate(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Xong').click();true`)
   await eventually(() => evaluate(`!document.querySelector('dialog').open`), 'Wizard did not return to chat')
-  assert.equal(await evaluate(`document.querySelector('.composer select').value.includes('interactive')`), true, 'Adding a provider must not change the selected model')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Draft before reload', 'Settings keeps the draft')
-  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+  assert.equal(
+    await evaluate(`document.querySelector('.composer select').value.includes('interactive')`),
+    true,
+    'Adding a provider must not change the selected model',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    'Draft before reload',
+    'Settings keeps the draft',
+  )
+  await protocol.call('Emulation.setDeviceMetricsOverride', {
+    width: 390,
+    height: 844,
+    deviceScaleFactor: 1,
+    mobile: false,
+  })
   await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`)
-  assert.equal(await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 360`), true, 'Mobile chat must wrap below the rail with usable width')
+  assert.equal(
+    await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 360`),
+    true,
+    'Mobile chat must wrap below the rail with usable width',
+  )
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();true`)
-  assert.equal(await evaluate(`(() => {const panel=document.querySelector('.model-popover');const box=panel.getBoundingClientRect();return panel.checkVisibility()&&box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;})()`), true, 'Model popover must remain visible inside mobile viewport')
+  assert.equal(
+    await evaluate(
+      `(() => {const panel=document.querySelector('.model-popover');const box=panel.getBoundingClientRect();return panel.checkVisibility()&&box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;})()`,
+    ),
+    true,
+    'Model popover must remain visible inside mobile viewport',
+  )
   assert.equal(await requestCount(app, chatId), 3, 'Reload, Settings and the model popover start no work')
 })
 
@@ -275,22 +760,48 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     try {
       await closeBrowser(session)
       await app?.close()
-    } finally { await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) }
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
   })
   // Seeded state stands in for decks that a later build publishes through the Agent runtime.
   const database = join(dir, 'data', 'db')
   const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
-  for (const [id, text] of [['browser-deck', 'Publish slide 1 first'], ['large-deck', 'A long deck']]) {
+  for (const [id, text] of [
+    ['browser-deck', 'Publish slide 1 first'],
+    ['large-deck', 'A long deck'],
+  ]) {
     await chats.bind(id, { provider: 'fixture', model: 'canvas' })
-    await chats.append(id, [{ role: 'user', content: text }, { role: 'assistant', content: `Saved ${id}` }])
+    await chats.append(id, [
+      { role: 'user', content: text },
+      { role: 'assistant', content: `Saved ${id}` },
+    ])
   }
   chats.close()
   const decks = new DeckService(join(database, 'decks.sqlite'))
-  decks.confirm('browser-deck', { outlineId: 'confirmed', slides: [{ slideId: 'intro', title: 'Introduction' }, { slideId: 'second', title: 'Second' }, { slideId: 'draft', title: 'Unpublished' }] })
-  decks.confirm('large-deck', { outlineId: 'large', slides: Array.from({ length: 60 }, (_, index) => ({ slideId: `slide-${index}`, title: `Long deck slide ${index + 1}` })) })
+  decks.confirm('browser-deck', {
+    outlineId: 'confirmed',
+    slides: [
+      { slideId: 'intro', title: 'Introduction' },
+      { slideId: 'second', title: 'Second' },
+      { slideId: 'draft', title: 'Unpublished' },
+    ],
+  })
+  decks.confirm('large-deck', {
+    outlineId: 'large',
+    slides: Array.from({ length: 60 }, (_, index) => ({
+      slideId: `slide-${index}`,
+      title: `Long deck slide ${index + 1}`,
+    })),
+  })
   for (const slideId of ['intro', 'second'])
-    decks.publish('browser-deck', { outlineId: 'confirmed', slideId, expectedRevision: 0, publicationId: `publish-${slideId}`,
-      html: `<style>body{background:#eef4dd}h1{color:rgb(0, 100, 0)}</style><h1>${slideId} published</h1>` })
+    decks.publish('browser-deck', {
+      outlineId: 'confirmed',
+      slideId,
+      expectedRevision: 0,
+      publicationId: `publish-${slideId}`,
+      html: `<style>body{background:#eef4dd}h1{color:rgb(0, 100, 0)}</style><h1>${slideId} published</h1>`,
+    })
   decks.close()
   const options = { dataDir: join(dir, 'data'), ...fixtureProvider('canvas') }
   session = await openBrowser(dir)
@@ -298,66 +809,200 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   app = await startLocalWeb(options)
   const navigate = async () => {
     await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-    await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [data-session-id="browser-deck"]'))`), 'Fixture Session missing')
-    await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]'))`), 'Initial chat did not finish opening')
+    await eventually(
+      () => evaluate(`Boolean(document.querySelector('.chat-navigation [data-session-id="browser-deck"]'))`),
+      'Fixture Session missing',
+    )
+    await eventually(
+      () => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]'))`),
+      'Initial chat did not finish opening',
+    )
     await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
-    await eventually(() => evaluate(`!!document.querySelector('.published-deck-sidebar .deck-slide-list [title*="Unpublished"]')`), 'Deck plan missing')
+    await eventually(
+      () => evaluate(`!!document.querySelector('.published-deck-sidebar .deck-slide-list [title*="Unpublished"]')`),
+      'Deck plan missing',
+    )
   }
   await navigate()
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`), 'Có slide', 'The chat list says the chat has slides')
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('intro published')`), 'Saved content missing')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`), '2/3 slide đã lưu')
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`),
+    'Có slide',
+    'The chat list says the chat has slides',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('intro published')`,
+      ),
+    'Saved content missing',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`),
+    '2/3 slide đã lưu',
+  )
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-placeholder').hidden`), true)
-  assert.equal(await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').disabled`), true, 'Previous must be disabled at the first slide')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').getBoundingClientRect().top >= document.querySelector('.deck-stage').getBoundingClientRect().bottom`), true, 'The slide filmstrip must sit under the canvas')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').getAttribute('sandbox')`), '')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').contentDocument === null`), true)
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').getAttribute('aria-label')`), '1. Introduction · Bản 1')
-  await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Sau').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('second published')`), 'Slide navigation failed')
-  await evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list [data-status=pending]').click(); true`)
-  assert.equal(await evaluate(`!document.querySelector('.published-deck-sidebar .deck-placeholder').hidden && document.querySelector('.published-deck-sidebar .deck-stage iframe').hidden`), true, 'Selecting pending must show a placeholder without old HTML')
-  await evaluate(`[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('second published')`), 'Returning from pending lost the saved slide')
+  assert.equal(
+    await evaluate(
+      `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').disabled`,
+    ),
+    true,
+    'Previous must be disabled at the first slide',
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.published-deck-sidebar .deck-slide-list').getBoundingClientRect().top >= document.querySelector('.deck-stage').getBoundingClientRect().bottom`,
+    ),
+    true,
+    'The slide filmstrip must sit under the canvas',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').getAttribute('sandbox')`),
+    '',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').contentDocument === null`),
+    true,
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').getAttribute('aria-label')`,
+    ),
+    '1. Introduction · Bản 1',
+  )
+  await evaluate(
+    `[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Sau').click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('second published')`,
+      ),
+    'Slide navigation failed',
+  )
+  await evaluate(
+    `document.querySelector('.published-deck-sidebar .deck-slide-list [data-status=pending]').click(); true`,
+  )
+  assert.equal(
+    await evaluate(
+      `!document.querySelector('.published-deck-sidebar .deck-placeholder').hidden && document.querySelector('.published-deck-sidebar .deck-stage iframe').hidden`,
+    ),
+    true,
+    'Selecting pending must show a placeholder without old HTML',
+  )
+  await evaluate(
+    `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('second published')`,
+      ),
+    'Returning from pending lost the saved slide',
+  )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="large-deck"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').children.length === 60`), 'Large deck did not load')
-  assert.equal(await evaluate(`(() => { const strip=document.querySelector('.published-deck-sidebar .deck-slide-list'); const stage=document.querySelector('.deck-stage'); return strip.getBoundingClientRect().height <= 130 && strip.scrollWidth>strip.clientWidth && stage.getBoundingClientRect().height>=180 && stage.getBoundingClientRect().bottom<=strip.getBoundingClientRect().top; })()`), true, 'Large decks must scroll the filmstrip sideways without crowding out the canvas')
+  await eventually(
+    () => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').children.length === 60`),
+    'Large deck did not load',
+  )
+  assert.equal(
+    await evaluate(
+      `(() => { const strip=document.querySelector('.published-deck-sidebar .deck-slide-list'); const stage=document.querySelector('.deck-stage'); return strip.getBoundingClientRect().height <= 130 && strip.scrollWidth>strip.clientWidth && stage.getBoundingClientRect().height>=180 && stage.getBoundingClientRect().bottom<=strip.getBoundingClientRect().top; })()`,
+    ),
+    true,
+    'Large decks must scroll the filmstrip sideways without crowding out the canvas',
+  )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('second published')`), 'Returning from large deck lost selection')
-  const savedModel = await evaluate(`document.querySelector('.conversation select').value`)
-  await evaluate(`[...document.querySelectorAll('button')].find(button=>button.dataset.action==='new-chat').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.messages').children.length === 0 && document.querySelector('.conversation select').value === ''`), 'Empty chat did not open independently')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('second published')`,
+      ),
+    'Returning from large deck lost selection',
+  )
+  const savedModel = await evaluate(`document.querySelector('.composer select').value`)
+  await evaluate(
+    `[...document.querySelectorAll('button')].find(button=>button.dataset.action==='new-chat').click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.messages').children.length === 0 && document.querySelector('.composer select').value === ''`,
+      ),
+    'Empty chat did not open independently',
+  )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('second published')`), 'History did not restore the deck and its selected slide')
-  assert.equal(await evaluate(`document.querySelector('.conversation select').value`), savedModel, 'History must restore its own model')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('second published')`,
+      ),
+    'History did not restore the deck and its selected slide',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer select').value`),
+    savedModel,
+    'History must restore its own model',
+  )
   assert.equal(await requestCount(app, 'browser-deck'), 0, 'Opening earlier chats must not send a request')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar input[type=range]') === null`), true, 'Width slider must be removed')
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar input[type=range]') === null`),
+    true,
+    'Width slider must be removed',
+  )
   await protocol.call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowLeft', code: 'ArrowLeft' })
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '656px', 'Focused divider must support keyboard resizing')
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar').style.width`),
+    '656px',
+    'Focused divider must support keyboard resizing',
+  )
   await protocol.call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowLeft', code: 'ArrowLeft' })
   await protocol.call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight' })
   await protocol.call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight' })
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 1100)
-  assert.equal(await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 320`), true, 'Dragging must preserve usable chat width')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= 1000`), true)
+  assert.equal(
+    await evaluate(`document.querySelector('.conversation').getBoundingClientRect().width >= 320`),
+    true,
+    'Dragging must preserve usable chat width',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= 1000`),
+    true,
+  )
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 200)
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px')
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 1100)
   // The release coordinate must win even when Chrome omits the final pointermove.
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 200, { releaseOnly: true })
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '320px', 'Pointer release must commit the final position without a preceding move')
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar').style.width`),
+    '320px',
+    'Pointer release must commit the final position without a preceding move',
+  )
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   // Fullscreen needs a real user gesture; a scripted click() carries no activation.
   // A CDP-created background tab can reject fullscreen as 'not granted' even after a real click.
   await protocol.call('Page.bringToFront')
   assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
-  const presentButton = await evaluate(`(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Trình chiếu').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`)
+  const presentButton = await evaluate(
+    `(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Trình chiếu').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`,
+  )
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', ...presentButton })
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mousePressed', ...presentButton, button: 'left', buttons: 1, clickCount: 1 })
-  await protocol.call('Input.dispatchMouseEvent', { type: 'mouseReleased', ...presentButton, button: 'left', clickCount: 1 })
+  await protocol.call('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    ...presentButton,
+    button: 'left',
+    buttons: 1,
+    clickCount: 1,
+  })
+  await protocol.call('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    ...presentButton,
+    button: 'left',
+    clickCount: 1,
+  })
   await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')
   const presenting = `(() => { const p=document.fullscreenElement; const r=p.querySelector('.deck-stage iframe').getBoundingClientRect(); const hidden=selector => getComputedStyle(p.querySelector(selector)).display==='none'; return { ok: p.dataset.presenting==='true' && hidden('header') && hidden('.deck-slide-list') && !p.querySelector('.deck-exit').hidden && Math.abs(r.width/r.height-16/9)<.02 && r.width<=innerWidth && r.height<=innerHeight, presenting: p.dataset.presenting, header: hidden('header'), list: hidden('.deck-slide-list'), exit: !p.querySelector('.deck-exit').hidden, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; })()`
   // `presenting` is set by the fullscreenchange handler, which runs after fullscreenElement exists.
@@ -366,25 +1011,87 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     layout = await evaluate(presenting)
     return layout.ok
   }, 'Presentation mode did not settle').catch(() => {})
-  assert.equal(layout.ok, true, `Presentation mode must hide the panel chrome and keep the slide 16:9 inside the screen: ${JSON.stringify(layout)}`)
-  await evaluate(`document.fullscreenElement.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})); true`)
-  await eventually(() => evaluate(`document.fullscreenElement.querySelector('.deck-stage iframe').srcdoc.includes('intro published')`), 'Arrow keys must move between slides while presenting')
-  await eventually(() => evaluate(`document.fullscreenElement.dataset.idle==='true' && getComputedStyle(document.fullscreenElement.querySelector('.deck-controls')).opacity==='0'`), 'Presentation controls must fade after the pointer rests')
+  assert.equal(
+    layout.ok,
+    true,
+    `Presentation mode must hide the panel chrome and keep the slide 16:9 inside the screen: ${JSON.stringify(layout)}`,
+  )
+  await evaluate(
+    `document.fullscreenElement.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})); true`,
+  )
+  await eventually(
+    () => evaluate(`document.fullscreenElement.querySelector('.deck-stage iframe').srcdoc.includes('intro published')`),
+    'Arrow keys must move between slides while presenting',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.fullscreenElement.dataset.idle==='true' && getComputedStyle(document.fullscreenElement.querySelector('.deck-controls')).opacity==='0'`,
+      ),
+    'Presentation controls must fade after the pointer rests',
+  )
   await evaluate('document.exitFullscreen(); true')
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-panel').dataset.presenting==='false' && !document.querySelector('.published-deck-sidebar header').hidden`), 'Leaving presentation must restore the panel')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-panel').dataset.presenting==='false' && !document.querySelector('.published-deck-sidebar header').hidden`,
+      ),
+    'Leaving presentation must restore the panel',
+  )
   await protocol.call('Page.reload')
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('intro published')`), 'Reload did not restore published content')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').style.width`), '640px', 'Dragged width must survive reload')
-  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 680, height: 1000, deviceScaleFactor: 1, mobile: false })
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.published-deck-sidebar [role=separator]')).display`), 'none', 'Stacked mobile layout must hide horizontal resizing')
-  assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= innerWidth`), true)
-  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe')?.srcdoc.includes('intro published')`,
+      ),
+    'Reload did not restore published content',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar').style.width`),
+    '640px',
+    'Dragged width must survive reload',
+  )
+  await protocol.call('Emulation.setDeviceMetricsOverride', {
+    width: 680,
+    height: 1000,
+    deviceScaleFactor: 1,
+    mobile: false,
+  })
+  assert.equal(
+    await evaluate(`getComputedStyle(document.querySelector('.published-deck-sidebar [role=separator]')).display`),
+    'none',
+    'Stacked mobile layout must hide horizontal resizing',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.published-deck-sidebar').getBoundingClientRect().width <= innerWidth`),
+    true,
+  )
+  await protocol.call('Emulation.setDeviceMetricsOverride', {
+    width: 1600,
+    height: 1000,
+    deviceScaleFactor: 1,
+    mobile: false,
+  })
   await app.close()
   app = await startLocalWeb(options)
   await navigate()
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] strong').textContent`), 'Publish slide 1 first', 'History title must survive Host restart')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`), 'Có slide', 'Published state must survive Host restart')
-  await eventually(() => evaluate(`document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('intro published')`), 'Host restart lost slide content')
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] strong').textContent`),
+    'Publish slide 1 first',
+    'History title must survive Host restart',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`),
+    'Có slide',
+    'Published state must survive Host restart',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.published-deck-sidebar .deck-stage iframe').srcdoc.includes('intro published')`,
+      ),
+    'Host restart lost slide content',
+  )
   const slideFrame = await eventually(async () => {
     const tree = await protocol.call('Page.getFrameTree')
     const child = tree.frameTree.childFrames?.find(frame => frame.frame.url === 'about:srcdoc')
@@ -394,16 +1101,32 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     return target ? { targetId: target.targetId } : undefined
   }, 'Rendered iframe missing')
   let contextId, sessionId
-  if (slideFrame.targetId) sessionId = (await protocol.call('Target.attachToTarget', { targetId: slideFrame.targetId, flatten: true })).sessionId
-  else contextId = (await protocol.call('Page.createIsolatedWorld', { frameId: slideFrame.frameId, worldName: 'deck-verification' })).executionContextId
+  if (slideFrame.targetId)
+    sessionId = (await protocol.call('Target.attachToTarget', { targetId: slideFrame.targetId, flatten: true }))
+      .sessionId
+  else
+    contextId = (
+      await protocol.call('Page.createIsolatedWorld', { frameId: slideFrame.frameId, worldName: 'deck-verification' })
+    ).executionContextId
   const rendered = await eventually(async () => {
-    const result = await protocol.call('Runtime.evaluate', { expression: `document.querySelector('h1') && ({text:document.body.textContent,color:getComputedStyle(document.querySelector('h1')).color})`, ...(contextId ? { contextId } : {}), returnByValue: true }, sessionId)
+    const result = await protocol.call(
+      'Runtime.evaluate',
+      {
+        expression: `document.querySelector('h1') && ({text:document.body.textContent,color:getComputedStyle(document.querySelector('h1')).color})`,
+        ...(contextId ? { contextId } : {}),
+        returnByValue: true,
+      },
+      sessionId,
+    )
     return result.result.value?.text.includes('intro published') ? result.result.value : undefined
   }, 'Published HTML did not render')
   assert.match(rendered.text, /intro published/)
   assert.equal(rendered.color, 'rgb(0, 100, 0)', 'Static inline CSS must render under CSP')
   await protocol.call('Page.captureScreenshot', { format: 'png' }).then(async result => {
-    await writeFile(process.env.DECKAGENT_CANVAS_SCREENSHOT ?? join(dir, 'canvas.png'), Buffer.from(result.data, 'base64'))
+    await writeFile(
+      process.env.DECKAGENT_CANVAS_SCREENSHOT ?? join(dir, 'canvas.png'),
+      Buffer.from(result.data, 'base64'),
+    )
   })
 })
 
@@ -416,53 +1139,137 @@ async function tree(folder) {
   return entries
 }
 
-test('public research is explicit, config checks the free key and stored excerpts remain safe after reload', { timeout: 60000 }, async t => {
+test('public research is explicit, config checks the free key and stored excerpts remain safe after reload', {
+  timeout: 60000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-research-'))
-  let app, session, searches = 0
+  let app,
+    session,
+    searches = 0
   const sourceText = 'Research marker 482 <script>window.researchInjected=true</script>'
-  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('research'), openCode: fakeOpenCode(dir), researchAccess: { key: 'browser-research-secret', fetch: async url => {
-    if (url.endsWith('/usage')) return Response.json({ key: { usage: 0, limit: null }, account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null } })
-    searches++
-    return Response.json({ results: [{ title: 'Public report', url: 'https://example.org/report', content: sourceText }] })
-  } } })
-  const created = await fetch(`${app.origin}/api/sessions`, { method: 'POST', headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, body: JSON.stringify({ selection: { provider: 'fixture', model: 'research' } }) })
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: dir,
+    ...fixtureProvider('research'),
+    openCode: fakeOpenCode(dir),
+    researchAccess: {
+      key: 'browser-research-secret',
+      fetch: async url => {
+        if (url.endsWith('/usage'))
+          return Response.json({
+            key: { usage: 0, limit: null },
+            account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+          })
+        searches++
+        return Response.json({
+          results: [{ title: 'Public report', url: 'https://example.org/report', content: sourceText }],
+        })
+      },
+    },
+  })
+  const created = await fetch(`${app.origin}/api/sessions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ selection: { provider: 'fixture', model: 'research' } }),
+  })
   assert.equal(created.ok, true)
   const researchChat = await created.json()
   session = await openBrowser(dir)
   const { protocol, evaluate } = session
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]')`), 'Research Chat not listed')
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]').click(); true`)
-  await eventually(() => evaluate(`!!document.querySelector('.public-research-choice') && !document.querySelector('.public-research-choice').disabled`), 'Research choice not ready')
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]')`),
+    'Research Chat not listed',
+  )
+  await evaluate(
+    `document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]').click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.public-research-choice') && !document.querySelector('.public-research-choice').disabled`,
+      ),
+    'Research choice not ready',
+  )
   await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Research model not ready')
   assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false)
-  await evaluate(`document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
-  await eventually(() => evaluate(`!!document.querySelector('.request-record[data-status=completed]')`), 'Unselected request did not finish')
+  await evaluate(
+    `document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`,
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.request-record[data-status=completed]')`),
+    'Unselected request did not finish',
+  )
   assert.equal(searches, 0)
-  await eventually(() => evaluate(`!document.querySelector('.public-research-choice').disabled && !document.querySelector('.send-action').disabled`), 'Composer did not release the completed request')
-  await evaluate(`document.querySelector('.public-research-choice').click(); document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`)
+  await eventually(
+    () =>
+      evaluate(
+        `!document.querySelector('.public-research-choice').disabled && !document.querySelector('.send-action').disabled`,
+      ),
+    'Composer did not release the completed request',
+  )
+  await evaluate(
+    `document.querySelector('.public-research-choice').click(); document.querySelector('.composer textarea').value='[mcp-research]'; document.querySelector('.composer textarea').dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit(); true`,
+  )
   await eventually(() => searches === 1, 'Selected research did not execute')
-  await eventually(() => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2`), 'Research request did not finish')
+  await eventually(
+    () => evaluate(`document.querySelectorAll('.request-record[data-status=completed]').length===2`),
+    'Research request did not finish',
+  )
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!document.querySelector('.public-research-choice')`), 'Reload did not boot')
-  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checked`), false, 'A new interface must not implicitly authorize outside research')
+  assert.equal(
+    await evaluate(`document.querySelector('.public-research-choice').checked`),
+    false,
+    'A new interface must not implicitly authorize outside research',
+  )
   await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.research-dialog pre')?.textContent.includes('Research marker 482')`), 'Saved excerpts not visible after reload')
+  await eventually(
+    () => evaluate(`document.querySelector('.research-dialog pre')?.textContent.includes('Research marker 482')`),
+    'Saved excerpts not visible after reload',
+  )
   assert.equal(await evaluate(`window.researchInjected === true`), false)
   assert.equal(await evaluate(`document.querySelector('.research-dialog input[type=password]').value`), '')
   assert.equal(await evaluate(`document.querySelector('.research-dialog a').href`), 'https://example.org/report')
-  await evaluate(`document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra key từ .env').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.research-dialog [role=status]').textContent.includes('Key môi trường hợp lệ')`), 'Free environment key check not shown')
+  await evaluate(
+    `document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra key từ .env').click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.research-dialog [role=status]').textContent.includes('Key môi trường hợp lệ')`,
+      ),
+    'Free environment key check not shown',
+  )
 })
 
-test('attachments survive reload and Chat switching, preview safely, reject invalid input and send without text', { timeout: 60000 }, async t => {
+test('attachments survive reload and Chat switching, preview safely, reject invalid input and send without text', {
+  timeout: 60000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-attachments-'))
   let app, session
-  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('attachments'), openCode: fakeOpenCode(dir) })
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: dir,
+    ...fixtureProvider('attachments'),
+    openCode: fakeOpenCode(dir),
+  })
   const api = async (path, method = 'GET', body) => {
-    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
     assert.equal(response.ok, true)
     return response.json()
   }
@@ -471,54 +1278,148 @@ test('attachments survive reload and Chat switching, preview safely, reject inva
   session = await openBrowser(dir)
   const { protocol, evaluate } = session
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]')`), 'Chat list missing')
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]:not(:disabled)')`,
+      ),
+    'Chat list missing',
+  )
   await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.chat-navigation button[aria-current=true]')?.dataset.sessionId === '${chat.sessionId}' && !document.querySelector('.composer select').disabled`), 'Selected attachment Chat did not finish opening')
-  await eventually(() => evaluate(`!document.querySelector('.attachment-action').disabled`), 'Attachment action unavailable')
-  const add = async (name, content) => evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(new File([${content}], ${JSON.stringify(name)})); const picker = document.querySelector('.composer input[type=file]'); picker.files = transfer.files; picker.dispatchEvent(new Event('change', {bubbles:true})); return true; })()`)
-  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='Retained draft';input.dispatchEvent(new Event('input'));} true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.chat-navigation button[aria-current=true]')?.dataset.sessionId === '${chat.sessionId}' && !document.querySelector('.composer select').disabled`,
+      ),
+    'Selected attachment Chat did not finish opening',
+  )
+  await eventually(
+    () => evaluate(`!document.querySelector('.attachment-action').disabled`),
+    'Attachment action unavailable',
+  )
+  const add = async (name, content) =>
+    evaluate(
+      `(() => { const transfer = new DataTransfer(); transfer.items.add(new File([${content}], ${JSON.stringify(name)})); const picker = document.querySelector('.composer input[type=file]'); picker.files = transfer.files; picker.dispatchEvent(new Event('change', {bubbles:true})); return true; })()`,
+    )
+  await evaluate(
+    `{const input=document.querySelector('.composer textarea');input.value='Retained draft';input.dispatchEvent(new Event('input'));} true`,
+  )
   await add('safe.md', JSON.stringify('<script>window.attachmentExecuted=true</script>\nsource evidence'))
-  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready'`), 'Uploaded file did not become ready')
+  await eventually(
+    () => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready'`),
+    'Uploaded file did not become ready',
+  )
   await evaluate(`document.querySelector('.attachment-row button').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.attachment-preview[open] pre')`), 'Preview not shown')
-  assert.equal(await evaluate(`document.querySelector('.attachment-preview pre').textContent.includes('<script>') && !window.attachmentExecuted`), true)
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.attachment-preview pre').textContent.includes('<script>') && !window.attachmentExecuted`,
+    ),
+    true,
+  )
   await evaluate(`document.querySelector('.attachment-preview button').click(); true`)
   const documentNode = await protocol.call('DOM.getDocument')
-  const pickerNode = await protocol.call('DOM.querySelector', { nodeId: documentNode.root.nodeId, selector: '.composer input[type=file]' })
-  await protocol.call('DOM.setFileInputFiles', { nodeId: pickerNode.nodeId, files: [fileURLToPath(new URL('./fixtures/attachments/sample.png', import.meta.url))] })
-  await eventually(() => evaluate(`[...document.querySelectorAll('.attachment-row')].some(row=>row.querySelector('.attachment-name').textContent==='sample.png'&&row.dataset.state==='ready')`), 'Image attachment not ready')
-  await evaluate(`[...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelector('button').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.attachment-preview img')?.naturalWidth > 0`), 'Normalized image preview did not render')
-  await evaluate(`document.querySelector('.attachment-preview button').click(); [...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelectorAll('button')[1].click(); true`)
-  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length===1&&!document.querySelector('.attachment-action').disabled`), 'Image removal did not settle')
+  const pickerNode = await protocol.call('DOM.querySelector', {
+    nodeId: documentNode.root.nodeId,
+    selector: '.composer input[type=file]',
+  })
+  await protocol.call('DOM.setFileInputFiles', {
+    nodeId: pickerNode.nodeId,
+    files: [fileURLToPath(new URL('./fixtures/attachments/sample.png', import.meta.url))],
+  })
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.attachment-row')].some(row=>row.querySelector('.attachment-name').textContent==='sample.png'&&row.dataset.state==='ready')`,
+      ),
+    'Image attachment not ready',
+  )
+  await evaluate(
+    `[...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelector('button').click(); true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.attachment-preview img')?.naturalWidth > 0`),
+    'Normalized image preview did not render',
+  )
+  await evaluate(
+    `document.querySelector('.attachment-preview button').click(); [...document.querySelectorAll('.attachment-row')].find(row=>row.querySelector('.attachment-name').textContent==='sample.png').querySelectorAll('button')[1].click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelectorAll('.attachment-row').length===1&&!document.querySelector('.attachment-action').disabled`,
+      ),
+    'Image removal did not settle',
+  )
   await protocol.call('Page.reload')
-  await eventually(() => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready' && document.querySelector('.composer textarea').value === 'Retained draft'`), 'Reload lost attachment or text')
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.attachment-row')?.dataset.state === 'ready' && document.querySelector('.composer textarea').value === 'Retained draft'`,
+      ),
+    'Reload lost attachment or text',
+  )
+  await evaluate(
+    `document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`,
+  )
   await eventually(() => evaluate(`!document.querySelector('.attachment-row')`), 'Attachment leaked to another Chat')
   await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.attachment-row')`), 'Switch lost attachment')
   await add('bad.txt', 'new Uint8Array([0,1,2])')
-  await eventually(() => evaluate(`!!document.querySelector('.attachment-row[data-state=rejected]')`), 'Rejected file not shown')
+  await eventually(
+    () => evaluate(`!!document.querySelector('.attachment-row[data-state=rejected]')`),
+    'Rejected file not shown',
+  )
   assert.equal(await evaluate(`document.querySelector('.send-action').disabled`), true)
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Retained draft')
-  await evaluate(`Array.from(document.querySelector('.attachment-row[data-state=rejected]').querySelectorAll('button')).at(-1).click(); true`)
-  await eventually(() => evaluate(`document.querySelectorAll('.attachment-row').length === 1 && !document.querySelector('.send-action').disabled`), 'Remove did not restore a valid draft')
-  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();} true`)
-  await eventually(async () => (await api(`sessions/${chat.sessionId}/requests`)).some(request => request.status === 'completed'), 'Attachment-only request did not finish')
-  await eventually(() => evaluate(`document.querySelector('.message-attachments')?.textContent.includes('safe.md')`), 'Saved attachment not rendered in conversation')
+  await evaluate(
+    `Array.from(document.querySelector('.attachment-row[data-state=rejected]').querySelectorAll('button')).at(-1).click(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelectorAll('.attachment-row').length === 1 && !document.querySelector('.send-action').disabled`,
+      ),
+    'Remove did not restore a valid draft',
+  )
+  await evaluate(
+    `{const input=document.querySelector('.composer textarea');input.value='';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();} true`,
+  )
+  await eventually(
+    async () => (await api(`sessions/${chat.sessionId}/requests`)).some(request => request.status === 'completed'),
+    'Attachment-only request did not finish',
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.message-attachments')?.textContent.includes('safe.md')`),
+    'Saved attachment not rendered in conversation',
+  )
   assert.deepEqual((await api(`sessions/${chat.sessionId}/draft`)).attachmentIds, [])
 })
 
-test('step approval survives reload and chat switching; refusal continues and Stop cancels a pending step', { timeout: 60000 }, async t => {
+test('step approval survives reload and chat switching; refusal continues and Stop cancels a pending step', {
+  timeout: 60000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-browser-approval-'))
   let app, session
-  t.after(async () => { await closeBrowser(session); await app?.close(); await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }) })
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
   const outside = join(dir, 'outside.txt')
   await writeFile(outside, 'outside browser marker')
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: dir, ...fixtureProvider('approval'), openCode: fakeOpenCode(dir) })
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: dir,
+    ...fixtureProvider('approval'),
+    openCode: fakeOpenCode(dir),
+  })
   const api = async (path, method = 'GET', body) => {
-    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
     assert.equal(response.ok, true)
     return response.json()
   }
@@ -530,28 +1431,46 @@ test('step approval survives reload and chat switching; refusal continues and St
   const { protocol, evaluate } = session
   const visit = async id => {
     await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-    await eventually(() => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${id}"]')`), 'Chat list missing')
+    await eventually(
+      () => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${id}"]:not(:disabled)')`),
+      'Chat list missing',
+    )
     await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${id}"]').click(); true`)
   }
   await visit(chat.sessionId)
   const visible = `document.querySelector('.step-approval:not([hidden])')`
-  await eventually(() => evaluate(`!!${visible}`), 'Saved approval did not appear')
+  await eventually(() => evaluate(`!!${visible}`), 'Saved approval did not appear').catch(async error => {
+    throw new Error(`${error.message}: ${await evaluate('document.body.innerText')}`)
+  })
   assert.equal(await evaluate(`${visible}.textContent.includes('outside.txt')`), true)
   assert.equal(await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').hidden`), false)
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`)
+  await evaluate(
+    `document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`,
+  )
   await eventually(() => evaluate(`!${visible}`), 'Approval leaked into another chat')
   await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
   await eventually(() => evaluate(`!!${visible}`), 'Approval lost on chat switch')
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!${visible}`), 'Approval lost on reload')
-  await evaluate(`Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Từ chối').click(); true`)
-  await eventually(async () => (await api(`requests/${request.requestId}`)).status === 'completed', 'Refused request did not continue')
-  await eventually(() => evaluate(`document.querySelector('.messages').textContent.includes('Không thực hiện vì bạn đã từ chối')`), 'Refusal missing from saved closing reply')
+  await evaluate(
+    `Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Từ chối').click(); true`,
+  )
+  await eventually(
+    async () => (await api(`requests/${request.requestId}`)).status === 'completed',
+    'Refused request did not continue',
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.messages').textContent.includes('Không thực hiện vì bạn đã từ chối')`),
+    'Refusal missing from saved closing reply',
+  )
   const next = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!${visible}`), 'Next approval missing')
   await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').click(); true`)
-  await eventually(async () => (await api(`requests/${next.requestId}`)).status === 'stopped', 'Stop failed during approval')
+  await eventually(
+    async () => (await api(`requests/${next.requestId}`)).status === 'stopped',
+    'Stop failed during approval',
+  )
   await eventually(() => evaluate(`!${visible}`), 'Cancelled approval controls remained visible')
 })
 
@@ -576,7 +1495,10 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   const database = join(dir, 'data', 'db')
   const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
   await chats.open('recycling')
-  await chats.append('recycling', [{ role: 'user', content: 'Kế hoạch tái chế cho trường' }, { role: 'assistant', content: 'Đã lưu dàn ý về giấy và nhựa' }])
+  await chats.append('recycling', [
+    { role: 'user', content: 'Kế hoạch tái chế cho trường' },
+    { role: 'assistant', content: 'Đã lưu dàn ý về giấy và nhựa' },
+  ])
   await chats.open('budget')
   await chats.append('budget', [{ role: 'user', content: 'Ngân sách quý ba' }])
   await chats.open('damaged')
@@ -590,85 +1512,249 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
   await protocol.call('Page.enable')
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-  await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])') && !!document.querySelector('.chat-navigation nav button[aria-current=true]')`), 'Browser boot failed')
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.welcome:not([hidden])') && !!document.querySelector('.chat-navigation nav button[aria-current=true]')`,
+      ),
+    'Browser boot failed',
+  )
   assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'Chat mới')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').getBoundingClientRect().height < 95`), true, 'Empty Composer must be compact')
-  assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled && document.querySelector('.requests-unavailable').checkVisibility()`), true,
-    'Send is unavailable and the composer says why')
-  assert.equal(await evaluate(`[...document.querySelectorAll('.workspace-controls select option')].map(o=>o.textContent).join('|')`), 'Workspace mặc định · mặc định',
-    'First start uses the default workspace and asks for no folder')
-  assert.equal(await evaluate(`[...document.querySelectorAll('.chat-navigation nav button strong')].map(n=>n.textContent).includes('Kế hoạch tái chế cho trường')`), true,
-    'Earlier chats from before the start are listed and named from their content')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"] strong').textContent`), 'Chat không đọc được',
-    'A chat whose saved work cannot be read stays listed')
-  const firstChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Nháp A'; ta.dispatchEvent(new Event('input'))} true`)
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').getBoundingClientRect().height < 95`),
+    true,
+    'Empty Composer must be compact',
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled && document.querySelector('.requests-unavailable').checkVisibility()`,
+    ),
+    true,
+    'Send is unavailable and the composer says why',
+  )
+  assert.equal(
+    await evaluate(
+      `[...document.querySelectorAll('.workspace-controls select option')].map(o=>o.textContent).join('|')`,
+    ),
+    'Workspace mặc định · mặc định',
+    'First start uses the default workspace and asks for no folder',
+  )
+  assert.equal(
+    await evaluate(
+      `[...document.querySelectorAll('.chat-navigation nav button strong')].map(n=>n.textContent).includes('Kế hoạch tái chế cho trường')`,
+    ),
+    true,
+    'Earlier chats from before the start are listed and named from their content',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"] strong').textContent`),
+    'Chat không đọc được',
+    'A chat whose saved work cannot be read stays listed',
+  )
+  const firstChat = await evaluate(
+    `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`,
+  )
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Nháp A'; ta.dispatchEvent(new Event('input'))} true`,
+  )
   // UC-006 A3: the damaged chat is not opened; the current chat and its draft stay.
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.conversation > [role=status]').hidden === false && document.querySelector('.conversation > [role=status]').textContent.includes('Không mở được chat này')`), 'Unreadable chat was not reported')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`), firstChat)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.conversation > [role=status]').hidden === false && document.querySelector('.conversation > [role=status]').textContent.includes('Không mở được chat này')`,
+      ),
+    'Unreadable chat was not reported',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`),
+    firstChat,
+  )
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Nháp A')
-  assert.equal(await evaluate(`!!document.querySelector('.chat-navigation [data-session-id="damaged"]')`), true, 'The unreadable chat is not removed')
+  assert.equal(
+    await evaluate(`!!document.querySelector('.chat-navigation [data-session-id="damaged"]')`),
+    true,
+    'The unreadable chat is not removed',
+  )
   // FR-134: find by words of the name or the conversation.
   await evaluate(`{const s=document.querySelector('.chat-search input'); s.value='nhựa'; s.form.requestSubmit()} true`)
-  await eventually(() => evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].map(b=>b.dataset.sessionId).join() === 'recycling'`), 'Search did not find the chat by its conversation')
-  await evaluate(`{const s=document.querySelector('.chat-search input'); s.value='không có từ này'; s.form.requestSubmit()} true`)
-  await eventually(() => evaluate(`document.querySelector('.chat-navigation nav').textContent.includes('Không có chat nào khớp')`), 'No-match message missing')
-  assert.equal(await evaluate(`document.querySelector('.chat-search input').value`), 'không có từ này', 'The search keeps the words')
-  await evaluate(`{const s=document.querySelector('.chat-search input'); s.value=''; s.dispatchEvent(new Event('input'))} true`)
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="budget"]')`), 'Clearing the search did not restore the list')
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.chat-navigation nav button')].map(b=>b.dataset.sessionId).join() === 'recycling'`,
+      ),
+    'Search did not find the chat by its conversation',
+  )
+  await evaluate(
+    `{const s=document.querySelector('.chat-search input'); s.value='không có từ này'; s.form.requestSubmit()} true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.chat-navigation nav').textContent.includes('Không có chat nào khớp')`),
+    'No-match message missing',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-search input').value`),
+    'không có từ này',
+    'The search keeps the words',
+  )
+  await evaluate(
+    `{const s=document.querySelector('.chat-search input'); s.value=''; s.dispatchEvent(new Event('input'))} true`,
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="budget"]')`),
+    'Clearing the search did not restore the list',
+  )
   // UC-013 A9 and BR-019: a refused folder sets up no workspace.
   await evaluate(`document.querySelector('[data-action=add-workspace]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open`), 'Workspace dialog did not open')
-  await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(parse(dir).root)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('thư mục gốc của ổ đĩa')`), 'Drive root was not refused with its reason')
+  await evaluate(
+    `document.querySelector('.workspace-dialog input').value=${JSON.stringify(parse(dir).root)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('thư mục gốc của ổ đĩa')`,
+      ),
+    'Drive root was not refused with its reason',
+  )
   assert.equal(await evaluate(`document.querySelectorAll('.workspace-controls select option').length`), 1)
   // UC-013 S2: set up a workspace for a folder; it becomes the workspace in use; the open chat and draft stay.
-  await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(project)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`), 'Workspace was not set up and selected')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The list shows the chats of the workspace in use')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Nháp A', 'Adding a workspace keeps the open chat and its draft')
+  await evaluate(
+    `document.querySelector('.workspace-dialog input').value=${JSON.stringify(project)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`,
+      ),
+    'Workspace was not set up and selected',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`),
+    null,
+    'The list shows the chats of the workspace in use',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    'Nháp A',
+    'Adding a workspace keeps the open chat and its draft',
+  )
   // UC-012: a new chat joins the workspace in use, with an empty draft.
   await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]') && document.querySelector('.composer textarea').value === ''`), 'New chat did not open in the workspace')
-  const projectChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.chat-navigation nav button[aria-current=true]') && document.querySelector('.composer textarea').value === ''`,
+      ),
+    'New chat did not open in the workspace',
+  )
+  const projectChat = await evaluate(
+    `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`,
+  )
   assert.notEqual(projectChat, firstChat)
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Nháp B'; ta.dispatchEvent(new Event('input'))} true`)
+  await evaluate(
+    `{const ta=document.querySelector('.composer textarea'); ta.value='Nháp B'; ta.dispatchEvent(new Event('input'))} true`,
+  )
   // UC-013 A7: switch back to the default workspace; then open the first chat with its own draft.
-  await evaluate(`{const sel=document.querySelector('.workspace-controls select'); sel.value='default'; sel.dispatchEvent(new Event('change'))} true`)
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${firstChat}"]')`), 'Switching workspace did not show its chats')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Nháp B', 'Switching keeps the open chat and its draft')
+  await evaluate(
+    `{const sel=document.querySelector('.workspace-controls select'); sel.value='default'; sel.dispatchEvent(new Event('change'))} true`,
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${firstChat}"]')`),
+    'Switching workspace did not show its chats',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    'Nháp B',
+    'Switching keeps the open chat and its draft',
+  )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${firstChat}"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Nháp A'`), 'Draft A did not come back with its chat')
+  await eventually(
+    () => evaluate(`document.querySelector('.composer textarea').value === 'Nháp A'`),
+    'Draft A did not come back with its chat',
+  )
   await protocol.call('Page.reload')
-  await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Nháp A'`), 'Reload lost the draft of the open chat')
+  await eventually(
+    () => evaluate(`document.querySelector('.composer textarea')?.value === 'Nháp A'`),
+    'Reload lost the draft of the open chat',
+  )
   // FR-141: rename with whitespace dropped.
-  await evaluate(`{const sel=document.querySelector('.workspace-controls select'); sel.value=[...sel.options].find(o=>o.textContent.startsWith('Dự án')).value; sel.dispatchEvent(new Event('change'))} true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`), 'Workspace not selected again')
+  await evaluate(
+    `{const sel=document.querySelector('.workspace-controls select'); sel.value=[...sel.options].find(o=>o.textContent.startsWith('Dự án')).value; sel.dispatchEvent(new Event('change'))} true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`,
+      ),
+    'Workspace not selected again',
+  )
   await evaluate(`document.querySelector('[data-action=rename-workspace]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open`), 'Rename dialog did not open')
-  await evaluate(`document.querySelector('.workspace-dialog input').value='   '; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('ít nhất một ký tự')`), 'Empty name was not refused')
-  await evaluate(`document.querySelector('.workspace-dialog input').value='  Dự án Việt  '; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án Việt'`), 'Rename failed')
+  await evaluate(
+    `document.querySelector('.workspace-dialog input').value='   '; document.querySelector('.workspace-dialog form').requestSubmit(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('ít nhất một ký tự')`),
+    'Empty name was not refused',
+  )
+  await evaluate(
+    `document.querySelector('.workspace-dialog input').value='  Dự án Việt  '; document.querySelector('.workspace-dialog form').requestSubmit(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án Việt'`),
+    'Rename failed',
+  )
   // UC-013 A2: remove after confirm; its chats become ungrouped; the default workspace is in use.
   await evaluate(`window.confirm=()=>true; document.querySelector('[data-action=remove-workspace]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').value === 'default'`), 'Default workspace not in use after remove')
-  await eventually(() => evaluate(`(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Chat chưa nhóm'); return !!heading && !!heading.parentElement.querySelector('[data-session-id="${projectChat}"]') })()`), 'Chat of the removed workspace is not ungrouped')
+  await eventually(
+    () => evaluate(`document.querySelector('.workspace-controls select').value === 'default'`),
+    'Default workspace not in use after remove',
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Chat chưa nhóm'); return !!heading && !!heading.parentElement.querySelector('[data-session-id="${projectChat}"]') })()`,
+      ),
+    'Chat of the removed workspace is not ungrouped',
+  )
   assert.deepEqual(await tree(project), before, 'No file of the project folder was created, changed or deleted')
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${projectChat}"]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Nháp B'`), 'Ungrouped chat lost its draft')
-  assert.equal(await evaluate(`document.querySelector('.workspace-controls select').value`), 'default', 'Opening an ungrouped chat keeps the workspace in use')
+  await eventually(
+    () => evaluate(`document.querySelector('.composer textarea').value === 'Nháp B'`),
+    'Ungrouped chat lost its draft',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.workspace-controls select').value`),
+    'default',
+    'Opening an ungrouped chat keeps the workspace in use',
+  )
   // The sample deck panel keeps its sandbox; samples are served with a sandbox CSP.
-  await evaluate(`document.querySelector('.published-deck-sidebar').hidden=true; document.querySelector('.deck-sidebar').hidden=false; true`)
+  await evaluate(
+    `document.querySelector('.published-deck-sidebar').hidden=true; document.querySelector('.deck-sidebar').hidden=false; true`,
+  )
   assert.equal(await evaluate(`document.querySelector('.deck-sidebar iframe').getAttribute('sandbox')`), '')
   const sample = await fetch(`${app.origin}/samples/2.html`)
   assert.match(sample.headers.get('content-security-policy'), /^sandbox;/)
-  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 900, height: 600, deviceScaleFactor: 1, mobile: false })
-  assert.equal(await evaluate(`(() => { const box=document.querySelector('.composer').getBoundingClientRect(); return box.bottom<=innerHeight && box.left>=0 && box.right<=innerWidth; })()`), true, 'Compact Composer must remain usable in a narrow, short window')
+  await protocol.call('Emulation.setDeviceMetricsOverride', {
+    width: 900,
+    height: 600,
+    deviceScaleFactor: 1,
+    mobile: false,
+  })
+  assert.equal(
+    await evaluate(
+      `(() => { const box=document.querySelector('.composer').getBoundingClientRect(); return box.bottom<=innerHeight && box.left>=0 && box.right<=innerWidth; })()`,
+    ),
+    true,
+    'Compact Composer must remain usable in a narrow, short window',
+  )
   if (process.env.DECKAGENT_BROWSER_SCREENSHOT) {
     const shot = await protocol.call('Page.captureScreenshot', { format: 'png' })
     await writeFile(process.env.DECKAGENT_BROWSER_SCREENSHOT, Buffer.from(shot.data, 'base64'))
   }
-  for (const id of ['recycling', 'budget', firstChat, projectChat]) assert.equal(await requestCount(app, id), 0, 'No step sent a request')
+  for (const id of ['recycling', 'budget', firstChat, projectChat])
+    assert.equal(await requestCount(app, id), 0, 'No step sent a request')
 })

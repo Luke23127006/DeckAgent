@@ -28,6 +28,14 @@ const activityNames: Readonly<Record<string, string>> = {
   read_external: 'Đọc file ngoài phạm vi',
   read_attachment: 'Đọc tệp đính kèm',
   research_public: 'Tìm nguồn công khai',
+  stage_brief: 'Đề xuất Brief',
+  stage_outline: 'Đề xuất Outline',
+  read_generation_plan: 'Đọc kế hoạch đã xác nhận',
+  begin_slide: 'Chuẩn bị slide',
+  append_slide: 'Soạn nội dung slide',
+  attach_slide_image: 'Thêm ảnh đã chọn',
+  publish_slide: 'Kiểm tra và lưu slide',
+  discard_slide: 'Bỏ bản slide chưa hoàn tất',
 }
 
 /** FR-079: where the summary the model reads starts. Every message above it stays readable here. */

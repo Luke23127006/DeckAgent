@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Connect confirmed deck generation to the isolated OpenCode MCP bridge with versioned prompts, selected-source grants and scoped slide staging/publication.
+- Add the end-user Create deck flow with Interview choices, Brief and Outline history, explicit confirmation, publication progress and sandboxed Preview; duplicate or lost confirmation responses do not start another generation.
+
 - Add explicit Host confirmation receipts and durable generation intents, exact Brief/Outline binding, idempotent admission retry and visual snapshot locks that survive Stop or restart.
 - Stage bounded HTML chunks and normalized attachment images in Application Storage, validate parsed HTML/CSS and real browser output, and atomically publish immutable artifact pointers with recovery that preserves last-good revisions. Deck schema v6 retains legacy HTML; generation model tools and end-user controls remain separate integrations.
 
@@ -15,7 +18,13 @@ Notable changes to this repository. The newest changes are at the top.
 - Add an offline versioned design catalog, validated effective theme snapshots and content-based layout candidates with guarded custom-layout fallback.
 - Persist immutable Brief versions and explicit source choices per Chat in Deck schema v3; expose authenticated Host reads/writes and a browser-safe client decoder. Existing Decks, Outlines and Chat history remain intact. Interview and generation integration remain separate.
 
+### Fixed
+
+- Keep Chat navigation disabled while a Chat is being created.
+
 ### Changed
+
+- Supply the shipped visual catalog, complete proposal shapes and explicit image/format choices to Interview runs; generation retains timeout and Stop without the interview's eight-step guard.
 
 - Record the accepted initial visual catalog and review/generation/publication contracts for B04, including product defaults and theme roles. Dependent runtime implementation remains separate.
 

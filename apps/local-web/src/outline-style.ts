@@ -1,4 +1,5 @@
 export const outlineStyle = `
+.deck-workflow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--line);max-height:35dvh;overflow:auto;overflow-wrap:anywhere}.deck-workflow>[hidden]{display:none}.deck-workflow label{display:flex;align-items:center;gap:6px;font-size:var(--t-sm)}.deck-workflow select,.deck-workflow button{padding:5px 10px;max-width:100%}.deck-workflow>div,.deck-workflow>details{flex-basis:100%}.deck-workflow p{white-space:pre-wrap;margin:6px 0}.deck-workflow summary{cursor:pointer}
 .outline-proposal{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .outline-proposal h3{margin:0 0 6px;font-size:var(--t-sm);font-weight:600;color:var(--ink)}
 .outline-status{color:var(--ink)!important;font-weight:600;margin-bottom:8px!important}

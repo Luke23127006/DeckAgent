@@ -215,6 +215,18 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     title.textContent = 'Bộ slide'
     const published = snapshot.slides.filter(slide => slide.status === 'published').length
     progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
+    if (snapshot.generation) {
+      const phase = snapshot.generation.state
+      progress.textContent +=
+        phase === 'generated'
+          ? ' · Hoàn tất'
+          : phase === 'incomplete'
+            ? ' · Chưa hoàn tất, không tự chạy tiếp'
+            : phase === 'pending'
+              ? ' · Đã xác nhận, chưa xếp lịch'
+              : ' · Đang tạo'
+      progress.textContent += ` · HTML · ${snapshot.generation.design.template.id} · ${snapshot.generation.design.designSystem.id}${snapshot.generation.formatLocked ? ' · Đã khóa' : ''}`
+    }
     for (const [id, item] of slideButtons)
       if (!snapshot.slides.some(slide => slide.slideId === id)) {
         observer?.unobserve(item)

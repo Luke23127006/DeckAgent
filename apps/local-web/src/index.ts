@@ -38,6 +38,7 @@ import { researchStyle } from './research-style.ts'
 import { BriefService } from './brief-service.ts'
 import { DeckWorkflow } from './deck-workflow.ts'
 import { ConfirmationService } from './confirmation-service.ts'
+import { GenerationWorkflow } from './generation-workflow.ts'
 import { artifactRenderer } from './artifact-renderer.ts'
 import type { RequestRuntime } from '@deckagent/host-api'
 
@@ -61,7 +62,7 @@ export { pinnedVersion } from './opencode/config.ts'
 export type { OpenCodeOptions } from './opencode/runtime.ts'
 
 export interface LocalWebOptions {
-  /** Composition seam for the generation runtime; absent until generation tools are connected. */
+  /** Tests may replace generation; production uses the same isolated CLI with confirmed phase tools. */
   readonly generationRuntime?: RequestRuntime
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
   readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
@@ -338,7 +339,12 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     }
     const briefs = new BriefService(presentation, store)
     const host = await startHost({
-      confirmations: new ConfirmationService(presentation, store, briefs, options.generationRuntime),
+      confirmations: new ConfirmationService(
+        presentation,
+        store,
+        briefs,
+        options.generationRuntime ?? new GenerationWorkflow(runtime, store),
+      ),
       briefs,
       decks: presentation,
       outlines: presentation,

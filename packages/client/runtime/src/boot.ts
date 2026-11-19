@@ -25,6 +25,10 @@ import type { ApprovalView } from '@deckagent/host-api'
 import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
 import { AttachmentDraftView } from './attachment-view.ts'
 import { researchView } from './research-view.ts'
+import { BriefClient } from './brief-client.ts'
+import { ConfirmationClient } from './confirmation-client.ts'
+import { DeckWorkflowView } from './deck-workflow-view.ts'
+import type { OutlineProposal, ConfirmationTarget } from '@deckagent/deck'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
@@ -77,24 +81,50 @@ const messages = element('div', undefined, 'messages')
 messages.setAttribute('aria-label', 'Hội thoại')
 const outlineDock = element('section', undefined, 'outline-dock')
 outlineDock.hidden = true
-// Outline confirmation and generation arrive with their builds (B04); this build sends generic chat requests only.
-const timeline = new ConversationView(messages, undefined, undefined, outlineDock, {
-  retry: text => {
-    input.value = text
+const confirmations = new ConfirmationClient(location.origin, token)
+const confirmationTargets = new Map<string, ConfirmationTarget>()
+const workflow = new DeckWorkflowView(
+  new BriefClient(location.origin, token),
+  text => {
+    input.value = `${input.value}${input.value.trim() ? '\n' : ''}${text}`
     input.focus()
-    input.setSelectionRange(text.length, text.length)
     saveDraft()
     controls()
   },
-  settings: () => run(settingsUI.open()),
-  draft: () => input.value,
-  previewAttachment: item => run(previewAttachment(item)),
-  approve: async (requestId, approvalId, decision) => {
-    await client.decide(requestId, approvalId, decision)
-    const saved = await client.snapshot(requestId)
-    if (current?.sessionId === saved.sessionId) timeline.snapshot(saved)
+  () => {
+    if (input.value.trim() || draftStates.get(current?.sessionId ?? '')?.attachments?.length) {
+      status.hidden = false
+      status.textContent = 'Hãy gửi câu trả lời hoặc tệp đang soạn trước khi bỏ qua các câu hỏi còn lại.'
+      return
+    }
+    run(submitRequest('Bỏ qua các câu hỏi còn lại; giữ các giới hạn nguồn đã chọn.', true))
   },
-})
+)
+const timeline = new ConversationView(
+  messages,
+  (action, proposal) => {
+    if (action === 'confirm') run(confirmOutline(proposal))
+  },
+  () => input.focus(),
+  outlineDock,
+  {
+    retry: text => {
+      input.value = text
+      input.focus()
+      input.setSelectionRange(text.length, text.length)
+      saveDraft()
+      controls()
+    },
+    settings: () => run(settingsUI.open()),
+    draft: () => input.value,
+    previewAttachment: item => run(previewAttachment(item)),
+    approve: async (requestId, approvalId, decision) => {
+      await client.decide(requestId, approvalId, decision)
+      const saved = await client.snapshot(requestId)
+      if (current?.sessionId === saved.sessionId) timeline.snapshot(saved)
+    },
+  },
+)
 const form = element('form', undefined, 'composer')
 form.noValidate = true
 form.dataset.slot = 'request'
@@ -392,7 +422,11 @@ function controls() {
       submit.disabled || (!input.value.trim() && !draft?.attachments?.length) || [...input.value].length > requestLimit,
     ),
   )
-  timeline.setOutlineBusy(true)
+  timeline.setOutlineBusy(!!activeId || (!!current && sending.has(current.sessionId)))
+  workflow.update(
+    outlineState?.proposals.find(p => p.outlineId === outlineState?.currentId),
+    !!activeId || (!!current && sending.has(current.sessionId)),
+  )
   picker.update(settings, !!activeId)
   title.textContent = chatTitle
   title.title = chatTitle
@@ -406,6 +440,10 @@ function controls() {
     (!outlineState?.confirmedId &&
       !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) ||
     !publishedDeck.hidden
+  const pendingGeneration =
+    deckModel.state.snapshot?.sessionId === current?.sessionId ? deckModel.state.snapshot?.generation : undefined
+  retryGeneration.hidden = pendingGeneration?.state !== 'pending'
+  retryGeneration.disabled = !!activeId || (!!current && sending.has(current.sessionId))
   fitInput()
 }
 function renderModels() {
@@ -447,7 +485,7 @@ function chatButton(session: WebSession) {
   item.dataset.sessionId = session.sessionId
   if (!session.readable) item.dataset.unreadable = 'true'
   item.setAttribute('aria-current', String(session.sessionId === current?.sessionId))
-  item.disabled = switchingBlocked()
+  item.disabled = switchingBlocked() || creating
   return item
 }
 function renderChats() {
@@ -508,6 +546,7 @@ async function showOutlines(id: string, expected: number) {
   if (outlineState?.sessionId === id && outlineState.version > next.version) return
   outlineState = next
   timeline.setOutlines(next)
+  await workflow.refresh(id)
   controls()
 }
 /**
@@ -634,6 +673,7 @@ async function open(listed: WebSession) {
   timeline.setRecords(loaded[2], loaded[1])
   outlineState = loaded[3]
   timeline.setOutlines(loaded[3])
+  await workflow.open(session.sessionId)
   if (opening === expected) opening = undefined
   controls()
   if (session.activeRequestId && generation === expected)
@@ -857,9 +897,14 @@ function showDeck() {
   openDeck.hidden = true
 }
 const openDeck = button('Mở deck', showDeck)
+const retryGeneration = button('Thử xếp lịch tạo deck đã xác nhận', () => {
+  const saved = deckModel.state.snapshot?.generation
+  if (saved?.state === 'pending' && current?.sessionId === saved.receipt.sessionId) run(confirmTarget(saved.receipt))
+})
+retryGeneration.hidden = true
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
-headingActions.append(openDeck)
+headingActions.append(openDeck, retryGeneration)
 heading.append(headingText, headingActions)
 const reconnect = button('Kết nối lại / đọc lịch sử', () => {
   closeAccountMenu()
@@ -908,7 +953,7 @@ input.addEventListener('keydown', event => {
 })
 const dock = element('div', undefined, 'composer-dock')
 dock.append(outlineDock, form)
-conversation.append(heading, status, welcome, messages, dock)
+conversation.append(heading, status, workflow.node, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
 initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
@@ -955,7 +1000,7 @@ form.addEventListener('submit', event => {
   event.preventDefault()
   run(submitRequest(input.value))
 })
-async function submitRequest(text: string): Promise<void> {
+async function submitRequest(text: string, skip = false): Promise<void> {
   if (submit.disabled || !current) return
   if (!text.trim() && !draftStates.get(current.sessionId)?.attachments?.length) return
   if ([...text].length > requestLimit) {
@@ -966,7 +1011,8 @@ async function submitRequest(text: string): Promise<void> {
   }
   const id = current.sessionId,
     expected = generation
-  const publicResearch = researchUI?.enabled(id) === true
+  const command = workflow.command(skip)
+  const publicResearch = command?.sourceChoice?.publicResearch ?? researchUI?.enabled(id) === true
   sending.add(id)
   controls()
   status.textContent = 'Đang gửi'
@@ -981,6 +1027,7 @@ async function submitRequest(text: string): Promise<void> {
         sessionId: id,
         input: text,
         publicResearch,
+        ...(command ? { deck: command } : {}),
         ...(draft?.revision === undefined
           ? {}
           : { draftRevision: draft.revision, attachmentIds: draft.attachmentIds ?? [] }),
@@ -1009,7 +1056,82 @@ async function submitRequest(text: string): Promise<void> {
     controls()
   }
 }
+async function confirmOutline(proposal: OutlineProposal): Promise<void> {
+  if (!current || current.activeRequestId || sending.has(current.sessionId)) return
+  if (input.value.trim() || draftStates.get(current.sessionId)?.attachments?.length) {
+    status.hidden = false
+    status.textContent =
+      'Bạn còn nội dung hoặc tệp chưa gửi. Hãy gửi yêu cầu sửa hoặc xóa bản nháp trước khi xác nhận đúng Outline đang hiển thị.'
+    return
+  }
+  if (!proposal.brief || outlineState?.currentId !== proposal.outlineId) throw new Error('OUTLINE_STALE')
+  const id = current.sessionId
+  const key = `${id}/${proposal.outlineId}/${proposal.version}/${proposal.brief.version}`
+  let target = confirmationTargets.get(key)
+  if (!target) {
+    let confirmationId: string | null = null
+    try {
+      confirmationId = sessionStorage.getItem(`confirmation:${key}`)
+    } catch {
+      /* Optional reload retry identity. */
+    }
+    target = {
+      confirmationId: confirmationId ?? crypto.randomUUID(),
+      outlineId: proposal.outlineId,
+      outlineVersion: proposal.version,
+      briefId: proposal.brief.briefId,
+      briefVersion: proposal.brief.version,
+    }
+    confirmationTargets.set(key, target)
+    try {
+      sessionStorage.setItem(`confirmation:${key}`, target.confirmationId)
+    } catch {
+      /* In-memory retries remain idempotent. */
+    }
+  }
+  await confirmTarget(target)
+}
+async function confirmTarget(target: ConfirmationTarget): Promise<void> {
+  if (!current || current.activeRequestId || sending.has(current.sessionId)) return
+  const id = current.sessionId,
+    expected = generation
+  sending.add(id)
+  controls()
+  try {
+    if (!(await flushDraft(id))) return
+    const draft = await management.draftState(id)
+    if (draft.text.trim() || draft.attachmentIds?.length) throw new Error('DRAFT_CONFLICT')
+    const accepted = await confirmations.confirm(id, {
+      confirmationId: target.confirmationId,
+      outlineId: target.outlineId,
+      outlineVersion: target.outlineVersion,
+      briefId: target.briefId,
+      briefVersion: target.briefVersion,
+    })
+    if (generation !== expected || current?.sessionId !== id) return
+    timeline.snapshot(accepted.request)
+    if (isActive(accepted.request.status)) current = { ...current, activeRequestId: accepted.request.requestId }
+    await showOutlines(id, expected)
+    await refresh()
+    if (isActive(accepted.request.status)) run(follow(accepted.request.requestId, id, expected))
+  } catch (error) {
+    await showOutlines(id, expected)
+    await refresh()
+    if (generation === expected && current?.sessionId === id && current.activeRequestId)
+      run(follow(current.activeRequestId, id, expected))
+    status.hidden = false
+    status.textContent =
+      'Chưa xác nhận được kết quả tạo deck. Kiểm tra kết nối và Outline hiện tại trước khi thử lại; các slide đã lưu vẫn được giữ.'
+    throw error
+  } finally {
+    sending.delete(id)
+    controls()
+  }
+}
 const timer = setInterval(() => {
+  const saved = deckModel.state.snapshot
+  retryGeneration.hidden = saved?.sessionId !== current?.sessionId || saved?.generation?.state !== 'pending'
+  retryGeneration.disabled = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
   if (!current?.activeRequestId || polling || disposed) return
   polling = true
   const id = current.sessionId,

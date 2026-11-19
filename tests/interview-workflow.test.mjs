@@ -259,6 +259,7 @@ test('an essential image requirement remains blocked until the user chooses the 
   assert.equal((await x.send('collect', 1, null)).events.at(-1).status, 'failed')
   assert.equal((await x.send('collect', 1, null, { imageChoice: 'attachments' })).events.at(-1).status, 'failed')
   assert.equal((await client.snapshot(x.id)).version, 1)
+  await x.write({ brief: x.full, outline: x.plan, expectedImageChoice: 'none' })
   assert.equal((await x.send('collect', 1, null, { imageChoice: 'none' })).events.at(-1).status, 'completed')
   assert.equal((await client.snapshot(x.id)).version, 2)
 })
