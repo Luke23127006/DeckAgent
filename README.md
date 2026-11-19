@@ -16,6 +16,16 @@ The last command starts the local Host and opens the Web app in your browser. Ke
 
 Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. On other shells, use `pnpm` in place of `pnpm.cmd`.
 
+### Windows shortcut with the local CLI
+
+If OpenCode 1.19.5 is installed at `.local/opencode/node_modules/opencode-windows-x64/bin/opencode.exe`, use:
+
+```powershell
+pnpm.cmd start:local
+```
+
+This uses Node 22.19.0 through npm exec, loads the root `.env` and opens the same saved chats, providers and models in the default Application Storage. It needs built app output; run `pnpm.cmd build` with a supported Node version after source changes. The first Node download needs network access. See [local development](docs/development/local-development.md#local-web-workspaces-and-chats) for the one-time local CLI setup and startup options.
+
 ## Documentation
 
 - [Product spec](docs/spec/) — the use cases, requirements and business rules of the product, and the behaviors left for later.

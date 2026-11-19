@@ -130,6 +130,15 @@ After build, start Web:
 pnpm.cmd start:local-web
 ```
 
+For Windows development with the pinned CLI inside this repository, run `pnpm.cmd start:local`. It uses npm exec to select Node 22.19.0, loads the root `.env` and supplies the relative executable path `.local/opencode/node_modules/opencode-windows-x64/bin/opencode.exe`. Install that CLI once if it is missing:
+
+```powershell
+npm.cmd install --prefix .local/opencode --no-save --package-lock=false --ignore-scripts opencode-windows-x64@1.19.5
+pnpm.cmd start:local
+```
+
+The shortcut reuses default Application Storage, including saved chats, provider credentials and model choices. It also honors `DECKAGENT_DATA_DIR` or an explicit `--data-dir` just like the normal command. It does not build the app: rebuild after source changes. The pinned Node package is cached by npm; its first download needs network access. Use `pnpm.cmd start:local --help` to check the launcher without starting the Host.
+
 This opens an authenticated local browser. No model and no API key are needed to start. You can:
 
 - work in the default workspace, which has no project folder, or add a workspace for a folder by typing its full path;

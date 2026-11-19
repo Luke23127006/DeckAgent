@@ -11,7 +11,7 @@
     "test:attachments": "node --test tests/attachment-parser.test.mjs tests/attachment-storage.test.mjs tests/attachment-admission.test.mjs",
     "test:research": "node --test tests/research.test.mjs",
     "test:research-live": "node --env-file-if-exists=.env --test tests/research-live.test.mjs",
-    "test:opencode-live": "node --test tests/opencode-live.test.mjs tests/opencode-source-live.test.mjs",
+    "test:opencode-live": "node --test tests/opencode-live.test.mjs tests/opencode-source-live.test.mjs tests/opencode-generation-live.test.mjs",
     "test:outline-workflow": "node --test tests/outline-state.test.mjs tests/outline-client.test.mjs",
     "test:brief-foundation": "node --test tests/design-catalog.test.mjs tests/deck-brief.test.mjs tests/brief-host.test.mjs tests/brief-client.test.mjs",
     "test:deck-review": "node --test tests/interview-policy.test.mjs tests/interview-workflow.test.mjs tests/bound-outline.test.mjs tests/outline-client.test.mjs",
@@ -34,6 +34,7 @@
     "chat": "node --env-file-if-exists=.env --use-system-ca apps/agent-runtime/lib/chat.js",
     "test:tools-browser": "node --test tests/file-tools.test.mjs tests/host-api.test.mjs tests/browser-runtime.test.mjs tests/local-web.test.mjs",
     "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js",
+    "start:local": "npm exec --yes --package=node@22.19.0 -- node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js --opencode .local/opencode/node_modules/opencode-windows-x64/bin/opencode.exe",
     "test:browser-smoke": "node --test tests/browser-smoke.test.mjs",
     "test:env-startup": "node --test tests/env-startup.test.mjs",
     "test:local-web": "node --test tests/web-session.test.mjs tests/web-management.test.mjs"

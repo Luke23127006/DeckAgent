@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add a Windows `start:local` shortcut using pinned Node and the repository-local OpenCode CLI while reusing saved application data.
+- Verify three-slide generation, restricted MCP tools, saved HTML and restart without replay through the real pinned CLI and a local test provider.
+
 - Connect confirmed deck generation to the isolated OpenCode MCP bridge with versioned prompts, selected-source grants and scoped slide staging/publication.
 - Add the end-user Create deck flow with Interview choices, Brief and Outline history, explicit confirmation, publication progress and sandboxed Preview; duplicate or lost confirmation responses do not start another generation.
 
