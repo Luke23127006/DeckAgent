@@ -23,7 +23,10 @@ export function researchView(
   choice.type = 'checkbox'
   choice.className = 'public-research-choice'
   const label = field('Tìm nguồn công khai', choice)
-  label.append(element('small', 'Query gửi tới Tavily · chỉ miễn phí'))
+  label.className = 'research-choice-label'
+  label.prepend(choice)
+  const control = element('div', undefined, 'research-control')
+  control.append(label)
   label.title =
     'Query tìm kiếm được gửi tới Tavily và có thể chứa thông tin từ tài liệu. Tối đa 3 lượt/yêu cầu, chỉ dùng miễn phí.'
   choice.addEventListener('change', () => {
@@ -102,11 +105,16 @@ export function researchView(
     content.replaceChildren()
   })
   root.append(dialog)
-  const settings = button('Cài đặt tìm kiếm', () => {
+  const openSettings = () => {
     status.textContent = 'Key đã lưu không bao giờ được hiện lại. Để dùng .env, bấm kiểm tra key môi trường.'
     content.replaceChildren()
     dialog.showModal()
-  })
+  }
+  const settings = button('Cài đặt tìm kiếm', openSettings)
+  const info = button('ⓘ', openSettings)
+  info.className = 'research-info'
+  info.setAttribute('aria-label', 'Thông tin tìm nguồn')
+  control.append(info)
   const sources = button('Nguồn đã tìm', () => {
     const id = chat()
     if (!id || dialog.open) return
@@ -130,7 +138,7 @@ export function researchView(
     })
   })
   return {
-    label,
+    control,
     settings,
     sources,
     enabled(id: string) {
@@ -140,6 +148,10 @@ export function researchView(
       const id = chat()
       choice.checked = !!id && selected.get(id) === true
       choice.disabled = !id || active || (!settings.research?.configured && !choice.checked)
+      info.textContent = settings.research?.configured ? 'ⓘ' : 'Chưa cấu hình'
+      info.title = settings.research?.configured
+        ? label.title
+        : 'Chưa cấu hình tìm nguồn công khai. Mở cài đặt để kết nối Tavily.'
       sources.disabled = !id
     },
   }

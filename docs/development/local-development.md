@@ -149,6 +149,8 @@ This opens an authenticated local browser. No model and no API key are needed to
 - choose a model for a chat, send a request, follow its status and activities, and stop it. A reload, or going to another chat, does not stop the request. A request that is still running when the Host stops is shown as not finished and is never started again;
 - keep a long chat going. When the provider says the conversation is too long for the model, OpenCode summarizes it and the request goes on. The chat marks where the summary starts, and every earlier message stays readable. If the summary cannot be written, the request does not finish and the conversation stays as it was.
 
+A custom provider has a URL-safe Provider ID, such as `river-ai`, and a separate display name, such as `River AI`. IDs accept ASCII letters, digits, dots, underscores and hyphens, with no spaces. Saving a connection does not add or select models. Add model IDs from the catalog or enter them by hand, then save; Save also includes a model ID still in the manual entry field. The model picker lists added models after the save, and the user chooses one explicitly.
+
 Requests run through the OpenCode CLI, version 1.19.5 (`opencode run --format json`). Install it, then point DeckAgent at the executable (on Windows, `opencode.exe`, not the `.cmd` shim):
 
 ```powershell

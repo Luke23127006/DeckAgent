@@ -460,6 +460,7 @@ export class ManagementClient {
       new?: boolean
     },
   ): Promise<void> {
+    if (!/^[\w.-]{1,100}$/.test(id)) throw new ManagementError('INVALID_PROVIDER', { field: 'providerId' })
     await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', value)
   }
 

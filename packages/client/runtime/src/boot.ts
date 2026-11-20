@@ -64,13 +64,12 @@ const headerState = element('small', '', 'chat-state')
 headerState.setAttribute('aria-live', 'polite')
 const welcome = element('section', undefined, 'welcome')
 welcome.hidden = true
-welcome.append(
-  element('h2', 'Hãy mô tả deck bạn muốn'),
-  element(
-    'p',
-    'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.',
-  ),
+const welcomeTitle = element('h2', 'Bạn muốn trao đổi điều gì?')
+const welcomeDetail = element(
+  'p',
+  'Gửi tin nhắn hoặc thêm tài liệu. Chọn Tạo deck ở trên khi bạn muốn làm bài trình bày.',
 )
+welcome.append(welcomeTitle, welcomeDetail)
 const model = element('select')
 model.disabled = true
 model.setAttribute('aria-label', 'Model đã chọn')
@@ -99,13 +98,17 @@ const workflow = new DeckWorkflowView(
     }
     run(submitRequest('Bỏ qua các câu hỏi còn lại; giữ các giới hạn nguồn đã chọn.', true))
   },
+  () => controls(),
 )
 const timeline = new ConversationView(
   messages,
   (action, proposal) => {
     if (action === 'confirm') run(confirmOutline(proposal))
   },
-  () => input.focus(),
+  () => {
+    workflow.requestRevision()
+    input.focus()
+  },
   outlineDock,
   {
     retry: text => {
@@ -388,7 +391,6 @@ function run(work: Promise<void>) {
   })
 }
 function controls() {
-  researchUI?.update(settings, !!current?.activeRequestId)
   const activeId = current?.activeRequestId
   stopRequest.hidden = !activeId
   stopRequest.disabled = !!activeId && stopping.has(activeId)
@@ -425,8 +427,18 @@ function controls() {
   timeline.setOutlineBusy(!!activeId || (!!current && sending.has(current.sessionId)))
   workflow.update(
     outlineState?.proposals.find(p => p.outlineId === outlineState?.currentId),
-    !!activeId || (!!current && sending.has(current.sessionId)),
+    !!activeId || opening !== undefined || creating || (!!current && sending.has(current.sessionId)),
   )
+  workflow.setResearchAvailable(settings.research?.configured === true)
+  researchUI?.update(settings, !!activeId)
+  if (researchUI) researchUI.control.hidden = workflow.preparingDeck
+  const welcomeHeading = workflow.preparingDeck ? 'Hãy mô tả deck bạn muốn' : 'Bạn muốn trao đổi điều gì?'
+  const welcomeText = workflow.preparingDeck
+    ? 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất Outline và Brief trước; chỉ tạo slide sau khi bạn xác nhận.'
+    : 'Gửi tin nhắn hoặc thêm tài liệu. Chọn Tạo deck ở trên khi bạn muốn làm bài trình bày.'
+  if (welcomeTitle.textContent !== welcomeHeading) welcomeTitle.textContent = welcomeHeading
+  if (welcomeDetail.textContent !== welcomeText) welcomeDetail.textContent = welcomeText
+  input.placeholder = workflow.inputHint
   picker.update(settings, !!activeId)
   title.textContent = chatTitle
   title.title = chatTitle
@@ -897,10 +909,11 @@ function showDeck() {
   openDeck.hidden = true
 }
 const openDeck = button('Mở deck', showDeck)
-const retryGeneration = button('Thử xếp lịch tạo deck đã xác nhận', () => {
+const retryGeneration = button('Thử bắt đầu tạo deck', () => {
   const saved = deckModel.state.snapshot?.generation
   if (saved?.state === 'pending' && current?.sessionId === saved.receipt.sessionId) run(confirmTarget(saved.receipt))
 })
+retryGeneration.title = 'Thử bắt đầu với Outline đã xác nhận; không tạo một lần xác nhận mới.'
 retryGeneration.hidden = true
 openDeck.hidden = true
 const headingActions = element('div', undefined, 'chat-heading-actions')
@@ -935,7 +948,7 @@ attachmentUI = new AttachmentDraftView({
 })
 const attachment = attachmentUI.trigger
 composerControls.append(attachment)
-composerControls.append(researchUI.label, researchUI.sources)
+composerControls.append(researchUI.control, researchUI.sources)
 const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)

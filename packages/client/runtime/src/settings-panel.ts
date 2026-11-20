@@ -3,7 +3,12 @@ import { ManagementError } from './management-client.ts'
 import type { ManagementClient } from './management-client.ts'
 import { button, element, field } from './dom.ts'
 
-export function settingsPanel(client: ManagementClient, changed: () => Promise<void>, workspace: HTMLElement, returned: () => void) {
+export function settingsPanel(
+  client: ManagementClient,
+  changed: () => Promise<void>,
+  workspace: HTMLElement,
+  returned: () => void,
+) {
   const dialog = element('dialog', undefined, 'settings-dialog')
   const title = element('h2', 'Cài đặt Provider')
   const message = element('p')
@@ -20,15 +25,26 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const fields = element('fieldset')
   const id = element('input')
   id.required = true
-  id.pattern = '[A-Za-z0-9_.-]+'
+  id.pattern = '[A-Za-z0-9_.\\-]+'
   id.maxLength = 100
+  id.placeholder = 'river-ai'
+  const providerIdField = field('Provider ID', id)
+  const idHint = element('small', 'ID không có dấu cách, ví dụ river-ai. Tên hiển thị bên dưới có thể là River AI.')
+  idHint.id = 'provider-id-help'
+  id.setAttribute('aria-describedby', idHint.id)
+  providerIdField.append(idHint)
   const name = element('input')
   name.required = true
   name.maxLength = 100
   const protocol = element('select')
   // BR-005 V-4: the API protocols of a custom model API.
-  for (const [value, label] of [['chat-completions', 'OpenAI Chat Completions'], ['responses', 'OpenAI Responses'],
-    ['anthropic-messages', 'Anthropic Messages'], ['gemini', 'Google Gemini']] as const) protocol.append(new Option(label, value))
+  for (const [value, label] of [
+    ['chat-completions', 'OpenAI Chat Completions'],
+    ['responses', 'OpenAI Responses'],
+    ['anthropic-messages', 'Anthropic Messages'],
+    ['gemini', 'Google Gemini'],
+  ] as const)
+    protocol.append(new Option(label, value))
   const url = element('input')
   url.type = 'url'
   url.required = true
@@ -72,11 +88,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const save = element('button', 'Save provider')
   save.type = 'submit'
   const remove = button('Delete provider', () => {
-    if (
-      !chooser.value ||
-      !confirm('Xóa cấu hình provider này? Chat vẫn giữ lịch sử và sẽ cần chọn model khác.')
-    )
-      return
+    if (!chooser.value || !confirm('Xóa cấu hình provider này? Chat vẫn giữ lịch sử và sẽ cần chọn model khác.')) return
     perform(async () => {
       await client.remove(chooser.value)
       await refresh()
@@ -92,8 +104,20 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   let selectedKind = ''
   let wizard = false
   let step = 1
-  const snapshot = () => JSON.stringify([id.value, name.value, protocol.value, url.value, key.value, removeKey.checked, models.value, manual.value])
-  const canDiscard = () => !busy && (snapshot() === baseline || confirm('Bỏ các thay đổi chưa lưu? Cấu hình đã lưu và nội dung chat vẫn được giữ.'))
+  const snapshot = () =>
+    JSON.stringify([
+      id.value,
+      name.value,
+      protocol.value,
+      url.value,
+      key.value,
+      removeKey.checked,
+      models.value,
+      manual.value,
+    ])
+  const canDiscard = () =>
+    !busy &&
+    (snapshot() === baseline || confirm('Bỏ các thay đổi chưa lưu? Cấu hình đã lưu và nội dung chat vẫn được giữ.'))
   function showUnexpected() {
     message.textContent = 'Không cập nhật được cài đặt.'
   }
@@ -122,7 +146,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     if (kind.parentElement) kind.parentElement.hidden = true
     if (removeKey.parentElement) removeKey.parentElement.hidden = !!template
     message.textContent = value?.hasKey
-      ? value.keyAvailable ? 'Đã lưu key. Để trống ô key để giữ nguyên.' : 'Key đã lưu không dùng được với tài khoản Windows này. Hãy nhập lại key.'
+      ? value.keyAvailable
+        ? 'Đã lưu key. Để trống ô key để giữ nguyên.'
+        : 'Key đã lưu không dùng được với tài khoản Windows này. Hãy nhập lại key.'
       : 'Chưa lưu key. Nhập key nếu provider yêu cầu.'
     for (const card of providerList.querySelectorAll<HTMLButtonElement>('button[data-provider]'))
       card.setAttribute('aria-pressed', String(card.dataset.provider === value?.id))
@@ -133,18 +159,29 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     renderModels()
   }
   kind.addEventListener('change', () => {
-    if (!canDiscard()) { kind.value = selectedKind; return }
+    if (!canDiscard()) {
+      kind.value = selectedKind
+      return
+    }
     selectedKind = kind.value
     chooser.value = `new:${kind.value || 'custom'}`
     selectedId = chooser.value
     fill()
   })
   chooser.addEventListener('change', () => {
-    if (!canDiscard()) { chooser.value = selectedId; return }
+    if (!canDiscard()) {
+      chooser.value = selectedId
+      return
+    }
     selectedId = chooser.value
     const value = providers.find(provider => provider.id === chooser.value)
-    kind.value = value ? builtIns.some(template => template.id === value.id) ? value.id : ''
-      : chooser.value.startsWith('new:') && chooser.value !== 'new:custom' ? chooser.value.slice(4) : ''
+    kind.value = value
+      ? builtIns.some(template => template.id === value.id)
+        ? value.id
+        : ''
+      : chooser.value.startsWith('new:') && chooser.value !== 'new:custom'
+        ? chooser.value.slice(4)
+        : ''
     kind.disabled = !!value
     selectedKind = kind.value
     fill(value)
@@ -168,8 +205,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     for (const provider of providers) saved.append(new Option(provider.displayName, provider.id))
     const offered = element('optgroup')
     offered.label = 'Thêm cấu hình'
-    for (const template of builtIns) if (!providers.some(provider => provider.id === template.id))
-      offered.append(new Option(template.displayName, `new:${template.id}`))
+    for (const template of builtIns)
+      if (!providers.some(provider => provider.id === template.id))
+        offered.append(new Option(template.displayName, `new:${template.id}`))
     offered.append(new Option('Custom model API', 'new:custom'))
     chooser.replaceChildren(saved, offered)
     providerList.replaceChildren(element('h3', 'Provider đã lưu'))
@@ -181,14 +219,21 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         chooser.dispatchEvent(new Event('change'))
       })
       card.dataset.provider = provider.id
-      card.append(element('strong', provider.displayName),
-        element('small', `${builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Có key' : provider.hasKey ? 'Key đã lưu không dùng được' : 'Chưa có key'}`),
-        element('span', provider.models.length ? provider.models.join(' · ') : 'Chưa thêm model'))
+      card.append(
+        element('strong', provider.displayName),
+        element(
+          'small',
+          `${builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Có key' : provider.hasKey ? 'Key đã lưu không dùng được' : 'Chưa có key'}`,
+        ),
+        element('span', provider.models.length ? provider.models.join(' · ') : 'Chưa thêm model'),
+      )
       providerList.append(card)
     }
     addList.replaceChildren(element('h3', 'Thêm provider'))
     const offers: readonly (readonly [string, string])[] = [
-      ...builtIns.filter(template => !providers.some(provider => provider.id === template.id)).map(template => [template.id, template.displayName] as const),
+      ...builtIns
+        .filter(template => !providers.some(provider => provider.id === template.id))
+        .map(template => [template.id, template.displayName] as const),
       ['custom', 'Custom model API'],
     ]
     for (const [offer, label] of offers) {
@@ -208,7 +253,8 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     selectedKind = kind.value
     fill(value)
     if (!settings.persistentKeys)
-      message.textContent = 'Máy này chưa có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ (hiện chỉ Windows), nên không lưu được key. Custom model API không cần key vẫn dùng được.'
+      message.textContent =
+        'Máy này chưa có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ (hiện chỉ Windows), nên không lưu được key. Custom model API không cần key vẫn dùng được.'
   }
   /** What failed and what to do next. Provider messages are never shown (they can echo a key). */
   function saveFailure(error: unknown): string {
@@ -217,19 +263,33 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     if (code === 'PROVIDER_ID_TAKEN')
       return `Provider ID này đã thuộc về ${typeof detail.provider === 'string' ? detail.provider : 'một cấu hình khác'}${detail.builtIn ? ' (provider có sẵn)' : ''}. Hãy chọn provider ID khác. Chưa lưu gì.`
     if (code === 'PROVIDER_KEY_REQUIRED') return 'Provider này cần key. Nhập key của tài khoản bạn. Chưa lưu gì.'
-    if (code === 'PROVIDER_KEY_REFUSED') return 'Provider từ chối key hoặc quyền truy cập. Kiểm tra key rồi lưu lại. Chưa lưu gì; key đã lưu trước đó được giữ.'
+    if (code === 'PROVIDER_KEY_REFUSED')
+      return 'Provider từ chối key hoặc quyền truy cập. Kiểm tra key rồi lưu lại. Chưa lưu gì; key đã lưu trước đó được giữ.'
     if (code === 'PROVIDER_NO_ANSWER')
       return `Provider không trả lời${detail.reason === 'certificate' ? ' (chứng chỉ bảo mật không hợp lệ)' : ''}. Kiểm tra Base URL và kết nối mạng. Chưa lưu gì.`
     if (code === 'PROVIDER_CHECK_FAILED')
       return `Provider không chấp nhận lần kiểm tra${detail.reason === 'rate-limit' ? ' (đã đạt giới hạn sử dụng)' : typeof detail.reason === 'string' && detail.reason.startsWith('http-') ? ` (HTTP ${detail.reason.slice(5)})` : ''}. Kiểm tra Base URL và API protocol. Chưa lưu gì.`
-    if (code === 'CREDENTIAL_STORE_UNAVAILABLE') return 'Máy này không có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ. Key không được lưu dạng văn bản thường. Chưa lưu gì.'
+    if (code === 'CREDENTIAL_STORE_UNAVAILABLE')
+      return 'Máy này không có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ. Key không được lưu dạng văn bản thường. Chưa lưu gì.'
     if (code === 'CREDENTIAL_NOT_SAVED') return 'Không lưu được key vào nơi lưu key của máy. Chưa lưu gì; thử lại.'
     if (code === 'PROVIDER_BUSY') return 'Provider đang được sử dụng. Đợi yêu cầu kết thúc trước khi xóa.'
-    if (code === 'NEW_ENDPOINT_REQUIRES_KEY') return 'Nhập key cho Base URL mới hoặc chọn gỡ key đã lưu. Key cũ không được gửi tới địa chỉ mới.'
+    if (code === 'NEW_ENDPOINT_REQUIRES_KEY')
+      return 'Nhập key cho Base URL mới hoặc chọn gỡ key đã lưu. Key cũ không được gửi tới địa chỉ mới.'
     if (code === 'PROVIDER_NAME_EXISTS') return 'Hãy chọn tên hiển thị không trùng.'
     if (code === 'PROTOCOL_IMMUTABLE') return 'Không đổi được API protocol của cấu hình đã lưu. Hãy tạo cấu hình mới.'
-    if (code === 'INVALID_PROVIDER') return 'Thông tin chưa hợp lệ. Base URL phải là HTTPS, hoặc HTTP tới chính máy này. Chưa lưu gì.'
-    return 'Không lưu được cài đặt. Kiểm tra các trường và quyền của Host.'
+    if (code === 'INVALID_PROVIDER' && detail.field === 'providerId')
+      return 'Provider ID chỉ nhận chữ không dấu, số, dấu chấm, gạch dưới và gạch nối; không có dấu cách. Ví dụ: river-ai. Tên hiển thị vẫn có thể là River AI.'
+    if (code === 'INVALID_PROVIDER')
+      return 'Thông tin chưa hợp lệ. Base URL phải là HTTPS, hoặc HTTP tới chính máy này. Chưa lưu gì.'
+    if (code === 'AUTH_REQUIRED')
+      return 'Phiên kết nối Host không còn hợp lệ (AUTH_REQUIRED). Mở lại liên kết do Host hiện tại cung cấp rồi thử lại.'
+    if (code === 'SETTINGS_REQUEST_FAILED')
+      return 'Host không xử lý được yêu cầu lưu (SETTINGS_REQUEST_FAILED). Kiểm tra kết nối và mở lại cài đặt trước khi thử lại.'
+    if (code === 'CATALOG_UNAVAILABLE')
+      return 'Chưa lấy được model catalog (CATALOG_UNAVAILABLE). Bạn vẫn có thể nhập model ID bằng tay; cấu hình đã lưu được giữ.'
+    if (code === 'INVALID_RESPONSE')
+      return 'Chưa đọc được phản hồi hợp lệ từ Host (INVALID_RESPONSE). Mở lại cài đặt để kiểm tra kết quả đã lưu.'
+    return 'Chưa xác nhận được kết quả lưu. Kiểm tra kết nối và mở lại cài đặt để đối chiếu trước khi thử lại.'
   }
   async function perform(action: () => Promise<void>) {
     if (busy) return
@@ -260,6 +320,7 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   }
   form.addEventListener('submit', event => {
     event.preventDefault()
+    addManualModel()
     const credential = key.value
     key.value = ''
     const value = {
@@ -276,12 +337,29 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     }
     perform(async () => {
       await client.save(id.value, value)
-      await refresh(id.value)
-      selectedId = chooser.value
-      await changed()
-      message.textContent = 'Đã lưu cấu hình. Bạn có thể chọn model trong chat.'
-      if (wizard && step === 2) { step = 3; renderStep() }
-      else if (wizard && step === 3) message.textContent = 'Đã lưu model. Bấm Xong để quay lại chat; model chưa được tự chọn.'
+      baseline = snapshot()
+      try {
+        await refresh(id.value)
+        selectedId = chooser.value
+        await changed()
+      } catch (error) {
+        const code =
+          error instanceof ManagementError
+            ? error.message
+            : error instanceof Error && error.message === 'INVALID_RESPONSE'
+              ? 'INVALID_RESPONSE'
+              : 'UI_REFRESH_FAILED'
+        message.textContent = `Host đã lưu cấu hình, nhưng chưa cập nhật được giao diện (${code}). Mở lại cài đặt để đọc kết quả đã lưu.`
+        return
+      }
+      message.textContent = value.models.length
+        ? `Đã lưu ${value.models.length} model. Bạn có thể chọn model trong chat.`
+        : 'Đã lưu kết nối, chưa thêm model. Nhập model ID hoặc lấy catalog, thêm model rồi lưu.'
+      if (wizard && step === 2) {
+        step = 3
+        renderStep()
+      } else if (wizard && step === 3 && value.models.length)
+        message.textContent = 'Đã lưu model. Bấm Xong để quay lại chat; model chưa được tự chọn.'
     }).catch(showUnexpected)
   })
   function requestClose() {
@@ -298,18 +376,25 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   close.setAttribute('aria-label', 'Đóng cài đặt')
   const cancel = button('Hủy', requestClose)
   const connection = element('section', undefined, 'settings-section')
-  connection.append(element('h3', 'Kết nối'),
+  connection.append(
+    element('h3', 'Kết nối'),
     field('Provider type', kind),
-    field('Provider ID', id),
+    providerIdField,
     field('Display name', name),
     field('API protocol', protocol),
     field('Base URL', url),
   )
   const credentials = element('section', undefined, 'settings-section')
-  credentials.append(element('h3', 'API key'), element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
-    field('API key', key), field('Remove saved key', removeKey))
+  credentials.append(
+    element('h3', 'API key'),
+    element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
+    field('API key', key),
+    field('Remove saved key', removeKey),
+  )
   const modelSection = element('section', undefined, 'settings-section')
-  modelSection.append(element('h3', 'Model'), element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
+  modelSection.append(
+    element('h3', 'Model'),
+    element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
     field('Added model IDs', models),
     loadCatalog,
     field('Model catalog', available),
@@ -319,22 +404,40 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const manual = element('input')
   manual.placeholder = 'Model ID, kể cả ID không có trong catalog'
   manual.setAttribute('aria-label', 'Thêm bằng model ID')
-  const addManual = button('Thêm', () => {
+  function addManualModel() {
     const value = manual.value.trim()
     if (!value) return
-    models.value = [...new Set([...models.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean), value])].join('\n')
+    models.value = [
+      ...new Set([
+        ...models.value
+          .split(/\r?\n/)
+          .map(value => value.trim())
+          .filter(Boolean),
+        value,
+      ]),
+    ].join('\n')
     manual.value = ''
     renderModels()
-  })
+  }
+  const addManual = button('Thêm', addManualModel)
   manual.addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); addManual.click() }
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      addManual.click()
+    }
   })
   function renderModels() {
     modelChips.replaceChildren()
-    for (const model of models.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean)) {
+    for (const model of models.value
+      .split(/\r?\n/)
+      .map(value => value.trim())
+      .filter(Boolean)) {
       const chip = element('span', undefined, 'model-chip')
       const remove = button('', () => {
-        models.value = models.value.split(/\r?\n/).filter(value => value.trim() !== model).join('\n')
+        models.value = models.value
+          .split(/\r?\n/)
+          .filter(value => value.trim() !== model)
+          .join('\n')
         renderModels()
         manual.focus()
       })
@@ -350,22 +453,43 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   const advanced = element('details', undefined, 'model-raw-editor')
   advanced.append(element('summary', 'Sửa danh sách model ID'), field('Added model IDs', models))
   // Catalog and manual entry share the same draft; nothing persists until Save.
-  modelSection.replaceChildren(element('h3', '3 · Thêm model'),
+  modelSection.replaceChildren(
+    element('h3', '3 · Thêm model'),
     element('p', 'Catalog không bảo đảm quyền truy cập hoặc tương thích. Bạn có thể thêm model ID bằng tay.'),
-    modelChips, manualRow, loadCatalog, field('Model catalog', available), addCatalog, advanced)
+    modelChips,
+    manualRow,
+    loadCatalog,
+    field('Model catalog', available),
+    addCatalog,
+    advanced,
+  )
   const savedProviders = element('details', undefined, 'saved-providers')
   savedProviders.append(element('summary', 'Cấu hình đã lưu'), providerList)
   const providerStep = element('section', undefined, 'provider-step')
-  providerStep.append(element('h3', '1 · Chọn provider'),
+  providerStep.append(
+    element('h3', '1 · Chọn provider'),
     element('p', 'Key lấy từ tài khoản của bạn với provider. Yêu cầu dùng cấu hình này sẽ được gửi tới provider đó.'),
-    field('Provider configuration', chooser), field('Provider type', kind), savedProviders)
+    field('Provider configuration', chooser),
+    field('Provider type', kind),
+    savedProviders,
+  )
   // Provider selection belongs to step 1, not to the connection form.
-  for (const label of [...connection.querySelectorAll('label')]) if (label.querySelector('span')?.textContent === 'Provider type') label.remove()
+  for (const label of [...connection.querySelectorAll('label')])
+    if (label.querySelector('span')?.textContent === 'Provider type') label.remove()
   const footer = element('footer', undefined, 'settings-footer')
   const next = button('Tiếp tục →', () => {
-    if (step === 1) { step = 2; renderStep(); name.focus() }
+    if (step === 1) {
+      step = 2
+      renderStep()
+      name.focus()
+    }
   })
-  const previous = button('← Quay lại', () => { if (canDiscard()) { step = 1; renderStep() } })
+  const previous = button('← Quay lại', () => {
+    if (canDiscard()) {
+      step = 1
+      renderStep()
+    }
+  })
   const finish = button('Xong', requestClose)
   footer.append(remove, previous, next, finish, cancel, save)
   save.setAttribute('form', 'provider-settings-form')
@@ -387,9 +511,14 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
   layout.append(nav, main)
   dialog.append(header, layout)
   // Escape and a click on the scrim both go through requestClose, so unsaved changes are still guarded.
-  dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose() })
+  dialog.addEventListener('cancel', event => {
+    event.preventDefault()
+    requestClose()
+  })
   let pressedScrim = false
-  dialog.addEventListener('pointerdown', event => { pressedScrim = event.target === dialog })
+  dialog.addEventListener('pointerdown', event => {
+    pressedScrim = event.target === dialog
+  })
   dialog.addEventListener('click', event => {
     if (pressedScrim && event.target === dialog) requestClose()
     pressedScrim = false
@@ -420,20 +549,35 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
     remove.hidden = wizard
     save.textContent = wizard && step === 2 ? 'Lưu kết nối →' : 'Lưu'
     // Validation concerns the visible step. Step 3 uses the connection just saved.
-    connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => { input.disabled = false })
+    connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => {
+      input.disabled = false
+    })
     fill(providers.find(provider => provider.id === chooser.value))
-    if (wizard && step !== 2) connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => { input.disabled = true })
+    if (wizard && step !== 2)
+      connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => {
+        input.disabled = true
+      })
     key.disabled = wizard && step !== 2
   }
   // Keep stable English field identities for existing automation; translate visible labels.
-  const labels: Readonly<Record<string, string>> = { 'Provider configuration': 'Provider', 'Provider type': 'Loại provider',
-    'Provider ID': 'Provider ID', 'Display name': 'Tên hiển thị', 'API protocol': 'API protocol', 'Base URL': 'Base URL',
-    'API key': 'Key', 'Remove saved key': 'Gỡ key đã lưu', 'Added model IDs': 'Danh sách model ID', 'Model catalog': 'Model catalog' }
+  const labels: Readonly<Record<string, string>> = {
+    'Provider configuration': 'Provider',
+    'Provider type': 'Loại provider',
+    'Provider ID': 'Provider ID',
+    'Display name': 'Tên hiển thị',
+    'API protocol': 'API protocol',
+    'Base URL': 'Base URL',
+    'API key': 'Key',
+    'Remove saved key': 'Gỡ key đã lưu',
+    'Added model IDs': 'Danh sách model ID',
+    'Model catalog': 'Model catalog',
+  }
   for (const label of dialog.querySelectorAll('label')) {
     const span = label.querySelector('span')
     if (span && labels[span.textContent ?? '']) span.textContent = labels[span.textContent ?? '']!
   }
-  credentials.querySelector('p')!.textContent = 'Sau khi lưu, không hiện lại bất kỳ phần nào của key. Để trống để giữ key đã lưu.'
+  credentials.querySelector('p')!.textContent =
+    'Sau khi lưu, không hiện lại bất kỳ phần nào của key. Để trống để giữ key đã lưu.'
   loadCatalog.textContent = 'Lấy model catalog'
   addCatalog.textContent = 'Thêm model đã chọn'
   remove.textContent = 'Xóa cấu hình'
@@ -452,7 +596,9 @@ export function settingsPanel(client: ManagementClient, changed: () => Promise<v
         if (!wizard) workspace.dataset.view = 'settings'
         dialog.showModal()
         close.focus()
-      } finally { opening = false }
+      } finally {
+        opening = false
+      }
     },
   }
 }

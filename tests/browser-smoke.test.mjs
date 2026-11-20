@@ -21,6 +21,22 @@ async function eventually(operation, message, { retries = 200, intervalMs = 50 }
   throw new Error(message)
 }
 
+async function chooseChat(evaluate, id) {
+  const selector = `.chat-navigation button[data-session-id="${id}"]`
+  await eventually(
+    () => evaluate(`!!document.querySelector(${JSON.stringify(selector)}+':not(:disabled)')`),
+    'Chat navigation is not ready',
+  )
+  await evaluate(`document.querySelector(${JSON.stringify(selector)}).click(); true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.chat-navigation [aria-current=true]')?.dataset.sessionId===${JSON.stringify(id)} && !document.querySelector(${JSON.stringify(selector)}).disabled`,
+      ),
+    'Selected Chat did not finish opening',
+  )
+}
+
 async function waitForBrowserPort(profile, browser) {
   return eventually(
     async () => {
@@ -228,6 +244,267 @@ const fakeOpenCode = dir => ({
   executable: process.execPath,
   launcherArgs: [fileURLToPath(new URL('./fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
   version: 'fake-1.0.0',
+})
+
+test('chat and deck controls show one effective research choice and matching input guidance', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-intent-ui-'))
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), openCode: fakeOpenCode(dir) })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [aria-current=true]')`), 'Chat not ready')
+  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'Bạn muốn trao đổi điều gì?')
+  await eventually(
+    () => evaluate(`!!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`),
+    'Conversation mode is not ready',
+  )
+  const mode = async value =>
+    evaluate(`{
+    const control=document.querySelector('[aria-label="Chế độ hội thoại"]');
+    control.value=${JSON.stringify(value)};control.dispatchEvent(new Event('change'));
+  } true`)
+  await mode('deck')
+  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'Hãy mô tả deck bạn muốn')
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').placeholder`),
+    'Mô tả deck hoặc trả lời các câu hỏi ở trên…',
+  )
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checkVisibility()`), false)
+  assert.equal(
+    await evaluate(`document.querySelectorAll('.deck-workflow input')[2].disabled`),
+    true,
+    'Unconfigured research must not look available in deck mode',
+  )
+  await mode('chat')
+  assert.equal(await evaluate(`document.querySelector('.public-research-choice').checkVisibility()`), true)
+  assert.equal(
+    await evaluate(`document.querySelector('[aria-label="Thông tin tìm nguồn"]').textContent`),
+    'Chưa cấu hình',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.public-research-choice').checked`),
+    false,
+    'Changing mode must not grant generic Chat research',
+  )
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').placeholder`), 'Nhập tin nhắn của bạn…')
+})
+
+test('research checkbox stays beside its clickable label on desktop and mobile without sending a request', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-research-control-'))
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    researchAccess: {
+      key: 'local-research-fixture',
+      fetch: async () =>
+        Response.json({
+          key: { usage: 0, limit: null },
+          account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+        }),
+    },
+  })
+  session = await openBrowser(dir, 900, 800)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`,
+      ),
+    'Chat is not ready for research selection',
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.public-research-choice:not(:disabled)')`),
+    'Research control not ready',
+  )
+  for (const width of [900, 390]) {
+    await protocol.call('Emulation.setDeviceMetricsOverride', {
+      width,
+      height: 800,
+      deviceScaleFactor: 1,
+      mobile: width === 390,
+    })
+    assert.equal(
+      await evaluate(`(() => {
+      const input=document.querySelector('.public-research-choice');
+      const box=input.getBoundingClientRect();const text=input.closest('label').querySelector('span').getBoundingClientRect();
+      return Math.abs(box.y+box.height/2-text.y-text.height/2)<2 && box.right<=text.left;
+    })()`),
+      true,
+      `Checkbox and label must share one line at ${width}px`,
+    )
+    assert.equal(
+      await evaluate(
+        `document.querySelector('.composer').scrollWidth<=document.querySelector('.composer').clientWidth`,
+      ),
+      true,
+    )
+  }
+  assert.deepEqual(
+    await evaluate(`(() => {
+    const input=document.querySelector('.public-research-choice');const label=input.closest('label');label.click();
+    return { checked:input.checked,disabled:input.disabled,associated:label.control===input };
+  })()`),
+    { checked: true, disabled: false, associated: true },
+  )
+  await evaluate(`document.querySelector('[aria-label="Thông tin tìm nguồn"]').click(); true`)
+  assert.equal(await evaluate(`document.querySelector('.research-dialog').open`), true)
+  assert.equal(
+    await evaluate(`document.querySelector('.public-research-choice').checked`),
+    true,
+    'Opening service information must not toggle the research choice',
+  )
+  assert.equal(
+    await requestCount(
+      app,
+      await evaluate(`document.querySelector('.chat-navigation [aria-current=true]').dataset.sessionId`),
+    ),
+    0,
+  )
+})
+
+test('Outline review names its exact target, hides resolved interview questions and selects revision explicitly', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-review-ui-'))
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const database = join(dir, 'data', 'db')
+  const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
+  await chats.bind('review-controls', { provider: 'fixture', model: 'review' })
+  await chats.append('review-controls', [
+    { role: 'user', content: 'Lập Outline' },
+    { role: 'assistant', content: 'Bản đầu tiên' },
+    { role: 'user', content: 'Sửa phần giới thiệu' },
+    {
+      role: 'assistant',
+      content:
+        '# Đã cập nhật Outline\n\n**Hai việc cần làm**\n\n- Đọc tài liệu\n- Xem [nguồn](https://example.com/source)\n\n```html\n<script>window.__unsafeMessage=true</script>\n```\n\n<img src=x onerror="window.__unsafeMessage=true">\n\n[Không mở](javascript:alert(1))\n\n![Ảnh](https://example.com/image.png)',
+    },
+  ])
+  chats.close()
+  const decks = new DeckService(join(database, 'decks.sqlite'))
+  const b = decks.saveBrief('review-controls', {
+    expectedVersion: 0,
+    draft: {
+      ...brief(),
+      purpose: 'Explain',
+      proposedSlideCount: 1,
+      answers: [{ topic: 'images', value: 'None' }],
+      sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
+    },
+  })
+  const draft = {
+    overview: 'Review the plan',
+    revisionSuggestions: [],
+    slides: [
+      {
+        title: 'Introduction',
+        content: 'Explain the purpose',
+        blocks: [{ kind: 'bullets', items: ['Explain the purpose'] }],
+        sources: [],
+      },
+    ],
+  }
+  const first = decks.proposeBoundOutline('review-controls', {
+    requestId: 'review-first',
+    responseIndex: 1,
+    expectedOutline: null,
+    expectedBrief: { briefId: b.briefId, version: b.version },
+    draft,
+  })
+  const current = decks.proposeBoundOutline('review-controls', {
+    requestId: 'review-second',
+    responseIndex: 3,
+    expectedOutline: { outlineId: first.outlineId, version: first.version },
+    expectedBrief: { briefId: b.briefId, version: b.version },
+    draft: { ...draft, overview: 'Updated plan' },
+  })
+  decks.close()
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('review'), openCode: fakeOpenCode(dir) })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [aria-current=true]')`), 'Chat not ready')
+  await eventually(
+    () => evaluate(`!!document.querySelector('[data-session-id="review-controls"]:not(:disabled)')`),
+    'Chat navigation not ready',
+  )
+  await evaluate(`document.querySelector('[data-session-id="review-controls"]').click(); true`)
+  await eventually(
+    () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
+    'Outline missing',
+  )
+  assert.equal(
+    await evaluate(`document.querySelectorAll('.message.assistant h2').length`),
+    1,
+    'Assistant headings and lists should be readable rather than literal Markdown',
+  )
+  assert.equal(await evaluate(`document.querySelector('.message.assistant strong')?.textContent`), 'Hai việc cần làm')
+  assert.equal(await evaluate(`document.querySelector('.message.assistant a')?.href`), 'https://example.com/source')
+  assert.equal(
+    await evaluate(`document.querySelectorAll('.message.assistant a').length`),
+    1,
+    'Image syntax must remain literal text',
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelectorAll('.message.assistant script,.message.assistant img,.message.assistant a[href^="javascript:"]').length`,
+    ),
+    0,
+  )
+  assert.equal(await evaluate(`window.__unsafeMessage===undefined`), true)
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.outline-dock').textContent.includes('Outline v${current.version} · 1 slide · Brief v${b.version}')`,
+    ),
+    true,
+  )
+  assert.equal(await evaluate(`document.querySelector('.outline-dock').dataset.outlineId`), current.outlineId)
+  assert.equal(
+    await evaluate(`document.querySelector('.deck-workflow [aria-label="Câu hỏi cần bổ sung"]').hidden`),
+    true,
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.outline-proposal[data-status=current] [aria-label="Nội dung dự kiến"]').textContent.split('Explain the purpose').length-1`,
+    ),
+    1,
+    'Structured content must not repeat the same legacy content paragraph',
+  )
+  await evaluate(`{
+    const action=document.querySelector('[aria-label="Loại yêu cầu Outline"]');
+    action.value='question';action.dispatchEvent(new Event('change'));
+    const input=document.querySelector('.composer textarea');input.value='Giữ bản nháp này';input.dispatchEvent(new Event('input'));
+    [...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent==='Yêu cầu sửa outline').click();
+  } true`)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value`), 'revise')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Giữ bản nháp này')
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('.composer textarea')`), true)
+  await protocol.call('Page.reload')
+  await eventually(
+    () => evaluate(`document.querySelector('.outline-dock')?.dataset.outlineId===${JSON.stringify(current.outlineId)}`),
+    'Reload lost the current target',
+  )
 })
 
 test('Create deck UI collects missing answers, revises, confirms once, previews and reopens published slides', {
@@ -461,6 +738,71 @@ async function modelsEndpoint() {
   }
 }
 
+test('saving a Custom API model ID from the input makes it available without a separate Add click', {
+  timeout: 45000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-custom-provider-'))
+  const endpoint = await modelsEndpoint()
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await endpoint.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), openCode: fakeOpenCode(dir) })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`,
+      ),
+    'Chat is not ready',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click(); true`,
+  )
+  await eventually(() => evaluate(`document.querySelector('.settings-dialog').open`), 'Provider wizard missing')
+  await evaluate(`{
+    [...document.querySelectorAll('.settings-dialog button')].find(b=>b.textContent==='Tiếp tục →').click();
+    document.querySelector('[aria-label="Provider ID"]').value='River AI';
+  } true`)
+  assert.equal(
+    await evaluate(`document.querySelector('[aria-label="Provider ID"]').validity.patternMismatch`),
+    true,
+    'A display name with spaces must not be accepted as a provider URL identity',
+  )
+  await evaluate(`{
+    document.querySelector('[aria-label="Provider ID"]').value='custom-fixture';
+    document.querySelector('[aria-label="Display name"]').value='Custom fixture';
+    document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};
+    document.querySelector('.settings-dialog form').requestSubmit();
+  } true`)
+  await eventually(
+    () => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`),
+    'Connection was not saved',
+  )
+  await evaluate(
+    `document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.settings-dialog form').requestSubmit();true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('Đã lưu model')`),
+    'Model save did not finish',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`),
+    true,
+    'Save must persist the model ID still in the manual entry field',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.composer select').value`),
+    '',
+    'Adding a model must not choose it for the Chat automatically',
+  )
+})
+
 test('interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat', {
   timeout: 60000,
 }, async t => {
@@ -585,6 +927,10 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
         `document.querySelector('.chat-navigation nav button[aria-current=true]')?.dataset.sessionId !== ${JSON.stringify(chatId)}`,
       ),
     'Another chat could not be opened while a request runs',
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${chatId}"]:not(:disabled)')`),
+    'Chat navigation is not ready to return',
   )
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${chatId}"]').click(); true`)
   await eventually(
@@ -817,6 +1163,10 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
       () => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]'))`),
       'Initial chat did not finish opening',
     )
+    await eventually(
+      () => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="browser-deck"]:not(:disabled)')`),
+      'Deck chat navigation is not ready',
+    )
     await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
     await eventually(
       () => evaluate(`!!document.querySelector('.published-deck-sidebar .deck-slide-list [title*="Unpublished"]')`),
@@ -824,6 +1174,14 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     )
   }
   await navigate()
+  assert.equal(
+    await evaluate(`(() => {
+      const progress=document.querySelector('.deck-progress');const rect=progress.getBoundingClientRect();
+      return rect.width>1 && rect.height>1 && getComputedStyle(progress).clipPath==='none';
+    })()`),
+    true,
+    'Saved slide progress must be visible outside presentation mode',
+  )
   assert.equal(
     await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`),
     'Có slide',
@@ -899,7 +1257,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
       ),
     'Returning from pending lost the saved slide',
   )
-  await evaluate(`document.querySelector('.chat-navigation [data-session-id="large-deck"]').click(); true`)
+  await chooseChat(evaluate, 'large-deck')
   await eventually(
     () => evaluate(`document.querySelector('.published-deck-sidebar .deck-slide-list').children.length === 60`),
     'Large deck did not load',
@@ -911,7 +1269,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     true,
     'Large decks must scroll the filmstrip sideways without crowding out the canvas',
   )
-  await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
+  await chooseChat(evaluate, 'browser-deck')
   await eventually(
     () =>
       evaluate(
@@ -930,7 +1288,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
       ),
     'Empty chat did not open independently',
   )
-  await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
+  await chooseChat(evaluate, 'browser-deck')
   await eventually(
     () =>
       evaluate(
@@ -1186,9 +1544,7 @@ test('public research is explicit, config checks the free key and stored excerpt
     () => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]')`),
     'Research Chat not listed',
   )
-  await evaluate(
-    `document.querySelector('.chat-navigation button[data-session-id="${researchChat.sessionId}"]').click(); true`,
-  )
+  await chooseChat(evaluate, researchChat.sessionId)
   await eventually(
     () =>
       evaluate(
@@ -1285,7 +1641,7 @@ test('attachments survive reload and Chat switching, preview safely, reject inva
       ),
     'Chat list missing',
   )
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await chooseChat(evaluate, chat.sessionId)
   await eventually(
     () =>
       evaluate(
@@ -1359,11 +1715,9 @@ test('attachments survive reload and Chat switching, preview safely, reject inva
       ),
     'Reload lost attachment or text',
   )
-  await evaluate(
-    `document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`,
-  )
+  await chooseChat(evaluate, other.sessionId)
   await eventually(() => evaluate(`!document.querySelector('.attachment-row')`), 'Attachment leaked to another Chat')
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await chooseChat(evaluate, chat.sessionId)
   await eventually(() => evaluate(`!!document.querySelector('.attachment-row')`), 'Switch lost attachment')
   await add('bad.txt', 'new Uint8Array([0,1,2])')
   await eventually(
@@ -1435,7 +1789,7 @@ test('step approval survives reload and chat switching; refusal continues and St
       () => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${id}"]:not(:disabled)')`),
       'Chat list missing',
     )
-    await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${id}"]').click(); true`)
+    await chooseChat(evaluate, id)
   }
   await visit(chat.sessionId)
   const visible = `document.querySelector('.step-approval:not([hidden])')`
@@ -1444,11 +1798,9 @@ test('step approval survives reload and chat switching; refusal continues and St
   })
   assert.equal(await evaluate(`${visible}.textContent.includes('outside.txt')`), true)
   assert.equal(await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').hidden`), false)
-  await evaluate(
-    `document.querySelector('.chat-navigation button[data-session-id="${other.sessionId}"]').click(); true`,
-  )
+  await chooseChat(evaluate, other.sessionId)
   await eventually(() => evaluate(`!${visible}`), 'Approval leaked into another chat')
-  await evaluate(`document.querySelector('.chat-navigation button[data-session-id="${chat.sessionId}"]').click(); true`)
+  await chooseChat(evaluate, chat.sessionId)
   await eventually(() => evaluate(`!!${visible}`), 'Approval lost on chat switch')
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!${visible}`), 'Approval lost on reload')

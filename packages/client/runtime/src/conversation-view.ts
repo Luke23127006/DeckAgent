@@ -2,6 +2,7 @@ import type { HistoryMessage, RequestSnapshot, RequestStatus, StoredActivity, St
 import { button, element } from './dom.ts'
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { OutlineView } from './outline-view.ts'
+import { messageContent } from './message-content.ts'
 import type { OutlineAction } from './outline-view.ts'
 import { isActive } from './host-client.ts'
 import { failureFeedback, offersSettings, requestFeedback } from './request-feedback.ts'
@@ -52,6 +53,7 @@ interface RequestRow {
   readonly diagnostic: HTMLElement
   readonly diagnosticCode: HTMLElement
   readonly reply: HTMLElement
+  replyText: string
   readonly empty: HTMLElement
   readonly list: HTMLElement
   readonly activities: Map<string, ActivityRow>
@@ -203,7 +205,7 @@ export class ConversationView {
     const diagnostic = element('details', undefined, 'request-diagnostic')
     const diagnosticCode = element('p')
     diagnostic.append(element('summary', 'Chi tiết kỹ thuật'), diagnosticCode)
-    const reply = element('p', undefined, 'request-live-reply')
+    const reply = element('div', undefined, 'request-live-reply')
     reply.hidden = true
     reply.setAttribute('aria-live', 'polite')
     const empty = element('p', 'Chưa ghi nhận hoạt động.')
@@ -224,6 +226,7 @@ export class ConversationView {
       diagnostic,
       diagnosticCode,
       reply,
+      replyText: '',
       empty,
       list,
       activities: new Map(),
@@ -270,7 +273,10 @@ export class ConversationView {
     // The reply as it arrives; once the request ends, the saved conversation shows it instead.
     const partial = isActive(state) ? (live?.text ?? '') : ''
     row.reply.hidden = !partial
-    if (row.reply.textContent !== partial) row.reply.textContent = partial
+    if (row.replyText !== partial) {
+      row.reply.replaceChildren(messageContent(partial))
+      row.replyText = partial
+    }
     const actionsKey = `${state}|${errorCode ?? ''}|${stored?.historyStart ?? ''}`
     if (row.actionsKey !== actionsKey) {
       row.actionsKey = actionsKey
@@ -406,7 +412,7 @@ export class ConversationView {
         )
       else {
         node.setAttribute('aria-label', value.role === 'assistant' ? 'DeckAgent' : 'Bạn')
-        node.append(element('p', value.content))
+        node.append(value.role === 'assistant' ? messageContent(value.content) : element('p', value.content))
         if (value.role === 'user' && value.attachments?.length) {
           const attachments = element('div', undefined, 'message-attachments')
           for (const attachment of value.attachments)

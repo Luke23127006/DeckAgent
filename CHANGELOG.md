@@ -23,6 +23,10 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Fixed
 
+- Keep Chat and Create deck guidance, research permissions and Outline revision targets aligned with the current workflow while preserving the interface layout and theme.
+- Keep the research checkbox beside its label, show deck publication progress and render assistant text with safe, limited formatting and readable Brief details.
+- Reject invalid custom provider IDs before sending a request, save pending model IDs and distinguish saved settings from a failed interface refresh.
+
 - Keep Chat navigation disabled while a Chat is being created.
 
 ### Changed

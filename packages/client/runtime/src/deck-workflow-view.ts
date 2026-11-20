@@ -2,6 +2,7 @@ import type { DeckRequest } from '@deckagent/host-api'
 import type { OutlineProposal } from '@deckagent/deck'
 import type { BriefClient } from './brief-client.ts'
 import { button, element } from './dom.ts'
+import { briefDetails } from './brief-view.ts'
 
 /** Collects explicit user choices; only Host snapshots determine versions and locks. */
 export class DeckWorkflowView {
@@ -19,21 +20,27 @@ export class DeckWorkflowView {
   private readonly format = element('select')
   private readonly action = element('select')
   private readonly questions = element('div')
+  private readonly blockers = element('div')
   private readonly summary = element('details')
   private readonly skip: HTMLButtonElement
+  private researchAvailable = false
   private rendered = ''
 
   constructor(
     private readonly client: BriefClient,
     private readonly choose: (text: string) => void,
     skip: () => void,
+    private readonly changed: () => void = () => {},
   ) {
     this.node.setAttribute('aria-label', 'Chuẩn bị deck')
+    this.questions.setAttribute('aria-label', 'Câu hỏi cần bổ sung')
+    this.blockers.setAttribute('aria-label', 'Thông tin cần xử lý')
     this.mode.setAttribute('aria-label', 'Chế độ hội thoại')
     this.mode.append(new Option('Chat thông thường', 'chat'), new Option('Tạo deck', 'deck'))
     this.mode.onchange = () => {
       this.active = this.mode.value === 'deck'
       this.render()
+      this.changed()
     }
     this.node.append(this.mode)
     for (const [input, label] of [
@@ -45,6 +52,8 @@ export class DeckWorkflowView {
       const row = element('label', label)
       row.prepend(input)
       this.node.append(row)
+      if (input === this.research)
+        row.title = 'Truy vấn được gửi tới Tavily và có thể chứa thông tin từ tài liệu; chỉ dùng quota miễn phí.'
     }
     this.images.setAttribute('aria-label', 'Lựa chọn ảnh')
     this.images.append(
@@ -63,8 +72,9 @@ export class DeckWorkflowView {
       new Option('Chỉ hỏi về Outline', 'question'),
       new Option('Làm rõ yêu cầu', 'clarify'),
     )
+    this.action.onchange = () => this.changed()
     this.skip = button('Bỏ qua câu hỏi còn lại', skip)
-    this.node.append(this.format, this.images, this.action, this.questions, this.skip, this.summary)
+    this.node.append(this.format, this.images, this.action, this.questions, this.blockers, this.skip, this.summary)
     this.render()
   }
 
@@ -101,6 +111,31 @@ export class DeckWorkflowView {
     this.render()
   }
 
+  get preparingDeck(): boolean {
+    return this.active && !this.state?.brief.locked
+  }
+
+  get inputHint(): string {
+    if (!this.preparingDeck) return 'Nhập tin nhắn của bạn…'
+    if (!this.current) return 'Mô tả deck hoặc trả lời các câu hỏi ở trên…'
+    if (this.action.value === 'question') return 'Nhập câu hỏi về Outline; nội dung sẽ được giữ nguyên…'
+    if (this.action.value === 'clarify') return 'Làm rõ yêu cầu trước khi sửa Outline…'
+    return 'Mô tả thay đổi bạn muốn cho Outline hiện tại…'
+  }
+
+  setResearchAvailable(available: boolean): void {
+    if (this.researchAvailable === available) return
+    this.researchAvailable = available
+    this.render()
+  }
+
+  requestRevision(): void {
+    this.active = true
+    this.action.value = 'revise'
+    this.render()
+    this.changed()
+  }
+
   command(skip = false): DeckRequest | undefined {
     if (!this.active || this.state?.brief.locked) return undefined
     if (!this.state) throw new Error('BRIEF_UNAVAILABLE')
@@ -133,16 +168,30 @@ export class DeckWorkflowView {
     for (const control of this.node.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
       'input,select,button',
     ))
-      control.disabled = this.busy || locked
-    this.mode.disabled = this.busy
+      control.disabled = this.busy || locked || !this.state
+    this.mode.disabled = this.busy || !this.state
+    this.research.disabled ||= !this.researchAvailable && !this.research.checked
     for (const child of this.node.children)
       if (child instanceof HTMLElement && child !== this.mode) child.hidden = !this.active
+    if (locked)
+      for (const child of this.node.children)
+        if (child instanceof HTMLElement && child !== this.mode && child !== this.summary) child.hidden = true
     this.action.hidden = !this.active || !this.current || locked
     this.skip.hidden = !this.active || !!this.current || locked
-    const key = `${this.sessionId}|${this.state?.brief.version}|${this.active}|${locked}`
+    this.questions.hidden = !this.active || !!this.current || locked
+    this.blockers.hidden = !this.active || locked || !this.state?.state.blockers.length
+    const key = JSON.stringify([
+      this.sessionId,
+      this.state?.brief.version,
+      this.current?.outlineId,
+      this.active,
+      locked,
+      this.state?.state,
+    ])
     if (this.rendered === key) return
     this.rendered = key
     this.questions.replaceChildren()
+    this.blockers.replaceChildren()
     if (this.active && this.state && !locked) {
       for (const q of this.state.state.questions) {
         const row = element('div')
@@ -154,32 +203,18 @@ export class DeckWorkflowView {
         }
         this.questions.append(row)
       }
-      for (const blocker of this.state.state.blockers) this.questions.append(element('p', blocker.message))
+      for (const blocker of this.state.state.blockers) this.blockers.append(element('p', blocker.message))
     }
     this.summary.replaceChildren(
       element('summary', locked ? 'Brief đã khóa cho deck này' : 'Brief hiện tại và giả định'),
     )
     const brief = this.state?.brief.current
     if (brief) {
-      const d = brief.draft
-      for (const [label, value] of [
-        ['Chủ đề', d.topic],
-        ['Người nghe', d.audience],
-        ['Mục tiêu', d.purpose],
-        ['Thời lượng (phút)', d.durationMinutes],
-        ['Ngôn ngữ', d.language],
-        ['Số slide', d.proposedSlideCount],
-        ['Định dạng', d.requestedFormat],
-        ['Template', d.template?.id],
-        ['Design System', d.designSystem?.id],
-      ] as const)
-        this.summary.append(element('p', `${label}: ${value ?? 'Chưa xác định'}`))
-      for (const a of d.answers) this.summary.append(element('p', `${a.topic}: ${a.value}`))
-      for (const r of d.requirements) this.summary.append(element('p', `Yêu cầu: ${r}`))
-      for (const a of d.assumptions) this.summary.append(element('p', `Giả định: ${a}`))
-      for (const r of d.sources.refs)
-        this.summary.append(element('p', `Nguồn ${r.kind}: ${r.sourceId} · v${r.version}`))
-      for (const r of d.images.unmetRequirements) this.summary.append(element('p', `Ảnh chưa đáp ứng: ${r}`))
+      const detail = briefDetails(
+        brief,
+        locked ? 'Brief đã khóa cho deck này' : `Brief hiện tại · v${brief.version} và giả định`,
+      )
+      this.summary.replaceChildren(...detail.childNodes)
     }
   }
 }

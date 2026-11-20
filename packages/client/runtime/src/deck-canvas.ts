@@ -225,7 +225,9 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
             : phase === 'pending'
               ? ' · Đã xác nhận, chưa xếp lịch'
               : ' · Đang tạo'
-      progress.textContent += ` · HTML · ${snapshot.generation.design.template.id} · ${snapshot.generation.design.designSystem.id}${snapshot.generation.formatLocked ? ' · Đã khóa' : ''}`
+      progress.title = `HTML · ${snapshot.generation.design.template.id} · ${snapshot.generation.design.designSystem.id}${snapshot.generation.formatLocked ? ' · Đã khóa' : ''}`
+    } else {
+      progress.title = ''
     }
     for (const [id, item] of slideButtons)
       if (!snapshot.slides.some(slide => slide.slideId === id)) {
