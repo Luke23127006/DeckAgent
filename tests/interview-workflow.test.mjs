@@ -128,6 +128,21 @@ async function fixture(t) {
   }
 }
 
+test('web images require an explicit image choice and do not enable text research', async t => {
+  const x = await fixture(t)
+  const draft = { ...x.full, images: { mode: 'public-research', attachmentIds: [], unmetRequirements: [] } }
+  await x.write({ brief: draft, outline: x.plan })
+  const sourceChoice = { material: false, modelKnowledge: true, publicResearch: false }
+  await x.send('collect', 0, null, { sourceChoice })
+  assert.equal((await x.f.call(`sessions/${x.id}/brief`)).data.version, 0)
+  const accepted = await x.send('collect', 0, null, { sourceChoice, imageChoice: 'public-research' })
+  const current = (await x.f.call(`sessions/${x.id}/brief`)).data.current
+  assert.ok(current, JSON.stringify(accepted.events.filter(e => e.kind === 'text')))
+  const saved = current.draft
+  assert.equal(saved.images.mode, 'public-research')
+  assert.equal(saved.sources.publicResearch, false)
+})
+
 test('full interview creates only an Outline, revisions keep history, and pure questions/clarification cannot mutate it', async t => {
   const x = await fixture(t)
   await x.write({ brief: x.full, outline: x.plan })

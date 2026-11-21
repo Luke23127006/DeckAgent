@@ -180,13 +180,18 @@ export function artifactRenderer(root: string) {
       await protocol.call('Page.setDocumentContent', { frameId: tree.frameTree.frame.id, html })
       const expression = `(async()=>{
         await document.fonts.ready;
+        const failure=(code,element)=>{
+          const binding=element?.closest('[data-node-id]')?.getAttribute('data-node-id');
+          const rect=element?.getBoundingClientRect();
+          return {code,path:binding?'document.'+binding:'nativeSource.'+(element?.tagName.toLowerCase()??'body'),expected:rect?'Visible bounds inside 1280x720; measured '+[rect.left,rect.top,rect.right,rect.bottom].map(n=>Math.round(n)).join(','):'All required text and images visible inside 1280x720'};
+        };
         const images = await Promise.all(Array.from(document.images, i=>i.decode().then(()=>i.naturalWidth>0,()=>false)));
-        if(images.some(ok=>!ok)) return 'ARTIFACT_IMAGE_UNREADABLE';
+        if(images.some(ok=>!ok)) return failure('ARTIFACT_IMAGE_UNREADABLE',document.images[images.indexOf(false)]);
         const normalize=s=>s.replace(/\\s+/g,' ').trim();
         const text=normalize(document.body.innerText);
-        if(!text && !images.length) return 'ARTIFACT_EMPTY';
+        if(!text && !images.length) return failure('ARTIFACT_EMPTY');
         const required=${JSON.stringify(requiredText)};
-        if(required.some(t=>!text.includes(normalize(t)))) return 'ARTIFACT_REQUIRED_CONTENT_MISSING';
+        if(required.some(t=>!text.includes(normalize(t)))) return failure('ARTIFACT_REQUIRED_CONTENT_MISSING');
         const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
         while(walker.nextNode()){
           const n=walker.currentNode;
@@ -194,26 +199,27 @@ export function artifactRenderer(root: string) {
           const range=document.createRange();range.selectNodeContents(n);
           const rect=range.getBoundingClientRect();
           const s=getComputedStyle(n.parentElement);
-          if(!rect.width || !rect.height || s.visibility!=='visible' || s.color==='rgba(0, 0, 0, 0)') return 'ARTIFACT_UNREADABLE';
-          if(rect.left<0 || rect.top<0 || rect.right>1281 || rect.bottom>721) return 'ARTIFACT_OVERFLOW';
+          if(!rect.width || !rect.height || s.visibility!=='visible' || s.color==='rgba(0, 0, 0, 0)') return failure('ARTIFACT_UNREADABLE',n.parentElement);
+          if(rect.left<0 || rect.top<0 || rect.right>1281 || rect.bottom>721) return failure('ARTIFACT_OVERFLOW',n.parentElement);
           let background='rgb(255, 255, 255)';
           for(let e=n.parentElement;e;e=e.parentElement){
             const p=getComputedStyle(e);const r=e.getBoundingClientRect();
-            if(Number(p.opacity)===0 || p.visibility!=='visible') return 'ARTIFACT_UNREADABLE';
+            if(Number(p.opacity)===0 || p.visibility!=='visible') return failure('ARTIFACT_UNREADABLE',n.parentElement);
             if(background==='rgb(255, 255, 255)' && p.backgroundColor!=='rgba(0, 0, 0, 0)') background=p.backgroundColor;
-            if(['hidden','clip','auto','scroll'].includes(p.overflow) && (rect.right>r.right+1 || rect.bottom>r.bottom+1 || rect.left<r.left-1 || rect.top<r.top-1)) return 'ARTIFACT_OVERFLOW';
+            if(['hidden','clip','auto','scroll'].includes(p.overflow) && (rect.right>r.right+1 || rect.bottom>r.bottom+1 || rect.left<r.left-1 || rect.top<r.top-1)) return failure('ARTIFACT_OVERFLOW',n.parentElement);
           }
-          if(s.color===background) return 'ARTIFACT_UNREADABLE';
+          if(s.color===background) return failure('ARTIFACT_UNREADABLE',n.parentElement);
         }
-        for(const image of document.images){const r=image.getBoundingClientRect();if(!r.width||!r.height||r.left<0||r.top<0||r.right>1281||r.bottom>721)return 'ARTIFACT_OVERFLOW'}
-        return 'ok';
+        for(const image of document.images){const r=image.getBoundingClientRect();if(!r.width||!r.height||r.left<0||r.top<0||r.right>1281||r.bottom>721)return failure('ARTIFACT_OVERFLOW',image)}
+        return {code:'ok'};
       })()`
       const report = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
       if (
         !object(report) ||
         report.exceptionDetails ||
         !object(report.result) ||
-        typeof report.result.value !== 'string'
+        !object(report.result.value) ||
+        typeof report.result.value.code !== 'string'
       )
         throw new DeckError('ARTIFACT_RENDERER_FAILED')
       const codes = [
@@ -223,8 +229,25 @@ export function artifactRenderer(root: string) {
         'ARTIFACT_UNREADABLE',
         'ARTIFACT_OVERFLOW',
       ]
-      if (report.result.value !== 'ok')
-        throw new DeckError(codes.includes(report.result.value) ? report.result.value : 'ARTIFACT_RENDERER_FAILED')
+      const validation = report.result.value
+      if (validation.code !== 'ok') {
+        if (
+          !codes.includes(String(validation.code)) ||
+          typeof validation.path !== 'string' ||
+          validation.path.length > 130 ||
+          typeof validation.expected !== 'string' ||
+          validation.expected.length > 250
+        )
+          throw new DeckError('ARTIFACT_RENDERER_FAILED')
+        throw new DeckError(String(validation.code), [
+          {
+            code: String(validation.code),
+            path: validation.path,
+            message: 'The rendered slide fails visibility or viewport validation.',
+            expected: validation.expected,
+          },
+        ])
+      }
     } catch (error) {
       if (caller.aborted) caller.throwIfAborted()
       throw error instanceof DeckError ? error : new DeckError('ARTIFACT_RENDERER_FAILED')

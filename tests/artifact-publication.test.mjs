@@ -4,7 +4,8 @@ import { mkdtemp, rm, readdir, writeFile, readFile, mkdir, symlink } from 'node:
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { DeckService, DeckError } from '../packages/presentation/deck/lib/index.js'
+import { createHash } from 'node:crypto'
 import { brief } from './fixtures/brief.mjs'
 
 async function fixture(t, options = {}, image) {
@@ -27,7 +28,9 @@ async function fixture(t, options = {}, image) {
   draft.proposedSlideCount = 1
   draft.purpose = 'Explain'
   draft.answers = [{ topic: 'images', value: 'None' }]
-  if (image) {
+  if (image?.web) {
+    draft.images = { mode: 'public-research', attachmentIds: [], unmetRequirements: [] }
+  } else if (image) {
     draft.images = { mode: 'attachments', attachmentIds: [image.attachmentId], unmetRequirements: [] }
     draft.sources.refs = [image.source]
   }
@@ -46,9 +49,13 @@ async function fixture(t, options = {}, image) {
           content: 'Explain the purpose',
           blocks: [
             { kind: 'bullets', items: ['Explain the purpose'] },
-            ...(image ? [{ kind: 'image', attachmentId: image.attachmentId }] : []),
+            ...(image?.web
+              ? [{ kind: 'web-image', query: 'solar energy', required: image.required !== false }]
+              : image
+                ? [{ kind: 'image', attachmentId: image.attachmentId }]
+                : []),
           ],
-          sources: image ? [image.source] : [],
+          sources: image && !image.web ? [image.source] : [],
         },
       ],
     },
@@ -71,6 +78,202 @@ async function fixture(t, options = {}, image) {
     },
   }
 }
+
+test('public image bytes and attribution survive reopen; missing essential images never publish', async t => {
+  const bytes = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
+  const digest = createHash('sha256').update(bytes).digest('hex')
+  let calls = 0
+  const credit = {
+    url: 'https://commons.wikimedia.org/wiki/File:Example.png',
+    author: 'Fixture author',
+    license: 'CC BY',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    unknownLicense: false,
+    retrievedAt: '2026-11-21T00:00:00Z',
+  }
+  const f = await fixture(
+    t,
+    {
+      researchImage: async () => {
+        calls++
+        return {
+          bytes,
+          originalDigest: digest,
+          parsedDigest: digest,
+          source: { sourceId: 'src-image-fixture', version: 1, kind: 'research' },
+          credit,
+        }
+      },
+    },
+    { web: true },
+  )
+  const cap = f.decks.generationCapability(f.grant, new AbortController().signal)
+  const slideId = f.p.slides[0].slideId
+  const stage = cap.begin(slideId, 'image-text')
+  await assert.rejects(cap.researchImage(stage.stageId, slideId, 'unconfirmed query'), {
+    code: 'ARTIFACT_ASSET_UNAVAILABLE',
+  })
+  assert.equal(calls, 0)
+  const asset = await cap.researchImage(stage.stageId, slideId, 'solar energy')
+  assert.deepEqual(await cap.researchImage(stage.stageId, slideId, 'solar energy'), asset)
+  assert.equal(calls, 1)
+  cap.append(stage.stageId, {
+    sequence: 0,
+    final: true,
+    text: `<h1>Purpose</h1><ul><li>Explain the purpose</li></ul><img src="asset:${asset.assetId}" alt="Solar">`,
+  })
+  await cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: 'web-publish' })
+  const reopened = new DeckService(join(f.dir, 'deck.sqlite'), {
+    artifactRoot: join(f.dir, 'artifacts'),
+    renderCheck: async () => {},
+    researchImage: async () => {
+      throw new Error('must not refetch saved images')
+    },
+  })
+  f.closeAfter.push(reopened)
+  const content = reopened.content('chat', slideId, 1)
+  assert.deepEqual(content.imageCredits, [credit])
+  assert.match(content.html, /data:image\/png;base64,/)
+  assert.equal(content.html.includes('https://upload.wikimedia.org'), false)
+  const missing = cap.begin(slideId, 'image-text')
+  cap.append(missing.stageId, {
+    sequence: 0,
+    final: true,
+    text: '<h1>Purpose</h1><ul><li>Explain the purpose</li></ul>',
+  })
+  await assert.rejects(
+    cap.publish({ stageId: missing.stageId, slideId, expectedRevision: 1, publicationId: 'missing-image' }),
+    { code: 'ARTIFACT_ASSET_UNAVAILABLE' },
+  )
+  assert.equal(f.decks.snapshot('chat').slides[0].revision, 1)
+  cap.discard(missing.stageId)
+  const unused = cap.begin(slideId, 'image-text')
+  await cap.researchImage(unused.stageId, slideId, 'solar energy')
+  cap.append(unused.stageId, {
+    sequence: 0,
+    final: true,
+    text: '<h1>Purpose</h1><ul><li>Explain the purpose</li></ul>',
+  })
+  await assert.rejects(
+    cap.publish({ stageId: unused.stageId, slideId, expectedRevision: 1, publicationId: 'unused-image' }),
+    { code: 'ARTIFACT_ASSET_INVALID' },
+  )
+  assert.equal(f.decks.snapshot('chat').slides[0].revision, 1)
+})
+
+test('layout retries reuse fetched web images without exhausting the request image budget', async t => {
+  const bytes = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
+  const digest = createHash('sha256').update(bytes).digest('hex')
+  let calls = 0
+  let renderCalls = 0
+  const f = await fixture(
+    t,
+    {
+      renderCheck: async () => {
+        if (renderCalls++ < 4) throw new DeckError('ARTIFACT_OVERFLOW')
+      },
+      researchImage: async () => {
+        calls++
+        return {
+          bytes,
+          originalDigest: digest,
+          parsedDigest: digest,
+          source: { sourceId: 'src-image-retry', version: 1, kind: 'research' },
+          credit: {
+            url: 'https://commons.wikimedia.org/wiki/File:Example.png',
+            author: 'Fixture author',
+            license: 'CC0',
+            licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+            unknownLicense: false,
+            retrievedAt: '2026-11-21T00:00:00Z',
+          },
+        }
+      },
+    },
+    { web: true },
+  )
+  const cap = f.decks.generationCapability(f.grant, new AbortController().signal)
+  const slideId = f.p.slides[0].slideId
+  let previous
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const stage = cap.begin(slideId, 'image-text')
+    const [image, repeated] = await Promise.all([
+      cap.researchImage(stage.stageId, slideId, 'solar energy'),
+      cap.researchImage(stage.stageId, slideId, 'solar energy'),
+    ])
+    assert.equal(repeated.assetId, image.assetId, 'Concurrent identical image calls must register one stage asset')
+    assert.notEqual(image.assetId, previous, 'A new stage gets its own managed asset identity')
+    previous = image.assetId
+    assert.equal(calls, 1, 'Layout retries must not search/download the same image again')
+    cap.append(stage.stageId, {
+      sequence: 0,
+      final: true,
+      text: `<h1>Purpose</h1><ul><li>Explain the purpose</li></ul><img src="asset:${image.assetId}" alt="Solar">`,
+    })
+    if (attempt < 4) {
+      await assert.rejects(
+        cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: `overflow-${attempt}` }),
+        { code: 'ARTIFACT_OVERFLOW' },
+      )
+      assert.equal(f.decks.snapshot('chat').slides[0].revision, 0)
+      cap.discard(stage.stageId)
+    } else {
+      await cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: 'retried-image' })
+    }
+  }
+  assert.equal(f.decks.snapshot('chat').slides[0].revision, 1)
+  assert.equal(f.decks.content('chat', slideId, 1).imageCredits[0].author, 'Fixture author')
+})
+
+test('an unavailable optional web image is omitted with saved metadata', async t => {
+  const f = await fixture(
+    t,
+    {
+      researchImage: async () => {
+        throw new Error('offline')
+      },
+    },
+    { web: true, required: false },
+  )
+  const cap = f.decks.generationCapability(f.grant, new AbortController().signal)
+  const slideId = f.p.slides[0].slideId
+  const stage = cap.begin(slideId, 'image-text')
+  await assert.rejects(cap.researchImage(stage.stageId, slideId, 'solar energy'))
+  cap.append(stage.stageId, { sequence: 0, final: true, text: '<h1>Purpose</h1><ul><li>Explain the purpose</li></ul>' })
+  await cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: 'optional-image' })
+  assert.deepEqual(f.decks.content('chat', slideId, 1).imageOmissions, ['solar energy'])
+})
+
+test('published provenance keeps real locations and rejects facts attributed only to model knowledge', async t => {
+  const f = await fixture(t)
+  const cap = f.decks.generationCapability(f.grant, new AbortController().signal)
+  const slide = f.p.slides[0]
+  const stage = cap.begin(slide.slideId, 'title-body')
+  assert.throws(
+    () => cap.provenance(stage.stageId, [{ text: 'Explain the purpose', kind: 'fact', origin: 'general-knowledge' }]),
+    { code: 'PROVENANCE_INVALID' },
+  )
+  cap.provenance(
+    stage.stageId,
+    [{ text: 'Explain the purpose', kind: 'wording', origin: 'general-knowledge' }],
+    'Explain the purpose to the audience with a concrete example.',
+  )
+  cap.append(stage.stageId, { sequence: 0, text: '<h1>Purpose</h1><p>Explain the purpose</p>', final: true })
+  await cap.publish({
+    stageId: stage.stageId,
+    slideId: slide.slideId,
+    expectedRevision: 0,
+    publicationId: 'with-provenance',
+  })
+  assert.deepEqual(f.decks.content('chat', slide.slideId, 1).provenance, [
+    { text: 'Explain the purpose', kind: 'wording', origin: 'general-knowledge' },
+  ])
+  assert.equal(
+    f.decks.content('chat', slide.slideId, 1).notes,
+    'Explain the purpose to the audience with a concrete example.',
+  )
+  assert.equal(f.decks.content('chat', slide.slideId, 1).html.includes('concrete example'), false)
+})
 
 test('chunk retries are exact, only finalized validated artifacts publish, and late writes preserve the last-good revision', async t => {
   const f = await fixture(t)

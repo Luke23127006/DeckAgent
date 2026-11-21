@@ -454,7 +454,8 @@ function controls() {
     !publishedDeck.hidden
   const pendingGeneration =
     deckModel.state.snapshot?.sessionId === current?.sessionId ? deckModel.state.snapshot?.generation : undefined
-  retryGeneration.hidden = pendingGeneration?.state !== 'pending'
+  retryGeneration.hidden = !pendingGeneration || !['pending', 'incomplete'].includes(pendingGeneration.state)
+  retryGeneration.textContent = pendingGeneration?.state === 'incomplete' ? 'Tiếp tục tạo deck' : 'Thử bắt đầu tạo deck'
   retryGeneration.disabled = !!activeId || (!!current && sending.has(current.sessionId))
   fitInput()
 }
@@ -619,17 +620,23 @@ async function follow(id: string, sessionId: string, expected: number) {
     }
   }
   if (control.signal.aborted || generation !== expected) return
-  await Promise.all([
-    showHistory(sessionId, expected),
-    showActivities(sessionId, expected),
-    showOutlines(sessionId, expected),
-  ])
-  await refresh()
-  if (current?.sessionId === sessionId && current.activeRequestId === id) {
-    const { activeRequestId: _ended, ...rest } = current
-    current = rest
+  try {
+    await Promise.all([
+      showHistory(sessionId, expected),
+      showActivities(sessionId, expected),
+      showOutlines(sessionId, expected),
+    ])
+    await refresh()
+  } finally {
+    // A saved terminal event ends this request even if a later projection read fails.
+    if (generation === expected) {
+      if (current?.sessionId === sessionId && current.activeRequestId === id) {
+        const { activeRequestId: _ended, ...rest } = current
+        current = rest
+      }
+      controls()
+    }
   }
-  controls()
 }
 async function open(listed: WebSession) {
   closePreview()
@@ -912,6 +919,8 @@ const openDeck = button('Mở deck', showDeck)
 const retryGeneration = button('Thử bắt đầu tạo deck', () => {
   const saved = deckModel.state.snapshot?.generation
   if (saved?.state === 'pending' && current?.sessionId === saved.receipt.sessionId) run(confirmTarget(saved.receipt))
+  else if (saved?.state === 'incomplete' && current?.sessionId === saved.receipt.sessionId)
+    run(submitRequest(input.value.trim() ? input.value : 'Tiếp tục hoàn thành các slide còn thiếu.', false, true))
 })
 retryGeneration.title = 'Thử bắt đầu với Outline đã xác nhận; không tạo một lần xác nhận mới.'
 retryGeneration.hidden = true
@@ -1013,8 +1022,14 @@ form.addEventListener('submit', event => {
   event.preventDefault()
   run(submitRequest(input.value))
 })
-async function submitRequest(text: string, skip = false): Promise<void> {
-  if (submit.disabled || !current) return
+async function submitRequest(text: string, skip = false, continueDeck = false): Promise<void> {
+  if (!current || (continueDeck ? retryGeneration.disabled : submit.disabled)) return
+  if (continueDeck && draftStates.get(current.sessionId)?.attachments?.length) {
+    status.hidden = false
+    status.dataset.kind = 'error'
+    status.textContent = 'Hãy gửi hoặc gỡ tệp đang soạn trước khi tiếp tục deck đã xác nhận. Bản nháp được giữ nguyên.'
+    return
+  }
   if (!text.trim() && !draftStates.get(current.sessionId)?.attachments?.length) return
   if ([...text].length > requestLimit) {
     status.hidden = false
@@ -1024,7 +1039,7 @@ async function submitRequest(text: string, skip = false): Promise<void> {
   }
   const id = current.sessionId,
     expected = generation
-  const command = workflow.command(skip)
+  const command = continueDeck ? undefined : workflow.command(skip)
   const publicResearch = command?.sourceChoice?.publicResearch ?? researchUI?.enabled(id) === true
   sending.add(id)
   controls()
@@ -1036,18 +1051,18 @@ async function submitRequest(text: string, skip = false): Promise<void> {
     if (!(await flushDraft(id))) return
     const accepted: RequestSnapshot = await enqueueDraft(id, async () => {
       const draft = draftStates.get(id)
+      const consumesDraft = draft?.revision !== undefined && (!continueDeck || draft.text === text)
       const accepted = await client.send({
         sessionId: id,
         input: text,
+        ...(continueDeck ? { continueDeck: true as const } : {}),
         publicResearch,
         ...(command ? { deck: command } : {}),
-        ...(draft?.revision === undefined
-          ? {}
-          : { draftRevision: draft.revision, attachmentIds: draft.attachmentIds ?? [] }),
+        ...(!consumesDraft ? {} : { draftRevision: draft!.revision, attachmentIds: draft!.attachmentIds ?? [] }),
       })
-      if (draft?.revision !== undefined)
+      if (consumesDraft)
         receiveDraft(
-          { sessionId: id, text: '', revision: draft.revision + 1, attachmentIds: [], attachments: [] },
+          { sessionId: id, text: '', revision: draft!.revision! + 1, attachmentIds: [], attachments: [] },
           true,
         )
       return accepted
@@ -1143,7 +1158,10 @@ async function confirmTarget(target: ConfirmationTarget): Promise<void> {
 }
 const timer = setInterval(() => {
   const saved = deckModel.state.snapshot
-  retryGeneration.hidden = saved?.sessionId !== current?.sessionId || saved?.generation?.state !== 'pending'
+  retryGeneration.hidden =
+    saved?.sessionId !== current?.sessionId ||
+    !saved?.generation ||
+    !['pending', 'incomplete'].includes(saved.generation.state)
   retryGeneration.disabled = !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
   if (!current?.activeRequestId || polling || disposed) return
   polling = true

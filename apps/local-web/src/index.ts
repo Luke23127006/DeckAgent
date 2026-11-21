@@ -8,6 +8,7 @@ import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/s
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
 import { WorkspaceError, WorkspaceRegistry } from '@deckagent/workspace-registry'
 import { DeckService } from '@deckagent/deck'
+import { HtmlFormatAdapter } from '@deckagent/html-format'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import {
   page,
@@ -39,10 +40,13 @@ import { BriefService } from './brief-service.ts'
 import { DeckWorkflow } from './deck-workflow.ts'
 import { ConfirmationService } from './confirmation-service.ts'
 import { GenerationWorkflow } from './generation-workflow.ts'
+import { generationReport } from './generation-report.ts'
+import { CommonsImages } from './commons-images.ts'
 import { artifactRenderer } from './artifact-renderer.ts'
 import type { RequestRuntime } from '@deckagent/host-api'
 
 export { ManagedAttachments } from './managed-attachments.ts'
+export { CommonsImages } from './commons-images.ts'
 export { TavilyClient } from './tavily.ts'
 export { prepareSourceTools } from './source-tools.ts'
 export { openToolBridge } from './opencode/mcp-bridge.ts'
@@ -62,6 +66,8 @@ export { pinnedVersion } from './opencode/config.ts'
 export type { OpenCodeOptions } from './opencode/runtime.ts'
 
 export interface LocalWebOptions {
+  /** Controlled image HTTP seam for tests; production uses fixed Wikimedia Commons hosts. */
+  readonly imageAccess?: { readonly fetch: typeof fetch }
   /** Tests may replace generation; production uses the same isolated CLI with confirmed phase tools. */
   readonly generationRuntime?: RequestRuntime
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -137,6 +143,7 @@ function body(value: unknown, key: string): unknown {
 export async function startLocalWeb(options: LocalWebOptions = {}) {
   const initial = options.selection ? { ...options.selection } : undefined
   const layout = await prepareStorage(options.dataDir ?? resolveStorageRoot())
+  const commonsImages = new CommonsImages(options.imageAccess?.fetch)
   let registry: WorkspaceRegistry | undefined
   let sessions: SqliteSessionStore | undefined
   let decks: DeckService | undefined
@@ -160,6 +167,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'))
       const sessionStore = sessions
       decks = new DeckService(join(layout.databases, 'decks.sqlite'), {
+        formats: [new HtmlFormatAdapter()],
+        researchImage: (_id, query, signal) => commonsImages.find(query, signal),
         artifactRoot: join(layout.files, 'decks'),
         renderCheck: artifactRenderer(join(layout.files, 'runtime', 'artifact-check')),
         preparedImage: async (id, attachmentId, signal) => {
@@ -355,8 +364,15 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       outlines: presentation,
       assets,
       requests: {
+        closingText: (sessionId, requestId, status) => generationReport(presentation, sessionId, requestId, status),
         store: requestStore,
-        runtime: new DeckWorkflow(runtime, presentation, store, briefs),
+        runtime: new DeckWorkflow(
+          runtime,
+          presentation,
+          store,
+          briefs,
+          options.generationRuntime ?? new GenerationWorkflow(runtime, store),
+        ),
         prepareTools: async (sessionId, attachmentIds, publicResearch) =>
           prepareSourceTools({
             sessionId,
@@ -444,6 +460,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           try {
             await host.close()
           } finally {
+            await commonsImages.close()
             await inputs.close()
             try {
               await catalog.close()
@@ -468,6 +485,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
     }
   } catch (error) {
+    await commonsImages.close()
     await preparation?.close()
     try {
       await providers?.close()

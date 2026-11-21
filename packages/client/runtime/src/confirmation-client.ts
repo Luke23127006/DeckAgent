@@ -51,6 +51,7 @@ export function decodeGeneration(v: unknown, sessionId: string): GenerationSnaps
     typeof v.selection.model !== 'string' ||
     !v.selection.model ||
     typeof v.formatLocked !== 'boolean' ||
+    (v.activeRequestId !== undefined && !id(v.activeRequestId)) ||
     (v.startedAt !== null && (typeof v.startedAt !== 'string' || !Number.isFinite(Date.parse(v.startedAt))))
   )
     return invalid()
@@ -60,12 +61,13 @@ export function decodeGeneration(v: unknown, sessionId: string): GenerationSnaps
     !state ||
     r.fingerprint !== v.design.fingerprint ||
     v.formatLocked !== (v.startedAt !== null) ||
-    (['pending', 'admitted'].includes(state) && v.startedAt !== null) ||
+    (['pending', 'admitted'].includes(state) && v.startedAt !== null && !v.activeRequestId) ||
     (['generating', 'generated'].includes(state) && v.startedAt === null)
   )
     return invalid()
   return {
     receipt: r,
+    ...(typeof v.activeRequestId === 'string' ? { activeRequestId: v.activeRequestId } : {}),
     state,
     format: 'html',
     design: v.design,
@@ -100,6 +102,7 @@ export class ConfirmationClient {
         'SOURCE_UNAVAILABLE',
         'BRIEF_STALE',
         'BRIEF_INCOMPLETE',
+        'IMAGE_PREPARATION_REQUIRED',
         'OUTLINE_STALE',
         'OUTLINE_ALREADY_CONFIRMED',
         'SESSION_BUSY',

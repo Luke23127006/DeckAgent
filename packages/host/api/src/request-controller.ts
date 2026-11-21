@@ -54,6 +54,7 @@ export class RequestController {
       attachmentIds?: readonly string[],
       publicResearch?: boolean,
     ) => Promise<PreparedTools>,
+    private readonly closingText?: (sessionId: string, requestId: string, status: TerminalStatus) => string | undefined,
   ) {}
 
   async submit(request: AgentRequest, admission?: RequestAdmission): Promise<RequestSnapshot> {
@@ -75,7 +76,8 @@ export class RequestController {
       if (this.store.activeFor(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
       if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
       const prepared = admission?.prepared ?? (await this.runtime.prepare(request))
-      const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds, request.publicResearch)
+      const publicResearch = prepared.publicResearch ?? request.publicResearch
+      const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds, publicResearch)
       if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
       const requestId = admission?.requestId ?? `req-${randomUUID()}`
       let admitted: StoredRequest
@@ -85,7 +87,7 @@ export class RequestController {
           sessionId: request.sessionId,
           input: request.input,
           selection: prepared.selection,
-          ...(request.publicResearch === undefined ? {} : { publicResearch: request.publicResearch }),
+          ...(publicResearch === undefined ? {} : { publicResearch }),
           ...(request.attachmentIds === undefined ? {} : { attachmentIds: request.attachmentIds }),
           ...(request.draftRevision === undefined ? {} : { draftRevision: request.draftRevision }),
         })
@@ -282,6 +284,15 @@ export class RequestController {
     delete execution.waiting
     waiting?.resolve(false)
     let written: readonly RequestEvent[] | undefined
+    try {
+      const text = this.closingText?.(execution.sessionId, execution.requestId, status)
+      if (text) this.publish(this.store.append(execution.requestId, { kind: 'text', part: 'generation-summary', text }))
+    } catch {
+      if (status === 'completed') {
+        status = 'failed'
+        errorCode = 'REQUEST_NOT_SAVED'
+      }
+    }
     try {
       written = this.store.finish(execution.requestId, status, errorCode)
     } catch {

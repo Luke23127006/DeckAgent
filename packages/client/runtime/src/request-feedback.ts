@@ -1,6 +1,14 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  IMAGE_PREPARATION_REQUIRED: [
+    'Chưa chuẩn bị đủ ảnh bắt buộc',
+    'Sửa Outline để đổi truy vấn ảnh, chọn ảnh khác hoặc xác nhận ảnh không bắt buộc, rồi xem lại trước khi xác nhận.',
+  ],
+  SLIDE_CORRECTION_LIMIT: [
+    'Slide đã hết lượt sửa trong yêu cầu này',
+    'Xem lỗi kiểm tra và các slide đã lưu. Hệ thống dừng để tránh lặp sửa vô hạn.',
+  ],
   BRIEF_STALE: ['Brief đã thay đổi', 'Mở lại chat để đọc Brief hiện tại trước khi gửi lại. Bản nháp được giữ.'],
   OUTLINE_STALE: ['Outline đã thay đổi', 'Đọc đề xuất hiện tại trước khi sửa hoặc xác nhận lại.'],
   CONFIRMATION_CONFLICT: [
@@ -158,6 +166,14 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   REQUEST_FAILED: [
     'Yêu cầu chưa hoàn tất',
     'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.',
+  ],
+  INVALID_RESPONSE: [
+    'Chưa đọc được dữ liệu từ Host',
+    'Tải lại giao diện hoặc kết nối lại để đọc phần đã lưu. Kiểm tra trạng thái yêu cầu trước khi gửi lại.',
+  ],
+  OUTLINE_UNAVAILABLE: [
+    'Chưa tải được Outline',
+    'Kết nối lại để đọc Outline đã lưu. Kiểm tra trạng thái yêu cầu trước khi gửi lại.',
   ],
   PROVIDER_HTTP: [
     'Nhà cung cấp model báo lỗi',

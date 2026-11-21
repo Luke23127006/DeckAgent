@@ -22,7 +22,6 @@ __pycache__/
 /.pnpm-store/
 /node_modules/
 **/node_modules/
-/vendor/*/lib/
 /packages/*/*/lib/
 /apps/*/lib/
 /apps/local-web/resources/opencode/

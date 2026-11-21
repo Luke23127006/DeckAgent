@@ -23,6 +23,20 @@ function block(v: unknown): ContentBlock {
   if (v.kind === 'bullets' && only(v, ['kind', 'items']) && strings(v.items) && v.items.length)
     return { kind: 'bullets', items: v.items }
   if (
+    v.kind === 'web-image' &&
+    only(v, ['kind', 'query', 'caption', 'required']) &&
+    text(v.query) &&
+    v.query.length <= 500 &&
+    (v.caption === undefined || text(v.caption)) &&
+    (v.required === undefined || typeof v.required === 'boolean')
+  )
+    return {
+      kind: 'web-image',
+      query: v.query,
+      ...(typeof v.caption === 'string' ? { caption: v.caption } : {}),
+      ...(typeof v.required === 'boolean' ? { required: v.required } : {}),
+    }
+  if (
     v.kind === 'image' &&
     only(v, ['kind', 'attachmentId', 'caption']) &&
     typeof v.attachmentId === 'string' &&

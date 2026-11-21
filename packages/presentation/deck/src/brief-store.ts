@@ -45,6 +45,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
       'template',
       'designSystem',
       'themeOverrides',
+      'presenterNotes',
     ])
   )
     return invalid()
@@ -53,6 +54,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
   } catch {
     return invalid()
   }
+  if (value.presenterNotes !== undefined && typeof value.presenterNotes !== 'boolean') return invalid()
   for (const key of ['topic', 'audience', 'purpose', 'language', 'requestedFormat'])
     if (value[key] !== undefined && !text(value[key])) return invalid()
   if (
@@ -100,7 +102,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
       return invalid()
   if (new Set(sources.refs.map(ref => `${ref.sourceId}:${ref.version}:${ref.kind}`)).size !== sources.refs.length)
     return invalid()
-  const imageModes: readonly BriefDraft['images']['mode'][] = ['none', 'attachments', 'unavailable']
+  const imageModes: readonly BriefDraft['images']['mode'][] = ['none', 'attachments', 'public-research', 'unavailable']
   if (
     !record(images) ||
     !only(images, ['mode', 'attachmentIds', 'unmetRequirements']) ||
@@ -130,6 +132,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
   const optionalText = (key: 'topic' | 'audience' | 'purpose' | 'language' | 'requestedFormat') =>
     typeof value[key] === 'string' ? { [key]: value[key] } : {}
   return {
+    ...(typeof value.presenterNotes === 'boolean' ? { presenterNotes: value.presenterNotes } : {}),
     ...optionalText('topic'),
     ...optionalText('audience'),
     ...optionalText('purpose'),

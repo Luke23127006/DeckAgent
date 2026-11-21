@@ -80,6 +80,10 @@ export class OutlineView {
             for (const item of block.items) content.append(element('p', `${item.value}: ${item.label}`))
           else if (block.kind === 'image')
             content.append(element('p', `Ảnh đính kèm${block.caption ? `: ${block.caption}` : ''}`))
+          else if (block.kind === 'web-image')
+            content.append(
+              element('p', `Ảnh web: ${block.query}${block.required === false ? ' (tùy chọn)' : ' (cần có)'}`),
+            )
         }
         detail.append(element('summary', `${index + 1}. ${slide.title}`), content)
         if (slide.sources?.length) detail.append(sourceReferences(slide.sources))

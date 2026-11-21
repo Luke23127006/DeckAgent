@@ -24,41 +24,17 @@
       "node"
     ],
     "paths": {
-      "@deckagent/design": ["./packages/presentation/design/src/index.ts"],
-      "@deckagent/presentation-tools": ["./packages/tools/presentation/src/index.ts"],
-      "@deckagent/deck": ["./packages/presentation/deck/src/index.ts"],
+      "@deckagent/design": [
+        "./packages/presentation/design/src/index.ts"
+      ],
+      "@deckagent/deck": [
+        "./packages/presentation/deck/src/index.ts"
+      ],
       "@deckagent/workspace-registry": [
         "./packages/workspace/registry/src/index.ts"
       ],
       "@deckagent/session-persistence": [
         "./packages/session/persistence/src/index.ts"
-      ],
-      "@deckagent/model-providers": [
-        "./packages/llm/providers/src/index.ts"
-      ],
-      "@deckagent/agent-runtime": [
-        "./packages/agent/runtime/src/index.ts"
-      ],
-      "@deepseek-ai/cosmokit": [
-        "./vendor/cosmokit/src/index.ts"
-      ],
-      "@deepseek-ai/cordis": [
-        "./vendor/cordis/src/index.ts"
-      ],
-      "@deepseek-ai/schemastery": [
-        "./vendor/schemastery/src/index.ts"
-      ],
-      "@deepseek-ai/cordis-plugin-loader": [
-        "./vendor/loader/src/index.ts"
-      ],
-      "@deepseek-ai/cordis-plugin-include": [
-        "./vendor/include/src/index.ts"
-      ],
-      "@deepseek-ai/cordis-plugin-group": [
-        "./vendor/group/src/index.ts"
-      ],
-      "@deckagent/cordis-fixture": [
-        "./packages/testing/cordis-fixture/src/index.ts"
       ],
       "@deckagent/file-tools": [
         "./packages/tools/filesystem/src/index.ts"
@@ -68,6 +44,12 @@
       ],
       "@deckagent/browser-runtime": [
         "./packages/client/runtime/src/index.ts"
+      ],
+      "@deckagent/presentation-document": [
+        "./packages/presentation/document/src/index.ts"
+      ],
+      "@deckagent/html-format": [
+        "./packages/presentation/html/src/index.ts"
       ]
     }
   }

@@ -1,6 +1,6 @@
 # Coding conventions
 
-These are the approved DeckAgent conventions for TypeScript in `apps/*`, `packages/*/*`, `scripts/`, and `tests/`. They apply to new code and to changes under review. Vendor packages under `vendor/` keep their upstream conventions (see [vendor/README.md](../../vendor/README.md)).
+These are the approved DeckAgent conventions for TypeScript in `apps/*`, `packages/*/*`, `scripts/`, and `tests/`. They apply to new code and to changes under review.
 
 Examples illustrate a rule; they are not additional rules. Where the codebase does not yet follow a rule, the gap is marked **Known drift** — do not copy the drift. How a change is judged (`MUST` / `SHOULD` / `MAY`) is in [`code-review-criteria.md`](./code-review-criteria.md); where code lives is in [`repository-structure.md`](./repository-structure.md).
 
@@ -22,14 +22,14 @@ Examples illustrate a rule; they are not additional rules. Where the codebase do
 ## 3. Imports and module boundaries
 
 - Relative imports within a package include the `.ts` extension (`import { buildPrompt } from './prompt.ts'`).
-- Cross-package imports use the workspace alias (`import { AgentRuntime } from '@deckagent/agent-runtime'`).
+- Cross-package imports use the workspace alias (`import { DeckService } from '@deckagent/deck'`).
 - Node built-ins use the `node:` prefix (`node:sqlite`); use `import type` for type-only symbols.
 - Dependency invariants (no cycles, no private-implementation imports, no bypassing a contract) are enforced by CQC-006.
 
 ## 4. Errors
 
-- The Agent Runtime boundary uses `RuntimeError(code, message)`; `code` is `SCREAMING_SNAKE_CASE` prefixed by area (`SESSION_*`, `PROVIDER_*`, `TOOL_*`, …), and messages are human-readable and never contain secrets or raw exception bodies.
-- New domains choose an error shape that fits their own boundary; they are not required to reuse `RuntimeError`.
+- Domain errors use stable `SCREAMING_SNAKE_CASE` codes prefixed by area (`SESSION_*`, `PROVIDER_*`, `SOURCE_*`, …), and messages are human-readable and never contain secrets or raw exception bodies.
+- New domains choose an error shape that fits their own boundary.
 - Distinguishing error outcomes and not leaking secrets are judged by CQC-008 and CQC-009.
 
 ## 5. Async and data-copy idioms
@@ -54,7 +54,7 @@ Examples illustrate a rule; they are not additional rules. Where the codebase do
 
 ## 8. Package naming and public APIs
 
-- DeckAgent-owned packages use the `@deckagent/*` scope; vendor keeps `@deepseek-ai/*`.
+- DeckAgent-owned packages use the `@deckagent/*` scope.
 - A library's public entry point is declared in its manifest so consumers resolve the same surface the build produces (`main`/`types`/`exports` today); apps are private with no `exports`.
 - Expose a small, stable barrel; put multi-component contracts in `contracts.ts`.
 - **Known drift:** package names do not always mirror directory paths — see `repository-structure.md`; renaming is a separate cleanup task.

@@ -4,6 +4,8 @@ status: accepted
 
 # Generated artifacts and publication
 
+The [portable content decision](0009-portable-slide-documents-and-format-adapters.md) extends the source/asset contract for new template versions with independent content documents, executable adapters and public-image preparation before confirmation. This record retains the initial publication and legacy compatibility decisions.
+
 Use Host-owned staging and immutable publication with the [review/generation contracts](0005-outline-generation-contracts.md). The [accepted decision](https://github.com/Luke23127006/DeckAgent/issues/92) limits image use to prepared attachments and preserves the read-only project policy. This defines the implementation contract, not a claim that its runtime checks already pass.
 
 ## Source and asset contract

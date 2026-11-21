@@ -18,6 +18,8 @@ export interface ModelSelection {
 
 /** A generic chat request (B02). Generation entries arrive with their own builds. */
 export interface AgentRequest {
+  /** Explicit user request to finish an existing incomplete deck, without another confirmation. */
+  readonly continueDeck?: true
   readonly deck?: DeckRequest
   readonly publicResearch?: boolean
   readonly sessionId: string
@@ -31,7 +33,7 @@ export interface DeckRequest {
   readonly expectedOutline: { readonly outlineId: string; readonly version: number } | null
   readonly restoreOutlineId?: string
   readonly formatChoice?: 'html'
-  readonly imageChoice?: 'none' | 'attachments'
+  readonly imageChoice?: 'none' | 'attachments' | 'public-research'
   readonly sourceChoice?: {
     readonly material: boolean
     readonly modelKnowledge: boolean
@@ -162,6 +164,8 @@ export interface RequestStore {
 
 /** A request the runtime accepted: its settings are frozen at admission (FR-042). Holds no secret visible to the Host API. */
 export interface PreparedRequest {
+  /** Host-frozen policy for a continuation of an already confirmed deck. */
+  readonly publicResearch?: boolean
   readonly selection: ModelSelection
   start(run: RequestRun): Promise<RuntimeOutcome>
 }
@@ -226,6 +230,8 @@ export interface HostOptions {
   readonly briefs?: BriefManagement
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
   readonly requests?: {
+    /** Host-owned summary derived from committed product state, including explicit Stop. */
+    readonly closingText?: (sessionId: string, requestId: string, status: TerminalStatus) => string | undefined
     readonly store: RequestStore
     readonly runtime: RequestRuntime
     readonly prepareTools?: (

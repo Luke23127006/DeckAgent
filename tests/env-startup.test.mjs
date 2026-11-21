@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -45,58 +44,6 @@ async function directory(t) {
   return dir
 }
 
-test('chat command loads .env credentials and terminal environment takes precedence without leaking either', {
-  timeout: 15000,
-}, async t => {
-  const dir = await directory(t)
-  const received = []
-  const server = createServer(async (req, res) => {
-    for await (const _chunk of req) {
-      /* Drain the model request. */
-    }
-    received.push(req.headers.authorization)
-    res.writeHead(200, { 'content-type': 'text/event-stream' })
-    res.end('data: {"choices":[{"index":0,"delta":{"content":"OK"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
-  })
-  server.listen(0, '127.0.0.1')
-  await once(server, 'listening')
-  t.after(
-    () =>
-      new Promise(resolve => {
-        server.close(resolve)
-        server.closeAllConnections()
-      }),
-  )
-  const config = join(dir, 'models.json')
-  await writeFile(
-    config,
-    JSON.stringify({
-      connections: [
-        {
-          id: 'fixture',
-          protocol: 'chat-completions',
-          baseUrl: `http://127.0.0.1:${server.address().port}`,
-          apiKeyEnv: 'DECKAGENT_TEST_TOKEN',
-        },
-      ],
-    }),
-  )
-  await writeFile(join(dir, '.env'), 'DECKAGENT_TEST_TOKEN=fixture-dotenv-value\n')
-  const args = ['--config', config, '--provider', 'fixture', '--model', 'fixture', '--prompt', 'Hello']
-  const dotenv = await launch(t, dir, 'chat', args)
-  assert.equal(dotenv.code, 0, dotenv.stderr)
-  const terminal = await launch(t, dir, 'chat', args, { DECKAGENT_TEST_TOKEN: 'fixture-terminal-value' })
-  assert.equal(terminal.code, 0)
-  assert.deepEqual(received, ['Bearer fixture-dotenv-value', 'Bearer fixture-terminal-value'])
-  const emptyTerminal = await launch(t, dir, 'chat', args, { DECKAGENT_TEST_TOKEN: '' })
-  assert.equal(emptyTerminal.code, 1)
-  assert.equal(received.length, 2, 'an explicitly empty terminal variable must not fall back to .env')
-  for (const output of [dotenv, terminal]) {
-    assert.equal((output.stdout + output.stderr).includes('fixture-dotenv-value'), false)
-    assert.equal((output.stdout + output.stderr).includes('fixture-terminal-value'), false)
-  }
-})
-
 test('Local Web opens the management API with missing or malformed environment keys so Settings can repair them', {
   timeout: 15000,
 }, async t => {
@@ -112,36 +59,64 @@ test('Local Web opens the management API with missing or malformed environment k
   )
   for (const value of ['', 'fixture invalid value']) {
     await writeFile(join(dir, '.env'), `DECKAGENT_TEST_TOKEN="${value}"\n`)
-    const child = spawn(process.execPath, ['--env-file-if-exists=.env', '--use-system-ca', join(root, 'apps/local-web/lib/cli.js'),
-      '--config', config, '--provider', 'fixture', '--model', 'fixture',
-      '--data-dir', join(dir, 'data'), '--no-open'], {
-      cwd: dir, windowsHide: true, env: { ...process.env, DECKAGENT_TEST_TOKEN: value }, stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    const child = spawn(
+      process.execPath,
+      [
+        '--env-file-if-exists=.env',
+        '--use-system-ca',
+        join(root, 'apps/local-web/lib/cli.js'),
+        '--config',
+        config,
+        '--provider',
+        'fixture',
+        '--model',
+        'fixture',
+        '--data-dir',
+        join(dir, 'data'),
+        '--no-open',
+      ],
+      {
+        cwd: dir,
+        windowsHide: true,
+        env: { ...process.env, DECKAGENT_TEST_TOKEN: value },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    )
     const closed = once(child, 'close')
     t.after(() => child.kill())
     let output = ''
-    child.stderr.on('data', bytes => { output += bytes })
+    child.stderr.on('data', bytes => {
+      output += bytes
+    })
     const origin = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Local Web did not start')), 5000)
       child.stdout.on('data', bytes => {
         output += bytes
         const match = /Local Host: (http:\/\/127\.0\.0\.1:\d+)/.exec(output)
-        if (match) { clearTimeout(timer); resolve(match[1]) }
+        if (match) {
+          clearTimeout(timer)
+          resolve(match[1])
+        }
       })
-      child.once('close', () => { clearTimeout(timer); reject(new Error('Local Web exited before Settings could open')) })
+      child.once('close', () => {
+        clearTimeout(timer)
+        reject(new Error('Local Web exited before Settings could open'))
+      })
     })
     assert.equal((await fetch(origin)).status, 200)
-    assert.equal((await fetch(`${origin}/api/settings`)).status, 401, 'Settings still require the browser capability token')
+    assert.equal(
+      (await fetch(`${origin}/api/settings`)).status,
+      401,
+      'Settings still require the browser capability token',
+    )
     if (value) assert.equal(output.includes(value), false)
     child.kill()
     await closed
   }
 })
 
-test('both commands still show help when no .env exists', { timeout: 10000 }, async t => {
+test('Local Web shows help when no .env exists', { timeout: 10000 }, async t => {
   const dir = await directory(t)
-  for (const script of ['chat', 'start:local-web']) {
-    const output = await launch(t, dir, script, ['--help'])
-    assert.equal(output.code, 0)
-  }
+  const output = await launch(t, dir, 'start:local-web', ['--help'])
+  assert.equal(output.code, 0)
 })

@@ -82,6 +82,26 @@ const template: Template = immutable({
     },
   ],
 })
+const templateV2: Template = immutable({
+  ...template,
+  version: 2,
+  layouts: [
+    ...template.layouts,
+    {
+      id: 'image-pair',
+      contentKinds: ['image', 'bullets'],
+      capacity: { title: 80, images: 2, minBullets: 1, maxBullets: 2, bullet: 140, caption: 160 },
+    },
+  ],
+})
+function selectedTemplate(value: unknown): Template {
+  if (value === undefined) return templateV2
+  if (isRecord(value) && only(value, ['id', 'version']) && value.id === template.id) {
+    if (value.version === 1) return template
+    if (value.version === 2) return templateV2
+  }
+  throw new DesignError('DESIGN_TEMPLATE_NOT_FOUND')
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
@@ -91,7 +111,7 @@ export function listDesignSystems(): readonly DesignSystem[] {
 }
 export function listTemplates(format: string): readonly Template[] {
   if (format !== 'html') throw new DesignError('DESIGN_FORMAT_UNAVAILABLE')
-  return [template]
+  return [templateV2, template]
 }
 function reference(value: unknown, expected: CatalogRef, code: string): void {
   if (
@@ -128,7 +148,7 @@ export function resolveDesign(value: unknown = {}): DesignSnapshot {
     throw new DesignError('DESIGN_SELECTION_INVALID')
   if (value.format !== undefined && value.format !== 'html') throw new DesignError('DESIGN_FORMAT_UNAVAILABLE')
   reference(value.designSystem, system, 'DESIGN_SYSTEM_NOT_FOUND')
-  reference(value.template, template, 'DESIGN_TEMPLATE_NOT_FOUND')
+  const chosenTemplate = selectedTemplate(value.template)
   if (
     value.overrides !== undefined &&
     (!isRecord(value.overrides) || Object.keys(value.overrides).some(k => !Object.hasOwn(system.theme, k)))
@@ -138,7 +158,7 @@ export function resolveDesign(value: unknown = {}): DesignSnapshot {
   const snapshot = {
     format: 'html' as const,
     designSystem: { id: system.id, version: system.version },
-    template: { id: template.id, version: template.version },
+    template: { id: chosenTemplate.id, version: chosenTemplate.version },
     theme,
     rules: [...system.rules],
     brandAssets: [],
@@ -240,6 +260,22 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         }),
       }
     }
+    if (block.kind === 'web-image') {
+      if (
+        !only(block, ['kind', 'query', 'caption', 'required']) ||
+        !text(block.query) ||
+        block.query.length > 500 ||
+        (block.caption !== undefined && !text(block.caption)) ||
+        (block.required !== undefined && typeof block.required !== 'boolean')
+      )
+        return invalid()
+      return {
+        kind: 'web-image' as const,
+        query: block.query,
+        ...(typeof block.caption === 'string' ? { caption: block.caption } : {}),
+        ...(typeof block.required === 'boolean' ? { required: block.required } : {}),
+      }
+    }
     if (block.kind === 'image') {
       if (
         !only(block, ['kind', 'attachmentId', 'caption']) ||
@@ -261,16 +297,20 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
 
 export function findCompatibleLayouts(
   input: unknown,
-  templateRef: CatalogRef = { id: template.id, version: template.version },
+  templateRef?: CatalogRef,
 ): { readonly candidates: readonly Template['layouts'][number][]; readonly fallbackAllowed: boolean } {
-  reference(templateRef, template, 'DESIGN_TEMPLATE_NOT_FOUND')
+  const template = selectedTemplate(templateRef)
   const plan = validateContentPlan(input)
   const length = (value: string) => [...value].length
   const candidates = template.layouts.filter(layout => {
     const c = layout.capacity
-    if (length(plan.title) > c.title! || plan.blocks.some(block => !layout.contentKinds.includes(block.kind)))
+    if (
+      length(plan.title) > c.title! ||
+      plan.blocks.some(block => !layout.contentKinds.includes(block.kind === 'web-image' ? 'image' : block.kind))
+    )
       return false
-    const count = (kind: ContentBlock['kind']) => plan.blocks.filter(b => b.kind === kind).length
+    const count = (kind: ContentBlock['kind']) =>
+      plan.blocks.filter(b => (b.kind === 'web-image' ? 'image' : b.kind) === kind).length
     const bulletsFit = (items: readonly string[]) =>
       items.length >= c.minBullets! && items.length <= c.maxBullets! && items.every(item => length(item) <= c.bullet!)
     if (layout.id === 'cover')
@@ -301,9 +341,9 @@ export function findCompatibleLayouts(
       )
     return (
       count('image') === c.images &&
-      count('bullets') === 1 &&
+      (layout.id === 'image-pair' ? count('bullets') <= 1 : count('bullets') === 1) &&
       plan.blocks.every(b =>
-        b.kind === 'image'
+        b.kind === 'image' || b.kind === 'web-image'
           ? !b.caption || length(b.caption) <= c.caption!
           : b.kind === 'bullets' && bulletsFit(b.items),
       )

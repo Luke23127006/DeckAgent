@@ -1,0 +1,25 @@
+# Portable slide content and executable templates
+
+The [portable content decision](../adr/0009-portable-slide-documents-and-format-adapters.md) separates generated content from its native artifact. The [generation reference](generation-and-publication.md) owns requests, grants, confirmation and publication. The interface layout, theme and OpenCode runtime remain the same.
+
+## Content and format ownership
+
+The browser-safe `@deckagent/presentation-document` package owns SlideDocument version 1, content-origin decoding, artifact descriptors, validation issues and the FormatAdapter contract. A document stores actual title, stable content nodes, layout intent, local image identities, origins and separate notes. It contains no HTML, CSS, image query or attachment path. Unknown fields, duplicate/reserved node identities and unsupported document versions fail validation. The browser and Deck domain use the same document and origin decoders.
+
+`@deckagent/design` owns the visual snapshot and catalog. `@deckagent/html-format` owns executable skeletons, parsed HTML/CSS policy, content bindings and local image materialization. Adapters have no request grant or publication pointer. Deck storage validates scope, retains required plan content and commits the document, descriptor, native digest, revision pointer and receipt together. `nativeArtifact` reads original bytes independently of the HTML Preview API. Legacy artifacts remain readable without a fabricated document.
+
+HTML Basic version 2 is the default for new selections. Version 1 remains available for pinned plans. Version 2 supplies the six existing layouts plus image-pair, with two images and at most two optional bullets. `begin_slide` returns a prepared document, assets, runnable source and exact capabilities. `read_slide_draft` refreshes this context after attachment copying or an explicit `record_slide_content` change. Native text must match stable `data-node-id` bindings; a missing node, changed image identity or unrecorded assertion fails. Every title, text item and caption requires an origin. Required plan text and images cannot disappear during a content change.
+
+`validate_slide` checks finalized staging without a publication receipt or revision change. It returns stable codes, field/node locations and safe repair guidance. Publication checks the exact source and document again. Version 2 allows three validation calls, four builds per stage and four stages per planned slide/request. Exhaustion stops correction; it does not weaken checks or shrink content. A request can discard a failed stage and create a corrected one within that budget. Browser errors include the affected node and measured bounds when available.
+
+## Public-image preparation
+
+Collecting/reviewing prepares exact web-image queries under the explicit public-image choice before committing its staged proposal. Preparation permits at most 32 unique queries per proposal and retains the existing per-image lookup/normalization bounds. An opaque in-memory token binds results to the exact Chat and proposal input. Cancelled or stale work cannot commit those results. Prepared image metadata belongs to that immutable Outline; successful local bytes are reused by later reviewed proposals and layout retries.
+
+Missing essential images keep the proposal saved but block confirmation. The interview shows the planned slide/query and asks for an Outline revision: choose another query/image or explicitly make the image optional. Optional omissions remain in revision metadata and the closing report. Version 2 generation receives fresh stage asset identities copied from these local bytes and exposes no image-search tool. A missing/corrupt local preparation requires review again. Pinned version 1 plans retain request-scoped image search and its original publication contract.
+
+## Native-format proof and compatibility
+
+`@deckagent/pptx-format` is a capability proof, not an available product generation format. It consumes the same document and local assets, producing editable text/image objects and separate presenter notes. The caller must explicitly map the CSS font stack to an installed Office font. Unsupported layouts or capacity fail instead of embedding a slide screenshot, silently replacing a font or truncating content. The proof does not establish PowerPoint rendering, arbitrary-layout fidelity or a complete multi-slide export workflow.
+
+Deck schema 8 adds immutable prepared-image rows and preserves prior manifests, bytes, confirmation receipts and visual snapshots. Host and browser consumers deploy together. Older binaries refuse schema 8; use a pre-upgrade backup for rollback. The session database remains schema 7. A second HTML template fixture exercises the adapter without changing generation orchestration. Run `pnpm.cmd test:generation-publication` after building for document validation, two-image preparation/retry, cancellation, optional omissions, native PPTX objects, legacy recovery and seven-layout publication through the real browser with a local CLI fixture. Cloud-model content quality and manual Office rendering require separate checks.

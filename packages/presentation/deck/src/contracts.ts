@@ -1,11 +1,16 @@
 import type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
+import { FormatError } from '@deckagent/presentation-document'
+import type {
+  SourceReference,
+  ContentOrigin,
+  SlideDocument,
+  FormatAdapter,
+  ArtifactDescriptor,
+  ValidationIssue,
+} from '@deckagent/presentation-document'
 export type { CatalogRef, ContentBlock, DesignSnapshot, ThemeValues } from '@deckagent/design'
 
-export interface BriefSourceRef {
-  readonly sourceId: string
-  readonly version: number
-  readonly kind: 'attachment' | 'project-file' | 'approved-file' | 'research'
-}
+export type BriefSourceRef = SourceReference
 export type InterviewTopic =
   | 'topic'
   | 'audience'
@@ -18,6 +23,7 @@ export type InterviewTopic =
   | 'template'
   | 'design-system'
 export interface BriefDraft {
+  readonly presenterNotes?: boolean
   readonly topic?: string
   readonly audience?: string
   readonly durationMinutes?: number
@@ -33,7 +39,7 @@ export interface BriefDraft {
     readonly refs: readonly BriefSourceRef[]
   }
   readonly images: {
-    readonly mode: 'none' | 'attachments' | 'unavailable'
+    readonly mode: 'none' | 'attachments' | 'public-research' | 'unavailable'
     readonly attachmentIds: readonly string[]
     readonly unmetRequirements: readonly string[]
   }
@@ -112,6 +118,8 @@ export interface ConfirmationReceipt extends ConfirmationTarget {
 }
 export interface GenerationSnapshot {
   readonly receipt: ConfirmationReceipt
+  /** The current execution; the original confirmation receipt remains immutable. */
+  readonly activeRequestId?: string
   readonly state: 'pending' | 'admitted' | 'generating' | 'generated' | 'incomplete'
   readonly startedAt: string | null
   readonly formatLocked: boolean
@@ -126,6 +134,8 @@ export interface GenerationGrant {
   readonly sessionId: string
 }
 export interface DeckOptions {
+  readonly formats?: readonly FormatAdapter[]
+  readonly researchImage?: (sessionId: string, query: string, signal: AbortSignal) => Promise<PreparedResearchImage>
   readonly activeRequest?: (sessionId: string, requestId: string) => boolean
   readonly artifactRoot?: string
   readonly renderCheck?: (html: string, requiredText: readonly string[], signal: AbortSignal) => Promise<void>
@@ -137,7 +147,22 @@ export interface PreparedImageAsset {
   readonly originalDigest: string
   readonly parsedDigest: string
 }
+export interface ImageCredit {
+  readonly url: string
+  readonly author: string
+  readonly license: 'public-domain' | 'CC0' | 'CC BY' | 'unknown'
+  readonly licenseUrl: string
+  readonly unknownLicense: boolean
+  readonly retrievedAt: string
+}
+export interface PreparedResearchImage extends PreparedImageAsset {
+  readonly credit: ImageCredit
+}
 export interface StageStatus {
+  readonly rules?: readonly string[]
+  readonly starter?: string
+  readonly document?: SlideDocument
+  readonly assets?: readonly ArtifactAsset[]
   readonly stageId: string
   readonly nextSequence: number
   readonly finalized: boolean
@@ -157,16 +182,28 @@ export interface ArtifactPublication {
 export interface ArtifactAsset {
   readonly assetId: string
   readonly source: BriefSourceRef
-  readonly attachmentId: string
+  readonly attachmentId?: string
+  readonly webQuery?: string
+  readonly credit?: ImageCredit
   readonly digest: string
   readonly originalDigest: string
   readonly parsedDigest: string
   readonly byteSize: number
 }
+export type ContentProvenance = ContentOrigin
 export interface GenerationCapability {
-  plan(): { readonly generation: GenerationSnapshot; readonly outline: OutlineProposal }
+  draft(stageId: string): StageStatus
+  document(stageId: string, document: SlideDocument): void
+  validate(input: ArtifactPublication): Promise<readonly ValidationIssue[]>
+  researchImage(stageId: string, slideId: string, query: string): Promise<ArtifactAsset>
+  plan(): {
+    readonly generation: GenerationSnapshot
+    readonly outline: OutlineProposal
+    readonly slides?: readonly DeckSlide[]
+  }
   begin(slideId: string, layoutId: string): StageStatus
   append(stageId: string, chunk: StageChunk): StageStatus
+  provenance(stageId: string, records: readonly ContentProvenance[], notes?: string): void
   discard(stageId: string): void
   image(stageId: string, slideId: string, attachmentId: string): Promise<ArtifactAsset>
   publish(input: ArtifactPublication): Promise<PublishedSlide>
@@ -193,6 +230,12 @@ export interface PublishedSlide extends DeckChange {
 }
 
 export interface SlideContent {
+  readonly document?: SlideDocument
+  readonly artifact?: ArtifactDescriptor
+  readonly imageCredits?: readonly ImageCredit[]
+  readonly imageOmissions?: readonly string[]
+  readonly notes?: string
+  readonly provenance?: readonly ContentProvenance[]
   readonly sessionId: string
   readonly slideId: string
   readonly revision: number
@@ -292,14 +335,19 @@ export interface OutlineReader {
   outlineSnapshot(sessionId: string): OutlineSnapshot
 }
 
-export class DeckError extends Error {
-  constructor(public readonly code: string) {
-    super(deckFailureMessage(code) ? `${code}: ${deckFailureMessage(code)}` : code)
+export class DeckError extends FormatError {
+  constructor(code: string, issues: readonly ValidationIssue[] = []) {
+    super(code, issues)
+    this.message = deckFailureMessage(code) ? `${code}: ${deckFailureMessage(code)}` : code
     this.name = 'DeckError'
   }
 }
 
 const failureMessages: Readonly<Record<string, string>> = {
+  IMAGE_PREPARATION_REQUIRED:
+    'Required images are not prepared. Revise the Outline query, select an alternative or explicitly mark the image optional before confirming again.',
+  SLIDE_CORRECTION_LIMIT:
+    'The correction budget for this slide is exhausted. Review the validation issues and retained publications before starting a new request.',
   CONFIRMATION_INVALID: 'Confirm exactly the displayed Outline and Brief. Refresh the proposal and try again.',
   CONFIRMATION_CONFLICT:
     'This confirmation targets different saved content. Reload the current proposal before confirming.',

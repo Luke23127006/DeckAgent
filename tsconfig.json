@@ -1,41 +1,11 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/presentation/design" },
-    { "path": "packages/tools/presentation" },
-    { "path": "packages/presentation/deck" },
     {
-      "path": "vendor/cosmokit"
+      "path": "packages/presentation/design"
     },
     {
-      "path": "vendor/cordis"
-    },
-    {
-      "path": "vendor/schemastery"
-    },
-    {
-      "path": "vendor/loader"
-    },
-    {
-      "path": "vendor/include"
-    },
-    {
-      "path": "vendor/group"
-    },
-    {
-      "path": "packages/testing/cordis-fixture"
-    },
-    {
-      "path": "apps/cordis-smoke"
-    },
-    {
-      "path": "packages/agent/runtime"
-    },
-    {
-      "path": "packages/llm/providers"
-    },
-    {
-      "path": "apps/agent-runtime"
+      "path": "packages/presentation/deck"
     },
     {
       "path": "packages/session/persistence"
@@ -54,6 +24,15 @@
     },
     {
       "path": "apps/local-web"
+    },
+    {
+      "path": "packages/presentation/document"
+    },
+    {
+      "path": "packages/presentation/html"
+    },
+    {
+      "path": "packages/presentation/pptx"
     }
   ]
 }

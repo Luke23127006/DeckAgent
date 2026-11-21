@@ -26,7 +26,7 @@ export interface DesignSystem extends CatalogRef {
   readonly brandAssets: readonly string[]
 }
 export interface Layout {
-  readonly id: 'cover' | 'section' | 'title-body' | 'two-column' | 'key-figures' | 'image-text'
+  readonly id: 'cover' | 'section' | 'title-body' | 'two-column' | 'key-figures' | 'image-text' | 'image-pair'
   readonly contentKinds: readonly ContentBlock['kind'][]
   readonly capacity: Readonly<Record<string, number>>
 }
@@ -51,6 +51,7 @@ export type ContentBlock =
   | { readonly kind: 'columns'; readonly columns: readonly { readonly bullets: readonly string[] }[] }
   | { readonly kind: 'metrics'; readonly items: readonly { readonly value: string; readonly label: string }[] }
   | { readonly kind: 'image'; readonly attachmentId: string; readonly caption?: string }
+  | { readonly kind: 'web-image'; readonly query: string; readonly caption?: string; readonly required?: boolean }
 export interface SlideContentPlan {
   readonly title: string
   readonly blocks: readonly ContentBlock[]

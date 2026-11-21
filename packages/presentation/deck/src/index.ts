@@ -1,5 +1,13 @@
 import { createHash } from 'node:crypto'
 import { DesignError } from '@deckagent/design'
+import { FormatError } from '@deckagent/presentation-document'
+export { decodeSlideDocument, documentText, FormatError } from '@deckagent/presentation-document'
+export type {
+  SlideDocument,
+  FormatAdapter,
+  ArtifactDescriptor,
+  ValidationIssue,
+} from '@deckagent/presentation-document'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -25,6 +33,8 @@ import { ArtifactStorage } from './artifact-store.ts'
 import type { ArtifactPublication, ArtifactAsset, StageChunk, StageStatus } from './contracts.ts'
 import type { GenerationCapability } from './contracts.ts'
 export type { GenerationCapability } from './contracts.ts'
+export type { ContentProvenance } from './contracts.ts'
+export type { PreparedResearchImage, ImageCredit } from './contracts.ts'
 export type { ArtifactPublication, ArtifactAsset, PreparedImageAsset, StageChunk, StageStatus } from './contracts.ts'
 import type { ConfirmationReceipt, GenerationSnapshot, GenerationGrant, DeckOptions } from './contracts.ts'
 export { validateConfirmation } from './generation-store.ts'
@@ -57,6 +67,7 @@ export type {
 } from './contracts.ts'
 import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
 
+import { deckFailureMessage } from './contracts.ts'
 export { DeckError, deckFailureMessage } from './contracts.ts'
 export { validateOutlineDraft } from './outline-store.ts'
 export type { OutlineDraft, OutlineProposal, OutlineReader, OutlineSnapshot, OutlineTarget } from './contracts.ts'
@@ -170,7 +181,18 @@ export class DeckService implements DeckReader, DeckPublisher {
   }
 
   /** Atomically saves a completed request's staged Brief/Outline before Session terminal status. */
-  commitBriefProposal(sessionId: string, input: BriefProposalInput): BriefRecord {
+  async prepareOutlineImages(sessionId: string, input: BriefProposalInput, signal: AbortSignal): Promise<object> {
+    this.id(sessionId)
+    return this.artifacts.prepareImages(sessionId, input, signal)
+  }
+  imageBlockers(sessionId: string): readonly { code: string; message: string }[] {
+    return this.access(() => {
+      const state = this.outlines.snapshot(sessionId)
+      const outline = state.proposals.find(p => p.outlineId === state.currentId)
+      return outline ? this.artifacts.imageBlockers(sessionId, outline) : []
+    })
+  }
+  commitBriefProposal(sessionId: string, input: BriefProposalInput, preparedImages?: object): BriefRecord {
     return this.access(() => {
       this.id(sessionId)
       this.id(input.requestId)
@@ -193,8 +215,8 @@ export class DeckService implements DeckReader, DeckPublisher {
         )
           throw new DeckError('OUTLINE_STALE')
         const brief = this.briefs.save(sessionId, { expectedVersion: input.expectedBriefVersion, draft: input.draft })
-        if (input.outline !== undefined)
-          saveBoundOutline(
+        if (input.outline !== undefined) {
+          const outline = saveBoundOutline(
             this.db,
             sessionId,
             {
@@ -208,6 +230,8 @@ export class DeckService implements DeckReader, DeckPublisher {
             brief,
             state,
           )
+          this.artifacts.commitImages(sessionId, input, outline, preparedImages)
+        }
         this.db
           .prepare('INSERT INTO brief_request_receipts VALUES(?,?,?,?,?)')
           .run(input.requestId, sessionId, brief.briefId, brief.version, fingerprint)
@@ -258,6 +282,7 @@ export class DeckService implements DeckReader, DeckPublisher {
           throw new DeckError('BRIEF_STALE')
         if (!interviewState(b.draft).readyForOutline || !b.design || !p.slides.length)
           throw new DeckError('BRIEF_INCOMPLETE')
+        if (this.artifacts.imageBlockers(sessionId, p).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
         this.insertPlan(sessionId, p)
         this.outlines.confirm(sessionId, p)
         fresh = true
@@ -268,11 +293,32 @@ export class DeckService implements DeckReader, DeckPublisher {
     })
   }
 
+  /** A user-admitted new request continues only missing slides; confirmation and first start stay immutable. */
+  continueGeneration(sessionId: string, requestId: string, selection: GenerationSnapshot['selection']): void {
+    this.access(() =>
+      this.transaction(() => {
+        this.id(requestId)
+        const generation = this.generations.get(sessionId)
+        if (!generation) throw new DeckError('GENERATION_NOT_FOUND')
+        if (generation.state !== 'incomplete') throw new DeckError('GENERATION_ALREADY_STARTED')
+        if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
+        if (!selection.provider || !selection.model) throw new DeckError('CONFIRMATION_INVALID')
+        const row = this.db.prepare('SELECT payload FROM generation_intents WHERE session_id=?').get(sessionId)!
+        const payload = JSON.parse(String(row.payload))
+        this.db
+          .prepare("UPDATE generation_intents SET state='admitted',payload=? WHERE session_id=?")
+          .run(JSON.stringify({ ...payload, activeRequestId: requestId, selection }), sessionId)
+        this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
+      }),
+    )
+    this.notify(sessionId, this.snapshot(sessionId).version)
+  }
+
   admitGeneration(sessionId: string, intentId: string, requestId: string): void {
     this.access(() =>
       this.transaction(() => {
         const g = this.generations.get(sessionId)
-        if (!g || g.receipt.intentId !== intentId || g.receipt.requestId !== requestId)
+        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
           throw new DeckError('GENERATION_NOT_FOUND')
         if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
         if (g.state !== 'pending') throw new DeckError('GENERATION_ALREADY_ADMITTED')
@@ -291,11 +337,14 @@ export class DeckService implements DeckReader, DeckPublisher {
       const grant = this.transaction(() => {
         const g = this.generations.get(sessionId)
         if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
-        if (!g || g.receipt.intentId !== intentId || g.receipt.requestId !== requestId)
+        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
           throw new DeckError('GENERATION_NOT_FOUND')
-        if (g.state !== 'admitted' || g.startedAt) throw new DeckError('GENERATION_ALREADY_STARTED')
+        if (g.state !== 'admitted' || (g.startedAt && !g.activeRequestId))
+          throw new DeckError('GENERATION_ALREADY_STARTED')
         this.db
-          .prepare("UPDATE generation_intents SET state='generating',started_at=? WHERE session_id=?")
+          .prepare(
+            "UPDATE generation_intents SET state='generating',started_at=COALESCE(started_at,?) WHERE session_id=?",
+          )
           .run(new Date().toISOString(), sessionId)
         this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
         return Object.freeze({ sessionId, intentId, requestId })
@@ -318,7 +367,7 @@ export class DeckService implements DeckReader, DeckPublisher {
     this.access(() =>
       this.transaction(() => {
         const g = this.generations.get(sessionId)
-        if (!g || g.receipt.intentId !== intentId || g.receipt.requestId !== requestId)
+        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
           throw new DeckError('GENERATION_NOT_FOUND')
         if (g.state === 'generated' || g.state === 'incomplete') return
         const unfinished = this.db.prepare('SELECT 1 FROM slides WHERE session_id=? AND revision=0').get(sessionId)
@@ -359,7 +408,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       !generation ||
       generation.state !== 'generating' ||
       generation.receipt.intentId !== grant.intentId ||
-      generation.receipt.requestId !== grant.requestId ||
+      (generation.activeRequestId ?? generation.receipt.requestId) !== grant.requestId ||
       !this.options.activeRequest?.(grant.sessionId, grant.requestId)
     )
       throw new DeckError('GENERATION_REQUEST_INACTIVE')
@@ -392,17 +441,53 @@ export class DeckService implements DeckReader, DeckPublisher {
       this.access(() => this.granted(grant))
     }
     return Object.freeze({
+      document: (stageId: string, document: import('@deckagent/presentation-document').SlideDocument) => {
+        check()
+        return this.access(() => this.artifacts.setDocument(grant, stageId, document))
+      },
+      draft: (stageId: string) => {
+        check()
+        return this.access(() => this.artifacts.draft(grant, stageId))
+      },
+      validate: async (input: ArtifactPublication) => {
+        check()
+        try {
+          const { generation, outline } = this.access(() => this.granted(grant))
+          const slide = outline.slides.find(s => s.slideId === input.slideId)
+          if (!slide) throw new DeckError('DECK_SLIDE_NOT_FOUND')
+          const artifact = await this.artifacts.prepare(grant, input, slide, generation, check, signal, true)
+          this.artifacts.removeValidationArtifact(artifact)
+          return []
+        } catch (error) {
+          signal.throwIfAborted()
+          if (error instanceof FormatError)
+            return error.issues.length
+              ? error.issues
+              : [{ code: error.code, path: 'draft', message: deckFailureMessage(error.code) ?? error.code }]
+          throw error
+        }
+      },
       plan: () => {
         check()
-        return this.access(() => this.granted(grant))
+        return { ...this.access(() => this.granted(grant)), slides: this.snapshot(grant.sessionId).slides }
       },
       begin: (slideId: string, layoutId: string) => {
         check()
+        const generation = this.generations.get(grant.sessionId)!
+        if (
+          generation.activeRequestId &&
+          this.snapshot(grant.sessionId).slides.some(s => s.slideId === slideId && s.revision > 0)
+        )
+          throw new DeckError('SLIDE_REVISION_CONFLICT')
         return this.beginStage(grant, slideId, layoutId)
       },
       append: (stageId: string, chunk: StageChunk) => {
         check()
         return this.appendStage(grant, stageId, chunk)
+      },
+      provenance: (stageId: string, records: readonly import('./contracts.ts').ContentProvenance[], notes?: string) => {
+        check()
+        this.artifacts.setProvenance(grant, stageId, records, notes)
       },
       discard: (stageId: string) => {
         check()
@@ -412,6 +497,19 @@ export class DeckService implements DeckReader, DeckPublisher {
         check()
         return this.attachStageImage(grant, stageId, slideId, attachmentId, signal)
       },
+      researchImage: (stageId: string, slideId: string, query: string) =>
+        this.asyncAccess(() => {
+          check()
+          const { generation, outline } = this.granted(grant)
+          if (outline.brief?.draft.images.mode !== 'public-research') throw new DeckError('IMAGE_CHOICE_REQUIRED')
+          const slide = outline.slides.find(s => s.slideId === slideId)
+          if (!slide || generation.state !== 'generating') throw new DeckError('DECK_SLIDE_NOT_FOUND')
+          const limit = Math.max(
+            1,
+            outline.slides.flatMap(s => s.blocks ?? []).filter(b => b.kind === 'web-image').length * 2,
+          )
+          return this.artifacts.researchImage(grant, stageId, slide, query, limit, check, signal)
+        }),
       publish: (input: ArtifactPublication) => {
         check()
         return this.publishArtifact(grant, input, signal)
@@ -734,6 +832,43 @@ export class DeckService implements DeckReader, DeckPublisher {
     })
   }
 
+  /** Source metadata readback without loading HTML or image bytes, including during Stop. */
+  provenance(
+    sessionId: string,
+    slideId: string,
+    revision: number,
+  ): readonly import('./contracts.ts').ContentProvenance[] {
+    return this.access(() => {
+      this.id(sessionId)
+      this.id(slideId)
+      const row = this.db
+        .prepare('SELECT manifest FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
+        .get(sessionId, slideId, revision)
+      return row ? this.artifacts.provenance(row) : []
+    })
+  }
+
+  slideMetadata(
+    sessionId: string,
+    slideId: string,
+    revision: number,
+  ): Pick<SlideContent, 'provenance' | 'notes' | 'imageCredits' | 'imageOmissions'> {
+    return this.access(() => {
+      this.id(sessionId)
+      this.id(slideId)
+      const row = this.db
+        .prepare('SELECT manifest FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
+        .get(sessionId, slideId, revision)
+      return row
+        ? {
+            provenance: this.artifacts.provenance(row),
+            ...this.artifacts.imageMetadata(row),
+            ...(this.artifacts.notes(row) ? { notes: this.artifacts.notes(row)! } : {}),
+          }
+        : {}
+    })
+  }
+
   content(sessionId: string, slideId: string, revision: number): SlideContent {
     return this.access(() => {
       this.id(sessionId)
@@ -746,8 +881,38 @@ export class DeckService implements DeckReader, DeckPublisher {
       const artifact = this.db
         .prepare('SELECT * FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
         .get(sessionId, slideId, revision)
-      if (artifact) return { sessionId, slideId, revision, html: this.artifacts.content(artifact) }
+      if (artifact)
+        return {
+          sessionId,
+          slideId,
+          revision,
+          html: this.artifacts.content(artifact),
+          provenance: this.artifacts.provenance(artifact),
+          ...this.artifacts.metadata(artifact),
+          ...this.artifacts.imageMetadata(artifact),
+          ...(this.artifacts.notes(artifact) ? { notes: this.artifacts.notes(artifact)! } : {}),
+        }
       return { sessionId, slideId, revision, html: String(row.html) }
+    })
+  }
+  nativeArtifact(
+    sessionId: string,
+    slideId: string,
+    revision: number,
+  ): {
+    bytes: Uint8Array
+    descriptor: import('@deckagent/presentation-document').ArtifactDescriptor
+    document?: import('@deckagent/presentation-document').SlideDocument
+  } {
+    return this.access(() => {
+      this.id(sessionId)
+      this.id(slideId)
+      if (!Number.isSafeInteger(revision) || revision < 1) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+      const row = this.db
+        .prepare('SELECT * FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
+        .get(sessionId, slideId, revision)
+      if (!row) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+      return this.artifacts.native(row)
     })
   }
 
@@ -783,6 +948,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       return operation()
     } catch (error) {
       if (error instanceof DesignError) throw new DeckError(error.code)
+      if (error instanceof FormatError && !(error instanceof DeckError)) throw new DeckError(error.code, error.issues)
       throw error instanceof DeckError || (error instanceof Error && error.name === 'AbortError')
         ? error
         : new DeckError('DECK_STORAGE')

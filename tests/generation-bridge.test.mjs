@@ -92,6 +92,10 @@ test('confirmed production runtime publishes a full deck through the request MCP
     [1, 1, 1],
   )
   for (const slide of state.slides) assert.match((await client.content(id, slide.slideId, 1)).html, /Explain/)
+  const provenance = (await client.content(id, state.slides[0].slideId, 1)).provenance
+  assert.equal(provenance[0].source.sourceId, selectedSource.sourceId)
+  assert.equal(provenance[0].quote, 'project marker')
+  assert.equal(JSON.parse(provenance[0].location).kind, 'lines')
   assert.ok(events.some(e => e.kind === 'text' && e.text.includes('3/3')))
   assert.ok(events.some(e => e.kind === 'text' && e.text.includes('foreign scope refused')))
   assert.ok(

@@ -360,5 +360,36 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
   assert.equal(sourceBundle.includes('@deckagent/agent-runtime'), false)
   assert.equal(sourceBundle.includes('@deepseek-ai/cordis'), false)
   const sourceComposition = await readFile(join(root, 'apps', 'local-web', 'src', 'source-tools.ts'), 'utf8')
-  assert.equal(sourceComposition.includes('registerFileTools'), false, 'Production must not register the legacy write tools')
+  assert.equal(
+    sourceComposition.includes('registerFileTools'),
+    false,
+    'Production must not register the legacy write tools',
+  )
+})
+
+test('workspace manifests, TypeScript projects and lockfile exclude the legacy runtime', async () => {
+  const retired = /cordis|@deepseek-ai\/|@deckagent\/(?:agent-runtime|model-providers|presentation-tools)/i
+  const manifests = [join(root, 'package.json')]
+  for (const app of await readdir(join(root, 'apps'))) manifests.push(join(root, 'apps', app, 'package.json'))
+  for (const domain of await readdir(join(root, 'packages'))) {
+    for (const name of await readdir(join(root, 'packages', domain)))
+      manifests.push(join(root, 'packages', domain, name, 'package.json'))
+  }
+  for (const path of manifests) {
+    let source
+    try {
+      source = await readFile(path, 'utf8')
+    } catch (error) {
+      if (error.code === 'ENOENT') continue
+      throw error
+    }
+    assert.doesNotMatch(source, retired, path)
+    const manifest = JSON.parse(source)
+    if (manifest.name === 'deckagent-tooling') assert.equal(manifest.workspaces.includes('vendor/*'), false)
+  }
+  for (const name of ['tsconfig.json', 'tsconfig.base.json', 'pnpm-lock.yaml'])
+    assert.doesNotMatch(await readFile(join(root, name), 'utf8'), retired, name)
+  const files = await import('../packages/tools/filesystem/lib/index.js')
+  assert.equal('registerFileTools' in files, false)
+  assert.equal('createWorkspaceReader' in files, false)
 })

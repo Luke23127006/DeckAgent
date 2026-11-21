@@ -83,11 +83,13 @@ export class GenerationStorage {
       )
       if (
         !state ||
+        (value.activeRequestId !== undefined && !validId(value.activeRequestId)) ||
         (row.started_at !== null &&
           (typeof row.started_at !== 'string' || !Number.isFinite(Date.parse(row.started_at))))
       )
         throw new DeckError('DECK_CORRUPT')
       return {
+        ...(typeof value.activeRequestId === 'string' ? { activeRequestId: value.activeRequestId } : {}),
         receipt: {
           ...target,
           sessionId,

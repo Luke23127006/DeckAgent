@@ -4,6 +4,8 @@ status: accepted
 
 # Initial visual catalog
 
+The [portable content decision](0009-portable-slide-documents-and-format-adapters.md) adds executable HTML Basic version 2 with a two-image layout. Existing version 1 snapshots retain the values recorded here.
+
 Use one neutral built-in design system and one HTML template to establish a complete local generation path. The [decision record](https://github.com/Luke23127006/DeckAgent/issues/92) holds the approval and reviewed alternatives. The canonical product values live in the [default design system rule](../spec/04-business-rules/BR-003.md), [theme role rule](../spec/04-business-rules/BR-017.md) and [template rule](../spec/04-business-rules/BR-018.md). This decision is not evidence that generation is implemented.
 
 ## Initial values

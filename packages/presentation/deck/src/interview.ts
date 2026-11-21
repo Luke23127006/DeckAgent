@@ -109,7 +109,7 @@ export function skipInterview(input: unknown): BriefDraft {
     ...(!draft.generationFormat && (!draft.requestedFormat || draft.requestedFormat === 'html')
       ? { generationFormat: 'html' }
       : {}),
-    ...(!draft.template ? { template: { id: 'html-basic', version: 1 } } : {}),
+    ...(!draft.template ? { template: { id: 'html-basic', version: 2 } } : {}),
     ...(!draft.designSystem ? { designSystem: { id: 'deckagent-neutral', version: 1 } } : {}),
   })
 }

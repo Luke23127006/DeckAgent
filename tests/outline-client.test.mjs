@@ -4,6 +4,74 @@ import test from 'node:test'
 import { OutlineClient } from '../packages/client/runtime/lib/index.js'
 import { resolveDesign } from '../packages/presentation/design/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
+import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+test('saved web-image Outlines remain readable and malformed image blocks are rejected', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'web-outline-decoder-'))
+  const decks = new DeckService(join(dir, 'decks.sqlite'))
+  t.after(async () => {
+    decks.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const saved = decks.saveBrief('chat', {
+    expectedVersion: 0,
+    draft: {
+      ...brief(),
+      proposedSlideCount: 1,
+      sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
+      images: { mode: 'public-research', attachmentIds: [], unmetRequirements: [] },
+    },
+  })
+  decks.proposeBoundOutline('chat', {
+    requestId: 'review',
+    responseIndex: 1,
+    expectedOutline: null,
+    expectedBrief: { briefId: saved.briefId, version: 1 },
+    draft: {
+      overview: 'Web illustration',
+      revisionSuggestions: [],
+      slides: [
+        {
+          title: 'Forest',
+          content: 'Explain',
+          sources: [],
+          blocks: [
+            { kind: 'web-image', query: 'forest ecosystem', caption: 'Forest', required: true },
+            { kind: 'web-image', query: 'ocean ecosystem', required: false },
+          ],
+        },
+      ],
+    },
+  })
+  let value = decks.outlineSnapshot('chat')
+  const valid = structuredClone(value)
+  const server = createServer((_req, res) =>
+    res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(value)),
+  )
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  t.after(
+    () =>
+      new Promise(resolve => {
+        server.closeAllConnections()
+        server.close(resolve)
+      }),
+  )
+  const client = new OutlineClient(`http://127.0.0.1:${server.address().port}`, 'fixture-token')
+  assert.deepEqual(await client.snapshot('chat'), valid)
+  for (const block of [
+    { kind: 'web-image', query: '' },
+    { kind: 'web-image', query: 'x'.repeat(501) },
+    { kind: 'web-image', query: 'forest', required: 'yes' },
+    { kind: 'web-image', query: 'forest', url: 'https://example.org/image.png' },
+  ]) {
+    value = structuredClone(valid)
+    value.proposals[0].slides[0].blocks = [block]
+    await assert.rejects(client.snapshot('chat'), /INVALID_RESPONSE/)
+  }
+})
 
 test('modern Outline decoder preserves Brief and structured content but rejects broken bindings', async t => {
   const briefRecord = {

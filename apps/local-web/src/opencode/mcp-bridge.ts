@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { RequestTools } from '@deckagent/host-api'
@@ -91,7 +91,7 @@ export async function openToolBridge(options: {
         return denied('TOOL_FAILED')
       }
     })
-    const transport = new StreamableHTTPServerTransport({ enableJsonResponse: true })
+    const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true })
     const connection: Transport = {
       start: () => transport.start(),
       send: (message, opts) => transport.send(message, opts),
@@ -106,7 +106,19 @@ export async function openToolBridge(options: {
     })
     try {
       await server.connect(connection)
-      await transport.handleRequest(req, res, body)
+      const headers = new Headers()
+      for (const [name, value] of Object.entries(req.headers))
+        if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(', ') : value)
+      const response = await transport.handleRequest(
+        new Request(`http://${expectedHost}/mcp`, { method: 'POST', headers, body: JSON.stringify(body) }),
+        { parsedBody: body },
+      )
+      // Let Node frame the HTTP body. The Node SDK wrapper's optimized socket path can emit invalid chunks.
+      const outgoing = Object.fromEntries(response.headers)
+      delete outgoing['transfer-encoding']
+      res.writeHead(response.status, outgoing)
+      if (response.body) for await (const bytes of response.body) res.write(bytes)
+      res.end()
     } catch {
       if (!res.headersSent) res.writeHead(500).end()
     }

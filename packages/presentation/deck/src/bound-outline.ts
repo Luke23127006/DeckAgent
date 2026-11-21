@@ -16,8 +16,13 @@ const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() &&
 const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
 
 export function validateBoundOutline(value: unknown): BoundOutlineDraft {
-  const invalid = (): never => {
-    throw new DeckError('OUTLINE_INVALID')
+  const invalid = (
+    path = 'outline',
+    expected = 'An overview, slides array and revisionSuggestions array using the supplied schema',
+  ): never => {
+    throw new DeckError('OUTLINE_INVALID', [
+      { code: 'OUTLINE_INVALID', path, message: 'The Outline field does not match its declared schema.', expected },
+    ])
   }
   if (
     !object(value) ||
@@ -34,7 +39,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
   } catch {
     return invalid()
   }
-  const slides = value.slides.map((s: unknown) => {
+  const slides = value.slides.map((s: unknown, index: number) => {
     if (
       !object(s) ||
       !only(s, ['slideId', 'title', 'content', 'blocks', 'sources']) ||
@@ -43,7 +48,21 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
       !text(s.content) ||
       !Array.isArray(s.sources)
     )
-      return invalid()
+      return invalid(
+        `slides[${index}]`,
+        'A title, string content, structured blocks array and sources array; slideId is optional',
+      )
+    if (!Array.isArray(s.blocks)) return invalid(`slides[${index}].blocks`, 'An array of structured content blocks')
+    for (const [blockIndex, block] of s.blocks.entries()) {
+      try {
+        validateContentPlan({ title: s.title, blocks: [block] })
+      } catch {
+        return invalid(
+          `slides[${index}].blocks[${blockIndex}]`,
+          'A declared block kind with exactly its required fields; image uses attachmentId, web-image uses query and optional caption/required',
+        )
+      }
+    }
     const content = validateContentPlan({ title: s.title, blocks: s.blocks })
     const kinds = ['attachment', 'project-file', 'approved-file', 'research'] as const
     const sources = s.sources.map((r: unknown) => {
@@ -158,6 +177,8 @@ export function saveBoundOutline(
       throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
     if (s.blocks.some(b => b.kind === 'image' && !brief.draft.images.attachmentIds.includes(b.attachmentId)))
       throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
+    if (s.blocks.some(b => b.kind === 'web-image') && brief.draft.images.mode !== 'public-research')
+      throw new DeckError('IMAGE_CHOICE_REQUIRED')
     return { ...s, slideId: s.slideId ?? `slide-${randomUUID()}` }
   })
   if (new Set(slides.map(s => s.slideId)).size !== slides.length) throw new DeckError('OUTLINE_INVALID')

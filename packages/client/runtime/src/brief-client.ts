@@ -89,10 +89,12 @@ function draft(v: unknown): v is BriefDraft {
       'template',
       'designSystem',
       'themeOverrides',
+      'presenterNotes',
     ])
   )
     return false
   if (
+    (v.presenterNotes !== undefined && typeof v.presenterNotes !== 'boolean') ||
     ['topic', 'audience', 'purpose', 'language', 'requestedFormat'].some(k => v[k] !== undefined && !text(v[k])) ||
     (v.durationMinutes !== undefined &&
       (typeof v.durationMinutes !== 'number' || !Number.isFinite(v.durationMinutes) || v.durationMinutes <= 0)) ||
@@ -124,7 +126,7 @@ function draft(v: unknown): v is BriefDraft {
   if (
     !object(i) ||
     !only(i, ['mode', 'attachmentIds', 'unmetRequirements']) ||
-    !['none', 'attachments', 'unavailable'].some(k => k === i.mode) ||
+    !['none', 'attachments', 'public-research', 'unavailable'].some(k => k === i.mode) ||
     !Array.isArray(i.attachmentIds) ||
     !i.attachmentIds.every(id => typeof id === 'string' && /^att-[a-f0-9-]{36}$/.test(id)) ||
     new Set(i.attachmentIds).size !== i.attachmentIds.length ||

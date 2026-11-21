@@ -57,37 +57,12 @@ jobs:
         id: lint
         run: pnpm lint
 
-      - name: Cordis smoke tests
-        id: smoke
-        timeout-minutes: 2
-        run: pnpm test:cordis-smoke
-
-      - name: DeckAgent runtime tests (TASK-002-A)
-        id: runtime
-        timeout-minutes: 2
-        run: pnpm test:agent-runtime
-
-      - name: Model provider and manual CLI checks (TASK-002-B, local HTTP only)
-        id: providers
-        timeout-minutes: 2
-        run: pnpm test:model-providers
-
-      - name: Boot and unload Cordis smoke CLI
-        id: boot
-        timeout-minutes: 2
-        run: pnpm start:cordis-smoke
-
-      - name: Durable Session and process restart checks (TASK-002-C, local HTTP only)
+      - name: Durable conversation storage (local SQLite)
         id: sessions
         timeout-minutes: 2
         run: pnpm test:session-persistence
 
-      - name: Chat first-run setup and Windows encrypted credentials (local HTTP only)
-        id: chat_setup
-        timeout-minutes: 3
-        run: pnpm test:chat-setup
-
-      - name: File Tools, Host API and browser connection (TASK-003, local fixtures)
+      - name: Host API and browser connection (local fixtures)
         id: tools_browser
         timeout-minutes: 2
         run: pnpm test:tools-browser
@@ -171,12 +146,7 @@ jobs:
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
-          SMOKE_RESULT: ${{ steps.smoke.outcome }}
-          RUNTIME_RESULT: ${{ steps.runtime.outcome }}
-          PROVIDERS_RESULT: ${{ steps.providers.outcome }}
           SESSIONS_RESULT: ${{ steps.sessions.outcome }}
-          CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
-          BOOT_RESULT: ${{ steps.boot.outcome }}
           TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
           BROWSER_RESULT: ${{ steps.browser.outcome }}
           ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
@@ -201,13 +171,8 @@ jobs:
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
           - Lint (Biome): $env:LINT_RESULT
-          - Integration smoke: $env:SMOKE_RESULT
-          - DeckAgent runtime (TASK-002-A only): $env:RUNTIME_RESULT
-          - Model providers (TASK-002-B, local HTTP only): $env:PROVIDERS_RESULT
-          - Session persistence (TASK-002-C, local HTTP only): $env:SESSIONS_RESULT
-          - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
-          - Boot/unload: $env:BOOT_RESULT
-          - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
+          - Session persistence (local SQLite): $env:SESSIONS_RESULT
+          - Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Local foundation / workspaces / chats / storage: $env:LOCAL_FOUNDATION_RESULT
           - Models / requests / fake OpenCode CLI (no real CLI or provider): $env:MODEL_REQUESTS_RESULT
           - Installed / packaged OpenCode resources / version / integrity checks: $env:OPENCODE_RESOURCES_RESULT
@@ -215,7 +180,7 @@ jobs:
           - Attachment parsing / upload / admission / source content (local fixtures): $env:ATTACHMENTS_RESULT
           - Public research / free-only policy / durable provenance (local fixtures): $env:RESEARCH_RESULT
           - Real browser workspaces / chats / drafts / deck canvas: $env:BROWSER_RESULT
-          - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
+          - Dotenv startup / Web settings without credentials: $env:ENV_STARTUP_RESULT
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
           - Outline state / client: $env:OUTLINE_WORKFLOW_RESULT
@@ -225,8 +190,6 @@ jobs:
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on
-          dev supplies automated evidence; also verify every criterion of the gate.
-          Gate 002 additionally requires a real-model request and history readback
-          after Host restart on the accepted baseline (manual evidence; no cloud keys
-          are required by this workflow). PR runs verify the proposed merge only.
+          dev supplies automated evidence. Real-provider requests and hosted checks
+          need separate evidence. PR runs verify the proposed merge only.
           "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8

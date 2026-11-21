@@ -4,7 +4,17 @@ Notable changes to this repository. The newest changes are at the top.
 
 ## [Unreleased]
 
+### Removed
+
+- Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.
+
 ### Added
+
+- Keep portable slide documents beside native artifacts, with executable HTML Basic version 2 templates, a two-image layout, shared browser decoding and separate validation diagnostics. Prepare public images before confirmation and reuse local bytes through layout retries; required missing images keep the Outline open for revision. Include a native PPTX capability proof with editable text/images and notes, without adding a product export option. Deck schema 8 preserves existing revisions and visual snapshots.
+
+- Continue missing slides with an explicit new request on the same confirmed Deck; retain completed revisions, visual choices and the original confirmation across Stop and restart.
+- Save per-content origins, actual source locations, separate presenter notes and a Host-written closing report from committed revisions.
+- Find public images through Wikimedia Commons without an API key, retain local PNGs and credits, reject incompatible licences and report optional omissions. Generated images remain deferred in [the follow-up issue](https://github.com/Luke23127006/DeckAgent/issues/106).
 
 - Install pinned OpenCode with Windows x64 application dependencies, discover it without global setup, validate runtime availability at startup and prepare verified release resources with the upstream license.
 
@@ -24,6 +34,12 @@ Notable changes to this repository. The newest changes are at the top.
 - Persist immutable Brief versions and explicit source choices per Chat in Deck schema v3; expose authenticated Host reads/writes and a browser-safe client decoder. Existing Decks, Outlines and Chat history remain intact. Interview and generation integration remain separate.
 
 ### Fixed
+
+- Reuse request-scoped web images when retrying slide layouts, register concurrent identical image calls once, and explain that web images are already attached by the image-search tool.
+
+- Read saved web-image Outline blocks in the browser and clear completed request controls even when a later Outline refresh fails; distinguish projection-read failures from model failures.
+
+- Write MCP responses with native Node HTTP framing so the pinned OpenCode client can read tool replies.
 
 - Keep Chat and Create deck guidance, research permissions and Outline revision targets aligned with the current workflow while preserving the interface layout and theme.
 - Keep the research checkbox beside its label, show deck publication progress and render assistant text with safe, limited formatting and readable Brief details.

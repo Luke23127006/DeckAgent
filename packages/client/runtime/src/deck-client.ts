@@ -1,5 +1,6 @@
-import type { DeckChange, DeckSnapshot, SlideContent } from '@deckagent/deck'
+import type { ImageCredit, DeckChange, DeckSnapshot, SlideContent } from '@deckagent/deck'
 import { decodeGeneration } from './confirmation-client.ts'
+import { decodeSlideDocument, decodeArtifactDescriptor, decodeContentOrigins } from '@deckagent/presentation-document'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -90,10 +91,56 @@ export class DeckClient {
       value.slideId !== slideId ||
       value.revision !== revision ||
       typeof value.html !== 'string' ||
-      value.html.length > 4 * 1024 * 1024
+      value.html.length > 4 * 1024 * 1024 ||
+      (value.notes !== undefined && (typeof value.notes !== 'string' || value.notes.length > 16000))
     )
       invalid()
-    return { sessionId, slideId, revision, html: value.html }
+    if (
+      value.imageCredits !== undefined &&
+      (!Array.isArray(value.imageCredits) ||
+        value.imageCredits.length > 100 ||
+        value.imageCredits.some(
+          c =>
+            !object(c) ||
+            typeof c.url !== 'string' ||
+            !c.url.startsWith('https://') ||
+            typeof c.author !== 'string' ||
+            typeof c.licenseUrl !== 'string' ||
+            !['public-domain', 'CC0', 'CC BY', 'unknown'].includes(String(c.license)) ||
+            c.unknownLicense !== (c.license === 'unknown') ||
+            typeof c.retrievedAt !== 'string',
+        ))
+    )
+      invalid()
+    if (
+      value.imageOmissions !== undefined &&
+      (!Array.isArray(value.imageOmissions) || value.imageOmissions.some(q => typeof q !== 'string'))
+    )
+      invalid()
+    const document = value.document === undefined ? undefined : decodeSlideDocument(value.document)
+    const artifact = value.artifact === undefined ? undefined : decodeArtifactDescriptor(value.artifact)
+    if (
+      document &&
+      (document.slideId !== slideId ||
+        artifact?.documentVersion !== document.schemaVersion ||
+        document.notes !== value.notes)
+    )
+      invalid()
+    if (artifact?.documentVersion && !document) invalid()
+    return {
+      sessionId,
+      slideId,
+      revision,
+      html: value.html,
+      ...(document ? { document } : {}),
+      ...(artifact ? { artifact } : {}),
+      ...(Array.isArray(value.imageCredits)
+        ? { imageCredits: value.imageCredits as unknown as readonly ImageCredit[] }
+        : {}),
+      ...(Array.isArray(value.imageOmissions) ? { imageOmissions: value.imageOmissions as string[] } : {}),
+      ...(typeof value.notes === 'string' ? { notes: value.notes } : {}),
+      ...(Array.isArray(value.provenance) ? { provenance: decodeContentOrigins(value.provenance) } : {}),
+    }
   }
 
   /** A connection always starts with a current-version notice, including an empty deck. */

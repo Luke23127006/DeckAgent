@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@deckagent/design": "workspace:*",
-    "css-tree": "3.1.0",
-    "parse5": "8.0.0"
+    "@deckagent/presentation-document": "workspace:*",
+    "@deckagent/html-format": "workspace:*"
   }
 }

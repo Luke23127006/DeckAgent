@@ -100,12 +100,17 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
     !('input' in value) ||
     typeof value.input !== 'string' ||
     Object.keys(value).some(
-      key => !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch', 'deck'].includes(key),
+      key =>
+        !['sessionId', 'input', 'attachmentIds', 'draftRevision', 'publicResearch', 'deck', 'continueDeck'].includes(
+          key,
+        ),
     ) ||
     ('publicResearch' in value && typeof value.publicResearch !== 'boolean')
   )
     throw new HttpError(400, 'INVALID_REQUEST')
   const ids = 'attachmentIds' in value ? value.attachmentIds : undefined
+  if ('continueDeck' in value && (value.continueDeck !== true || 'deck' in value || (Array.isArray(ids) && ids.length)))
+    throw new HttpError(400, 'INVALID_REQUEST')
   const deck = 'deck' in value ? value.deck : undefined
   const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
   let workflow: import('./contracts.ts').DeckRequest | undefined
@@ -130,7 +135,10 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
       !Number.isSafeInteger(deck.expectedBriefVersion) ||
       Number(deck.expectedBriefVersion) < 0 ||
       (deck.formatChoice !== undefined && deck.formatChoice !== 'html') ||
-      (deck.imageChoice !== undefined && deck.imageChoice !== 'none' && deck.imageChoice !== 'attachments')
+      (deck.imageChoice !== undefined &&
+        deck.imageChoice !== 'none' &&
+        deck.imageChoice !== 'attachments' &&
+        deck.imageChoice !== 'public-research')
     )
       throw new HttpError(400, 'INVALID_REQUEST')
     const target = deck.expectedOutline
@@ -162,7 +170,9 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
       expectedOutline:
         target === null ? null : { outlineId: String(target!.outlineId), version: Number(target!.version) },
       ...(deck.formatChoice === 'html' ? { formatChoice: 'html' } : {}),
-      ...(deck.imageChoice === 'none' || deck.imageChoice === 'attachments' ? { imageChoice: deck.imageChoice } : {}),
+      ...(deck.imageChoice === 'none' || deck.imageChoice === 'attachments' || deck.imageChoice === 'public-research'
+        ? { imageChoice: deck.imageChoice }
+        : {}),
       ...(typeof deck.restoreOutlineId === 'string' ? { restoreOutlineId: deck.restoreOutlineId } : {}),
       ...(object(choice)
         ? {
@@ -190,6 +200,7 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
   if ([...value.input].length > requestTextLimit) throw new HttpError(413, 'REQUEST_TEXT_TOO_LONG')
   if (!value.input.isWellFormed()) throw new HttpError(400, 'INVALID_REQUEST')
   return {
+    ...('continueDeck' in value ? { continueDeck: true as const } : {}),
     ...(workflow ? { deck: workflow } : {}),
     sessionId: value.sessionId,
     input: value.input,
@@ -212,7 +223,12 @@ export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
   const expected = Buffer.from(`Bearer ${token}`)
   const controller = options.requests
-    ? new RequestController(options.requests.store, options.requests.runtime, options.requests.prepareTools)
+    ? new RequestController(
+        options.requests.store,
+        options.requests.runtime,
+        options.requests.prepareTools,
+        options.requests.closingText,
+      )
     : undefined
   const streams = new Set<ServerResponse>()
   let origin = ''

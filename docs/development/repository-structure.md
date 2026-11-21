@@ -8,7 +8,6 @@ This document defines where code lives and who owns dependencies. Dependencies a
 | --- | --- |
 | `apps/` | Application composition and process entry points. |
 | `packages/` | Reusable DeckAgent-owned libraries, grouped by domain as `packages/<domain>/<name>`. |
-| `vendor/` | Pinned upstream code; keep upstream identities and source (see [vendor/README.md](../../vendor/README.md)). Do not edit. |
 | `scripts/` | Repository build and maintenance scripts. |
 | `tests/` | Node test-runner suites and their fixtures in `tests/fixtures/`. |
 | `config/` | Checked-in sample/development configuration; never commit secrets. |
@@ -30,15 +29,16 @@ This section describes the current state and changes with the codebase; it is no
 
 | Package | Path | Depends on |
 | --- | --- | --- |
-| `@deckagent/agent-runtime` | `packages/agent/runtime` | `@deepseek-ai/cordis` |
-| `@deckagent/model-providers` | `packages/llm/providers` | `@deckagent/agent-runtime` |
 | `@deckagent/session-persistence` | `packages/session/persistence` | none |
 | `@deckagent/workspace-registry` | `packages/workspace/registry` | none |
 | `@deckagent/design` | `packages/presentation/design` | none |
-| `@deckagent/deck` | `packages/presentation/deck` | design |
-| `@deckagent/local-web` | `apps/local-web` | deck, host-api, browser-runtime, model-providers, session-persistence, workspace-registry |
-| `@deckagent/cordis-fixture` | `packages/testing/cordis-fixture` | `@deepseek-ai/cordis` |
-| `@deckagent/agent-runtime-cli` | `apps/agent-runtime` | runtime, providers, persistence, `@deepseek-ai/cordis` |
-| `@deckagent/cordis-smoke` | `apps/cordis-smoke` | `@deepseek-ai/cordis`, fixture |
+| `@deckagent/presentation-document` | `packages/presentation/document` | design types; browser-safe contracts and decoders |
+| `@deckagent/html-format` | `packages/presentation/html` | design, presentation-document, css-tree, parse5 |
+| `@deckagent/pptx-format` | `packages/presentation/pptx` | design, presentation-document, pptxgenjs, jszip; native-format proof |
+| `@deckagent/deck` | `packages/presentation/deck` | design, presentation-document, html-format compatibility default |
+| `@deckagent/file-tools` | `packages/tools/filesystem` | zip.js, fast-xml-parser, pdfjs-dist, sharp |
+| `@deckagent/host-api` | `packages/host/api` | deck, busboy |
+| `@deckagent/browser-runtime` | `packages/client/runtime` | deck, host-api, presentation-document; animejs at build time |
+| `@deckagent/local-web` | `apps/local-web` | browser-runtime, deck, design, file-tools, host-api, session-persistence, workspace-registry, MCP SDK; optional Windows OpenCode runtime |
 
-Adding a package needs no fixed set of file changes: the build script discovers workspace packages through pnpm (so it changes only when a package adds a non-`index` entry point), and `pnpm-workspace.yaml`, the root `tsconfig.json`, and `tsconfig.base.json` are edited only when a new glob, a root project reference, or a workspace path alias is actually required. Package names do not always mirror directory paths (`model-providers` in `packages/llm`, `-cli` on `apps/agent-runtime`); this drift is recorded as-is and renaming is a separate cleanup task.
+Adding a package needs no fixed set of file changes: the build script discovers workspace packages through pnpm (so it changes only when a package adds a non-`index` entry point), and `pnpm-workspace.yaml`, the root `tsconfig.json`, and `tsconfig.base.json` are edited only when a new glob, a root project reference, or a workspace path alias is actually required.

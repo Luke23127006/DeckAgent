@@ -48,6 +48,7 @@ export function briefDetails(
   const record = element('details')
   record.append(element('summary', title))
   const draft = brief.draft
+  if (draft.presenterNotes) record.append(element('p', 'Ghi chú người trình bày: có yêu cầu.'))
   for (const [key, value] of Object.entries(draft))
     if (typeof value === 'string' || typeof value === 'number')
       record.append(element('p', `${briefFieldLabel(key)}: ${value}`))
@@ -63,6 +64,7 @@ export function briefDetails(
   const imageLabels = {
     none: 'Không dùng ảnh',
     attachments: 'Dùng ảnh đính kèm',
+    'public-research': 'Ảnh web từ Wikimedia Commons; truy vấn ảnh được gửi tới dịch vụ này.',
     unavailable: 'Yêu cầu ảnh chưa đáp ứng',
   }
   record.append(element('p', `Ảnh: ${imageLabels[draft.images.mode]}`))

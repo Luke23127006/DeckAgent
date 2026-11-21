@@ -55,12 +55,18 @@ export class BriefService implements BriefManagement {
       sources: { material: false, modelKnowledge: false, publicResearch: false, refs: [] },
       images: { mode: 'none' as const, attachmentIds: [], unmetRequirements: [] },
     }
+    const state = interviewState(
+      draft,
+      brief.sourceStates.some(s => s.status === 'unavailable'),
+    )
+    const images = this.decks.imageBlockers(id)
     return {
       brief,
-      state: interviewState(
-        draft,
-        brief.sourceStates.some(s => s.status === 'unavailable'),
-      ),
+      state: {
+        ...state,
+        blockers: [...state.blockers, ...images],
+        readyForOutline: state.readyForOutline && !images.length,
+      },
     }
   }
 

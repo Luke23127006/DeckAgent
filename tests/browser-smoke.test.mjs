@@ -719,6 +719,26 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
       ),
     'Reload lost the last published slide after Stop',
   )
+  await writeFile(`${log}.generation.json`, '{}')
+  await eventually(
+    () =>
+      evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent==='Tiếp tục tạo deck' && !b.disabled)`),
+    'Incomplete deck does not offer explicit continuation',
+  )
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Tiếp tục tạo deck').click(); true`)
+  try {
+    await eventually(
+      () =>
+        evaluate(
+          `document.querySelector('.deck-progress')?.textContent.includes('3/3') && document.querySelector('.stop-action').hidden`,
+        ),
+      'Explicit continuation did not finish the remaining slides',
+    )
+  } catch (error) {
+    throw new Error(
+      `${error.message}: ${await evaluate(`JSON.stringify({status:document.querySelector('.request-status')?.textContent,progress:document.querySelector('.deck-progress')?.textContent})`)}`,
+    )
+  }
 })
 
 async function modelsEndpoint() {
@@ -737,6 +757,106 @@ async function modelsEndpoint() {
       }),
   }
 }
+
+test('web-image Outline completion clears request controls and history reopens after reload and Chat switching', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'web-outline-history-ui-'))
+  let app, session
+  t.after(async () => {
+    await closeBrowser(session)
+    await app?.close()
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+  })
+  const log = join(dir, 'opencode.log')
+  const draft = {
+    ...brief(),
+    proposedSlideCount: 1,
+    purpose: 'Explain',
+    answers: [{ topic: 'images', value: 'Web illustration' }],
+    sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
+    images: { mode: 'public-research', attachmentIds: [], unmetRequirements: [] },
+  }
+  const plan = {
+    overview: 'Forest overview',
+    revisionSuggestions: [],
+    slides: [
+      {
+        title: 'Forest',
+        content: 'Explain',
+        sources: [],
+        blocks: [
+          { kind: 'web-image', query: 'forest ecosystem', required: true },
+          { kind: 'bullets', items: ['Explain'] },
+        ],
+      },
+    ],
+  }
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan }))
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir) })
+  const create = async () =>
+    (
+      await (
+        await fetch(`${app.origin}/api/sessions`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ selection: { provider: 'fixture', model: 'workflow' } }),
+        })
+      ).json()
+    ).sessionId
+  const other = await create(),
+    target = await create()
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation button[data-session-id="${target}"]')`),
+    'Target Chat missing',
+  )
+  await chooseChat(evaluate, target)
+  await eventually(
+    () => evaluate(`!document.querySelector('[aria-label="Chế độ hội thoại"]').disabled`),
+    'Deck mode not ready',
+  )
+  await evaluate(
+    `window.__originalOutlineFetch=window.fetch.bind(window);window.__outlineFaultSeen=false;window.fetch=async (...args)=>{const url=String(args[0]);if(url.endsWith('/outline')){const requests=await (await window.__originalOutlineFetch(url.replace(/\\/outline$/,'/requests'),args[1])).json();if(requests.some(r=>r.status==='completed')){window.__outlineFaultSeen=true;throw new Error('fixture Outline refresh unavailable')}}return window.__originalOutlineFetch(...args)};true`,
+  )
+  await evaluate(
+    `{ const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;document.querySelector('[aria-label="Lựa chọn ảnh"]').value='public-research';const input=document.querySelector('.composer textarea');input.value='Create the forest deck [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit(); } true`,
+  )
+  await eventually(
+    () => evaluate(`document.querySelector('.stop-action').hidden && !document.querySelector('.send-action').disabled`),
+    'Completed request left composer active',
+  )
+  assert.equal(
+    await evaluate('window.__outlineFaultSeen'),
+    true,
+    'The post-completion Outline failure must be exercised',
+  )
+  await evaluate(
+    `window.fetch=window.__originalOutlineFetch;[...document.querySelectorAll('button')].find(b=>b.textContent==='Kết nối lại / đọc lịch sử').click();true`,
+  )
+  await eventually(
+    () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
+    'Saved web-image Outline not shown',
+  )
+  assert.equal(await requestCount(app, target), 1)
+  await protocol.call('Page.reload')
+  await eventually(
+    () => evaluate(`document.querySelector('.outline-proposal[data-status=current]')?.textContent.includes('Forest')`),
+    'Reload lost web-image Outline',
+  )
+  await chooseChat(evaluate, other)
+  await chooseChat(evaluate, target)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.messages')?.textContent.includes('Create the forest deck') && !!document.querySelector('.outline-proposal[data-status=current]')`,
+      ),
+    'Chat history did not reopen',
+  )
+  assert.equal(await requestCount(app, target), 1, 'Opening history must not replay the model request')
+})
 
 test('saving a Custom API model ID from the input makes it available without a separate Add click', {
   timeout: 45000,
@@ -1583,6 +1703,11 @@ test('public research is explicit, config checks the free key and stored excerpt
     await evaluate(`document.querySelector('.public-research-choice').checked`),
     false,
     'A new interface must not implicitly authorize outside research',
+  )
+  await eventually(
+    () =>
+      evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm')?.disabled === false`),
+    'Restored Chat sources are not ready',
   )
   await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm').click(); true`)
   await eventually(

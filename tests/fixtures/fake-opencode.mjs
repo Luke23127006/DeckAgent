@@ -178,20 +178,90 @@ if (existsSync(`${logFile}.generation.json`)) {
       event('text', { id: 'prt_negative', type: 'text', text: 'Generation phase escalation and foreign scope refused' })
     }
     const escapeHtml = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    let publishedCount = 0
     for (const slide of plan.slides) {
       const stage = await call('begin_slide', { slideId: slide.slideId, layoutId: slide.candidates[0].id })
-      const html = `<h1>${escapeHtml(slide.title)}</h1><ul>${slide.blocks
-        .flatMap(b => b.items ?? [])
-        .map(text => `<li>${escapeHtml(text)}</li>`)
-        .join('')}</ul>`
+      const imageTags = []
+      for (const block of slide.blocks.filter(b => !stage.document && b.kind === 'web-image')) {
+        try {
+          const image = await call('find_slide_image', {
+            stageId: stage.stageId,
+            slideId: slide.slideId,
+            query: block.query,
+          })
+          imageTags.push(
+            `<img src="asset:${image.assetId}" alt="Public illustration" style="width:80px;height:80px">${block.caption ? `<p>${escapeHtml(block.caption)}</p>` : ''}`,
+          )
+        } catch (error) {
+          if (block.required !== false) throw error
+        }
+      }
+      const html =
+        stage.starter ??
+        `<h1>${escapeHtml(slide.title)}</h1><ul>${slide.blocks
+          .flatMap(b => b.items ?? [])
+          .map(text => `<li>${escapeHtml(text)}</li>`)
+          .join('')}</ul>${imageTags.join('')}`
       await call('append_slide', { stageId: stage.stageId, sequence: 0, text: html, final: true })
+      if (fixture.negative) {
+        let rejected = false
+        try {
+          await call('record_slide_provenance', {
+            stageId: stage.stageId,
+            entries: [{ text: slide.content, kind: 'fact', evidenceId: 'evidence-forged', quote: 'fabricated' }],
+          })
+        } catch {
+          rejected = true
+        }
+        if (!rejected) throw new Error('Forged source evidence was accepted')
+      }
+      const source = plan.sources?.find(s => s.kind === 'project-file')
+      const proof = source ? await call('read_source', { path: source.label }, true) : undefined
+      await call('record_slide_provenance', {
+        stageId: stage.stageId,
+        ...(plan.outline.brief.draft.presenterNotes
+          ? { notes: `Present ${slide.title} using a concrete example for the audience.` }
+          : {}),
+        entries: [
+          ...(stage.document
+            ? [
+                stage.document.title,
+                ...stage.document.nodes.flatMap(n =>
+                  n.kind === 'bullets'
+                    ? n.items
+                    : n.kind === 'columns'
+                      ? n.columns.flatMap(c => c.bullets)
+                      : n.kind === 'metrics'
+                        ? n.items.flatMap(m => [m.value, m.label])
+                        : n.kind === 'image'
+                          ? n.caption
+                            ? [n.caption]
+                            : []
+                          : [n.text],
+                ),
+              ]
+                .filter(text => text !== slide.content)
+                .map(text => ({ text, kind: 'wording' }))
+            : []),
+          {
+            text: slide.content,
+            kind: proof ? 'fact' : 'wording',
+            ...(proof ? { evidenceId: proof.evidenceId, quote: proof.text } : {}),
+          },
+        ],
+      })
+      if (stage.document) {
+        const validation = await call('validate_slide', { stageId: stage.stageId, slideId: slide.slideId })
+        if (!validation.valid) throw new Error(`Template validation: ${JSON.stringify(validation.issues)}`)
+      }
       await call('publish_slide', {
         stageId: stage.stageId,
         slideId: slide.slideId,
         expectedRevision: 0,
         publicationId: `pub-${slide.slideId}`,
       })
-      if (fixture.stopAfterFirst) {
+      publishedCount++
+      if (fixture.stopAfterFirst || publishedCount === fixture.stopAfter) {
         event('text', { id: 'prt_partial', type: 'text', text: 'First published; waiting for Stop' })
         await sleep(10 * 60 * 1000)
       }
