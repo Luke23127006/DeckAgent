@@ -10,7 +10,8 @@
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./boot": "./lib/boot.js"
+    "./boot": "./lib/boot.js",
+    "./logo": "./assets/Logo.png"
   },
   "dependencies": {
     "@deckagent/deck": "workspace:*",

@@ -163,6 +163,28 @@ test('interactive composer selects a model without work, offers no send in this 
   app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('interactive') })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])')`), 'Welcome missing')
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.wordmark'),'::before').maskImage.includes('/client/Logo.png')`), true, 'The wordmark uses the supplied logo as its mask')
+  await evaluate(`document.querySelector('.account-trigger').click(); true`)
+  const logoPalettes = [
+    ['none', '#F5A9E8', '#88C7FF', '#A73398', '#2465C6'],
+    ['koi', '#9DE4C4', '#FF9677', '#237D65', '#C6462B'],
+    ['rain', '#FFC17D', '#83C8FF', '#A65A17', '#286AAB'],
+    ['forest', '#98E6A1', '#D9F581', '#237747', '#668C19'],
+    ['stars', '#A8B5FF', '#E1D8FF', '#4053B3', '#7951A6'],
+    ['sakura', '#FFD0E3', '#FF9FC3', '#AE386F', '#C64E78'],
+  ]
+  for (const [index, [id, darkStart, darkEnd, lightStart, lightEnd]] of logoPalettes.entries()) {
+    await evaluate(`document.querySelectorAll('.background-control button')[${index}].click(); document.documentElement.dataset.theme='dark'; true`)
+    await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,${darkStart},${darkEnd})'`), `${id} dark logo colors did not apply`)
+    await evaluate(`document.documentElement.dataset.theme='light'; true`)
+    await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,${lightStart},${lightEnd})'`), `${id} light logo colors did not apply`)
+  }
+  await protocol.call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
+  await evaluate(`delete document.documentElement.dataset.theme; true`)
+  await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,#FFD0E3,#FF9FC3)'`), 'System dark mode did not recolor the logo')
+  await protocol.call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+  await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,#AE386F,#C64E78)'`), 'System light mode did not recolor the logo')
+  await evaluate(`document.querySelectorAll('.background-control button')[0].click(); true`)
   // The first start shows a new chat that the Host has not made yet, like ChatGPT.
   assert.equal((await storedChats(app)).length, 0, 'Opening the interface makes no chat')
   assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The new chat is not listed before it is made')

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -28,6 +28,11 @@ test('Local Web serves the page and fixed assets only; saved history survives a 
   const page = await fetch(app.origin)
   assert.equal(page.status, 200)
   assert.match(await page.text(), /\/client\/boot\.js/)
+  const logo = await fetch(`${app.origin}/client/Logo.png`)
+  assert.equal(logo.status, 200)
+  assert.equal(logo.headers.get('content-type'), 'image/png')
+  assert.match(logo.headers.get('content-security-policy'), /img-src 'self'/)
+  assert.deepEqual(Buffer.from(await logo.arrayBuffer()), await readFile('packages/client/runtime/assets/Logo.png'))
   assert.equal((await fetch(`${app.origin}/slide.html`)).status, 404)
   assert.equal((await fetch(`${app.origin}/api/sessions`)).status, 401, 'the API needs the capability token')
   await app.close()

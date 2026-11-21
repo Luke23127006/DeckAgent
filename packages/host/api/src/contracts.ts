@@ -68,7 +68,7 @@ export interface HostOptions {
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
-  readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>>
+  readonly assets?: Readonly<Record<string, { readonly contentType: string; readonly body: string | Uint8Array; readonly sandboxed?: boolean }>>
 }
 
 export interface ProviderSettings {

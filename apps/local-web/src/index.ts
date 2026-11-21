@@ -131,7 +131,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     providers = catalog
     await catalog.load(options.connections, initial)
     const drafts = new MemoryDraftStore()
-    const assets: Record<string, { contentType: string; body: string }> = {
+    const assets: Record<string, { contentType: string; body: string | Uint8Array }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
       // Read per request so the saved choice is applied before first paint, whatever the origin.
@@ -139,6 +139,10 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
+    assets['/client/Logo.png'] = {
+      contentType: 'image/png',
+      body: await readFile(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime/logo'))),
+    }
     for (const name of await readdir(clientDir)) {
       if (/^[\w-]+\.js$/.test(name))
         assets[`/client/${name}`] = {

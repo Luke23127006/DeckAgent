@@ -28,6 +28,19 @@ export const backgroundChoices: ReadonlyArray<readonly [BackgroundId, string, re
   ['sakura', 'Hoa anh đào', ['#fff3f6', '#ffb3cb', '#6a4638']],
 ]
 
+export function backgroundGradient(colors: readonly [string, string, string]): string {
+  return `linear-gradient(135deg,${colors[0]},${colors[1]} 60%,${colors[2]})`
+}
+
+const logoColors: Readonly<Record<BackgroundId, Readonly<Record<Mode, readonly [string, string]>>>> = {
+  none: { night: ['#F5A9E8', '#88C7FF'], day: ['#A73398', '#2465C6'] },
+  koi: { night: ['#9DE4C4', '#FF9677'], day: ['#237D65', '#C6462B'] },
+  rain: { night: ['#FFC17D', '#83C8FF'], day: ['#A65A17', '#286AAB'] },
+  forest: { night: ['#98E6A1', '#D9F581'], day: ['#237747', '#668C19'] },
+  stars: { night: ['#A8B5FF', '#E1D8FF'], day: ['#4053B3', '#7951A6'] },
+  sakura: { night: ['#FFD0E3', '#FF9FC3'], day: ['#AE386F', '#C64E78'] },
+}
+
 /** The choice named by the page before first paint, or `none` for anything else. */
 export function backgroundFrom(value: string | undefined): BackgroundId {
   for (const [id] of backgroundChoices) if (id === value) return id
@@ -56,6 +69,7 @@ export function createBackdrop(): Backdrop {
   const prefersDark = matchMedia('(prefers-color-scheme: dark)')
   const cache = new Map<Animated, Scene>()
   let scene: Scene | null = null
+  let selectedBackground: BackgroundId = 'none'
   let frameRequest = 0
   let lastTick = 0
   let lastDraw = 0
@@ -67,6 +81,11 @@ export function createBackdrop(): Backdrop {
     if (theme === 'dark') return 'night'
     if (theme === 'light') return 'day'
     return prefersDark.matches ? 'night' : 'day'
+  }
+
+  function recolorLogo(): void {
+    const [start, end] = logoColors[selectedBackground][resolveMode()]
+    document.documentElement.style.setProperty('--logo-gradient', `linear-gradient(135deg,${start},${end})`)
   }
 
   function stop(): void {
@@ -121,6 +140,7 @@ export function createBackdrop(): Backdrop {
   reduceMotion.addEventListener('change', refresh)
   const recolor = (): void => {
     env.mode = resolveMode()
+    recolorLogo()
     if (scene && !animating()) scene.draw(0, true)
   }
   prefersDark.addEventListener('change', recolor)
@@ -133,6 +153,8 @@ export function createBackdrop(): Backdrop {
 
   return {
     set(id) {
+      selectedBackground = id
+      recolorLogo()
       if (id === 'none') {
         stop()
         scene = null

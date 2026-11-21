@@ -105,7 +105,7 @@ export async function startHost(options: HostOptions) {
     res.setHeader('referrer-policy', 'no-referrer')
     res.setHeader(
       'content-security-policy',
-      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     )
     route(req, res).catch(error => {
       if (res.headersSent) {

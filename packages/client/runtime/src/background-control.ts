@@ -1,4 +1,4 @@
-import { type Backdrop, backgroundChoices } from './background.ts'
+import { type Backdrop, backgroundChoices, backgroundGradient } from './background.ts'
 import { button, element } from './dom.ts'
 import type { ManagementClient } from './management-client.ts'
 import type { BackgroundId } from '@deckagent/host-api'
@@ -33,7 +33,7 @@ export function backgroundControl(
       })
     })
     const swatch = element('span', undefined, 'swatch')
-    swatch.style.background = `linear-gradient(135deg,${colors[0]},${colors[1]} 60%,${colors[2]})`
+    swatch.style.background = backgroundGradient(colors)
     choice.append(swatch, label)
     return [value, choice] as const
   })
