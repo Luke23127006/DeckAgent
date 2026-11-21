@@ -92,12 +92,12 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   ],
   REQUESTS_UNAVAILABLE: ['Chưa thể gửi yêu cầu', 'DeckAgent chưa kết nối runtime. Bản nháp được giữ nguyên.'],
   RUNTIME_UNAVAILABLE: [
-    'Chưa tìm thấy OpenCode CLI',
-    'Cài OpenCode CLI đúng phiên bản rồi khởi động lại DeckAgent với --opencode <đường dẫn>. Bản nháp được giữ nguyên.',
+    'Runtime OpenCode đi kèm chưa sẵn sàng',
+    'Cài lại dependencies hoặc khôi phục bộ cài DeckAgent rồi khởi động lại. Nếu đã chỉ định runtime riêng, kiểm tra đường dẫn đó. Bản nháp được giữ nguyên.',
   ],
   RUNTIME_VERSION_UNSUPPORTED: [
     'Phiên bản OpenCode CLI không được hỗ trợ',
-    'Cài đúng phiên bản OpenCode CLI mà DeckAgent hỗ trợ rồi khởi động lại DeckAgent. Bản nháp được giữ nguyên.',
+    'Khôi phục runtime đi kèm DeckAgent rồi khởi động lại. Nếu đã chỉ định runtime riêng, kiểm tra phiên bản và khả năng chạy của nó. Bản nháp được giữ nguyên.',
   ],
   RUNTIME_CONFIG_UNSAFE: [
     'OpenCode không chạy với cấu hình an toàn',

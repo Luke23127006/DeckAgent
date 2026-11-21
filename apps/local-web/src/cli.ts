@@ -20,7 +20,8 @@ function connection(value: unknown): ProviderConnection {
     typeof value.baseUrl !== 'string' ||
     !validBaseUrl(value.baseUrl) ||
     !protocols.some(protocol => protocol === value.protocol) ||
-    (value.apiKeyEnv !== undefined && (typeof value.apiKeyEnv !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.apiKeyEnv))) ||
+    (value.apiKeyEnv !== undefined &&
+      (typeof value.apiKeyEnv !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.apiKeyEnv))) ||
     (value.timeoutMs !== undefined && typeof value.timeoutMs !== 'number') ||
     (value.maxOutputTokens !== undefined && typeof value.maxOutputTokens !== 'number') ||
     (value.temperature !== undefined && typeof value.temperature !== 'number') ||
@@ -66,7 +67,7 @@ async function main() {
   })
   if (values.help) {
     console.log(
-      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--opencode <path-to-opencode-executable>] [--port 0] [--no-open]\nRequests run with the OpenCode CLI (pinned version), found by --opencode, else DECKAGENT_OPENCODE, else opencode on PATH. Without it, workspaces and chats still work and sending says why it is unavailable. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
+      'pnpm start:local-web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--opencode <path-to-opencode-executable>] [--port 0] [--no-open]\nRequests run with the OpenCode CLI (pinned version), found by --opencode, else DECKAGENT_OPENCODE, prepared app resources, the installed platform dependency, then opencode on PATH. Windows x64 dependency installation includes the runtime; no global install is needed. Startup checks its version; unavailable runtime keeps Settings, history and drafts. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
     )
     return
   }
@@ -75,8 +76,11 @@ async function main() {
   if (!!provider !== !!model) throw new Error('Supply provider and model together')
   let connections: ProviderConnection[] = []
   if (provider && model) {
-    const config: unknown = JSON.parse(await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'))
-    if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections')) throw new Error('Invalid config')
+    const config: unknown = JSON.parse(
+      await readFile(values.config ?? process.env.DECKAGENT_MODELS_CONFIG ?? 'config/models.example.json', 'utf8'),
+    )
+    if (!object(config) || !Array.isArray(config.connections) || Object.keys(config).some(key => key !== 'connections'))
+      throw new Error('Invalid config')
     connections = config.connections.map(connection)
     if (!connections.some(entry => entry.id === provider)) throw new Error('Unknown provider')
   }
@@ -85,12 +89,30 @@ async function main() {
   let confirmedDecks: NonNullable<LocalWebOptions['confirmedDecks']> = []
   if (values['confirmed-deck']) {
     const value: unknown = JSON.parse(await readFile(values['confirmed-deck'], 'utf8'))
-    if (!object(value) || typeof value.sessionId !== 'string' || typeof value.outlineId !== 'string' || !Array.isArray(value.slides)
-      || Object.keys(value).some(key => !['sessionId', 'outlineId', 'slides'].includes(key))) throw new Error('Invalid confirmed deck fixture')
-    confirmedDecks = [{ sessionId: value.sessionId, outlineId: value.outlineId, slides: value.slides.map((slide: unknown) => {
-      if (!object(slide) || typeof slide.slideId !== 'string' || typeof slide.title !== 'string' || Object.keys(slide).some(key => !['slideId', 'title'].includes(key))) throw new Error('Invalid planned slide')
-      return { slideId: slide.slideId, title: slide.title }
-    }) }]
+    if (
+      !object(value) ||
+      typeof value.sessionId !== 'string' ||
+      typeof value.outlineId !== 'string' ||
+      !Array.isArray(value.slides) ||
+      Object.keys(value).some(key => !['sessionId', 'outlineId', 'slides'].includes(key))
+    )
+      throw new Error('Invalid confirmed deck fixture')
+    confirmedDecks = [
+      {
+        sessionId: value.sessionId,
+        outlineId: value.outlineId,
+        slides: value.slides.map((slide: unknown) => {
+          if (
+            !object(slide) ||
+            typeof slide.slideId !== 'string' ||
+            typeof slide.title !== 'string' ||
+            Object.keys(slide).some(key => !['slideId', 'title'].includes(key))
+          )
+            throw new Error('Invalid planned slide')
+          return { slideId: slide.slideId, title: slide.title }
+        }),
+      },
+    ]
   }
   const app = await startLocalWeb({
     confirmedDecks,
@@ -136,6 +158,8 @@ main().catch(error => {
     process.exitCode = 1
     return
   }
-  console.error('Local Web failed. Check the arguments, the model configuration and the permissions of the data folder.')
+  console.error(
+    'Local Web failed. Check the arguments, the model configuration and the permissions of the data folder.',
+  )
   process.exitCode = 1
 })

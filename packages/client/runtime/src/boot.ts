@@ -32,10 +32,10 @@ import type { OutlineProposal, ConfirmationTarget } from '@deckagent/deck'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {
-  if (!settings.runtime.available)
-    return settings.runtime.reason === 'RUNTIME_UNAVAILABLE'
-      ? 'Chưa gửi được yêu cầu: DeckAgent không tìm thấy OpenCode CLI. Cài OpenCode CLI rồi khởi động lại với --opencode <đường dẫn>. Bản nháp được giữ nguyên.'
-      : 'Chưa gửi được yêu cầu: runtime chưa sẵn sàng. Bản nháp được giữ nguyên.'
+  if (!settings.runtime.available) {
+    const feedback = failureFeedback(settings.runtime.reason)
+    return `${feedback.label}. ${feedback.detail}`
+  }
   if (!session || session.selectable) return undefined
   if (!settings.providers.length)
     return 'Chưa có provider nào. Thêm provider và model trong Cài đặt model để gửi yêu cầu. Bản nháp được giữ nguyên.'

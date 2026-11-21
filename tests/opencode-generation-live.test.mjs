@@ -11,7 +11,7 @@ import { MemoryCredentials, finished, filesContaining } from './fixtures/b02-hel
 import { brief } from './fixtures/brief.mjs'
 
 const executable = process.env.DECKAGENT_OPENCODE
-const enabled = process.env.DECKAGENT_OPENCODE_LIVE === '1' && !!executable
+const enabled = process.env.DECKAGENT_OPENCODE_LIVE === '1'
 
 // The CLI and renderer are real. The loopback provider is deterministic and costs nothing;
 // it does not replace acceptance with the user's selected cloud model.

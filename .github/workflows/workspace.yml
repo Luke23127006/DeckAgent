@@ -112,6 +112,11 @@ jobs:
         timeout-minutes: 4
         run: pnpm test:model-requests
 
+      - name: Installed and packaged OpenCode resources (no global CLI or provider key)
+        id: opencode_resources
+        timeout-minutes: 2
+        run: pnpm test:opencode-resources
+
       - name: Sources, request-scoped MCP and one-step approval (local fixtures)
         id: source_permissions
         timeout-minutes: 3
@@ -183,6 +188,7 @@ jobs:
           GENERATION_PUBLICATION_RESULT: ${{ steps.generation_publication.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
           MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
+          OPENCODE_RESOURCES_RESULT: ${{ steps.opencode_resources.outcome }}
           SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
           ATTACHMENTS_RESULT: ${{ steps.attachments.outcome }}
           RESEARCH_RESULT: ${{ steps.research.outcome }}
@@ -204,6 +210,7 @@ jobs:
           - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Local foundation / workspaces / chats / storage: $env:LOCAL_FOUNDATION_RESULT
           - Models / requests / fake OpenCode CLI (no real CLI or provider): $env:MODEL_REQUESTS_RESULT
+          - Installed / packaged OpenCode resources / version / integrity checks: $env:OPENCODE_RESOURCES_RESULT
           - Sources / request-scoped MCP / one-step approval (local fixtures): $env:SOURCE_PERMISSIONS_RESULT
           - Attachment parsing / upload / admission / source content (local fixtures): $env:ATTACHMENTS_RESULT
           - Public research / free-only policy / durable provenance (local fixtures): $env:RESEARCH_RESULT

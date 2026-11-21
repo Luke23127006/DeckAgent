@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import { access, mkdir, stat } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { delimiter, isAbsolute, join } from 'node:path'
 import { HttpError } from '@deckagent/host-api'
 import type {
@@ -28,10 +29,13 @@ import { errorCode, isContextOverflow, parseEvent } from './events.ts'
 import { seedPrompt } from './history.ts'
 import { runProcess } from './process.ts'
 import { UnsupportedProviderError, selector } from './provider.ts'
+import { resourceExecutable } from './resources.ts'
 
 export interface OpenCodeOptions {
-  /** Absolute path of the OpenCode CLI. Absent: looked up on PATH. */
+  /** Absolute developer override. Absent: use app resources, the installed platform runtime, then PATH. */
   readonly executable?: string
+  /** Prepared release resources. App startup defaults to its own resources/opencode directory. */
+  readonly resourceDir?: string
   /** Version the CLI must report. Tests with a fake CLI may set their own. */
   readonly version?: string
   /** Longest a request may run before it is ended as not finished. */
@@ -44,13 +48,29 @@ export interface OpenCodeOptions {
 export async function findExecutable(
   configured: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
+  resourceDir?: string,
 ): Promise<string | undefined> {
+  if (!configured && resourceDir) {
+    const bundled = await resourceExecutable(resourceDir)
+    if (bundled.present) return bundled.executable
+  }
+  let installed: string | undefined
+  if (!configured && process.platform === 'win32' && process.arch === 'x64') {
+    try {
+      installed = createRequire(import.meta.url).resolve('opencode-windows-x64/bin/opencode.exe')
+    } catch {
+      // Optional platform packages can be omitted; startup reports the missing runtime.
+    }
+  }
   const candidates = configured
     ? [configured]
-    : (env.PATH ?? env.Path ?? '')
-        .split(delimiter)
-        .filter(Boolean)
-        .map(folder => join(folder, process.platform === 'win32' ? 'opencode.exe' : 'opencode'))
+    : [
+        ...(installed ? [installed] : []),
+        ...(env.PATH ?? env.Path ?? '')
+          .split(delimiter)
+          .filter(Boolean)
+          .map(folder => join(folder, process.platform === 'win32' ? 'opencode.exe' : 'opencode')),
+      ]
   for (const candidate of candidates) {
     if (!isAbsolute(candidate)) continue
     try {
@@ -77,6 +97,7 @@ interface Attempt {
  */
 export class OpenCodeRuntime implements RequestRuntime {
   private versionCheck: Promise<boolean> | undefined
+  private healthy = false
   private get launcher(): readonly string[] {
     return this.options.launcherArgs ?? []
   }
@@ -89,9 +110,15 @@ export class OpenCodeRuntime implements RequestRuntime {
     private readonly options: OpenCodeOptions = {},
   ) {}
 
+  /** Check the executable before the browser can offer Send; no model call is made. */
+  async initialize(): Promise<void> {
+    this.healthy = !!this.executable && (await this.checkVersion(this.executable))
+  }
+
   /** Whether requests can run, and why not, for the interface. */
   availability(): { available: boolean; reason?: string } {
-    return this.executable ? { available: true } : { available: false, reason: 'RUNTIME_UNAVAILABLE' }
+    if (!this.executable) return { available: false, reason: 'RUNTIME_UNAVAILABLE' }
+    return this.healthy ? { available: true } : { available: false, reason: 'RUNTIME_VERSION_UNSUPPORTED' }
   }
 
   async prepare(request: AgentRequest): Promise<PreparedRequest> {

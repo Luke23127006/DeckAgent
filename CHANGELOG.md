@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Install pinned OpenCode with Windows x64 application dependencies, discover it without global setup, validate runtime availability at startup and prepare verified release resources with the upstream license.
+
 - Add a Windows `start:local` shortcut using pinned Node and the repository-local OpenCode CLI while reusing saved application data.
 - Verify three-slide generation, restricted MCP tools, saved HTML and restart without replay through the real pinned CLI and a local test provider.
 

@@ -74,7 +74,7 @@ export interface LocalWebOptions {
   readonly port?: number
   /** The user's own folder for the project-folder rules (BR-019). Defaults to the OS home folder. */
   readonly home?: string
-  /** The OpenCode CLI. Defaults: `DECKAGENT_OPENCODE`, else `opencode` on PATH; pinned version. */
+  /** Developer override. Otherwise use DECKAGENT_OPENCODE, app resources, installed runtime, then PATH. */
   readonly openCode?: OpenCodeOptions
   /** Defaults to the protected store of this OS. Tests may give their own. */
   readonly credentials?: CredentialStore
@@ -223,12 +223,17 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     providers = catalog
     await catalog.load(options.connections, initial)
     const runtime = new OpenCodeRuntime(
-      await findExecutable(options.openCode?.executable ?? process.env.DECKAGENT_OPENCODE?.trim() ?? undefined),
+      await findExecutable(
+        options.openCode?.executable ?? (process.env.DECKAGENT_OPENCODE?.trim() || undefined),
+        process.env,
+        options.openCode?.resourceDir ?? fileURLToPath(new URL('../resources/opencode/', import.meta.url)),
+      ),
       join(layout.files, 'runtime', 'opencode'),
       store,
       catalog,
       options.openCode,
     )
+    await runtime.initialize()
     const settings = (): WebSettings => ({
       research: research.settings(),
       providers: catalog.providerSettings(),

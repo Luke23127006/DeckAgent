@@ -12,5 +12,8 @@
     "@deckagent/session-persistence": "workspace:*",
     "@deckagent/workspace-registry": "workspace:*",
     "@modelcontextprotocol/sdk": "1.26.0"
+  },
+  "optionalDependencies": {
+    "opencode-windows-x64": "1.19.5"
   }
 }

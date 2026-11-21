@@ -25,4 +25,5 @@ __pycache__/
 /vendor/*/lib/
 /packages/*/*/lib/
 /apps/*/lib/
+/apps/local-web/resources/opencode/
 *.tsbuildinfo

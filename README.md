@@ -14,17 +14,17 @@ pnpm.cmd start:local-web
 
 The last command starts the local Host and opens the Web app in your browser. Keep the terminal running while using the Web app; **Ctrl+C** stops the Host. After the initial install/build, `pnpm.cmd start:local-web` alone reopens it. After pulling source changes, run `pnpm.cmd build` and restart the Host.
 
-Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. On other shells, use `pnpm` in place of `pnpm.cmd`.
+Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. Windows x64 installation includes OpenCode 1.19.5 as an application dependency; no global OpenCode installation or PATH change is needed. Keep optional dependencies enabled. Other platforms require a separately supplied compatible CLI and are not verified by this installation path. On other shells, use `pnpm` in place of `pnpm.cmd`.
 
 ### Windows shortcut with the local CLI
 
-If OpenCode 1.19.5 is installed at `.local/opencode/node_modules/opencode-windows-x64/bin/opencode.exe`, use:
+To select Node 22.19.0 through npm exec, use:
 
 ```powershell
 pnpm.cmd start:local
 ```
 
-This uses Node 22.19.0 through npm exec, loads the root `.env` and opens the same saved chats, providers and models in the default Application Storage. It needs built app output; run `pnpm.cmd build` with a supported Node version after source changes. The first Node download needs network access. See [local development](docs/development/local-development.md#local-web-workspaces-and-chats) for the one-time local CLI setup and startup options.
+This loads the root `.env`, finds the OpenCode dependency automatically and opens the same saved chats, providers and models in the default Application Storage. It needs built app output; run `pnpm.cmd build` with a supported Node version after source changes. The first Node download needs network access. See [local development](docs/development/local-development.md#local-web-workspaces-and-chats) for resource packaging, recovery and developer overrides.
 
 ## Documentation
 

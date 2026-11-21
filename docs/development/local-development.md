@@ -106,7 +106,7 @@ Native shell/file tools and arbitrary MCP servers remain denied. The project sou
 
 An external read outside the Chat's project folder waits for **Allow once** or **Refuse** in the conversation. The prompt names the file and reason. A later step asks again; a refused identical step does not ask again within that request. Refusal leaves other authorized work running, and the closing reply names skipped work. Reload or switching Chats keeps the pending decision in the Host. Stop cancels it; restarting the Host records unfinished work without executing it again. Waiting for approval pauses the adapter's model-work timeout. The pinned CLI still has a technical MCP request timeout of at most 2,147,483,647 ms; it is not an approval decision or an OS sandbox.
 
-Project folders, application data, other Workspace folders and configured credential/system roots are checked at the Host boundary. App-data and other Chat data cannot be reached by supplying their paths. Project-folder files are never write targets. Run opt-in CLI smoke with `DECKAGENT_OPENCODE_LIVE=1`, `DECKAGENT_OPENCODE` set to the pinned executable, and `pnpm.cmd test:opencode-live`; its local endpoints need no real provider key. Real-provider smoke additionally needs the documented live-provider environment values in the test file. The [pinned CLI's JSON event loop](https://github.com/anomalyco/opencode/blob/v1.19.5/packages/opencode/src/cli/cmd/run.ts) emits text when a part finishes; a hanging provider stream need not produce partial reply text before Stop.
+Project folders, application data, other Workspace folders and configured credential/system roots are checked at the Host boundary. App-data and other Chat data cannot be reached by supplying their paths. Project-folder files are never write targets. Run opt-in CLI smoke with `DECKAGENT_OPENCODE_LIVE=1` and `pnpm.cmd test:opencode-live`; `DECKAGENT_OPENCODE` optionally selects a developer executable instead of the prepared or installed runtime. Its local endpoints need no real provider key. Real-provider smoke additionally needs the documented live-provider environment values in the test file. The [pinned CLI's JSON event loop](https://github.com/anomalyco/opencode/blob/v1.19.5/packages/opencode/src/cli/cmd/run.ts) emits text when a part finishes; a hanging provider stream need not produce partial reply text before Stop.
 
 ### Public research
 
@@ -130,10 +130,9 @@ After build, start Web:
 pnpm.cmd start:local-web
 ```
 
-For Windows development with the pinned CLI inside this repository, run `pnpm.cmd start:local`. It uses npm exec to select Node 22.19.0, loads the root `.env` and supplies the relative executable path `.local/opencode/node_modules/opencode-windows-x64/bin/opencode.exe`. Install that CLI once if it is missing:
+On Windows x64, `pnpm install --frozen-lockfile` installs OpenCode 1.19.5 as an optional application dependency, with its tarball integrity recorded in the lockfile. No install script or global CLI is needed. Keep optional dependencies enabled. Subsequent installs reuse the package-manager cache. For Windows development with Node 22.19.0 selected through npm exec, run:
 
 ```powershell
-npm.cmd install --prefix .local/opencode --no-save --package-lock=false --ignore-scripts opencode-windows-x64@1.19.5
 pnpm.cmd start:local
 ```
 
@@ -151,13 +150,19 @@ This opens an authenticated local browser. No model and no API key are needed to
 
 A custom provider has a URL-safe Provider ID, such as `river-ai`, and a separate display name, such as `River AI`. IDs accept ASCII letters, digits, dots, underscores and hyphens, with no spaces. Saving a connection does not add or select models. Add model IDs from the catalog or enter them by hand, then save; Save also includes a model ID still in the manual entry field. The model picker lists added models after the save, and the user chooses one explicitly.
 
-Requests run through the OpenCode CLI, version 1.19.5 (`opencode run --format json`). Install it, then point DeckAgent at the executable (on Windows, `opencode.exe`, not the `.cmd` shim):
+Requests run through the OpenCode CLI, version 1.19.5 (`opencode run --format json`). Startup checks its version before the interface offers Send. An explicit developer override uses a real executable (on Windows, `opencode.exe`, not a `.cmd` shim):
 
 ```powershell
 pnpm.cmd start:local-web --opencode C:\path\to\opencode.exe
 ```
 
-Without `--opencode`, DeckAgent uses `DECKAGENT_OPENCODE`, then `opencode` on `PATH`. If it finds no executable, or the version differs, the composer says why it cannot send. Each request runs in an isolated OpenCode configuration that denies every native tool and uses only the selected provider and model. The run works in a folder under `files/runtime/opencode/`, never in a project folder. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
+Resolution uses `--opencode`, then a nonempty `DECKAGENT_OPENCODE`, then prepared application resources, then the installed Windows x64 dependency, and finally a real `opencode` executable on `PATH` for compatibility. A broken explicit override or present but invalid resource set does not fall back silently. Missing or incompatible runtime resources leave Settings and history available and keep drafts. Reinstall dependencies with optional packages enabled, or restore the release resources, then restart. Only Windows x64 resource installation is verified; other platforms retain the explicit-CLI path.
+
+Each request runs in an isolated OpenCode configuration that denies every native tool and uses only the selected provider and model. The run works in a folder under `files/runtime/opencode/`, never in a project folder. DeckAgent reads no file of a project folder when you set up a workspace, and writes nothing there.
+
+For release assembly, run `pnpm.cmd package:opencode` after installation. It prepares `apps/local-web/resources/opencode/` with the executable, package metadata, MIT notice and a version/platform/SHA-256 manifest. Startup finds that folder next to the built app and verifies the digest before running it. The command uses the installed package without downloading another copy, stages files before publication, reuses an identical resource set and refuses to overwrite a different destination. `--output <empty-directory>` chooses another staging destination; the release must place it at the application's documented resource path. Resource preparation is separate from ordinary build to avoid an extra executable copy during development. Generated resources are gitignored. This command prepares the runtime files; it does not create a complete DeckAgent installer.
+
+Run `pnpm.cmd test:opencode-resources` for dependency discovery without PATH, early version/override failures, repeat packaging and corrupted-resource checks. Opt-in `DECKAGENT_OPENCODE_LIVE=1` with the real-CLI test in `tests/opencode-live.test.mjs` uses the installed runtime without requiring an override; its local-provider check needs no real provider account.
 
 Application Storage is chosen in this order: `--data-dir <folder>`, then the `DECKAGENT_DATA_DIR` environment variable, then the app-data folder of the OS:
 
