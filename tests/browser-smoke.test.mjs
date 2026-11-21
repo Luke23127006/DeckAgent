@@ -6,7 +6,7 @@ import { join, parse } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { startLocalWeb } from '../apps/local-web/lib/index.js'
+import { FolderPickerUnavailableError, startLocalWeb } from '../apps/local-web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
@@ -145,6 +145,10 @@ const fixtureProvider = model => ({
 async function requestCount(app, sessionId) {
   return (await (await fetch(`${app.origin}/api/sessions/${sessionId}/requests`, { headers: { authorization: `Bearer ${app.token}` } })).json()).length
 }
+/** Every chat the Host keeps, listed or not: a new chat that waits for its first character is not one of them. */
+async function storedChats(app) {
+  return (await fetch(`${app.origin}/api/sessions`, { headers: { authorization: `Bearer ${app.token}` } })).json()
+}
 
 test('interactive composer selects a model without work, offers no send in this build and keeps per-chat drafts on reload', { timeout: 45000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-interactive-'))
@@ -159,13 +163,41 @@ test('interactive composer selects a model without work, offers no send in this 
   app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('interactive') })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])')`), 'Welcome missing')
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.wordmark'),'::before').maskImage.includes('/client/Logo.png')`), true, 'The wordmark uses the supplied logo as its mask')
+  await evaluate(`document.querySelector('.account-trigger').click(); true`)
+  const logoPalettes = [
+    ['none', '#F5A9E8', '#88C7FF', '#A73398', '#2465C6'],
+    ['koi', '#9DE4C4', '#FF9677', '#237D65', '#C6462B'],
+    ['rain', '#FFC17D', '#83C8FF', '#A65A17', '#286AAB'],
+    ['forest', '#98E6A1', '#D9F581', '#237747', '#668C19'],
+    ['stars', '#A8B5FF', '#E1D8FF', '#4053B3', '#7951A6'],
+    ['sakura', '#FFD0E3', '#FF9FC3', '#AE386F', '#C64E78'],
+  ]
+  for (const [index, [id, darkStart, darkEnd, lightStart, lightEnd]] of logoPalettes.entries()) {
+    await evaluate(`document.querySelectorAll('.background-control button')[${index}].click(); document.documentElement.dataset.theme='dark'; true`)
+    await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,${darkStart},${darkEnd})'`), `${id} dark logo colors did not apply`)
+    await evaluate(`document.documentElement.dataset.theme='light'; true`)
+    await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,${lightStart},${lightEnd})'`), `${id} light logo colors did not apply`)
+  }
+  await protocol.call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
+  await evaluate(`delete document.documentElement.dataset.theme; true`)
+  await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,#FFD0E3,#FF9FC3)'`), 'System dark mode did not recolor the logo')
+  await protocol.call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+  await eventually(() => evaluate(`document.documentElement.style.getPropertyValue('--logo-gradient') === 'linear-gradient(135deg,#AE386F,#C64E78)'`), 'System light mode did not recolor the logo')
+  await evaluate(`document.querySelectorAll('.background-control button')[0].click(); true`)
+  // The first start shows a new chat that the Host has not made yet, like ChatGPT.
+  assert.equal((await storedChats(app)).length, 0, 'Opening the interface makes no chat')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The new chat is not listed before it is made')
   assert.equal(await evaluate(`!!document.querySelector('[aria-label="Chọn model"]')`), true, 'The composer must offer the provider/model popover')
   await eventually(() => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`), 'Chat not ready for model selection')
   await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.model-options button')`), 'Model popover empty')
   await evaluate(`document.querySelector('.model-options button').click(); true`)
   await eventually(() => evaluate(`!document.querySelector('.composer select').disabled && document.querySelector('.composer select').value !== ''`), 'Selection not saved')
+  // Choosing a model makes the waiting chat, with that model.
+  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`), 'Choosing a model did not make the chat')
   const chatId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  assert.equal((await storedChats(app)).length, 1, 'Choosing a model makes exactly one chat')
   assert.equal(await requestCount(app, chatId), 0, 'Selecting a model must not start work')
   assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled`), true, 'Send is unavailable until a runtime is connected')
   assert.equal(await evaluate(`[...document.querySelectorAll('.composer-controls button')].find(b=>b.textContent==='Đề xuất outline').disabled`), true)
@@ -180,10 +212,31 @@ test('interactive composer selects a model without work, offers no send in this 
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Draft before reload'`), 'Reload lost the draft')
   assert.equal(await evaluate(`document.querySelector('.composer select').value.includes('interactive')`), true, 'The chat keeps its selected model')
-  const before = await evaluate(`document.querySelectorAll('.chat-navigation nav button').length`)
+  const before = await evaluate(`document.querySelectorAll('.chat-navigation button[data-session-id]').length`)
+  // `Chat mới` shows a new chat of no workspace and makes nothing yet; the chat that holds a draft stays listed.
+  const chatCount = () => evaluate(`document.querySelectorAll('.chat-navigation button[data-session-id]').length`)
+  const kept = (await storedChats(app)).length
+  await evaluate(`document.querySelector('[data-action=new-chat]').click();true`)
+  await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])') && document.querySelector('.composer textarea').value === ''`), 'New chat did not show')
+  assert.equal(await chatCount(), before, 'The new chat is not listed before its first character')
+  assert.equal((await storedChats(app)).length, kept, 'Pressing `Chat mới` makes no chat')
   await evaluate(`document.querySelector('[data-action=new-chat]').click();true`)
   await delay(150)
-  assert.equal(await evaluate(`document.querySelectorAll('.chat-navigation nav button').length`), before, 'New chat must not create duplicates while already empty')
+  assert.equal((await storedChats(app)).length, kept, 'A second press makes no chat either')
+  // Typing fast while the Host makes the chat makes one chat, under `Chat`, that keeps every character.
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); for (const text of ['N','Nh','Nháp','Nháp mới']) { ta.value=text; ta.dispatchEvent(new Event('input')) }} true`)
+  await eventually(async () => (await chatCount()) === before + 1, 'Typing did not make the new chat')
+  await eventually(() => evaluate(`!!document.querySelector('.chat-group button[data-session-id][aria-current=true]')`), 'The new chat is not a chat of no workspace')
+  assert.equal(await evaluate(`document.querySelector('.chat-group .chat-group-heading').textContent`), 'Chat', 'Chats of no workspace list under `Chat`')
+  assert.equal((await storedChats(app)).length, kept + 1, 'Typing makes exactly one chat')
+  const typedChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  await delay(400)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Nháp mới'`), 'The draft typed while the chat was made was lost')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`), typedChat)
+  // The chat with the draft opens again, with its draft.
+  await evaluate(`document.querySelector('.chat-navigation [data-session-id="${chatId}"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Draft before reload'`), 'The draft did not come back with its chat')
   await evaluate(`document.querySelector('.nav-toggle').click(); true`)
   assert.equal(await evaluate(`document.querySelector('#app').dataset.nav`), 'collapsed', 'The toggle hides the chat list to a rail')
   assert.equal(await evaluate(`document.querySelector('.nav-toggle').getAttribute('aria-expanded')`), 'false')
@@ -251,7 +304,8 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   const navigate = async () => {
     await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
     await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [data-session-id="browser-deck"]'))`), 'Fixture Session missing')
-    await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]'))`), 'Initial chat did not finish opening')
+    // A first visit shows a new chat that is not made yet; a later one opens the chat it remembers.
+    await eventually(() => evaluate(`Boolean(document.querySelector('.chat-navigation [aria-current=true]') || document.querySelector('.welcome:not([hidden])'))`), 'Initial chat did not finish opening')
     await evaluate(`document.querySelector('.chat-navigation [data-session-id="browser-deck"]').click(); true`)
     await eventually(() => evaluate(`!!document.querySelector('.published-deck-sidebar .deck-slide-list [title*="Unpublished"]')`), 'Deck plan missing')
   }
@@ -400,19 +454,39 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
   await protocol.call('Page.enable')
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
-  await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])') && !!document.querySelector('.chat-navigation nav button[aria-current=true]')`), 'Browser boot failed')
+  // The first start shows a new chat that is neither made nor listed yet.
+  await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])') && !!document.querySelector('.chat-navigation [data-session-id="recycling"]')`), 'Browser boot failed')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The new chat is not listed before it is made')
+  const seeded = (await storedChats(app)).length
+  assert.equal(seeded, 3, 'Opening the interface makes no chat')
   assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'Chat mới')
   assert.equal(await evaluate(`document.querySelector('.composer textarea').getBoundingClientRect().height < 95`), true, 'Empty Composer must be compact')
   assert.equal(await evaluate(`document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled && document.querySelector('.requests-unavailable').checkVisibility()`), true,
     'Send is unavailable and the composer says why')
-  assert.equal(await evaluate(`[...document.querySelectorAll('.workspace-controls select option')].map(o=>o.textContent).join('|')`), 'Workspace mặc định · mặc định',
+  assert.equal(await evaluate(`[...document.querySelectorAll('.workspace-row .workspace-name')].map(o=>o.textContent).join('|')`), 'Workspace mặc định',
     'First start uses the default workspace and asks for no folder')
+  // The sidebar can be dragged wider, up to a quarter of the window (1600 px wide here), and back to its normal width.
+  const navWidth = () => evaluate(`Math.round(document.querySelector('.chat-navigation').getBoundingClientRect().width)`)
+  const divider = await evaluate(`Math.round(document.querySelector('.nav-resizer').getBoundingClientRect().left)`)
+  const mouse = (type, x) => protocol.call('Input.dispatchMouseEvent', { type, x, y: 400, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mouseReleased' ? 0 : 1, pointerType: 'mouse', clickCount: 1 })
+  await mouse('mouseMoved', divider)
+  await mouse('mousePressed', divider)
+  await mouse('mouseMoved', divider + 120)
+  assert.equal(await navWidth(), 236 + 120, 'Dragging the divider widens the sidebar')
+  await mouse('mouseMoved', 1500)
+  await mouse('mouseReleased', 1500)
+  assert.equal(await navWidth(), 400, 'The sidebar stops at a quarter of the window')
+  await evaluate(`document.querySelector('.nav-resizer').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); true`)
+  await eventually(async () => (await navWidth()) === 236, 'Double press did not restore the normal width')
   assert.equal(await evaluate(`[...document.querySelectorAll('.chat-navigation nav button strong')].map(n=>n.textContent).includes('Kế hoạch tái chế cho trường')`), true,
     'Earlier chats from before the start are listed and named from their content')
   assert.equal(await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"] strong').textContent`), 'Chat không đọc được',
     'A chat whose saved work cannot be read stays listed')
-  const firstChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  // The first character makes the chat, a chat of no workspace like the one `Chat mới` starts.
   await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Nháp A'; ta.dispatchEvent(new Event('input'))} true`)
+  await eventually(() => evaluate(`!!document.querySelector('.chat-group button[data-session-id][aria-current=true]')`), 'Typing did not make the chat')
+  const firstChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  assert.equal((await storedChats(app)).length, seeded + 1, 'Typing makes exactly one chat')
   // UC-006 A3: the damaged chat is not opened; the current chat and its draft stay.
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.conversation > [role=status]').hidden === false && document.querySelector('.conversation > [role=status]').textContent.includes('Không mở được chat này')`), 'Unreadable chat was not reported')
@@ -421,54 +495,122 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   assert.equal(await evaluate(`!!document.querySelector('.chat-navigation [data-session-id="damaged"]')`), true, 'The unreadable chat is not removed')
   // FR-134: find by words of the name or the conversation.
   await evaluate(`{const s=document.querySelector('.chat-search input'); s.value='nhựa'; s.form.requestSubmit()} true`)
-  await eventually(() => evaluate(`[...document.querySelectorAll('.chat-navigation nav button')].map(b=>b.dataset.sessionId).join() === 'recycling'`), 'Search did not find the chat by its conversation')
+  await eventually(() => evaluate(`[...document.querySelectorAll('.chat-navigation button[data-session-id]')].map(b=>b.dataset.sessionId).join() === 'recycling'`), 'Search did not find the chat by its conversation')
   await evaluate(`{const s=document.querySelector('.chat-search input'); s.value='không có từ này'; s.form.requestSubmit()} true`)
   await eventually(() => evaluate(`document.querySelector('.chat-navigation nav').textContent.includes('Không có chat nào khớp')`), 'No-match message missing')
   assert.equal(await evaluate(`document.querySelector('.chat-search input').value`), 'không có từ này', 'The search keeps the words')
   await evaluate(`{const s=document.querySelector('.chat-search input'); s.value=''; s.dispatchEvent(new Event('input'))} true`)
   await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="budget"]')`), 'Clearing the search did not restore the list')
   // UC-013 A9 and BR-019: a refused folder sets up no workspace.
-  await evaluate(`document.querySelector('[data-action=add-workspace]').click(); true`)
+  await evaluate(`document.querySelector('[data-action=add-workspace]').click(); document.querySelector('[data-action=add-folder-workspace]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open`), 'Workspace dialog did not open')
   await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(parse(dir).root)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('thư mục gốc của ổ đĩa')`), 'Drive root was not refused with its reason')
-  assert.equal(await evaluate(`document.querySelectorAll('.workspace-controls select option').length`), 1)
-  // UC-013 S2: set up a workspace for a folder; it becomes the workspace in use; the open chat and draft stay.
+  assert.equal(await evaluate(`document.querySelectorAll('.workspace-row').length`), 1)
+  // UC-013 S2: set up a workspace for a folder; it becomes the workspace in use, and the view goes to its page, like the
+  // project page of ChatGPT, with no chat made yet. The chat that was open keeps its draft and stays listed.
   await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(project)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`), 'Workspace was not set up and selected')
-  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The list shows the chats of the workspace in use')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Nháp A', 'Adding a workspace keeps the open chat and its draft')
-  // UC-012: a new chat joins the workspace in use, with an empty draft.
-  await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]') && document.querySelector('.composer textarea').value === ''`), 'New chat did not open in the workspace')
+  await eventually(() => evaluate(`!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-row[aria-pressed=true] .workspace-name')?.textContent === 'Dự án tái chế'`), 'Workspace was not set up and selected')
+  const pageShows = name => evaluate(`!document.querySelector('.workspace-home').hidden && document.querySelector('.workspace-home-name').textContent === ${JSON.stringify(name)} && !document.querySelector('.conversation-header').checkVisibility()`)
+  await eventually(() => pageShows('Dự án tái chế'), 'Adding a workspace did not show its page')
+  assert.equal(await evaluate(`document.querySelector('.workspace-home .composer textarea')?.placeholder`), 'Chat mới trong Dự án tái chế', 'The composer sits on the page and says where the chat goes')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), '', 'The composer of the page starts empty')
+  assert.equal(await evaluate(`document.querySelector('.workspace-home-empty').checkVisibility()`), true, 'The page of a new workspace says it has no chats')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[data-home=true] .workspace-name').textContent`), 'Dự án tái chế', 'The sidebar marks the workspace whose page shows')
+  assert.equal(await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]')`), null, 'The new chat of the workspace is not listed before it is made')
+  assert.equal((await storedChats(app)).length, seeded + 1, 'Adding a workspace makes no chat')
+  // The tree lists the chats of every workspace under their own workspace: a new workspace has none, and the chat that was open stays under `Chat`.
+  assert.equal(await evaluate(`document.querySelector('.workspace-item:has(.workspace-row[aria-pressed=true]) button[data-session-id]')`), null, 'A new workspace has no chats')
+  assert.equal(await evaluate(`!!document.querySelector('.chat-group button[data-session-id="${firstChat}"]')`), true, 'The chat that was open stays listed')
+  // The button of the workspace row keeps the same page and makes nothing; the first character makes the chat in that workspace.
+  await evaluate(`document.querySelector('.workspace-item:has(.workspace-row[aria-pressed=true]) .workspace-new-chat').click(); true`)
+  await delay(150)
+  assert.equal((await storedChats(app)).length, seeded + 1, 'The new chat button of a workspace makes no chat')
+  // Typing fast on the page keeps the page, the focus and every character; the composer does not move while typing.
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.focus(); for (const text of ['N','Nh','Nháp','Nháp B']) { ta.value=text; ta.dispatchEvent(new Event('input')) }} true`)
+  await eventually(() => evaluate(`!!document.querySelector('.workspace-item:has(.workspace-row[aria-pressed=true]) button[data-session-id][aria-current=true]')`), 'Typing did not make the chat in the workspace')
   const projectChat = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
   assert.notEqual(projectChat, firstChat)
-  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Nháp B'; ta.dispatchEvent(new Event('input'))} true`)
-  // UC-013 A7: switch back to the default workspace; then open the first chat with its own draft.
-  await evaluate(`{const sel=document.querySelector('.workspace-controls select'); sel.value='default'; sel.dispatchEvent(new Event('change'))} true`)
-  await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${firstChat}"]')`), 'Switching workspace did not show its chats')
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Nháp B', 'Switching keeps the open chat and its draft')
+  assert.equal((await storedChats(app)).length, seeded + 2, 'Typing makes exactly one chat in the workspace')
+  assert.deepEqual(await evaluate(`({ page: !document.querySelector('.workspace-home').hidden, focus: document.activeElement === document.querySelector('.composer textarea'), text: document.querySelector('.composer textarea').value })`),
+    { page: true, focus: true, text: 'Nháp B' }, 'Typing on the page keeps the page and the focus')
+  assert.equal(await evaluate(`document.querySelector('.workspace-home-chats [data-chat-id="${projectChat}"]')`), null, 'The page does not list the chat that its composer is typing')
+  // Chats of no workspace are a section of their own: folding the workspaces keeps them in view.
+  await evaluate(`document.querySelector('.workspace-head .workspace-toggle').click(); true`)
+  assert.equal(await evaluate(`document.querySelector('.workspace-list').checkVisibility() === false && document.querySelector('.chat-group button[data-session-id="${firstChat}"]').checkVisibility()`), true,
+    'Folding the workspaces does not hide the chats of no workspace')
+  await evaluate(`document.querySelector('.workspace-head .workspace-toggle').click(); true`)
+  // UC-013 A7: pressing the row of the default workspace shows its page, with its chats; the chat of the project stays listed.
+  await evaluate(`document.querySelector('.workspace-row[data-workspace-id=default]').click(); true`)
+  await eventually(() => pageShows('Workspace mặc định'), 'Pressing a workspace row did not show its page')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dataset.workspaceId`), 'default', 'The workspace of the page is the workspace in use')
+  assert.equal(await evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${projectChat}"]') && !!document.querySelector('.workspace-home-chats [data-chat-id="recycling"]')`), true,
+    'The page lists the chats of its workspace, and the chat that was typed stays listed')
+  // A chat opened from the page shows its conversation; the header names its workspace.
+  await evaluate(`document.querySelector('.workspace-home-chats [data-chat-id="recycling"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-home').hidden && document.querySelector('.conversation-header h1').textContent.startsWith('Kế hoạch')`), 'A chat of the page did not open')
+  assert.equal(await evaluate(`!document.querySelector('.chat-place').hidden && document.querySelector('.chat-place-name').textContent`), 'Workspace mặc định', 'The header names the workspace of the chat')
+  // The chat of the project comes back with its draft; with no conversation yet, its welcome names its workspace.
+  await evaluate(`document.querySelector('.chat-navigation [data-session-id="${projectChat}"]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Nháp B'`), 'Draft B did not come back with its chat')
+  assert.equal(await evaluate(`document.querySelector('.chat-place-name').textContent`), 'Dự án tái chế')
+  assert.equal(await evaluate(`document.querySelector('.welcome:not([hidden]) .welcome-workspace')?.textContent`), 'Trong workspace “Dự án tái chế”', 'The welcome names the workspace of the chat')
+  // The first chat, of no workspace, comes back with its own draft and names no workspace.
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${firstChat}"]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Nháp A'`), 'Draft A did not come back with its chat')
+  assert.equal(await evaluate(`document.querySelector('.chat-place').hidden && document.querySelector('.welcome-workspace').hidden`), true, 'A chat of no workspace names no workspace')
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`document.querySelector('.composer textarea')?.value === 'Nháp A'`), 'Reload lost the draft of the open chat')
   // FR-141: rename with whitespace dropped.
-  await evaluate(`{const sel=document.querySelector('.workspace-controls select'); sel.value=[...sel.options].find(o=>o.textContent.startsWith('Dự án')).value; sel.dispatchEvent(new Event('change'))} true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án tái chế'`), 'Workspace not selected again')
-  await evaluate(`document.querySelector('[data-action=rename-workspace]').click(); true`)
+  await evaluate(`[...document.querySelectorAll('.workspace-row')].find(r=>r.textContent.startsWith('Dự án')).click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name')?.textContent === 'Dự án tái chế'`), 'Workspace not selected again')
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:40,clientY:150})); document.querySelector('[data-action=rename-workspace]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open`), 'Rename dialog did not open')
   await evaluate(`document.querySelector('.workspace-dialog input').value='   '; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
   await eventually(() => evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('ít nhất một ký tự')`), 'Empty name was not refused')
   await evaluate(`document.querySelector('.workspace-dialog input').value='  Dự án Việt  '; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án Việt'`), 'Rename failed')
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name')?.textContent === 'Dự án Việt'`), 'Rename failed')
+  assert.equal(await evaluate(`document.querySelector('.workspace-home-name').textContent`), 'Dự án Việt', 'The page shows the new name')
+  // The user places workspaces: by dragging a row, and by Alt with the arrow keys. Two workspaces exist here.
+  const placed = () => evaluate(`[...document.querySelectorAll('.workspace-item')].map(li=>li.dataset.workspaceId).join('|')`)
+  const original = await placed()
+  const [firstId, secondId] = original.split('|')
+  await evaluate(`(() => { const [from, to] = [...document.querySelectorAll('.workspace-item')].reverse(); const list = document.querySelector('.workspace-list'); const data = new DataTransfer(); const y = to.getBoundingClientRect().top + 2
+    from.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }))
+    list.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, clientY: y, dataTransfer: data }))
+    list.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientY: y, dataTransfer: data }))
+    from.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: data })) })(); true`)
+  await eventually(async () => (await placed()) === `${secondId}|${firstId}`, 'Dragging the last workspace above the first did not reorder')
+  await evaluate(`const row = document.querySelector('.workspace-row'); row.focus(); row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true, cancelable: true })); true`)
+  await eventually(async () => (await placed()) === original, 'Alt and the down arrow did not move the workspace down')
+  // UC-013 A3 and FR-083: choose another folder; the workspace keeps its ID, name and chats.
+  const moved = join(dir, 'Dự án đã chuyển')
+  await mkdir(moved)
+  const workspaceId = await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dataset.workspaceId`)
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:40,clientY:150})); document.querySelector('[data-action=relink-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-dialog input').value.endsWith('Dự án tái chế')`), 'The folder dialog did not open with the current folder')
+  await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(moved)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
+  await eventually(() => evaluate(`!document.querySelector('.workspace-dialog').open && document.querySelector('.workspace-row[aria-pressed=true]').title.endsWith('Dự án đã chuyển')`), 'The workspace did not move to the other folder')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dataset.workspaceId`), workspaceId, 'Changing the folder keeps the workspace ID')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name').textContent`), 'Dự án Việt', 'Changing the folder keeps the name')
+  assert.equal(await evaluate(`!!document.querySelector('.chat-navigation [data-session-id="${projectChat}"]')`), true, 'Changing the folder keeps the chats of the workspace')
   // UC-013 A2: remove after confirm; its chats become ungrouped; the default workspace is in use.
-  await evaluate(`window.confirm=()=>true; document.querySelector('[data-action=remove-workspace]').click(); true`)
-  await eventually(() => evaluate(`document.querySelector('.workspace-controls select').value === 'default'`), 'Default workspace not in use after remove')
-  await eventually(() => evaluate(`(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Chat chưa nhóm'); return !!heading && !!heading.parentElement.querySelector('[data-session-id="${projectChat}"]') })()`), 'Chat of the removed workspace is not ungrouped')
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:40,clientY:150})); document.querySelector('[data-action=remove-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-confirm').open`), 'The delete confirmation did not open')
+  assert.equal(await evaluate(`document.querySelector('.workspace-confirm li:nth-child(2)').textContent.includes('giữ nguyên')`), true, 'The confirmation states that the folder stays')
+  // Cancel keeps the workspace; Escape does not delete either.
+  await evaluate(`[...document.querySelectorAll('.workspace-confirm button')].find(b=>b.textContent==='Hủy').click(); true`)
+  await eventually(() => evaluate(`!document.querySelector('.workspace-confirm').open`), 'Cancel did not close the confirmation')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name')?.textContent`), 'Dự án Việt', 'Cancel keeps the workspace')
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:40,clientY:150})); document.querySelector('[data-action=remove-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-confirm').open`), 'The delete confirmation did not reopen')
+  await evaluate(`document.querySelector('[data-action=confirm-remove-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true]')?.dataset.workspaceId === 'default' && !document.querySelector('.workspace-confirm').open`), 'Default workspace not in use after remove')
+  await eventually(() => evaluate(`(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Chat'); return !!heading && !!heading.closest('.chat-group').querySelector('[data-session-id="${projectChat}"]') })()`), 'Chat of the removed workspace is not ungrouped')
   assert.deepEqual(await tree(project), before, 'No file of the project folder was created, changed or deleted')
   await evaluate(`document.querySelector('.chat-navigation [data-session-id="${projectChat}"]').click(); true`)
   await eventually(() => evaluate(`document.querySelector('.composer textarea').value === 'Nháp B'`), 'Ungrouped chat lost its draft')
-  assert.equal(await evaluate(`document.querySelector('.workspace-controls select').value`), 'default', 'Opening an ungrouped chat keeps the workspace in use')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]')?.dataset.workspaceId`), 'default', 'Opening an ungrouped chat keeps the workspace in use')
   // The sample deck panel keeps its sandbox; samples are served with a sandbox CSP.
   await evaluate(`document.querySelector('.published-deck-sidebar').hidden=true; document.querySelector('.deck-sidebar').hidden=false; true`)
   assert.equal(await evaluate(`document.querySelector('.deck-sidebar iframe').getAttribute('sandbox')`), '')
@@ -481,4 +623,118 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
     await writeFile(process.env.DECKAGENT_BROWSER_SCREENSHOT, Buffer.from(shot.data, 'base64'))
   }
   for (const id of ['recycling', 'budget', firstChat, projectChat]) assert.equal(await requestCount(app, id), 0, 'No step sent a request')
+})
+
+test('the folder dialog of the system adds a workspace and changes its folder; closing it changes nothing; without one the path is typed', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-picker-'))
+  let app, session
+  t.after(async () => {
+    try {
+      await closeBrowser(session)
+      if (app) await app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  const first = join(dir, 'Báo cáo')
+  const second = join(dir, 'Bài giảng')
+  await mkdir(first)
+  await mkdir(second)
+  // The test stands in for the dialog: it answers with a folder, with null (the user closed it), or has none.
+  let answer = 'unavailable'
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: join(dir, 'home'),
+    pickDirectory: async () => {
+      if (answer === 'unavailable') throw new FolderPickerUnavailableError()
+      if (answer === 'broken') throw new Error('no dialog')
+      return answer
+    },
+  })
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(() => evaluate(`!!document.querySelector('[data-action=add-workspace]')`), 'Browser boot failed')
+  const rows = () => evaluate(`[...document.querySelectorAll('.workspace-row .workspace-name')].map(n => n.textContent).join('|')`)
+  const add = () => evaluate(`document.querySelector('[data-action=add-workspace]').click(); document.querySelector('[data-action=add-folder-workspace]').click(); true`)
+  const dialogOpen = () => evaluate(`document.querySelector('.workspace-dialog').open`)
+
+  // The user closes the dialog: nothing is set up and no typing box opens (UC-013 A9).
+  answer = null
+  await add()
+  await delay(500)
+  assert.equal(await rows(), 'Workspace mặc định', 'Closing the folder dialog sets no workspace up')
+  assert.equal(await dialogOpen(), false, 'Closing the folder dialog does not open the typing box')
+
+  // The user chooses a folder: the workspace is set up and in use.
+  answer = first
+  await add()
+  await eventually(async () => (await rows()) === 'Workspace mặc định|Báo cáo', 'The folder from the dialog did not become a workspace')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name').textContent`), 'Báo cáo')
+  assert.equal(await dialogOpen(), false)
+  // The view goes to the page of the workspace; no chat is made until the user types.
+  const pageOf = () => evaluate(`document.querySelector('.workspace-home:not([hidden]) .workspace-home-name')?.textContent ?? ''`)
+  await eventually(async () => (await pageOf()) === 'Báo cáo', 'Importing a folder did not show the page of the workspace')
+  assert.equal((await storedChats(app)).length, 0, 'Importing a folder makes no chat')
+
+  // Change the folder of that workspace through the dialog.
+  answer = second
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 150 })); document.querySelector('[data-action=relink-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').title.endsWith('Bài giảng')`), 'The folder from the dialog did not replace the folder of the workspace')
+  assert.equal(await dialogOpen(), false)
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name').textContent`), 'Báo cáo', 'Changing the folder keeps the name')
+
+  // A dialog that does not open: the user types the full path instead.
+  answer = 'broken'
+  await add()
+  await eventually(dialogOpen, 'The typing box did not open when the dialog failed')
+  assert.equal(await evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('hộp chọn thư mục')`), true, 'The box says why')
+  await evaluate(`document.querySelector('.workspace-dialog input').value=${JSON.stringify(first)}; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
+  await eventually(async () => !(await dialogOpen()) && (await rows()) === 'Workspace mặc định|Báo cáo|Báo cáo', 'The typed path did not set up a workspace')
+
+  // A workspace with a name only: the plus button offers it next to the folder that exists.
+  await evaluate(`document.querySelector('[data-action=add-workspace]').click(); document.querySelector('[data-action=new-workspace]').click(); true`)
+  await eventually(dialogOpen, 'The name box did not open')
+  assert.equal(await evaluate(`document.querySelector('.workspace-dialog h2').textContent`), 'Tạo workspace mới')
+  await evaluate(`document.querySelector('.workspace-dialog input').value='Dự án mới'; document.querySelector('.workspace-dialog form').requestSubmit(); true`)
+  await eventually(async () => !(await dialogOpen()) && (await rows()) === 'Workspace mặc định|Báo cáo|Báo cáo|Dự án mới', 'The workspace with a name only was not set up')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true] .workspace-name').textContent`), 'Dự án mới', 'The new workspace is the workspace in use')
+  await eventually(async () => (await pageOf()) === 'Dự án mới', 'A workspace with a name only did not show its page')
+  assert.equal((await storedChats(app)).length, 0, 'Setting up a workspace by name makes no chat')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').title`), 'Chưa gắn thư mục dự án')
+  assert.equal(await evaluate(`!!document.querySelector('.workspace-row[aria-pressed=true] .workspace-flag')`), false, 'A workspace without a folder asks for no check')
+  // A folder can be chosen for it later.
+  const draft = join(dir, 'Bản thảo')
+  await mkdir(draft)
+  answer = draft
+  // The options button of the page opens the menu of the workspace.
+  await evaluate(`document.querySelector('.workspace-home-options').click(); true`)
+  assert.equal(await evaluate(`document.querySelector('[data-action=relink-workspace]').checkVisibility() && document.querySelector('[data-action=relink-workspace]').textContent`), 'Chọn thư mục', 'The menu offers to choose the first folder')
+  await evaluate(`document.querySelector('[data-action=relink-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').title.endsWith('Bản thảo')`), 'The folder was not chosen for the workspace')
+
+  // The new chat of `Dự án mới` still waits. Removing that workspace moves the waiting chat to the workspace in use,
+  // the default one, so the first character makes it there instead of failing on a workspace that is gone.
+  await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 150 })); document.querySelector('[data-action=remove-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-confirm').open`), 'The delete confirmation did not open')
+  await evaluate(`document.querySelector('[data-action=confirm-remove-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-row[aria-pressed=true]')?.dataset.workspaceId === 'default' && !document.querySelector('.workspace-confirm').open`), 'Default workspace not in use after remove')
+  await eventually(async () => (await pageOf()) === 'Workspace mặc định', 'The waiting chat did not move to the page of the workspace in use')
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Sau khi xóa'; ta.dispatchEvent(new Event('input'))} true`)
+  await eventually(() => evaluate(`!!document.querySelector('.workspace-item[data-workspace-id=default] button[data-session-id][aria-current=true]')`), 'The waiting chat was not made in the workspace in use')
+  assert.equal((await storedChats(app)).length, 1, 'Typing makes exactly one chat')
+  assert.equal(await evaluate(`document.querySelector('.conversation > [role=status]').hidden`), true, 'Making the chat reports no failure')
+
+  // `Chat mới` shows a chat that belongs to no workspace, like ChatGPT, and the first character makes it; the workspace in use stays.
+  const inUse = await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dataset.workspaceId`)
+  await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
+  await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])') && document.querySelector('.welcome-workspace').hidden && document.querySelector('.workspace-home').hidden`), 'The new chat of no workspace did not show')
+  assert.equal((await storedChats(app)).length, 1, 'Pressing `Chat mới` makes no chat')
+  await evaluate(`{const ta=document.querySelector('.composer textarea'); ta.value='Ý tưởng'; ta.dispatchEvent(new Event('input'))} true`)
+  await eventually(() => evaluate(`!!document.querySelector('.chat-group button[data-session-id][aria-current=true]')`), 'The chat of no workspace was not created')
+  assert.equal((await storedChats(app)).length, 2, 'Typing makes exactly one chat')
+  assert.equal(await evaluate(`document.querySelector('.workspace-row[aria-pressed=true]').dataset.workspaceId`), inUse, 'The workspace in use does not change')
 })

@@ -16,9 +16,13 @@ import { ProviderStore } from './provider-settings.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
+import { FolderPickerUnavailableError } from './folder-picker.ts'
+import type { PickDirectory } from './folder-picker.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
+export { FolderPickerUnavailableError } from './folder-picker.ts'
+export type { PickDirectory } from './folder-picker.ts'
 
 export interface LocalWebOptions {
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -30,6 +34,11 @@ export interface LocalWebOptions {
   readonly port?: number
   /** The user's own folder for the project-folder rules (BR-019). Defaults to the OS home folder. */
   readonly home?: string
+  /**
+   * Opens the folder dialog of the operating system. The command line passes the Windows dialog; tests and any
+   * other caller pass a fake, so that no dialog opens by accident. Without it, the folder is typed as a path.
+   */
+  readonly pickDirectory?: PickDirectory
 }
 
 const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
@@ -122,14 +131,18 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     providers = catalog
     await catalog.load(options.connections, initial)
     const drafts = new MemoryDraftStore()
-    const assets: Record<string, { contentType: string; body: string }> = {
+    const assets: Record<string, { contentType: string; body: string | Uint8Array }> = {
       ...sampleAssets,
       '/': { contentType: 'text/html; charset=utf-8', body: page },
       // Read per request so the saved choice is applied before first paint, whatever the origin.
-      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences().theme) } },
+      '/theme.js': { contentType: 'text/javascript; charset=utf-8', get body() { return themeBootstrap(state.preferences()) } },
       '/style.css': { contentType: 'text/css; charset=utf-8', body: style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle },
     }
     const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
+    assets['/client/Logo.png'] = {
+      contentType: 'image/png',
+      body: await readFile(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime/logo'))),
+    }
     for (const name of await readdir(clientDir)) {
       if (/^[\w-]+\.js$/.test(name))
         assets[`/client/${name}`] = {
@@ -147,6 +160,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       return project(found)
     }
     const listWorkspaces = async (): Promise<WorkspaceList> => ({ workspaces: await workspaces.list(), selectedId: workspaces.selectedId() })
+    let picking = false
     const workspaceManagement: WorkspaceManagement = {
       list: () => workspaceCall(listWorkspaces),
       add: value => workspaceCall(async () => { await workspaces.add(body(value, 'folder')); return listWorkspaces() }),
@@ -154,6 +168,32 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         const id = body(value, 'id')
         if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
         workspaces.select(id)
+        return listWorkspaces()
+      }),
+      ...(options.pickDirectory
+        ? {
+            pick: async (signal: AbortSignal) => {
+              // One dialog at a time: a second request would open a second dialog behind the first.
+              if (picking) throw new HttpError(409, 'FOLDER_PICKER_BUSY')
+              picking = true
+              try {
+                return { folder: await options.pickDirectory!(signal) }
+              } catch (error) {
+                if (signal.aborted) throw new HttpError(408, 'FOLDER_PICKER_CANCELLED')
+                if (error instanceof FolderPickerUnavailableError) throw new HttpError(501, 'FOLDER_PICKER_UNAVAILABLE')
+                throw new HttpError(502, 'FOLDER_PICKER_FAILED')
+              } finally {
+                picking = false
+              }
+            },
+          }
+        : {}),
+      create: value => workspaceCall(async () => { workspaces.create(body(value, 'name')); return listWorkspaces() }),
+      move: value => workspaceCall(async () => {
+        if (!record(value) || Object.keys(value).some(name => name !== 'id' && name !== 'before')) throw new HttpError(400, 'INVALID_REQUEST')
+        const { id, before } = value
+        if (typeof id !== 'string' || (before !== null && before !== undefined && typeof before !== 'string')) throw new HttpError(400, 'INVALID_REQUEST')
+        workspaces.move(id, before)
         return listWorkspaces()
       }),
       rename: (id, value) => workspaceCall(async () => { workspaces.rename(id, body(value, 'name')); return listWorkspaces() }),
@@ -179,11 +219,12 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         catalog: id => catalog.catalog(id),
         sessions: async () => (await store.chats()).map(project),
         async createSession(value) {
-          if (!record(value) || Object.keys(value).some(key => key !== 'selection')) throw new HttpError(400, 'INVALID_SESSION')
+          if (!record(value) || Object.keys(value).some(key => key !== 'selection' && key !== 'ungrouped')) throw new HttpError(400, 'INVALID_SESSION')
+          if (value.ungrouped !== undefined && typeof value.ungrouped !== 'boolean') throw new HttpError(400, 'INVALID_SESSION')
           // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
           const chosen = value.selection === undefined ? state.lastSelection() : selection(value.selection)
           if (chosen && !state.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-          const created = await store.create(workspaces.selectedId(), chosen)
+          const created = await store.create(value.ungrouped === true ? null : workspaces.selectedId(), chosen)
           return chat(created.sessionId)
         },
         async selectModel(id, value) {

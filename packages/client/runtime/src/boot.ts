@@ -2,7 +2,7 @@ import type { AgentRequest, HistoryMessage, RequestReply, RequestSnapshot, WebSe
 import type { OutlineSnapshot } from '@deckagent/deck'
 import { HostClient } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
-import { button, element } from './dom.ts'
+import { button, element, icon, iconButton } from './dom.ts'
 import { modelPicker } from './model-picker.ts'
 import { settingsPanel } from './settings-panel.ts'
 import { mountDeckTab } from './deck-tab.ts'
@@ -12,9 +12,14 @@ import { mountDeckCanvas } from './deck-canvas.ts'
 import { OutlineClient } from './outline-client.ts'
 import { failureFeedback } from './request-feedback.ts'
 import { questionView } from './question-view.ts'
+import { backgroundControl } from './background-control.ts'
+import { backgroundFrom, createBackdrop } from './background.ts'
+import { mountNavResizer } from './nav-resizer.ts'
 import { themeControl } from './theme.ts'
+import { tooltip } from './tooltip.ts'
 import { initMotion } from './motion.ts'
-import { workspaceView } from './workspace-view.ts'
+import { workspaceHome } from './workspace-home.ts'
+import { folderIcon, workspaceView } from './workspace-view.ts'
 
 /**
  * No Agent runtime is connected in this build (B01): the Host refuses every request, so the composer
@@ -36,11 +41,20 @@ chats.setAttribute('aria-label', 'Lịch sử chat')
 const conversation = element('section', undefined, 'conversation')
 const heading = element('header', undefined, 'conversation-header')
 const title = element('h1', 'Chat mới')
+// A chat of a workspace names its workspace before its title, like a project chat of Claude; a chat of no workspace does not.
+const place = element('span', undefined, 'chat-place')
+const placeName = element('span', '', 'chat-place-name')
+place.append(icon(folderIcon), placeName)
+place.hidden = true
 const headerState = element('small', '', 'chat-state')
 headerState.setAttribute('aria-live', 'polite')
 const welcome = element('section', undefined, 'welcome')
 welcome.hidden = true
-welcome.append(element('h2', 'Hãy mô tả deck bạn muốn'),
+const pageView = workspaceHome((id, x, y) => workspaceUI.menuFor(id, x, y))
+// Names the workspace of a chat with no conversation yet, when it is open outside the page of the workspace.
+const welcomeWorkspace = element('p', '', 'welcome-workspace')
+welcomeWorkspace.hidden = true
+welcome.append(welcomeWorkspace, element('h2', 'Hãy mô tả deck bạn muốn'),
   element('p', 'Dán ghi chú hoặc ý tưởng của bạn. DeckAgent đề xuất outline trước. Chưa có slide nào được tạo cho đến khi bạn xác nhận outline.'))
 const model = element('select')
 model.disabled = true
@@ -115,6 +129,17 @@ let disposed = false
 let reconnecting = false
 let opening: number | undefined
 let creating = false
+/**
+ * A new chat that the Host has not made yet, like the new chat of ChatGPT: it is not listed, and the Host makes it at
+ * the first character of its draft, so the draft is kept from then on (FR-038). `workspaceId` is the workspace it
+ * joins; `null` for a chat of no workspace. Never set together with `current`.
+ */
+let pending: { readonly workspaceId: string | null } | undefined
+/**
+ * The workspace whose page shows in the main view, like the project page of ChatGPT, with the composer under its name.
+ * The page stays while the user types its first chat (made at the first character); opening a chat or sending leaves it.
+ */
+let page: string | undefined
 let historyPresent = false
 let chatTitle = 'Chat mới'
 
@@ -164,6 +189,14 @@ function remember(id: string) {
     /* Session can still be selected from History. */
   }
 }
+/** A reload while a new chat waits opens a new chat again, not the chat that was open before it. */
+function forget() {
+  try {
+    sessionStorage.removeItem('deckagent-session')
+  } catch {
+    /* Optional: a reload then opens the chat remembered before. */
+  }
+}
 function run(work: Promise<void>) {
   work.catch(error => {
     status.hidden = false
@@ -178,28 +211,33 @@ function controls() {
   const question = waiting?.sessionId === current?.sessionId && waiting?.requestId === current?.activeRequestId ? waiting?.question : undefined
   stopRequest.hidden = !current?.activeRequestId
   submit.hidden = !!current?.activeRequestId && !question
-  for (const item of chats.querySelectorAll('button')) item.disabled = switchingBlocked() || creating
+  for (const item of chats.querySelectorAll<HTMLButtonElement>('button[data-session-id]')) item.disabled = switchingBlocked() || creating
+  for (const item of pageView.node.querySelectorAll<HTMLButtonElement>('button[data-chat-id]')) item.disabled = switchingBlocked() || creating
   newChatButton.disabled = switchingBlocked() || creating
-  model.disabled = !current || selecting.has(current.sessionId) || opening !== undefined || creating
+  model.disabled = (!current && !pending) || (!!current && selecting.has(current.sessionId)) || opening !== undefined || creating
   workspaceUI.setBusy(opening !== undefined || creating)
   unavailable.hidden = requestsAvailable
   submit.disabled =
     !requestsAvailable ||
-    !current ||
+    (!current && !pending) ||
     creating ||
     reconnecting ||
     opening !== undefined ||
-    sending.has(current.sessionId) ||
-    selecting.has(current.sessionId) ||
-    (!!current.activeRequestId && !question) ||
-    (!current.selectable && !question)
+    (!!current && (sending.has(current.sessionId) || selecting.has(current.sessionId))) ||
+    (!!current?.activeRequestId && !question) ||
+    (!!current && !current.selectable && !question)
   createPresentation.disabled = submit.disabled
   submit.setAttribute('aria-disabled', String(submit.disabled || !input.value.trim() || input.value.length > 16000))
   createPresentation.hidden = !!outlineState?.active || !!deckModel.state.snapshot?.outlineId
   timeline.setOutlineBusy(submit.disabled || !!current?.activeRequestId)
   questionUI.update(question, submit.disabled)
   timeline.setQuestion(question?.prompt)
-  input.placeholder = question ? 'Nhập câu trả lời của bạn…' : 'Nhập hoặc dán yêu cầu của bạn…'
+  const shown = page === undefined ? undefined : workspaces.workspaces.find(item => item.id === page)
+  input.placeholder = question
+    ? 'Nhập câu trả lời của bạn…'
+    : shown
+      ? `Chat mới trong ${shown.name}`
+      : 'Nhập hoặc dán yêu cầu của bạn…'
   picker.update(settings, !!current?.activeRequestId)
   title.textContent = chatTitle
   title.title = chatTitle
@@ -209,8 +247,21 @@ function controls() {
   const outlinePending = !!outlineState?.proposals.some(proposal => proposal.status === 'current')
   headerState.dataset.waiting = String(!!question || (!active && outlinePending))
   navigationHint.hidden = !active || chats.hidden
-  welcome.hidden = historyPresent || active || !current || opening !== undefined
-  messages.hidden = !welcome.hidden
+  // The page of a workspace takes the place of the chat header, the welcome and the conversation.
+  heading.hidden = !!shown
+  pageView.node.hidden = !shown
+  workspaceUI.setHome(shown?.id)
+  placeDock(!!shown)
+  welcome.hidden = !!shown || historyPresent || active || (!current && !pending) || opening !== undefined
+  // The workspace of the open chat, or of the waiting new chat; nothing for a chat of no workspace.
+  const homeId = current ? current.workspaceId : (pending?.workspaceId ?? null)
+  const home = homeId ? workspaces.workspaces.find(item => item.id === homeId) : undefined
+  placeName.textContent = home?.name ?? ''
+  place.title = home ? `Workspace “${home.name}”` : ''
+  place.hidden = !home
+  welcomeWorkspace.textContent = home ? `Trong workspace “${home.name}”` : ''
+  welcomeWorkspace.hidden = !home
+  messages.hidden = !!shown || !welcome.hidden
   openDeck.hidden = (!outlineState?.confirmedId && !(deckModel.state.snapshot?.sessionId === current?.sessionId && deckModel.state.snapshot?.outlineId)) || !publishedDeck.hidden
   fitInput()
   // Only a saved model that can no longer be used needs a notice; with no model chosen yet the picker already says so.
@@ -234,6 +285,13 @@ function renderModels() {
   model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
   controls()
 }
+/** What the chat lists say of a chat: its name, and whether it has slides. */
+function describeChat(session: WebSession): { name: string; slides: string } {
+  return {
+    name: !session.readable ? 'Chat không đọc được' : !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên',
+    slides: !session.readable ? 'Không mở được chat này' : session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide',
+  }
+}
 function chatButton(session: WebSession) {
   const item = button('', () =>
     run(open(session)),
@@ -242,8 +300,7 @@ function chatButton(session: WebSession) {
   updated.dateTime = session.updatedAt
   const date = new Date(session.updatedAt)
   updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
-  const slides = !session.readable ? 'Không mở được chat này' : session.hasSlides === undefined ? 'Chưa rõ slide' : session.hasSlides ? 'Có slide' : 'Chưa có slide'
-  const name = !session.readable ? 'Chat không đọc được' : !session.messageCount ? 'Chat mới' : session.title ?? 'Chat chưa có tên'
+  const { name, slides } = describeChat(session)
   item.append(element('strong', name), updated, element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`))
   item.title = `${name} · ${updated.textContent} · ${slides}`
   item.dataset.sessionId = session.sessionId
@@ -252,30 +309,76 @@ function chatButton(session: WebSession) {
   item.disabled = switchingBlocked()
   return item
 }
-function renderChats() {
-  chats.replaceChildren()
-  const listed = (session: WebSession) => session.sessionId === current?.sessionId || session.messageCount || session.selection || session.hasSlides
-    || !session.readable || session.hasDraft || drafts.get(session.sessionId)?.trim()
+/** A chat that lists: the open one, and those with a conversation, a model, slides or a draft. */
+function listed(session: WebSession): boolean {
+  return session.sessionId === current?.sessionId || !!session.messageCount || !!session.selection || !!session.hasSlides
+    || !session.readable || !!session.hasDraft || !!drafts.get(session.sessionId)?.trim()
+}
+// Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
+function newestFirst(a: WebSession, b: WebSession): number {
+  return b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId)
+}
+/** The chats the tree can show: those that list, or the matches of a search. */
+function visibleChats(): WebSession[] {
   const found = searchResults
-  const visible = sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
-  // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
-  visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId))
-  // UC-006 S1: the chats of the workspace in use, and the ungrouped chats apart from them, whichever workspace is in use.
-  const grouped = visible.filter(session => session.workspaceId === workspaces.selectedId)
-  const ungrouped = visible.filter(session => session.workspaceId === null)
-  if (!grouped.length && !ungrouped.length)
-    chats.append(element('p', found ? 'Không có chat nào khớp với các từ đã nhập.' : 'Chưa có chat trước.'))
-  for (const session of grouped) chats.append(chatButton(session))
-  if (ungrouped.length) {
-    chats.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
-    for (const session of ungrouped) chats.append(chatButton(session))
-  }
+  return sessions.filter(session => (found ? found.has(session.sessionId) : listed(session))).sort(newestFirst)
+}
+/** One row of the chat list on the page of a workspace: name, slides and draft, and the day of the last change. */
+function pageChatButton(session: WebSession): HTMLElement {
+  const item = button('', () => run(open(session)))
+  item.dataset.chatId = session.sessionId
+  const { name, slides } = describeChat(session)
+  const text = element('span', undefined, 'workspace-home-chat-text')
+  text.append(element('strong', name), element('small', `${slides}${session.hasDraft ? ' · Có bản nháp' : ''}`))
+  const updated = element('time')
+  updated.dateTime = session.updatedAt
+  const date = new Date(session.updatedAt)
+  updated.textContent = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
+  item.append(text, updated)
+  item.title = name
+  item.disabled = switchingBlocked() || creating
+  return item
+}
+/** Draws the page of the workspace whose page shows. The chat that the page composer is typing is not listed yet. */
+function renderPage() {
+  const shown = page === undefined ? undefined : workspaces.workspaces.find(item => item.id === page)
+  if (!shown) return
+  const typing = current?.sessionId
+  pageView.update(
+    shown,
+    sessions
+      .filter(session => session.workspaceId === shown.id && session.sessionId !== typing && listed(session))
+      .sort(newestFirst)
+      .map(pageChatButton),
+  )
+}
+/**
+ * The composer sits under the name of the workspace on its page, and at the foot of the conversation otherwise.
+ * It moves only when the view changes: moving a focused text box takes the focus away from it.
+ */
+function placeDock(onPage: boolean) {
+  const target = onPage ? pageView.slot : conversation
+  if (dock.parentElement === target) return
+  const focused = dock.contains(document.activeElement)
+  target.append(dock)
+  if (focused) input.focus()
+}
+/** One group of the tree: the chats of a workspace, or the ungrouped chats for `null`. */
+function chatRows(workspaceId: string | null): HTMLElement[] {
+  return visibleChats()
+    .filter(session => session.workspaceId === workspaceId)
+    .map(chatButton)
+}
+function renderChats() {
+  workspaceUI.refresh()
+  renderPage()
 }
 async function refresh() {
   const [nextSettings, nextSessions, nextWorkspaces] = await Promise.all([management.settings(), management.sessions(), management.workspaces()])
   settings = nextSettings
   sessions = nextSessions
   workspaces = nextWorkspaces
+  followWorkspace()
   workspaceUI.update(workspaces)
   if (current) current = sessions.find(session => session.sessionId === current?.sessionId) ?? current
   if (searchWords) searchResults = new Set((await management.search(searchWords)).map(session => session.sessionId))
@@ -345,8 +448,10 @@ async function open(session: WebSession) {
   watch?.abort()
   if (current?.sessionId !== session.sessionId) { timeline.reset(); outlineState = undefined }
   current = session
-  const pending = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
-  waiting = pending?.question ? { requestId: pending.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: pending.question } : undefined
+  pending = undefined
+  page = undefined
+  const asking = loaded[2].find(request => request.requestId === session.activeRequestId && request.status === 'awaiting_user')
+  waiting = asking?.question ? { requestId: asking.requestId, sessionId: session.sessionId, status: 'awaiting_user', question: asking.question } : undefined
   deckModel.open(session.sessionId)
   remember(session.sessionId)
   const expected = generation
@@ -367,35 +472,128 @@ async function open(session: WebSession) {
   if (session.activeRequestId && generation === expected)
     run(follow(session.activeRequestId, session.sessionId, expected))
 }
-async function newChat() {
+/**
+ * Shows a new chat of a workspace, or of none for `null`, without making it: the Host makes it at the first character
+ * of the draft (`materialize`). The chat that was open keeps its draft, and stays listed when it has one.
+ */
+async function startPending(workspaceId: string | null) {
   if (switchingBlocked() || creating) return
   if (!settingsUI.leave()) return
-  // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
-  if (current && !historyPresent && current.workspaceId === workspaces.selectedId) { input.focus(); return }
+  // A second press on the same new chat makes nothing.
+  if (pending?.workspaceId === workspaceId) { input.focus(); return }
+  picker.close()
+  if (current) { saveDraft(); await flushDraft(current.sessionId) }
+  if (switchingBlocked() || creating) return
+  generation++
+  watch?.abort()
+  timeline.reset()
+  outlineState = undefined
+  deckModel.close()
+  publishedDeck.hidden = true
+  current = undefined
+  waiting = undefined
+  pending = { workspaceId }
+  // A new chat of a workspace shows on the page of that workspace; a chat of no workspace on the plain new chat.
+  page = workspaceId ?? undefined
+  input.value = ''
+  describeHistory([])
+  forget()
+  status.hidden = true
+  renderModels()
+  renderChats()
+  input.focus()
+}
+/**
+ * Makes the waiting new chat on the Host, once, with `selection` when the user chose a model first. Text typed while
+ * the Host makes it stays in the composer and becomes the draft of the chat. Returns the chat, or nothing when there
+ * is no waiting chat or another call is making it.
+ */
+async function materialize(selection?: { provider: string; model: string }): Promise<WebSession | undefined> {
+  const target = pending
+  if (!target || creating) return undefined
   creating = true
   controls()
   try {
-    // FR-053: the Host gives the new chat the most recent model choice of any chat, when still selectable.
-    const created = await management.create()
+    // The Host puts a chat in the workspace in use, which another open interface may have changed.
+    if (target.workspaceId !== null && target.workspaceId !== workspaces.selectedId) {
+      workspaces = await management.selectWorkspace(target.workspaceId)
+      workspaceUI.update(workspaces)
+    }
+    // FR-053: with no selection, the Host gives the chat the most recent model choice of any chat, when still selectable.
+    const created = await management.create(selection, target.workspaceId === null ? { ungrouped: true } : {})
+    if (pending !== target) return undefined
+    adopt(created)
     await refresh()
-    await open(created)
-  } finally { creating = false; controls() }
+    return current
+  } finally {
+    creating = false
+    // A failed attempt leaves the new chat waiting; the picker goes back to no choice.
+    if (pending) renderModels()
+    else controls()
+  }
+}
+/**
+ * A waiting new chat of a workspace joins the workspace in use: after a switch, or after its own workspace was
+ * removed and the default one is in use. It never names a workspace that is gone. A chat of no workspace stays so.
+ */
+function followWorkspace() {
+  const inUse = workspaces.selectedId
+  if (pending?.workspaceId != null && pending.workspaceId !== inUse) pending = { workspaceId: inUse }
+  // The page of a workspace that is gone or no longer in use gives way: to the page of the workspace in use while its
+  // chat is not made yet, or else to the chat that the composer of the page made.
+  if (page !== undefined && page !== inUse) page = pending ? inUse : undefined
+}
+/** The chat the Host just made becomes the open chat. Not `open()`: that reads the draft back and would drop typed text. */
+function adopt(created: WebSession) {
+  pending = undefined
+  current = created
+  remember(created.sessionId)
+  deckModel.open(created.sessionId)
+  saveDraft()
 }
 const settingsUI = settingsPanel(management, refresh, root, () => input.focus())
-const workspaceUI = workspaceView(management, root, async (next, reloadChats) => {
-  // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
-  workspaces = next
-  if (reloadChats) await refresh()
-  else renderChats()
-  controls()
-})
+/** The "new chat" button of a workspace row: the workspace becomes the one in use, and a new chat of it waits. */
+async function newChatIn(id: string) {
+  if (creating) return
+  if (id !== workspaces.selectedId) {
+    workspaces = await management.selectWorkspace(id)
+    workspaceUI.update(workspaces)
+    renderChats()
+    controls()
+  }
+  // While a request runs, the workspace still becomes the one in use, and the open chat stays (FR-071).
+  if (!switchingBlocked()) await startPending(id)
+}
+const workspaceUI = workspaceView(
+  management,
+  root,
+  async (next, reloadChats) => {
+    // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
+    workspaces = next
+    followWorkspace()
+    if (reloadChats) await refresh()
+    else renderChats()
+    controls()
+  },
+  id => run(newChatIn(id)),
+  { rows: chatRows, searching: () => searchResults !== undefined },
+  // A workspace set up by name or for a folder opens a new chat of it; no chat is made until the user types.
+  id => run(startPending(id)),
+)
+// The tree of workspaces with their chats fills the list area of the sidebar.
+chats.append(workspaceUI.node)
 const search = element('form', undefined, 'chat-search')
 search.setAttribute('role', 'search')
 const searchInput = element('input')
 searchInput.type = 'search'
 searchInput.placeholder = 'Tìm chat theo từ…'
 searchInput.setAttribute('aria-label', 'Tìm chat trước theo từ')
-search.append(searchInput)
+// The field grows out of the search icon in the sidebar header (see `searchButton`); it is closed until then.
+// The icon inside the open field sits where the header icon was; pressing it again closes the field.
+const searchToggle = iconButton('Đóng tìm kiếm', ['M3 11a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'm21 21-4.34-4.34'], () => closeSearch(true))
+searchToggle.className = 'nav-icon search-toggle'
+search.dataset.open = 'false'
+search.append(searchInput, searchToggle)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 function findChats() {
   const words = searchInput.value.trim()
@@ -416,24 +614,20 @@ const picker = modelPicker(model, () => run(settingsUI.open()), () => run(settin
 function switchingBlocked(): boolean {
   return opening !== undefined || !!current?.activeRequestId || (!!current && sending.has(current.sessionId))
 }
-const newChatButton = button('Chat mới', () => run(newChat()))
+// Like ChatGPT, the `Chat mới` button starts a chat that belongs to no workspace; the button of a workspace row starts one in it.
+const newChatButton = button('Chat mới', () => run(startPending(null)))
 newChatButton.dataset.action = 'new-chat'
 newChatButton.title = 'Chat mới'
 const navigationHint = element('p', 'Hãy đợi yêu cầu kết thúc hoặc dừng yêu cầu trước khi đổi chat.', 'navigation-hint')
 navigationHint.hidden = true
-const recents = button('Gần đây', () => {
-  chats.hidden = !chats.hidden
-  recents.setAttribute('aria-expanded', String(!chats.hidden))
-  controls()
+// The shortcut works without being shown.
+newChatButton.setAttribute('aria-keyshortcuts', 'Control+Shift+O')
+document.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+    event.preventDefault()
+    if (!newChatButton.disabled) run(startPending(null))
+  }
 })
-recents.className = 'recents-toggle'
-recents.setAttribute('aria-expanded', 'true')
-// On a phone the chat list starts folded so the conversation owns the first screen.
-const compactNavigation = matchMedia('(max-width:720px)')
-const foldRecents = () => { chats.hidden = compactNavigation.matches; recents.setAttribute('aria-expanded', String(!chats.hidden)) }
-foldRecents()
-compactNavigation.addEventListener('change', () => { foldRecents(); controls() })
-recents.setAttribute('aria-controls', 'recent-chats')
 chats.id = 'recent-chats'
 // The chat list can be hidden to a narrow rail; the choice is a per-browser layout convenience.
 const navToggle = button('', () => setNavigation(root.dataset.nav !== 'collapsed'))
@@ -451,7 +645,37 @@ let storedNavigation: string | null = null
 try { storedNavigation = localStorage.getItem('deckagent-nav') } catch { /* Optional layout preference. */ }
 setNavigation(storedNavigation === 'collapsed', false)
 const navTop = element('div', undefined, 'nav-top')
-navTop.append(element('div', 'DeckAgent', 'wordmark'), navToggle)
+// The search icon opens a field that grows out of it. The chat list opens too, so the matches show.
+const searchButton = iconButton('Tìm chat', ['M3 11a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'm21 21-4.34-4.34'], () => openSearch())
+searchButton.setAttribute('aria-expanded', 'false')
+searchButton.setAttribute('aria-controls', 'chat-search')
+search.id = 'chat-search'
+function openSearch() {
+  if (root.dataset.nav === 'collapsed') setNavigation(false)
+  search.dataset.open = 'true'
+  searchButton.setAttribute('aria-expanded', 'true')
+  searchInput.focus()
+}
+/** Closing clears the words, so the list never stays filtered by a field that is out of sight. */
+function closeSearch(restoreFocus: boolean) {
+  search.dataset.open = 'false'
+  searchButton.setAttribute('aria-expanded', 'false')
+  if (searchInput.value) {
+    searchInput.value = ''
+    clearTimeout(searchTimer)
+    findChats()
+  }
+  if (restoreFocus) searchButton.focus()
+}
+searchInput.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); closeSearch(true) } })
+search.addEventListener('focusout', event => {
+  if (!search.contains(event.relatedTarget as Node | null) && !searchInput.value.trim()) closeSearch(false)
+})
+searchButton.className = 'nav-icon nav-search'
+tooltip(searchButton, 'Tìm chat')
+const navActions = element('div', undefined, 'nav-actions')
+navActions.append(searchButton, navToggle)
+navTop.append(element('div', 'DeckAgent', 'wordmark'), navActions, search)
 // Settings, theme, reconnect and developer tools live in one menu at the bottom of the sidebar, like the Claude app.
 const accountMenu = element('div', undefined, 'account-menu')
 accountMenu.id = 'account-menu'
@@ -489,24 +713,28 @@ document.addEventListener('pointerdown', event => {
 })
 const themeSection = element('div', undefined, 'menu-section')
 themeSection.append(element('span', 'Giao diện'), themeControl(management))
+const backdrop = createBackdrop()
+// `/theme.js` already set the saved choice before first paint; this draws it.
+const initialBackground = backgroundFrom(document.documentElement.dataset.background)
+backdrop.set(initialBackground)
+const backgroundSection = element('div', undefined, 'menu-section')
+backgroundSection.append(element('span', 'Nền'), backgroundControl(management, backdrop, initialBackground))
 accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
   Object.assign(button('Cài đặt model', () => { closeAccountMenu(); run(settingsUI.open()) }), { className: 'settings-open', title: 'Cài đặt model' }),
   themeSection,
+  backgroundSection,
 )
 navigation.append(
   navTop,
-  workspaceUI.node,
   newChatButton,
   navigationHint,
-  recents,
-  search,
   chats,
   accountTrigger,
   accountMenu,
 )
 const headingText = element('div', undefined, 'chat-heading')
-headingText.append(title, headerState)
+headingText.append(place, title, headerState)
 function showDeck() { deck.hidden = true; publishedDeck.hidden = false; openDeck.hidden = true }
 const openDeck = button('Mở deck', showDeck)
 openDeck.hidden = true
@@ -545,7 +773,12 @@ const primaryAction = element('div', undefined, 'composer-primary')
 primaryAction.append(picker.node, submit, stopRequest)
 composerActions.append(composerControls, primaryAction)
 form.append(unavailable, input, composerActions)
-input.addEventListener('input', () => { saveDraft(); controls() })
+input.addEventListener('input', () => {
+  // The first character of a waiting new chat makes it; from then on its draft is kept like any other.
+  if (pending && input.value.trim()) run(materialize().then(() => {}))
+  saveDraft()
+  controls()
+})
 input.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
@@ -554,19 +787,39 @@ input.addEventListener('keydown', event => {
 })
 const dock = element('div', undefined, 'composer-dock')
 dock.append(questionUI.node, outlineDock, form)
-conversation.append(heading, status, welcome, messages, dock)
+conversation.append(heading, status, pageView.node, welcome, messages, dock)
 root.prepend(navigation, conversation, deck, publishedDeck)
+mountNavResizer(navigation, root)
 initMotion(root)
 // Mobile navigation wraps as history/status changes; reserve its actual height for the chat.
 const navigationSize = new ResizeObserver(() => root.style.setProperty('--navigation-height', `${navigation.getBoundingClientRect().height}px`))
 navigationSize.observe(navigation)
+/** The model that an option of the picker stands for; nothing for the empty option or a malformed value. */
+function chosenModel(text: string): { provider: string; model: string } | undefined {
+  if (!text) return undefined
+  try {
+    const value: unknown = JSON.parse(text)
+    if (!value || typeof value !== 'object' || !('provider' in value) || !('model' in value)) return undefined
+    return typeof value.provider === 'string' && typeof value.model === 'string'
+      ? { provider: value.provider, model: value.model }
+      : undefined
+  } catch {
+    return undefined
+  }
+}
 model.addEventListener('change', () => {
   if (model.value === '__settings') {
     model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
     run(settingsUI.open())
     return
   }
-  if (!model.value || !current) return
+  const choice = chosenModel(model.value)
+  if (!choice) return
+  // Choosing a model for a waiting new chat makes the chat with that model.
+  if (!current) {
+    if (pending) run(materialize(choice).then(() => {}))
+    return
+  }
   const id = current.sessionId
   selecting.add(id)
   model.disabled = true
@@ -574,17 +827,7 @@ model.addEventListener('change', () => {
   run(
     (async () => {
       try {
-        const value: unknown = JSON.parse(model.value)
-        if (
-          !value ||
-          typeof value !== 'object' ||
-          !('provider' in value) ||
-          !('model' in value) ||
-          typeof value.provider !== 'string' ||
-          typeof value.model !== 'string'
-        )
-          return
-        await management.select(id, { provider: value.provider, model: value.model })
+        await management.select(id, choice)
         await refresh()
         if (current?.sessionId === id) status.hidden = true
       } finally {
@@ -600,7 +843,7 @@ form.addEventListener('submit', event => {
   run(submitRequest(input.value))
 })
 async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId' | 'input'> = {}): Promise<void> {
-  if (submit.disabled || !current) return
+  if (submit.disabled || (!current && !pending)) return
   if (!text.trim()) return
   if (text.length > 16000) {
     status.hidden = false
@@ -608,11 +851,19 @@ async function submitRequest(text: string, extra: Omit<AgentRequest, 'sessionId'
     status.textContent = 'Yêu cầu quá dài. Hãy rút gọn nội dung trước khi gửi.'
     return
   }
-  if (waiting?.question && current.activeRequestId === waiting.requestId) {
+  // The first request of a waiting new chat makes the chat first.
+  const fresh = !current
+  const chat = current ?? (await materialize())
+  if (!chat) return
+  // A chat made just now has no model that can be used: the picker and the status say so.
+  if (fresh && !chat.selectable) { controls(); return }
+  // Sending leaves the page of the workspace for the conversation of the chat, like ChatGPT.
+  if (page !== undefined) { page = undefined; controls() }
+  if (waiting?.question && chat.activeRequestId === waiting.requestId) {
     if (!extra.outlineAction) await replyToQuestion({ type: 'text', text })
     return
   }
-  const id = current.sessionId,
+  const id = chat.sessionId,
     expected = generation
   const target = outlineState?.proposals.find(p => p.status === 'current')
   sending.add(id)
@@ -715,6 +966,6 @@ run(
     }
     const previous = sessions.find(session => session.sessionId === remembered)
     if (previous) await open(previous)
-    else await newChat()
+    else await startPending(null)
   })(),
 )
