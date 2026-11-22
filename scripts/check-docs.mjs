@@ -209,7 +209,7 @@ const run = () => {
   failures.push(...findUnlisted(targets, io.readFile))
   for (const failure of failures) console.log(`${failure.path}:${failure.line} ${failure.rule} ${failure.message}`)
   const fileCount = new Set(failures.map(failure => failure.path)).size
-  console.log(`check-docs: ${failures.length} error(s) in ${fileCount} file(s)`)
+  console.log(`check-docs: ${targets.length} file(s) checked, ${failures.length} error(s) in ${fileCount} file(s)`)
   process.exit(failures.length > 0 ? 1 : 0)
 }
 

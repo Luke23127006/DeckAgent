@@ -6,12 +6,14 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the use case index in `docs/UCs/README.md` (actors, use case map, files, ID prefixes, glossary), the six area file skeletons, and the open question OQ-001 about an independent baseline for the gap analysis.
 - Add the implementation plan that moves the spec in `docs/00-old/spec/` to use case files in `docs/UCs/`, and add `UCs` as a `refactor` workstream of the implementation-plan skill.
 - Add agent skills for test design techniques, test risk, estimation and defect classification, UI design review, and writing use cases and architecture documents.
 - Check documentation structure and citations with `check:docs`, forbid comments in code with `check:comments`, and run both checks from a Claude Code hook after each edit.
 
 ### Changed
 
+- `check:docs` prints the number of checked files, so a clean result is not mistaken for a run that checked no files.
 - Use oxlint 1.94.0 with the `correctness` and `suspicious` categories as the only linter. Biome stays as the formatter only.
 
 ### Fixed
