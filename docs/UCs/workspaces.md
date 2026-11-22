@@ -132,11 +132,13 @@ DeckAgent không có đăng nhập người dùng. Hệ thống không bảo v�
 
 ## Gap analysis
 
-Baseline độc lập cho file này đã có [[4]](#ref-4). File này chưa được đối chiếu với baseline đó.
+Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[4]](#ref-4). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline workspaces](../build/refactor/UCs/baseline/workspaces.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
+| GAP-01 | Không rule nào giới hạn số workspace | [BL-WS-1 3e](../build/refactor/UCs/baseline/workspaces.md) | Rủi ro được chấp nhận: DeckAgent chạy trên máy của người dùng, và mỗi workspace chỉ gắn một thư mục dự án | Accepted |
+| GAP-02 | Hai giao diện cùng mở danh sách workspace khi một giao diện thay đổi danh sách | [BL-WS-1 4b](../build/refactor/UCs/baseline/workspaces.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
+| GAP-03 | Người dùng không thêm hoặc xoá tài liệu trong workspace | [BL-WS-3, BL-WS-4](../build/refactor/UCs/baseline/workspaces.md) | Rủi ro được chấp nhận: workspace gắn với thư mục dự án, và agent đọc file của thư mục đó mà không cần thêm từng file (FR-077) [[3]](#ref-3) | Accepted |
 
 ## References
 

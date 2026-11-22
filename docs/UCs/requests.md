@@ -96,7 +96,7 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 | UC-003.A14 | Tại bước 3. Người dùng viết nội dung request hoặc thêm tài liệu trong lúc có request đang chạy. Tiếp tục tại bước 3 | Hệ thống giữ nội dung đó làm draft, không gửi request mới cho tới khi request đang chạy kết thúc, và không thay đổi tài liệu của request đang chạy | Product owner | Confirmed |
 | UC-003.A17 | Tại bước 2. Chat không có model đã chọn nào là model chọn được (BR-005) [[1]](#ref-1). Quay lại bước 1 | Hệ thống không gửi gì và giữ draft. Hệ thống báo lý do: chưa thiết lập provider, chưa thêm model, hoặc chat không có model đã chọn. Hệ thống không tự chọn model | Product owner | Confirmed |
 | UC-003.A31 | Tại bước 3. Người dùng dừng công việc của request đang chạy. Kết thúc | Hệ thống dừng công việc (NFR-011), hiển thị công việc đã bị dừng chứ không phải bị lỗi, giữ request và công việc đã xong, hiển thị mỗi hoạt động còn đang chạy là đã dừng, và không tự gửi lại gì | Product owner | Confirmed |
-| UC-003.A43 | Tại bước 3. Hệ thống chỉ dùng một phần tài liệu của request, hoặc tài liệu không còn đọc được trong lúc làm. Tiếp tục tại bước 3 | Hệ thống nêu tên tài liệu và phần không dùng, khi biết. Hệ thống không đọc file khác thay thế. Hệ thống hỏi lại phần còn thiếu khi phần đó làm kết quả thay đổi nhiều | Product owner | Confirmed |
+| UC-003.A43 | Tại bước 3. Hệ thống chỉ dùng một phần tài liệu của request, hoặc tài liệu không còn đọc được trong lúc làm. Tiếp tục tại bước 3 | Hệ thống nêu tên tài liệu và phần không dùng, khi biết. Hệ thống không đọc file khác thay thế. Hệ thống hỏi lại phần còn thiếu khi phần đó làm mất hoặc làm đổi luận điểm của một slide bất kỳ (FR-067.c) | Product owner | Confirmed |
 | UC-003.A50 | Tại bước 3. Hệ thống không lưu được trạng thái của chat, ví dụ một thay đổi của deck hoặc request vừa gửi. Tiếp tục tại bước 3 | Hệ thống báo công việc chưa được lưu và thay đổi nào hệ thống không giữ được. Hệ thống giữ trạng thái đã lưu gần nhất và không tự chạy lại gì | Product owner | Confirmed |
 | UC-003.A51 | Tại bước 3. Một bước của công việc vượt quá phạm vi agent của chat được làm mà không hỏi (NFR-003), ví dụ đọc một file ngoài thư mục dự án. Tiếp tục tại bước 3 | Hệ thống nêu bước đó, những gì bước đó chạm tới và lý do, rồi hỏi phê duyệt: cho phép một lần hoặc từ chối. Request vẫn đang chạy, và hệ thống không làm gì vượt qua bước đó trong lúc chờ. Khi được cho phép, hệ thống làm bước đó một lần. Khi bị từ chối, hệ thống làm phần còn lại của công việc, và thông báo kết thúc nêu những gì hệ thống không làm | Product owner | Confirmed |
 | UC-003.A52 | Tại bước 3. Cuộc hội thoại của chat không còn vừa context của model đã chọn. Tiếp tục tại bước 3 | Hệ thống viết tóm tắt hội thoại thay cho phần hội thoại trước đó và tiếp tục công việc. Hệ thống báo điều đó trong cuộc hội thoại, kèm vị trí bắt đầu của tóm tắt. Người dùng vẫn đọc được toàn bộ cuộc hội thoại, và brief, outline, deck, file đính kèm vẫn còn đủ. Khi không viết được tóm tắt: như luồng công việc không xong (UC-003.A11) | Product owner | Confirmed |
@@ -120,10 +120,12 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 | FR-014.c | Trong lúc có request đang chạy, người dùng được chuẩn bị request tiếp theo làm draft, và tài liệu của request đang chạy giữ nguyên | — | — | Product owner | Confirmed |
 | FR-015 | Hệ thống chỉ gửi request khi có nội dung request, ít nhất một file đính kèm sẵn sàng, hoặc cả hai, và không có file đính kèm nào đang chuẩn bị hay bị từ chối. Request rỗng không có thông báo lỗi | — | — | Product owner | Confirmed |
 | FR-015.b | Hệ thống không gửi nội dung request dài hơn độ dài tối đa của nội dung request (BR-002.V1); hệ thống báo nội dung quá dài và giữ draft | — | — | Product owner | Confirmed |
+| FR-015.c | Khi nội dung request dài hơn độ dài tối đa của nội dung request, hệ thống nêu độ dài hiện tại và độ dài tối đa (BR-002.V1) | — | — | Product owner | Confirmed |
 | FR-016 | Hệ thống hiển thị mỗi file người dùng thêm làm file đính kèm của draft, kèm tên hoặc bản xem trước, loại file và trạng thái: đang chuẩn bị, sẵn sàng, hoặc bị từ chối kèm lý do | — | — | Product owner | Confirmed |
 | FR-016.b | Người dùng được xem trước một file đính kèm, gỡ file đó, và thêm nội dung request vào draft | — | — | Product owner | Confirmed |
 | FR-017 | Hệ thống từ chối một file vừa thêm khi file vi phạm quy tắc file đính kèm (BR-001), hoặc được bảo vệ, bị hỏng hay không đọc được, và hiển thị ngay lý do trên file đính kèm lúc file được thêm (NFR-010) | — | — | Product owner | Confirmed |
 | FR-017.b | File đính kèm bị từ chối ở lại cho tới khi người dùng gỡ, và phần còn lại của draft giữ nguyên | — | — | Product owner | Confirmed |
+| FR-017.c | Khi hệ thống từ chối một file vì loại file, hệ thống nêu các loại file đính kèm được nhận (BR-001.V1) | — | — | Product owner | Confirmed |
 | FR-018 | Người dùng được dừng một request đang chạy. Hệ thống dừng công việc (NFR-011), hiển thị công việc đã bị dừng chứ không phải bị lỗi, và hiển thị mỗi hoạt động còn đang chạy là đã dừng | — | — | Product owner | Confirmed |
 | FR-018.b | Sau khi dừng, hệ thống giữ request và công việc đã xong, không bao giờ tự gửi lại request, và request sau đó là công việc mới, không phải lần chạy tiếp | — | — | Product owner | Confirmed |
 | FR-019 | Khi công việc của một request không xong, hệ thống kết thúc request và báo request không xong, kèm lý do khi biết, ví dụ provider không truy cập được, key hoặc model bị từ chối, hoặc đã chạm giới hạn sử dụng | — | — | Product owner | Confirmed |
@@ -137,7 +139,7 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 | FR-046 | Khi chat không có model đã chọn nào là model chọn được (BR-005) [[1]](#ref-1), hệ thống không gửi request, không bắt đầu công việc, giữ draft, báo lý do (chưa thiết lập provider, chưa thêm model, hoặc chat không có model đã chọn) và không tự chọn model | — | — | Product owner | Confirmed |
 | FR-067 | Khi hệ thống chỉ dùng một phần tài liệu của request, hoặc tài liệu không còn đọc được trong lúc làm, hệ thống báo điều đó và nêu tên tài liệu cùng phần không dùng, khi biết | — | — | Product owner | Confirmed |
 | FR-067.b | Hệ thống không bao giờ nói đã dùng nội dung mà hệ thống không dùng, và không đọc file khác thay cho file không đọc được | — | — | Product owner | Confirmed |
-| FR-067.c | Khi phần còn thiếu làm kết quả thay đổi nhiều, hệ thống đề nghị người dùng đưa lại phần đó hoặc sửa request | — | — | Product owner | Confirmed |
+| FR-067.c | Khi phần còn thiếu làm mất hoặc làm đổi luận điểm của một slide bất kỳ, hệ thống đề nghị người dùng đưa lại phần đó hoặc sửa request | — | — | Product owner | Confirmed |
 | FR-068 | Trong lúc DeckAgent chạy, việc tải lại hoặc đóng giao diện, mất kết nối giữa giao diện và DeckAgent, sang chat khác, hoặc đổi workspace đang dùng không dừng request đang chạy. Provider không truy cập được thì không thuộc rule này mà là request không xong (FR-019) | — | — | Product owner | Confirmed |
 | FR-068.b | Khi người dùng quay lại, hệ thống hiển thị chat như hiện tại: cuộc hội thoại, deck, các hoạt động và việc hệ thống đang làm. Hệ thống không hiển thị thông báo công việc bị gián đoạn khi công việc vẫn đang tiếp tục | — | — | Product owner | Confirmed |
 | FR-070 | Cuộc hội thoại hiển thị các hoạt động của một request theo thứ tự xảy ra, mỗi hoạt động kèm việc hệ thống đã làm và trạng thái của hoạt động. Không hoạt động nào được bịa ra | — | — | Product owner | Confirmed |
@@ -159,11 +161,20 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 
 ## Gap analysis
 
-Baseline độc lập cho file này đã có [[3]](#ref-3). File này chưa được đối chiếu với baseline đó.
+Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[3]](#ref-3). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline requests](../build/refactor/UCs/baseline/requests.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
+| GAP-01 | Hệ thống không nêu độ dài hiện tại so với độ dài tối đa khi nội dung request quá dài | [BL-REQ-A 1b](../build/refactor/UCs/baseline/requests.md) | Báo độ dài hiện tại và độ dài tối đa (FR-015.c) | Closed |
+| GAP-02 | Hệ thống không nêu các loại file được nhận khi từ chối một file vì loại file | [BL-REQ-A 1c](../build/refactor/UCs/baseline/requests.md) | Nêu các loại file được nhận (FR-017.c) | Closed |
+| GAP-03 | Hệ thống không cảnh báo trước khi gửi rằng một file không có chữ, ví dụ bản scan | [BL-REQ-A 1e](../build/refactor/UCs/baseline/requests.md) | Rủi ro được chấp nhận: hệ thống báo phần tài liệu không dùng được trong lúc làm, và không bao giờ nói đã dùng nội dung mà hệ thống không dùng (FR-067) | Accepted |
+| GAP-04 | Không rule nào giới hạn kích thước sau khi giải nén và số file bên trong một file nén | OWASP ASVS 5.0.0 mục 5.2.3 (L2), kiểm tra file nén trước khi giải nén | [Giới hạn của file nén (OQ-066)](../open-questions.md#oq-066) | Open |
+| GAP-05 | Hai giao diện cùng gửi request trong một chat | [BL-REQ-A 3a](../build/refactor/UCs/baseline/requests.md) | [Hai giao diện cùng gửi request (OQ-007)](../open-questions.md#oq-007) | Open |
+| GAP-06 | Không rule nào giới hạn thời gian chờ provider trả lời | [BL-REQ-A 4a](../build/refactor/UCs/baseline/requests.md) | [Thời gian chờ provider (OQ-062)](../open-questions.md#oq-062) | Open |
+| GAP-07 | Hệ thống không phân biệt các loại lỗi của provider và không nói người dùng làm gì tiếp theo | [BL-REQ-A 4b](../build/refactor/UCs/baseline/requests.md) | [Loại lỗi của provider (OQ-063)](../open-questions.md#oq-063) | Open |
+| GAP-08 | Không có cách chạy lại một request lỗi, đã dừng hoặc chưa xong | [BL-REQ-C](../build/refactor/UCs/baseline/requests.md) | [Chạy lại request (OQ-064)](../open-questions.md#oq-064) | Open |
+| GAP-09 | Hệ thống không báo khi một request kết thúc trong lúc người dùng ở chat khác | [BL-REQ-A 6b](../build/refactor/UCs/baseline/requests.md) | [Báo request kết thúc ở chat khác (OQ-065)](../open-questions.md#oq-065) | Open |
+| GAP-10 | Không rule nào nói kết quả khi người dùng chọn gửi hoặc dừng nhiều lần liên tiếp | [BL-REQ-A 2a, BL-REQ-B 1a](../build/refactor/UCs/baseline/requests.md) | Rủi ro được chấp nhận: mỗi chat chỉ làm một request tại một thời điểm (FR-014), và lần dừng thứ hai không còn request nào để dừng | Accepted |
 
 ## References
 

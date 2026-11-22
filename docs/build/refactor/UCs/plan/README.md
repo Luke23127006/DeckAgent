@@ -83,6 +83,7 @@ The [Decisions](#decisions) row `Method` gives the parts of the skill `write-use
 | 7 | [Workspaces](task-07-workspaces.md) |
 | 8 | [Check the migration](task-08-verify-migration.md) |
 | 9 | [Propose the missing values](task-09-propose-values.md) |
+| 10 | [Write the approved values](task-10-write-approved-values.md) |
 
 ## Next revision
 

@@ -93,7 +93,7 @@ Luồng chính:
 2. Người dùng gửi request. Trong một tin nhắn, hệ thống hỏi về mỗi chủ đề phỏng vấn mà request và tài liệu không trả lời (BR-013). Hệ thống đưa câu trả lời gợi ý và một cách bỏ qua mọi câu hỏi còn lại. Hệ thống đề xuất một định dạng tạo deck có sẵn và nói lý do (BR-011). Hệ thống cho người dùng thêm các yêu cầu khác.
 3. Người dùng trả lời hoặc bỏ qua từng câu hỏi. Hệ thống hiển thị đề xuất outline trong cuộc hội thoại làm outline hiện tại: tổng quan và nội dung dự kiến của mỗi slide dự kiến. Hệ thống hiển thị kèm brief: các câu trả lời, mỗi giả định, số slide dự kiến, các nguồn, định dạng tạo deck, template (BR-018) và design system (BR-003). Hệ thống đưa bản sửa gợi ý, và nói là không slide nào được dựng trước khi người dùng xác nhận.
 4. Người dùng xác nhận outline. Hệ thống xác nhận outline hiện tại và brief, khoá định dạng tạo deck của deck, và bắt đầu dựng slide.
-5. Người dùng theo dõi việc dựng deck. Hệ thống hiển thị deck canvas và cho biết công việc đang chạy. Hệ thống hiển thị mỗi slide khi slide đó xong (NFR-002, NFR-004).
+5. Người dùng theo dõi việc dựng deck. Hệ thống hiển thị deck canvas và cho biết công việc đang chạy. Hệ thống hiển thị mỗi slide khi slide đó xong (NFR-004).
 6. Người dùng xem bản nháp. Hệ thống hiển thị toàn bộ bản nháp deck và thông báo kết thúc: mỗi slide chứa gì, các giả định, các placeholder và nội dung không đến từ tài liệu của người dùng.
 
 ```mermaid
@@ -148,14 +148,14 @@ Số slide theo thời lượng của bài nói, do model đánh giá chứ khô
 | --- | --- | --- | --- | --- |
 | UC-001.A9 | Tại bước 3. Một file đã được nhận trong tài liệu không chứa gì dùng được. Tiếp tục tại bước 3 | Hệ thống không dùng gì từ file đó, và nêu tên file cùng lý do kèm outline | Product owner | Confirmed |
 | UC-001.A10 | Tại bước 5. Người dùng dừng công việc, hoặc công việc lỗi, trước khi mọi slide xong. Kết thúc | Hệ thống giữ outline đã xác nhận và mỗi slide đã xong, nói số slide đã xong, và giữ định dạng tạo deck đã khoá | Product owner | Confirmed |
-| UC-001.A23 | Tại bước 4. Người dùng yêu cầu thay đổi outline hiện tại hoặc brief, chọn một bản sửa gợi ý, yêu cầu dùng lại một đề xuất trước, hoặc gửi một tin nhắn về outline có các nghĩa khác nhau nhiều. Quay lại bước 3 | Hệ thống hỏi trước một câu hỏi tập trung khi nghĩa chưa rõ. Hệ thống hiển thị kết quả làm outline hiện tại mới cùng brief, nêu những gì đã thay đổi, và giữ nguyên mỗi đề xuất trước | Product owner | Confirmed |
+| UC-001.A23 | Tại bước 4. Người dùng yêu cầu thay đổi outline hiện tại hoặc brief, chọn một bản sửa gợi ý, yêu cầu dùng lại một đề xuất trước, hoặc gửi một tin nhắn về outline có hai nghĩa làm đổi luận điểm của một slide dự kiến bất kỳ. Quay lại bước 3 | Hệ thống hỏi trước một câu hỏi tập trung khi nghĩa chưa rõ. Hệ thống hiển thị kết quả làm outline hiện tại mới cùng brief, nêu những gì đã thay đổi, và giữ nguyên mỗi đề xuất trước | Product owner | Confirmed |
 | UC-001.A32 | Tại bước 3. Người dùng bỏ qua câu hỏi về chủ đề, và request cùng tài liệu không cho biết chủ đề. Ở lại bước 3 | Hệ thống không soạn outline, nói là cần chủ đề, và hỏi lại chủ đề | Product owner | Confirmed |
-| UC-001.A33 | Tại bước 3. Hai phần của tài liệu không khớp nhau về một điểm mà outline cần. Tiếp tục tại bước 3 | Hệ thống nêu cả hai phần và vị trí của từng phần. Hệ thống đề nghị người dùng chọn khi điểm đó làm kế hoạch thay đổi nhiều. Nếu không, hệ thống đánh dấu điểm đó là còn mở trong outline | Product owner | Confirmed |
+| UC-001.A33 | Tại bước 3. Hai phần của tài liệu không khớp nhau về một điểm mà outline cần. Tiếp tục tại bước 3 | Hệ thống nêu cả hai phần và vị trí của từng phần. Hệ thống đề nghị người dùng chọn khi điểm đó làm đổi luận điểm của một slide dự kiến bất kỳ (FR-011.b). Nếu không, hệ thống đánh dấu điểm đó là còn mở trong outline | Product owner | Confirmed |
 | UC-001.A34 | Tại bước 3. Outline cần nội dung thuộc loại cần nguồn (BR-015), và không nguồn nào cho nội dung đó. Tiếp tục tại bước 3 | Hệ thống viết placeholder thay thế, và nêu tên từng mục còn thiếu kèm outline | Product owner | Confirmed |
 | UC-001.A37 | Tại bước 5. Request hoặc một câu trả lời phỏng vấn yêu cầu ghi chú người trình bày. Tiếp tục tại bước 5 | Hệ thống dựng ghi chú của mỗi slide cùng slide đó, và nêu các slide có ghi chú trong thông báo kết thúc | Product owner | Confirmed |
 | UC-001.A42 | Tại bước 5. Một slide cần ảnh, theo câu trả lời phỏng vấn, request hoặc nội dung của slide. Tiếp tục tại bước 5 | Hệ thống dùng ảnh đính kèm, ảnh mới, hoặc ảnh tìm được bằng public research (BR-014). Thông báo kết thúc nêu nguồn, tác giả và giấy phép của mỗi ảnh tìm được bằng public research | Product owner | Confirmed |
 | UC-001.A51 | Tại bước 3. Định dạng tạo deck mà người dùng nêu tên hoặc đã chọn không có sẵn, hoặc request nêu hai định dạng cho một deck. Quay lại bước 2 | Hệ thống nói nhu cầu nào hệ thống không đáp ứng được, hiển thị các định dạng tạo deck có sẵn, và không tự đặt định dạng khác vào chỗ đó | Product owner | Confirmed |
-| UC-001.A52 | Tại bước 3. Người dùng đã chọn public research làm nguồn, và public research không cho thông tin mà outline cần. Tiếp tục tại bước 3 | Hệ thống nói thông tin nào hệ thống không lấy được. Hệ thống hỏi người dùng khi phần thiếu làm outline thay đổi nhiều. Nếu không, hệ thống tiếp tục với các nguồn khác | Product owner | Confirmed |
+| UC-001.A52 | Tại bước 3. Người dùng đã chọn public research làm nguồn, và public research không cho thông tin mà outline cần. Tiếp tục tại bước 3 | Hệ thống nói thông tin nào hệ thống không lấy được. Hệ thống hỏi người dùng khi phần thiếu làm hệ thống không viết được luận điểm của một slide dự kiến (FR-089.b). Khi phần thiếu là nội dung thuộc loại cần nguồn, hệ thống viết placeholder (FR-010) và tiếp tục với các nguồn khác | Product owner | Confirmed |
 | UC-001.A53 | Tại bước 2. Request không có tài liệu và không nêu nguồn nào (BR-013). Tiếp tục tại bước 3 | Hệ thống hỏi dùng nguồn nào. Hệ thống chỉ dùng kiến thức chung của model sau khi người dùng xác nhận điều đó | Product owner | Confirmed |
 | UC-001.A54 | Tại bước 4. Người dùng hỏi một câu về outline hiện tại và không yêu cầu thay đổi. Ở lại bước 4 | Hệ thống trả lời câu hỏi và không thay đổi outline hay brief. Hệ thống hỏi người dùng muốn nói ý nào khi tin nhắn đọc được theo cả hai nghĩa | Product owner | Confirmed |
 
@@ -190,7 +190,7 @@ Các định dạng tạo deck được chia theo nhóm (BR-011.V1). Nhóm khôn
 | FR-010 | Khi outline cần nội dung thuộc loại cần nguồn (BR-015) và không nguồn nào cho nội dung đó, hệ thống viết placeholder thay vì bịa ra nội dung | — | — | Product owner | Confirmed |
 | FR-010.b | Hệ thống đánh dấu từng điểm như vậy trong outline và nêu tên từng mục còn thiếu kèm outline | — | — | Product owner | Confirmed |
 | FR-011 | Khi hai phần của tài liệu không khớp nhau về một điểm mà công việc cần, hệ thống nêu cả hai phần và vị trí của từng phần | — | — | Product owner | Confirmed |
-| FR-011.b | Hệ thống báo người dùng trước outline khi chỗ không khớp làm nội dung dự kiến thay đổi nhiều. Nếu không, hệ thống nêu chỗ không khớp kèm outline | — | — | Product owner | Confirmed |
+| FR-011.b | Hệ thống báo người dùng trước outline khi chỗ không khớp làm đổi luận điểm của một slide dự kiến bất kỳ. Nếu không, hệ thống nêu chỗ không khớp kèm outline | — | — | Product owner | Confirmed |
 | FR-021 | Trước outline đầu tiên, hệ thống hỏi trong một tin nhắn phỏng vấn về mỗi chủ đề phỏng vấn mà request và tài liệu không trả lời (BR-013), bằng ngôn ngữ người dùng viết | — | — | Product owner | Confirmed |
 | FR-021.b | Hệ thống đưa câu trả lời gợi ý, nhận câu trả lời của người dùng hoặc việc bỏ qua cho từng câu hỏi, cho bỏ qua mọi câu hỏi còn lại cùng một lúc, và cho người dùng thêm yêu cầu khác bằng lời của mình | — | — | Product owner | Confirmed |
 | FR-021.c | Với câu hỏi bị bỏ qua, hệ thống dùng một giả định, trừ chủ đề. Khi chủ đề còn chưa biết, hệ thống không soạn outline và hỏi lại chủ đề | — | — | Product owner | Confirmed |
@@ -208,7 +208,7 @@ Các định dạng tạo deck được chia theo nhóm (BR-011.V1). Nhóm khôn
 | FR-069.b | Việc đọc outline không thay đổi outline nào, không xác nhận gì và không gửi request nào | — | — | Product owner | Confirmed |
 | FR-069.c | Outline đã xác nhận vẫn đọc được và không thay đổi | — | — | Product owner | Confirmed |
 | FR-089 | Khi public research không cho thông tin mà công việc cần, hệ thống nói thông tin nào hệ thống không lấy được | — | — | Product owner | Confirmed |
-| FR-089.b | Hệ thống hỏi người dùng và chờ khi phần thiếu làm kết quả thay đổi nhiều. Nếu không, hệ thống tiếp tục với các nguồn khác | — | — | Product owner | Confirmed |
+| FR-089.b | Hệ thống hỏi người dùng và chờ khi phần thiếu làm hệ thống không viết được luận điểm của một slide dự kiến. Khi phần thiếu là nội dung thuộc loại cần nguồn (BR-015), hệ thống viết placeholder (FR-010) và tiếp tục với các nguồn khác | — | — | Product owner | Confirmed |
 | FR-089.c | Hệ thống không bao giờ đưa thông tin chưa kiểm tra ra như đã kiểm tra | — | — | Product owner | Confirmed |
 | FR-090 | Public research không gửi nội dung riêng tư nào của request, cuộc hội thoại, tài liệu hay deck tới dịch vụ tìm kiếm bên ngoài. Từ khoá tìm kiếm chỉ chứa thông tin công khai (NFR-007) | — | — | Product owner | Confirmed |
 | FR-113 | Trong phỏng vấn, hệ thống đề xuất một định dạng tạo deck có sẵn cho deck, dựa trên request và tài liệu, và nói lý do (BR-011). Định dạng có sẵn được nêu tên thì được đề xuất đúng như tên. Khi không có định dạng được nêu tên và không có nhu cầu đặc biệt, hệ thống đề xuất định dạng tạo deck mặc định | — | — | Product owner | Confirmed |
@@ -239,7 +239,7 @@ Luồng chính:
 
 1. Người dùng mô tả thay đổi: sửa gì, trên slide nào, trên cả deck hay trên một phần được đánh dấu. Hệ thống hiển thị nội dung request, từng file đính kèm và từng phần được đánh dấu trước khi gửi.
 2. Người dùng gửi request. Hệ thống nói trong cuộc hội thoại những slide nào hệ thống sửa và những slide mới nào hệ thống dựng. Hệ thống dùng outline đã xác nhận, các slide, tài liệu đã đưa trước đó trong chat và các nguồn của brief.
-3. Người dùng theo dõi deck thay đổi. Hệ thống sửa tại chỗ mỗi slide trong phạm vi trong mã nguồn deck, dựng mỗi slide mới tại vị trí request nêu hoặc ở cuối deck, giữ nguyên mọi slide khác, và không soạn outline (NFR-012).
+3. Người dùng theo dõi deck thay đổi. Hệ thống sửa tại chỗ mỗi slide trong phạm vi trong mã nguồn deck, dựng mỗi slide mới tại vị trí request nêu hoặc ở cuối deck, giữ nguyên mọi slide khác, và không soạn outline.
 4. Người dùng xem thay đổi. Hệ thống hiển thị các slide đã sửa trong deck canvas và thông báo kết thúc: mỗi slide đã sửa hoặc đã thêm và điều đã thay đổi trong slide đó, việc không slide nào khác thay đổi, cùng các giả định, các placeholder và nội dung không đến từ tài liệu của người dùng.
 
 ```mermaid
@@ -290,7 +290,7 @@ Màu hoặc font người dùng yêu cầu không bao giờ bị từ chối: h�
 
 | ID | Rule | Giá trị | Đo tại | Nguồn | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| FR-027 | Hệ thống áp dụng một request tiếp theo rõ ràng ở phạm vi request nêu: các slide được nêu tên, các phần được đánh dấu, nhiều slide hoặc cả deck, kể cả khi thay đổi lớn (NFR-012) | — | — | Product owner | Confirmed |
+| FR-027 | Hệ thống áp dụng một request tiếp theo rõ ràng ở phạm vi request nêu: các slide được nêu tên, các phần được đánh dấu, nhiều slide hoặc cả deck, kể cả khi thay đổi lớn | — | — | Product owner | Confirmed |
 | FR-027.b | Hệ thống sửa tại chỗ mỗi slide trong phạm vi trong mã nguồn deck, dựng mỗi slide mới tại vị trí request nêu hoặc ở cuối deck, và không hỏi phê duyệt trước | — | — | Product owner | Confirmed |
 | FR-027.c | Hệ thống giữ nguyên mọi slide ngoài phạm vi, không soạn outline và không làm deck thứ hai | — | — | Product owner | Confirmed |
 | FR-028 | Một request tiếp theo sau bản nháp đầu tiên đã dừng hoặc lỗi làm tiếp trên bản nháp đó. Hệ thống dùng outline đã xác nhận và các slide đã xong, kể cả khi chưa slide nào xong, và không hiển thị outline thứ hai | — | — | Product owner | Confirmed |
@@ -366,11 +366,17 @@ Một tin nhắn không yêu cầu thay đổi được trả lời ở đây. M
 
 ## Gap analysis
 
-Baseline độc lập cho file này đã có [[5]](#ref-5). File này chưa được đối chiếu với baseline đó.
+Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[5]](#ref-5). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline deck](../build/refactor/UCs/baseline/deck.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
+| GAP-01 | Không rule nào giới hạn số slide của một deck | [BL-D1 bước 1, BL-D2 bước 1](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: số slide theo thời lượng của bài nói và theo số slide người dùng yêu cầu (FR-008.c), không theo một giới hạn cố định | Accepted |
+| GAP-02 | Không use case nào cho người dùng trình chiếu deck toàn màn hình | [BL-D4](../build/refactor/UCs/baseline/deck.md) | [Trình chiếu deck (OQ-057)](../open-questions.md#oq-057) | Open |
+| GAP-03 | Hai giao diện cùng sửa hoặc xác nhận outline | [BL-D1 bước 6](../build/refactor/UCs/baseline/deck.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
+| GAP-04 | Người dùng không quay lại được trạng thái trước của deck | [BL-D2 bước 5](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: việc quay lại trạng thái trước của deck là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-008) | Accepted |
+| GAP-05 | Người dùng không tự sửa deck trong lúc agent sửa | [BL-D2 bước 5](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: việc tự sửa deck bằng tay là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-007) | Accepted |
+| GAP-06 | Không use case nào xuất deck ra file | [BL-D5](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: việc xuất deck là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-004, FR-085) | Accepted |
+| GAP-07 | Người dùng thêm cùng một file hai lần | [BL-D1 bước 2](../build/refactor/UCs/baseline/deck.md) | [Một file được thêm hai lần vào draft (OQ-009)](../open-questions.md#oq-009) | Open |
 
 ## References
 

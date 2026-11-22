@@ -107,11 +107,17 @@ Mỗi design system có sẵn và mỗi design system tự tạo có một giá 
 
 ## Gap analysis
 
-Baseline độc lập cho file này đã có [[4]](#ref-4). File này chưa được đối chiếu với baseline đó.
+Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[4]](#ref-4). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline design-systems](../build/refactor/UCs/baseline/design-systems.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
+| GAP-01 | Không rule nào nêu loại, số lượng và kích thước của file thương hiệu | [BL-DS-01 1b, 1c](../build/refactor/UCs/baseline/design-systems.md) | [Giới hạn của file thương hiệu (OQ-032)](../open-questions.md#oq-032) | Open |
+| GAP-02 | Không rule nào giới hạn độ dài tên design system | [BL-DS-01 3b](../build/refactor/UCs/baseline/design-systems.md) | [Độ dài tên design system (OQ-033)](../open-questions.md#oq-033) | Open |
+| GAP-03 | Hệ thống không cảnh báo khi màu chữ và màu nền có độ tương phản thấp | [BL-DS-02 4a](../build/refactor/UCs/baseline/design-systems.md) | [Độ tương phản của design system (OQ-034)](../open-questions.md#oq-034) | Open |
+| GAP-04 | Không rule nào nói kết quả khi font của design system không có trên máy | [BL-DS-01 5a](../build/refactor/UCs/baseline/design-systems.md) | [Font không có trên máy (OQ-035)](../open-questions.md#oq-035) | Open |
+| GAP-05 | Không có design system mặc định riêng cho từng workspace | [BL-DS-05](../build/refactor/UCs/baseline/design-systems.md) | Rủi ro được chấp nhận: người dùng không đặt design system khác làm design system mặc định (BR-003.V1) [[1]](#ref-1) | Accepted |
+| GAP-06 | Hai giao diện cùng thay đổi một design system | [BL-DS-03 4a](../build/refactor/UCs/baseline/design-systems.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
+| GAP-07 | Người dùng không sửa trực tiếp giá trị theme, ví dụ mã màu | [BL-DS-03 bước 2](../build/refactor/UCs/baseline/design-systems.md) | Rủi ro được chấp nhận: người dùng thay đổi design system bằng quy tắc bằng lời và file thương hiệu (UC-010.A2) | Accepted |
 
 ## References
 

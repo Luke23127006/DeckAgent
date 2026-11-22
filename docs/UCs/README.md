@@ -45,6 +45,7 @@ flowchart LR
 | [chats.md](chats.md) | Người dùng mở lại chat cũ và bắt đầu chat mới |
 | [design-systems.md](design-systems.md) | Người dùng thiết lập design system cho các deck |
 | [workspaces.md](workspaces.md) | Người dùng giữ công việc với deck trong workspace gắn với thư mục của mình |
+| [quality-attributes.md](quality-attributes.md) | Yêu cầu chất lượng toàn hệ thống: thời gian phản hồi, bảo mật, quyền riêng tư, toàn vẹn dữ liệu, hiển thị và độ tin cậy |
 
 ## Tiền tố ID
 

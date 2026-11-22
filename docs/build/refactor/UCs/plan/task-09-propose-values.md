@@ -32,7 +32,7 @@ Read this file to learn the steps of Task 9, which proposes the values that the 
 - Put two proposed values in one row of the report table.
 - Give a standard as a source without its exact section number from the original text of the standard.
 
-- [ ] **Step 1: List the items that need a value**
+- [x] **Step 1: List the items that need a value**
 
 Run: `grep -lE "soon|robust|a lot|quickly|few" docs/00-old/spec/03-requirements/nfr/NFR-*.md`
 Expected: a list of file paths. Add each ID of the `Vague quantity` lists of Tasks 2 to 7.
@@ -45,7 +45,7 @@ For each item, use this table:
 | The statement has no quantity, for example "never reaches the data of another chat" (NFR-003) | Write one row with `Đề xuất` = `— (không có đại lượng)` and give the measure in `Đo tại` |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 2: Write one row for each value**
+- [x] **Step 2: Write one row for each value**
 
 Write the table `ID | Câu gốc | Nguồn hiện có | Đề xuất | Đo tại | Lý do | Khác nguồn ở đâu` with these rules:
 
@@ -56,6 +56,6 @@ Write the table `ID | Câu gốc | Nguồn hiện có | Đề xuất | Đo tại
 - `Lý do`: why this value, in one sentence.
 - `Khác nguồn ở đâu`: what changes compared with the old sentence. Say when the proposal counts or measures a different thing.
 
-- [ ] **Step 3: Report and STOP**
+- [x] **Step 3: Report and STOP**
 
 Send the table of Step 2. Then STOP. Do not write `docs/UCs/quality-attributes.md`. Do not change a rule row. The product owner approves or changes each row of the table one by one. The next revision of the plan writes the approved values.

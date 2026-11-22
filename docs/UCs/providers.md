@@ -140,11 +140,18 @@ Một model service chạy trên máy người dùng được thiết lập như
 
 ## Gap analysis
 
-Baseline độc lập cho file này đã có [[2]](#ref-2). File này chưa được đối chiếu với baseline đó.
+Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[2]](#ref-2). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline providers](../build/refactor/UCs/baseline/providers.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
+| GAP-01 | Không rule nào bỏ khoảng trắng ở hai đầu key hoặc giới hạn độ dài key | [BL-P1 4b, 4c](../build/refactor/UCs/baseline/providers.md) | [Khoảng trắng và độ dài của key (OQ-025)](../open-questions.md#oq-025) | Open |
+| GAP-02 | Hệ thống không phân biệt key bị từ chối, hết quota, mất mạng và phản hồi lỗi của provider | [BL-P1 6b–6e, BL-P4 3a–3f](../build/refactor/UCs/baseline/providers.md) | [Loại lỗi của provider (OQ-063)](../open-questions.md#oq-063) | Open |
+| GAP-03 | Không rule nào giới hạn thời gian chờ khi hệ thống kiểm tra key | [BL-P1 6c](../build/refactor/UCs/baseline/providers.md) | [Thời gian chờ provider (OQ-062)](../open-questions.md#oq-062) | Open |
+| GAP-04 | Hệ thống không báo các chat bị ảnh hưởng khi key mới cho ít model hơn | [BL-P2 3b](../build/refactor/UCs/baseline/providers.md) | [Chat bị ảnh hưởng khi đổi key (OQ-026)](../open-questions.md#oq-026) | Open |
+| GAP-05 | Hệ thống không cảnh báo khi model đã chọn không đáp ứng request, ví dụ không đọc được ảnh | [BL-P3 3a](../build/refactor/UCs/baseline/providers.md) | [Model không đáp ứng request (OQ-027)](../open-questions.md#oq-027) | Open |
+| GAP-06 | Hai giao diện chọn hai model khác nhau cho một chat | [BL-P3 4a](../build/refactor/UCs/baseline/providers.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
+| GAP-07 | Người dùng không làm mới danh mục model bằng một thao tác riêng | [BL-P3 2b](../build/refactor/UCs/baseline/providers.md) | Rủi ro được chấp nhận: người dùng vẫn thêm được model bằng model ID khi danh mục thiếu model (FR-058) | Accepted |
+| GAP-08 | Không use case nào cho người dùng xem trạng thái và mức sử dụng của provider | [BL-P6](../build/refactor/UCs/baseline/providers.md) | [Trạng thái và mức sử dụng của provider (OQ-028)](../open-questions.md#oq-028) | Open |
 
 ## References
 

@@ -6,6 +6,10 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add `docs/UCs/quality-attributes.md` with one quality attribute scenario for each of the 11 old quality requirements. Each scenario has the six SEI parts, and the security scenarios cite OWASP ASVS 5.0.0 and the OWASP Top 10 for LLM Applications 2025.
+- Add the gap analysis of each use case file against its independent baseline. Each gap becomes a new rule, an accepted risk with its reason, or an open question.
+- Add the open questions that the gap analysis found, and a question about the default language of a deck.
+- Add Task 10 of the use case plan, which records the values that the product owner approved.
 - Add the `Gửi request` use case file in `docs/UCs/` with its rules, flows and lifecycle diagrams, and nine open questions for the items that no rule decides.
 - Add an independent baseline for the gap analysis of each area in `docs/UCs/`, written by a subagent that does not read the spec, together with the standards that the analysis uses.
 - Add the use case index in `docs/UCs/README.md` (actors, use case map, files, ID prefixes, glossary), the six area file skeletons, and the open question OQ-001 about an independent baseline for the gap analysis.
@@ -15,6 +19,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Replace the vague words "thay đổi nhiều" in three rules with a condition that a tester can check. The rules are about material conflicts, missing material and missing research. The condition is a change to the main point of a planned slide.
+- Make the rule about missing research ask the user only when the system cannot write the main point of a planned slide. For missing content of a sourced type, the system writes a placeholder, so the rule no longer conflicts with the placeholder rule.
+- Drop the wait-time requirements for the first slide and for a changed slide, because the time depends on the model and the provider.
 - Link the gap-analysis row of each use case area file to its baseline file in `docs/build/refactor/UCs/baseline/`, and run the comparison after Task 7.
 - Make `write-use-case` use DeckAgent examples, ask for an open question when no rule decides an item, and run `check:docs` with the pinned pnpm version. Tasks 1 to 7 of the use case plan follow the skill and the plan method.
 - `check:docs` prints the number of checked files, so a clean result is not mistaken for a run that checked no files.

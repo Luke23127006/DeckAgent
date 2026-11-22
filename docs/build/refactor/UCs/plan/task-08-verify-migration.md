@@ -25,7 +25,7 @@ Read this file to learn the steps of Task 8, which checks the IDs and the values
 - Add a comment, a lint-disable directive or `@ts-expect-error`.
 - Commit or push.
 
-- [ ] **Step 1: Make sure that each old ID has rows in exactly one file**
+- [x] **Step 1: Make sure that each old ID has rows in exactly one file**
 
 Run:
 
@@ -35,7 +35,7 @@ for f in docs/00-old/spec/03-requirements/fr/FR-*.md docs/00-old/spec/04-busines
 
 Expected: PASS. The output is `DONE` only. FAIL: the output contains `BAD` or `NFR-ROW`.
 
-- [ ] **Step 2: List each number in a rule row**
+- [x] **Step 2: List each number in a rule row**
 
 Run:
 
@@ -53,12 +53,12 @@ Expected: one line for each row whose `Giá trị` cell has a digit. For each li
 | The number is in no old file of the ID | Add the line to the report list `Value without source` |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 3: Run the documentation check**
+- [x] **Step 3: Run the documentation check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: PASS. The command exits with code 0.
 
-- [ ] **Step 4: Report and stop**
+- [x] **Step 4: Report and stop**
 
 Send this report:
 - Commands run, with the last 20 lines of output of each command
