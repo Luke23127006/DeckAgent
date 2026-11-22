@@ -6,6 +6,7 @@ Read this file to learn the steps of Task 1, which writes the index and the skel
 - [Global Constraints](README.md#global-constraints) and [Owner map](README.md#owner-map) in `README.md`
 - `docs/conventions/docs.md`
 - `docs/conventions/use-cases.md`
+- `.agents/skills/write-use-case/SKILL.md` (the method. Obey [Method](README.md#method) for the steps that change)
 - `docs/conventions/mermaid.md`
 - `docs/00-old/spec/_STYLE.md` (lines 40-124, the glossary)
 - `docs/UCs/README.md`
@@ -35,7 +36,7 @@ Read this file to learn the steps of Task 1, which writes the index and the skel
 - Commit or push.
 - Write rules, flows or diagrams in the six area files. Tasks 2 to 7 write them.
 
-- [ ] **Step 1: Create the six skeleton files**
+- [x] **Step 1: Create the six skeleton files**
 
 Each file has two lines only: a level-1 heading and one purpose sentence. Use these exact texts:
 
@@ -48,7 +49,7 @@ Each file has two lines only: a level-1 heading and one purpose sentence. Use th
 | `docs/UCs/design-systems.md` | `# Design system` | `Đọc file này để biết người dùng thiết lập design system cho các deck như thế nào.` |
 | `docs/UCs/workspaces.md` | `# Workspace` | `Đọc file này để biết người dùng giữ công việc với deck trong workspace gắn với thư mục của mình như thế nào.` |
 
-- [ ] **Step 2: Write `docs/UCs/README.md`**
+- [x] **Step 2: Write `docs/UCs/README.md`**
 
 Keep line 1 and line 3 as they are. Add these sections in this order:
 
@@ -66,28 +67,28 @@ Keep line 1 and line 3 as they are. Add these sections in this order:
 
 | Tiền tố | Nhóm | Nguồn |
 | --- | --- | --- |
-| `UC` | Use case | Spec cũ |
-| `FR` | Functional requirement | Spec cũ |
-| `BR` | Business rule. Giá trị của rule có ID dạng `BR-nnn.Vn` | Spec cũ |
-| `NFR` | Quality requirement | Spec cũ |
-| `A` | Luồng thay thế và luồng ngoại lệ, đánh số riêng trong từng use case. ID dạng `UC-nnn.An` | Spec cũ |
+| `UC` | Use case | Section use case của file vùng chức năng |
+| `FR` | Functional requirement | Bảng rule của file vùng chức năng |
+| `BR` | Business rule. Giá trị của rule có ID dạng `BR-nnn.Vn` | Bảng rule của file vùng chức năng |
+| `NFR` | Quality requirement | `quality-attributes.md` |
+| `A` | Luồng thay thế và luồng ngoại lệ, đánh số riêng trong từng use case. ID dạng `UC-nnn.An` | Bảng luồng của section use case |
 
 5. `## Thuật ngữ`: a table `Thuật ngữ | Nghĩa`. One row for each row of the glossary in `docs/00-old/spec/_STYLE.md`. Translate the meaning. Write the term in Vietnamese, or keep the English term when the Global Constraints keep it. Each term has one name only.
 
-- [ ] **Step 3: Add `OQ-001` to `docs/open-questions.md`**
+- [x] **Step 3: Add `OQ-001` to `docs/open-questions.md`**
 
 Add the section `## Use cases` before `## Resolved & Dropped`. The section has the table `ID | Câu hỏi | Điều đã biết | Chặn | Ưu tiên | Nguồn` with one row:
 
 | ID | Câu hỏi | Điều đã biết | Chặn | Ưu tiên | Nguồn |
 | --- | --- | --- | --- | --- | --- |
-| <a id="oq-001"></a>OQ-001 | Baseline độc lập nào dùng cho gap analysis của từng file trong `docs/UCs/`? | Spec cũ chỉ được so với sản phẩm khác (open-design, Napkin AI), không với chuẩn ngành hay bộ use case viết độc lập. | Gap analysis của mọi file trong `docs/UCs/` | High | `LESSONS.md` LL-001 |
+| <a id="oq-001"></a>OQ-001 | Baseline độc lập nào dùng cho gap analysis của từng file trong `docs/UCs/`? | Các use case hiện có chỉ được so với sản phẩm khác (open-design, Napkin AI), không với chuẩn ngành hay bộ use case viết độc lập. | Gap analysis của mọi file trong `docs/UCs/` | High | `LESSONS.md` LL-001 |
 
-- [ ] **Step 4: Run the documentation check**
+- [x] **Step 4: Run the documentation check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: PASS. The command exits with code 0. FAIL: the output contains a line with `docs/UCs/` or `docs/open-questions.md`.
 
-- [ ] **Step 5: Report and stop**
+- [x] **Step 5: Report and stop**
 
 Send this report:
 - Files changed: <list>

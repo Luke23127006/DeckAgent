@@ -6,6 +6,7 @@ Read this file to learn the steps of Task 3, which writes `docs/UCs/deck.md` fro
 - [Global Constraints](README.md#global-constraints) and [Decisions](README.md#decisions) in `README.md`
 - `docs/conventions/docs.md`
 - `docs/conventions/use-cases.md`
+- `.agents/skills/write-use-case/SKILL.md` (the method. Obey [Method](README.md#method) for the steps that change)
 - `docs/conventions/mermaid.md`
 - `.agents/skills/mermaid-markdown/SKILL.md`
 - `docs/UCs/README.md` (the sections `## Tiền tố ID` and `## Thuật ngữ`)
@@ -74,6 +75,7 @@ Read this file to learn the steps of Task 3, which writes `docs/UCs/deck.md` fro
 
 **Files:**
 - Change: `docs/UCs/deck.md`
+- Change: `docs/open-questions.md` (add rows only)
 
 **Interfaces:**
 - Uses: the six area files in `docs/UCs/`. They exist. Some of them contain only a heading and a purpose line. Uses the anchor `../open-questions.md#oq-001`.
@@ -116,9 +118,9 @@ Read this file to learn the steps of Task 3, which writes `docs/UCs/deck.md` fro
 | `## Trigger and precondition` | The lines `**Trigger:**` and `**Precondition:**` of its section |
 | `## Outcome and minimal guarantee` | The lines `**Kết quả khi thành công:**` and `**Kết quả khi thất bại:**` |
 | A `[Sn]` message or note in `## Interaction diagram` | One numbered step of the main flow, and one message of the `sequenceDiagram`. The participants are `Người dùng` and `DeckAgent` only |
-| A flow `### An · <title>` | One row of the flow table. The columns are `ID \| Điều kiện \| Phản hồi người dùng thấy \| Nguồn \| Trạng thái`. The ID is `<UC ID>.An`. `Điều kiện` holds the `At`, `When` and `Ends` fields. `Nguồn` is `Spec cũ: <UC ID> An` |
-| An owned `FR-nnn` | One row of the rule table `ID \| Rule \| Giá trị \| Đo tại \| Nguồn \| Trạng thái`. A statement that says two things becomes the rows `FR-nnn`, `FR-nnn.b`, `FR-nnn.c`. `Nguồn` is `Spec cũ: FR-nnn` |
-| An owned `BR-nnn` | One row `BR-nnn` for its statement, and one row `BR-nnn.Vn` for each `### V-n` value, with the number and the unit. `Nguồn` is `Spec cũ: BR-nnn V-n` |
+| A flow `### An · <title>` | One row of the flow table. The columns are `ID \| Điều kiện \| Phản hồi người dùng thấy \| Nguồn \| Trạng thái`. The ID is `<UC ID>.An`. `Điều kiện` holds the `At`, `When` and `Ends` fields. `Nguồn` is `Product owner` |
+| An owned `FR-nnn` | One row of the rule table `ID \| Rule \| Giá trị \| Đo tại \| Nguồn \| Trạng thái`. A statement that says two things becomes the rows `FR-nnn`, `FR-nnn.b`, `FR-nnn.c`. `Nguồn` is `Product owner` |
+| An owned `BR-nnn` | One row `BR-nnn` for its statement, and one row `BR-nnn.Vn` for each `### V-n` value, with the number and the unit. `Nguồn` is `Product owner` |
 | An owned item that two or more use cases of this file cite | Its row goes in `## Quy tắc dùng chung` |
 | A `Next free flow ID` line, or a line that says which `V-n` numbers are not used | Leave it out |
 | A line of `## Notes` that a user or a tester can see | One sentence in the section of its use case |
@@ -140,11 +142,27 @@ Write this section only when two or more use cases of this file cite an owned it
 
 For each of `UC-001 UC-002 UC-009`, in this order, write the section with the mapping table. The section has these parts: goal, trigger, precondition, outcomes, numbered main flow, `sequenceDiagram` and flow table. It also has the rule table of the owned items that only this use case cites.
 
-- [ ] **Step 4: Write `## Gap analysis` and `## References`**
+- [ ] **Step 4: Find the exception flows step by step**
+
+Do step 5 of the skill `write-use-case`. For each step of each main flow, ask each question of the skill list:
+
+  - The input is empty, wrong or too long, or the input is at a limit.
+  - A provider or an external service does not answer, or gives an error.
+  - The user does the same action again.
+  - Time passes during the flow.
+  - The action was already done.
+  - A second interface shows the same chat.
+  - The user leaves the flow and comes back.
+
+For each object that has a lifecycle (an attachment, a request, a deck, a workspace), draw a `stateDiagram-v2` in the section of its use case. Each transition label is a content phrase with the ID of the rule that gives the transition.
+
+Some answers change what the user sees, but no old file gives the result. Do not write a flow row for such an answer, because the old files do not give its behavior. Do Step 7 for it: it is an item with no decision.
+
+- [ ] **Step 5: Write `## Gap analysis` and `## References`**
 
 `## Gap analysis` has this sentence: `Chưa có baseline độc lập cho file này [[n]](#ref-n).` Then the table `ID | Gap | Baseline | Quyết định | Trạng thái` with one row: `GAP-01 | Chưa đối chiếu với baseline độc lập | — | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open`. In `## References`, the citation number `n` points to `../open-questions.md`.
 
-- [ ] **Step 5: Make sure that each owned ID has a row**
+- [ ] **Step 6: Make sure that each owned ID has a row**
 
 Run:
 
@@ -154,12 +172,24 @@ for i in BR-003 BR-011 BR-013 BR-014 BR-015 BR-018 FR-001 FR-003 FR-005 FR-007 F
 
 Expected: PASS. The output is `DONE` only. FAIL: the output contains `MISSING`.
 
-- [ ] **Step 6: Run the documentation check**
+- [ ] **Step 7: Review the file for open questions**
+
+Read the old files of the `Read first` block again, and read the area file that you wrote. Find each item that has no decision. These are the types of item:
+
+  - A `pending` mark or an `Open` finding in an old file.
+  - Two rows, two flows, or a row and an outcome line, that give different results for the same condition. Compare the rows of this file, and the rows of the owner files that this file cites.
+  - A condition that a user can cause, but no flow or rule gives the result for it. Examples: two events at the same time, a failure during a flow, and the state after a failure.
+  - A word in a rule that a tester cannot check without a decision. Example: "no longer applies", when no rule tells when this occurs.
+  - A sentence that you translated in two possible ways, and the old text does not tell which way is correct.
+
+Write the rule as the old file states it. Do not change a rule to solve the question. Do not include a vague quantity word, because Task 9 proposes those values. Do not include an item of a parked file. For each item, search `docs/open-questions.md`, `docs/architecture/` and `docs/knowledge/` for an answer or for the same question. When you find no answer and no question, add one row to the `## Use cases` table of `docs/open-questions.md`. Use the next free ID `OQ-nnn` and the anchor `<a id="oq-nnn"></a>`. In the `Nguồn` cell, write a link to the area file. Example: `[Gửi request](UCs/requests.md)`. Some items have an effect that a user or a tester can see. For each of these items, add one sentence to the section of its use case. The sentence links to the question. Example: `[Điểm bắt đầu tóm tắt hội thoại (OQ-002)](../open-questions.md#oq-002)`. Do not link from `docs/UCs/` to a question about an architecture fact.
+
+- [ ] **Step 8: Run the documentation check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: PASS. The command exits with code 0. FAIL: the output contains a line with `docs/UCs/deck.md`.
 
-- [ ] **Step 7: Report and stop**
+- [ ] **Step 9: Report and stop**
 
 Send this report:
 - Files changed: <list>
@@ -168,4 +198,7 @@ Send this report:
 - `Architecture facts`: each line, with its old file
 - Each `FR` that you split, with the new row IDs
 - Items that the mapping table sent to the report
+- The commit of `docs/00-old/spec/` that you read (`git log -1 --format=%h -- docs/00-old/spec`)
+- Each lifecycle diagram that you drew, and each transition that has no rule
+- Each open question that you added, with its ID, and each item that you did not add, with the reason
 - What the commands do not prove: they do not prove that the translation keeps the meaning, or that each row says one thing only.

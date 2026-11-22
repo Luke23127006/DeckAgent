@@ -26,43 +26,52 @@ Copy this checklist. Mark each step when you complete it.
 - [ ] 6. Rules written with measure, source and status
 - [ ] 7. Each fact passed the boundary test
 - [ ] 8. Gap analysis against an independent baseline
-- [ ] 9. pnpm check:docs passes and review-change has no open finding
+- [ ] 9. check:docs passes and the review has no open finding
 - [ ] 10. Agent-proposed values reported to the user one by one
 ```
 
 ### 1. Collect the sources
 
-Read the sources of the feature area. The sources are the section of `docs/UCs/sources/project-brief.md`, the file for the area in `docs/design/prototype/docs/requirements/`, and the prototype screen. Also read the questions in `docs/open-questions.md` and the ADRs in `docs/architecture/30-decisions.md`. Record the commit of each source that you read.
+Read the sources of the feature area:
 
-The prototype shows the interface, not the product behavior. A behavior that only the prototype shows gets the status `Inferred`, not `Confirmed`.
+- The current file of the area in `docs/UCs/`, if it exists.
+- The requirement that the product owner gives: an issue, a message or a meeting note. Ask the product owner for it when you do not have it.
+- The questions in `docs/open-questions.md`.
+- The ADRs in `docs/architecture/30-decisions.md`, if the file exists.
+- A design or a prototype in `docs/design/`, if one exists for the area.
+
+Record the commit or the link of each source that you read. Put this record in the report, not in the use case file.
+
+A prototype or a design shows the interface, not the product behavior. A behavior that only a prototype or a design shows gets the status `Inferred`, not `Confirmed`.
 
 ### 2. Find the existing IDs
 
-Search `docs/testing/test-scopes/` and `docs/open-questions.md` for IDs of this area. A test case or a defect that points to an ID must keep pointing to the same behavior. Keep each existing ID and its meaning. Give a new rule the next number in its group. When one old rule says two things, keep the old ID for the first and give the second a new ID.
+Search `apps/`, `docs/testing/`, `docs/architecture/` and `docs/open-questions.md` for the IDs of this area. The code cites IDs in more than one form, for example `UC-003 A11` and `UC-003.A11`. Search for each form. A test case or a defect that points to an ID must keep pointing to the same behavior. Keep each existing ID and its meaning. Give a new rule the next number in its group. When one old rule says two things, keep the old ID for the first and give the second a new ID.
 
 ### 3. Write the actors, the goals and the scope
 
-- An actor is a person or a system outside Crypto Force that has a goal or that the user sees. Examples: the guest, the signed-in user, the operator, the mailbox, Google, Binance.
-- Each use case is one goal that the actor can finish in one session, for example "Reset password". A step of a goal (for example "type the email") is not a use case.
+- An actor is a person or a system outside DeckAgent that has a goal or that the user sees. Examples: the user, a provider, an external service.
+- Each use case is one goal that the actor can finish in one session, for example "Gửi request và chờ công việc". A step of a goal (for example "thêm file đính kèm") is not a use case.
 - Write what is out of scope, so that the reader does not look for it.
 
 ### 4. Write the main flow as a black box
 
-Write the steps that the actor sees, from the trigger to the goal. The system is one participant: Crypto Force. Do not write the internal parts (API, database, library, endpoint). They belong to `docs/architecture/`. Draw the main flow as a `sequenceDiagram`, with the labels that `docs/conventions/mermaid.md` gives.
+Write the steps that the actor sees, from the trigger to the goal. The system is one participant: DeckAgent. Do not write the internal parts (API, database, library, endpoint). They belong to `docs/architecture/`. Draw the main flow as a `sequenceDiagram`, with the labels that `docs/conventions/mermaid.md` gives.
 
 ### 5. Find the exception flows step by step
 
 Go through each step of the main flow. For each step, ask how it can fail:
 
 - The input is empty, has a wrong format, is too long, or is at a limit.
-- The system or an external system (mailbox, Google, Binance) does not answer or gives an error.
+- DeckAgent, a provider or an external service does not answer or gives an error.
 - The actor sends the request again, too many times, or after the limit.
-- Time passes: a link, a session or a lock expires during the flow.
-- The action was already done: a link opened again, an email already registered, an account already verified.
-- A second browser, a second tab, or a scanner opens the link. A different account has a session in the browser.
-- The actor leaves the flow and comes back (reload, back, close the window).
+- Time passes: the actor does not answer, or a wait has no end.
+- The action was already done: the same file added again, a suggestion chosen again, an outline that the user approved before.
+- A second interface shows the same chat at the same time.
+- DeckAgent stops and starts again during the flow.
+- The actor leaves the flow and comes back (reload, another chat, close the interface).
 
-Each answer that changes what the actor sees is a row of the flow table. When an object has a lifecycle (a link, a session, a job), draw a `stateDiagram-v2` and check that each transition has a rule.
+Each answer that changes what the actor sees is a row of the flow table. When no source gives the result of an answer, do not make up the behavior. Add an open question to `docs/open-questions.md` and link to it from the section of the use case. When an object has a lifecycle (an attachment, a request, a deck, a workspace), draw a `stateDiagram-v2` and check that each transition has a rule.
 
 ### 6. Write the rules
 
@@ -79,16 +88,18 @@ Ask: can the user or a tester see this fact from outside the system? If yes, it 
 
 The spec, the prototype, the code and the tests have one origin. A comparison between them finds only where they differ, not what all of them omit. Choose a baseline from outside that origin:
 
-- A standard of the domain. Use OWASP ASVS for authentication, session and input. Use WCAG for accessibility. Use the SEI quality attribute scenario for quality requirements.
+- A standard of the domain. Use WCAG for accessibility. Use OWASP ASVS for input handling and for access to files. Use the SEI quality attribute scenario for quality requirements.
 - A set of use cases that a person or a subagent writes without reading the spec. Give the subagent only the goal of the area and the actors.
 
 Take the item IDs and levels from the original text of the standard, not from a summary. For each item in scope, record one result. The result is full, partial, missing, or not applicable. Each item without a full result becomes a row of the gap table. For each row, make a new rule, record an accepted risk with the reason, or add an open question.
 
 ### 9. Check the result
 
-Run `pnpm check:docs`. Fix each problem as its message says. Then run the skill `review-change`. It finds what the check cannot find, for example a rule that says two things or a fact in the wrong folder.
+Run `corepack pnpm@11.28.5 check:docs`. Fix each problem as its message says. Then do a review with the skill `open-code-review-delegate`. The review finds what the check cannot find, for example a rule that says two things or a fact in the wrong folder.
 
 ### 10. Report
+
+Review the file for open questions. An open question is an item that has no decision. Examples: two rules that give different results for the same condition, a condition that no rule covers, and a word that a tester cannot check. Add each question to `docs/open-questions.md`, and do not change a rule to solve it.
 
 In the reply to the user, list separately each value that you proposed, with its reason and the change from the source. The user approves each value one by one. Also list each ID that you added or split.
 
@@ -99,5 +110,5 @@ For `docs/UCs/quality-attributes.md`, write one scenario for each concern of the
 ## Sources of this method
 
 - M. Barbacci et al., *Quality Attribute Workshops (QAWs), Third Edition*, CMU/SEI-2003-TR-016, §3.5 and §3.8: the six parts of a scenario and the three types of scenarios.
-- OWASP ASVS 5.0: an example of an independent baseline for authentication and session.
-- `LESSONS.md` LL-003 and LL-004: the baseline rule and the rule for agent-proposed values.
+- OWASP ASVS 5.0: an example of an independent baseline for input handling and access control.
+- `LESSONS.md` LL-001 and LL-002: the baseline rule and the rule for agent-proposed values.

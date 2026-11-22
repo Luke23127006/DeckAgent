@@ -2,7 +2,7 @@
 
 Read this file to learn the goal, the decisions, the global constraints and the task order of the migration of the old spec into `docs/UCs/`.
 
-> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
+> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
 **Goal:** Move the use cases, functional requirements and business rules of `docs/00-old/spec/` into use case files in `docs/UCs/` that obey `docs/conventions/use-cases.md`, with no value that has no source.
 
@@ -26,7 +26,13 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Backlog | `docs/00-old/spec/05-backlog/` is not migrated. Each area file names its parked items in the out-of-scope list of `## Tổng quan`. |
 | Product evidence | The `## Product evidence` sections (open-design, Napkin AI) are not migrated in this revision. They are product research, not behavior. |
 | Old files | `docs/00-old/spec/` stays unchanged. |
+| Method | Tasks 1 to 7 obey the skill `write-use-case`. The project decisions of this plan replace these parts of the skill. Step 1: the source is `docs/00-old/spec/`. Step 6: a vague word stays without a number, and Task 9 proposes the value. Step 8: the gap analysis has one `Open` row that links to `OQ-001`. |
+| Independence | The files in `docs/UCs/` and `docs/open-questions.md` do not refer to `docs/00-old/` or to the old spec. The product owner deletes `docs/00-old/` after Task 9. The old IDs stay the same, so Task 8 and Task 9 find each item in the old files by its ID. The `Nguồn` cell of a `Confirmed` row is `Product owner`. The `Nguồn` cell of a `Proposed` or `Inferred` row gives the evidence in words, with no old file path. |
 | Gap analysis | No independent baseline exists yet. Task 1 adds the open question `OQ-001` to `docs/open-questions.md`. Each area file has one gap row with status `Open` that links to `../open-questions.md#oq-001`. |
+
+## Method
+
+The [Decisions](#decisions) row `Method` gives the parts of the skill `write-use-case` that this plan replaces.
 
 ## Owner map
 
@@ -47,9 +53,10 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 - Glossary: use one Vietnamese term for each term of the glossary in `docs/00-old/spec/_STYLE.md` (lines 40-120). Task 1 writes the term table in `docs/UCs/README.md`. Tasks 2 to 7 use the terms of that table only.
 - Format of a use case file: `docs/conventions/use-cases.md`. Format of each document: `docs/conventions/docs.md`. Diagrams: `docs/conventions/mermaid.md`.
 - Before each mention of an ID, write a content phrase. Put the ID in parentheses after the phrase. Example: "độ dài tối đa của nội dung request (BR-002.V1)". The ID column of a table is an exception.
-- Values (lesson LL-002): write only a value that the old file states, with its unit. The `Nguồn` column of that row is `Spec cũ: <old ID>`, for example `Spec cũ: BR-002 V-1`. Do not write a number that the old file does not state. Do not change what a value counts or measures.
+- Values (lesson LL-002): write only a value that the old file states, with its unit. The `Nguồn` column of that row is `Product owner`. Do not write a number that the old file does not state. Do not change what a value counts or measures.
 - Vague quantity words in the old text are "soon", "a lot", "few", "some" and "quickly". Do not invent a number for them. Write the rule without a number, write `—` in `Giá trị` and `Đo tại`, and add the ID to the report list `Vague quantity`. Do not use the forbidden words of `docs/conventions/use-cases.md` (section `Rule có số đo`) in the `Rule` column.
 - Boundary test: some facts are not visible to a user or a tester from outside the system. Examples are the model, code, theme code, layout selection by code, storage and protocols inside DeckAgent. These facts do not go into `docs/UCs/`. Add the fact and its old file to the report list `Architecture facts`.
+- Open questions: after you write an area file, review it for items that have no decision. Add each new question to `docs/open-questions.md`. The task file gives the steps.
 - History: do not write where text came from ("chuyển từ", "merged from"), dates of decisions, or who decided.
 - Do not change files in `docs/00-old/`.
 - Do not create a Markdown file that the task does not name.

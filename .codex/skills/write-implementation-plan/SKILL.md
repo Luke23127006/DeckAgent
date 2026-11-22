@@ -117,7 +117,7 @@ The `README.md` of the plan folder has this structure:
 
 Read this file to learn the goal, the decisions, the global constraints and the task order of <feature>.
 
-> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
+> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
 **Goal:** <one sentence>
 

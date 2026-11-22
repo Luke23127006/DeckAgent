@@ -50,11 +50,11 @@ flowchart LR
 
 | Tiền tố | Nhóm | Nguồn |
 | --- | --- | --- |
-| `UC` | Use case | Spec cũ |
-| `FR` | Functional requirement | Spec cũ |
-| `BR` | Business rule. Giá trị của rule có ID dạng `BR-nnn.Vn` | Spec cũ |
-| `NFR` | Quality requirement | Spec cũ |
-| `A` | Luồng thay thế và luồng ngoại lệ, đánh số riêng trong từng use case. ID dạng `UC-nnn.An` | Spec cũ |
+| `UC` | Use case | Section use case của file vùng chức năng |
+| `FR` | Functional requirement | Bảng rule của file vùng chức năng |
+| `BR` | Business rule. Giá trị của rule có ID dạng `BR-nnn.Vn` | Bảng rule của file vùng chức năng |
+| `NFR` | Quality requirement | `quality-attributes.md` |
+| `A` | Luồng thay thế và luồng ngoại lệ, đánh số riêng trong từng use case. ID dạng `UC-nnn.An` | Bảng luồng của section use case |
 
 ## Thuật ngữ
 

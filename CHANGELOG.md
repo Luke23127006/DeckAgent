@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the `Gửi request` use case file in `docs/UCs/` with its rules, flows and lifecycle diagrams, and nine open questions for the items that no rule decides.
+- Add an independent baseline for the gap analysis of each area in `docs/UCs/`, written by a subagent that does not read the spec, together with the standards that the analysis uses.
 - Add the use case index in `docs/UCs/README.md` (actors, use case map, files, ID prefixes, glossary), the six area file skeletons, and the open question OQ-001 about an independent baseline for the gap analysis.
 - Add the implementation plan that moves the spec in `docs/00-old/spec/` to use case files in `docs/UCs/`, and add `UCs` as a `refactor` workstream of the implementation-plan skill.
 - Add agent skills for test design techniques, test risk, estimation and defect classification, UI design review, and writing use cases and architecture documents.
@@ -13,6 +15,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Make `write-use-case` use DeckAgent examples, ask for an open question when no rule decides an item, and run `check:docs` with the pinned pnpm version. Tasks 1 to 7 of the use case plan follow the skill and the plan method.
 - `check:docs` prints the number of checked files, so a clean result is not mistaken for a run that checked no files.
 - Use oxlint 1.94.0 with the `correctness` and `suspicious` categories as the only linter. Biome stays as the formatter only.
 
