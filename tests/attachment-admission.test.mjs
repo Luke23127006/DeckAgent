@@ -12,10 +12,17 @@ import { Readable } from 'node:stream'
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-input-'))
   const app = await startLocalWeb({ dataDir: join(dir, 'data') })
-  t.after(async () => { await app.close(); await rm(dir, { recursive: true, force: true }) })
+  t.after(async () => {
+    await app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
   const api = async (path, method = 'GET', body) => {
     const multipart = body instanceof FormData
-    const response = await fetch(`${app.origin}/api/${path}`, { method, headers: { authorization: `Bearer ${app.token}`, ...(multipart ? {} : { 'content-type': 'application/json' }) }, ...(body === undefined ? {} : { body: multipart ? body : JSON.stringify(body) }) })
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, ...(multipart ? {} : { 'content-type': 'application/json' }) },
+      ...(body === undefined ? {} : { body: multipart ? body : JSON.stringify(body) }),
+    })
     return { status: response.status, data: await response.json() }
   }
   const chat = await api('sessions', 'POST', {})
@@ -23,18 +30,36 @@ async function fixture(t) {
 }
 
 test('multipart closes promptly when its storage consumer rejects a file before the boundary ends', async t => {
-  const unavailable = async () => { throw new HttpError(404, 'ATTACHMENT_NOT_FOUND') }
-  const host = await startHost({ readHistory: async () => [], attachments: {
-    maxBytes: 8,
-    maxFiles: 10,
-    async upload(input) { for await (const chunk of input.bytes) { assert.ok(chunk.length); throw new HttpError(413, 'ATTACHMENT_TOO_LARGE') } throw new Error('Expected file bytes') },
-    get: unavailable, remove: unavailable, preview: unavailable,
-  } })
+  const unavailable = async () => {
+    throw new HttpError(404, 'ATTACHMENT_NOT_FOUND')
+  }
+  const host = await startHost({
+    readHistory: async () => [],
+    attachments: {
+      maxBytes: 8,
+      maxFiles: 10,
+      async upload(input) {
+        for await (const chunk of input.bytes) {
+          assert.ok(chunk.length)
+          throw new HttpError(413, 'ATTACHMENT_TOO_LARGE')
+        }
+        throw new Error('Expected file bytes')
+      },
+      get: unavailable,
+      remove: unavailable,
+      preview: unavailable,
+    },
+  })
   t.after(() => host.close())
   const body = new FormData()
   body.append('expectedRevision', '0')
   body.append('file', new Blob(['larger than storage bound']), 'limit.txt')
-  const response = await fetch(`${host.origin}/api/sessions/chat/attachments`, { method: 'POST', headers: { authorization: `Bearer ${host.token}` }, body, signal: AbortSignal.timeout(2000) })
+  const response = await fetch(`${host.origin}/api/sessions/chat/attachments`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${host.token}` },
+    body,
+    signal: AbortSignal.timeout(2000),
+  })
   assert.equal(response.status, 413)
   assert.equal((await response.json()).error.code, 'ATTACHMENT_TOO_LARGE')
 })
@@ -79,24 +104,49 @@ test('browser management client decodes revisioned attachment state and removes 
   assert.deepEqual(draft.attachmentIds, [])
 })
 
-test('upload byte bounds are inclusive and malformed multipart never makes a draft attachment ready', { timeout: 30000 }, async t => {
+test('upload byte bounds are inclusive and malformed multipart never makes a draft attachment ready', {
+  timeout: 30000,
+}, async t => {
   const { api, app, id } = await fixture(t)
   const client = new ManagementClient(app.origin, app.token)
   let draft = await client.saveDraftState(id, 'Keep valid draft text', 0)
-  const exact = await client.uploadAttachment(id, new File([new Uint8Array(20 * 1024 * 1024).fill(65)], 'at-limit.txt'), draft.revision)
-  await waitFor(async () => (await api(`sessions/${id}/attachments/${exact.attachment.attachmentId}`)).data.state === 'ready')
+  const exact = await client.uploadAttachment(
+    id,
+    new File([new Uint8Array(20 * 1024 * 1024).fill(65)], 'at-limit.txt'),
+    draft.revision,
+  )
+  await waitFor(
+    async () => (await api(`sessions/${id}/attachments/${exact.attachment.attachmentId}`)).data.state === 'ready',
+  )
   draft = await client.draftState(id)
-  await assert.rejects(client.uploadAttachment(id, new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'over-limit.txt'), draft.revision), /ATTACHMENT_TOO_LARGE/)
+  await assert.rejects(
+    client.uploadAttachment(id, new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'over-limit.txt'), draft.revision),
+    /ATTACHMENT_TOO_LARGE/,
+  )
   draft = await client.draftState(id)
   assert.equal(draft.text, 'Keep valid draft text')
   assert.ok(draft.attachments.some(item => item.state === 'rejected' && item.rejectionCode === 'ATTACHMENT_TOO_LARGE'))
   const boundary = 'controlled-attachment-boundary'
-  const body = Readable.from((async function* () {
-    yield Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="expectedRevision"\r\n\r\n${draft.revision}\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="extra.txt"\r\nContent-Type: text/plain\r\n\r\nnot admitted from malformed multipart`)
-    await waitFor(async () => (await api(`sessions/${id}/draft`)).data.attachments.some(item => item.name === 'extra.txt'))
-    yield Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="unexpected"\r\n\r\nfield\r\n--${boundary}--\r\n`)
-  })())
-  const malformed = await fetch(`${app.origin}/api/sessions/${id}/attachments`, { method: 'POST', headers: { authorization: `Bearer ${app.token}`, 'content-type': `multipart/form-data; boundary=${boundary}` }, body, duplex: 'half', signal: AbortSignal.timeout(5000) })
+  const body = Readable.from(
+    (async function* () {
+      yield Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="expectedRevision"\r\n\r\n${draft.revision}\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="extra.txt"\r\nContent-Type: text/plain\r\n\r\nnot admitted from malformed multipart`,
+      )
+      await waitFor(async () =>
+        (await api(`sessions/${id}/draft`)).data.attachments.some(item => item.name === 'extra.txt'),
+      )
+      yield Buffer.from(
+        `\r\n--${boundary}\r\nContent-Disposition: form-data; name="unexpected"\r\n\r\nfield\r\n--${boundary}--\r\n`,
+      )
+    })(),
+  )
+  const malformed = await fetch(`${app.origin}/api/sessions/${id}/attachments`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${app.token}`, 'content-type': `multipart/form-data; boundary=${boundary}` },
+    body,
+    duplex: 'half',
+    signal: AbortSignal.timeout(5000),
+  })
   assert.equal(malformed.status, 400)
   draft = await client.draftState(id)
   assert.equal(draft.text, 'Keep valid draft text')
@@ -105,9 +155,21 @@ test('upload byte bounds are inclusive and malformed multipart never makes a dra
 
 test('Host counts rejected draft members toward the ten-file limit and enforces code points independently of JSON bytes', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-input-limits-'))
-  const f = await startApp(dir, { options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } } })
-  t.after(async () => { await f.app.close(); await rm(dir, { recursive: true, force: true }) })
-  await f.call('providers/test', 'PUT', { displayName: 'Fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1', key: 'fixture', models: ['model-a'], new: true })
+  const f = await startApp(dir, {
+    options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } },
+  })
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  await f.call('providers/test', 'PUT', {
+    displayName: 'Fixture',
+    protocol: 'chat-completions',
+    baseUrl: 'http://127.0.0.1:9/v1',
+    key: 'fixture',
+    models: ['model-a'],
+    new: true,
+  })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const accepted = await f.client.send({ sessionId: chat.sessionId, input: '😀'.repeat(16000) })
   assert.equal((await finished(f.client, accepted.requestId)).at(-1).status, 'completed')
@@ -117,11 +179,18 @@ test('Host counts rejected draft members toward the ten-file limit and enforces 
   const client = new ManagementClient(f.app.origin, f.app.token)
   for (let index = 0; index < 10; index++) {
     const draft = await client.draftState(chat.sessionId)
-    await client.uploadAttachment(chat.sessionId, new File([new Uint8Array([0])], `rejected-${index}.txt`), draft.revision)
+    await client.uploadAttachment(
+      chat.sessionId,
+      new File([new Uint8Array([0])], `rejected-${index}.txt`),
+      draft.revision,
+    )
   }
   const full = await client.draftState(chat.sessionId)
   assert.equal(full.attachmentIds.length, 10)
-  await assert.rejects(client.uploadAttachment(chat.sessionId, new File(['extra'], 'eleven.txt'), full.revision), /ATTACHMENT_COUNT_EXCEEDED/)
+  await assert.rejects(
+    client.uploadAttachment(chat.sessionId, new File(['extra'], 'eleven.txt'), full.revision),
+    /ATTACHMENT_COUNT_EXCEEDED/,
+  )
   const after = await client.removeAttachment(chat.sessionId, full.attachmentIds[0], full.revision)
   assert.equal(after.attachmentIds.length, 9)
   await client.uploadAttachment(chat.sessionId, new File(['replacement'], 'replacement.txt'), after.revision)
@@ -129,9 +198,21 @@ test('Host counts rejected draft members toward the ten-file limit and enforces 
 
 test('admission binds newly uploaded sources, accepts attachment-only input and refuses bypass of rejected draft members', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-input-requests-'))
-  const f = await startApp(dir, { options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } } })
-  t.after(async () => { await f.app.close(); await rm(dir, { recursive: true, force: true }) })
-  await f.call('providers/test', 'PUT', { displayName: 'Fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1', key: 'fixture', models: ['model-a'], new: true })
+  const f = await startApp(dir, {
+    options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } },
+  })
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  await f.call('providers/test', 'PUT', {
+    displayName: 'Fixture',
+    protocol: 'chat-completions',
+    baseUrl: 'http://127.0.0.1:9/v1',
+    key: 'fixture',
+    models: ['model-a'],
+    new: true,
+  })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const foreign = (await f.call('sessions', 'POST', {})).data
   const path = `sessions/${chat.sessionId}`
@@ -140,7 +221,11 @@ test('admission binds newly uploaded sources, accepts attachment-only input and 
     const form = new FormData()
     form.append('expectedRevision', String(draft.revision))
     form.append('file', new Blob([text]), name)
-    const response = await fetch(`${f.app.origin}/api/${path}/attachments`, { method: 'POST', headers: { authorization: `Bearer ${f.app.token}` }, body: form })
+    const response = await fetch(`${f.app.origin}/api/${path}/attachments`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${f.app.token}` },
+      body: form,
+    })
     assert.equal(response.status, 202)
     return (await response.json()).attachment.attachmentId
   }
@@ -150,16 +235,30 @@ test('admission binds newly uploaded sources, accepts attachment-only input and 
   let draft = (await f.call(`${path}/draft`)).data
   const text = `[mcp-attachment] ${id}`
   draft = (await f.call(`${path}/draft`, 'PUT', { text, expectedRevision: draft.revision })).data
-  const accepted = await f.client.send({ sessionId: chat.sessionId, input: text, attachmentIds: [id], draftRevision: draft.revision })
+  const accepted = await f.client.send({
+    sessionId: chat.sessionId,
+    input: text,
+    attachmentIds: [id],
+    draftRevision: draft.revision,
+  })
   assert.equal((await finished(f.client, accepted.requestId)).at(-1).status, 'completed')
   assert.match((await f.client.history(chat.sessionId)).at(-1).content, /admitted source evidence/)
   assert.deepEqual((await f.call(`${path}/draft`)).data.attachmentIds, [])
   const only = await upload('only.txt', 'attachment-only evidence')
   await waitFor(async () => (await f.call(`${path}/attachments/${only}`)).data.state === 'ready')
   draft = (await f.call(`${path}/draft`)).data
-  const attachmentOnly = await f.client.send({ sessionId: chat.sessionId, input: '', attachmentIds: [only], draftRevision: draft.revision })
+  const attachmentOnly = await f.client.send({
+    sessionId: chat.sessionId,
+    input: '',
+    attachmentIds: [only],
+    draftRevision: draft.revision,
+  })
   assert.equal((await finished(f.client, attachmentOnly.requestId)).at(-1).status, 'completed')
-  assert.ok((await f.client.history(chat.sessionId)).some(message => message.role === 'user' && message.content === '' && message.attachments?.[0].name === 'only.txt'))
+  assert.ok(
+    (await f.client.history(chat.sessionId)).some(
+      message => message.role === 'user' && message.content === '' && message.attachments?.[0].name === 'only.txt',
+    ),
+  )
   assert.equal((await f.call(`${path}/attachments/${only}`, 'DELETE', { expectedRevision: 0 })).status, 409)
   const running = await f.client.send({ sessionId: chat.sessionId, input: '[hang]' })
   const nextFile = await upload('next.txt', 'next draft evidence')
@@ -172,11 +271,18 @@ test('admission binds newly uploaded sources, accepts attachment-only input and 
   draft = (await f.call(`${path}/draft`)).data
   assert.equal(draft.text, 'next draft while request runs')
   assert.deepEqual(draft.attachmentIds, [nextFile])
-  assert.equal((await f.call(`${path}/attachments/${nextFile}`, 'DELETE', { expectedRevision: draft.revision })).status, 200)
+  assert.equal(
+    (await f.call(`${path}/attachments/${nextFile}`, 'DELETE', { expectedRevision: draft.revision })).status,
+    200,
+  )
   const bad = await upload('bad.txt', Buffer.from([0, 1, 2]))
   await waitFor(async () => (await f.call(`${path}/attachments/${bad}`)).data.state === 'rejected')
   draft = (await f.call(`${path}/draft`)).data
-  const bypass = await f.call('requests', 'POST', { sessionId: chat.sessionId, input: 'omit the rejected ID', attachmentIds: [] })
+  const bypass = await f.call('requests', 'POST', {
+    sessionId: chat.sessionId,
+    input: 'omit the rejected ID',
+    attachmentIds: [],
+  })
   assert.equal(bypass.status, 409)
   assert.equal(bypass.data.error.code, 'ATTACHMENT_REJECTED')
   assert.deepEqual((await f.call(`${path}/draft`)).data.attachmentIds, [bad])

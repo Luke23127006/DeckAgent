@@ -31,14 +31,27 @@ const maxLine = 2 * 1024 * 1024
 function killTree(pid: number): Promise<void> {
   if (process.platform === 'win32') {
     return new Promise(done => {
-      const killer = spawn(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'taskkill.exe'), ['/PID', String(pid), '/T', '/F'],
-        { windowsHide: true, stdio: 'ignore' })
+      const killer = spawn(
+        join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'taskkill.exe'),
+        ['/PID', String(pid), '/T', '/F'],
+        { windowsHide: true, stdio: 'ignore' },
+      )
       killer.on('error', () => done())
       killer.on('close', () => done())
     })
   }
-  try { process.kill(-pid, 'SIGTERM') } catch { /* Already ended. */ }
-  const force = setTimeout(() => { try { process.kill(-pid, 'SIGKILL') } catch { /* Already ended. */ } }, 2000)
+  try {
+    process.kill(-pid, 'SIGTERM')
+  } catch {
+    /* Already ended. */
+  }
+  const force = setTimeout(() => {
+    try {
+      process.kill(-pid, 'SIGKILL')
+    } catch {
+      /* Already ended. */
+    }
+  }, 2000)
   force.unref()
   return Promise.resolve()
 }
@@ -47,7 +60,11 @@ function killTree(pid: number): Promise<void> {
  * Runs the CLI directly, never through a shell, so no argument is interpreted. stderr is drained and dropped:
  * provider errors there can hold credentials. Resolves once the process ended, or soon after it was killed.
  */
-export function runProcess(executable: string, args: readonly string[], options: ProcessOptions): Promise<ProcessResult> {
+export function runProcess(
+  executable: string,
+  args: readonly string[],
+  options: ProcessOptions,
+): Promise<ProcessResult> {
   return new Promise(resolve => {
     if (options.signal.aborted) {
       resolve({ startFailed: false, code: null, malformed: false, killed: true, stdout: '' })
@@ -57,7 +74,11 @@ export function runProcess(executable: string, args: readonly string[], options:
     let child: ReturnType<typeof spawn>
     try {
       child = spawn(executable, [...args], {
-        cwd: options.cwd, env: options.env, windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: options.cwd,
+        env: options.env,
+        windowsHide: true,
+        shell: false,
+        stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       })
     } catch {
@@ -83,24 +104,41 @@ export function runProcess(executable: string, args: readonly string[], options:
       // A process that ignores the kill still releases the request soon; its output is no longer read.
       setTimeout(() => finish({ startFailed: false, code: null, malformed, killed: true }), 3000).unref()
     }
-    const abort = () => { killed = true; stop() }
+    const abort = () => {
+      killed = true
+      stop()
+    }
     options.signal.addEventListener('abort', abort, { once: true })
     const line = (text: string) => {
       if (!text.trim() || !options.onLine) return
       let value: unknown
-      try { value = JSON.parse(text) } catch { malformed = true; stop(); return }
+      try {
+        value = JSON.parse(text)
+      } catch {
+        malformed = true
+        stop()
+        return
+      }
       options.onLine(value)
     }
     child.stdout!.setEncoding('utf8')
     child.stdout!.on('data', (data: string) => {
       if (malformed || killed) return
       total += Buffer.byteLength(data)
-      if (total > limit) { malformed = true; stop(); return }
+      if (total > limit) {
+        malformed = true
+        stop()
+        return
+      }
       if (options.collect) stdout += data
       pending += data
       const lines = pending.split('\n')
       pending = lines.pop() ?? ''
-      if (pending.length > maxLine) { malformed = true; stop(); return }
+      if (pending.length > maxLine) {
+        malformed = true
+        stop()
+        return
+      }
       for (const text of lines) {
         if (malformed || killed) return
         line(text)

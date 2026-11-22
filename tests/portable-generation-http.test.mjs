@@ -18,30 +18,52 @@ test('Create deck prepares images, then MCP templates publish all seven layouts 
   const f = await startApp(dir, {
     options: {
       providerAccess: { check: async () => {}, catalog: async () => ['model-a'] },
-      researchAccess: { key: 'fixture-tavily', fetch: async (url, init) => {
-        assert.equal(offline, false)
-        if (String(url).endsWith('/usage')) return Response.json({
-          account: { current_plan: 'Researcher', paygo_usage: 0, paygo_limit: 0, plan_usage: 0, plan_limit: 1000 },
-          key: { usage: 0, limit: null },
-        })
-        lookups++
-        const query = JSON.parse(init.body).query
-        assert.equal(JSON.parse(init.body).include_images, true)
-        return Response.json({ images: [], results: [{ title: query, url: `https://photos.example/${query}`,
-          images: [{ url: 'https://photos.example/wrong.png', description: 'An unrelated car' },
-            { url: `https://photos.example/${query}.png`, description: `${query} ecosystem illustration` }] }] })
-      } },
+      researchAccess: {
+        key: 'fixture-tavily',
+        fetch: async (url, init) => {
+          assert.equal(offline, false)
+          if (String(url).endsWith('/usage'))
+            return Response.json({
+              account: { current_plan: 'Researcher', paygo_usage: 0, paygo_limit: 0, plan_usage: 0, plan_limit: 1000 },
+              key: { usage: 0, limit: null },
+            })
+          lookups++
+          const query = JSON.parse(init.body).query
+          assert.equal(JSON.parse(init.body).include_images, true)
+          return Response.json({
+            images: [],
+            results: [
+              {
+                title: query,
+                url: `https://photos.example/${query}`,
+                images: [
+                  { url: 'https://photos.example/wrong.png', description: 'An unrelated car' },
+                  { url: `https://photos.example/${query}.png`, description: `${query} ecosystem illustration` },
+                ],
+              },
+            ],
+          })
+        },
+      },
       imageAccess: {
         resolve: async () => [{ address: '8.8.8.8', family: 4 }],
         fetch: async url => {
           assert.equal(offline, false, 'Generation must use prepared images without another network call')
           const path = new URL(url).pathname
           assert.equal(path.includes('wrong'), false, 'Do not download the first irrelevant candidate')
-          if (!path.endsWith('.png')) return new Response(`<script type="application/ld+json">${JSON.stringify({
-            '@type': 'ImageObject', contentUrl: `${url}.png`, creator: { name: 'Fixture author' },
-            license: 'https://creativecommons.org/licenses/by/4.0/',
-          })}</script>`, { headers: { 'content-type': 'text/html' } })
-          return new Response(path.includes('ocean') ? jpg : png, { headers: { 'content-type': path.includes('ocean') ? 'image/jpeg' : 'image/png' } })
+          if (!path.endsWith('.png'))
+            return new Response(
+              `<script type="application/ld+json">${JSON.stringify({
+                '@type': 'ImageObject',
+                contentUrl: `${url}.png`,
+                creator: { name: 'Fixture author' },
+                license: 'https://creativecommons.org/licenses/by/4.0/',
+              })}</script>`,
+              { headers: { 'content-type': 'text/html' } },
+            )
+          return new Response(path.includes('ocean') ? jpg : png, {
+            headers: { 'content-type': path.includes('ocean') ? 'image/jpeg' : 'image/png' },
+          })
         },
       },
     },
@@ -111,9 +133,18 @@ test('Create deck prepares images, then MCP templates publish all seven layouts 
         content: 'Protect habitats',
         blocks: [
           { kind: 'bullets', items: ['Protect habitats'] },
-          { kind: 'web-image', query: 'forest', caption: 'Forest illustration', intent: {
-            subject: 'Forest ecosystem', role: 'Show a forest habitat', mustInclude: ['trees'], mustAvoid: ['city'], aspect: 'landscape',
-          } },
+          {
+            kind: 'web-image',
+            query: 'forest',
+            caption: 'Forest illustration',
+            intent: {
+              subject: 'Forest ecosystem',
+              role: 'Show a forest habitat',
+              mustInclude: ['trees'],
+              mustAvoid: ['city'],
+              aspect: 'landscape',
+            },
+          },
         ],
         sources: [],
       },
@@ -128,7 +159,10 @@ test('Create deck prepares images, then MCP templates publish all seven layouts 
       },
     ],
   }
-  await writeFile(`${f.log}.workflow.json`, JSON.stringify({ brief: draft, outline, selectImages: true, imageCandidateIndex: 1 }))
+  await writeFile(
+    `${f.log}.workflow.json`,
+    JSON.stringify({ brief: draft, outline, selectImages: true, imageCandidateIndex: 1 }),
+  )
   const review = await f.call('requests', 'POST', {
     sessionId: id,
     input: '[workflow] Introduce the environment',
@@ -156,7 +190,9 @@ test('Create deck prepares images, then MCP templates publish all seven layouts 
   const imagePath = `sessions/${id}/outlines/${current.outlineId}/images/${decoded.imageReview[0].needId}`
   assert.equal((await fetch(`${f.app.origin}/api/${imagePath}`)).status, 401)
   assert.equal((await f.client.outlineImage(id, current.outlineId, decoded.imageReview[0].needId)).type, 'image/png')
-  const wrongChat = await fetch(`${f.app.origin}/api/${imagePath.replace(id, 'other-chat')}`, { headers: { authorization: `Bearer ${f.app.token}` } })
+  const wrongChat = await fetch(`${f.app.origin}/api/${imagePath.replace(id, 'other-chat')}`, {
+    headers: { authorization: `Bearer ${f.app.token}` },
+  })
   assert.equal(wrongChat.status, 404)
   assert.deepEqual((await f.call(`sessions/${id}/research-sources`)).data, [])
   offline = true

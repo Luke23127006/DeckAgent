@@ -8,18 +8,31 @@ import { startApp, finished, filesContaining, waitFor, MemoryCredentials } from 
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import { DatabaseSync } from 'node:sqlite'
 
-const freeUsage = { key: { usage: 0, limit: null }, account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null } }
+const freeUsage = {
+  key: { usage: 0, limit: null },
+  account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+}
 test('research accepts only free accounts and checks usage before bounded basic search', async () => {
   const calls = []
   let usage = freeUsage
   const client = new app.TavilyClient(async (url, init) => {
     calls.push({ url, init })
-    return Response.json(url.endsWith('/usage') ? usage : { request_id: 'test-call', results: [{ title: 'Public source', url: 'https://example.org/report', content: 'Known source content.' }] })
+    return Response.json(
+      url.endsWith('/usage')
+        ? usage
+        : {
+            request_id: 'test-call',
+            results: [{ title: 'Public source', url: 'https://example.org/report', content: 'Known source content.' }],
+          },
+    )
   })
   const signal = new AbortController().signal
   const result = await client.search('test-key', 'public topic', signal)
   assert.equal(result.results[0].content, 'Known source content.')
-  assert.deepEqual(calls.map(x => new URL(x.url).pathname), ['/usage', '/search'])
+  assert.deepEqual(
+    calls.map(x => new URL(x.url).pathname),
+    ['/usage', '/search'],
+  )
   const sent = JSON.parse(calls[1].init.body)
   assert.equal(sent.search_depth, 'basic')
   assert.equal(sent.max_results, 5)
@@ -38,7 +51,10 @@ test('free-only search rejects quota, malformed metadata, redirects, oversized r
     {},
   ]) {
     let searches = 0
-    const client = new app.TavilyClient(async url => { if (url.endsWith('/search')) searches++; return Response.json({ ...freeUsage, account }) })
+    const client = new app.TavilyClient(async url => {
+      if (url.endsWith('/search')) searches++
+      return Response.json({ ...freeUsage, account })
+    })
     await assert.rejects(client.search('fixture-key', 'public topic', new AbortController().signal))
     assert.equal(searches, 0)
   }
@@ -48,8 +64,11 @@ test('free-only search rejects quota, malformed metadata, redirects, oversized r
     () => Response.json({ results: [{ title: 'unsafe', url: 'javascript:alert(1)', content: 'unsafe' }] }),
     () => new Response('x'.repeat(256 * 1024 + 1)),
   ]) {
-    const client = new app.TavilyClient(async url => url.endsWith('/usage') ? Response.json(freeUsage) : response())
-    await assert.rejects(client.search('fixture-key', 'public topic', new AbortController().signal), error => !error.message.includes('fixture-key'))
+    const client = new app.TavilyClient(async url => (url.endsWith('/usage') ? Response.json(freeUsage) : response()))
+    await assert.rejects(
+      client.search('fixture-key', 'public topic', new AbortController().signal),
+      error => !error.message.includes('fixture-key'),
+    )
   }
 })
 
@@ -57,8 +76,12 @@ test('research choice and attempt budget are durable, isolated and revoked at te
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-research-budget-'))
   const path = join(dir, 'sessions.sqlite')
   let store = new SqliteSessionStore(path)
-  t.after(async () => { store.close(); await rm(dir, { recursive: true, force: true }) })
-  await store.open('a'); await store.open('b')
+  t.after(async () => {
+    store.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  await store.open('a')
+  await store.open('b')
   store.close()
   const old = new DatabaseSync(path)
   old.exec('DROP TABLE research_sources; DROP TABLE request_research; PRAGMA user_version=6;')
@@ -66,11 +89,18 @@ test('research choice and attempt budget are durable, isolated and revoked at te
   store = new SqliteSessionStore(path)
   store.requests.admit({ requestId: 'off', sessionId: 'b', input: 'off', selection: { provider: 'p', model: 'm' } })
   assert.throws(() => store.requests.reserveResearch('off', 'b'), { code: 'RESEARCH_NOT_SELECTED' })
-  store.requests.admit({ requestId: 'on', sessionId: 'a', input: 'on', publicResearch: true, selection: { provider: 'p', model: 'm' } })
+  store.requests.admit({
+    requestId: 'on',
+    sessionId: 'a',
+    input: 'on',
+    publicResearch: true,
+    selection: { provider: 'p', model: 'm' },
+  })
   assert.throws(() => store.requests.reserveResearch('on', 'b'))
   store.requests.reserveResearch('on', 'a')
   store.requests.reserveResearch('on', 'a')
-  store.close(); store = new SqliteSessionStore(path)
+  store.close()
+  store = new SqliteSessionStore(path)
   store.requests.reserveResearch('on', 'a')
   assert.throws(() => store.requests.reserveResearch('on', 'a'), { code: 'RESEARCH_BUDGET_EXHAUSTED' })
   assert.equal(store.requests.get('on').publicResearch, true)
@@ -78,20 +108,37 @@ test('research choice and attempt budget are durable, isolated and revoked at te
   assert.throws(() => store.requests.recordResearch('on', 'a', 'query', { results: [] }), { code: 'REQUEST_CLOSED' })
 })
 
-test('research is opt-in through Host, retains exact sources across restart and keeps keys private', { timeout: 30000 }, async t => {
+test('research is opt-in through Host, retains exact sources across restart and keeps keys private', {
+  timeout: 30000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-research-'))
   const secret = 'secret-research-fixture-9234'
   const credentials = new MemoryCredentials()
   let searches = 0
   let accountUsage = freeUsage
-  const options = { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] }, researchAccess: { key: secret, fetch: async (url, init) => {
-    if (init.headers.Authorization === 'Bearer invalid-key') return new Response('invalid-key must not leak', { status: 401 })
-    if (url.endsWith('/usage')) return Response.json(accountUsage)
-    searches++
-    return Response.json({ request_id: 'public-search-123', results: [{ title: 'Source title', url: 'https://example.org/facts', content: 'Public fact: the number is 482.' }] })
-  } } }
+  const options = {
+    providerAccess: { check: async () => {}, catalog: async () => ['model-a'] },
+    researchAccess: {
+      key: secret,
+      fetch: async (url, init) => {
+        if (init.headers.Authorization === 'Bearer invalid-key')
+          return new Response('invalid-key must not leak', { status: 401 })
+        if (url.endsWith('/usage')) return Response.json(accountUsage)
+        searches++
+        return Response.json({
+          request_id: 'public-search-123',
+          results: [
+            { title: 'Source title', url: 'https://example.org/facts', content: 'Public fact: the number is 482.' },
+          ],
+        })
+      },
+    },
+  }
   let f = await startApp(dir, { options, credentials })
-  t.after(async () => { await f.app.close(); await rm(dir, { recursive: true, force: true }) })
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
   assert.equal((await f.call('research', 'PUT', { useEnvironment: true })).status, 200)
   assert.equal((await f.call('research', 'PUT', { key: secret })).status, 200)
   const savedReferences = [...credentials.values.keys()]
@@ -99,7 +146,19 @@ test('research is opt-in through Host, retains exact sources across restart and 
   assert.equal(rejected.status, 503)
   assert.equal(JSON.stringify(rejected.data).includes('invalid-key'), false)
   assert.deepEqual([...credentials.values.keys()], savedReferences)
-  assert.equal((await f.call('providers/test', 'PUT', { displayName: 'Fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1', key: 'model-fixture', models: ['model-a'], new: true })).status, 200)
+  assert.equal(
+    (
+      await f.call('providers/test', 'PUT', {
+        displayName: 'Fixture',
+        protocol: 'chat-completions',
+        baseUrl: 'http://127.0.0.1:9/v1',
+        key: 'model-fixture',
+        models: ['model-a'],
+        new: true,
+      })
+    ).status,
+    200,
+  )
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const off = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]' })
   await finished(f.client, off.requestId)
@@ -123,10 +182,20 @@ test('research is opt-in through Host, retains exact sources across restart and 
   await finished(f.client, reread.requestId)
   assert.ok((await f.client.history(chat.sessionId)).at(-1).content.includes('Public fact: the number is 482.'))
   assert.equal(searches, 1, 'Reading a saved source must not access Tavily')
-  const foreign = await f.client.send({ sessionId: other.sessionId, input: '[mcp-research-read] ' + sources[0].sourceId })
+  const foreign = await f.client.send({
+    sessionId: other.sessionId,
+    input: '[mcp-research-read] ' + sources[0].sourceId,
+  })
   await finished(f.client, foreign.requestId)
-  assert.equal((await f.client.history(other.sessionId)).at(-1).content.includes('Public fact: the number is 482.'), false)
-  const budget = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-research] [research-budget]', publicResearch: true })
+  assert.equal(
+    (await f.client.history(other.sessionId)).at(-1).content.includes('Public fact: the number is 482.'),
+    false,
+  )
+  const budget = await f.client.send({
+    sessionId: chat.sessionId,
+    input: '[mcp-research] [research-budget]',
+    publicResearch: true,
+  })
   await finished(f.client, budget.requestId)
   assert.equal(searches, 4, 'Only three more searches may leave the Host')
   assert.ok((await f.client.history(chat.sessionId)).at(-1).content.includes('RESEARCH_BUDGET_EXHAUSTED'))
@@ -138,20 +207,53 @@ test('research is opt-in through Host, retains exact sources across restart and 
   assert.equal(searches, 4)
   assert.ok((await f.client.history(chat.sessionId)).at(-1).content.includes('RESEARCH_FREE_ONLY'))
   assert.equal((await f.call('research', 'DELETE')).status, 200)
-  await assert.rejects(f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true }), /RESEARCH_UNAVAILABLE/)
+  await assert.rejects(
+    f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true }),
+    /RESEARCH_UNAVAILABLE/,
+  )
   assert.deepEqual(await filesContaining(join(dir, 'data'), 'replacement-must-not-be-saved'), [])
 })
 
-test('Stop aborts research network work and prevents late sources from being committed', { timeout: 30000 }, async t => {
+test('Stop aborts research network work and prevents late sources from being committed', {
+  timeout: 30000,
+}, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-research-stop-'))
-  let started = false, aborted = false
-  const f = await startApp(dir, { options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] }, researchAccess: { key: 'stop-key', fetch: async (url, init) => {
-    if (url.endsWith('/usage')) return Response.json(freeUsage)
-    started = true
-    return new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => { aborted = true; reject(init.signal.reason) }, { once: true }))
-  } } } })
-  t.after(async () => { await f.app.close(); await rm(dir, { recursive: true, force: true }) })
-  await f.call('providers/test', 'PUT', { displayName: 'Fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1', key: 'fixture', models: ['model-a'], new: true })
+  let started = false,
+    aborted = false
+  const f = await startApp(dir, {
+    options: {
+      providerAccess: { check: async () => {}, catalog: async () => ['model-a'] },
+      researchAccess: {
+        key: 'stop-key',
+        fetch: async (url, init) => {
+          if (url.endsWith('/usage')) return Response.json(freeUsage)
+          started = true
+          return new Promise((_resolve, reject) =>
+            init.signal.addEventListener(
+              'abort',
+              () => {
+                aborted = true
+                reject(init.signal.reason)
+              },
+              { once: true },
+            ),
+          )
+        },
+      },
+    },
+  })
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  await f.call('providers/test', 'PUT', {
+    displayName: 'Fixture',
+    protocol: 'chat-completions',
+    baseUrl: 'http://127.0.0.1:9/v1',
+    key: 'fixture',
+    models: ['model-a'],
+    new: true,
+  })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const accepted = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true })
   await waitFor(() => started)

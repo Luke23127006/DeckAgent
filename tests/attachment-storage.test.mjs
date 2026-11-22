@@ -11,8 +11,15 @@ import { AttachmentParser } from '../packages/tools/filesystem/lib/index.js'
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-attachments-'))
   const stores = []
-  const open = () => { const store = new SqliteSessionStore(join(dir, 'sessions.sqlite')); stores.push(store); return store }
-  t.after(async () => { for (const store of stores) store.close(); await rm(dir, { recursive: true, force: true }) })
+  const open = () => {
+    const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
+    stores.push(store)
+    return store
+  }
+  t.after(async () => {
+    for (const store of stores) store.close()
+    await rm(dir, { recursive: true, force: true })
+  })
   return { dir, open }
 }
 
@@ -24,19 +31,42 @@ test('versioned prepared content survives committed restart and foreign Chat rea
   const drafts = new MemoryDraftStore()
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
   const bytes = Buffer.from('Saved source\nsecond line')
-  const item = await files.receive({ sessionId: 'a', name: 'notes.txt', expectedRevision: 0, bytes: (async function* () { yield bytes })(), maxBytes: 100, signal: new AbortController().signal })
+  const item = await files.receive({
+    sessionId: 'a',
+    name: 'notes.txt',
+    expectedRevision: 0,
+    bytes: (async function* () {
+      yield bytes
+    })(),
+    maxBytes: 100,
+    signal: new AbortController().signal,
+  })
   const parser = new AttachmentParser()
   t.after(() => parser.close())
   const parsed = await parser.parse({ name: item.name, bytes, signal: new AbortController().signal })
   const parsedFingerprint = await files.savePrepared('a', item.attachmentId, parsed, new AbortController().signal)
-  store.attachments.ready('a', item.attachmentId, parsed.mediaType, { parserVersion: parsed.parserVersion, capabilities: parsed.capabilities, completeness: parsed.completeness, omitted: parsed.omitted, parsedFingerprint })
-  store.requests.admit({ requestId: 'req-parsed', sessionId: 'a', input: '', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
+  store.attachments.ready('a', item.attachmentId, parsed.mediaType, {
+    parserVersion: parsed.parserVersion,
+    capabilities: parsed.capabilities,
+    completeness: parsed.completeness,
+    omitted: parsed.omitted,
+    parsedFingerprint,
+  })
+  store.requests.admit({
+    requestId: 'req-parsed',
+    sessionId: 'a',
+    input: '',
+    attachmentIds: [item.attachmentId],
+    selection: { provider: 'p', model: 'm' },
+  })
   store.requests.finish('req-parsed', 'completed')
   store.close()
   const reopened = open()
   const restored = await local.ManagedAttachments.open(join(dir, 'files'), reopened.attachments, new MemoryDraftStore())
   assert.deepEqual(await restored.prepared('a', item.attachmentId, new AbortController().signal), parsed)
-  await assert.rejects(restored.prepared('b', item.attachmentId, new AbortController().signal), { code: 'ATTACHMENT_NOT_FOUND' })
+  await assert.rejects(restored.prepared('b', item.attachmentId, new AbortController().signal), {
+    code: 'ATTACHMENT_NOT_FOUND',
+  })
 })
 
 test('v5 source identities and approval records survive preparation migration without inventing parsed content', async t => {
@@ -46,11 +76,24 @@ test('v5 source identities and approval records survive preparation migration wi
   const item = store.attachments.create('a', 'legacy.txt')
   store.attachments.received('a', item.attachmentId, { byteSize: 5, fingerprint: 'a'.repeat(64) })
   const ready = store.attachments.ready('a', item.attachmentId, 'text/plain')
-  store.requests.admit({ requestId: 'req-v5', sessionId: 'a', input: 'legacy request', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
-  const approval = store.requests.approvals.create('req-v5', { key: 'a'.repeat(64), operation: 'read-file', target: 'outside.txt', reason: 'Read outside source' }).approval
+  store.requests.admit({
+    requestId: 'req-v5',
+    sessionId: 'a',
+    input: 'legacy request',
+    attachmentIds: [item.attachmentId],
+    selection: { provider: 'p', model: 'm' },
+  })
+  const approval = store.requests.approvals.create('req-v5', {
+    key: 'a'.repeat(64),
+    operation: 'read-file',
+    target: 'outside.txt',
+    reason: 'Read outside source',
+  }).approval
   store.close()
   const v5 = new DatabaseSync(join(dir, 'sessions.sqlite'))
-  v5.exec('DROP TABLE research_sources; DROP TABLE request_research; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 5;')
+  v5.exec(
+    'DROP TABLE research_sources; DROP TABLE request_research; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 5;',
+  )
   v5.close()
   const upgraded = open()
   assert.deepEqual(upgraded.attachments.get('a', item.attachmentId), ready)
@@ -82,7 +125,13 @@ test('request admission binds ready attachments atomically and failed admission 
   await store.open('a')
   await store.open('b')
   const item = store.attachments.create('a', 'notes.txt')
-  const input = { requestId: 'req-files', sessionId: 'a', input: '', selection: { provider: 'p', model: 'm' }, attachmentIds: [item.attachmentId] }
+  const input = {
+    requestId: 'req-files',
+    sessionId: 'a',
+    input: '',
+    selection: { provider: 'p', model: 'm' },
+    attachmentIds: [item.attachmentId],
+  }
   assert.throws(() => store.requests.admit(input), { code: 'ATTACHMENT_NOT_READY' })
   assert.deepEqual(await store.read('a'), [])
   assert.equal(store.requests.activeFor('a'), undefined)
@@ -107,18 +156,35 @@ test('managed bytes survive committed restart; unsent uploads expire with the dr
   await store.open('b')
   const drafts = new MemoryDraftStore()
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
-  const upload = name => files.receive({ sessionId: 'a', name, expectedRevision: drafts.snapshot('a').revision,
-    bytes: (async function* () { yield Buffer.from('hello') })(), maxBytes: 10, signal: new AbortController().signal })
+  const upload = name =>
+    files.receive({
+      sessionId: 'a',
+      name,
+      expectedRevision: drafts.snapshot('a').revision,
+      bytes: (async function* () {
+        yield Buffer.from('hello')
+      })(),
+      maxBytes: 10,
+      signal: new AbortController().signal,
+    })
   const sent = await upload('notes.txt')
   assert.equal(sent.state, 'preparing', 'Saving bytes does not claim parsing has succeeded')
   store.attachments.ready('a', sent.attachmentId, 'text/plain')
-  store.requests.admit({ requestId: 'req-1', sessionId: 'a', input: '', attachmentIds: [sent.attachmentId], selection: { provider: 'p', model: 'm' } })
+  store.requests.admit({
+    requestId: 'req-1',
+    sessionId: 'a',
+    input: '',
+    attachmentIds: [sent.attachmentId],
+    selection: { provider: 'p', model: 'm' },
+  })
   store.requests.finish('req-1', 'completed')
   const staleRevision = drafts.snapshot('a').revision
   drafts.set('a', 'next request')
   assert.equal(drafts.clear('a', staleRevision), false, 'A sent request cannot clear a newer draft')
   const unsent = await upload('unsent.txt')
-  await assert.rejects(files.read('b', sent.attachmentId, new AbortController().signal), { code: 'ATTACHMENT_NOT_FOUND' })
+  await assert.rejects(files.read('b', sent.attachmentId, new AbortController().signal), {
+    code: 'ATTACHMENT_NOT_FOUND',
+  })
   store.close()
   const next = open()
   const reopenedDrafts = new MemoryDraftStore()
@@ -136,8 +202,19 @@ test('failed and oversized uploads keep the draft and rejection; removal clears 
   const drafts = new MemoryDraftStore()
   drafts.set('a', 'keep this text')
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
-  await assert.rejects(files.receive({ sessionId: 'a', name: 'large.txt', expectedRevision: 1,
-    bytes: (async function* () { yield Buffer.from('too large') })(), maxBytes: 2, signal: new AbortController().signal }), { code: 'ATTACHMENT_TOO_LARGE' })
+  await assert.rejects(
+    files.receive({
+      sessionId: 'a',
+      name: 'large.txt',
+      expectedRevision: 1,
+      bytes: (async function* () {
+        yield Buffer.from('too large')
+      })(),
+      maxBytes: 2,
+      signal: new AbortController().signal,
+    }),
+    { code: 'ATTACHMENT_TOO_LARGE' },
+  )
   const snapshot = drafts.snapshot('a')
   const id = snapshot.attachmentIds[0]
   assert.equal(snapshot.text, 'keep this text')
@@ -147,9 +224,20 @@ test('failed and oversized uploads keep the draft and rejection; removal clears 
   await files.remove('a', id, snapshot.revision)
   assert.equal(drafts.get('a'), 'keep this text')
   assert.deepEqual(drafts.snapshot('a').attachmentIds, [])
-  await assert.rejects(files.receive({ sessionId: 'a', name: 'broken.txt', expectedRevision: drafts.snapshot('a').revision,
-    bytes: (async function* () { yield Buffer.from('part'); throw new Error('raw failure with private material') })(), maxBytes: 10,
-    signal: new AbortController().signal }), error => error.code === 'ATTACHMENT_NOT_SAVED' && !error.message.includes('private'))
+  await assert.rejects(
+    files.receive({
+      sessionId: 'a',
+      name: 'broken.txt',
+      expectedRevision: drafts.snapshot('a').revision,
+      bytes: (async function* () {
+        yield Buffer.from('part')
+        throw new Error('raw failure with private material')
+      })(),
+      maxBytes: 10,
+      signal: new AbortController().signal,
+    }),
+    error => error.code === 'ATTACHMENT_NOT_SAVED' && !error.message.includes('private'),
+  )
   assert.equal(drafts.get('a'), 'keep this text')
 })
 
@@ -161,12 +249,22 @@ test('a source file is unchanged and a modified managed copy is reported unreada
   await store.open('a')
   const drafts = new MemoryDraftStore()
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
-  const item = await files.receive({ sessionId: 'a', name: 'user.txt', expectedRevision: 0,
-    bytes: (async function* () { yield await readFile(source) })(), maxBytes: 10, signal: new AbortController().signal })
+  const item = await files.receive({
+    sessionId: 'a',
+    name: 'user.txt',
+    expectedRevision: 0,
+    bytes: (async function* () {
+      yield await readFile(source)
+    })(),
+    maxBytes: 10,
+    signal: new AbortController().signal,
+  })
   store.attachments.ready('a', item.attachmentId, 'text/plain')
   const managed = join(dir, 'files', 'attachments', `${item.attachmentId}.bin`)
   await writeFile(managed, 'other')
-  await assert.rejects(files.read('a', item.attachmentId, new AbortController().signal), { code: 'ATTACHMENT_UNREADABLE' })
+  await assert.rejects(files.read('a', item.attachmentId, new AbortController().signal), {
+    code: 'ATTACHMENT_UNREADABLE',
+  })
   assert.equal(await readFile(source, 'utf8'), 'hello')
 })
 
@@ -179,13 +277,23 @@ test('history attachments survive the Host and client projection without exposin
   const item = store.attachments.create('a', 'notes.txt')
   store.attachments.received('a', item.attachmentId, { byteSize: 5, fingerprint: 'a'.repeat(64) })
   const ready = store.attachments.ready('a', item.attachmentId, 'text/plain')
-  store.requests.admit({ requestId: 'req-h', sessionId: 'a', input: '', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
+  store.requests.admit({
+    requestId: 'req-h',
+    sessionId: 'a',
+    input: '',
+    attachmentIds: [item.attachmentId],
+    selection: { provider: 'p', model: 'm' },
+  })
   const host = await startHost({ readHistory: id => store.read(id) })
   t.after(() => host.close())
   const history = await new HostClient(host.origin, host.token).history('a')
   assert.equal(history[0].attachments[0].attachmentId, item.attachmentId)
   assert.equal(history[0].attachments[0].source.sourceId, ready.source.sourceId)
-  assert.equal(history[0].attachments[0].fingerprint, undefined, 'Private content fingerprints are not needed in the browser')
+  assert.equal(
+    history[0].attachments[0].fingerprint,
+    undefined,
+    'Private content fingerprints are not needed in the browser',
+  )
 })
 
 test('v3 conversations, request events and native bindings survive the attachment migration', async t => {
@@ -224,13 +332,32 @@ test('database failure rolls back message/request associations and restart remov
   await store.open('a')
   const drafts = new MemoryDraftStore()
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
-  const item = await files.receive({ sessionId: 'a', name: 'notes.txt', expectedRevision: 0,
-    bytes: (async function* () { yield Buffer.from('hello') })(), maxBytes: 10, signal: new AbortController().signal })
+  const item = await files.receive({
+    sessionId: 'a',
+    name: 'notes.txt',
+    expectedRevision: 0,
+    bytes: (async function* () {
+      yield Buffer.from('hello')
+    })(),
+    maxBytes: 10,
+    signal: new AbortController().signal,
+  })
   store.attachments.ready('a', item.attachmentId, 'text/plain')
   const fault = new DatabaseSync(join(dir, 'sessions.sqlite'))
-  fault.exec("CREATE TRIGGER refuse_request BEFORE INSERT ON requests BEGIN SELECT RAISE(ABORT, 'fixture disk failure'); END;")
-  assert.throws(() => store.requests.admit({ requestId: 'req-fail', sessionId: 'a', input: '', attachmentIds: [item.attachmentId],
-    selection: { provider: 'p', model: 'm' } }), { code: 'SESSION_STORAGE' })
+  fault.exec(
+    "CREATE TRIGGER refuse_request BEFORE INSERT ON requests BEGIN SELECT RAISE(ABORT, 'fixture disk failure'); END;",
+  )
+  assert.throws(
+    () =>
+      store.requests.admit({
+        requestId: 'req-fail',
+        sessionId: 'a',
+        input: '',
+        attachmentIds: [item.attachmentId],
+        selection: { provider: 'p', model: 'm' },
+      }),
+    { code: 'SESSION_STORAGE' },
+  )
   assert.deepEqual(await store.read('a'), [])
   assert.equal(store.requests.get('req-fail'), undefined)
   assert.equal(drafts.snapshot('a').attachmentIds[0], item.attachmentId)
@@ -249,12 +376,35 @@ test('cancellation stops an upload even when the next input chunk never arrives'
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
   const abort = new AbortController()
   let started
-  const waiting = new Promise(resolve => { started = resolve })
-  const work = files.receive({ sessionId: 'a', name: 'waiting.txt', expectedRevision: 0, maxBytes: 10, signal: abort.signal,
-    bytes: { [Symbol.asyncIterator]() { return { next() { started(); return new Promise(() => {}) } } } } })
+  const waiting = new Promise(resolve => {
+    started = resolve
+  })
+  const work = files.receive({
+    sessionId: 'a',
+    name: 'waiting.txt',
+    expectedRevision: 0,
+    maxBytes: 10,
+    signal: abort.signal,
+    bytes: {
+      [Symbol.asyncIterator]() {
+        return {
+          next() {
+            started()
+            return new Promise(() => {})
+          },
+        }
+      },
+    },
+  })
   await waiting
   abort.abort()
-  const result = await Promise.race([work.then(() => 'completed', error => error.code), new Promise(resolve => setTimeout(() => resolve('hung'), 500))])
+  const result = await Promise.race([
+    work.then(
+      () => 'completed',
+      error => error.code,
+    ),
+    new Promise(resolve => setTimeout(() => resolve('hung'), 500)),
+  ])
   assert.equal(result, 'UPLOAD_CANCELLED')
   assert.equal(store.attachments.get('a', drafts.snapshot('a').attachmentIds[0]).state, 'rejected')
 })
@@ -267,10 +417,30 @@ test('removing a preparing attachment cancels its upload and keeps the draft tex
   drafts.set('a', 'keep')
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
   let started
-  const waiting = new Promise(resolve => { started = resolve })
-  const work = files.receive({ sessionId: 'a', name: 'waiting.txt', expectedRevision: 1, maxBytes: 10, signal: new AbortController().signal,
-    bytes: { [Symbol.asyncIterator]() { return { next() { started(); return new Promise(() => {}) } } } } })
-  const outcome = work.then(() => 'completed', error => error.code)
+  const waiting = new Promise(resolve => {
+    started = resolve
+  })
+  const work = files.receive({
+    sessionId: 'a',
+    name: 'waiting.txt',
+    expectedRevision: 1,
+    maxBytes: 10,
+    signal: new AbortController().signal,
+    bytes: {
+      [Symbol.asyncIterator]() {
+        return {
+          next() {
+            started()
+            return new Promise(() => {})
+          },
+        }
+      },
+    },
+  })
+  const outcome = work.then(
+    () => 'completed',
+    error => error.code,
+  )
   await waiting
   const draft = drafts.snapshot('a')
   await files.remove('a', draft.attachmentIds[0], draft.revision)
@@ -288,7 +458,9 @@ test('startup rejects a linked attachment root without deleting the linked folde
   await mkdir(root)
   await writeFile(join(source, 'keep.txt'), 'untouched')
   await symlink(source, join(root, 'attachments'), process.platform === 'win32' ? 'junction' : 'dir')
-  await assert.rejects(local.ManagedAttachments.open(root, open().attachments, new MemoryDraftStore()), { code: 'ATTACHMENT_NOT_SAVED' })
+  await assert.rejects(local.ManagedAttachments.open(root, open().attachments, new MemoryDraftStore()), {
+    code: 'ATTACHMENT_NOT_SAVED',
+  })
   assert.equal(await readFile(join(source, 'keep.txt'), 'utf8'), 'untouched')
 })
 
@@ -297,15 +469,31 @@ test('missing committed bytes stay referenced after recovery and cannot be silen
   const store = open()
   await store.open('a')
   const files = await local.ManagedAttachments.open(join(dir, 'files'), store.attachments, new MemoryDraftStore())
-  const item = await files.receive({ sessionId: 'a', name: 'notes.txt', expectedRevision: 0, maxBytes: 10,
-    bytes: (async function* () { yield Buffer.from('hello') })(), signal: new AbortController().signal })
+  const item = await files.receive({
+    sessionId: 'a',
+    name: 'notes.txt',
+    expectedRevision: 0,
+    maxBytes: 10,
+    bytes: (async function* () {
+      yield Buffer.from('hello')
+    })(),
+    signal: new AbortController().signal,
+  })
   store.attachments.ready('a', item.attachmentId, 'text/plain')
-  store.requests.admit({ requestId: 'req-missing', sessionId: 'a', input: 'use notes', attachmentIds: [item.attachmentId], selection: { provider: 'p', model: 'm' } })
+  store.requests.admit({
+    requestId: 'req-missing',
+    sessionId: 'a',
+    input: 'use notes',
+    attachmentIds: [item.attachmentId],
+    selection: { provider: 'p', model: 'm' },
+  })
   store.requests.finish('req-missing', 'completed')
   await unlink(join(dir, 'files', 'attachments', `${item.attachmentId}.bin`))
   store.close()
   const next = open()
   const recovered = await local.ManagedAttachments.open(join(dir, 'files'), next.attachments, new MemoryDraftStore())
   assert.equal((await next.read('a'))[0].attachments[0].attachmentId, item.attachmentId)
-  await assert.rejects(recovered.read('a', item.attachmentId, new AbortController().signal), { code: 'ATTACHMENT_UNREADABLE' })
+  await assert.rejects(recovered.read('a', item.attachmentId, new AbortController().signal), {
+    code: 'ATTACHMENT_UNREADABLE',
+  })
 })

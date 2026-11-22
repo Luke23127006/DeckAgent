@@ -52,7 +52,11 @@ interface ProviderInput {
 export interface ProviderStoreOptions {
   /** The connection and key check before saving (FR-041). Tests replace it; it never runs a model. */
   readonly check?: (endpoint: ProviderEndpoint, key: string | undefined) => Promise<void>
-  readonly catalog?: (endpoint: ProviderEndpoint, key: string | undefined, signal: AbortSignal) => Promise<readonly string[]>
+  readonly catalog?: (
+    endpoint: ProviderEndpoint,
+    key: string | undefined,
+    signal: AbortSignal,
+  ) => Promise<readonly string[]>
   /** Chats that selected a removed model lose the selection (FR-065). `undefined` means every model of the provider. */
   readonly modelsRemoved?: (provider: string, models: readonly string[] | undefined) => Promise<void>
 }
@@ -66,21 +70,35 @@ const modelId = /^[\x21-\x7e]{1,200}$/
 const keyText = /^[\x21-\x7e]{1,4096}$/
 
 function parse(id: string, value: unknown): ProviderInput {
-  if (!record(value) || Object.keys(value).some(key => !['displayName', 'protocol', 'baseUrl', 'models', 'key', 'new'].includes(key)) ||
-    !providerId.test(id) || typeof value.displayName !== 'string' || !value.displayName.trim() || value.displayName.length > 100 ||
-    !protocols.includes(value.protocol as ProviderProtocol) || typeof value.baseUrl !== 'string' ||
-    !Array.isArray(value.models) || value.models.length > 100 ||
-    value.models.some(model => typeof model !== 'string' || !modelId.test(model)) || new Set(value.models).size !== value.models.length ||
+  if (
+    !record(value) ||
+    Object.keys(value).some(key => !['displayName', 'protocol', 'baseUrl', 'models', 'key', 'new'].includes(key)) ||
+    !providerId.test(id) ||
+    typeof value.displayName !== 'string' ||
+    !value.displayName.trim() ||
+    value.displayName.length > 100 ||
+    !protocols.includes(value.protocol as ProviderProtocol) ||
+    typeof value.baseUrl !== 'string' ||
+    !Array.isArray(value.models) ||
+    value.models.length > 100 ||
+    value.models.some(model => typeof model !== 'string' || !modelId.test(model)) ||
+    new Set(value.models).size !== value.models.length ||
     (value.key !== undefined && (typeof value.key !== 'string' || (value.key !== '' && !keyText.test(value.key)))) ||
-    (value.new !== undefined && typeof value.new !== 'boolean'))
+    (value.new !== undefined && typeof value.new !== 'boolean')
+  )
     throw new HttpError(400, 'INVALID_PROVIDER')
   if (!validBaseUrl(value.baseUrl)) throw new HttpError(400, 'INVALID_PROVIDER', { field: 'baseUrl' })
   const protocol = value.protocol as ProviderProtocol
   const models = value.models.map(model => String(model))
-  if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model))) throw new HttpError(400, 'INVALID_PROVIDER', { field: 'models' })
+  if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
+    throw new HttpError(400, 'INVALID_PROVIDER', { field: 'models' })
   return {
-    displayName: value.displayName.trim(), protocol, baseUrl: value.baseUrl, models,
-    ...(typeof value.key === 'string' ? { key: value.key } : {}), isNew: value.new === true,
+    displayName: value.displayName.trim(),
+    protocol,
+    baseUrl: value.baseUrl,
+    models,
+    ...(typeof value.key === 'string' ? { key: value.key } : {}),
+    isNew: value.new === true,
   }
 }
 
@@ -90,8 +108,10 @@ function checkFailure(error: unknown): HttpError {
     if (error.code === 'PROVIDER_REFUSED_KEY') return new HttpError(422, 'PROVIDER_KEY_REFUSED')
     if (error.code === 'PROVIDER_NO_ANSWER') return new HttpError(504, 'PROVIDER_NO_ANSWER')
     if (error.code === 'PROVIDER_TLS') return new HttpError(504, 'PROVIDER_NO_ANSWER', { reason: 'certificate' })
-    if (error.code === 'PROVIDER_RATE_LIMIT') return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
-    if (error.code === 'PROVIDER_HTTP') return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
+    if (error.code === 'PROVIDER_RATE_LIMIT')
+      return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
+    if (error.code === 'PROVIDER_HTTP')
+      return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
     return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: 'protocol' })
   }
   return new HttpError(504, 'PROVIDER_NO_ANSWER')
@@ -109,14 +129,21 @@ export class ProviderStore {
   private mutation: Promise<void> = Promise.resolve()
   private readonly catalogAbort = new AbortController()
 
-  constructor(private readonly db: DatabaseSync, private readonly credentials: CredentialStore, private readonly options: ProviderStoreOptions = {}) {}
+  constructor(
+    private readonly db: DatabaseSync,
+    private readonly credentials: CredentialStore,
+    private readonly options: ProviderStoreOptions = {},
+  ) {}
 
   async load(connections: readonly ProviderConnection[] = [], initial?: ModelSelection): Promise<void> {
     const reads: Promise<void>[] = []
     for (const row of this.db.prepare('SELECT id, payload FROM providers').all()) {
       const id = String(row.id)
       const data: unknown = JSON.parse(String(row.payload))
-      if (record(data) && data.deleted === true && Object.keys(data).length === 1) { this.deleted.add(id); continue }
+      if (record(data) && data.deleted === true && Object.keys(data).length === 1) {
+        this.deleted.add(id)
+        continue
+      }
       if (!record(data)) throw new HttpError(500, 'SETTINGS_STORAGE')
       // Older files kept the protected key inside the provider row (B01). It moves to the credential store unchanged.
       let credentialRef = typeof data.credentialRef === 'string' ? data.credentialRef : undefined
@@ -124,23 +151,53 @@ export class ProviderStore {
         credentialRef = await this.credentials.adopt(data.encryptedKey)
       }
       const connection = record(data.connection) ? data.connection : data
-      const parsed = parse(id, { displayName: data.displayName, protocol: connection.protocol, baseUrl: connection.baseUrl, models: data.models })
-      const saved: SavedProvider = { id, displayName: parsed.displayName, protocol: parsed.protocol, baseUrl: parsed.baseUrl, models: parsed.models,
-        ...(credentialRef ? { credentialRef } : {}) }
+      const parsed = parse(id, {
+        displayName: data.displayName,
+        protocol: connection.protocol,
+        baseUrl: connection.baseUrl,
+        models: data.models,
+      })
+      const saved: SavedProvider = {
+        id,
+        displayName: parsed.displayName,
+        protocol: parsed.protocol,
+        baseUrl: parsed.baseUrl,
+        models: parsed.models,
+        ...(credentialRef ? { credentialRef } : {}),
+      }
       if (typeof data.encryptedKey === 'string' || record(data.connection)) this.write(saved)
       this.providers.set(id, saved)
       const reference = credentialRef
-      if (reference) reads.push(this.credentials.read(reference).then(key => { this.keys.set(id, key) }, () => {
-        // Kept as saved: Settings shows the key is unavailable on this account and lets the user replace it.
-      }))
+      if (reference)
+        reads.push(
+          this.credentials.read(reference).then(
+            key => {
+              this.keys.set(id, key)
+            },
+            () => {
+              // Kept as saved: Settings shows the key is unavailable on this account and lets the user replace it.
+            },
+          ),
+        )
     }
     await Promise.all(reads)
     // Explicit CLI bootstrap: saved Settings take precedence; a deleted configuration stays deleted.
     if (initial && !this.providers.has(initial.provider) && !this.deleted.has(initial.provider)) {
       const connection = connections.find(value => value.id === initial.provider)
-      if (connection && protocols.includes(connection.protocol) && validBaseUrl(connection.baseUrl) && providerId.test(connection.id)) {
-        this.providers.set(connection.id, { id: connection.id, displayName: connection.id, protocol: connection.protocol, baseUrl: connection.baseUrl,
-          models: [initial.model], bootstrap: true })
+      if (
+        connection &&
+        protocols.includes(connection.protocol) &&
+        validBaseUrl(connection.baseUrl) &&
+        providerId.test(connection.id)
+      ) {
+        this.providers.set(connection.id, {
+          id: connection.id,
+          displayName: connection.id,
+          protocol: connection.protocol,
+          baseUrl: connection.baseUrl,
+          models: [initial.model],
+          bootstrap: true,
+        })
         const key = connection.apiKeyEnv ? process.env[connection.apiKeyEnv] : undefined
         if (key && keyText.test(key)) this.keys.set(connection.id, key)
       }
@@ -149,14 +206,23 @@ export class ProviderStore {
 
   providerSettings(): readonly ProviderSettings[] {
     return [...this.providers.values()].map(value => ({
-      id: value.id, displayName: value.displayName, protocol: value.protocol, baseUrl: value.baseUrl, models: [...value.models],
-      hasKey: !!value.credentialRef || this.keys.has(value.id), keyAvailable: this.keys.has(value.id),
+      id: value.id,
+      displayName: value.displayName,
+      protocol: value.protocol,
+      baseUrl: value.baseUrl,
+      models: [...value.models],
+      hasKey: !!value.credentialRef || this.keys.has(value.id),
+      keyAvailable: this.keys.has(value.id),
       builtIn: builtInProviders.some(template => template.id === value.id),
     }))
   }
 
-  get persistentKeys(): boolean { return this.credentials.persistent }
-  get builtIns(): readonly ProviderTemplate[] { return builtInProviders }
+  get persistentKeys(): boolean {
+    return this.credentials.persistent
+  }
+  get builtIns(): readonly ProviderTemplate[] {
+    return builtInProviders
+  }
 
   /** A selectable model is an added model of a saved provider configuration (BR-005 V-3). */
   selectable(selection: ModelSelection | undefined): boolean {
@@ -169,7 +235,13 @@ export class ProviderStore {
     if (!saved || !saved.models.includes(selection.model)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
     const key = this.keys.get(saved.id)
     if (saved.credentialRef && !key) throw new HttpError(409, 'PROVIDER_KEY_UNAVAILABLE')
-    return { provider: saved.id, protocol: saved.protocol, baseUrl: saved.baseUrl, model: selection.model, ...(key ? { key } : {}) }
+    return {
+      provider: saved.id,
+      protocol: saved.protocol,
+      baseUrl: saved.baseUrl,
+      model: selection.model,
+      ...(key ? { key } : {}),
+    }
   }
 
   save(id: string, value: unknown): Promise<void> {
@@ -207,13 +279,21 @@ export class ProviderStore {
         try {
           created = await this.credentials.save(input.key)
         } catch (error) {
-          throw new HttpError(error instanceof CredentialError && error.code === 'CREDENTIAL_STORE_UNAVAILABLE' ? 422 : 500,
-            error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED')
+          throw new HttpError(
+            error instanceof CredentialError && error.code === 'CREDENTIAL_STORE_UNAVAILABLE' ? 422 : 500,
+            error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED',
+          )
         }
         credentialRef = created
       } else if (input.key === '') credentialRef = undefined
-      const saved: SavedProvider = { id, displayName: input.displayName, protocol: input.protocol, baseUrl: input.baseUrl, models: input.models,
-        ...(credentialRef ? { credentialRef } : {}) }
+      const saved: SavedProvider = {
+        id,
+        displayName: input.displayName,
+        protocol: input.protocol,
+        baseUrl: input.baseUrl,
+        models: input.models,
+        ...(credentialRef ? { credentialRef } : {}),
+      }
       try {
         this.write(saved)
       } catch {
@@ -224,7 +304,8 @@ export class ProviderStore {
       this.deleted.delete(id)
       if (input.key) this.keys.set(id, input.key)
       else if (input.key === '') this.keys.delete(id)
-      if (previous?.credentialRef && previous.credentialRef !== credentialRef) await this.credentials.remove(previous.credentialRef).catch(() => {})
+      if (previous?.credentialRef && previous.credentialRef !== credentialRef)
+        await this.credentials.remove(previous.credentialRef).catch(() => {})
       const removed = previous?.models.filter(model => !input.models.includes(model)) ?? []
       if (removed.length) await this.options.modelsRemoved?.(id, removed)
     })
@@ -236,7 +317,10 @@ export class ProviderStore {
       const previous = this.providers.get(id)
       if (!previous) throw new HttpError(404, 'PROVIDER_NOT_FOUND')
       // A tombstone keeps a startup flag from bringing a deleted configuration back.
-      this.db.prepare('INSERT INTO providers(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload')
+      this.db
+        .prepare(
+          'INSERT INTO providers(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',
+        )
         .run(id, JSON.stringify({ deleted: true }))
       this.providers.delete(id)
       this.deleted.add(id)
@@ -253,11 +337,18 @@ export class ProviderStore {
     const endpoint = { protocol: saved.protocol, baseUrl: saved.baseUrl }
     const key = this.keys.get(id)
     try {
-      return this.options.catalog ? await this.options.catalog(endpoint, key, this.catalogAbort.signal)
+      return this.options.catalog
+        ? await this.options.catalog(endpoint, key, this.catalogAbort.signal)
         : await listModels(endpoint, key, { signal: this.catalogAbort.signal, timeoutMs: 30_000 })
     } catch (error) {
-      const reason = error instanceof ProviderCheckError ? error.code === 'PROVIDER_REFUSED_KEY' ? 'refused'
-        : error.code === 'PROVIDER_NO_ANSWER' || error.code === 'PROVIDER_TLS' ? 'no-answer' : 'unusable' : 'no-answer'
+      const reason =
+        error instanceof ProviderCheckError
+          ? error.code === 'PROVIDER_REFUSED_KEY'
+            ? 'refused'
+            : error.code === 'PROVIDER_NO_ANSWER' || error.code === 'PROVIDER_TLS'
+              ? 'no-answer'
+              : 'unusable'
+          : 'no-answer'
       throw new HttpError(502, 'CATALOG_UNAVAILABLE', { reason })
     }
   }
@@ -271,7 +362,10 @@ export class ProviderStore {
   private write(saved: SavedProvider): void {
     if (saved.bootstrap) return
     const { id, bootstrap: _bootstrap, ...payload } = saved
-    this.db.prepare('INSERT INTO providers(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload')
+    this.db
+      .prepare(
+        'INSERT INTO providers(id, payload) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',
+      )
       .run(id, JSON.stringify(payload))
   }
 

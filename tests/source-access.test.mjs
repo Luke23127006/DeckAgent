@@ -27,7 +27,9 @@ test('source access separates project reads, one-step outside approval and perma
   assert.equal(outside.decision, 'ask')
   assert.equal((await outside.read(signal)).text, 'outside')
   await assert.rejects(access.planRead('../outside.txt', false, signal), { code: 'SOURCE_ACCESS_DENIED' })
-  await assert.rejects(access.planRead(join(f.dir, 'other', 'private.txt'), true, signal), { code: 'SOURCE_ACCESS_DENIED' })
+  await assert.rejects(access.planRead(join(f.dir, 'other', 'private.txt'), true, signal), {
+    code: 'SOURCE_ACCESS_DENIED',
+  })
   assert.equal(await readFile(join(f.project, 'notes.txt'), 'utf8'), 'first\nsecond\n')
 })
 

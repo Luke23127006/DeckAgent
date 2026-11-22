@@ -15,15 +15,22 @@ export type ProviderFailure =
   | 'PROVIDER_TLS'
 
 export class ProviderCheckError extends Error {
-  constructor(readonly code: ProviderFailure, readonly status?: number) {
+  constructor(
+    readonly code: ProviderFailure,
+    readonly status?: number,
+  ) {
     super(code)
     this.name = 'ProviderCheckError'
   }
 }
 
 const certificateCodes = new Set([
-  'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', 'SELF_SIGNED_CERT_IN_CHAIN',
-  'DEPTH_ZERO_SELF_SIGNED_CERT', 'CERT_HAS_EXPIRED', 'ERR_TLS_CERT_ALTNAME_INVALID',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+  'SELF_SIGNED_CERT_IN_CHAIN',
+  'DEPTH_ZERO_SELF_SIGNED_CERT',
+  'CERT_HAS_EXPIRED',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
 ])
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -43,16 +50,33 @@ function transportCode(error: unknown): string | undefined {
 /** HTTPS, or HTTP to this computer only (a local model service); no credentials, query or fragment in the URL. */
 export function validBaseUrl(value: string): boolean {
   let url: URL
-  try { url = new URL(value) } catch { return false }
-  return !url.username && !url.password && !url.search && !url.hash && value.length <= 2048 &&
-    (url.protocol === 'https:' || (url.protocol === 'http:' && ['127.0.0.1', '[::1]', 'localhost'].includes(url.hostname)))
+  try {
+    url = new URL(value)
+  } catch {
+    return false
+  }
+  return (
+    !url.username &&
+    !url.password &&
+    !url.search &&
+    !url.hash &&
+    value.length <= 2048 &&
+    (url.protocol === 'https:' ||
+      (url.protocol === 'http:' && ['127.0.0.1', '[::1]', 'localhost'].includes(url.hostname)))
+  )
 }
 
 function headers(protocol: ProviderProtocol, key: string | undefined): Record<string, string> {
   const anthropic = protocol === 'anthropic-messages'
   return {
     ...(anthropic ? { 'anthropic-version': '2023-06-01' } : {}),
-    ...(key ? protocol === 'gemini' ? { 'x-goog-api-key': key } : anthropic ? { 'x-api-key': key } : { authorization: `Bearer ${key}` } : {}),
+    ...(key
+      ? protocol === 'gemini'
+        ? { 'x-goog-api-key': key }
+        : anthropic
+          ? { 'x-api-key': key }
+          : { authorization: `Bearer ${key}` }
+      : {}),
   }
 }
 
@@ -83,8 +107,15 @@ async function boundedJson(response: Response): Promise<unknown> {
  * Lists the provider's models (FR-058): at most ten pages and 1000 IDs. With `pages: 1` it is the key and
  * connection check before saving (FR-041); a provider that does not answer counts as a refusal.
  */
-export async function listModels(endpoint: ProviderEndpoint, key: string | undefined, options: { signal?: AbortSignal; pages?: number; timeoutMs?: number } = {}): Promise<readonly string[]> {
-  const signal = AbortSignal.any([AbortSignal.timeout(options.timeoutMs ?? 20_000), ...(options.signal ? [options.signal] : [])])
+export async function listModels(
+  endpoint: ProviderEndpoint,
+  key: string | undefined,
+  options: { signal?: AbortSignal; pages?: number; timeoutMs?: number } = {},
+): Promise<readonly string[]> {
+  const signal = AbortSignal.any([
+    AbortSignal.timeout(options.timeoutMs ?? 20_000),
+    ...(options.signal ? [options.signal] : []),
+  ])
   const gemini = endpoint.protocol === 'gemini'
   const anthropic = endpoint.protocol === 'anthropic-messages'
   const ids = new Set<string>()
@@ -98,8 +129,14 @@ export async function listModels(endpoint: ProviderEndpoint, key: string | undef
       if (!response.ok) {
         // A provider error body can echo the key; it is never read.
         await response.body?.cancel().catch(() => {})
-        throw new ProviderCheckError(response.status === 401 || response.status === 403 ? 'PROVIDER_REFUSED_KEY'
-          : response.status === 429 ? 'PROVIDER_RATE_LIMIT' : 'PROVIDER_HTTP', response.status)
+        throw new ProviderCheckError(
+          response.status === 401 || response.status === 403
+            ? 'PROVIDER_REFUSED_KEY'
+            : response.status === 429
+              ? 'PROVIDER_RATE_LIMIT'
+              : 'PROVIDER_HTTP',
+          response.status,
+        )
       }
       const data = await boundedJson(response)
       if (!record(data)) throw new ProviderCheckError('PROVIDER_PROTOCOL')
@@ -109,7 +146,12 @@ export async function listModels(endpoint: ProviderEndpoint, key: string | undef
         if (!record(entry)) throw new ProviderCheckError('PROVIDER_PROTOCOL')
         const raw = gemini ? entry.name : entry.id
         if (typeof raw !== 'string') throw new ProviderCheckError('PROVIDER_PROTOCOL')
-        if (gemini && (!Array.isArray(entry.supportedGenerationMethods) || !entry.supportedGenerationMethods.includes('generateContent'))) continue
+        if (
+          gemini &&
+          (!Array.isArray(entry.supportedGenerationMethods) ||
+            !entry.supportedGenerationMethods.includes('generateContent'))
+        )
+          continue
         const id = gemini ? raw.replace(/^models\//, '') : raw
         if (!/^[\x21-\x7e]{1,200}$/.test(id)) throw new ProviderCheckError('PROVIDER_PROTOCOL')
         ids.add(id)
@@ -117,7 +159,8 @@ export async function listModels(endpoint: ProviderEndpoint, key: string | undef
       }
       const next = gemini ? data.nextPageToken : anthropic && data.has_more === true ? data.last_id : undefined
       if (next === undefined || next === '') return [...ids]
-      if (typeof next !== 'string' || next.length > 2048 || seen.has(next)) throw new ProviderCheckError('PROVIDER_PROTOCOL')
+      if (typeof next !== 'string' || next.length > 2048 || seen.has(next))
+        throw new ProviderCheckError('PROVIDER_PROTOCOL')
       seen.add(next)
       cursor = next
     }

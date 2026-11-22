@@ -22,9 +22,13 @@ export type CredentialErrorCode = 'CREDENTIAL_STORE_UNAVAILABLE' | 'CREDENTIAL_U
 /** The message never holds a key, a path or a system error text. */
 export class CredentialError extends Error {
   constructor(readonly code: CredentialErrorCode) {
-    super(code === 'CREDENTIAL_STORE_UNAVAILABLE' ? 'This computer has no supported protected key store'
-      : code === 'CREDENTIAL_UNAVAILABLE' ? 'The saved key cannot be read on this computer account'
-        : 'The key could not be saved')
+    super(
+      code === 'CREDENTIAL_STORE_UNAVAILABLE'
+        ? 'This computer has no supported protected key store'
+        : code === 'CREDENTIAL_UNAVAILABLE'
+          ? 'The saved key cannot be read on this computer account'
+          : 'The key could not be saved',
+    )
     this.name = 'CredentialError'
   }
 }
@@ -46,7 +50,10 @@ $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Se
       ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')],
       { windowsHide: true, signal: deadline, maxBuffer: 65536, encoding: 'utf8' },
       (error, stdout) => {
-        if (error) { reject(new CredentialError(operation === 'Protect' ? 'CREDENTIAL_NOT_SAVED' : 'CREDENTIAL_UNAVAILABLE')); return }
+        if (error) {
+          reject(new CredentialError(operation === 'Protect' ? 'CREDENTIAL_NOT_SAVED' : 'CREDENTIAL_UNAVAILABLE'))
+          return
+        }
         const encoded = stdout.trim()
         const result = Buffer.from(encoded, 'base64')
         if (!result.length || result.toString('base64') !== encoded)
@@ -120,8 +127,12 @@ export class ProtectedFileCredentialStore implements CredentialStore {
 /** No protected store on this computer: keys are refused instead of kept in plain text. */
 export class UnavailableCredentialStore implements CredentialStore {
   readonly persistent = false
-  async save(): Promise<string> { throw new CredentialError('CREDENTIAL_STORE_UNAVAILABLE') }
-  async read(): Promise<string> { throw new CredentialError('CREDENTIAL_UNAVAILABLE') }
+  async save(): Promise<string> {
+    throw new CredentialError('CREDENTIAL_STORE_UNAVAILABLE')
+  }
+  async read(): Promise<string> {
+    throw new CredentialError('CREDENTIAL_UNAVAILABLE')
+  }
   async remove(): Promise<void> {}
 }
 
@@ -131,7 +142,10 @@ export class UnavailableCredentialStore implements CredentialStore {
  */
 export function defaultCredentialStore(root: string, platform: NodeJS.Platform = process.platform): CredentialStore {
   if (platform === 'win32')
-    return new ProtectedFileCredentialStore(join(root, 'credentials'),
-      bytes => windowsDataProtection('Protect', bytes), bytes => windowsDataProtection('Unprotect', bytes))
+    return new ProtectedFileCredentialStore(
+      join(root, 'credentials'),
+      bytes => windowsDataProtection('Protect', bytes),
+      bytes => windowsDataProtection('Unprotect', bytes),
+    )
   return new UnavailableCredentialStore()
 }

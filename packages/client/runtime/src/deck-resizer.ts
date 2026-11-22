@@ -8,11 +8,17 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
   divider.setAttribute('aria-orientation', 'vertical')
   divider.title = 'Drag to resize presentation; use Left and Right arrow keys'
   let preferred = initial
-  let drag: { pointer: number; start: number; width: number; overlay: HTMLElement; control: AbortController } | undefined
+  let drag:
+    | { pointer: number; start: number; width: number; overlay: HTMLElement; control: AbortController }
+    | undefined
   const bounds = () => {
     const navigation = document.querySelector('.chat-navigation')?.getBoundingClientRect().width ?? 0
-    const maximum = Math.max(1, Math.floor(Math.min(1000, innerWidth - navigation - 320,
-      Number.parseFloat(getComputedStyle(container).maxWidth) || 1000)))
+    const maximum = Math.max(
+      1,
+      Math.floor(
+        Math.min(1000, innerWidth - navigation - 320, Number.parseFloat(getComputedStyle(container).maxWidth) || 1000),
+      ),
+    )
     return { minimum: Math.min(320, maximum), maximum }
   }
   const render = () => {
@@ -45,22 +51,39 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
     divider.focus()
     const overlay = element('div', undefined, 'deck-resize-overlay')
     const control = new AbortController()
-    drag = { pointer: event.pointerId, start: event.clientX, width: container.getBoundingClientRect().width, overlay, control }
+    drag = {
+      pointer: event.pointerId,
+      start: event.clientX,
+      width: container.getBoundingClientRect().width,
+      overlay,
+      control,
+    }
     document.body.classList.add('deck-resizing')
     document.body.append(overlay)
     // Track on the fixed overlay/window: native capture can be lost across opaque iframe widgets.
     // Window capture also handles a pointer released over the iframe/overlay boundary.
-    window.addEventListener('pointermove', move => {
-      if (drag?.pointer !== move.pointerId) return
-      if (!move.buttons) { finish(); return }
-      resize(drag.width + drag.start - move.clientX)
-    }, { capture: true, signal: control.signal })
-    window.addEventListener('pointerup', release => {
-      if (drag?.pointer !== release.pointerId) return
-      // The final move may be coalesced or omitted; commit the actual release position before saving.
-      resize(drag.width + drag.start - release.clientX)
-      finish()
-    }, { capture: true, signal: control.signal })
+    window.addEventListener(
+      'pointermove',
+      move => {
+        if (drag?.pointer !== move.pointerId) return
+        if (!move.buttons) {
+          finish()
+          return
+        }
+        resize(drag.width + drag.start - move.clientX)
+      },
+      { capture: true, signal: control.signal },
+    )
+    window.addEventListener(
+      'pointerup',
+      release => {
+        if (drag?.pointer !== release.pointerId) return
+        // The final move may be coalesced or omitted; commit the actual release position before saving.
+        resize(drag.width + drag.start - release.clientX)
+        finish()
+      },
+      { capture: true, signal: control.signal },
+    )
     window.addEventListener('pointercancel', finish, { capture: true, signal: control.signal })
     window.addEventListener('blur', finish, { signal: control.signal })
   })
@@ -69,14 +92,25 @@ export function mountDeckResizer(container: HTMLElement, initial: number, save: 
     const current = container.getBoundingClientRect().width
     const { minimum, maximum } = bounds()
     const step = event.shiftKey ? 64 : 16
-    const width = event.key === 'ArrowLeft' ? current + step : event.key === 'ArrowRight' ? current - step
-      : event.key === 'Home' ? minimum : event.key === 'End' ? maximum : undefined
+    const width =
+      event.key === 'ArrowLeft'
+        ? current + step
+        : event.key === 'ArrowRight'
+          ? current - step
+          : event.key === 'Home'
+            ? minimum
+            : event.key === 'End'
+              ? maximum
+              : undefined
     if (width === undefined) return
     event.preventDefault()
     resize(width)
     save(preferred)
   })
-  window.addEventListener('resize', () => { finish(); render() })
+  window.addEventListener('resize', () => {
+    finish()
+    render()
+  })
   window.addEventListener('pagehide', finish)
   container.append(divider)
   render()

@@ -44,7 +44,8 @@ export class WebState {
       if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new HttpError(500, 'SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
       // Requests and activities moved to Session persistence (B02); older files keep their unused tables unchanged.
-      if (fresh) this.db.exec(`
+      if (fresh)
+        this.db.exec(`
         CREATE TABLE providers (id TEXT PRIMARY KEY, payload TEXT NOT NULL) STRICT;
         PRAGMA application_id=1145132866; PRAGMA user_version=1;`)
       // Added after schema version 1 shipped: created on demand so existing data files keep working.
@@ -65,16 +66,26 @@ export class WebState {
   }
 
   savePreferences(value: unknown): WebPreferences {
-    if (!record(value) || Object.keys(value).some(key => key !== 'theme') || (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system'))
+    if (
+      !record(value) ||
+      Object.keys(value).some(key => key !== 'theme') ||
+      (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system')
+    )
       throw new HttpError(400, 'INVALID_REQUEST')
-    this.db.prepare("INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(value.theme)
+    this.db
+      .prepare(
+        "INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
+      .run(value.theme)
     return this.preferences()
   }
 
   /** FR-053: the most recent choice of a model in any chat, kept across restarts. */
   rememberSelection(value: ModelSelection): void {
     this.db
-      .prepare("INSERT INTO preferences (key, value) VALUES ('lastSelection', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+      .prepare(
+        "INSERT INTO preferences (key, value) VALUES ('lastSelection', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      )
       .run(JSON.stringify({ provider: value.provider, model: value.model }))
   }
 

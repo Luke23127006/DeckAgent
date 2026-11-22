@@ -12,14 +12,29 @@ async function fixture(t, extra = {}) {
   await writeFile(join(source, 'notes.txt'), 'project marker')
   const outside = join(dir, 'outside.txt')
   await writeFile(outside, 'outside marker')
-  const state = await startApp(dir, { ...extra, options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } } })
-  t.after(async () => { await state.app.close(); await rm(dir, { recursive: true, force: true }) })
-  const saved = await state.call('providers/test', 'PUT', { displayName: 'Fixture', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1', key: 'fixture', models: ['model-a'], new: true })
+  const state = await startApp(dir, {
+    ...extra,
+    options: { providerAccess: { check: async () => {}, catalog: async () => ['model-a'] } },
+  })
+  t.after(async () => {
+    await state.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const saved = await state.call('providers/test', 'PUT', {
+    displayName: 'Fixture',
+    protocol: 'chat-completions',
+    baseUrl: 'http://127.0.0.1:9/v1',
+    key: 'fixture',
+    models: ['model-a'],
+    new: true,
+  })
   assert.equal(saved.status, 200)
   return { ...state, dir, source, outside }
 }
 
-test('Host-scoped MCP reads project sources, refuses native writes and leaves the source folder unchanged', { timeout: 30000 }, async t => {
+test('Host-scoped MCP reads project sources, refuses native writes and leaves the source folder unchanged', {
+  timeout: 30000,
+}, async t => {
   const f = await fixture(t)
   assert.equal((await f.call('workspaces', 'POST', { folder: f.source })).status, 200)
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
@@ -41,7 +56,10 @@ test('outside reads ask per step and refusal does not reprompt the same denied s
   const pending = await waitFor(async () => (await f.client.snapshot(accepted.requestId)).pendingApproval)
   assert.equal((await f.client.snapshot(accepted.requestId)).status, 'waiting_approval')
   await f.client.decide(accepted.requestId, pending.approvalId, 'allow-once')
-  const next = await waitFor(async () => { const item = (await f.client.snapshot(accepted.requestId)).pendingApproval; return item?.approvalId !== pending.approvalId ? item : undefined })
+  const next = await waitFor(async () => {
+    const item = (await f.client.snapshot(accepted.requestId)).pendingApproval
+    return item?.approvalId !== pending.approvalId ? item : undefined
+  })
   await f.client.decide(accepted.requestId, next.approvalId, 'refuse')
   const events = await finished(f.client, accepted.requestId)
   assert.equal(events.at(-1).status, 'completed')

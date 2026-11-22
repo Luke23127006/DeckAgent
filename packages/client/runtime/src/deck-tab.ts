@@ -45,10 +45,7 @@ export function mountDeckTab(container: HTMLElement): void {
   let width = '520'
   function save() {
     try {
-      localStorage.setItem(
-        'deckagent-sample-layout',
-        JSON.stringify({ current, width, open: !container.hidden }),
-      )
+      localStorage.setItem('deckagent-sample-layout', JSON.stringify({ current, width, open: !container.hidden }))
     } catch {
       /* Layout persistence is optional; controls remain usable without browser storage. */
     }
@@ -78,7 +75,10 @@ export function mountDeckTab(container: HTMLElement): void {
   } catch {
     /* Ignore invalid optional layout state. */
   }
-  mountDeckResizer(container, Number(width), value => { width = String(value); save() })
+  mountDeckResizer(container, Number(width), value => {
+    width = String(value)
+    save()
+  })
   panel.append(heading, frame, caption, controls)
   container.append(panel)
   render()

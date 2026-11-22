@@ -3,23 +3,36 @@ import { crc32, deflateRawSync, deflateSync } from 'node:zlib'
 export function noisyAttachmentPng(side = 1024) {
   const scanlines = Buffer.alloc((side * 4 + 1) * side)
   let seed = 123456789
-  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
-    const offset = y * (side * 4 + 1) + 1 + x * 4
-    for (let channel = 0; channel < 3; channel++) {
-      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5
-      scanlines[offset + channel] = seed & 255
+  for (let y = 0; y < side; y++)
+    for (let x = 0; x < side; x++) {
+      const offset = y * (side * 4 + 1) + 1 + x * 4
+      for (let channel = 0; channel < 3; channel++) {
+        seed ^= seed << 13
+        seed ^= seed >>> 17
+        seed ^= seed << 5
+        scanlines[offset + channel] = seed & 255
+      }
+      scanlines[offset + 3] = 255
     }
-    scanlines[offset + 3] = 255
-  }
   const chunk = (type, value) => {
     const label = Buffer.from(type)
-    const header = Buffer.alloc(4); header.writeUInt32BE(value.length)
-    const check = Buffer.alloc(4); check.writeUInt32BE(crc32(Buffer.concat([label, value])))
+    const header = Buffer.alloc(4)
+    header.writeUInt32BE(value.length)
+    const check = Buffer.alloc(4)
+    check.writeUInt32BE(crc32(Buffer.concat([label, value])))
     return Buffer.concat([header, label, value, check])
   }
   const header = Buffer.alloc(13)
-  header.writeUInt32BE(side, 0); header.writeUInt32BE(side, 4); header[8] = 8; header[9] = 6
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(scanlines)), chunk('IEND', Buffer.alloc(0))])
+  header.writeUInt32BE(side, 0)
+  header.writeUInt32BE(side, 4)
+  header[8] = 8
+  header[9] = 6
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(scanlines)),
+    chunk('IEND', Buffer.alloc(0)),
+  ])
 }
 
 /** Controlled ZIP fixtures with valid local/central metadata; never used by product code. */

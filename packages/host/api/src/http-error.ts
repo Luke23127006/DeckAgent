@@ -2,5 +2,11 @@
 export type HttpErrorDetail = Readonly<Record<string, string | boolean>>
 
 export class HttpError extends Error {
-  constructor(readonly status: number, readonly code: string, readonly detail?: HttpErrorDetail) { super(code) }
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    readonly detail?: HttpErrorDetail,
+  ) {
+    super(code)
+  }
 }

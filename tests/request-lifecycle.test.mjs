@@ -15,8 +15,18 @@ async function storeFixture(t) {
   const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
   const open = [store]
   // Every store closes before the folder goes (Windows keeps open files locked).
-  t.after(async () => { for (const item of open) item.close(); await rm(dir, { recursive: true, force: true }) })
-  return { dir, store, track: item => { open.push(item); return item } }
+  t.after(async () => {
+    for (const item of open) item.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  return {
+    dir,
+    store,
+    track: item => {
+      open.push(item)
+      return item
+    },
+  }
 }
 
 test('admission saves the user message and the active request together; a chat has one active request', async t => {
@@ -27,44 +37,80 @@ test('admission saves the user message and the active request together; a chat h
   assert.equal(admitted.status, 'active')
   assert.equal(admitted.historyStart, 0)
   assert.deepEqual(await store.read(chat.sessionId), [{ role: 'user', content: 'Hello' }])
-  assert.deepEqual(store.requests.events('req-1').map(event => [event.sequence, event.kind]), [[1, 'status']])
-  assert.throws(() => store.requests.admit({ requestId: 'req-2', sessionId: chat.sessionId, input: 'Again', selection }),
-    error => error instanceof SessionError && error.code === 'REQUEST_ACTIVE')
-  assert.deepEqual(await store.read(chat.sessionId), [{ role: 'user', content: 'Hello' }], 'A refused admission adds no message')
+  assert.deepEqual(
+    store.requests.events('req-1').map(event => [event.sequence, event.kind]),
+    [[1, 'status']],
+  )
+  assert.throws(
+    () => store.requests.admit({ requestId: 'req-2', sessionId: chat.sessionId, input: 'Again', selection }),
+    error => error instanceof SessionError && error.code === 'REQUEST_ACTIVE',
+  )
+  assert.deepEqual(
+    await store.read(chat.sessionId),
+    [{ role: 'user', content: 'Hello' }],
+    'A refused admission adds no message',
+  )
   // Another chat runs independently.
   store.requests.admit({ requestId: 'req-3', sessionId: other.sessionId, input: 'Other', selection })
   assert.equal(store.requests.activeFor(other.sessionId), 'req-3')
-  assert.throws(() => store.requests.admit({ requestId: 'req-4', sessionId: 'chat-missing', input: 'x', selection }),
-    error => error instanceof SessionError && error.code === 'SESSION_NOT_FOUND')
+  assert.throws(
+    () => store.requests.admit({ requestId: 'req-4', sessionId: 'chat-missing', input: 'x', selection }),
+    error => error instanceof SessionError && error.code === 'SESSION_NOT_FOUND',
+  )
 })
 
 test('events are ordered; finish settles running activities, keeps the text once, and refuses later writes', async t => {
   const { store } = await storeFixture(t)
   const chat = await store.create('default')
   store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
-  store.requests.append('req-1', { kind: 'activity', id: 'model-1', label: 'Model response', type: 'model', status: 'running' })
+  store.requests.append('req-1', {
+    kind: 'activity',
+    id: 'model-1',
+    label: 'Model response',
+    type: 'model',
+    status: 'running',
+  })
   store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'Hel' })
   store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'Hello there' })
   store.requests.append('req-1', { kind: 'activity', id: 'tool-1', label: 'read', type: 'tool', status: 'failed' })
   assert.equal(store.requests.text('req-1'), 'Hello there', 'A repeated part replaces itself instead of doubling')
   assert.throws(() => store.requests.append('req-1', { kind: 'status', status: 'completed' }))
-  assert.throws(() => store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'x', extra: 1 }),
-    error => error instanceof SessionError && error.code === 'REQUEST_EVENT')
+  assert.throws(
+    () => store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'x', extra: 1 }),
+    error => error instanceof SessionError && error.code === 'REQUEST_EVENT',
+  )
   const written = store.requests.finish('req-1', 'stopped')
-  assert.deepEqual(written.map(event => event.kind === 'activity' ? `${event.id}:${event.status}` : `${event.kind}:${event.status}`),
-    ['model-1:stopped', 'status:stopped'])
+  assert.deepEqual(
+    written.map(event => (event.kind === 'activity' ? `${event.id}:${event.status}` : `${event.kind}:${event.status}`)),
+    ['model-1:stopped', 'status:stopped'],
+  )
   assert.equal(store.requests.finish('req-1', 'completed'), undefined, 'A request ends once')
-  assert.throws(() => store.requests.append('req-1', { kind: 'text', part: 'p2', text: 'late' }),
-    error => error instanceof SessionError && error.code === 'REQUEST_CLOSED')
+  assert.throws(
+    () => store.requests.append('req-1', { kind: 'text', part: 'p2', text: 'late' }),
+    error => error instanceof SessionError && error.code === 'REQUEST_CLOSED',
+  )
   const sequences = store.requests.events('req-1').map(event => event.sequence)
-  assert.deepEqual(sequences, sequences.map((_, index) => index + 1))
-  assert.deepEqual(store.requests.events('req-1', 5).map(event => event.sequence), [6, 7], 'A cursor returns only later events')
+  assert.deepEqual(
+    sequences,
+    sequences.map((_, index) => index + 1),
+  )
+  assert.deepEqual(
+    store.requests.events('req-1', 5).map(event => event.sequence),
+    [6, 7],
+    'A cursor returns only later events',
+  )
   assert.deepEqual(await store.read(chat.sessionId), [
     { role: 'user', content: 'Hi' },
     { role: 'assistant', content: 'Hello there', interrupted: true },
   ])
-  assert.deepEqual(store.requests.activities(chat.sessionId).map(item => [item.id, item.status, item.sequence]),
-    [['model-1', 'stopped', 2], ['tool-1', 'failed', 5]], 'Activities keep the order they started in')
+  assert.deepEqual(
+    store.requests.activities(chat.sessionId).map(item => [item.id, item.status, item.sequence]),
+    [
+      ['model-1', 'stopped', 2],
+      ['tool-1', 'failed', 5],
+    ],
+    'Activities keep the order they started in',
+  )
   assert.equal(store.requests.get('req-1').status, 'stopped')
   assert.equal(store.requests.activeFor(chat.sessionId), undefined)
 })
@@ -73,7 +119,13 @@ test('Host start marks requests left active as interrupted, keeps their text, an
   const { dir, store, track } = await storeFixture(t)
   const chat = await store.create('default')
   store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
-  store.requests.append('req-1', { kind: 'activity', id: 'model-1', label: 'Model response', type: 'model', status: 'running' })
+  store.requests.append('req-1', {
+    kind: 'activity',
+    id: 'model-1',
+    label: 'Model response',
+    type: 'model',
+    status: 'running',
+  })
   store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'Half an answer' })
   store.close()
   const reopened = track(new SqliteSessionStore(join(dir, 'sessions.sqlite')))
@@ -82,8 +134,15 @@ test('Host start marks requests left active as interrupted, keeps their text, an
   const request = reopened.requests.get('req-1')
   assert.equal(request.status, 'interrupted')
   assert.equal(request.errorCode, 'HOST_RESTARTED')
-  assert.deepEqual(reopened.requests.activities(chat.sessionId).map(item => item.status), ['failed'])
-  assert.deepEqual((await reopened.read(chat.sessionId)).at(-1), { role: 'assistant', content: 'Half an answer', interrupted: true })
+  assert.deepEqual(
+    reopened.requests.activities(chat.sessionId).map(item => item.status),
+    ['failed'],
+  )
+  assert.deepEqual((await reopened.read(chat.sessionId)).at(-1), {
+    role: 'assistant',
+    content: 'Half an answer',
+    interrupted: true,
+  })
 })
 
 test('native session binding only follows a completed request of the same chat', async t => {
@@ -91,10 +150,23 @@ test('native session binding only follows a completed request of the same chat',
   const chat = await store.create('default')
   const other = await store.create('default')
   store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
-  const binding = { sessionId: chat.sessionId, nativeSessionId: 'ses_abc', selection, context: 'ctx', lastRequestId: 'req-1' }
-  assert.throws(() => store.requests.bind(binding), error => error.code === 'SESSION_CONFLICT', 'Not before completion')
+  const binding = {
+    sessionId: chat.sessionId,
+    nativeSessionId: 'ses_abc',
+    selection,
+    context: 'ctx',
+    lastRequestId: 'req-1',
+  }
+  assert.throws(
+    () => store.requests.bind(binding),
+    error => error.code === 'SESSION_CONFLICT',
+    'Not before completion',
+  )
   store.requests.finish('req-1', 'completed')
-  assert.throws(() => store.requests.bind({ ...binding, sessionId: other.sessionId }), error => error.code === 'SESSION_CONFLICT')
+  assert.throws(
+    () => store.requests.bind({ ...binding, sessionId: other.sessionId }),
+    error => error.code === 'SESSION_CONFLICT',
+  )
   store.requests.bind(binding)
   assert.deepEqual(store.requests.binding(chat.sessionId), binding)
   assert.equal(store.requests.binding(other.sessionId), undefined)
@@ -105,7 +177,10 @@ test('native session binding only follows a completed request of the same chat',
 test('schema v2 files gain request tables in place; removed models leave chats with no selection', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-schema-v3-'))
   let store
-  t.after(async () => { store?.close(); await rm(dir, { recursive: true, force: true }) })
+  t.after(async () => {
+    store?.close()
+    await rm(dir, { recursive: true, force: true })
+  })
   const path = join(dir, 'sessions.sqlite')
   const db = new DatabaseSync(path)
   db.exec(`CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, provider TEXT, model TEXT, workspace_id TEXT,
@@ -154,7 +229,9 @@ async function collect(client, id, after = 0) {
 
 test('Host persists before publishing, replays by cursor, and the runtime alone never decides completion', async t => {
   let release
-  const gate = new Promise(resolve => { release = resolve })
+  const gate = new Promise(resolve => {
+    release = resolve
+  })
   const { client, chats, store } = await hostFixture(t, async run => {
     await run.emit({ kind: 'activity', id: 'model-1', label: 'Model response', type: 'model', status: 'running' })
     // Every published event is already saved.
@@ -166,19 +243,32 @@ test('Host persists before publishing, replays by cursor, and the runtime alone 
   })
   const accepted = await client.send({ sessionId: chats[0].sessionId, input: 'Hi' })
   assert.equal(accepted.status, 'active')
-  await assert.rejects(client.send({ sessionId: chats[0].sessionId, input: 'Second' }), error => error.message === 'SESSION_BUSY')
+  await assert.rejects(
+    client.send({ sessionId: chats[0].sessionId, input: 'Second' }),
+    error => error.message === 'SESSION_BUSY',
+  )
   // A reader that drops after two events reconnects at its cursor and gets the rest once.
   const first = []
-  for await (const event of client.watch(accepted.requestId)) { first.push(event); if (first.length === 2) break }
+  for await (const event of client.watch(accepted.requestId)) {
+    first.push(event)
+    if (first.length === 2) break
+  }
   release()
   const rest = await collect(client, accepted.requestId, first.at(-1).sequence)
   const all = [...first, ...rest]
-  assert.deepEqual(all.map(event => event.sequence), all.map((_, index) => index + 1), 'No gap and no repeat')
+  assert.deepEqual(
+    all.map(event => event.sequence),
+    all.map((_, index) => index + 1),
+    'No gap and no repeat',
+  )
   assert.deepEqual(all.at(-1), { ...all.at(-1), kind: 'status', status: 'completed' })
   const snapshot = await client.snapshot(accepted.requestId)
   assert.equal(snapshot.status, 'completed')
   assert.equal(snapshot.text, 'Hello')
-  assert.deepEqual(await client.history(chats[0].sessionId), [{ role: 'user', content: 'Hi' }, { role: 'assistant', content: 'Hello' }])
+  assert.deepEqual(await client.history(chats[0].sessionId), [
+    { role: 'user', content: 'Hi' },
+    { role: 'assistant', content: 'Hello' },
+  ])
   // A finished stream replays everything and ends.
   assert.equal((await collect(client, accepted.requestId)).length, all.length)
 })
@@ -190,7 +280,10 @@ test('Stop ends a silent runtime at once, refuses its late writes, and the chat 
     await run.emit({ kind: 'text', part: 'p', text: 'Done part' })
     // Sends nothing more and ignores the abort for a while, like a hung provider.
     await new Promise(resolve => setTimeout(resolve, 300))
-    lateWrite = run.emit({ kind: 'text', part: 'late', text: 'late' }).then(() => 'accepted', () => 'refused')
+    lateWrite = run.emit({ kind: 'text', part: 'late', text: 'late' }).then(
+      () => 'accepted',
+      () => 'refused',
+    )
     return { status: 'completed' }
   })
   const accepted = await client.send({ sessionId: chats[0].sessionId, input: 'hang' })
@@ -202,11 +295,21 @@ test('Stop ends a silent runtime at once, refuses its late writes, and the chat 
   assert.equal((await client.stop(accepted.requestId)).status, 'stopped', 'Stop is idempotent')
   const next = await client.send({ sessionId: chats[0].sessionId, input: 'after' })
   assert.equal(await lateWrite, 'refused')
-  assert.equal(store.requests.get(accepted.requestId).status, 'stopped', 'A runtime "completed" after Stop changes nothing')
+  assert.equal(
+    store.requests.get(accepted.requestId).status,
+    'stopped',
+    'A runtime "completed" after Stop changes nothing',
+  )
   assert.equal(store.requests.text(accepted.requestId), 'Done part')
   await collect(client, next.requestId)
-  assert.deepEqual((await client.history(chats[0].sessionId)).map(message => [message.role, message.interrupted ?? false]),
-    [['user', false], ['assistant', true], ['user', false]])
+  assert.deepEqual(
+    (await client.history(chats[0].sessionId)).map(message => [message.role, message.interrupted ?? false]),
+    [
+      ['user', false],
+      ['assistant', true],
+      ['user', false],
+    ],
+  )
 })
 
 test('failure, refused admission, two chats in parallel and Host shutdown', async t => {
@@ -216,8 +319,10 @@ test('failure, refused admission, two chats in parallel and Host shutdown', asyn
     await new Promise(resolve => run.signal.addEventListener('abort', resolve))
     return { status: 'failed', errorCode: 'STOPPED' }
   })
-  await assert.rejects(client.send({ sessionId: chats[0].sessionId, input: 'no model' }),
-    error => error.message === 'NO_SELECTABLE_MODEL' && error.detail.reason === 'no-selection')
+  await assert.rejects(
+    client.send({ sessionId: chats[0].sessionId, input: 'no model' }),
+    error => error.message === 'NO_SELECTABLE_MODEL' && error.detail.reason === 'no-selection',
+  )
   assert.deepEqual(await client.history(chats[0].sessionId), [], 'A refused request adds nothing to the chat')
   const failed = await client.send({ sessionId: chats[0].sessionId, input: 'fail' })
   const failure = (await collect(client, failed.requestId)).at(-1)
@@ -243,8 +348,11 @@ test('without a runtime the Host refuses requests and saves nothing', async t =>
   const chat = await store.create('default')
   const host = await startHost({ readHistory: id => store.read(id) })
   t.after(() => host.close())
-  const response = await fetch(`${host.origin}/api/requests`, { method: 'POST',
-    headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' }, body: JSON.stringify({ sessionId: chat.sessionId, input: 'Hi' }) })
+  const response = await fetch(`${host.origin}/api/requests`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId: chat.sessionId, input: 'Hi' }),
+  })
   assert.equal(response.status, 503)
   assert.equal((await response.json()).error.code, 'REQUESTS_UNAVAILABLE')
   assert.deepEqual(await store.read(chat.sessionId), [])
@@ -252,13 +360,19 @@ test('without a runtime the Host refuses requests and saves nothing', async t =>
 
 test('request input is validated before admission', async t => {
   const { host, chats } = await hostFixture(t, async () => ({ status: 'completed' }))
-  const post = body => fetch(`${host.origin}/api/requests`, { method: 'POST',
-    headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  const post = body =>
+    fetch(`${host.origin}/api/requests`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
   assert.equal((await post({ sessionId: chats[0].sessionId, input: ' ' })).status, 400)
   assert.equal((await post({ sessionId: chats[0].sessionId, input: 'x', presentation: true })).status, 400)
   const long = await post({ sessionId: chats[0].sessionId, input: 'x'.repeat(16001) })
   assert.equal(long.status, 413)
   assert.equal((await long.json()).error.code, 'REQUEST_TEXT_TOO_LONG')
-  const bad = await fetch(`${host.origin}/api/requests/req-x/events`, { headers: { authorization: `Bearer ${host.token}`, 'last-event-id': 'abc' } })
+  const bad = await fetch(`${host.origin}/api/requests/req-x/events`, {
+    headers: { authorization: `Bearer ${host.token}`, 'last-event-id': 'abc' },
+  })
   assert.equal(bad.status, 404)
 })

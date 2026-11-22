@@ -20,11 +20,17 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
   const options = element('div', undefined, 'model-options')
   options.id = 'model-options'
   options.setAttribute('role', 'tabpanel')
-  const manageButton = button('', () => { toggle(false); manage() })
+  const manageButton = button('', () => {
+    toggle(false)
+    manage()
+  })
   manageButton.className = 'model-manage'
   manageButton.setAttribute('aria-label', 'Cài đặt model')
   manageButton.title = 'Cài đặt model'
-  const addButton = button('+', () => { toggle(false); add() })
+  const addButton = button('+', () => {
+    toggle(false)
+    add()
+  })
   addButton.setAttribute('aria-label', 'Thêm provider')
   addButton.title = 'Thêm provider'
   const top = element('header')
@@ -82,8 +88,15 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
       option.title = model
       options.append(option)
     }
-    if (!options.children.length) options.append(element('p', providers.length
-      ? 'Provider này chưa có model. Mở Cài đặt để thêm model ID.' : 'Chưa có provider. Bấm + để thêm cấu hình.'))
+    if (!options.children.length)
+      options.append(
+        element(
+          'p',
+          providers.length
+            ? 'Provider này chưa có model. Mở Cài đặt để thêm model ID.'
+            : 'Chưa có provider. Bấm + để thêm cấu hình.',
+        ),
+      )
   }
   document.addEventListener('pointerdown', event => {
     if (!panel.hidden && event.target instanceof Node && !node.contains(event.target)) {
@@ -92,38 +105,68 @@ export function modelPicker(select: HTMLSelectElement, manage: () => void, add: 
     }
   })
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !panel.hidden) { event.preventDefault(); toggle(false) }
+    if (event.key === 'Escape' && !panel.hidden) {
+      event.preventDefault()
+      toggle(false)
+    }
   })
   node.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !panel.hidden) { event.preventDefault(); event.stopPropagation(); toggle(false) }
+    if (event.key === 'Escape' && !panel.hidden) {
+      event.preventDefault()
+      event.stopPropagation()
+      toggle(false)
+    }
     if (event.key === 'ArrowDown' && event.target === trigger) {
-      event.preventDefault(); toggle(true); options.querySelector<HTMLButtonElement>('button')?.focus()
-    } else if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) && !panel.hidden) {
+      event.preventDefault()
+      toggle(true)
+      options.querySelector<HTMLButtonElement>('button')?.focus()
+    } else if (
+      ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) &&
+      !panel.hidden
+    ) {
       const inTabs = tabs.contains(document.activeElement)
       const items = [...(inTabs ? tabs : options).querySelectorAll<HTMLButtonElement>('button:not(:disabled)')]
       const index = items.indexOf(document.activeElement as HTMLButtonElement)
       if (index < 0) return
       event.preventDefault()
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
-        : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length
+      const next =
+        event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? items.length - 1
+            : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length
       if (inTabs) items[next]?.click()
       else items[next]?.focus()
     }
   })
-  window.addEventListener('resize', () => { if (!panel.hidden) toggle(false) })
-  return { node, close: () => { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false') },
+  window.addEventListener('resize', () => {
+    if (!panel.hidden) toggle(false)
+  })
+  return {
+    node,
+    close: () => {
+      panel.hidden = true
+      trigger.setAttribute('aria-expanded', 'false')
+    },
     update(settings: WebSettings, running: boolean) {
       providers = settings.providers
       trigger.disabled = select.disabled
-      trigger.textContent = select.selectedOptions[0]?.value && select.value !== '__settings'
-        ? `${select.selectedOptions[0]!.textContent}` : providers.some(provider => provider.models.length) ? 'Chọn model' : 'Chưa có model'
+      trigger.textContent =
+        select.selectedOptions[0]?.value && select.value !== '__settings'
+          ? `${select.selectedOptions[0]!.textContent}`
+          : providers.some(provider => provider.models.length)
+            ? 'Chọn model'
+            : 'Chưa có model'
       note.hidden = !running
       const next = JSON.stringify([providers, select.value, select.disabled])
       if (signature !== next) {
         signature = next
-        const selected = providers.find(provider => provider.models.some(model => select.value === JSON.stringify({ provider: provider.id, model })))
+        const selected = providers.find(provider =>
+          provider.models.some(model => select.value === JSON.stringify({ provider: provider.id, model })),
+        )
         active = selected?.id ?? active
         render()
       }
-    } }
+    },
+  }
 }

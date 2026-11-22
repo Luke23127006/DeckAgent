@@ -130,10 +130,16 @@ async function fixture(t) {
 
 test('image providers cannot be silently changed by a staged Brief or Outline', async t => {
   const x = await fixture(t)
-  const draft = { ...x.full, template: { id: 'html-basic', version: 2 },
-    images: { mode: 'public-research', provider: 'commons', attachmentIds: [], unmetRequirements: [] } }
-  const choice = { imageChoice: 'public-research', imageProviderChoice: 'tavily',
-    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false } }
+  const draft = {
+    ...x.full,
+    template: { id: 'html-basic', version: 2 },
+    images: { mode: 'public-research', provider: 'commons', attachmentIds: [], unmetRequirements: [] },
+  }
+  const choice = {
+    imageChoice: 'public-research',
+    imageProviderChoice: 'tavily',
+    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+  }
   await x.write({ brief: draft, outline: x.plan })
   const rejected = await x.send('collect', 0, null, choice)
   assert.equal(rejected.events.at(-1).status, 'failed')
