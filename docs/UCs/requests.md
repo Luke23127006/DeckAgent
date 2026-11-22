@@ -163,7 +163,7 @@ Baseline độc lập cho file này đã có [[3]](#ref-3). File này chưa đư
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline requests](../build/refactor/UCs/baseline/requests.md) | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open |
+| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline requests](../build/refactor/UCs/baseline/requests.md) | [Đối chiếu từng vùng với baseline độc lập (OQ-060)](../open-questions.md#oq-060) | Open |
 
 ## References
 

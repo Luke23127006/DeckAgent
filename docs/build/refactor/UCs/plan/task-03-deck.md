@@ -130,19 +130,19 @@ Read this file to learn the steps of Task 3, which writes `docs/UCs/deck.md` fro
 | A vague quantity word | Obey the Global Constraints rule for vague quantity words |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Write `## Tổng quan`**
+- [x] **Step 1: Write `## Tổng quan`**
 
 Write the actors, the scope, the out-of-scope list with each parked item, and a `flowchart` from the actor `Người dùng` to each use case of this file. Link the prefix table: `[Tiền tố ID](README.md#tiền-tố-id)`. Do not write a second prefix table.
 
-- [ ] **Step 2: Write `## Quy tắc dùng chung`**
+- [x] **Step 2: Write `## Quy tắc dùng chung`**
 
 Write this section only when two or more use cases of this file cite an owned item. Use the rule table.
 
-- [ ] **Step 3: Write one section for each use case**
+- [x] **Step 3: Write one section for each use case**
 
 For each of `UC-001 UC-002 UC-009`, in this order, write the section with the mapping table. The section has these parts: goal, trigger, precondition, outcomes, numbered main flow, `sequenceDiagram` and flow table. It also has the rule table of the owned items that only this use case cites.
 
-- [ ] **Step 4: Find the exception flows step by step**
+- [x] **Step 4: Find the exception flows step by step**
 
 Do step 5 of the skill `write-use-case`. For each step of each main flow, ask each question of the skill list:
 
@@ -158,11 +158,11 @@ For each object that has a lifecycle (an attachment, a request, a deck, a worksp
 
 Some answers change what the user sees, but no old file gives the result. Do not write a flow row for such an answer, because the old files do not give its behavior. Do Step 7 for it: it is an item with no decision.
 
-- [ ] **Step 5: Write `## Gap analysis` and `## References`**
+- [x] **Step 5: Write `## Gap analysis` and `## References`**
 
 `## Gap analysis` has this sentence: `Baseline độc lập cho file này đã có [[n]](#ref-n). File này chưa được đối chiếu với baseline đó.` Then the table `ID | Gap | Baseline | Quyết định | Trạng thái` with one row: `GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline deck](../build/refactor/UCs/baseline/deck.md) | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open`. In `## References`, the citation number `n` points to `../build/refactor/UCs/baseline/deck.md`. Do not change the baseline file. Do not compare with the baseline in this task. The gap analysis runs after Task 7.
 
-- [ ] **Step 6: Make sure that each owned ID has a row**
+- [x] **Step 6: Make sure that each owned ID has a row**
 
 Run:
 
@@ -172,7 +172,7 @@ for i in BR-003 BR-011 BR-013 BR-014 BR-015 BR-018 FR-001 FR-003 FR-005 FR-007 F
 
 Expected: PASS. The output is `DONE` only. FAIL: the output contains `MISSING`.
 
-- [ ] **Step 7: Review the file for open questions**
+- [x] **Step 7: Review the file for open questions**
 
 Read the old files of the `Read first` block again, and read the area file that you wrote. Find each item that has no decision. These are the types of item:
 
@@ -182,9 +182,9 @@ Read the old files of the `Read first` block again, and read the area file that 
   - A word in a rule that a tester cannot check without a decision. Example: "no longer applies", when no rule tells when this occurs.
   - A sentence that you translated in two possible ways, and the old text does not tell which way is correct.
 
-Write the rule as the old file states it. Do not change a rule to solve the question. Do not include a vague quantity word, because Task 9 proposes those values. Do not include an item of a parked file. For each item, search `docs/open-questions.md`, `docs/architecture/` and `docs/knowledge/` for an answer or for the same question. When you find no answer and no question, add one row to the `## Use cases` table of `docs/open-questions.md`. Use the next free ID `OQ-nnn` and the anchor `<a id="oq-nnn"></a>`. In the `Nguồn` cell, write a link to the area file. Example: `[Gửi request](UCs/requests.md)`. Some items have an effect that a user or a tester can see. For each of these items, add one sentence to the section of its use case. The sentence links to the question. Example: `[Điểm bắt đầu tóm tắt hội thoại (OQ-002)](../open-questions.md#oq-002)`. Do not link from `docs/UCs/` to a question about an architecture fact.
+Write the rule as the old file states it. Do not change a rule to solve the question. Do not include a vague quantity word, because Task 9 proposes those values. Do not include an item of a parked file. For each item, search `docs/open-questions.md`, `docs/architecture/` and `docs/knowledge/` for an answer or for the same question. When you find no answer and no question, add one row to the `## Use cases` table of `docs/open-questions.md`. Use the next free ID `OQ-nnn` in the ID range of the area (Task 4: 020–029, Task 5: 010–019, Task 7: 040–049, Task 3: 050–059, Task 6: 030–039). Task 2 uses the next free ID below 010. A question for more than one area uses the next free ID from 060 and the anchor `<a id="oq-nnn"></a>`. In the `Nguồn` cell, write a link to the area file. Example: `[Gửi request](UCs/requests.md)`. Some items have an effect that a user or a tester can see. For each of these items, add one sentence to the section of its use case. The sentence links to the question. Example: `[Điểm bắt đầu tóm tắt hội thoại (OQ-002)](../open-questions.md#oq-002)`. Do not link from `docs/UCs/` to a question about an architecture fact.
 
-- [ ] **Step 8: Run the documentation check**
+- [x] **Step 8: Run the documentation check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: PASS. The command exits with code 0. FAIL: the output contains a line with `docs/UCs/deck.md`.
