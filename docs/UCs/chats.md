@@ -137,7 +137,7 @@ Một chat chứa tối đa một deck, nên một deck khác bắt đầu trong
 | FR-053.c | Chat mới nhận model đã chọn và mức suy luận của lần chọn model gần nhất trong mọi chat, khi model đó vẫn là model chọn được (BR-005) [[3]](#ref-3). Trong trường hợp khác, chat mới không có model đã chọn | — | — | Product owner | Confirmed |
 ## Gap analysis
 
-Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[5]](#ref-5). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
+Baseline độc lập gồm bộ use case mà một subagent viết cho vùng này mà không đọc spec [[5]](#ref-5) và Microsoft HAX Guidelines for Human-AI Interaction [[6]](#ref-6). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của bộ use case; 18 guideline G1–G18 của HAX. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -145,6 +145,7 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 | GAP-02 | Không có cách chạy lại một request lỗi hoặc đã dừng | [BL-CHAT-5](../build/refactor/UCs/baseline/chats.md) | [Chạy lại request (OQ-064)](../open-questions.md#oq-064) | Open |
 | GAP-03 | Hai giao diện chọn hai model khác nhau cho một chat | [BL-CHAT-6 4a](../build/refactor/UCs/baseline/chats.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
 | GAP-04 | Người dùng không đổi tên và không xoá được chat | [BL-CHAT-8, BL-CHAT-9](../build/refactor/UCs/baseline/chats.md) | Rủi ro được chấp nhận: việc đổi tên và xoá chat là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-018) | Accepted |
+| GAP-05 | Hệ thống không học sở thích của người dùng qua các chat | HAX G13 [[6]](#ref-6) | Rủi ro được chấp nhận: chat mới không lấy gì từ chat khác ngoài model đã chọn và mức suy luận (FR-053.b, FR-053.c), nên hành vi của một chat không đổi theo chat khác | Accepted |
 
 ## References
 
@@ -153,3 +154,4 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 3. <a id="ref-3"></a>[Provider và model](providers.md)
 4. <a id="ref-4"></a>[Deck](deck.md)
 5. <a id="ref-5"></a>[Baseline chats](../build/refactor/UCs/baseline/chats.md)
+6. <a id="ref-6"></a>S. Amershi và cộng sự, *Guidelines for Human-AI Interaction*, CHI 2019, Microsoft HAX Toolkit. <https://www.microsoft.com/en-us/haxtoolkit/library/>

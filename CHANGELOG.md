@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the reference structure of DeckAgent to `docs/conventions/project-structure.md`: the runtime and package ownership, a folder reference for each application and package, the dependency rules, and the check that enforces each boundary.
+- Extend the gap analysis of the chats, deck, providers, requests and workspaces use cases with five standards: the OWASP Top 10 for LLM Applications 2025, OWASP ASVS 5.0.0 and the Microsoft HAX Guidelines for Human-AI Interaction. Each new gap cites the standard item, and each accepted risk names the rule that answers it.
+- Add four open questions for the gaps that no rule decides: the secret files that the agent reads without a prompt (OQ-068), the resource limit of one request (OQ-069), the valid base URL of a custom model API (OQ-070), and the link inside a project folder that points outside it (OQ-071).
 - Add the `review-change` skill: a new subagent reviews a change against the convention files in `docs/conventions/` and reports only the mistakes that `pnpm check` cannot find.
 - Add the `correct` skill: find the mistake classes that agents repeat in this repository and stop each one at the highest level that works, from architecture to a Lesson Learned.
 - Add `docs/UCs/quality-attributes.md` with one quality attribute scenario for each of the 11 old quality requirements. Each scenario has the six SEI parts, and the security scenarios cite OWASP ASVS 5.0.0 and the OWASP Top 10 for LLM Applications 2025.
@@ -21,6 +24,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Rewrite `docs/conventions/code.md` from a plan of six empty sections into the rules of production code: naming, TypeScript contracts and nullability, async lifetime, comments, runtime validation, data representation, state, error representation and propagation, recovery, and the patterns that DeckAgent does not require.
 - Replace the vague words "thay đổi nhiều" in three rules with a condition that a tester can check. The rules are about material conflicts, missing material and missing research. The condition is a change to the main point of a planned slide.
 - Make the rule about missing research ask the user only when the system cannot write the main point of a planned slide. For missing content of a sourced type, the system writes a placeholder, so the rule no longer conflicts with the placeholder rule.
 - Drop the wait-time requirements for the first slide and for a changed slide, because the time depends on the model and the provider.

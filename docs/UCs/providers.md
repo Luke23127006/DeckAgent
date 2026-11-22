@@ -140,7 +140,7 @@ Một model service chạy trên máy người dùng được thiết lập như
 
 ## Gap analysis
 
-Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[2]](#ref-2). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
+Baseline độc lập gồm bộ use case mà một subagent viết cho vùng này mà không đọc spec [[2]](#ref-2), OWASP Top 10 for LLM Applications 2025 [[3]](#ref-3) và OWASP ASVS 5.0.0 [[4]](#ref-4). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của bộ use case; mọi mục từ LLM01 tới LLM10 của OWASP Top 10 for LLM Applications trừ LLM04 và LLM08; các mục L1 của chương V2 và V12 trong ASVS về giá trị người dùng nhập và kết nối tới provider, và mục 12.3.1 (L2). LLM04 và LLM08 không áp dụng: DeckAgent không huấn luyện model, và không use case nào mô tả việc lưu embedding. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -152,8 +152,12 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 | GAP-06 | Hai giao diện chọn hai model khác nhau cho một chat | [BL-P3 4a](../build/refactor/UCs/baseline/providers.md) | [Hai giao diện cùng thay đổi một đối tượng (OQ-061)](../open-questions.md#oq-061) | Open |
 | GAP-07 | Người dùng không làm mới danh mục model bằng một thao tác riêng | [BL-P3 2b](../build/refactor/UCs/baseline/providers.md) | Rủi ro được chấp nhận: người dùng vẫn thêm được model bằng model ID khi danh mục thiếu model (FR-058) | Accepted |
 | GAP-08 | Không use case nào cho người dùng xem trạng thái và mức sử dụng của provider | [BL-P6](../build/refactor/UCs/baseline/providers.md) | [Trạng thái và mức sử dụng của provider (OQ-028)](../open-questions.md#oq-028) | Open |
+| GAP-09 | Không rule nào nêu base URL hợp lệ của custom model API. Hệ thống gửi key tới base URL người dùng nhập, kể cả base URL không mã hoá (`http`) tới một máy khác máy của người dùng. Khi người dùng chỉ đổi base URL, key đã lưu được gửi tới base URL mới | OWASP ASVS 5.0.0 mục 2.2.1 (L1), 12.3.1 (L2) [[4]](#ref-4) | [Base URL của custom model API (OQ-070)](../open-questions.md#oq-070) | Open |
+| GAP-10 | Hệ thống không nói rằng provider xử lý và giữ nội dung của request theo điều khoản và chính sách dữ liệu riêng của provider | LLM03:2025 mục 1 [[3]](#ref-3) | Rủi ro được chấp nhận: người dùng chọn provider và dùng key của tài khoản riêng của họ, nên điều khoản của provider áp dụng cho tài khoản đó. Hệ thống nói mỗi request chạy qua một cấu hình provider được gửi tới provider đó (FR-039.c) | Accepted |
 
 ## References
 
 1. <a id="ref-1"></a>[Gửi request](requests.md)
 2. <a id="ref-2"></a>[Baseline providers](../build/refactor/UCs/baseline/providers.md)
+3. <a id="ref-3"></a>OWASP, *OWASP Top 10 for LLM Applications 2025*. <https://genai.owasp.org/llm-top-10/>
+4. <a id="ref-4"></a>OWASP, *Application Security Verification Standard 5.0.0*. <https://github.com/OWASP/ASVS/tree/v5.0.0/5.0/en>

@@ -132,7 +132,7 @@ DeckAgent không có đăng nhập người dùng. Hệ thống không bảo v�
 
 ## Gap analysis
 
-Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[4]](#ref-4). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
+Baseline độc lập gồm bộ use case mà một subagent viết cho vùng này mà không đọc spec [[4]](#ref-4) và OWASP ASVS 5.0.0 [[5]](#ref-5). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của bộ use case; các mục L1 của chương V5 và V8 trong ASVS về truy cập file và phân quyền. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -146,3 +146,4 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 2. <a id="ref-2"></a>[Deck](deck.md)
 3. <a id="ref-3"></a>[Gửi request](requests.md)
 4. <a id="ref-4"></a>[Baseline workspaces](../build/refactor/UCs/baseline/workspaces.md)
+5. <a id="ref-5"></a>OWASP, *Application Security Verification Standard 5.0.0*. <https://github.com/OWASP/ASVS/tree/v5.0.0/5.0/en>

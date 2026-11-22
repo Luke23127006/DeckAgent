@@ -366,7 +366,7 @@ Một tin nhắn không yêu cầu thay đổi được trả lời ở đây. M
 
 ## Gap analysis
 
-Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[5]](#ref-5). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
+Baseline độc lập gồm bộ use case mà một subagent viết cho vùng này mà không đọc spec [[5]](#ref-5), OWASP Top 10 for LLM Applications 2025 [[6]](#ref-6) và Microsoft HAX Guidelines for Human-AI Interaction [[7]](#ref-7). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của bộ use case; các mục LLM01, LLM02, LLM05, LLM06, LLM07, LLM09 và LLM10 của OWASP Top 10 for LLM Applications; 18 guideline G1–G18 của HAX. LLM03 được so trong file provider [[8]](#ref-8). LLM04 và LLM08 không áp dụng: DeckAgent không huấn luyện model, và không use case nào mô tả việc lưu embedding. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
@@ -377,6 +377,8 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 | GAP-05 | Người dùng không tự sửa deck trong lúc agent sửa | [BL-D2 bước 5](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: việc tự sửa deck bằng tay là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-007) | Accepted |
 | GAP-06 | Không use case nào xuất deck ra file | [BL-D5](../build/refactor/UCs/baseline/deck.md) | Rủi ro được chấp nhận: việc xuất deck là mục ngoài phạm vi trong Tổng quan, và chưa file nào mô tả mục này (UC-004, FR-085) | Accepted |
 | GAP-07 | Người dùng thêm cùng một file hai lần | [BL-D1 bước 2](../build/refactor/UCs/baseline/deck.md) | [Một file được thêm hai lần vào draft (OQ-009)](../open-questions.md#oq-009) | Open |
+| GAP-08 | Hệ thống không nói với người dùng rằng nội dung từ kiến thức chung của model có thể sai | HAX G2 [[7]](#ref-7), LLM09:2025 mục 5 [[6]](#ref-6) | Rủi ro được chấp nhận: hệ thống chỉ dùng kiến thức chung của model làm nguồn sau khi người dùng xác nhận (FR-124.b). Thông báo kết thúc nêu nội dung đến từ kiến thức đó (FR-024, FR-029.c), và không bao giờ nói đã kiểm tra điều hệ thống không kiểm tra (FR-024.b, FR-029.c) | Accepted |
+| GAP-09 | Không rule nào nói hệ thống tránh nội dung hoặc ảnh củng cố định kiến xã hội | HAX G6 [[7]](#ref-7) | Rủi ro được chấp nhận: người dùng xác nhận outline trước khi hệ thống dựng slide (FR-003), và sửa được mọi slide bằng request tiếp theo (FR-027). Không rule nào ở mức use case đo được định kiến | Accepted |
 
 ## References
 
@@ -385,3 +387,6 @@ Baseline độc lập là bộ use case mà một subagent viết cho vùng này
 3. <a id="ref-3"></a>[Chat](chats.md)
 4. <a id="ref-4"></a>[Workspace](workspaces.md)
 5. <a id="ref-5"></a>[Baseline deck](../build/refactor/UCs/baseline/deck.md)
+6. <a id="ref-6"></a>OWASP, *OWASP Top 10 for LLM Applications 2025*. <https://genai.owasp.org/llm-top-10/>
+7. <a id="ref-7"></a>S. Amershi và cộng sự, *Guidelines for Human-AI Interaction*, CHI 2019, Microsoft HAX Toolkit. <https://www.microsoft.com/en-us/haxtoolkit/library/>
+8. <a id="ref-8"></a>[Provider và model](providers.md)

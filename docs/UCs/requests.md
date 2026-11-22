@@ -161,23 +161,34 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 
 ## Gap analysis
 
-Baseline độc lập là bộ use case mà một subagent viết cho vùng này mà không đọc spec [[3]](#ref-3). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của baseline. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
+Baseline độc lập gồm bộ use case mà một subagent viết cho vùng này mà không đọc spec [[3]](#ref-3), OWASP Top 10 for LLM Applications 2025 [[4]](#ref-4), Microsoft HAX Guidelines for Human-AI Interaction [[5]](#ref-5) và OWASP ASVS 5.0.0 [[6]](#ref-6). Mức áp dụng: mọi use case và mọi luồng ngoại lệ của bộ use case; các mục LLM01, LLM02, LLM05, LLM06, LLM07, LLM09 và LLM10 của OWASP Top 10 for LLM Applications; 18 guideline G1–G18 của HAX; các mục L1 của chương V5 trong ASVS và mục 5.2.3 (L2). LLM03 được so trong file provider [[1]](#ref-1). LLM04 và LLM08 không áp dụng: DeckAgent không huấn luyện model, và không use case nào mô tả việc lưu embedding. Mục nào file này đáp ứng đủ thì không có dòng trong bảng.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
 | GAP-01 | Hệ thống không nêu độ dài hiện tại so với độ dài tối đa khi nội dung request quá dài | [BL-REQ-A 1b](../build/refactor/UCs/baseline/requests.md) | Báo độ dài hiện tại và độ dài tối đa (FR-015.c) | Closed |
 | GAP-02 | Hệ thống không nêu các loại file được nhận khi từ chối một file vì loại file | [BL-REQ-A 1c](../build/refactor/UCs/baseline/requests.md) | Nêu các loại file được nhận (FR-017.c) | Closed |
 | GAP-03 | Hệ thống không cảnh báo trước khi gửi rằng một file không có chữ, ví dụ bản scan | [BL-REQ-A 1e](../build/refactor/UCs/baseline/requests.md) | Rủi ro được chấp nhận: hệ thống báo phần tài liệu không dùng được trong lúc làm, và không bao giờ nói đã dùng nội dung mà hệ thống không dùng (FR-067) | Accepted |
-| GAP-04 | Không rule nào giới hạn kích thước sau khi giải nén và số file bên trong một file nén | OWASP ASVS 5.0.0 mục 5.2.3 (L2), kiểm tra file nén trước khi giải nén | [Giới hạn của file nén (OQ-066)](../open-questions.md#oq-066) | Open |
+| GAP-04 | Không rule nào giới hạn kích thước sau khi giải nén và số file bên trong một file nén | OWASP ASVS 5.0.0 mục 5.2.3 (L2), kiểm tra file nén trước khi giải nén [[6]](#ref-6) | [Giới hạn của file nén (OQ-066)](../open-questions.md#oq-066) | Open |
 | GAP-05 | Hai giao diện cùng gửi request trong một chat | [BL-REQ-A 3a](../build/refactor/UCs/baseline/requests.md) | [Hai giao diện cùng gửi request (OQ-007)](../open-questions.md#oq-007) | Open |
 | GAP-06 | Không rule nào giới hạn thời gian chờ provider trả lời | [BL-REQ-A 4a](../build/refactor/UCs/baseline/requests.md) | [Thời gian chờ provider (OQ-062)](../open-questions.md#oq-062) | Open |
 | GAP-07 | Hệ thống không phân biệt các loại lỗi của provider và không nói người dùng làm gì tiếp theo | [BL-REQ-A 4b](../build/refactor/UCs/baseline/requests.md) | [Loại lỗi của provider (OQ-063)](../open-questions.md#oq-063) | Open |
 | GAP-08 | Không có cách chạy lại một request lỗi, đã dừng hoặc chưa xong | [BL-REQ-C](../build/refactor/UCs/baseline/requests.md) | [Chạy lại request (OQ-064)](../open-questions.md#oq-064) | Open |
 | GAP-09 | Hệ thống không báo khi một request kết thúc trong lúc người dùng ở chat khác | [BL-REQ-A 6b](../build/refactor/UCs/baseline/requests.md) | [Báo request kết thúc ở chat khác (OQ-065)](../open-questions.md#oq-065) | Open |
 | GAP-10 | Không rule nào nói kết quả khi người dùng chọn gửi hoặc dừng nhiều lần liên tiếp | [BL-REQ-A 2a, BL-REQ-B 1a](../build/refactor/UCs/baseline/requests.md) | Rủi ro được chấp nhận: mỗi chat chỉ làm một request tại một thời điểm (FR-014), và lần dừng thứ hai không còn request nào để dừng | Accepted |
+| GAP-11 | Agent đọc mà không hỏi mọi file của thư mục dự án, kể cả file chứa secret như `.env`, và gửi nội dung tới provider. Không rule nào loại các file đó, và hệ thống không báo người dùng điều này khi thiết lập workspace | LLM02:2025 mục Restrict Data Sources [[4]](#ref-4), HAX G1 [[5]](#ref-5) | [File chứa secret trong thư mục dự án (OQ-068)](../open-questions.md#oq-068) | Open |
+| GAP-12 | Không rule nào giới hạn tài nguyên mà một request dùng, ví dụ số lần gọi model, nên một request lặp lại các bước tiêu quota của người dùng cho tới khi người dùng dừng | LLM10:2025 mục 4 [[4]](#ref-4) | [Giới hạn tài nguyên của một request (OQ-069)](../open-questions.md#oq-069) | Open |
+| GAP-13 | Người dùng không đưa được phản hồi riêng cho một kết quả, ví dụ đánh giá một slide là tốt hay chưa tốt | HAX G15 [[5]](#ref-5) | Rủi ro được chấp nhận: người dùng nói điều chưa tốt bằng một request tiếp theo (UC-002) [[7]](#ref-7) | Accepted |
+| GAP-14 | Người dùng không chỉnh được hành vi chung của agent, ví dụ mức quyền của agent | HAX G17 [[5]](#ref-5) | Rủi ro được chấp nhận: phạm vi agent được làm mà không hỏi là cố định (FR-077), và mỗi bước ngoài phạm vi đó cần phê duyệt của người dùng (FR-076) | Accepted |
+| GAP-15 | Hệ thống không báo người dùng khi một bản phát hành thêm hoặc thay đổi khả năng, ví dụ một định dạng tạo deck mới | HAX G18 [[5]](#ref-5) | Rủi ro được chấp nhận: người dùng thấy khả năng hiện tại ở lúc chọn. Trong phỏng vấn, hệ thống chỉ đưa ra các định dạng tạo deck dựng được lúc đó và nêu công cụ hoặc quyền còn thiếu (FR-117, FR-117.b) [[7]](#ref-7), nên một thay đổi khả năng hiện ra ở lần chọn sau | Accepted |
+| GAP-16 | Không rule nào nói agent làm gì với một link bên trong thư mục dự án trỏ ra ngoài thư mục dự án, ví dụ trỏ tới `.ssh`. Hệ thống chỉ đi theo link của chính thư mục đã chọn (BR-019) [[2]](#ref-2) | OWASP ASVS 5.0.0 mục 5.3.2 (L1) [[6]](#ref-6) | [Link trong thư mục dự án trỏ ra ngoài (OQ-071)](../open-questions.md#oq-071) | Open |
+| GAP-17 | Không rule nào giới hạn kích thước của file mà agent đọc từ thư mục dự án. Giới hạn kích thước chỉ áp dụng cho file đính kèm (BR-001.V3) | OWASP ASVS 5.0.0 mục 5.2.1 (L1) [[6]](#ref-6), LLM10:2025 mục 1 [[4]](#ref-4) | Rủi ro được chấp nhận: khi hệ thống chỉ dùng một phần tài liệu, hệ thống nêu tên tài liệu và phần không dùng, và không nói đã dùng nội dung mà hệ thống không dùng (FR-067, FR-067.b) | Accepted |
 
 ## References
 
 1. <a id="ref-1"></a>[Provider và model](providers.md)
 2. <a id="ref-2"></a>[Workspace](workspaces.md)
 3. <a id="ref-3"></a>[Baseline requests](../build/refactor/UCs/baseline/requests.md)
+4. <a id="ref-4"></a>OWASP, *OWASP Top 10 for LLM Applications 2025*. <https://genai.owasp.org/llm-top-10/>
+5. <a id="ref-5"></a>S. Amershi và cộng sự, *Guidelines for Human-AI Interaction*, CHI 2019, Microsoft HAX Toolkit. <https://www.microsoft.com/en-us/haxtoolkit/library/>
+6. <a id="ref-6"></a>OWASP, *Application Security Verification Standard 5.0.0*. <https://github.com/OWASP/ASVS/tree/v5.0.0/5.0/en>
+7. <a id="ref-7"></a>[Deck](deck.md)
