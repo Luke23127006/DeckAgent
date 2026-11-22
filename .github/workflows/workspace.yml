@@ -53,7 +53,7 @@ jobs:
         id: build
         run: pnpm build
 
-      - name: Lint (Biome)
+      - name: Lint (oxlint)
         id: lint
         run: pnpm lint
 
@@ -170,7 +170,7 @@ jobs:
           - Environment: windows-2022, Node 22.19.0; pnpm from package.json
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
-          - Lint (Biome): $env:LINT_RESULT
+          - Lint (oxlint): $env:LINT_RESULT
           - Session persistence (local SQLite): $env:SESSIONS_RESULT
           - Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Local foundation / workspaces / chats / storage: $env:LOCAL_FOUNDATION_RESULT

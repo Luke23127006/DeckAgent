@@ -4,6 +4,18 @@ Notable changes to this repository. The newest changes are at the top.
 
 ## [Unreleased]
 
+### Added
+
+- Check documentation structure and citations with `check:docs`, forbid comments in code with `check:comments`, and run both checks from a Claude Code hook after each edit.
+
+### Changed
+
+- Use oxlint 1.94.0 with the `correctness` and `suspicious` categories as the only linter. Biome stays as the formatter only.
+
+### Fixed
+
+- Run workspace discovery in the build with the pnpm that runs the script, so a different `pnpm` on PATH no longer fails the build.
+
 ### Removed
 
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.
