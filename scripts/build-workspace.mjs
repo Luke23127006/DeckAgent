@@ -13,10 +13,11 @@ function discoverWorkspacePackages() {
   const outFile = join(tmpdir(), `deckagent-workspace-${process.pid}.json`)
   const fd = openSync(outFile, 'w')
   try {
-    const result = spawnSync('pnpm', ['list', '--recursive', '--depth', '-1', '--json'], {
-      shell: true,
-      stdio: ['ignore', fd, 'inherit'],
-    })
+    const args = ['list', '--recursive', '--depth', '-1', '--json']
+    const pnpmScript = process.env.npm_execpath
+    const result = pnpmScript?.endsWith('js')
+      ? spawnSync(process.execPath, [pnpmScript, ...args], { stdio: ['ignore', fd, 'inherit'] })
+      : spawnSync('pnpm', args, { shell: true, stdio: ['ignore', fd, 'inherit'] })
     if (result.error) throw result.error
     if (result.status !== 0) throw new Error(`pnpm list exited with code ${result.status}`)
     return JSON.parse(readFileSync(outFile, 'utf8'))
@@ -39,7 +40,7 @@ const extraEntries = {
 
 const discovered = discoverWorkspacePackages()
   .filter(pkg => pkg.name !== 'deckagent-tooling') // exclude the root project
-  .sort((a, b) => a.path.localeCompare(b.path)) // deterministic build order
+  .toSorted((a, b) => a.path.localeCompare(b.path)) // deterministic build order
 // Browser bundles inline the pure document contract. Build public dependency
 // entries first so a fresh checkout does not need artifacts from an earlier build.
 const packages = []
@@ -51,7 +52,7 @@ function visit(pkg) {
   if (visiting.has(pkg.name)) throw new Error(`Cyclic workspace dependency: ${pkg.name}`)
   visiting.add(pkg.name)
   const manifest = JSON.parse(readFileSync(join(pkg.path, 'package.json'), 'utf8'))
-  for (const name of Object.keys(manifest.dependencies ?? {}).sort()) if (byName.has(name)) visit(byName.get(name))
+  for (const name of Object.keys(manifest.dependencies ?? {}).toSorted()) if (byName.has(name)) visit(byName.get(name))
   visiting.delete(pkg.name)
   visited.add(pkg.name)
   packages.push(pkg)
