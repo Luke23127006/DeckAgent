@@ -59,7 +59,7 @@ Diagram trong `docs/UCs/` coi hệ thống là hộp đen: participant chỉ g�
 
 Mỗi file use case có section `## Gap analysis`. Section mở đầu bằng baseline độc lập đã dùng và mức áp dụng: chuẩn ngành của domain (ví dụ OWASP ASVS cho authentication và session, WCAG cho accessibility), hoặc bộ use case do người chưa đọc spec viết. Baseline không được là prototype, code hay test của chính hệ thống, vì chúng có cùng nguồn gốc với spec. ID và mức của chuẩn lấy từ bản gốc của chuẩn, không lấy từ bản tóm tắt.
 
-Gap nằm trong bảng `ID | Gap | Baseline | Quyết định | Trạng thái`. Trạng thái là `Closed` (đã thành rule, ghi ID của rule ở cột Quyết định), `Accepted` (chấp nhận rủi ro, ghi lý do) hoặc `Open` (link tới `open-questions.md`).
+Gap nằm trong bảng `ID | Gap | Baseline | Quyết định | Trạng thái`. Trạng thái là `Closed` (đã thành rule, ghi ID của rule ở cột Quyết định), `Accepted` (chấp nhận rủi ro, ghi lý do) hoặc `Open` (link tới một câu còn mở trong `open-questions.md`, không tới câu trong Resolved & Dropped) *(check-docs)*.
 
 ## Quality attribute scenario
 

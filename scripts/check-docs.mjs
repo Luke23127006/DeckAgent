@@ -151,6 +151,24 @@ export const checkMarkdown = (relativePath, rawText, io) => {
     }
   }
 
+  if (relativePath.startsWith('docs/UCs/') && io.exists('docs/open-questions.md')) {
+    const questions = normalize(io.readFile('docs/open-questions.md'))
+    const resolvedStart = questions.indexOf('\n## Resolved & Dropped')
+    const closed = resolvedStart === -1 ? new Set() : collectAnchors(questions.slice(resolvedStart))
+    masked.split('\n').forEach((row, index) => {
+      if (!/\|\s*Open\s*\|\s*$/.test(row)) return
+      for (const link of row.matchAll(/open-questions\.md#(oq-\d+)/g)) {
+        if (closed.has(link[1])) {
+          add(
+            index + 1,
+            'open-gap-closed-question',
+            `Status is Open but ${link[1].toUpperCase()} is in "Resolved & Dropped" of docs/open-questions.md. Link an open question, or change the status to Closed or Accepted. See docs/conventions/use-cases.md#gap-analysis.`,
+          )
+        }
+      }
+    })
+  }
+
   return errors.toSorted((a, b) => a.line - b.line)
 }
 

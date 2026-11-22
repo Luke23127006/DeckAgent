@@ -140,3 +140,27 @@ test('findUnlisted uses the nearest README of an ancestor folder', () => {
   const result = findUnlisted(files, () => '[Plan](build/x/plan.md)\n')
   assert.deepEqual(result, [])
 })
+
+const questions = [
+  '# Open Questions',
+  '',
+  'Đọc file này để biết A.',
+  '',
+  '| <a id="oq-002"></a>OQ-002 | Q |',
+  '',
+  '## Resolved & Dropped',
+  '',
+  '| <a id="oq-001"></a>OQ-001 | Q |',
+  '',
+].join('\n')
+const questionsIo = { exists: () => true, readFile: () => questions }
+const gapRules = row =>
+  checkMarkdown('docs/UCs/a.md', `# Title\n\nĐọc file này để biết A.\n\n${row}\n`, questionsIo).map(error => error.rule)
+
+test('rejects an Open gap that links a resolved question', () => {
+  assert.deepEqual(gapRules('| GAP-01 | G | B | [Q](../open-questions.md#oq-001) | Open |'), ['open-gap-closed-question'])
+})
+
+test('accepts an Open gap that links an open question', () => {
+  assert.deepEqual(gapRules('| GAP-01 | G | B | [Q](../open-questions.md#oq-002) | Open |'), [])
+})
