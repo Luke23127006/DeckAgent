@@ -87,7 +87,7 @@ function nodes(tree: unknown, tag: string): Record<string, unknown>[] {
       for (let i = item.tree.length - 1; i >= 0; i--) pending.push({ tree: item.tree[i], depth: item.depth + 1 })
     } else if (record(item.tree)) {
       if (Object.hasOwn(item.tree, tag)) found.push(item.tree)
-      for (const value of Object.values(item.tree).reverse())
+      for (const value of Object.values(item.tree).toReversed())
         if (Array.isArray(value)) pending.push({ tree: value, depth: item.depth + 1 })
     }
   }

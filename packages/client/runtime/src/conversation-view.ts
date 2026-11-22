@@ -153,7 +153,7 @@ export class ConversationView {
       if (!previous || previous.status === 'running' || activity.status !== 'running')
         knownActivities.set(key, { ...activity, sequence: previous?.sequence ?? activity.sequence })
     }
-    this.activities = [...knownActivities.values()].sort((a, b) =>
+    this.activities = [...knownActivities.values()].toSorted((a, b) =>
       a.requestId === b.requestId ? a.sequence - b.sequence : a.requestId < b.requestId ? -1 : 1,
     )
     this.render()

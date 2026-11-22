@@ -58,7 +58,7 @@ log({
   configHasLiteralKey: !!key && content.includes(key),
   env: Object.keys(process.env)
     .filter(name => /^(OPENCODE_|XDG_|HOME$|USERPROFILE$|DECKAGENT_)/.test(name))
-    .sort(),
+    .toSorted(),
 })
 
 if (resume && !sessions[resume]) {
@@ -328,10 +328,16 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
     if (workflow.selectImages)
       for (const need of staged.value.imageNeeds ?? []) {
         const candidate = need.candidates[workflow.imageCandidateIndex ?? 0]
-        if (candidate) await callWorkflow('select_slide_image', {
-          needId: need.needId, candidateId: candidate.candidateId,
-          reason: `Candidate description matches the requested subject and role: ${need.intent.subject}; ${need.intent.role}.`,
-        }, attempt++)
+        if (candidate)
+          await callWorkflow(
+            'select_slide_image',
+            {
+              needId: need.needId,
+              candidateId: candidate.candidateId,
+              reason: `Candidate description matches the requested subject and role: ${need.intent.subject}; ${need.intent.role}.`,
+            },
+            attempt++,
+          )
       }
   }
 }

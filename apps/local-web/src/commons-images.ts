@@ -175,7 +175,7 @@ export class CommonsImages {
   }
   /** Compatibility for pinned legacy generation only. Reviewed plans use explicit candidate selection. */
   async find(query: string, signal: AbortSignal): Promise<PreparedResearchImage> {
-    const candidates = [...(await this.candidates(query, signal))].sort(
+    const candidates = [...(await this.candidates(query, signal))].toSorted(
       (a, b) => Number(a.credit.unknownLicense) - Number(b.credit.unknownLicense),
     )
     for (const candidate of candidates) {

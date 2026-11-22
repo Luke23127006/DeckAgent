@@ -133,7 +133,7 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-model-snapshot-'))
   let app
   const server = createServer((req, res) => {
-    if (req.url === '/models' && /^Bearer fixture-key-/.test(req.headers.authorization ?? '')) {
+    if (req.url === '/models' && (req.headers.authorization ?? '').startsWith('Bearer fixture-key-')) {
       res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"a"}]}')
     } else res.writeHead(401).end()
   })

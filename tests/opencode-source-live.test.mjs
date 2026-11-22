@@ -175,7 +175,7 @@ test('real CLI source boundary: allowed MCP read, outside approval, permanent de
     for await (const chunk of req) raw += chunk
     const body = JSON.parse(raw)
     requests.push(body)
-    const user = [...body.messages].reverse().find(message => message.role === 'user')
+    const user = [...body.messages].toReversed().find(message => message.role === 'user')
     const quoted = typeof user?.content === 'string' ? user.content : JSON.stringify(user?.content)
     const marker = "The user's new request:\n"
     const input = quoted.includes(marker) ? quoted.slice(quoted.lastIndexOf(marker) + marker.length) : quoted

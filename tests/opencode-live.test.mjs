@@ -48,7 +48,7 @@ async function chatEndpoint() {
     for await (const chunk of req) raw += chunk
     const body = JSON.parse(raw || '{}')
     requests.push({ url: req.url, authorization: req.headers.authorization, body })
-    const last = [...(body.messages ?? [])].reverse().find(message => message.role === 'user')
+    const last = [...(body.messages ?? [])].toReversed().find(message => message.role === 'user')
     const text = typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '')
     const newest = text.includes("The user's new request:")
       ? text.slice(text.lastIndexOf("The user's new request:"))

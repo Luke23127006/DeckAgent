@@ -189,7 +189,7 @@ for (const portable of [false, true])
     assert.equal(events.at(-1).status, 'completed', JSON.stringify(events.at(-1)))
     assert.ok(requests >= 13, 'The CLI must finish all three slides with provenance instead of stopping at eight steps')
     assert.deepEqual(
-      [...toolNames].sort(),
+      [...toolNames].toSorted(),
       [
         'read_generation_plan',
         'begin_slide',
@@ -201,7 +201,7 @@ for (const portable of [false, true])
         ...(portable ? ['read_slide_draft', 'record_slide_content', 'validate_slide'] : []),
       ]
         .map(name => `deckagent_${name}`)
-        .sort(),
+        .toSorted(),
       'The real provider must see only the confirmed version-specific generation tools',
     )
     const state = await new DeckClient(app.origin, app.token).snapshot(chat.sessionId)

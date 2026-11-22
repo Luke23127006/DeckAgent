@@ -474,7 +474,7 @@ export function settingsPanel(
     savedProviders,
   )
   // Provider selection belongs to step 1, not to the connection form.
-  for (const label of [...connection.querySelectorAll('label')])
+  for (const label of connection.querySelectorAll('label'))
     if (label.querySelector('span')?.textContent === 'Provider type') label.remove()
   const footer = element('footer', undefined, 'settings-footer')
   const next = button('Tiếp tục →', () => {

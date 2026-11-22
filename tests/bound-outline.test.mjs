@@ -130,7 +130,7 @@ test('bound Outline revisions preserve slide identity and exact Brief history ac
   })
   assert.deepEqual(
     next.slides.map(s => s.slideId),
-    first.slides.map(s => s.slideId).reverse(),
+    first.slides.map(s => s.slideId).toReversed(),
   )
   assert.deepEqual(next.changes.briefFields, ['audience'])
   assert.equal(next.changes.orderChanged, true)

@@ -336,7 +336,11 @@ export function initMotion(root: HTMLElement): void {
       else if (record.attributeName === 'data-presenting' && target.dataset.presenting === 'true') presentIn(target)
     }
     if (fresh.length > 3) bulk(fresh)
-    else for (const node of fresh) node.matches('.message.user') ? fly(root, node) : pop(node)
+    else
+      for (const node of fresh) {
+        if (node.matches('.message.user')) fly(root, node)
+        else pop(node)
+      }
   }).observe(root, {
     subtree: true,
     childList: true,

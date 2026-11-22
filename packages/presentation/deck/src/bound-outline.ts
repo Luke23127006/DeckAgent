@@ -114,7 +114,7 @@ export function outlineChanges(
       .filter(
         k => JSON.stringify(a.find(([key]) => key === k)?.[1]) !== JSON.stringify(b.find(([key]) => key === k)?.[1]),
       )
-      .sort(),
+      .toSorted(),
     added: slides.filter(s => !prior.some(p => p.slideId === s.slideId)).map(s => s.slideId),
     removed: prior.filter(s => !slides.some(p => p.slideId === s.slideId)).map(s => s.slideId),
     changed: slides

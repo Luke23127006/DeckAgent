@@ -13,25 +13,45 @@ export const fakeCli = resolve(fileURLToPath(new URL('./fake-opencode.mjs', impo
 export class MemoryCredentials {
   persistent = true
   values = new Map()
-  async save(secret) { const ref = `cred-${randomUUID()}`; this.values.set(ref, secret); return ref }
-  async read(ref) { if (!this.values.has(ref)) throw new Error('CREDENTIAL_UNAVAILABLE'); return this.values.get(ref) }
-  async remove(ref) { this.values.delete(ref) }
+  async save(secret) {
+    const ref = `cred-${randomUUID()}`
+    this.values.set(ref, secret)
+    return ref
+  }
+  async read(ref) {
+    if (!this.values.has(ref)) throw new Error('CREDENTIAL_UNAVAILABLE')
+    return this.values.get(ref)
+  }
+  async remove(ref) {
+    this.values.delete(ref)
+  }
 }
 
 /** A local provider endpoint: `GET /v1/models` answers only the expected key; refusals echo the key like some providers do. */
 export async function providerFixture(key) {
   const server = createServer((req, res) => {
-    if (req.url !== '/v1/models' || req.method !== 'GET') { res.writeHead(404).end(); return }
-    if (key && req.headers.authorization !== `Bearer ${key.current}`) {
-      res.writeHead(401, { 'content-type': 'application/json' }).end(JSON.stringify({ error: `invalid key ${req.headers.authorization}` }))
+    if (req.url !== '/v1/models' || req.method !== 'GET') {
+      res.writeHead(404).end()
       return
     }
-    res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ data: [{ id: 'model-a' }, { id: 'model-b' }, { id: 'model-c' }] }))
+    if (key && req.headers.authorization !== `Bearer ${key.current}`) {
+      res
+        .writeHead(401, { 'content-type': 'application/json' })
+        .end(JSON.stringify({ error: `invalid key ${req.headers.authorization}` }))
+      return
+    }
+    res
+      .writeHead(200, { 'content-type': 'application/json' })
+      .end(JSON.stringify({ data: [{ id: 'model-a' }, { id: 'model-b' }, { id: 'model-c' }] }))
   })
   await new Promise(done => server.listen(0, '127.0.0.1', done))
   return {
     baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
-    close: () => new Promise(done => { server.closeAllConnections(); server.close(done) }),
+    close: () =>
+      new Promise(done => {
+        server.closeAllConnections()
+        server.close(done)
+      }),
   }
 }
 
@@ -41,13 +61,21 @@ export async function startApp(dir, extra = {}) {
     dataDir: join(dir, 'data'),
     home: dir,
     credentials: extra.credentials ?? new MemoryCredentials(),
-    openCode: { executable: process.execPath, launcherArgs: [fakeCli, log], version: 'fake-1.0.0', timeoutMs: 30000, ...extra.openCode },
+    openCode: {
+      executable: process.execPath,
+      launcherArgs: [fakeCli, log],
+      version: 'fake-1.0.0',
+      timeoutMs: 30000,
+      ...extra.openCode,
+    },
     ...extra.options,
   })
   const call = async (path, method = 'GET', body) => {
-    const response = await fetch(`${app.origin}/api/${path}`, { method,
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
       headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
     return { status: response.status, data: await response.json().catch(() => undefined) }
   }
   return { app, log, call, client: new HostClient(app.origin, app.token) }
@@ -55,7 +83,11 @@ export async function startApp(dir, extra = {}) {
 
 export function runs(log) {
   if (!existsSync(log)) return []
-  return readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).filter(entry => entry.command === 'run')
+  return readFileSync(log, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line))
+    .filter(entry => entry.command === 'run')
 }
 
 export async function finished(client, requestId) {
@@ -86,5 +118,5 @@ export async function filesContaining(folder, needle) {
 }
 
 export async function listTree(folder) {
-  return (await readdir(folder, { recursive: true })).sort()
+  return (await readdir(folder, { recursive: true })).toSorted()
 }

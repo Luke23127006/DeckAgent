@@ -12,7 +12,7 @@ import {
 
 async function tree(folder) {
   const entries = []
-  for (const name of (await readdir(folder)).sort()) {
+  for (const name of (await readdir(folder)).toSorted()) {
     const info = await stat(join(folder, name))
     entries.push([name, info.size, info.mtimeMs, info.isDirectory() ? await tree(join(folder, name)) : null])
   }

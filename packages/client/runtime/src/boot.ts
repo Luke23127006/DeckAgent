@@ -582,6 +582,7 @@ async function follow(id: string, sessionId: string, expected: number) {
   let cursor = 0
   let failures = 0
   let pendingApproval: ApprovalView | null = null
+  const isCurrent = () => generation === expected
   const show = () =>
     timeline.snapshot({
       requestId: id,
@@ -592,7 +593,7 @@ async function follow(id: string, sessionId: string, expected: number) {
       pendingApproval,
       ...(errorCode ? { errorCode } : {}),
     })
-  while (!control.signal.aborted && generation === expected && isActive(state)) {
+  while (!control.signal.aborted && isCurrent() && isActive(state)) {
     try {
       for await (const event of client.watch(id, control.signal, cursor)) {
         if (generation !== expected) return

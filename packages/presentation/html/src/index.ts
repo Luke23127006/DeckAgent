@@ -122,7 +122,7 @@ function verifyContent(source: string, input: FormatContext): void {
         },
       ])
   }
-  const tokens = (v: string) => normalize(v).split(' ').sort().join('\0')
+  const tokens = (v: string) => normalize(v).split(' ').toSorted().join('\0')
   if (tokens(all.join(' ')) !== tokens(documentText(d).join(' ')))
     throw new FormatError('ARTIFACT_UNRECORDED_CONTENT', [
       {

@@ -751,6 +751,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   } catch (error) {
     throw new Error(
       `${error.message}: ${await evaluate(`JSON.stringify({status:document.querySelector('.request-status')?.textContent,progress:document.querySelector('.deck-progress')?.textContent})`)}`,
+      { cause: error },
     )
   }
 })
@@ -809,14 +810,36 @@ test('web-image Outline completion clears request controls and history reopens a
   }
   await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
   const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir),
-    imageAccess: { fetch: async url => String(url).includes('/w/api.php?') ? Response.json({ query: { pages: [{
-      title: 'Forest ecosystem', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/wikipedia/commons/forest.png',
-        descriptionurl: 'https://commons.wikimedia.org/wiki/File:Forest.png', extmetadata: {
-          Artist: { value: 'Forest photographer' }, LicenseShortName: { value: 'CC BY 4.0' },
-          LicenseUrl: { value: 'https://creativecommons.org/licenses/by/4.0/' }, ImageDescription: { value: 'A forest ecosystem with trees' },
-        } }],
-    }] } }) : new Response(png, { headers: { 'content-type': 'image/png' } }) },
+  app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    ...fixtureProvider('workflow'),
+    openCode: fakeOpenCode(dir),
+    imageAccess: {
+      fetch: async url =>
+        String(url).includes('/w/api.php?')
+          ? Response.json({
+              query: {
+                pages: [
+                  {
+                    title: 'Forest ecosystem',
+                    imageinfo: [
+                      {
+                        thumburl: 'https://upload.wikimedia.org/wikipedia/commons/forest.png',
+                        descriptionurl: 'https://commons.wikimedia.org/wiki/File:Forest.png',
+                        extmetadata: {
+                          Artist: { value: 'Forest photographer' },
+                          LicenseShortName: { value: 'CC BY 4.0' },
+                          LicenseUrl: { value: 'https://creativecommons.org/licenses/by/4.0/' },
+                          ImageDescription: { value: 'A forest ecosystem with trees' },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            })
+          : new Response(png, { headers: { 'content-type': 'image/png' } }),
+    },
   })
   const create = async () =>
     (
@@ -865,9 +888,15 @@ test('web-image Outline completion clears request controls and history reopens a
     'Saved web-image Outline not shown',
   )
   await evaluate(`document.querySelector('.planned-slide').open=true;true`)
-  await eventually(() => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`), 'Prepared image thumbnail missing')
+  await eventually(
+    () => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`),
+    'Prepared image thumbnail missing',
+  )
   assert.equal(await evaluate(`document.querySelector('.outline-image-review img').src.startsWith('blob:')`), true)
-  assert.equal(await evaluate(`document.querySelector('.outline-image-review a').href`), 'https://commons.wikimedia.org/wiki/File:Forest.png')
+  assert.equal(
+    await evaluate(`document.querySelector('.outline-image-review a').href`),
+    'https://commons.wikimedia.org/wiki/File:Forest.png',
+  )
   assert.equal(await requestCount(app, target), 1)
   await protocol.call('Page.reload')
   await eventually(
@@ -885,12 +914,16 @@ test('web-image Outline completion clears request controls and history reopens a
   )
   assert.equal(await requestCount(app, target), 1, 'Opening history must not replay the model request')
   await evaluate(`document.querySelector('.planned-slide').open=true;true`)
-  await eventually(() => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`), 'Reopened thumbnail missing')
-  await evaluate(`document.querySelector('.composer textarea').value='Keep this draft';document.querySelector('.outline-image-review button').click();true`)
+  await eventually(
+    () => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`),
+    'Reopened thumbnail missing',
+  )
+  await evaluate(
+    `document.querySelector('.composer textarea').value='Keep this draft';document.querySelector('.outline-image-review button').click();true`,
+  )
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.startsWith('Keep this draft')`), true)
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.includes('replace:true')`), true)
   assert.equal(await requestCount(app, target), 1, 'Replace prepares a review request, never sends it silently')
-
 })
 
 test('saving a Custom API model ID from the input makes it available without a separate Add click', {
@@ -1645,7 +1678,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
 
 async function tree(folder) {
   const entries = []
-  for (const name of (await readdir(folder)).sort()) {
+  for (const name of (await readdir(folder)).toSorted()) {
     const info = await stat(join(folder, name))
     entries.push([name, info.size, info.mtimeMs, info.isDirectory() ? await tree(join(folder, name)) : null])
   }

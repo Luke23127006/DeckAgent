@@ -18,16 +18,16 @@ test('each catalog layout admits its content at capacity and refuses excess or d
     ],
     [
       'two-column',
-      [{ kind: 'columns', columns: Array(2).fill({ bullets: Array(3).fill('b'.repeat(120)) }) }],
-      [{ kind: 'columns', columns: Array(3).fill({ bullets: ['b'] }) }],
+      [{ kind: 'columns', columns: Array.from({ length: 2 }, () => ({ bullets: Array(3).fill('b'.repeat(120)) })) }],
+      [{ kind: 'columns', columns: Array.from({ length: 3 }, () => ({ bullets: ['b'] })) }],
     ],
     [
       'key-figures',
       [
-        { kind: 'metrics', items: Array(3).fill({ value: 'v'.repeat(24), label: 'l'.repeat(80) }) },
+        { kind: 'metrics', items: Array.from({ length: 3 }, () => ({ value: 'v'.repeat(24), label: 'l'.repeat(80) })) },
         { kind: 'source-note', text: 'n'.repeat(160) },
       ],
-      [{ kind: 'metrics', items: Array(4).fill({ value: '1', label: 'label' }) }],
+      [{ kind: 'metrics', items: Array.from({ length: 4 }, () => ({ value: '1', label: 'label' })) }],
     ],
     [
       'image-text',
