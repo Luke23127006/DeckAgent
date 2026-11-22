@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add agent skills for test design techniques, test risk, estimation and defect classification, UI design review, and writing use cases and architecture documents.
 - Check documentation structure and citations with `check:docs`, forbid comments in code with `check:comments`, and run both checks from a Claude Code hook after each edit.
 
 ### Changed
@@ -18,6 +19,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Removed
 
+- Remove the `domain-modeling` and `spec-authoring` agent skills.
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.
 
 ### Added
