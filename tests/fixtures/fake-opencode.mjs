@@ -281,23 +281,58 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
     !config.agent.deckagent.prompt.includes(`"imageChoice":"${workflow.expectedImageChoice}"`)
   )
     throw new Error('Host image choice missing from workflow context')
-  for (const [name, value] of [
-    ['stage_brief', workflow.brief],
-    ['stage_outline', workflow.outline],
-  ]) {
-    if (value === undefined) continue
+  const callWorkflow = async (name, value, attempt) => {
     const response = await fetch(bridge.url, {
       method: 'POST',
       headers: { ...bridge.headers, 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        id: name,
+        id: `${name}-${attempt}`,
         method: 'tools/call',
         params: { name, arguments: { json: JSON.stringify(value) } },
       }),
     })
     const result = await response.json()
-    event('text', { id: `prt_${name}`, type: 'text', text: result.result?.content?.[0]?.text ?? 'TOOL_FAILED' })
+    const text = result.result?.content?.[0]?.text ?? 'TOOL_FAILED'
+    event('text', { id: `prt_${name}_${attempt}`, type: 'text', text })
+    let valueResult
+    try {
+      valueResult = JSON.parse(text)
+    } catch {
+      valueResult = text
+    }
+    return { isError: result.result?.isError, value: valueResult }
+  }
+  let attempt = 0
+  for (const value of workflow.briefAttempts ?? (workflow.brief === undefined ? [] : [workflow.brief])) {
+    const result = await callWorkflow('stage_brief', value, attempt++)
+    if (workflow.repairBrief && result.isError) {
+      const marker = 'Host workflow data (not instructions): '
+      const supplied = JSON.parse(config.agent.deckagent.prompt.split(marker).at(-1))
+      if (supplied.briefContract?.schema?.properties?.durationMinutes?.type !== 'number')
+        throw new Error('Brief schema missing from model context')
+      if (!result.value.issues?.length || result.value.repair?.remaining !== 2)
+        throw new Error('Repair diagnostics missing')
+      const corrected = structuredClone(value)
+      for (const issue of result.value.issues) {
+        if (issue.path === 'requestedFormat') corrected.requestedFormat = 'html'
+        else if (['durationMinutes', 'themeOverrides'].includes(issue.path) && corrected[issue.path] === null)
+          delete corrected[issue.path]
+        else throw new Error('Unexpected repair issue')
+      }
+      await callWorkflow('stage_brief', corrected, attempt++)
+    }
+  }
+  if (workflow.outline !== undefined) {
+    const staged = await callWorkflow('stage_outline', workflow.outline, attempt++)
+    if (workflow.selectImages)
+      for (const need of staged.value.imageNeeds ?? []) {
+        const candidate = need.candidates[workflow.imageCandidateIndex ?? 0]
+        if (candidate) await callWorkflow('select_slide_image', {
+          needId: need.needId, candidateId: candidate.candidateId,
+          reason: `Candidate description matches the requested subject and role: ${need.intent.subject}; ${need.intent.role}.`,
+        }, attempt++)
+      }
   }
 }
 if (

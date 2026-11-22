@@ -147,4 +147,22 @@ export class ResearchService {
       },
     }
   }
+
+  /** Image-only capability: neither grants text research nor writes text source receipts. */
+  async imageSearch(query: string, signal: AbortSignal) {
+    const key = await this.key(this.configuration())
+    if (query.includes(key)) throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+    const work = this.queue.then(async () => {
+      signal.throwIfAborted()
+      const images = await this.client.images(key, query, signal)
+      signal.throwIfAborted()
+      if (JSON.stringify(images).includes(key)) throw new HttpError(503, 'RESEARCH_UNAVAILABLE')
+      return images
+    })
+    this.queue = work.then(
+      () => {},
+      () => {},
+    )
+    return work
+  }
 }

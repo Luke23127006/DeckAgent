@@ -34,6 +34,7 @@ export interface DeckRequest {
   readonly restoreOutlineId?: string
   readonly formatChoice?: 'html'
   readonly imageChoice?: 'none' | 'attachments' | 'public-research'
+  readonly imageProviderChoice?: 'tavily' | 'commons'
   readonly sourceChoice?: {
     readonly material: boolean
     readonly modelKnowledge: boolean

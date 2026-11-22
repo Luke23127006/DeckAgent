@@ -130,11 +130,15 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
             'sourceChoice',
             'formatChoice',
             'imageChoice',
+            'imageProviderChoice',
           ].includes(k),
       ) ||
       !Number.isSafeInteger(deck.expectedBriefVersion) ||
       Number(deck.expectedBriefVersion) < 0 ||
       (deck.formatChoice !== undefined && deck.formatChoice !== 'html') ||
+      (deck.imageProviderChoice !== undefined &&
+        (deck.imageChoice !== 'public-research' ||
+          !['tavily', 'commons'].includes(String(deck.imageProviderChoice)))) ||
       (deck.imageChoice !== undefined &&
         deck.imageChoice !== 'none' &&
         deck.imageChoice !== 'attachments' &&
@@ -172,6 +176,9 @@ async function body(req: IncomingMessage, maxAttachments: number): Promise<Agent
       ...(deck.formatChoice === 'html' ? { formatChoice: 'html' } : {}),
       ...(deck.imageChoice === 'none' || deck.imageChoice === 'attachments' || deck.imageChoice === 'public-research'
         ? { imageChoice: deck.imageChoice }
+        : {}),
+      ...(deck.imageProviderChoice === 'tavily' || deck.imageProviderChoice === 'commons'
+        ? { imageProviderChoice: deck.imageProviderChoice }
         : {}),
       ...(typeof deck.restoreOutlineId === 'string' ? { restoreOutlineId: deck.restoreOutlineId } : {}),
       ...(object(choice)
@@ -330,6 +337,18 @@ export async function startHost(options: HostOptions) {
       }
     }
     if (options.decks && req.method === 'GET' && routeDeck(url.pathname, res, options.decks, streams)) return
+    const imagePreview =
+      /^\/api\/sessions\/([\w-]{1,100})\/outlines\/([\w-]{1,100})\/images\/(need-[a-f0-9]{64})$/.exec(url.pathname)
+    if (imagePreview && options.outlines?.outlineImagePreview && req.method === 'GET') {
+      const bytes = options.outlines.outlineImagePreview(imagePreview[1]!, imagePreview[2]!, imagePreview[3]!)
+      res.writeHead(200, {
+        'content-type': 'image/png',
+        'cache-control': 'private, no-store',
+        'x-content-type-options': 'nosniff',
+      })
+      res.end(bytes)
+      return
+    }
     const outline = /^\/api\/sessions\/([\w-]{1,100})\/outline$/.exec(url.pathname)
     if (outline && options.outlines && req.method === 'GET') {
       json(res, 200, options.outlines.outlineSnapshot(outline[1]!))

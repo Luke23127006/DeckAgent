@@ -25,11 +25,11 @@ test('a new request continues an interrupted confirmed deck after restart withou
   decks.close()
   // The original-attempt payload is also the v6 representation, without activeRequestId.
   const legacy = new DatabaseSync(join(dir, 'deck.sqlite'))
-  legacy.exec('DROP TABLE prepared_images; PRAGMA user_version=6')
+  legacy.exec('DROP TABLE prepared_images; DROP TABLE image_search_attempts; PRAGMA user_version=6')
   legacy.close()
   decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
   const upgraded = new DatabaseSync(join(dir, 'deck.sqlite'))
-  assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 8)
+  assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 9)
   upgraded.close()
   assert.deepEqual(decks.generation('chat').receipt, receipt)
   assert.equal(decks.generation('chat').state, 'incomplete')

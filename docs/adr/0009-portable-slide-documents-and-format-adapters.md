@@ -25,3 +25,7 @@ Use one browser-safe schema for each shared content contract. Tool descriptions 
 Existing published bytes, revisions, Outline confirmations and visual snapshots remain unchanged. Historical artifacts without a SlideDocument remain explicitly legacy; do not invent structured content by extracting it from HTML. New database versions preserve old rows and older binaries refuse newer schemas. Deploy producers, Host and browser consumers together. An incomplete legacy Deck retains its pinned execution contract; changing its template or essential image policy requires an explicit new reviewed plan.
 
 Keep source generation against executable templates instead of unconstrained HTML with growing prompt exceptions. A JSON-only renderer was considered but would remove the existing custom-source path. Separate native adapters preserve that path while giving other formats a content contract independent of HTML. Detailed implementation work and verification evidence belong in the corresponding issue, not in this record.
+
+## Implementation reference
+
+The [request-to-Preview diagram](../development/generation-and-publication.md#request-to-preview) shows Brief collection, Outline review, confirmation and generation. The [per-slide template sequence](../development/portable-slide-content.md#per-slide-template-sequence) shows how the model, Host, HTML adapter and browser check turn confirmed content into a saved slide.

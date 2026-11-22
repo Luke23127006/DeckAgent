@@ -128,6 +128,25 @@ async function fixture(t) {
   }
 }
 
+test('image providers cannot be silently changed by a staged Brief or Outline', async t => {
+  const x = await fixture(t)
+  const draft = { ...x.full, template: { id: 'html-basic', version: 2 },
+    images: { mode: 'public-research', provider: 'commons', attachmentIds: [], unmetRequirements: [] } }
+  const choice = { imageChoice: 'public-research', imageProviderChoice: 'tavily',
+    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false } }
+  await x.write({ brief: draft, outline: x.plan })
+  const rejected = await x.send('collect', 0, null, choice)
+  assert.equal(rejected.events.at(-1).status, 'failed')
+  assert.equal((await x.f.call(`sessions/${x.id}/brief`)).data.version, 0)
+  const tavily = { ...draft, images: { ...draft.images, provider: 'tavily' } }
+  const plan = structuredClone(x.plan)
+  plan.slides[0].blocks.push({ kind: 'web-image', query: 'forest', provider: 'commons' })
+  await x.write({ brief: tavily, outline: plan })
+  const invalidOutline = await x.send('collect', 0, null, choice)
+  assert.equal(invalidOutline.events.at(-1).status, 'failed')
+  assert.equal((await x.f.call(`sessions/${x.id}/outline`)).data.currentId, null)
+})
+
 test('web images require an explicit image choice and do not enable text research', async t => {
   const x = await fixture(t)
   const draft = { ...x.full, images: { mode: 'public-research', attachmentIds: [], unmetRequirements: [] } }
@@ -141,6 +160,110 @@ test('web images require an explicit image choice and do not enable text researc
   const saved = current.draft
   assert.equal(saved.images.mode, 'public-research')
   assert.equal(saved.sources.publicResearch, false)
+})
+
+test('Brief tool repairs schema errors in the same request and keeps an unknown duration as an Interview question', async t => {
+  const x = await fixture(t)
+  await x.write({
+    brief: { ...x.full, requestedFormat: 'HTML', durationMinutes: null, themeOverrides: null },
+    repairBrief: true,
+  })
+  const run = await x.send('collect', 0, null, {
+    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+  })
+  assert.equal(run.events.at(-1).status, 'completed', JSON.stringify(run.events))
+  const view = await new BriefClient(x.f.app.origin, x.f.app.token).interview(x.id)
+  assert.equal(view.brief.version, 1)
+  assert.equal(view.brief.current.draft.durationMinutes, undefined)
+  assert.deepEqual(
+    view.state.questions.map(q => q.topic),
+    ['duration'],
+  )
+  assert.equal(view.brief.current.draft.sources.publicResearch, false)
+  assert.equal((await new OutlineClient(x.f.app.origin, x.f.app.token).snapshot(x.id)).proposals.length, 0)
+  assert.equal(runs(x.f.log).length, 1)
+})
+
+test('a repaired Brief proceeds to a seven-slide Outline without changing user-selected visuals or sources', async t => {
+  const x = await fixture(t)
+  const draft = {
+    ...x.full,
+    proposedSlideCount: 7,
+    template: { id: 'html-basic', version: 2 },
+    requestedFormat: 'HTML',
+    themeOverrides: { 'color.accent': '#123456' },
+  }
+  const plan = {
+    ...x.plan,
+    slides: Array.from({ length: 7 }, (_, i) => ({ ...x.plan.slides[0], title: `Part ${i + 1}` })),
+  }
+  await x.write({ brief: draft, outline: plan, repairBrief: true })
+  const run = await x.send('collect', 0, null, {
+    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+  })
+  assert.equal(run.events.at(-1).status, 'completed', JSON.stringify(run.events))
+  const outline = (await new OutlineClient(x.f.app.origin, x.f.app.token).snapshot(x.id)).proposals[0]
+  assert.equal(outline.slides.length, 7)
+  assert.deepEqual(outline.brief.draft.template, { id: 'html-basic', version: 2 })
+  assert.equal(outline.brief.draft.durationMinutes, 10)
+  assert.equal(outline.brief.design.theme['color.accent'], '#123456')
+  assert.equal(outline.brief.draft.sources.publicResearch, false)
+  assert.equal((await x.f.call(`sessions/${x.id}/deck`)).data.slides.length, 0)
+})
+
+test('Brief repair exhaustion closes the request and preserves earlier Brief and Outline history', async t => {
+  const x = await fixture(t)
+  const choices = { sourceChoice: { material: false, modelKnowledge: true, publicResearch: false } }
+  await x.write({ brief: x.full, outline: x.plan })
+  await x.send('collect', 0, null, choices)
+  const client = new BriefClient(x.f.app.origin, x.f.app.token),
+    outlines = new OutlineClient(x.f.app.origin, x.f.app.token)
+  const before = await client.snapshot(x.id),
+    oldOutline = await outlines.snapshot(x.id)
+  const bad = { ...x.full, requestedFormat: 'HTML', themeOverrides: null }
+  await x.write({ briefAttempts: [x.full, bad, bad, bad, x.full], outline: x.plan })
+  const run = await x.send('revise', 1, oldOutline.proposals[0], choices)
+  assert.equal(run.events.at(-1).status, 'failed')
+  assert.equal(run.events.at(-1).errorCode, 'BRIEF_REPAIR_LIMIT')
+  assert.deepEqual(await client.snapshot(x.id), before)
+  assert.deepEqual(await outlines.snapshot(x.id), oldOutline)
+  const errors = run.events
+    .filter(e => e.kind === 'text')
+    .map(e => {
+      try {
+        return JSON.parse(e.text)
+      } catch {
+        return undefined
+      }
+    })
+    .filter(v => v?.repair)
+  assert.deepEqual(
+    errors.slice(0, 3).map(e => e.repair.remaining),
+    [2, 1, 0],
+  )
+  assert.ok(errors.slice(2).every(e => e.code === 'BRIEF_REPAIR_LIMIT'))
+  const recovered = await x.send('question', 1, oldOutline.proposals[0], {}, 'What is in this Outline?')
+  assert.equal(recovered.events.at(-1).status, 'completed')
+})
+
+test('a failed Brief repair cannot reuse an earlier staged Brief to bypass source permissions', async t => {
+  const x = await fixture(t)
+  await x.write({
+    briefAttempts: [x.full, { ...x.full, sources: { ...x.full.sources, publicResearch: true } }],
+    outline: x.plan,
+  })
+  const run = await x.send('collect', 0, null, {
+    sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+  })
+  assert.equal(run.events.at(-1).status, 'failed')
+  const text = run.events
+    .filter(e => e.kind === 'text')
+    .map(e => e.text)
+    .join('\n')
+  assert.match(text, /SOURCE_CHOICE_REQUIRED/)
+  assert.match(text, /BRIEF_INCOMPLETE/)
+  assert.equal((await new BriefClient(x.f.app.origin, x.f.app.token).snapshot(x.id)).version, 0)
+  assert.equal((await new OutlineClient(x.f.app.origin, x.f.app.token).snapshot(x.id)).proposals.length, 0)
 })
 
 test('full interview creates only an Outline, revisions keep history, and pure questions/clarification cannot mutate it', async t => {

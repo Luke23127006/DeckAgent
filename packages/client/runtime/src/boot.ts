@@ -105,8 +105,13 @@ const timeline = new ConversationView(
   (action, proposal) => {
     if (action === 'confirm') run(confirmOutline(proposal))
   },
-  () => {
+  text => {
     workflow.requestRevision()
+    if (text) {
+      input.value = input.value.trim() ? `${input.value}\n\n${text}` : text
+      saveDraft()
+      controls()
+    }
     input.focus()
   },
   outlineDock,
@@ -121,6 +126,7 @@ const timeline = new ConversationView(
     settings: () => run(settingsUI.open()),
     draft: () => input.value,
     previewAttachment: item => run(previewAttachment(item)),
+    previewOutlineImage: (sessionId, outlineId, needId) => client.outlineImage(sessionId, outlineId, needId),
     approve: async (requestId, approvalId, decision) => {
       await client.decide(requestId, approvalId, decision)
       const saved = await client.snapshot(requestId)

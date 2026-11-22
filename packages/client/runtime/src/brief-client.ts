@@ -1,3 +1,4 @@
+import { decodeBriefDraft } from '@deckagent/deck/brief'
 import type { BriefDraft, BriefSourceRef, DesignSnapshot } from '@deckagent/deck'
 import type { BriefView } from '@deckagent/host-api'
 
@@ -16,18 +17,6 @@ const source = (v: unknown): v is BriefSourceRef =>
   integer(v.version) &&
   v.version > 0 &&
   ['attachment', 'project-file', 'approved-file', 'research'].some(k => k === v.kind)
-const topics = [
-  'topic',
-  'audience',
-  'duration',
-  'purpose',
-  'sources',
-  'language',
-  'images',
-  'format',
-  'template',
-  'design-system',
-]
 const colors = [
   'color.background',
   'color.surface',
@@ -69,80 +58,13 @@ export function isDesignSnapshot(v: unknown): v is DesignSnapshot {
     /^[a-f0-9]{64}$/.test(v.fingerprint)
   )
 }
-function draft(v: unknown): v is BriefDraft {
-  if (
-    !object(v) ||
-    !only(v, [
-      'topic',
-      'audience',
-      'durationMinutes',
-      'purpose',
-      'language',
-      'requirements',
-      'answers',
-      'assumptions',
-      'sources',
-      'images',
-      'proposedSlideCount',
-      'requestedFormat',
-      'generationFormat',
-      'template',
-      'designSystem',
-      'themeOverrides',
-      'presenterNotes',
-    ])
-  )
+function draft(value: unknown): value is BriefDraft {
+  try {
+    decodeBriefDraft(value)
+    return true
+  } catch {
     return false
-  if (
-    (v.presenterNotes !== undefined && typeof v.presenterNotes !== 'boolean') ||
-    ['topic', 'audience', 'purpose', 'language', 'requestedFormat'].some(k => v[k] !== undefined && !text(v[k])) ||
-    (v.durationMinutes !== undefined &&
-      (typeof v.durationMinutes !== 'number' || !Number.isFinite(v.durationMinutes) || v.durationMinutes <= 0)) ||
-    (v.proposedSlideCount !== undefined && (!integer(v.proposedSlideCount) || v.proposedSlideCount < 1))
-  )
-    return false
-  if (
-    !strings(v.requirements) ||
-    !strings(v.assumptions) ||
-    !Array.isArray(v.answers) ||
-    !v.answers.every(
-      a => object(a) && only(a, ['topic', 'value']) && topics.some(k => k === a.topic) && text(a.value),
-    ) ||
-    new Set(v.answers.map(a => a.topic)).size !== v.answers.length
-  )
-    return false
-  const s = v.sources,
-    i = v.images
-  if (
-    !object(s) ||
-    !only(s, ['material', 'modelKnowledge', 'publicResearch', 'refs']) ||
-    ['material', 'modelKnowledge', 'publicResearch'].some(k => typeof s[k] !== 'boolean') ||
-    !Array.isArray(s.refs) ||
-    !s.refs.every(source) ||
-    new Set(s.refs.map(r => `${r.sourceId}:${r.version}:${r.kind}`)).size !== s.refs.length ||
-    s.refs.some(r => (r.kind === 'research' ? !s.material && !s.publicResearch : !s.material))
-  )
-    return false
-  if (
-    !object(i) ||
-    !only(i, ['mode', 'attachmentIds', 'unmetRequirements']) ||
-    !['none', 'attachments', 'public-research', 'unavailable'].some(k => k === i.mode) ||
-    !Array.isArray(i.attachmentIds) ||
-    !i.attachmentIds.every(id => typeof id === 'string' && /^att-[a-f0-9-]{36}$/.test(id)) ||
-    new Set(i.attachmentIds).size !== i.attachmentIds.length ||
-    !strings(i.unmetRequirements) ||
-    (i.mode !== 'attachments' && i.attachmentIds.length > 0) ||
-    (i.mode === 'attachments' && !s.material) ||
-    (i.mode === 'unavailable' && !i.unmetRequirements.length)
-  )
-    return false
-  return (
-    (v.generationFormat === undefined || v.generationFormat === 'html') &&
-    !(v.requestedFormat !== undefined && v.requestedFormat !== 'html' && v.generationFormat !== undefined) &&
-    (v.template === undefined || reference(v.template)) &&
-    (v.designSystem === undefined || reference(v.designSystem)) &&
-    (v.themeOverrides === undefined || theme(v.themeOverrides, true))
-  )
+  }
 }
 
 /** Browser-safe structural decoding; selection policy, source access and snapshot integrity belong to Host. */

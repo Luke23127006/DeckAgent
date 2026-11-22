@@ -231,6 +231,8 @@ export class HostRequestError extends Error {
 }
 
 const allowed = [
+  'BRIEF_REPAIR_LIMIT',
+  'BRIEF_PROPOSAL_REQUIRED',
   'RESEARCH_UNAVAILABLE',
   'RESEARCH_KEY_UNAVAILABLE',
   'RESEARCH_KEY_REJECTED',
@@ -320,6 +322,16 @@ export class HostClient {
         })
       ).json(),
     )
+  }
+
+  async outlineImage(sessionId: string, outlineId: string, needId: string): Promise<Blob> {
+    const response = await this.request(
+      `/api/sessions/${encodeURIComponent(sessionId)}/outlines/${encodeURIComponent(outlineId)}/images/${encodeURIComponent(needId)}`,
+    )
+    if (response.headers.get('content-type') !== 'image/png') throw new HostRequestError('HOST_REQUEST_FAILED')
+    const blob = await response.blob()
+    if (blob.size > 256 * 1024) throw new HostRequestError('HOST_REQUEST_FAILED')
+    return blob
   }
 
   async snapshot(id: string): Promise<RequestSnapshot> {

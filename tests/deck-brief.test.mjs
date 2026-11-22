@@ -3,10 +3,103 @@ import test from 'node:test'
 import { mkdtemp, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { DeckService, validateBriefDraft } from '../packages/presentation/deck/lib/index.js'
 import { DatabaseSync } from 'node:sqlite'
 
 import { brief } from './fixtures/brief.mjs'
+import { decodeBriefDraft, briefJsonSchema } from '../packages/presentation/deck/lib/brief.js'
+
+test('Brief validation reports every independent field error without guessing omitted answers', () => {
+  const input = {
+    ...brief(),
+    proposedSlideCount: 7,
+    template: { id: 'html-basic', version: 2 },
+    requestedFormat: 'HTML',
+    durationMinutes: null,
+    themeOverrides: null,
+  }
+  assert.throws(
+    () => validateBriefDraft(input),
+    error => {
+      assert.equal(error.code, 'BRIEF_INVALID')
+      assert.deepEqual(
+        new Set(error.issues.map(issue => issue.path)),
+        new Set(['requestedFormat', 'durationMinutes', 'themeOverrides']),
+      )
+      assert.ok(error.issues.every(issue => issue.message && issue.expected))
+      return true
+    },
+  )
+  assert.equal(input.requestedFormat, 'HTML')
+  assert.equal(input.durationMinutes, null)
+  const corrected = { ...input, requestedFormat: 'html' }
+  delete corrected.durationMinutes
+  delete corrected.themeOverrides
+  const accepted = validateBriefDraft(corrected)
+  assert.equal(accepted.proposedSlideCount, 7)
+  assert.equal(accepted.durationMinutes, undefined)
+  assert.equal(accepted.sources.publicResearch, false)
+})
+
+test('the public browser-safe Brief contract reports nested fields and never echoes rejected values', () => {
+  const input = {
+    ...brief(),
+    requirements: [''],
+    answers: [{ topic: 'wrong-topic', value: 'private-value-do-not-echo' }],
+    sources: { ...brief().sources, publicResearch: 'private-value-do-not-echo' },
+    themeOverrides: { 'color.accent': 'private-value-do-not-echo' },
+  }
+  assert.equal(briefJsonSchema.properties.durationMinutes.type, 'number')
+  assert.equal(briefJsonSchema.properties.generationFormat.const, 'html')
+  assert.equal(briefJsonSchema.required.includes('durationMinutes'), false)
+  assert.equal(briefJsonSchema.additionalProperties, false)
+  assert.equal(
+    new RegExp(briefJsonSchema.properties.themeOverrides.properties['color.accent'].pattern).test('#AABBCC'),
+    true,
+  )
+  assert.throws(
+    () => decodeBriefDraft(input),
+    error => {
+      const paths = error.issues.map(i => i.path)
+      for (const path of [
+        'requirements[0]',
+        'answers[0].topic',
+        'sources.publicResearch',
+        'themeOverrides["color.accent"]',
+      ])
+        assert.ok(paths.includes(path), JSON.stringify(paths))
+      assert.equal(JSON.stringify(error.issues).includes('private-value-do-not-echo'), false)
+      return true
+    },
+  )
+})
+
+test('Brief diagnostics collect independent catalog and theme failures alongside structural errors', () => {
+  assert.throws(
+    () =>
+      validateBriefDraft({
+        ...brief(),
+        requestedFormat: 'HTML',
+        durationMinutes: null,
+        template: { id: 'missing-template', version: 1 },
+        designSystem: { id: 'missing-system', version: 1 },
+        themeOverrides: { 'color.accent': 'invalid', 'font.body': 'Unavailable font' },
+      }),
+    error => {
+      const paths = new Set(error.issues.map(i => i.path))
+      for (const path of [
+        'requestedFormat',
+        'durationMinutes',
+        'template',
+        'designSystem',
+        'themeOverrides["color.accent"]',
+        'themeOverrides["font.body"]',
+      ])
+        assert.ok(paths.has(path), JSON.stringify([...paths]))
+      return true
+    },
+  )
+})
 
 test('Brief versions preserve explicit source choices and isolate immutable history by Chat across restart', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-brief-'))

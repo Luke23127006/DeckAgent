@@ -39,6 +39,15 @@ async function limited(response: Response, max: number): Promise<Buffer> {
   }
 }
 
+export interface CommonsCandidate {
+  readonly originalUrl?: string
+  readonly imageUrl: string
+  readonly sourceUrl: string
+  readonly title: string
+  readonly description: string
+  readonly credit: ImageCredit
+}
+
 /** Fixed public metadata/upload hosts only; no provider key, arbitrary URL, redirect or model switch. */
 export class CommonsImages {
   private readonly parser = new AttachmentParser()
@@ -47,8 +56,8 @@ export class CommonsImages {
     return this.parser.close()
   }
 
-  async find(query: string, signal: AbortSignal): Promise<PreparedResearchImage> {
-    if (!query.trim() || query.length > 500) throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+  async candidates(query: string, signal: AbortSignal, title?: string): Promise<readonly CommonsCandidate[]> {
+    if ((!query.trim() && !title) || query.length > 500) throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     const operation = AbortSignal.any([signal, AbortSignal.timeout(20000)])
     const headers = {
       'User-Agent': 'DeckAgent/0.0.0 (https://github.com/Luke23127006/DeckAgent)',
@@ -67,6 +76,10 @@ export class CommonsImages {
       format: 'json',
       formatversion: '2',
     }).toString()
+    if (title) {
+      for (const key of ['generator', 'gsrsearch', 'gsrnamespace', 'gsrlimit']) url.searchParams.delete(key)
+      url.searchParams.set('titles', title)
+    }
     try {
       const metadata: unknown = JSON.parse(
         (
@@ -75,7 +88,7 @@ export class CommonsImages {
       )
       const pages =
         object(metadata) && object(metadata.query) && Array.isArray(metadata.query.pages) ? metadata.query.pages : []
-      const candidates: { image: string; credit: ImageCredit }[] = []
+      const candidates: CommonsCandidate[] = []
       for (const page of pages.slice(0, 5)) {
         if (!object(page) || !Array.isArray(page.imageinfo) || !object(page.imageinfo[0])) continue
         const info = page.imageinfo[0]
@@ -102,7 +115,13 @@ export class CommonsImages {
         else if (!name && !link) license = 'unknown'
         else continue
         candidates.push({
-          image,
+          imageUrl: image,
+          sourceUrl: source,
+          ...(safeUrl(info.url, 'upload.wikimedia.org') ? { originalUrl: String(info.url) } : {}),
+          title: typeof page.title === 'string' ? page.title.slice(0, 300) : query,
+          description: value('ImageDescription')
+            .replace(/<[^>]*>/g, '')
+            .slice(0, 1500),
           credit: {
             url: source,
             author:
@@ -116,41 +135,55 @@ export class CommonsImages {
           },
         })
       }
-      candidates.sort((a, b) => Number(a.credit.unknownLicense) - Number(b.credit.unknownLicense))
-      for (const candidate of candidates) {
-        try {
-          const response = await this.request(candidate.image, {
-            headers: { ...headers, Accept: 'image/png,image/jpeg' },
-            signal: operation,
-            redirect: 'error',
-          })
-          const type = response.headers.get('content-type')?.split(';')[0]
-          if (type !== 'image/png' && type !== 'image/jpeg') {
-            await response.body?.cancel().catch(() => {})
-            continue
-          }
-          const bytes = await limited(response, 8 * 1024 * 1024)
-          const parsed = await this.parser.parse({
-            name: type === 'image/png' ? 'commons.png' : 'commons.jpg',
-            bytes,
-            signal: operation,
-          })
-          const image = parsed.parts.find(p => p.type === 'image')
-          if (!image || image.type !== 'image') continue
-          const normalized = Buffer.from(image.data, 'base64')
-          return {
-            bytes: normalized,
-            source: { sourceId: `src-${randomUUID()}`, version: 1, kind: 'research' },
-            originalDigest: hash(bytes),
-            parsedDigest: hash(normalized),
-            credit: candidate.credit,
-          }
-        } catch {
-          operation.throwIfAborted()
-        }
-      }
+      return candidates
     } catch {
       signal.throwIfAborted()
+    }
+    throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+  }
+  async prepare(candidate: CommonsCandidate, signal: AbortSignal): Promise<PreparedResearchImage> {
+    const operation = AbortSignal.any([signal, AbortSignal.timeout(20000)])
+    if (!(safeUrl(candidate.imageUrl, 'upload.wikimedia.org') ?? safeUrl(candidate.imageUrl, 'thumb.wikimedia.org')))
+      throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+    const response = await this.request(candidate.imageUrl, {
+      signal: operation,
+      redirect: 'error',
+      headers: { Accept: 'image/png,image/jpeg' },
+    })
+    const type = response.headers.get('content-type')?.split(';')[0]
+    if (type !== 'image/png' && type !== 'image/jpeg') {
+      await response.body?.cancel().catch(() => {})
+      throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+    }
+    const bytes = await limited(response, 8 * 1024 * 1024)
+    const parsed = await this.parser.parse({
+      name: type === 'image/png' ? 'commons.png' : 'commons.jpg',
+      bytes,
+      signal: operation,
+    })
+    const image = parsed.parts.find(p => p.type === 'image')
+    if (!image || image.type !== 'image') throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+    operation.throwIfAborted()
+    const normalized = Buffer.from(image.data, 'base64')
+    return {
+      bytes: normalized,
+      source: { sourceId: `src-${randomUUID()}`, version: 1, kind: 'research' },
+      originalDigest: hash(bytes),
+      parsedDigest: hash(normalized),
+      credit: candidate.credit,
+    }
+  }
+  /** Compatibility for pinned legacy generation only. Reviewed plans use explicit candidate selection. */
+  async find(query: string, signal: AbortSignal): Promise<PreparedResearchImage> {
+    const candidates = [...(await this.candidates(query, signal))].sort(
+      (a, b) => Number(a.credit.unknownLicense) - Number(b.credit.unknownLicense),
+    )
+    for (const candidate of candidates) {
+      try {
+        return await this.prepare(candidate, signal)
+      } catch {
+        signal.throwIfAborted()
+      }
     }
     throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
   }

@@ -24,6 +24,7 @@
       "node"
     ],
     "paths": {
+      "@deckagent/deck/brief": ["./packages/presentation/deck/src/brief.ts"],
       "@deckagent/design": [
         "./packages/presentation/design/src/index.ts"
       ],

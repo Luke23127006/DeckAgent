@@ -10,6 +10,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Review public-image candidates against each slide role using Tavily or explicitly selected Commons. Keep selection reasons, local thumbnails and immutable credits; require accepted image-specific licence evidence, block duplicate images within a slide and preserve unchanged choices across reviews. Add bounded public-image downloads and durable search attempts in Deck schema 9.
+
 - Keep portable slide documents beside native artifacts, with executable HTML Basic version 2 templates, a two-image layout, shared browser decoding and separate validation diagnostics. Prepare public images before confirmation and reuse local bytes through layout retries; required missing images keep the Outline open for revision. Include a native PPTX capability proof with editable text/images and notes, without adding a product export option. Deck schema 8 preserves existing revisions and visual snapshots.
 
 - Continue missing slides with an explicit new request on the same confirmed Deck; retain completed revisions, visual choices and the original confirmation across Stop and restart.
@@ -34,6 +36,8 @@ Notable changes to this repository. The newest changes are at the top.
 - Persist immutable Brief versions and explicit source choices per Chat in Deck schema v3; expose authenticated Host reads/writes and a browser-safe client decoder. Existing Decks, Outlines and Chat history remain intact. Interview and generation integration remain separate.
 
 ### Fixed
+
+- Share one strict Brief schema between Host validation, browser decoding and model tool descriptions. Report independent field errors together, bound same-request model repairs and preserve saved versions after exhaustion. Missing duration stays an Interview question; schema repair never enables sources or resets visual choices.
 
 - Reuse request-scoped web images when retrying slide layouts, register concurrent identical image calls once, and explain that web images are already attached by the image-search tool.
 

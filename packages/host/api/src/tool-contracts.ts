@@ -19,7 +19,7 @@ export interface ToolSchema {
   readonly description: string
   readonly inputSchema: {
     readonly type: 'object'
-    readonly properties: Readonly<Record<string, { readonly type: 'string' }>>
+    readonly properties: Readonly<Record<string, { readonly type: 'string'; readonly description?: string }>>
     readonly required: readonly string[]
     readonly additionalProperties: false
   }

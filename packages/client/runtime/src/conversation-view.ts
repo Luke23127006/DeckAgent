@@ -38,6 +38,8 @@ const activityNames: Readonly<Record<string, string>> = {
   record_slide_provenance: 'Ghi nhận nguồn nội dung',
   find_slide_image: 'Tìm ảnh minh họa',
   prepare_slide_images: 'Chuẩn bị ảnh cho Outline',
+  search_slide_images: 'Tìm ảnh theo nội dung slide',
+  select_slide_image: 'Chọn và kiểm tra ảnh',
   validate_slide: 'Kiểm tra bản nháp slide',
   append_slide: 'Soạn nội dung slide',
   attach_slide_image: 'Thêm ảnh đã chọn',
@@ -86,7 +88,7 @@ export class ConversationView {
   constructor(
     private readonly container: HTMLElement,
     action?: OutlineAction,
-    revise?: () => void,
+    revise?: (text?: string) => void,
     private readonly dock?: HTMLElement,
     private readonly hooks?: {
       retry(text: string): void
@@ -94,9 +96,10 @@ export class ConversationView {
       draft(): string
       approve?(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): Promise<void>
       previewAttachment?(item: NonNullable<HistoryMessage['attachments']>[number]): void
+      previewOutlineImage?(sessionId: string, outlineId: string, needId: string): Promise<Blob>
     },
   ) {
-    this.outlineView = new OutlineView(action, revise, dock)
+    this.outlineView = new OutlineView(action, revise, dock, hooks?.previewOutlineImage)
   }
 
   setOutlines(snapshot: OutlineSnapshot): void {

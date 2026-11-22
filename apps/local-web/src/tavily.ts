@@ -14,9 +14,71 @@ const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 const failure = (code = 'RESEARCH_UNAVAILABLE') => new HttpError(503, code)
 
+export interface ImageSearchCandidate {
+  readonly imageUrl: string
+  readonly sourceUrl?: string
+  readonly sourcePages?: readonly string[]
+  readonly title: string
+  readonly description: string
+}
+
 /** Fixed endpoints, no redirects, no raw provider failures and no automatic paid fallback. */
 export class TavilyClient {
   constructor(private readonly fetcher: typeof fetch = fetch) {}
+
+  async images(key: string, query: string, signal: AbortSignal): Promise<readonly ImageSearchCandidate[]> {
+    const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
+    if (!query.trim() || query.length > 500 || !query.isWellFormed())
+      throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+    await this.check(key, deadline)
+    const response = await this.json('search', key, deadline, {
+      query,
+      search_depth: 'basic',
+      auto_parameters: false,
+      max_results: 5,
+      topic: 'general',
+      include_answer: false,
+      include_raw_content: false,
+      include_images: true,
+      include_image_descriptions: true,
+      include_usage: true,
+    })
+    const safe = (v: unknown): v is string => {
+      if (typeof v !== 'string' || v.length > 2048) return false
+      try {
+        const url = new URL(v)
+        return url.protocol === 'https:' && !url.username && !url.password && !url.port
+      } catch {
+        return false
+      }
+    }
+    const candidates: ImageSearchCandidate[] = []
+    const add = (entry: unknown, page?: Record<string, unknown>) => {
+      if (!record(entry) || !safe(entry.url) || candidates.some(c => c.imageUrl === entry.url)) return
+      candidates.push({
+        imageUrl: entry.url,
+        ...(page && safe(page.url) ? { sourceUrl: page.url } : {}),
+        ...(!page
+          ? {
+              sourcePages: Array.isArray(response.results)
+                ? response.results
+                    .filter(record)
+                    .map(r => r.url)
+                    .filter(safe)
+                    .slice(0, 2)
+                : [],
+            }
+          : {}),
+        title: page && typeof page.title === 'string' ? page.title.slice(0, 300) : '',
+        description: typeof entry.description === 'string' ? entry.description.slice(0, 1500) : '',
+      })
+    }
+    if (!Array.isArray(response.results) || !Array.isArray(response.images)) throw failure()
+    for (const page of response.results.slice(0, 5))
+      if (record(page) && Array.isArray(page.images)) for (const entry of page.images.slice(0, 5)) add(entry, page)
+    for (const entry of response.images.slice(0, 5)) add(entry)
+    return candidates.slice(0, 5)
+  }
 
   private async json(
     path: 'usage' | 'search',

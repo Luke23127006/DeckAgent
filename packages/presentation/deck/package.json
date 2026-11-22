@@ -6,12 +6,17 @@
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
+    "./brief": {
+      "types": "./lib/types/brief.d.ts",
+      "default": "./lib/brief.js"
+    },
     ".": {
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     }
   },
   "dependencies": {
+    "zod": "4.6.7",
     "@deckagent/design": "workspace:*",
     "@deckagent/presentation-document": "workspace:*",
     "@deckagent/html-format": "workspace:*"

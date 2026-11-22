@@ -524,10 +524,10 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     answers: [{ topic: 'images', value: 'None' }],
     sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
   }
-  const incomplete = { ...draft }
+  const incomplete = { ...draft, requestedFormat: 'HTML', themeOverrides: null }
   delete incomplete.purpose
   const log = join(dir, 'opencode.log')
-  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: incomplete }))
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: incomplete, repairBrief: true }))
   await writeFile(`${log}.generation.json`, '{}')
   app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir) })
   session = await openBrowser(dir)
@@ -574,6 +574,16 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     0,
     'Incomplete Brief must not offer confirmation',
   )
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ briefAttempts: [incomplete, incomplete, incomplete] }))
+  await send('Giữ yêu cầu hiện tại [workflow]')
+  await eventually(
+    () =>
+      evaluate(
+        `[...document.querySelectorAll('.request-state')].some(node=>node.textContent.includes('Chưa chuẩn bị được Brief hợp lệ'))`,
+      ),
+    'Brief repair exhaustion must have specific feedback',
+  )
+  assert.equal(await evaluate(`document.querySelectorAll('.outline-proposal').length`), 0)
   const plan = {
     overview: 'Three slides',
     revisionSuggestions: ['Clarify next steps'],
@@ -678,7 +688,11 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     .filter(Boolean)
     .map(JSON.parse)
     .filter(r => r.command === 'run')
-  assert.equal(runs.length, 5, 'Duplicate confirmation, restart and reload must not replay generation')
+  assert.equal(
+    runs.length,
+    6,
+    'The explicit failed Brief request is counted; duplicate confirmation, restart and reload must not replay generation',
+  )
   await writeFile(`${log}.generation.json`, JSON.stringify({ stopAfterFirst: true }))
   await evaluate(`document.querySelector('[data-action=new-chat]').click(); true`)
   await eventually(
@@ -771,11 +785,12 @@ test('web-image Outline completion clears request controls and history reopens a
   const log = join(dir, 'opencode.log')
   const draft = {
     ...brief(),
+    template: { id: 'html-basic', version: 2 },
     proposedSlideCount: 1,
     purpose: 'Explain',
     answers: [{ topic: 'images', value: 'Web illustration' }],
     sources: { material: false, modelKnowledge: true, publicResearch: false, refs: [] },
-    images: { mode: 'public-research', attachmentIds: [], unmetRequirements: [] },
+    images: { mode: 'public-research', provider: 'commons', attachmentIds: [], unmetRequirements: [] },
   }
   const plan = {
     overview: 'Forest overview',
@@ -792,8 +807,17 @@ test('web-image Outline completion clears request controls and history reopens a
       },
     ],
   }
-  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan }))
-  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir) })
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
+  const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir),
+    imageAccess: { fetch: async url => String(url).includes('/w/api.php?') ? Response.json({ query: { pages: [{
+      title: 'Forest ecosystem', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/wikipedia/commons/forest.png',
+        descriptionurl: 'https://commons.wikimedia.org/wiki/File:Forest.png', extmetadata: {
+          Artist: { value: 'Forest photographer' }, LicenseShortName: { value: 'CC BY 4.0' },
+          LicenseUrl: { value: 'https://creativecommons.org/licenses/by/4.0/' }, ImageDescription: { value: 'A forest ecosystem with trees' },
+        } }],
+    }] } }) : new Response(png, { headers: { 'content-type': 'image/png' } }) },
+  })
   const create = async () =>
     (
       await (
@@ -822,7 +846,7 @@ test('web-image Outline completion clears request controls and history reopens a
     `window.__originalOutlineFetch=window.fetch.bind(window);window.__outlineFaultSeen=false;window.fetch=async (...args)=>{const url=String(args[0]);if(url.endsWith('/outline')){const requests=await (await window.__originalOutlineFetch(url.replace(/\\/outline$/,'/requests'),args[1])).json();if(requests.some(r=>r.status==='completed')){window.__outlineFaultSeen=true;throw new Error('fixture Outline refresh unavailable')}}return window.__originalOutlineFetch(...args)};true`,
   )
   await evaluate(
-    `{ const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;document.querySelector('[aria-label="Lựa chọn ảnh"]').value='public-research';const input=document.querySelector('.composer textarea');input.value='Create the forest deck [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit(); } true`,
+    `{ const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;document.querySelector('[aria-label="Lựa chọn ảnh"]').value='commons';const input=document.querySelector('.composer textarea');input.value='Create the forest deck [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit(); } true`,
   )
   await eventually(
     () => evaluate(`document.querySelector('.stop-action').hidden && !document.querySelector('.send-action').disabled`),
@@ -840,6 +864,10 @@ test('web-image Outline completion clears request controls and history reopens a
     () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
     'Saved web-image Outline not shown',
   )
+  await evaluate(`document.querySelector('.planned-slide').open=true;true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`), 'Prepared image thumbnail missing')
+  assert.equal(await evaluate(`document.querySelector('.outline-image-review img').src.startsWith('blob:')`), true)
+  assert.equal(await evaluate(`document.querySelector('.outline-image-review a').href`), 'https://commons.wikimedia.org/wiki/File:Forest.png')
   assert.equal(await requestCount(app, target), 1)
   await protocol.call('Page.reload')
   await eventually(
@@ -856,6 +884,13 @@ test('web-image Outline completion clears request controls and history reopens a
     'Chat history did not reopen',
   )
   assert.equal(await requestCount(app, target), 1, 'Opening history must not replay the model request')
+  await evaluate(`document.querySelector('.planned-slide').open=true;true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-image-review img')?.naturalWidth > 0`), 'Reopened thumbnail missing')
+  await evaluate(`document.querySelector('.composer textarea').value='Keep this draft';document.querySelector('.outline-image-review button').click();true`)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value.startsWith('Keep this draft')`), true)
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').value.includes('replace:true')`), true)
+  assert.equal(await requestCount(app, target), 1, 'Replace prepares a review request, never sends it silently')
+
 })
 
 test('saving a Custom API model ID from the input makes it available without a separate Add click', {

@@ -10,6 +10,7 @@ import type {
   ThemeValues,
 } from './contracts.ts'
 export { DesignError } from './contracts.ts'
+export type { WebImageIntent } from './contracts.ts'
 export type {
   CatalogRef,
   ContentBlock,
@@ -262,11 +263,27 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
     }
     if (block.kind === 'web-image') {
       if (
-        !only(block, ['kind', 'query', 'caption', 'required']) ||
+        !only(block, ['kind', 'query', 'caption', 'required', 'intent', 'provider', 'replace']) ||
         !text(block.query) ||
         block.query.length > 500 ||
         (block.caption !== undefined && !text(block.caption)) ||
-        (block.required !== undefined && typeof block.required !== 'boolean')
+        (block.required !== undefined && typeof block.required !== 'boolean') ||
+        (block.replace !== undefined && typeof block.replace !== 'boolean') ||
+        (block.provider !== undefined && !['tavily', 'commons'].includes(String(block.provider))) ||
+        (block.intent !== undefined &&
+          (!isRecord(block.intent) ||
+            !only(block.intent, ['subject', 'role', 'mustInclude', 'mustAvoid', 'aspect']) ||
+            !text(block.intent.subject) ||
+            block.intent.subject.length > 500 ||
+            !text(block.intent.role) ||
+            block.intent.role.length > 500 ||
+            !Array.isArray(block.intent.mustInclude) ||
+            block.intent.mustInclude.length > 10 ||
+            !block.intent.mustInclude.every((v: unknown) => text(v) && v.length <= 300) ||
+            !Array.isArray(block.intent.mustAvoid) ||
+            block.intent.mustAvoid.length > 10 ||
+            !block.intent.mustAvoid.every((v: unknown) => text(v) && v.length <= 300) ||
+            !['landscape', 'portrait', 'square', 'any'].includes(String(block.intent.aspect))))
       )
         return invalid()
       return {
@@ -274,6 +291,9 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         query: block.query,
         ...(typeof block.caption === 'string' ? { caption: block.caption } : {}),
         ...(typeof block.required === 'boolean' ? { required: block.required } : {}),
+        ...(typeof block.replace === 'boolean' ? { replace: block.replace } : {}),
+        ...(block.provider === 'tavily' || block.provider === 'commons' ? { provider: block.provider } : {}),
+        ...(block.intent ? { intent: block.intent as unknown as import('./contracts.ts').WebImageIntent } : {}),
       }
     }
     if (block.kind === 'image') {

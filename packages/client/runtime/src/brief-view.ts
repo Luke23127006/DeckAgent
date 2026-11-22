@@ -64,7 +64,9 @@ export function briefDetails(
   const imageLabels = {
     none: 'Không dùng ảnh',
     attachments: 'Dùng ảnh đính kèm',
-    'public-research': 'Ảnh web từ Wikimedia Commons; truy vấn ảnh được gửi tới dịch vụ này.',
+    'public-research': draft.images.provider
+      ? `Ảnh web từ ${draft.images.provider === 'commons' ? 'Wikimedia Commons' : 'Tavily · chỉ miễn phí'}; truy vấn ảnh được gửi tới dịch vụ này.`
+      : 'Ảnh web; xem nguồn được lưu cùng từng ảnh. Phiên bản Brief này chưa ghi riêng dịch vụ tìm ảnh.',
     unavailable: 'Yêu cầu ảnh chưa đáp ứng',
   }
   record.append(element('p', `Ảnh: ${imageLabels[draft.images.mode]}`))

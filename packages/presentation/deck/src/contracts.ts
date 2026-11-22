@@ -1,3 +1,4 @@
+import type { briefTopics } from './brief.ts'
 import type { CatalogRef, DesignSnapshot, ThemeValues } from '@deckagent/design'
 import { FormatError } from '@deckagent/presentation-document'
 import type {
@@ -11,17 +12,7 @@ import type {
 export type { CatalogRef, ContentBlock, DesignSnapshot, ThemeValues } from '@deckagent/design'
 
 export type BriefSourceRef = SourceReference
-export type InterviewTopic =
-  | 'topic'
-  | 'audience'
-  | 'duration'
-  | 'purpose'
-  | 'sources'
-  | 'language'
-  | 'images'
-  | 'format'
-  | 'template'
-  | 'design-system'
+export type InterviewTopic = (typeof briefTopics)[number]
 export interface BriefDraft {
   readonly presenterNotes?: boolean
   readonly topic?: string
@@ -40,6 +31,7 @@ export interface BriefDraft {
   }
   readonly images: {
     readonly mode: 'none' | 'attachments' | 'public-research' | 'unavailable'
+    readonly provider?: 'tavily' | 'commons'
     readonly attachmentIds: readonly string[]
     readonly unmetRequirements: readonly string[]
   }
@@ -150,13 +142,50 @@ export interface PreparedImageAsset {
 export interface ImageCredit {
   readonly url: string
   readonly author: string
-  readonly license: 'public-domain' | 'CC0' | 'CC BY' | 'unknown'
+  readonly license: 'public-domain' | 'CC0' | 'CC BY' | 'Pexels' | 'unknown'
+  readonly evidence?: 'image-metadata' | 'pexels-cdn'
   readonly licenseUrl: string
   readonly unknownLicense: boolean
   readonly retrievedAt: string
 }
 export interface PreparedResearchImage extends PreparedImageAsset {
   readonly credit: ImageCredit
+  readonly selection?: ImageSelection
+}
+export interface ImageNeed {
+  readonly contextBlocks: readonly import('@deckagent/design').ContentBlock[]
+  readonly needId: string
+  readonly slideIndex: number
+  readonly blockIndex: number
+  readonly title: string
+  readonly content: string
+  readonly query: string
+  readonly caption: string
+  readonly provider: 'tavily' | 'commons'
+  readonly intent: import('@deckagent/design').WebImageIntent
+  readonly required: boolean
+  readonly replace: boolean
+}
+export interface ImageSelection {
+  readonly provider: 'tavily' | 'commons'
+  readonly query: string
+  readonly imageUrl: string
+  readonly description: string
+  readonly reason: string
+  readonly evidence: 'metadata'
+  readonly policy: 'web-images-v1'
+}
+export type ImageResolver = (need: ImageNeed, signal: AbortSignal) => Promise<PreparedResearchImage>
+export interface OutlineImageReview {
+  readonly digest?: string
+  readonly needId: string
+  readonly slideIndex: number
+  readonly blockIndex: number
+  readonly required: boolean
+  readonly status: 'prepared' | 'unavailable'
+  readonly failure?: string
+  readonly credit?: ImageCredit
+  readonly selection?: ImageSelection
 }
 export interface StageStatus {
   readonly rules?: readonly string[]
@@ -184,6 +213,8 @@ export interface ArtifactAsset {
   readonly source: BriefSourceRef
   readonly attachmentId?: string
   readonly webQuery?: string
+  readonly imageNeedId?: string
+  readonly selection?: ImageSelection
   readonly credit?: ImageCredit
   readonly digest: string
   readonly originalDigest: string
@@ -264,6 +295,7 @@ export interface OutlineTarget {
 }
 
 export interface OutlineProposal extends OutlineTarget {
+  readonly imageReview?: readonly OutlineImageReview[]
   readonly brief?: BriefRecord
   readonly revisionSuggestions?: readonly string[]
   readonly previousOutlineId?: string
@@ -332,6 +364,7 @@ export interface OutlineSnapshot {
 }
 
 export interface OutlineReader {
+  outlineImagePreview?(sessionId: string, outlineId: string, needId: string): Uint8Array
   outlineSnapshot(sessionId: string): OutlineSnapshot
 }
 
@@ -344,6 +377,8 @@ export class DeckError extends FormatError {
 }
 
 const failureMessages: Readonly<Record<string, string>> = {
+  BRIEF_REPAIR_LIMIT:
+    'The request exhausted two Brief repairs. Inspect the field issues before starting a new request; saved Brief and Outline versions remain unchanged.',
   IMAGE_PREPARATION_REQUIRED:
     'Required images are not prepared. Revise the Outline query, select an alternative or explicitly mark the image optional before confirming again.',
   SLIDE_CORRECTION_LIMIT:

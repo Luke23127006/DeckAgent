@@ -1,6 +1,14 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  BRIEF_REPAIR_LIMIT: [
+    'Chưa chuẩn bị được Brief hợp lệ',
+    'Đã hết hai lượt sửa tự động trong yêu cầu này. Xem các trường còn lỗi trong phản hồi; Brief và Outline đã lưu được giữ nguyên.',
+  ],
+  BRIEF_PROPOSAL_REQUIRED: [
+    'Chưa lưu được Brief',
+    'Model chưa gửi được Brief hợp lệ. Yêu cầu đã kết thúc; thông tin đã lưu trước đó được giữ nguyên.',
+  ],
   IMAGE_PREPARATION_REQUIRED: [
     'Chưa chuẩn bị đủ ảnh bắt buộc',
     'Sửa Outline để đổi truy vấn ảnh, chọn ảnh khác hoặc xác nhận ảnh không bắt buộc, rồi xem lại trước khi xác nhận.',

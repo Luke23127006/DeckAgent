@@ -51,7 +51,22 @@ export type ContentBlock =
   | { readonly kind: 'columns'; readonly columns: readonly { readonly bullets: readonly string[] }[] }
   | { readonly kind: 'metrics'; readonly items: readonly { readonly value: string; readonly label: string }[] }
   | { readonly kind: 'image'; readonly attachmentId: string; readonly caption?: string }
-  | { readonly kind: 'web-image'; readonly query: string; readonly caption?: string; readonly required?: boolean }
+  | {
+      readonly kind: 'web-image'
+      readonly query: string
+      readonly caption?: string
+      readonly required?: boolean
+      readonly intent?: WebImageIntent
+      readonly provider?: 'tavily' | 'commons'
+      readonly replace?: boolean
+    }
+export interface WebImageIntent {
+  readonly subject: string
+  readonly role: string
+  readonly mustInclude: readonly string[]
+  readonly mustAvoid: readonly string[]
+  readonly aspect: 'landscape' | 'portrait' | 'square' | 'any'
+}
 export interface SlideContentPlan {
   readonly title: string
   readonly blocks: readonly ContentBlock[]

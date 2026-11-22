@@ -28,10 +28,10 @@ function discoverWorkspacePackages() {
 
 // tsc -b emits checked JavaScript and declarations first. tsdown then bundles each
 // package's lib/types entry. External package imports retain their public entry
-// points. The extra entry points below are build-time conventions not declared
-// by the manifests (apps are private with
-// no exports), so they are listed explicitly rather than derived from a manifest.
+// points. Additional public subpaths and application/worker entry points are
+// listed explicitly: workspace discovery enumerates packages, not bundler entries.
 const extraEntries = {
+  '@deckagent/deck': ['lib/types/brief.js'],
   '@deckagent/file-tools': ['lib/types/parser-worker.js'],
   '@deckagent/browser-runtime': ['lib/types/boot.js'],
   '@deckagent/local-web': ['lib/types/cli.js'],
@@ -73,7 +73,10 @@ for (const pkg of packages) {
   }
   if (pkg.name === '@deckagent/browser-runtime') {
     config.platform = 'browser'
-    config.noExternal = ['@deckagent/presentation-document']
+    config.deps = {
+      alwaysBundle: ['@deckagent/presentation-document', '@deckagent/deck/brief', 'zod'],
+      onlyBundle: [/^@deckagent\//, /^zod(?:\/|$)/, 'animejs'],
+    }
   }
   if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name])
   await build(config)

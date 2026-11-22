@@ -1,5 +1,6 @@
 import type { OutlineProposal, BriefSourceRef, ContentBlock } from '@deckagent/deck'
 import { decodeBriefView } from './brief-client.ts'
+import { decodeImageReview } from './image-review-client.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
@@ -24,17 +25,22 @@ function block(v: unknown): ContentBlock {
     return { kind: 'bullets', items: v.items }
   if (
     v.kind === 'web-image' &&
-    only(v, ['kind', 'query', 'caption', 'required']) &&
+    only(v, ['kind', 'query', 'caption', 'required', 'intent', 'provider', 'replace']) &&
     text(v.query) &&
     v.query.length <= 500 &&
     (v.caption === undefined || text(v.caption)) &&
-    (v.required === undefined || typeof v.required === 'boolean')
+    (v.required === undefined || typeof v.required === 'boolean') &&
+    (v.replace === undefined || typeof v.replace === 'boolean') &&
+    (v.provider === undefined || v.provider === 'tavily' || v.provider === 'commons')
   )
     return {
       kind: 'web-image',
       query: v.query,
       ...(typeof v.caption === 'string' ? { caption: v.caption } : {}),
       ...(typeof v.required === 'boolean' ? { required: v.required } : {}),
+      ...(typeof v.replace === 'boolean' ? { replace: v.replace } : {}),
+      ...(v.provider === 'tavily' || v.provider === 'commons' ? { provider: v.provider } : {}),
+      ...(v.intent === undefined ? {} : { intent: imageIntent(v.intent) }),
     }
   if (
     v.kind === 'image' &&
@@ -65,6 +71,26 @@ function block(v: unknown): ContentBlock {
       }),
     }
   return invalid()
+}
+function imageIntent(v: unknown): import('@deckagent/design').WebImageIntent {
+  if (
+    !object(v) ||
+    !only(v, ['subject', 'role', 'mustInclude', 'mustAvoid', 'aspect']) ||
+    !text(v.subject) ||
+    v.subject.length > 500 ||
+    !text(v.role) ||
+    v.role.length > 500 ||
+    !strings(v.mustInclude) ||
+    v.mustInclude.length > 10 ||
+    v.mustInclude.some(s => s.length > 300) ||
+    !strings(v.mustAvoid) ||
+    v.mustAvoid.length > 10 ||
+    v.mustAvoid.some(s => s.length > 300)
+  )
+    return invalid()
+  const aspect = (['landscape', 'portrait', 'square', 'any'] as const).find(k => k === v.aspect)
+  if (!aspect) return invalid()
+  return { subject: v.subject, role: v.role, mustInclude: v.mustInclude, mustAvoid: v.mustAvoid, aspect }
 }
 function source(v: unknown): BriefSourceRef {
   if (
@@ -160,6 +186,7 @@ export function decodeBoundProposal(v: Record<string, unknown>, sessionId: strin
     overview: v.overview,
     status,
     slides,
+    ...(v.imageReview === undefined ? {} : { imageReview: decodeImageReview(v.imageReview) }),
     brief,
     revisionSuggestions: v.revisionSuggestions,
     changes: {

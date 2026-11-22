@@ -2,6 +2,34 @@
 
 The [review/generation decision](../adr/0005-outline-generation-contracts.md) and [artifact decision](../adr/0006-generated-artifact-publication.md) define the contracts. [Interview and Outline review](interview-and-outline.md) describes the preceding stage. The [portable content reference](portable-slide-content.md) describes executable template version 2, prepared-image confirmation and independent native adapters. The production app connects confirmation, the isolated OpenCode runtime, request-scoped generation tools and sandboxed Preview.
 
+## Request to Preview
+
+This flow shows new HTML Basic version 2 decks. The Host supplies the catalog and admitted source choices during review, then supplies the confirmed plan during generation. The [per-slide template sequence](portable-slide-content.md#per-slide-template-sequence) expands the generation step.
+
+```mermaid
+flowchart TD
+    Request["User: request, material and source choices"] --> Brief["Model: stage_brief"]
+    Brief --> Ready{"Host: ready for Outline?"}
+    Ready -->|No| Questions["Ask missing questions or offer skip"]
+    Questions --> Answer["User: answer or skip in a new request"]
+    Answer --> Brief
+    Ready -->|Yes| Outline["Model: stage_outline"]
+    Outline --> Save["Host: prepare web images and save Brief with Outline"]
+    Save --> Review["User: review Brief and Outline"]
+    Review -->|Revise| Request
+    Review -->|Confirm| Gate{"Host: current versions and required images ready?"}
+    Gate -->|No| Resolve["Explain blocker and request a review change"]
+    Resolve --> Review
+    Gate -->|Yes| Plan["Host: save confirmed plan and visual snapshot"]
+    Plan --> Generate["New generation request: build each pending slide"]
+    Generate --> Publish["Host: validate and publish each finished revision"]
+    Publish --> Preview["Preview: show saved slides as they finish"]
+```
+
+`stage_brief` and `stage_outline` hold proposals in memory until the request succeeds. An incomplete interview saves its Brief and returns questions without an Outline. The ready path saves the Brief, Outline and prepared-image records together. Missing required images leave the proposal available for review and block confirmation. Schema errors are repaired within the request's bound; they do not require the user to answer the interview again.
+
+Confirmation binds the reviewed Brief and Outline versions. Generation uses the saved template version and theme; it does not choose them again. Stop or failure keeps published revisions. An explicit continuation starts a new request for missing slides in the same Deck; restart does not resume generation automatically.
+
 ## Confirmation and request lifecycle
 
 `POST /api/sessions/:id/deck/confirm` accepts exactly `confirmationId`, `outlineId`, `outlineVersion`, `briefId` and `briefVersion`. It rejects message text, mixed change fields, stale or foreign targets. Authentication and origin checks apply. `ConfirmationClient` validates receipts and their linked requests; `DeckClient` retains generation state and the effective visual snapshot.
@@ -48,7 +76,7 @@ The validator uses [parse5 HTML parsing](https://parse5.js.org/functions/parse5.
 
 A hidden installed Chrome or Edge checks the materialized document at 1280 × 720. Its child environment contains only allowlisted platform/path settings, without inherited provider or research keys; the browser uses a fresh isolated user-data directory. Document CSP and blocked resource URLs deny document network reads. The check waits for fonts/images and rejects missing planned text, unreadable or invisible content, failed images and known overflow. It is bounded by a 15-second deadline and two concurrent checks. It does not prove every fact, every overlap, contrast quality, glyph coverage, a hard process memory limit or OS sandboxing. Missing browser support blocks publication with an error instead of bypassing validation.
 
-Deck schema v8 accepts existing v1 through v7 databases and adds immutable prepared-image records. It preserves legacy revisions and original confirmation receipts. An absent active-attempt ID refers to the original request; historical absent origins, notes and credits stay absent. Session schema stays v7 because linkage uses existing unique request IDs. Modern source/assets live under `files/decks/`; SQLite holds metadata, manifests and receipts. Source/assets are written and checked before revision/current pointer/receipt commit in one transaction. A failed render, interrupted request or metadata commit leaves the previous pointer unchanged. Startup removes only recognized unreferenced managed artifacts and partial chunks; published files and unrelated names are kept. Missing or changed published bytes produce an error without rewriting history. Older binaries refuse the newer schema; keep a backup if downgrade is needed. Deploy Host and browser decoders together for the new image mode, content block and revision metadata.
+Deck schema v9 accepts existing v1 through v8 databases and preserves immutable prepared-image records and adds durable image-search attempts. It preserves legacy revisions and original confirmation receipts. An absent active-attempt ID refers to the original request; historical absent origins, notes and credits stay absent. Session schema stays v7 because linkage uses existing unique request IDs. Modern source/assets live under `files/decks/`; SQLite holds metadata, manifests and receipts. Source/assets are written and checked before revision/current pointer/receipt commit in one transaction. A failed render, interrupted request or metadata commit leaves the previous pointer unchanged. Startup removes only recognized unreferenced managed artifacts and partial chunks; published files and unrelated names are kept. Missing or changed published bytes produce an error without rewriting history. Older binaries refuse the newer schema; keep a backup if downgrade is needed. Deploy Host and browser decoders together for the new image mode, content block and revision metadata.
 
 Run `pnpm.cmd test:generation-publication` and `pnpm.cmd test:browser-smoke` after building. Tests cover concurrent/invalid confirmation, admission/link/terminal fault windows, Stop, chunk conflict, foreign grants, revision conflicts, immutable image provenance, actual browser rendering and restart recovery. A fake CLI exercises the actual MCP transport and selected-source restrictions; a browser runs Interview, revision, question-only review, duplicate/mixed confirmation, a complete three-slide deck, Preview and Stop. No cloud provider or paid service is needed. Real CLI/provider acceptance remains separate: repeat the end-user flow with a configured free model, inspect every rendered slide and source claim, then stop a second deck after its first saved slide and reopen it after restart.
 

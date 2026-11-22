@@ -35,7 +35,7 @@ This section describes the current state and changes with the codebase; it is no
 | `@deckagent/presentation-document` | `packages/presentation/document` | design types; browser-safe contracts and decoders |
 | `@deckagent/html-format` | `packages/presentation/html` | design, presentation-document, css-tree, parse5 |
 | `@deckagent/pptx-format` | `packages/presentation/pptx` | design, presentation-document, pptxgenjs, jszip; native-format proof |
-| `@deckagent/deck` | `packages/presentation/deck` | design, presentation-document, html-format compatibility default |
+| `@deckagent/deck` | `packages/presentation/deck` | design, presentation-document, html-format compatibility default, zod; browser-safe Brief subpath |
 | `@deckagent/file-tools` | `packages/tools/filesystem` | zip.js, fast-xml-parser, pdfjs-dist, sharp |
 | `@deckagent/host-api` | `packages/host/api` | deck, busboy |
 | `@deckagent/browser-runtime` | `packages/client/runtime` | deck, host-api, presentation-document; animejs at build time |

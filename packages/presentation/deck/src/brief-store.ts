@@ -1,174 +1,59 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { decodeDesignSnapshot, resolveDesign } from '@deckagent/design'
+import { decodeDesignSnapshot, resolveDesign, DesignError } from '@deckagent/design'
 import { DeckError, validId } from './contracts.ts'
-import type { BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef, InterviewTopic } from './contracts.ts'
+import type { BriefDraft, BriefRecord, BriefSnapshot } from './contracts.ts'
+import { decodeBriefDraft } from './brief.ts'
+import type { ValidationIssue } from '@deckagent/presentation-document'
 
-const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
-const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
-const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(text)
-const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
-const topics: readonly InterviewTopic[] = [
-  'topic',
-  'audience',
-  'duration',
-  'purpose',
-  'sources',
-  'language',
-  'images',
-  'format',
-  'template',
-  'design-system',
-]
-
-/** Strict JSON contract; sources are references, never grants. App composition verifies their owning Chat. */
+/** Shared structural contract; catalog availability remains a Host policy check. */
 export function validateBriefDraft(value: unknown): BriefDraft {
-  const invalid = (): never => {
-    throw new DeckError('BRIEF_INVALID')
-  }
-  if (
-    !record(value) ||
-    !only(value, [
-      'topic',
-      'audience',
-      'durationMinutes',
-      'purpose',
-      'language',
-      'requirements',
-      'answers',
-      'assumptions',
-      'sources',
-      'images',
-      'proposedSlideCount',
-      'requestedFormat',
-      'generationFormat',
-      'template',
-      'designSystem',
-      'themeOverrides',
-      'presenterNotes',
-    ])
-  )
-    return invalid()
+  let draft: BriefDraft | undefined
+  const issues: ValidationIssue[] = []
   try {
-    if (Buffer.byteLength(JSON.stringify(value)) > 128 * 1024) return invalid()
-  } catch {
-    return invalid()
+    draft = decodeBriefDraft(value)
+  } catch (error) {
+    if (!(error instanceof DeckError)) throw error
+    issues.push(...error.issues)
   }
-  if (value.presenterNotes !== undefined && typeof value.presenterNotes !== 'boolean') return invalid()
-  for (const key of ['topic', 'audience', 'purpose', 'language', 'requestedFormat'])
-    if (value[key] !== undefined && !text(value[key])) return invalid()
-  if (
-    value.durationMinutes !== undefined &&
-    (typeof value.durationMinutes !== 'number' || !Number.isFinite(value.durationMinutes) || value.durationMinutes <= 0)
-  )
-    return invalid()
-  if (
-    value.proposedSlideCount !== undefined &&
-    (!Number.isSafeInteger(value.proposedSlideCount) || Number(value.proposedSlideCount) < 1)
-  )
-    return invalid()
-  if (
-    !strings(value.requirements) ||
-    !strings(value.assumptions) ||
-    !Array.isArray(value.answers) ||
-    value.answers.some(
-      a => !record(a) || !only(a, ['topic', 'value']) || !topics.some(t => t === a.topic) || !text(a.value),
-    )
-  )
-    return invalid()
-  if (new Set(value.answers.map(a => a.topic)).size !== value.answers.length) return invalid()
-  const sources = value.sources,
-    images = value.images
-  if (
-    !record(sources) ||
-    !only(sources, ['material', 'modelKnowledge', 'publicResearch', 'refs']) ||
-    ['material', 'modelKnowledge', 'publicResearch'].some(k => typeof sources[k] !== 'boolean') ||
-    !Array.isArray(sources.refs)
-  )
-    return invalid()
-  const sourceKinds: readonly BriefSourceRef['kind'][] = ['attachment', 'project-file', 'approved-file', 'research']
-  for (const ref of sources.refs)
+  const rejected = (path: string) =>
+    issues.some(i => i.path === path || i.path.startsWith(path + '.') || i.path.startsWith(path + '['))
+  const check = (selection: unknown, path: string) => {
+    if (rejected(path)) return
+    try {
+      resolveDesign(selection)
+    } catch (error) {
+      if (!(error instanceof DesignError)) throw error
+      issues.push({
+        code: error.code,
+        path,
+        message: 'The visual selection is not available in the supplied catalog.',
+        expected:
+          'Use a supplied catalog reference or available theme role value. Preserve user choices; do not substitute another selection to repair JSON.',
+      })
+    }
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value) && issues.length < 64) {
+    if ('template' in value && value.template !== undefined) check({ template: value.template }, 'template')
+    if ('designSystem' in value && value.designSystem !== undefined)
+      check({ designSystem: value.designSystem }, 'designSystem')
     if (
-      !record(ref) ||
-      !only(ref, ['sourceId', 'version', 'kind']) ||
-      typeof ref.sourceId !== 'string' ||
-      !/^src-[a-f0-9-]{36}$/.test(ref.sourceId) ||
-      !Number.isSafeInteger(ref.version) ||
-      Number(ref.version) < 1 ||
-      !sourceKinds.some(k => k === ref.kind) ||
-      (ref.kind !== 'research' && !sources.material) ||
-      (ref.kind === 'research' && !sources.material && !sources.publicResearch)
-    )
-      return invalid()
-  if (new Set(sources.refs.map(ref => `${ref.sourceId}:${ref.version}:${ref.kind}`)).size !== sources.refs.length)
-    return invalid()
-  const imageModes: readonly BriefDraft['images']['mode'][] = ['none', 'attachments', 'public-research', 'unavailable']
-  if (
-    !record(images) ||
-    !only(images, ['mode', 'attachmentIds', 'unmetRequirements']) ||
-    !imageModes.some(m => m === images.mode) ||
-    !Array.isArray(images.attachmentIds) ||
-    images.attachmentIds.some(id => typeof id !== 'string' || !/^att-[a-f0-9-]{36}$/.test(id)) ||
-    new Set(images.attachmentIds).size !== images.attachmentIds.length ||
-    !strings(images.unmetRequirements)
-  )
-    return invalid()
-  if (
-    (images.mode !== 'attachments' && images.attachmentIds.length > 0) ||
-    (images.mode === 'attachments' && !sources.material) ||
-    (images.mode === 'unavailable' && !images.unmetRequirements.length)
-  )
-    return invalid()
-  if (value.generationFormat !== undefined && value.generationFormat !== 'html') return invalid()
-  if (value.requestedFormat !== undefined && value.requestedFormat !== 'html' && value.generationFormat !== undefined)
-    return invalid()
-  // Selection is validated even while incomplete; defaults are not silently written into the Brief.
-  const visual = resolveDesign({
-    ...(value.generationFormat !== undefined ? { format: value.generationFormat } : {}),
-    ...(value.template !== undefined ? { template: value.template } : {}),
-    ...(value.designSystem !== undefined ? { designSystem: value.designSystem } : {}),
-    ...(value.themeOverrides !== undefined ? { overrides: value.themeOverrides } : {}),
-  })
-  const optionalText = (key: 'topic' | 'audience' | 'purpose' | 'language' | 'requestedFormat') =>
-    typeof value[key] === 'string' ? { [key]: value[key] } : {}
-  return {
-    ...(typeof value.presenterNotes === 'boolean' ? { presenterNotes: value.presenterNotes } : {}),
-    ...optionalText('topic'),
-    ...optionalText('audience'),
-    ...optionalText('purpose'),
-    ...optionalText('language'),
-    ...optionalText('requestedFormat'),
-    ...(typeof value.durationMinutes === 'number' ? { durationMinutes: value.durationMinutes } : {}),
-    ...(typeof value.proposedSlideCount === 'number' ? { proposedSlideCount: value.proposedSlideCount } : {}),
-    ...(value.generationFormat === 'html' ? { generationFormat: 'html' as const } : {}),
-    ...(value.template !== undefined ? { template: visual.template } : {}),
-    ...(value.designSystem !== undefined ? { designSystem: visual.designSystem } : {}),
-    ...(record(value.themeOverrides)
-      ? {
-          themeOverrides: Object.fromEntries(
-            Object.keys(value.themeOverrides).map(k => [k, visual.theme[k as keyof typeof visual.theme]]),
-          ),
-        }
-      : {}),
-    requirements: [...value.requirements],
-    assumptions: [...value.assumptions],
-    answers: value.answers.map(a => ({ topic: topics.find(t => t === a.topic) ?? invalid(), value: String(a.value) })),
-    sources: {
-      material: sources.material === true,
-      modelKnowledge: sources.modelKnowledge === true,
-      publicResearch: sources.publicResearch === true,
-      refs: sources.refs.map(r => ({
-        sourceId: String(r.sourceId),
-        version: Number(r.version),
-        kind: sourceKinds.find(k => k === r.kind) ?? invalid(),
-      })),
-    },
-    images: {
-      mode: imageModes.find(m => m === images.mode) ?? invalid(),
-      attachmentIds: images.attachmentIds.map(String),
-      unmetRequirements: [...images.unmetRequirements],
-    },
+      'themeOverrides' in value &&
+      value.themeOverrides &&
+      typeof value.themeOverrides === 'object' &&
+      !Array.isArray(value.themeOverrides)
+    ) {
+      for (const [role, token] of Object.entries(value.themeOverrides))
+        if (!rejected('themeOverrides.' + role))
+          check({ overrides: { [role]: token } }, 'themeOverrides[' + JSON.stringify(role) + ']')
+    }
   }
+  if (issues.length || !draft)
+    throw new DeckError(
+      issues.some(i => i.code === 'BRIEF_INVALID') ? 'BRIEF_INVALID' : (issues[0]?.code ?? 'BRIEF_INVALID'),
+      issues.slice(0, 65),
+    )
+  return draft
 }
 
 /** Internal implementation; DeckService owns all transactions. */

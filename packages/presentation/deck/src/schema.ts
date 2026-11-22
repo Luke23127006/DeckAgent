@@ -25,7 +25,8 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id=1145128004;
         PRAGMA user_version=1;
       `)
-    } else if (owner !== 1145128004 || ![1, 2, 3, 4, 5, 6, 7, 8].includes(version)) throw new DeckError('DECK_SCHEMA')
+    } else if (owner !== 1145128004 || ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(version))
+      throw new DeckError('DECK_SCHEMA')
     if (version < 2) {
       db.exec(`
         CREATE TABLE outline_heads(session_id TEXT PRIMARY KEY,version INTEGER NOT NULL,
@@ -70,6 +71,10 @@ export function initialize(db: DatabaseSync): void {
       db.exec(`CREATE TABLE prepared_images(session_id TEXT NOT NULL,outline_id TEXT NOT NULL,query TEXT NOT NULL,payload TEXT NOT NULL,
       PRIMARY KEY(session_id,outline_id,query),FOREIGN KEY(session_id,outline_id) REFERENCES outline_proposals(session_id,outline_id)) STRICT;
       PRAGMA user_version=8;`)
+    if (version < 9)
+      db.exec(`ALTER TABLE prepared_images RENAME COLUMN query TO image_key;
+      CREATE TABLE image_search_attempts(request_id TEXT PRIMARY KEY,session_id TEXT NOT NULL,attempts INTEGER NOT NULL) STRICT;
+      PRAGMA user_version=9;`)
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
       throw new DeckError('DECK_CORRUPT')
     db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()

@@ -47,6 +47,18 @@ import { validateProvenance } from './provenance.ts'
 import type { ContentProvenance } from './contracts.ts'
 import { validateBriefDraft } from './brief-store.ts'
 import { validateBoundOutline } from './bound-outline.ts'
+import { outlineImageNeeds } from './image-needs.ts'
+import type { ImageResolver, OutlineImageReview } from './contracts.ts'
+
+interface PreparedRecord {
+  query: string
+  needId?: string
+  slideIndex?: number
+  blockIndex?: number
+  slideId?: string
+  asset?: ArtifactAsset
+  failure?: string
+}
 
 const digest = (bytes: string | Uint8Array) => createHash('sha256').update(bytes).digest('hex')
 const hashMismatch = (expected: string, bytes: Uint8Array) =>
@@ -80,10 +92,7 @@ export interface PreparedArtifact {
 
 /** Managed immutable files only. DeckService owns metadata transactions and active-grant checks. */
 export class ArtifactStorage {
-  private readonly preparations = new WeakMap<
-    object,
-    { fingerprint: string; records: { query: string; asset?: ArtifactAsset; failure?: string }[] }
-  >()
+  private readonly preparations = new WeakMap<object, { fingerprint: string; records: PreparedRecord[] }>()
   private readonly stageAttempts = new WeakMap<GenerationGrant, Map<string, number>>()
   private readonly formats: ReadonlyMap<string, FormatAdapter>
   private readonly stages = new Map<string, Stage>()
@@ -155,41 +164,43 @@ export class ArtifactStorage {
     if (!stage || stage.grant !== grant) throw new DeckError('STAGE_NOT_FOUND')
     return stage
   }
-  async prepareImages(sessionId: string, input: BriefProposalInput, signal: AbortSignal): Promise<object> {
-    const records: { query: string; asset?: ArtifactAsset; failure?: string }[] = []
+  async prepareImages(
+    sessionId: string,
+    input: BriefProposalInput,
+    signal: AbortSignal,
+    resolver?: ImageResolver,
+  ): Promise<object> {
+    const records: PreparedRecord[] = []
     const brief = validateBriefDraft(input.draft),
       outline = input.outline ? validateBoundOutline(input.outline) : undefined
-    const queries =
-      brief.template?.version === 1
-        ? []
-        : [
-            ...new Set(
-              outline?.slides.flatMap(s => s.blocks.filter(b => b.kind === 'web-image').map(b => b.query)) ?? [],
-            ),
-          ]
-    if (queries.length && brief.images.mode !== 'public-research') throw new DeckError('IMAGE_CHOICE_REQUIRED')
-    if (queries.length > 32) throw new DeckError('RESEARCH_IMAGE_BUDGET')
-    for (const query of queries) {
+    const needs = brief.template?.version === 1 || !outline ? [] : outlineImageNeeds(outline)
+    if (needs.length && brief.images.mode !== 'public-research') throw new DeckError('IMAGE_CHOICE_REQUIRED')
+    if (needs.length > 32) throw new DeckError('RESEARCH_IMAGE_BUDGET')
+    for (const need of needs) {
+      const { query, needId, slideIndex, blockIndex } = need
+      const identity = { query, needId, slideIndex, blockIndex }
       signal.throwIfAborted()
       if (this.options.activeRequest && !this.options.activeRequest(sessionId, input.requestId))
         throw new DeckError('REQUEST_CLOSED')
       const previous = this.db
-        .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND query=?')
-        .all(sessionId, query)
+        .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND image_key=? ORDER BY rowid DESC')
+        .all(sessionId, needId)
         .map(r => JSON.parse(String(r.payload)))
         .find(r => r.asset)
-      if (previous?.asset) {
+      if (!resolver && !need.replace && previous?.asset) {
         try {
           this.read(`${previous.asset.assetId}.png`, previous.asset.digest, 256 * 1024)
-          records.push({ query, asset: previous.asset })
+          records.push({ ...identity, asset: previous.asset })
           continue
         } catch {
           /* A new reviewed proposal is allowed to prepare a replacement, without changing old records. */
         }
       }
       try {
-        if (!this.options.researchImage) throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
-        const image = await this.options.researchImage(sessionId, query, signal)
+        if (!resolver && !this.options.researchImage) throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
+        const image = resolver
+          ? await resolver(need, signal)
+          : await this.options.researchImage!(sessionId, query, signal)
         signal.throwIfAborted()
         if (this.options.activeRequest && !this.options.activeRequest(sessionId, input.requestId))
           throw new DeckError('REQUEST_CLOSED')
@@ -214,6 +225,8 @@ export class ArtifactStorage {
         const asset: ArtifactAsset = {
           assetId: `asset-${randomUUID()}`,
           webQuery: query,
+          imageNeedId: needId,
+          ...(image.selection ? { selection: { ...image.selection } } : {}),
           source: { ...image.source },
           credit: { ...image.credit },
           digest: digest(bytes),
@@ -222,12 +235,12 @@ export class ArtifactStorage {
           byteSize: bytes.length,
         }
         this.write(`${asset.assetId}.png`, bytes)
-        records.push({ query, asset })
+        records.push({ ...identity, asset })
       } catch (error) {
         signal.throwIfAborted()
         if (this.options.activeRequest && !this.options.activeRequest(sessionId, input.requestId))
           throw new DeckError('REQUEST_CLOSED')
-        records.push({ query, failure: error instanceof DeckError ? error.code : 'ARTIFACT_ASSET_UNAVAILABLE' })
+        records.push({ ...identity, failure: error instanceof DeckError ? error.code : 'ARTIFACT_ASSET_UNAVAILABLE' })
       }
     }
     const token = Object.freeze({})
@@ -242,37 +255,112 @@ export class ArtifactStorage {
     if (!prepared || prepared.fingerprint !== digest(JSON.stringify([sessionId, input])))
       throw new DeckError('IMAGE_PREPARATION_STALE')
     for (const record of prepared.records)
-      this.db
-        .prepare('INSERT INTO prepared_images VALUES(?,?,?,?)')
-        .run(sessionId, outline.outlineId, record.query, JSON.stringify(record))
+      this.db.prepare('INSERT INTO prepared_images VALUES(?,?,?,?)').run(
+        sessionId,
+        outline.outlineId,
+        record.needId ?? record.query,
+        JSON.stringify({
+          ...record,
+          ...(record.slideIndex === undefined ? {} : { slideId: outline.slides[record.slideIndex]?.slideId }),
+        }),
+      )
+  }
+  private preparedRecord(
+    sessionId: string,
+    outlineId: string,
+    slideId: string,
+    blockIndex: number,
+    query: string,
+  ): PreparedRecord | undefined {
+    const records = this.db
+      .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND outline_id=?')
+      .all(sessionId, outlineId)
+      .map(r => JSON.parse(String(r.payload)) as PreparedRecord)
+    return (
+      records.find(r => r.needId && r.slideId === slideId && r.blockIndex === blockIndex) ??
+      records.find(r => !r.needId && r.query === query)
+    )
+  }
+  imageReview(sessionId: string, outline: SavedOutline, verify = false): readonly OutlineImageReview[] {
+    if ((outline.brief?.design?.template.version ?? 1) < 2) return []
+    return outlineImageNeeds(outline).map(need => {
+      const slide = outline.slides[need.slideIndex]!
+      const row = this.preparedRecord(sessionId, outline.outlineId, slide.slideId, need.blockIndex, need.query)
+      let available = false
+      if (row?.asset)
+        try {
+          if (verify) this.read(`${row.asset.assetId}.png`, row.asset.digest, 256 * 1024)
+          available = existsSync(this.path(`${row.asset.assetId}.png`))
+        } catch {
+          /* Kept for review. */
+        }
+      return {
+        needId: row?.needId ?? need.needId,
+        slideIndex: need.slideIndex,
+        blockIndex: need.blockIndex,
+        required: need.required,
+        status: available ? ('prepared' as const) : ('unavailable' as const),
+        ...(available && row?.asset
+          ? {
+              digest: row.asset.parsedDigest,
+              ...(row.asset.credit ? { credit: row.asset.credit } : {}),
+              ...(row.asset.selection ? { selection: row.asset.selection } : {}),
+            }
+          : { failure: row?.failure ?? 'RESEARCH_IMAGE_SELECTION_REQUIRED' }),
+      }
+    })
+  }
+  imagePreview(sessionId: string, outline: SavedOutline, needId: string): Uint8Array {
+    const need = this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared')
+    if (!need) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+    const slide = outline.slides[need.slideIndex]!
+    const block = slide.blocks?.[need.blockIndex]
+    const record = this.preparedRecord(
+      sessionId,
+      outline.outlineId,
+      slide.slideId,
+      need.blockIndex,
+      block?.kind === 'web-image' ? block.query : '',
+    )
+    if (!record?.asset) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+    return this.read(`${record.asset.assetId}.png`, record.asset.digest, 256 * 1024)
+  }
+  restoredImage(
+    sessionId: string,
+    outline: SavedOutline,
+    needId: string,
+  ): import('./contracts.ts').PreparedResearchImage {
+    const need = this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared')
+    if (!need) throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
+    const slide = outline.slides[need.slideIndex]!
+    const block = slide.blocks?.[need.blockIndex]
+    const record = this.preparedRecord(
+      sessionId,
+      outline.outlineId,
+      slide.slideId,
+      need.blockIndex,
+      block?.kind === 'web-image' ? block.query : '',
+    )
+    const asset = record?.asset
+    if (!asset?.credit || asset.credit.unknownLicense || !asset.selection)
+      throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
+    return {
+      bytes: this.read(`${asset.assetId}.png`, asset.digest, 256 * 1024),
+      source: asset.source,
+      originalDigest: asset.originalDigest,
+      parsedDigest: asset.parsedDigest,
+      credit: asset.credit,
+      selection: asset.selection,
+    }
   }
   imageBlockers(sessionId: string, outline: SavedOutline): readonly { code: string; message: string }[] {
     if ((outline.brief?.design?.template.version ?? 1) < 2) return []
-    return outline.slides.flatMap((slide, index) =>
-      (slide.blocks ?? []).flatMap(block => {
-        if (block.kind !== 'web-image' || block.required === false) return []
-        const row = this.db
-          .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND outline_id=? AND query=?')
-          .get(sessionId, outline.outlineId, block.query)
-        if (row) {
-          const asset: ArtifactAsset | undefined = JSON.parse(String(row.payload)).asset
-          if (asset) {
-            try {
-              this.read(`${asset.assetId}.png`, asset.digest, 256 * 1024)
-              return []
-            } catch {
-              /* A lost/corrupt prepared image requires explicit review again. */
-            }
-          }
-        }
-        return [
-          {
-            code: 'IMAGE_PREPARATION_REQUIRED',
-            message: `Slide ${index + 1}: chưa chuẩn bị được ảnh “${block.query}”. Sửa Outline để đổi truy vấn, chọn ảnh khác hoặc xác nhận ảnh này không bắt buộc.`,
-          },
-        ]
-      }),
-    )
+    return this.imageReview(sessionId, outline, true)
+      .filter(n => n.required && n.status !== 'prepared')
+      .map(n => ({
+        code: 'IMAGE_PREPARATION_REQUIRED',
+        message: `Slide ${n.slideIndex + 1}: chưa chuẩn bị được ảnh. Sửa Outline để đổi ảnh, truy vấn hoặc xác nhận ảnh này không bắt buộc.`,
+      }))
   }
   private status(stage: Stage): StageStatus {
     return {
@@ -328,14 +416,20 @@ export class ArtifactStorage {
     }
     this.stages.set(stage.stageId, stage)
     if (generation.design.template.version >= 2) {
-      for (const block of slide.blocks ?? [])
+      for (const [blockIndex, block] of (slide.blocks ?? []).entries())
         if (block.kind === 'web-image') {
-          const row = this.db
-            .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND outline_id=? AND query=?')
-            .get(grant.sessionId, generation.receipt.outlineId, block.query)
-          const asset: ArtifactAsset | undefined = row ? JSON.parse(String(row.payload)).asset : undefined
+          const asset = this.preparedRecord(
+            grant.sessionId,
+            generation.receipt.outlineId,
+            slide.slideId,
+            blockIndex,
+            block.query,
+          )?.asset
           if (asset) {
-            if (stage.assets.some(a => a.webQuery === block.query)) continue
+            if (
+              stage.assets.some(a => (a.imageNeedId ? a.imageNeedId === asset.imageNeedId : a.webQuery === block.query))
+            )
+              continue
             const bytes = this.read(`${asset.assetId}.png`, asset.digest, 256 * 1024)
             const copy = { ...asset, assetId: `asset-${randomUUID()}` }
             this.write(`${copy.assetId}.png`, bytes)
@@ -361,13 +455,25 @@ export class ArtifactStorage {
       ...(stage.document ? { document: stage.document } : {}),
     }
   }
+  private matchesNeed(stage: Stage, asset: ArtifactAsset, index: number, query: string): boolean {
+    const record = this.preparedRecord(
+      stage.grant.sessionId,
+      stage.generation.receipt.outlineId,
+      stage.slideId,
+      index,
+      query,
+    )
+    return asset.imageNeedId ? asset.imageNeedId === record?.needId : asset.webQuery === query
+  }
   private documentFromPlan(stage: Stage): void {
     const nodes: SlideNode[] = []
     ;(stage.plan.blocks ?? []).forEach((block, index) => {
       const id = `node-${index}`
       if (block.kind === 'web-image' || block.kind === 'image') {
         const asset = stage.assets.find(a =>
-          block.kind === 'web-image' ? a.webQuery === block.query : a.attachmentId === block.attachmentId,
+          block.kind === 'web-image'
+            ? this.matchesNeed(stage, a, index, block.query)
+            : a.attachmentId === block.attachmentId,
         )
         if (asset)
           nodes.push({
@@ -681,8 +787,10 @@ export class ArtifactStorage {
     const source = this.source(stage)
     if (
       slide.blocks?.some(
-        b =>
-          (b.kind === 'web-image' && b.required !== false && !stage.assets.some(a => a.webQuery === b.query)) ||
+        (b, index) =>
+          (b.kind === 'web-image' &&
+            b.required !== false &&
+            !stage.assets.some(a => this.matchesNeed(stage, a, index, b.query))) ||
           (b.kind === 'image' && !stage.assets.some(a => a.attachmentId === b.attachmentId)),
       )
     )
@@ -739,8 +847,8 @@ export class ArtifactStorage {
       intentId: stage.grant.intentId,
       sourceRefs: slide.sources ?? [],
       provenance: stage.provenance,
-      imageOmissions: (slide.blocks ?? []).flatMap(b =>
-        b.kind === 'web-image' && !stage.assets.some(a => a.webQuery === b.query) ? [b.query] : [],
+      imageOmissions: (slide.blocks ?? []).flatMap((b, index) =>
+        b.kind === 'web-image' && !stage.assets.some(a => this.matchesNeed(stage, a, index, b.query)) ? [b.query] : [],
       ),
       ...(stage.notes ? { notes: stage.notes } : {}),
     })

@@ -56,11 +56,14 @@ export class DeckWorkflowView {
         row.title = 'Truy vấn được gửi tới Tavily và có thể chứa thông tin từ tài liệu; chỉ dùng quota miễn phí.'
     }
     this.images.setAttribute('aria-label', 'Lựa chọn ảnh')
+    this.images.title =
+      'Truy vấn ảnh được gửi tới nguồn bạn chọn. Tavily dùng key và quota miễn phí; lựa chọn này không bật tìm nguồn văn bản.'
     this.images.append(
       new Option('Giữ yêu cầu ảnh hiện tại', ''),
       new Option('Không cần ảnh', 'none'),
       new Option('Dùng ảnh đã đính kèm', 'attachments'),
-      new Option('Dùng ảnh web · Wikimedia Commons', 'public-research'),
+      new Option('Tìm ảnh web · Tavily · chỉ miễn phí', 'public-research'),
+      new Option('Tìm ảnh web · Wikimedia Commons', 'commons'),
     )
     this.format.setAttribute('aria-label', 'Định dạng deck')
     this.format.append(
@@ -157,9 +160,14 @@ export class DeckWorkflowView {
         publicResearch: this.research.checked,
       },
       ...(this.format.value === 'html' ? { formatChoice: 'html' } : {}),
-      ...(this.images.value === 'none' || this.images.value === 'attachments' || this.images.value === 'public-research'
+      ...(this.images.value === 'none' || this.images.value === 'attachments'
         ? { imageChoice: this.images.value }
-        : {}),
+        : this.images.value === 'public-research' || this.images.value === 'commons'
+          ? {
+              imageChoice: 'public-research' as const,
+              imageProviderChoice: this.images.value === 'commons' ? ('commons' as const) : ('tavily' as const),
+            }
+          : {}),
     }
   }
 

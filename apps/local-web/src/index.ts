@@ -42,11 +42,16 @@ import { ConfirmationService } from './confirmation-service.ts'
 import { GenerationWorkflow } from './generation-workflow.ts'
 import { generationReport } from './generation-report.ts'
 import { CommonsImages } from './commons-images.ts'
+import { WebImageResearch } from './image-research.ts'
+import { PublicImageReader } from './public-image-reader.ts'
+import type { ImageLookup } from './public-image-reader.ts'
 import { artifactRenderer } from './artifact-renderer.ts'
 import type { RequestRuntime } from '@deckagent/host-api'
 
 export { ManagedAttachments } from './managed-attachments.ts'
 export { CommonsImages } from './commons-images.ts'
+export { WebImageResearch, imagePageCredit } from './image-research.ts'
+export { PublicImageReader } from './public-image-reader.ts'
 export { TavilyClient } from './tavily.ts'
 export { prepareSourceTools } from './source-tools.ts'
 export { openToolBridge } from './opencode/mcp-bridge.ts'
@@ -66,8 +71,8 @@ export { pinnedVersion } from './opencode/config.ts'
 export type { OpenCodeOptions } from './opencode/runtime.ts'
 
 export interface LocalWebOptions {
-  /** Controlled image HTTP seam for tests; production uses fixed Wikimedia Commons hosts. */
-  readonly imageAccess?: { readonly fetch: typeof fetch }
+  /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
+  readonly imageAccess?: { readonly fetch: typeof fetch; readonly resolve?: ImageLookup }
   /** Tests may replace generation; production uses the same isolated CLI with confirmed phase tools. */
   readonly generationRuntime?: RequestRuntime
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
@@ -151,6 +156,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   let providers: ProviderStore | undefined
   let preparation: AttachmentService | undefined
   let artifactAttachments: ManagedAttachments | undefined
+  let imageResearch: WebImageResearch | undefined
   try {
     try {
       registry = new WorkspaceRegistry({
@@ -264,6 +270,12 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
       options.researchAccess?.fetch,
     )
+    const images = new WebImageResearch(
+      research,
+      commonsImages,
+      new PublicImageReader(options.imageAccess?.fetch, options.imageAccess?.resolve),
+    )
+    imageResearch = images
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
     const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
     artifactAttachments = attachments
@@ -372,6 +384,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           store,
           briefs,
           options.generationRuntime ?? new GenerationWorkflow(runtime, store),
+          images,
         ),
         prepareTools: async (sessionId, attachmentIds, publicResearch) =>
           prepareSourceTools({
@@ -461,6 +474,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
             await host.close()
           } finally {
             await commonsImages.close()
+            await images.close()
             await inputs.close()
             try {
               await catalog.close()
@@ -486,6 +500,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     }
   } catch (error) {
     await commonsImages.close()
+    await imageResearch?.close()
     await preparation?.close()
     try {
       await providers?.close()

@@ -35,6 +35,8 @@ import type { GenerationCapability } from './contracts.ts'
 export type { GenerationCapability } from './contracts.ts'
 export type { ContentProvenance } from './contracts.ts'
 export type { PreparedResearchImage, ImageCredit } from './contracts.ts'
+export type { ImageNeed, ImageResolver, ImageSelection, OutlineImageReview } from './contracts.ts'
+export { outlineImageNeeds } from './image-needs.ts'
 export type { ArtifactPublication, ArtifactAsset, PreparedImageAsset, StageChunk, StageStatus } from './contracts.ts'
 import type { ConfirmationReceipt, GenerationSnapshot, GenerationGrant, DeckOptions } from './contracts.ts'
 export { validateConfirmation } from './generation-store.ts'
@@ -142,7 +144,13 @@ export class DeckService implements DeckReader, DeckPublisher {
   outlineSnapshot(sessionId: string): OutlineSnapshot {
     return this.access(() => {
       this.id(sessionId)
-      return this.outlines.snapshot(sessionId)
+      const snapshot = this.outlines.snapshot(sessionId)
+      return {
+        ...snapshot,
+        proposals: snapshot.proposals.map(p =>
+          p.brief ? { ...p, imageReview: this.artifacts.imageReview(sessionId, p) } : p,
+        ),
+      }
     })
   }
 
@@ -181,9 +189,54 @@ export class DeckService implements DeckReader, DeckPublisher {
   }
 
   /** Atomically saves a completed request's staged Brief/Outline before Session terminal status. */
-  async prepareOutlineImages(sessionId: string, input: BriefProposalInput, signal: AbortSignal): Promise<object> {
+  async prepareOutlineImages(
+    sessionId: string,
+    input: BriefProposalInput,
+    signal: AbortSignal,
+    resolver?: import('./contracts.ts').ImageResolver,
+  ): Promise<object> {
     this.id(sessionId)
-    return this.artifacts.prepareImages(sessionId, input, signal)
+    return this.artifacts.prepareImages(sessionId, input, signal, resolver)
+  }
+  reserveImageSearch(sessionId: string, requestId: string): void {
+    this.access(() =>
+      this.transaction(() => {
+        this.id(sessionId)
+        this.id(requestId)
+        if (this.options.activeRequest && !this.options.activeRequest(sessionId, requestId))
+          throw new DeckError('REQUEST_CLOSED')
+        const previous = this.db
+          .prepare('SELECT session_id,attempts FROM image_search_attempts WHERE request_id=?')
+          .get(requestId)
+        if (previous && (previous.session_id !== sessionId || Number(previous.attempts) >= 5))
+          throw new DeckError('RESEARCH_IMAGE_BUDGET')
+        this.db
+          .prepare(
+            `INSERT INTO image_search_attempts VALUES(?,?,1) ON CONFLICT(request_id) DO UPDATE SET attempts=attempts+1`,
+          )
+          .run(requestId, sessionId)
+      }),
+    )
+  }
+  outlineImagePreview(sessionId: string, outlineId: string, needId: string): Uint8Array {
+    return this.access(() => {
+      this.id(sessionId)
+      const outline = this.outlines.snapshot(sessionId).proposals.find(p => p.outlineId === outlineId)
+      if (!outline) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+      return this.artifacts.imagePreview(sessionId, outline, needId)
+    })
+  }
+  restoredOutlineImage(
+    sessionId: string,
+    outlineId: string,
+    needId: string,
+  ): import('./contracts.ts').PreparedResearchImage {
+    return this.access(() => {
+      this.id(sessionId)
+      const outline = this.outlines.snapshot(sessionId).proposals.find(p => p.outlineId === outlineId)
+      if (!outline) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+      return this.artifacts.restoredImage(sessionId, outline, needId)
+    })
   }
   imageBlockers(sessionId: string): readonly { code: string; message: string }[] {
     return this.access(() => {
