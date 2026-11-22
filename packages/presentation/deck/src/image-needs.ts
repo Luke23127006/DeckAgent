@@ -7,7 +7,7 @@ export function outlineImageNeeds(outline: BoundOutlineDraft | OutlineProposal):
     (slide.blocks ?? []).flatMap((block, blockIndex) => {
       if (block.kind !== 'web-image') return []
       const context = {
-        policy: 'web-images-v1',
+        policy: 'web-images-v2',
         slideIndex,
         blockIndex,
         title: slide.title,

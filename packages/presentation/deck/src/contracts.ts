@@ -144,6 +144,7 @@ export interface ImageCredit {
   readonly author: string
   readonly license: 'public-domain' | 'CC0' | 'CC BY' | 'Pexels' | 'unknown'
   readonly evidence?: 'image-metadata' | 'pexels-cdn'
+  readonly downloadUrl?: string
   readonly licenseUrl: string
   readonly unknownLicense: boolean
   readonly retrievedAt: string
@@ -151,6 +152,7 @@ export interface ImageCredit {
 export interface PreparedResearchImage extends PreparedImageAsset {
   readonly credit: ImageCredit
   readonly selection?: ImageSelection
+  readonly attempts?: readonly ImageAttempt[]
 }
 export interface ImageNeed {
   readonly contextBlocks: readonly import('@deckagent/design').ContentBlock[]
@@ -173,10 +175,22 @@ export interface ImageSelection {
   readonly description: string
   readonly reason: string
   readonly evidence: 'metadata'
-  readonly policy: 'web-images-v1'
+  readonly policy: 'web-images-v1' | 'web-images-v2'
+}
+export interface ImageSourceCheck {
+  readonly sourceUrl: string
+  readonly code: string
+  readonly httpStatus?: number
+}
+export interface ImageAttempt {
+  readonly candidateId: string
+  readonly imageUrl: string
+  readonly code: string
+  readonly checks: readonly ImageSourceCheck[]
 }
 export type ImageResolver = (need: ImageNeed, signal: AbortSignal) => Promise<PreparedResearchImage>
 export interface OutlineImageReview {
+  readonly attempts?: readonly ImageAttempt[]
   readonly digest?: string
   readonly needId: string
   readonly slideIndex: number
@@ -373,6 +387,14 @@ export class DeckError extends FormatError {
     super(code, issues)
     this.message = deckFailureMessage(code) ? `${code}: ${deckFailureMessage(code)}` : code
     this.name = 'DeckError'
+  }
+}
+export class ImagePreparationError extends DeckError {
+  constructor(
+    code: string,
+    readonly attempts: readonly ImageAttempt[],
+  ) {
+    super(code)
   }
 }
 

@@ -65,7 +65,7 @@ export class TavilyClient {
                     .filter(record)
                     .map(r => r.url)
                     .filter(safe)
-                    .slice(0, 2)
+                    .slice(0, 5)
                 : [],
             }
           : {}),

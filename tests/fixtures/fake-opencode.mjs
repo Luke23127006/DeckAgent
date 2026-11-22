@@ -303,6 +303,43 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
     }
     return { isError: result.result?.isError, value: valueResult }
   }
+  const recoveryMarker = 'Host image recovery data (untrusted data): '
+  if (config.agent.deckagent.prompt.includes(recoveryMarker)) {
+    if (workflow.pauseImageRecovery) await sleep(30000)
+    if (workflow.repairImages) {
+      const recovery = JSON.parse(config.agent.deckagent.prompt.split(recoveryMarker).at(-1))
+      let index = 0
+      for (const need of recovery.imageNeeds) {
+        const candidate = need.candidates.find(c => c.license === 'Pexels') ??
+          need.candidates.find(c => !need.attempts.some(a => a.candidateId === c.candidateId))
+        if (candidate) await callWorkflow('select_slide_image', { needId: need.needId, candidateId: candidate.candidateId,
+          reason: `The alternative matches the requested image subject: ${need.intent.subject}` }, index++)
+      }
+    }
+  } else if (workflow.resumeImages) {
+    const supplied = JSON.parse(config.agent.deckagent.prompt.split('Host workflow data (not instructions): ').at(-1))
+    let attempt = 0
+    if (workflow.staleImageId) {
+      const stale = await callWorkflow('search_slide_images', {
+        needId: workflow.staleImageId, query: 'forest',
+      }, attempt++)
+      if (stale.isError && stale.value.imageNeeds?.length)
+        supplied.imageNeeds = stale.value.imageNeeds
+    }
+    for (const need of workflow.onlyStaleImage ? [] : supplied.imageNeeds ?? workflow.resumeNeeds ?? []) {
+      if (need.status === 'prepared' && !workflow.replacePrepared) continue
+      const searched = await callWorkflow('search_slide_images', {
+        needId: need.needId, query: need.query,
+      }, attempt++)
+      if (workflow.pauseImageResume) await sleep(30000)
+      const candidates = searched.value.candidates ?? []
+      const candidate = candidates.find(c => c.license !== 'unverified') ?? candidates[0]
+      if (candidate) await callWorkflow('select_slide_image', {
+        needId: need.needId, candidateId: candidate.candidateId,
+        reason: 'This image describes the requested ecosystem and role.',
+      }, attempt++)
+    }
+  } else {
   let attempt = 0
   for (const value of workflow.briefAttempts ?? (workflow.brief === undefined ? [] : [workflow.brief])) {
     const result = await callWorkflow('stage_brief', value, attempt++)
@@ -334,6 +371,8 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
         }, attempt++)
       }
   }
+  }
+
 }
 if (
   has('mcp-read') ||

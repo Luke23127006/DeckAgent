@@ -1,4 +1,4 @@
-import type { OutlineImageReview, ImageCredit, ImageSelection } from '@deckagent/deck'
+import type { OutlineImageReview, ImageCredit, ImageSelection, ImageAttempt } from '@deckagent/deck'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const string = (v: unknown): v is string => typeof v === 'string' && v.length <= 2048 && v.isWellFormed()
@@ -17,8 +17,10 @@ const url = (v: unknown): v is string => {
 function credit(v: unknown): ImageCredit {
   if (!object(v) || !url(v.url) || !string(v.author) || !string(v.licenseUrl) || !string(v.retrievedAt))
     return invalid()
-  const license = (['public-domain', 'CC0', 'CC BY', 'unknown'] as const).find(k => k === v.license)
+  const license = (['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'] as const).find(k => k === v.license)
   if (!license || v.unknownLicense !== (license === 'unknown')) return invalid()
+  if (v.evidence !== undefined && v.evidence !== 'image-metadata' && v.evidence !== 'pexels-cdn') return invalid()
+  if (v.downloadUrl !== undefined && !url(v.downloadUrl)) return invalid()
   return {
     url: v.url,
     author: v.author,
@@ -26,7 +28,46 @@ function credit(v: unknown): ImageCredit {
     licenseUrl: v.licenseUrl,
     retrievedAt: v.retrievedAt,
     unknownLicense: license === 'unknown',
+    ...(v.evidence === 'image-metadata' || v.evidence === 'pexels-cdn' ? { evidence: v.evidence } : {}),
+    ...(typeof v.downloadUrl === 'string' ? { downloadUrl: v.downloadUrl } : {}),
   }
+}
+function attempts(value: unknown): readonly ImageAttempt[] {
+  if (!Array.isArray(value) || value.length > 4) return invalid()
+  return value.map(a => {
+    if (
+      !object(a) ||
+      !string(a.candidateId) ||
+      !url(a.imageUrl) ||
+      !string(a.code) ||
+      !Array.isArray(a.checks) ||
+      a.checks.length > 3
+    )
+      return invalid()
+    return {
+      candidateId: a.candidateId,
+      imageUrl: a.imageUrl,
+      code: a.code,
+      checks: a.checks.map((c: unknown) => {
+        if (
+          !object(c) ||
+          !url(c.sourceUrl) ||
+          !string(c.code) ||
+          (c.httpStatus !== undefined &&
+            (typeof c.httpStatus !== 'number' ||
+              !Number.isInteger(c.httpStatus) ||
+              c.httpStatus < 100 ||
+              c.httpStatus > 599))
+        )
+          return invalid()
+        return {
+          sourceUrl: c.sourceUrl,
+          code: c.code,
+          ...(typeof c.httpStatus === 'number' ? { httpStatus: c.httpStatus } : {}),
+        }
+      }),
+    }
+  })
 }
 function selection(v: unknown): ImageSelection {
   if (
@@ -36,7 +77,7 @@ function selection(v: unknown): ImageSelection {
     !string(v.description) ||
     !string(v.reason) ||
     v.evidence !== 'metadata' ||
-    v.policy !== 'web-images-v1' ||
+    (v.policy !== 'web-images-v1' && v.policy !== 'web-images-v2') ||
     (v.provider !== 'tavily' && v.provider !== 'commons')
   )
     return invalid()
@@ -77,6 +118,7 @@ export function decodeImageReview(v: unknown): readonly OutlineImageReview[] {
       status: item.status,
       ...(typeof item.digest === 'string' ? { digest: item.digest } : {}),
       ...(typeof item.failure === 'string' ? { failure: item.failure } : {}),
+      ...(item.attempts === undefined ? {} : { attempts: attempts(item.attempts) }),
       ...(item.credit === undefined ? {} : { credit: credit(item.credit) }),
       ...(item.selection === undefined ? {} : { selection: selection(item.selection) }),
     }
@@ -86,6 +128,20 @@ export function decodeImageReview(v: unknown): readonly OutlineImageReview[] {
 export const imageFailure = (code?: string): string =>
   ({
     RESEARCH_IMAGE_LICENSE_REQUIRED: 'Chưa xác minh được giấy phép cho phép sử dụng ảnh.',
+    RESEARCH_IMAGE_LICENSE_UNSUPPORTED: 'Giấy phép của ảnh chưa được hỗ trợ cho deck này.',
+    RESEARCH_IMAGE_AUTHOR_REQUIRED: 'Ảnh yêu cầu ghi công nhưng chưa xác định được tác giả.',
+    IMAGE_PREPARED: 'Đã chuẩn bị ảnh.',
+    RESEARCH_IMAGE_SOURCE_UNRESOLVED: 'Chưa tìm được trang nguồn của ảnh.',
+    RESEARCH_IMAGE_SOURCE_BLOCKED: 'Website chặn truy cập để kiểm tra nguồn ảnh.',
+    RESEARCH_IMAGE_SOURCE_HTTP: 'Trang nguồn ảnh trả về lỗi HTTP.',
+    RESEARCH_IMAGE_NETWORK: 'Không kết nối được tới nguồn ảnh.',
+    RESEARCH_IMAGE_RESPONSE_TOO_LARGE: 'Dữ liệu nguồn ảnh vượt giới hạn tải.',
+    RESEARCH_IMAGE_CONTENT_TYPE: 'Nguồn trả về định dạng không được hỗ trợ.',
+    RESEARCH_IMAGE_TIMEOUT: 'Hết thời gian kiểm tra hoặc tải ảnh.',
+    RESEARCH_IMAGE_NORMALIZATION_LIMIT: 'Ảnh vượt giới hạn xử lý. Chọn phiên bản nhỏ hơn hoặc ảnh khác.',
+    RESEARCH_IMAGE_DECODE_FAILED: 'Không đọc được dữ liệu ảnh đã tải. Cần chọn ảnh khác.',
+    RESEARCH_IMAGE_SELECTION_BUSY: 'Vị trí này đang được chọn ảnh. Chờ lượt đang chạy kết thúc.',
+    RESEARCH_IMAGE_SELECTION_STALE: 'Yêu cầu ảnh đã thay đổi; cần chọn từ kết quả tìm mới.',
     RESEARCH_IMAGE_DUPLICATE: 'Ảnh trùng với vị trí ảnh khác; cần chọn ảnh khác.',
     RESEARCH_IMAGE_NO_MATCH: 'Chưa tìm được ảnh phù hợp với yêu cầu.',
     RESEARCH_IMAGE_SELECTION_REQUIRED: 'Chưa chọn được ảnh phù hợp.',

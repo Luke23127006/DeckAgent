@@ -13,6 +13,18 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
     'Chưa chuẩn bị đủ ảnh bắt buộc',
     'Sửa Outline để đổi truy vấn ảnh, chọn ảnh khác hoặc xác nhận ảnh không bắt buộc, rồi xem lại trước khi xác nhận.',
   ],
+  RESEARCH_IMAGE_CONTEXT_REQUIRED: [
+    'Chưa khôi phục được trạng thái tìm ảnh',
+    'Đọc lại Outline hiện tại rồi gửi yêu cầu tiếp tục. Tiến độ đã lưu được giữ nguyên; lượt này chưa tìm ảnh.',
+  ],
+  RESEARCH_IMAGE_SELECTION_STALE: [
+    'Vị trí hoặc lựa chọn ảnh đã thay đổi',
+    'Đọc lại Outline hiện tại rồi yêu cầu tiếp tục phần ảnh còn thiếu. Kết quả đã lưu được giữ nguyên.',
+  ],
+  RESEARCH_IMAGE_ARGUMENTS_INVALID: [
+    'Lệnh tìm hoặc chọn ảnh chưa hợp lệ',
+    'Lượt xử lý chưa hoàn tất. Tiến độ đã lưu được giữ nguyên; gửi yêu cầu mới để tiếp tục.',
+  ],
   SLIDE_CORRECTION_LIMIT: [
     'Slide đã hết lượt sửa trong yêu cầu này',
     'Xem lỗi kiểm tra và các slide đã lưu. Hệ thống dừng để tránh lặp sửa vô hạn.',

@@ -13,3 +13,5 @@
 **Image need**: The subject, role and constraints of an image at one position in a planned slide.
 
 **Image candidate**: An image returned by an admitted public search, with source information available for assessing its fit and use licence. Finding a candidate does not select it for a deck.
+
+**Image source evidence**: The retained basis for linking an image to its publisher or file record and its stated use licence. A candidate page hint is still unverified until that link is established.

@@ -142,6 +142,28 @@ export class OutlineView {
                 link.target = '_blank'
                 link.rel = 'noopener noreferrer'
                 figure.append(element('p', `${review.credit.author} · ${review.credit.license}`), link)
+                if (review.credit.licenseUrl.startsWith('https://')) {
+                  const license = element('a', 'Điều kiện sử dụng ảnh')
+                  license.href = review.credit.licenseUrl
+                  license.target = '_blank'
+                  license.rel = 'noopener noreferrer'
+                  figure.append(document.createTextNode(' · '), license)
+                }
+              }
+              if (review.attempts?.length) {
+                const audit = element('details')
+                audit.append(element('summary', `Lịch sử kiểm tra ảnh (${review.attempts.length} lần)`))
+                for (const attempt of review.attempts) {
+                  audit.append(element('p', imageFailure(attempt.code)))
+                  for (const check of attempt.checks)
+                    audit.append(
+                      element(
+                        'p',
+                        `${new URL(check.sourceUrl).hostname}: ${imageFailure(check.code)}${check.httpStatus ? ` (HTTP ${check.httpStatus})` : ''}`,
+                      ),
+                    )
+                }
+                figure.append(audit)
               }
               const replace = button('Tìm ảnh khác', () =>
                 this.revise?.(
@@ -229,7 +251,9 @@ export class OutlineView {
       proposal.status === 'confirmed'
         ? 'Đã xác nhận · chỉ đọc'
         : proposal.status === 'current'
-          ? 'Hiện tại · chờ bạn xác nhận'
+          ? proposal.imageReview?.some(n => n.required && n.status !== 'prepared')
+              ? `Chưa thể xác nhận · còn ${proposal.imageReview.filter(n => n.required && n.status !== 'prepared').length} ảnh bắt buộc chưa chuẩn bị`
+              : 'Hiện tại · chờ bạn xác nhận'
           : proposal.status === 'cancelled'
             ? 'Đã hủy'
             : 'Đề xuất cũ · không còn là hiện tại'

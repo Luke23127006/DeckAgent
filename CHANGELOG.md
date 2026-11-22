@@ -10,6 +10,10 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Resume saved image progress in later review requests without restaging unchanged Briefs and Outlines. Apply explicit image provider changes to new searches, retain prepared images and their provenance, keep question-only turns read-only, and report stale image IDs as workflow errors with current positions.
+
+- Resolve Commons thumbnail and Pexels stock-photo origins, preserve distinct licence and source-read diagnostics, and retain per-image attempt history. Allow model-ranked image alternatives and one restricted recovery run before saving an unresolved Outline. Deck schema 10 preserves prior data and marks the Pexels licence contract.
+
 - Review public-image candidates against each slide role using Tavily or explicitly selected Commons. Keep selection reasons, local thumbnails and immutable credits; require accepted image-specific licence evidence, block duplicate images within a slide and preserve unchanged choices across reviews. Add bounded public-image downloads and durable search attempts in Deck schema 9.
 
 - Keep portable slide documents beside native artifacts, with executable HTML Basic version 2 templates, a two-image layout, shared browser decoding and separate validation diagnostics. Prepare public images before confirmation and reuse local bytes through layout retries; required missing images keep the Outline open for revision. Include a native PPTX capability proof with editable text/images and notes, without adding a product export option. Deck schema 8 preserves existing revisions and visual snapshots.

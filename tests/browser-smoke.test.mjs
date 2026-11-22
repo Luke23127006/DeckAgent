@@ -12,13 +12,13 @@ import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
-async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
+async function eventually(operation, message, { retries = 200, intervalMs = 50, describe } = {}) {
   for (let i = 0; i < retries; i++) {
     const value = await operation()
     if (value) return value
     await delay(intervalMs)
   }
-  throw new Error(message)
+  throw new Error(describe ? `${message}: ${JSON.stringify(await describe())}` : message)
 }
 
 async function chooseChat(evaluate, id) {
@@ -709,6 +709,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   await eventually(
     () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
     'Second Outline not shown',
+    { describe: () => evaluate(`({text:document.querySelector('.messages')?.innerText.slice(-3500),draft:document.querySelector('.composer textarea').value,stop:document.querySelector('.stop-action').hidden})`) },
   )
   await evaluate(
     `[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click(); true`,
@@ -808,13 +809,14 @@ test('web-image Outline completion clears request controls and history reopens a
     ],
   }
   await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
+  let unknownLicence = false
   const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
   app = await startLocalWeb({ dataDir: join(dir, 'data'), ...fixtureProvider('workflow'), openCode: fakeOpenCode(dir),
     imageAccess: { fetch: async url => String(url).includes('/w/api.php?') ? Response.json({ query: { pages: [{
       title: 'Forest ecosystem', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/wikipedia/commons/forest.png',
         descriptionurl: 'https://commons.wikimedia.org/wiki/File:Forest.png', extmetadata: {
-          Artist: { value: 'Forest photographer' }, LicenseShortName: { value: 'CC BY 4.0' },
-          LicenseUrl: { value: 'https://creativecommons.org/licenses/by/4.0/' }, ImageDescription: { value: 'A forest ecosystem with trees' },
+          Artist: { value: 'Forest photographer' }, LicenseShortName: { value: unknownLicence ? '' : 'CC BY 4.0' },
+          LicenseUrl: { value: unknownLicence ? '' : 'https://creativecommons.org/licenses/by/4.0/' }, ImageDescription: { value: 'A forest ecosystem with trees' },
         } }],
     }] } }) : new Response(png, { headers: { 'content-type': 'image/png' } }) },
   })
@@ -890,7 +892,26 @@ test('web-image Outline completion clears request controls and history reopens a
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.startsWith('Keep this draft')`), true)
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.includes('replace:true')`), true)
   assert.equal(await requestCount(app, target), 1, 'Replace prepares a review request, never sends it silently')
-
+  unknownLicence = true
+  const unresolved = structuredClone(plan)
+  unresolved.slides[0].blocks[0].query = 'another forest ecosystem'
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: unresolved, selectImages:true }))
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='Find another image [workflow]';input.dispatchEvent(new Event('input'));}true`)
+  await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Image revision is not ready to send')
+  await evaluate(`document.querySelector('.composer').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('1') && document.querySelector('.stop-action').hidden`), 'Missing-image status not visible',
+    { describe: () => evaluate(`({text:document.querySelector('.messages')?.innerText.slice(-3500),status:document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent,draft:document.querySelector('.composer textarea').value,stop:document.querySelector('.stop-action').hidden})`) })
+  assert.equal(await evaluate(`document.querySelector('.outline-actions button').disabled`), true)
+  assert.equal(await evaluate(`document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('chưa chuẩn bị')`), true)
+  unknownLicence = false
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ resumeImages: true }))
+  await evaluate(`{const input=document.querySelector('.composer textarea');input.value='Hoàn thiện phần ảnh còn thiếu giúp tôi [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();}true`)
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận') && document.querySelector('.stop-action').hidden`), 'Resumed image progress is not ready for confirmation')
+  assert.equal(await requestCount(app, target), 3)
+  assert.equal(await evaluate(`document.querySelector('.outline-actions button').disabled`), false)
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận')`), 'Reload lost the resumed image progress')
+  assert.equal(await requestCount(app, target), 3, 'Reload does not replay image continuation')
 })
 
 test('saving a Custom API model ID from the input makes it available without a separate Add click', {

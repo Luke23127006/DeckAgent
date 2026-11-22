@@ -86,6 +86,24 @@ test('intent changes invalidate selection; the same query cannot pin an old imag
   await assert.rejects(f.run.select(need.needId, need.candidates[0].candidateId, 'Stale'), { code: 'RESEARCH_IMAGE_ARGUMENTS_INVALID' })
 })
 
+test('resuming an exhausted saved position exposes fresh budgets without reusing its old budget failure', async t => {
+  const f = service(t)
+  const [need] = outlineImageNeeds(outline)
+  let searches = 0
+  const run = f.images.open(AbortSignal.timeout(5000), () => { searches++ }, [
+    { ...need, status: 'unavailable', failure: 'RESEARCH_IMAGE_BUDGET' },
+  ])
+  const [resumed] = await run.resume([need])
+  assert.equal(searches, 0)
+  assert.equal(resumed.remainingSearches, 2)
+  assert.equal(resumed.remainingSelections, 4)
+  assert.equal(resumed.failure, 'RESEARCH_IMAGE_SELECTION_REQUIRED')
+  assert.equal(resumed.previousFailure, 'RESEARCH_IMAGE_BUDGET')
+  assert.deepEqual(resumed.candidates, [])
+  assert.equal((await run.search(need.needId, 'photovoltaic panels')).candidates.length, 2)
+  assert.equal(searches, 1)
+})
+
 test('two image roles with the same query stay distinct and duplicate image bytes are rejected', async t => {
   const f = service(t), pair = structuredClone(outline)
   pair.slides[0].blocks.push({ ...pair.slides[0].blocks[0], caption: 'A second view' })
@@ -110,6 +128,10 @@ test('licence evidence must identify the exact image and an accepted licence', (
   assert.equal(imagePageCredit(html({ ...item, contentUrl: 'https://photos.example/other.png' }), item.contentUrl, credit.url), undefined)
   assert.equal(imagePageCredit(html({ ...item, license: 'https://creativecommons.org/licenses/by-sa/4.0/' }), item.contentUrl, credit.url), undefined)
   assert.equal(imagePageCredit(html({ ...item, '@type': 'Article' }), item.contentUrl, credit.url), undefined)
+  assert.equal(imagePageCredit(html({ ...item, license:{ '@id':credit.licenseUrl } }), item.contentUrl, credit.url).license, 'CC BY')
+  const rejected = []
+  imagePageCredit(html({ ...item, license:'https://creativecommons.org/licenses/by-nc/4.0/' }), item.contentUrl, credit.url, code => rejected.push(code))
+  assert.deepEqual(rejected, ['RESEARCH_IMAGE_LICENSE_UNSUPPORTED'])
 })
 
 test('a top-level Pexels stock image resolves its source and retains its platform licence without scraping a blocked page', async t => {
@@ -131,6 +153,84 @@ test('a top-level Pexels stock image resolves its source and retains its platfor
   assert.equal(result.credit.licenseUrl, 'https://www.pexels.com/license/')
   assert.equal(result.credit.evidence, 'pexels-cdn')
   assert.equal(reads.length, 1)
+  assert.equal(new URL(reads[0]).searchParams.get('w'), '940')
+  assert.equal(new URL(reads[0]).searchParams.get('h'), '650')
+  assert.equal(new URL(reads[0]).searchParams.get('dpr'), '2')
+})
+
+test('source hints are checked against the exact image, including a relevant page beyond the first two text results', async t => {
+  const pages = []
+  const imageUrl = 'https://photos.example/solar.png'
+  const images = new WebImageResearch({ imageSearch: async () => [] }, { candidates: async () => [] }, {
+    read: async url => {
+      if (url === imageUrl) return png
+      pages.push(url)
+      const object = { '@type': 'ImageObject', contentUrl: url.endsWith('/right') ? imageUrl : 'https://photos.example/unrelated.png',
+        creator: 'Photographer', license: credit.licenseUrl }
+      return Buffer.from(`<script type="application/ld+json">${JSON.stringify(object)}</script>`)
+    },
+  })
+  t.after(() => images.close())
+  const result = await images.prepare({ candidateId: 'top-level', imageUrl, title: '', description: 'Solar panels',
+    sourcePages: ['https://photos.example/one', 'https://photos.example/two', 'https://photos.example/right'] }, AbortSignal.timeout(5000))
+  assert.equal(result.credit.url, 'https://photos.example/right')
+  assert.equal(pages.length, 3)
+})
+
+test('a blocked source is reported with HTTP evidence instead of being labelled a missing licence', async t => {
+  const reader = new PublicImageReader(async () => new Response('Forbidden', { status: 403, headers: { 'content-type': 'text/html' } }),
+    async () => [{ address: '8.8.8.8', family: 4 }])
+  const images = new WebImageResearch({ imageSearch: async () => [] }, { candidates: async () => [] }, reader)
+  t.after(() => images.close())
+  await assert.rejects(images.prepare({ candidateId: 'blocked', imageUrl: 'https://photos.example/image.png', sourceUrl: 'https://photos.example/page',
+    title: '', description: 'Solar panels' }, AbortSignal.timeout(5000)), error => {
+    assert.equal(error.code, 'RESEARCH_IMAGE_SOURCE_BLOCKED')
+    assert.equal(error.checks[0].httpStatus, 403)
+    return true
+  })
+})
+
+test('ranked fallback tries only model-approved candidates and preserves the first failure', async t => {
+  const good = { ...candidates[1], credit }
+  const bad = { ...candidates[0], credit: { ...credit, license: 'unknown', unknownLicense: true } }
+  const f = service(t, [bad, good])
+  const [need] = await f.run.stage(outlineImageNeeds(outline))
+  const selected = await f.run.select(need.needId, need.candidates[0].candidateId, 'First semantic choice', [
+    { candidateId: need.candidates[1].candidateId, reason: 'Also fits the slide role' },
+  ])
+  assert.equal(selected.selection.imageUrl, good.imageUrl)
+  assert.deepEqual(selected.attempts.map(a => a.code), ['RESEARCH_IMAGE_LICENSE_REQUIRED', 'IMAGE_PREPARED'])
+  assert.deepEqual(f.downloads, [good.imageUrl])
+})
+
+test('a Commons thumbnail resolves by verified file identity while an unrelated image cannot borrow that file licence', async t => {
+  let preparedCalls = 0
+  const commons = { candidates: async () => [{ imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Forest.jpg/1024px-Forest.jpg',
+    originalUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Forest.jpg', sourceUrl: 'https://commons.wikimedia.org/wiki/File:Forest.jpg',
+    title:'Forest', description:'Forest', credit }], prepare: async () => { preparedCalls++; return prepared } }
+  const images = new WebImageResearch({ imageSearch: async () => [] }, commons)
+  t.after(() => images.close())
+  await images.prepare({ candidateId:'thumb', imageUrl:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Forest.jpg/640px-Forest.jpg',
+    title:'Forest', description:'Forest' }, AbortSignal.timeout(5000))
+  assert.equal(preparedCalls, 1)
+  await assert.rejects(images.prepare({ candidateId:'spoof', imageUrl:'https://unrelated.example/other.jpg',
+    sourceUrl:'https://commons.wikimedia.org/wiki/File:Forest.jpg', title:'Forest', description:'Forest' }, AbortSignal.timeout(5000)), { code:'RESEARCH_IMAGE_LICENSE_REQUIRED' })
+  assert.equal(preparedCalls, 1)
+})
+
+test('an in-flight image selection cannot override a newer search for the same slot', async t => {
+  let release
+  const pending = new Promise(resolve => { release = resolve })
+  const images = new WebImageResearch({ imageSearch: async () => [] }, { candidates: async () => candidates,
+    prepare: async () => { await pending; return prepared } })
+  t.after(() => images.close())
+  const run = images.open(AbortSignal.timeout(5000), () => {})
+  const [need] = await run.stage(outlineImageNeeds(outline))
+  const selection = run.select(need.needId, need.candidates[1].candidateId, 'Solar')
+  await run.search(need.needId, 'solar panel manufacturing')
+  release()
+  await assert.rejects(selection, { code:'RESEARCH_IMAGE_SELECTION_STALE' })
+  await assert.rejects(run.resolve(need), { code:'RESEARCH_IMAGE_SELECTION_REQUIRED' })
 })
 
 test('private addresses, mixed DNS answers and redirects into private networks are refused before connection', async () => {
@@ -185,10 +285,10 @@ test('Stop while DNS is pending exits promptly and never connects', async () => 
 })
 
 test('oversized or invalid content types fail without returning image bytes', async () => {
-  for (const response of [new Response('not an image', { headers: { 'content-type': 'text/html' } }),
-    new Response('too large', { headers: { 'content-type': 'image/png' } })]) {
+  for (const [response, code] of [[new Response('not an image', { headers: { 'content-type': 'text/html' } }), 'RESEARCH_IMAGE_CONTENT_TYPE'],
+    [new Response('too large', { headers: { 'content-type': 'image/png' } }), 'RESEARCH_IMAGE_RESPONSE_TOO_LARGE']]) {
     const reader = new PublicImageReader(async () => response, async () => [{ address: '8.8.8.8', family: 4 }])
-    await assert.rejects(reader.read('https://public.example/image.png', AbortSignal.timeout(1000), 2, ['image/png']), { code: 'RESEARCH_IMAGE_UNAVAILABLE' })
+    await assert.rejects(reader.read('https://public.example/image.png', AbortSignal.timeout(1000), 2, ['image/png']), { code })
   }
 })
 
@@ -222,7 +322,7 @@ test('schema 8 migration preserves the exact legacy prepared-image payload', asy
   decks = new DeckService(path)
   t.after(async () => { decks.close(); await rm(dir, { recursive: true, force: true }) })
   const db = new DatabaseSync(path)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 10)
   assert.equal(db.prepare('SELECT payload FROM prepared_images WHERE image_key=?').get('forest').payload, payload)
   db.close()
 })

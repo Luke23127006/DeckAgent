@@ -16,7 +16,7 @@ import {
 import { dirname, join, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { resolveLayout } from '@deckagent/design'
-import { DeckError, validId } from './contracts.ts'
+import { DeckError, validId, ImagePreparationError } from './contracts.ts'
 import type {
   ArtifactAsset,
   ArtifactPublication,
@@ -58,6 +58,7 @@ interface PreparedRecord {
   slideId?: string
   asset?: ArtifactAsset
   failure?: string
+  attempts?: readonly import('./contracts.ts').ImageAttempt[]
 }
 
 const digest = (bytes: string | Uint8Array) => createHash('sha256').update(bytes).digest('hex')
@@ -214,7 +215,7 @@ export class ArtifactStorage {
           !validId(image.source.sourceId) ||
           !Number.isSafeInteger(image.source.version) ||
           image.source.version < 1 ||
-          !['public-domain', 'CC0', 'CC BY', 'unknown'].includes(image.credit.license) ||
+          !['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'].includes(image.credit.license) ||
           image.credit.unknownLicense !== (image.credit.license === 'unknown') ||
           !image.credit.url.startsWith('https://') ||
           !image.credit.author ||
@@ -235,12 +236,16 @@ export class ArtifactStorage {
           byteSize: bytes.length,
         }
         this.write(`${asset.assetId}.png`, bytes)
-        records.push({ ...identity, asset })
+        records.push({ ...identity, asset, ...(image.attempts ? { attempts: image.attempts } : {}) })
       } catch (error) {
         signal.throwIfAborted()
         if (this.options.activeRequest && !this.options.activeRequest(sessionId, input.requestId))
           throw new DeckError('REQUEST_CLOSED')
-        records.push({ ...identity, failure: error instanceof DeckError ? error.code : 'ARTIFACT_ASSET_UNAVAILABLE' })
+        records.push({
+          ...identity,
+          failure: error instanceof DeckError ? error.code : 'ARTIFACT_ASSET_UNAVAILABLE',
+          ...(error instanceof ImagePreparationError ? { attempts: error.attempts } : {}),
+        })
       }
     }
     const token = Object.freeze({})
@@ -299,6 +304,7 @@ export class ArtifactStorage {
         slideIndex: need.slideIndex,
         blockIndex: need.blockIndex,
         required: need.required,
+        ...(row?.attempts ? { attempts: row.attempts } : {}),
         status: available ? ('prepared' as const) : ('unavailable' as const),
         ...(available && row?.asset
           ? {
@@ -330,7 +336,9 @@ export class ArtifactStorage {
     outline: SavedOutline,
     needId: string,
   ): import('./contracts.ts').PreparedResearchImage {
-    const need = this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared')
+    const need =
+      this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared') ??
+      outlineImageNeeds(outline).find(n => n.needId === needId)
     if (!need) throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
     const slide = outline.slides[need.slideIndex]!
     const block = slide.blocks?.[need.blockIndex]
@@ -351,6 +359,7 @@ export class ArtifactStorage {
       parsedDigest: asset.parsedDigest,
       credit: asset.credit,
       selection: asset.selection,
+      ...(record?.attempts ? { attempts: record.attempts } : {}),
     }
   }
   imageBlockers(sessionId: string, outline: SavedOutline): readonly { code: string; message: string }[] {
@@ -702,7 +711,7 @@ export class ArtifactStorage {
       !validId(image.source.sourceId) ||
       !/^[a-f0-9]{64}$/.test(image.originalDigest) ||
       hashMismatch(image.parsedDigest, bytes) ||
-      !['public-domain', 'CC0', 'CC BY', 'unknown'].includes(image.credit.license) ||
+      !['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'].includes(image.credit.license) ||
       image.credit.unknownLicense !== (image.credit.license === 'unknown') ||
       !image.credit.url.startsWith('https://') ||
       !image.credit.author
@@ -745,7 +754,7 @@ export class ArtifactStorage {
         typeof c.url !== 'string' ||
         !c.url.startsWith('https://') ||
         typeof c.author !== 'string' ||
-        !['public-domain', 'CC0', 'CC BY', 'unknown'].includes(c.license) ||
+        !['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'].includes(c.license) ||
         typeof c.licenseUrl !== 'string' ||
         c.unknownLicense !== (c.license === 'unknown') ||
         typeof c.retrievedAt !== 'string'
