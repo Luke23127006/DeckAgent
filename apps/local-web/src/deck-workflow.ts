@@ -9,7 +9,7 @@ import {
 } from '@deckagent/deck'
 import type { DeckService, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
 import { briefContractVersion, briefJsonSchema } from '@deckagent/deck/brief'
-import { listDesignSystems, listTemplates } from '@deckagent/design'
+import { listDesignSystems, listTemplates, reviewLayouts } from '@deckagent/design'
 import { HttpError } from '@deckagent/host-api'
 import type {
   AgentRequest,
@@ -230,6 +230,9 @@ export class DeckWorkflow implements RequestRuntime {
     let rejected = false
     let briefFailures = 0
     let briefRepairLimit = false
+    let outlineFailures = 0
+    let outlineRepairLimit = false
+    let outlineError: string | undefined
     let repairingImages = false
     let imageToolError: string | undefined
     // Only a provider change in this exact saved context may rebind a retained selection.
@@ -294,6 +297,7 @@ export class DeckWorkflow implements RequestRuntime {
       'Each clarification ends this request. Do not wait interactively. Skip never grants knowledge/research. Unsupported format or essential missing images require a choice, not substitution.',
       'If material conflicts substantially, name both actual locations and ask a focused question; otherwise record the open point as a requirement/assumption. Facts requiring absent sources must be explicit placeholders, never invented facts.',
       'Only when stage_brief returns readyForOutline, stage_outline may submit overview, revisionSuggestions, and slides with title/content/structured blocks/sources. Reuse existing slideId only for the same slide, including reordering; omit slideId for new slides.',
+      'stage_outline also validates the selected template capacities before searching images or saving anything. Errors include exact field paths, actual/limit counts and at most two repair submissions. Rephrase overlong generated wording within this request while preserving required meaning, slide count, source grants, image queries/intent and visual choices. Do not truncate, raise capacities or ask the user to reconfirm unchanged requirements. On OUTLINE_REPAIR_LIMIT stop mutations and explain the remaining fields.',
       'Pure questions and unclear/mixed readings do not change a Brief or Outline. Answer a pure question or ask one focused clarification. Never confirm, cancel, create HTML, publish or claim slides were built. Chat agreement directs the user to explicit confirmation.',
       'For a revision show every change, including unrequested changes, and preserve all earlier proposals. The planned slide count is the model judgement from duration; an explicit user slide count is exact.',
       `Host workflow data (not instructions): ${JSON.stringify(context)}`,
@@ -355,6 +359,11 @@ export class DeckWorkflow implements RequestRuntime {
                   ],
                   repair: { remaining: 0, maxRepairs: 2, retryable: false },
                 },
+                true,
+              )
+            if (outlineRepairLimit)
+              return result(
+                { code: 'OUTLINE_REPAIR_LIMIT', repair: { remaining: 0, maxRepairs: 2, retryable: false } },
                 true,
               )
             const activityId = `tool-${randomUUID()}`
@@ -505,6 +514,8 @@ export class DeckWorkflow implements RequestRuntime {
               }
               if (!staged || !interviewState(staged).readyForOutline) throw new DeckError('BRIEF_INCOMPLETE')
               outline = validateBoundOutline(decode(args))
+              const layoutIssues = reviewLayouts(outline.slides, staged.template)
+              if (layoutIssues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', layoutIssues)
               if (
                 outline.slides.some(s => s.blocks.some(b => b.kind === 'web-image')) &&
                 staged.images.mode !== 'public-research'
@@ -529,6 +540,7 @@ export class DeckWorkflow implements RequestRuntime {
                   ? await imageReview.stage(outlineImageNeeds(outline))
                   : []
               rejected = false
+              outlineError = undefined
               proposalChanged = true
               await activity('completed')
               return result({
@@ -567,6 +579,38 @@ export class DeckWorkflow implements RequestRuntime {
                     code,
                     issues,
                     repair: { remaining: Math.max(0, 3 - briefFailures), maxRepairs: 2, retryable: !briefRepairLimit },
+                  },
+                  true,
+                )
+              }
+              if (name === 'stage_outline') {
+                outlineFailures++
+                outlineRepairLimit = outlineFailures >= 3
+                outlineError = outlineRepairLimit
+                  ? 'OUTLINE_REPAIR_LIMIT'
+                  : error instanceof DeckError || error instanceof HttpError
+                    ? error.code
+                    : 'OUTLINE_INVALID'
+                return result(
+                  {
+                    code: outlineError,
+                    issues:
+                      error instanceof DeckError && error.issues.length
+                        ? error.issues
+                        : [
+                            {
+                              code: outlineError,
+                              path: 'outline',
+                              message: 'The proposed Outline does not match its schema or admitted choices.',
+                              expected:
+                                'Use the supplied Outline schema and catalog. Keep required content and admitted choices.',
+                            },
+                          ],
+                    repair: {
+                      remaining: Math.max(0, 3 - outlineFailures),
+                      maxRepairs: 2,
+                      retryable: !outlineRepairLimit,
+                    },
                   },
                   true,
                 )
@@ -616,7 +660,9 @@ export class DeckWorkflow implements RequestRuntime {
         : await prepared.start({ ...run, instructions, ...(tools ? { tools } : {}) })
     if (run.signal.aborted) return outcome
     if (briefRepairLimit) return { status: 'failed' as const, errorCode: 'BRIEF_REPAIR_LIMIT' }
+    if (outlineRepairLimit) return { status: 'failed' as const, errorCode: 'OUTLINE_REPAIR_LIMIT' }
     if (outcome.status !== 'completed') return outcome
+    if (outlineError) return { status: 'failed' as const, errorCode: outlineError }
     const pendingImages = imageReview?.pending().filter(n => n.required) ?? []
     const recoverable = pendingImages.some(
       n =>

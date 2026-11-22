@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { DesignError, findCompatibleLayouts } from '@deckagent/design'
+import { DesignError, reviewLayouts } from '@deckagent/design'
 import { FormatError } from '@deckagent/presentation-document'
 export { decodeSlideDocument, documentText, FormatError } from '@deckagent/presentation-document'
 export type {
@@ -150,7 +150,18 @@ export class DeckService implements DeckReader, DeckPublisher {
       return {
         ...snapshot,
         proposals: snapshot.proposals.map(p =>
-          p.brief ? { ...p, imageReview: this.artifacts.imageReview(sessionId, p) } : p,
+          p.brief
+            ? {
+                ...p,
+                imageReview: this.artifacts.imageReview(sessionId, p),
+                layoutIssues: p.brief.design
+                  ? reviewLayouts(
+                      p.slides.map(s => ({ title: s.title, blocks: s.blocks ?? [] })),
+                      p.brief.design.template,
+                    )
+                  : [],
+              }
+            : p,
         ),
       }
     })
@@ -338,10 +349,9 @@ export class DeckService implements DeckReader, DeckPublisher {
         if (!interviewState(b.draft).readyForOutline || !b.design || !p.slides.length)
           throw new DeckError('BRIEF_INCOMPLETE')
         if (b.design.template.id === 'html-basic' && b.design.template.version === 3) {
-          const issues = p.slides.flatMap((s, index) =>
-            findCompatibleLayouts({ title: s.title, blocks: s.blocks ?? [] }, b.design!.template).candidates.length
-              ? []
-              : [{ code: 'DESIGN_LAYOUT_INCOMPATIBLE', path: `slides[${index}].blocks`, message: 'No controlled layout fits the planned content.', expected: 'Revise the Outline to fit a catalog layout without dropping required content.' }],
+          const issues = reviewLayouts(
+            p.slides.map(s => ({ title: s.title, blocks: s.blocks ?? [] })),
+            b.design.template,
           )
           if (issues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', issues)
         }

@@ -4,6 +4,10 @@ Notable changes to this repository. The newest changes are at the top.
 
 ## [Unreleased]
 
+### Fixed
+
+- Validate controlled-layout capacities before Outline image search and commit; return exact fields and Unicode counts with at most two repair submissions. Show derived layout blockers for saved Outlines across reload, retain existing image progress, and preserve the confirmation error instead of reporting a connection failure.
+
 ### Removed
 
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.

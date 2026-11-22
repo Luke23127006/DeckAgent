@@ -1,6 +1,14 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
+  OUTLINE_REPAIR_LIMIT: [
+    'Chưa chuẩn bị được Outline hợp lệ',
+    'Đã hết hai lượt sửa tự động. Xem các vị trí còn lỗi trong phản hồi; Outline và ảnh đã lưu trước đó được giữ nguyên.',
+  ],
+  DESIGN_LAYOUT_INCOMPATIBLE: [
+    'Nội dung chưa phù hợp với layout',
+    'Sửa Outline để nội dung vừa một layout trong catalog trước khi xác nhận. Nội dung và tiến độ đã lưu được giữ nguyên.',
+  ],
   BRIEF_REPAIR_LIMIT: [
     'Chưa chuẩn bị được Brief hợp lệ',
     'Đã hết hai lượt sửa tự động trong yêu cầu này. Xem các trường còn lỗi trong phản hồi; Brief và Outline đã lưu được giữ nguyên.',

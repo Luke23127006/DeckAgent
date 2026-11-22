@@ -309,6 +309,8 @@ export interface OutlineTarget {
 }
 
 export interface OutlineProposal extends OutlineTarget {
+  /** Derived on read from the pinned catalog; never persisted as proposal content. */
+  readonly layoutIssues?: readonly import('@deckagent/design').LayoutIssue[]
   readonly imageReview?: readonly OutlineImageReview[]
   readonly brief?: BriefRecord
   readonly revisionSuggestions?: readonly string[]

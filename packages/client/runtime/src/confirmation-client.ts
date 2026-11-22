@@ -103,6 +103,7 @@ export class ConfirmationClient {
         'BRIEF_STALE',
         'BRIEF_INCOMPLETE',
         'IMAGE_PREPARATION_REQUIRED',
+        'DESIGN_LAYOUT_INCOMPATIBLE',
         'OUTLINE_STALE',
         'OUTLINE_ALREADY_CONFIRMED',
         'SESSION_BUSY',

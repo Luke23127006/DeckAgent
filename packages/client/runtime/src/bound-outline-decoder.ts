@@ -108,6 +108,51 @@ function source(v: unknown): BriefSourceRef {
   return { sourceId: v.sourceId, version: v.version, kind }
 }
 
+function layoutIssues(value: unknown, slideCount: number): NonNullable<OutlineProposal['layoutIssues']> {
+  if (!Array.isArray(value) || value.length > 32) return invalid()
+  return value.map(v => {
+    const layoutId = object(v)
+      ? (['cover', 'section', 'title-body', 'two-column', 'key-figures', 'image-text', 'image-pair'] as const).find(
+          id => id === v.layoutId,
+        )
+      : undefined
+    if (
+      !object(v) ||
+      v.code !== 'DESIGN_LAYOUT_INCOMPATIBLE' ||
+      typeof v.slideIndex !== 'number' ||
+      !Number.isSafeInteger(v.slideIndex) ||
+      v.slideIndex < 0 ||
+      v.slideIndex >= slideCount ||
+      !text(v.path) ||
+      v.path.length > 500 ||
+      !v.path.startsWith(`slides[${v.slideIndex}].`) ||
+      !text(v.message) ||
+      v.message.length > 1000 ||
+      !text(v.expected) ||
+      v.expected.length > 1000 ||
+      (v.layoutId !== undefined && !layoutId) ||
+      (v.actual === undefined) !== (v.limit === undefined) ||
+      (v.actual !== undefined &&
+        (typeof v.actual !== 'number' ||
+          !Number.isSafeInteger(v.actual) ||
+          typeof v.limit !== 'number' ||
+          !Number.isSafeInteger(v.limit) ||
+          v.limit < 0 ||
+          v.actual <= v.limit))
+    )
+      return invalid()
+    return {
+      code: 'DESIGN_LAYOUT_INCOMPATIBLE' as const,
+      slideIndex: v.slideIndex,
+      path: v.path,
+      message: v.message,
+      expected: v.expected,
+      ...(layoutId === undefined ? {} : { layoutId }),
+      ...(typeof v.actual === 'number' && typeof v.limit === 'number' ? { actual: v.actual, limit: v.limit } : {}),
+    }
+  })
+}
+
 /** Additive decoder; legacy proposals retain their original contract. */
 export function decodeBoundProposal(v: Record<string, unknown>, sessionId: string): OutlineProposal {
   if (
@@ -186,6 +231,7 @@ export function decodeBoundProposal(v: Record<string, unknown>, sessionId: strin
     overview: v.overview,
     status,
     slides,
+    ...(v.layoutIssues === undefined ? {} : { layoutIssues: layoutIssues(v.layoutIssues, slides.length) }),
     ...(v.imageReview === undefined ? {} : { imageReview: decodeImageReview(v.imageReview) }),
     brief,
     revisionSuggestions: v.revisionSuggestions,

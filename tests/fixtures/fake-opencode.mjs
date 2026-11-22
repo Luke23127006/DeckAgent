@@ -363,8 +363,13 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
       await callWorkflow('stage_brief', corrected, attempt++)
     }
   }
-  if (workflow.outline !== undefined) {
-    const staged = await callWorkflow('stage_outline', workflow.outline, attempt++)
+  for (const value of workflow.outlineAttempts ?? (workflow.outline === undefined ? [] : [workflow.outline])) {
+    let staged = await callWorkflow('stage_outline', value, attempt++)
+    if (workflow.repairOutline && staged.isError) {
+      if (!staged.value.issues?.length || staged.value.repair?.remaining !== 2)
+        throw new Error('Outline repair diagnostics missing')
+      staged = await callWorkflow('stage_outline', workflow.repairedOutline, attempt++)
+    }
     if (workflow.selectImages)
       for (const need of staged.value.imageNeeds ?? []) {
         const candidate = need.candidates[workflow.imageCandidateIndex ?? 0]

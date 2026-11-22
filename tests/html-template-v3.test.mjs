@@ -152,7 +152,7 @@ test('an over-capacity v3 Outline cannot create a generation intent or lock the 
         },
         { provider: 'fixture', model: 'fixture' },
       ),
-    e => e.code === 'DESIGN_LAYOUT_INCOMPATIBLE' && e.issues.some(i => i.path === 'slides[0].blocks'),
+    e => e.code === 'DESIGN_LAYOUT_INCOMPATIBLE' && e.issues.some(i => i.path === 'slides[0].blocks[0].items[0]'),
   )
   assert.equal(decks.generation('chat'), null)
   assert.equal(decks.outlineSnapshot('chat').proposals.at(-1).status, 'current')
