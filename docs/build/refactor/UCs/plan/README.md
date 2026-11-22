@@ -26,9 +26,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Backlog | `docs/00-old/spec/05-backlog/` is not migrated. Each area file names its parked items in the out-of-scope list of `## Tổng quan`. |
 | Product evidence | The `## Product evidence` sections (open-design, Napkin AI) are not migrated in this revision. They are product research, not behavior. |
 | Old files | `docs/00-old/spec/` stays unchanged. |
-| Method | Tasks 1 to 7 obey the skill `write-use-case`. The project decisions of this plan replace these parts of the skill. Step 1: the source is `docs/00-old/spec/`. Step 6: a vague word stays without a number, and Task 9 proposes the value. Step 8: the gap analysis has one `Open` row that links to `OQ-001`. |
+| Method | Tasks 1 to 7 obey the skill `write-use-case`. The project decisions of this plan replace these parts of the skill. Step 1: the source is `docs/00-old/spec/`. Step 6: a vague word stays without a number, and Task 9 proposes the value. Step 8: the gap analysis has one `Open` row that links to the area baseline file and to `OQ-001`. The comparison runs after Task 7. |
 | Independence | The files in `docs/UCs/` and `docs/open-questions.md` do not refer to `docs/00-old/` or to the old spec. The product owner deletes `docs/00-old/` after Task 9. The old IDs stay the same, so Task 8 and Task 9 find each item in the old files by its ID. The `Nguồn` cell of a `Confirmed` row is `Product owner`. The `Nguồn` cell of a `Proposed` or `Inferred` row gives the evidence in words, with no old file path. |
-| Gap analysis | No independent baseline exists yet. Task 1 adds the open question `OQ-001` to `docs/open-questions.md`. Each area file has one gap row with status `Open` that links to `../open-questions.md#oq-001`. |
+| Gap analysis | `OQ-001` is `Resolved`. The independent baseline is in `docs/build/refactor/UCs/baseline/`, one file for each area. Tasks 2 to 7 do not change the baseline and do not compare with it. Each area file has one gap row with status `Open` that links to its baseline file and to `../open-questions.md#oq-001`. |
 
 ## Method
 
@@ -89,4 +89,4 @@ The [Decisions](#decisions) row `Method` gives the parts of the skill `write-use
 - Write `docs/UCs/quality-attributes.md` from the 11 old `NFR` items with the values that the product owner approves from the Task 9 report.
 - Add the vague-quantity values that the product owner approves from the Task 9 report to the rule rows of Tasks 2 to 7.
 - Move the facts of the `Architecture facts` lists of Tasks 2 to 7 to `docs/architecture/`.
-- Run the gap analysis against an independent baseline, and close `OQ-001`.
+- Compare each area file with its baseline file in `docs/build/refactor/UCs/baseline/`, and replace the row `GAP-01`.

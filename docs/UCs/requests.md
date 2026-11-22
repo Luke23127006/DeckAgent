@@ -159,14 +159,14 @@ Không có việc chờ câu trả lời bên trong một request. Một câu h�
 
 ## Gap analysis
 
-Chưa có baseline độc lập cho file này [[3]](#ref-3).
+Baseline độc lập cho file này đã có [[3]](#ref-3). File này chưa được đối chiếu với baseline đó.
 
 | ID | Gap | Baseline | Quyết định | Trạng thái |
 | --- | --- | --- | --- | --- |
-| GAP-01 | Chưa đối chiếu với baseline độc lập | — | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open |
+| GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline requests](../build/refactor/UCs/baseline/requests.md) | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open |
 
 ## References
 
 1. <a id="ref-1"></a>[Provider và model](providers.md)
 2. <a id="ref-2"></a>[Workspace](workspaces.md)
-3. <a id="ref-3"></a>[Open Questions](../open-questions.md)
+3. <a id="ref-3"></a>[Baseline requests](../build/refactor/UCs/baseline/requests.md)

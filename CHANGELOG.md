@@ -15,6 +15,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Link the gap-analysis row of each use case area file to its baseline file in `docs/build/refactor/UCs/baseline/`, and run the comparison after Task 7.
 - Make `write-use-case` use DeckAgent examples, ask for an open question when no rule decides an item, and run `check:docs` with the pinned pnpm version. Tasks 1 to 7 of the use case plan follow the skill and the plan method.
 - `check:docs` prints the number of checked files, so a clean result is not mistaken for a run that checked no files.
 - Use oxlint 1.94.0 with the `correctness` and `suspicious` categories as the only linter. Biome stays as the formatter only.

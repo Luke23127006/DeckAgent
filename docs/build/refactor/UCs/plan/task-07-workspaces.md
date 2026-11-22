@@ -114,7 +114,7 @@ Some answers change what the user sees, but no old file gives the result. Do not
 
 - [ ] **Step 5: Write `## Gap analysis` and `## References`**
 
-`## Gap analysis` has this sentence: `Chưa có baseline độc lập cho file này [[n]](#ref-n).` Then the table `ID | Gap | Baseline | Quyết định | Trạng thái` with one row: `GAP-01 | Chưa đối chiếu với baseline độc lập | — | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open`. In `## References`, the citation number `n` points to `../open-questions.md`.
+`## Gap analysis` has this sentence: `Baseline độc lập cho file này đã có [[n]](#ref-n). File này chưa được đối chiếu với baseline đó.` Then the table `ID | Gap | Baseline | Quyết định | Trạng thái` with one row: `GAP-01 | Chưa đối chiếu với baseline độc lập | [Baseline workspaces](../build/refactor/UCs/baseline/workspaces.md) | [Baseline độc lập cho gap analysis (OQ-001)](../open-questions.md#oq-001) | Open`. In `## References`, the citation number `n` points to `../build/refactor/UCs/baseline/workspaces.md`. Do not change the baseline file. Do not compare with the baseline in this task. The gap analysis runs after Task 7.
 
 - [ ] **Step 6: Make sure that each owned ID has a row**
 
