@@ -158,7 +158,11 @@ export function compileArtifact(source: string, design: DesignSnapshot, assets: 
       )
       .join(';')
     const theme = `:root{${vars}}*{box-sizing:border-box}html,body{margin:0;width:1280px;height:720px;background:var(--color-background);color:var(--color-text);font-family:var(--font-body);font-size:var(--type-body);line-height:var(--type-lineHeight)}body{padding:calc(var(--space-unit)*4)}h1{font-family:var(--font-heading);font-size:var(--type-display)}h2,h3{font-family:var(--font-heading);font-size:var(--type-heading)}small,figcaption{font-size:var(--type-caption)}img{max-width:100%;max-height:100%;object-fit:contain}`
-    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><style>${theme}</style></head><body>${serialize(root)}</body></html>`
+    const layoutPolicy =
+      design.template.id === 'html-basic' && design.template.version === 3
+        ? '<meta name="deckagent-layout-policy" content="html-layout-v3">'
+        : ''
+    return `<!doctype html><html><head><meta charset="utf-8">${layoutPolicy}<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><style>${theme}</style></head><body>${serialize(root)}</body></html>`
   } catch (error) {
     throw error instanceof DeckError ? error : new DeckError('ARTIFACT_UNSAFE_HTML')
   }

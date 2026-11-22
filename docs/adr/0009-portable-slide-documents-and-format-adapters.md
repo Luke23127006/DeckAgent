@@ -28,4 +28,6 @@ Keep source generation against executable templates instead of unconstrained HTM
 
 ## Implementation reference
 
+The [controlled HTML layout decision](0012-controlled-html-layouts.md) narrows source authoring for HTML Basic version 3 while retaining the earlier native source paths and portable content contract.
+
 The [request-to-Preview diagram](../development/generation-and-publication.md#request-to-preview) shows Brief collection, Outline review, confirmation and generation. The [per-slide template sequence](../development/portable-slide-content.md#per-slide-template-sequence) shows how the model, Host, HTML adapter and browser check turn confirmed content into a saved slide.

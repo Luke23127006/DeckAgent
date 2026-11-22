@@ -143,7 +143,10 @@ if (existsSync(`${logFile}.generation.json`)) {
       const responseBody = await response.json()
       const tool = responseBody.result
       if (!tool || tool.isError) throw new Error(tool?.content?.[0]?.text ?? 'TOOL_FAILED')
-      return JSON.parse(tool.content[0].text)
+      const valueResult = JSON.parse(tool.content[0].text)
+      if (name === 'validate_slide' && valueResult.valid === false)
+        event('text', { id: 'prt_validation_issues', type:'text', text:`Template validation issues: ${JSON.stringify(valueResult.issues)}` })
+      return valueResult
     }
     const plan = await call('read_generation_plan', {})
     if (plan.sources.length) {

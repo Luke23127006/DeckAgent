@@ -3,7 +3,7 @@ import { DeckModel } from './deck-model.ts'
 import { button, element } from './dom.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
 
-/** Slides carry no fixed size. A preview lays one out at this viewport, then CSS scales it down. */
+/** Published HTML lays out at this viewport; every viewer scales the same canvas without reflow. */
 const PREVIEW_WIDTH = 1280
 const PREVIEW_CONCURRENCY = 3
 const IDLE_MS = 2500
@@ -52,6 +52,11 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
   const placeholder = element('div', undefined, 'deck-placeholder')
   placeholder.setAttribute('role', 'status')
   stage.append(frame, placeholder)
+  const fitStage = () => {
+    const scale = Math.min(stage.clientWidth / PREVIEW_WIDTH, stage.clientHeight / 720)
+    if (scale > 0) stage.style.setProperty('--slide-scale', String(scale))
+  }
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fitStage).observe(stage)
   const caption = element('p', 'Chat này chưa có deck đã xác nhận', 'slide-caption')
   caption.setAttribute('aria-live', 'polite')
   const counter = element('span', '0 / 0', 'deck-counter')
@@ -327,6 +332,7 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     const on = presenting()
     panel.dataset.presenting = String(on)
     exit.hidden = !on
+    fitStage()
     if (on) panel.focus({ preventScroll: true })
     wake()
   })

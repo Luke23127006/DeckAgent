@@ -332,8 +332,10 @@ export function initMotion(root: HTMLElement): void {
         if (target.matches('.account-menu')) menuIn(target)
         else if (target.matches('.welcome')) welcomeIn(target)
         else if (target.matches('.published-deck-sidebar')) deckIn(target)
-      } else if (record.attributeName === 'srcdoc' && target.matches('.deck-stage iframe')) slideIn(target)
-      else if (record.attributeName === 'data-presenting' && target.dataset.presenting === 'true') presentIn(target)
+      } else if (record.attributeName === 'srcdoc' && target.matches('.deck-stage iframe')) {
+        // Keep the iframe's viewport-fitting transform owned by the canvas.
+        if (target.parentElement) slideIn(target.parentElement)
+      } else if (record.attributeName === 'data-presenting' && target.dataset.presenting === 'true') presentIn(target)
     }
     if (fresh.length > 3) bulk(fresh)
     else for (const node of fresh) node.matches('.message.user') ? fly(root, node) : pop(node)

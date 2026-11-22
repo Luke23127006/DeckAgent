@@ -17,7 +17,12 @@ test('executable HTML templates preserve portable content and validate against t
           : [{ id: 'body', kind: 'bullets', items: ['Forest', 'Ocean'] }],
       provenance: [],
     }
-    const context = { design: resolveDesign(), layoutId, document, assets: [] }
+    const context = {
+      design: resolveDesign({ template: { id: 'html-basic', version: 2 } }),
+      layoutId,
+      document,
+      assets: [],
+    }
     const draft = html.context(context)
     const built = await html.build(draft.starter, context)
     assert.equal(built.descriptor.format, 'html')

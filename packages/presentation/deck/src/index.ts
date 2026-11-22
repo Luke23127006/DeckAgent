@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { DesignError } from '@deckagent/design'
+import { DesignError, findCompatibleLayouts } from '@deckagent/design'
 import { FormatError } from '@deckagent/presentation-document'
 export { decodeSlideDocument, documentText, FormatError } from '@deckagent/presentation-document'
 export type {
@@ -337,6 +337,14 @@ export class DeckService implements DeckReader, DeckPublisher {
           throw new DeckError('BRIEF_STALE')
         if (!interviewState(b.draft).readyForOutline || !b.design || !p.slides.length)
           throw new DeckError('BRIEF_INCOMPLETE')
+        if (b.design.template.id === 'html-basic' && b.design.template.version === 3) {
+          const issues = p.slides.flatMap((s, index) =>
+            findCompatibleLayouts({ title: s.title, blocks: s.blocks ?? [] }, b.design!.template).candidates.length
+              ? []
+              : [{ code: 'DESIGN_LAYOUT_INCOMPATIBLE', path: `slides[${index}].blocks`, message: 'No controlled layout fits the planned content.', expected: 'Revise the Outline to fit a catalog layout without dropping required content.' }],
+          )
+          if (issues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', issues)
+        }
         if (this.artifacts.imageBlockers(sessionId, p).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
         this.insertPlan(sessionId, p)
         this.outlines.confirm(sessionId, p)

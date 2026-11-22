@@ -40,7 +40,9 @@ test('each catalog layout admits its content at capacity and refuses excess or d
   ]
   for (const [id, blocks, excess] of cases) {
     assert.deepEqual(
-      findCompatibleLayouts({ title: 't'.repeat(80), blocks }).candidates.map(x => x.id),
+      findCompatibleLayouts({ title: 't'.repeat(80), blocks }, { id: 'html-basic', version: 2 }).candidates.map(
+        x => x.id,
+      ),
       [id],
     )
     for (const plan of [
@@ -48,7 +50,7 @@ test('each catalog layout admits its content at capacity and refuses excess or d
       { title: 't', blocks: excess },
       { title: 't', blocks: [...blocks, ...blocks] },
     ])
-      assert.equal(findCompatibleLayouts(plan).fallbackAllowed, true, id)
+      assert.equal(findCompatibleLayouts(plan, { id: 'html-basic', version: 2 }).fallbackAllowed, true, id)
   }
   assert.throws(() => findCompatibleLayouts({ title: 't', blocks: [{ kind: 'bullets', items: [] }] }), {
     code: 'DESIGN_CONTENT_INVALID',
@@ -62,7 +64,7 @@ test('snapshot round trips preserve overrides without applying catalog defaults 
   assert.throws(() => decodeDesignSnapshot({ ...snapshot, theme: { ...snapshot.theme, 'type.body': 30 } }), {
     code: 'DESIGN_SNAPSHOT_INVALID',
   })
-  assert.throws(() => resolveDesign({ template: { id: 'html-basic', version: 3 } }), {
+  assert.throws(() => resolveDesign({ template: { id: 'html-basic', version: 99 } }), {
     code: 'DESIGN_TEMPLATE_NOT_FOUND',
   })
   assert.throws(() => resolveDesign({ designSystem: { id: 'missing', version: 1 } }), {
@@ -90,7 +92,7 @@ test('offline catalog resolves accepted defaults and retains an immutable effect
   assert.equal(listDesignSystems()[0].theme['color.accent'], '#2563EB')
   assert.equal(listTemplates('html')[0].layouts.length, 7)
   assert.equal(listTemplates('html').find(t => t.version === 1).layouts.length, 6)
-  assert.equal(snapshot.template.version, 2)
+  assert.equal(snapshot.template.version, 3)
   assert.throws(() => resolveDesign({ format: 'pptx' }), { code: 'DESIGN_FORMAT_UNAVAILABLE' })
   assert.throws(() => resolveDesign({ format: 'html', template: { id: 'missing', version: 1 } }), {
     code: 'DESIGN_TEMPLATE_NOT_FOUND',
@@ -106,8 +108,10 @@ test('layout candidates count actual Unicode content and allow fallback only whe
   )
   assert.throws(() => design.resolveLayout(plan, 'custom'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
   const tooLong = { ...plan, blocks: [{ kind: 'bullets', items: ['😀'.repeat(141)] }] }
-  assert.equal(design.findCompatibleLayouts(tooLong).fallbackAllowed, true)
-  assert.equal(design.resolveLayout(tooLong, 'custom').kind, 'custom')
+  assert.equal(design.findCompatibleLayouts(tooLong).fallbackAllowed, false)
+  assert.throws(() => design.resolveLayout(tooLong, 'custom'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
+  assert.equal(design.findCompatibleLayouts(tooLong, { id: 'html-basic', version: 2 }).fallbackAllowed, true)
+  assert.equal(design.resolveLayout(tooLong, 'custom', { id: 'html-basic', version: 2 }).kind, 'custom')
   assert.throws(() => design.resolveLayout(tooLong, 'title-body'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
   assert.throws(() => design.findCompatibleLayouts({ title: 'T', blocks: [{ kind: 'script', text: 'x' }] }), {
     code: 'DESIGN_CONTENT_INVALID',

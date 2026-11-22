@@ -19,6 +19,7 @@ __pycache__/
 /trash/
 
 # Node.js development tooling
+/.local/layout-gallery-v3/
 /.pnpm-store/
 /node_modules/
 **/node_modules/

@@ -1517,6 +1517,13 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   )
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   // Fullscreen needs a real user gesture; a scripted click() carries no activation.
+  await eventually(() => evaluate(`(()=>{
+    const frame=document.querySelector('.published-deck-sidebar .deck-stage iframe');
+    const stage=frame.parentElement;const rect=frame.getBoundingClientRect(),box=stage.getBoundingClientRect();
+    const expected=Math.min(stage.clientWidth/1280,stage.clientHeight/720);
+    return frame.offsetWidth===1280 && frame.offsetHeight===720 && Math.abs(rect.width-1280*expected)<1 &&
+      Math.abs(rect.height-720*expected)<1 && Math.abs(rect.x+rect.width/2-box.x-box.width/2)<1;
+  })()`), 'Preview must scale the complete 1280x720 canvas without reflow or clipping')
   // A CDP-created background tab can reject fullscreen as 'not granted' even after a real click.
   await protocol.call('Page.bringToFront')
   assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
@@ -1538,7 +1545,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     clickCount: 1,
   })
   await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')
-  const presenting = `(() => { const p=document.fullscreenElement; const r=p.querySelector('.deck-stage iframe').getBoundingClientRect(); const hidden=selector => getComputedStyle(p.querySelector(selector)).display==='none'; return { ok: p.dataset.presenting==='true' && hidden('header') && hidden('.deck-slide-list') && !p.querySelector('.deck-exit').hidden && Math.abs(r.width/r.height-16/9)<.02 && r.width<=innerWidth && r.height<=innerHeight, presenting: p.dataset.presenting, header: hidden('header'), list: hidden('.deck-slide-list'), exit: !p.querySelector('.deck-exit').hidden, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; })()`
+  const presenting = `(() => { const p=document.fullscreenElement;const frame=p.querySelector('.deck-stage iframe'); const r=frame.getBoundingClientRect(); const hidden=selector => getComputedStyle(p.querySelector(selector)).display==='none'; return { ok: p.dataset.presenting==='true' && frame.offsetWidth===1280 && frame.offsetHeight===720 && hidden('header') && hidden('.deck-slide-list') && !p.querySelector('.deck-exit').hidden && Math.abs(r.width/r.height-16/9)<.02 && r.width<=innerWidth && r.height<=innerHeight, presenting: p.dataset.presenting, header: hidden('header'), list: hidden('.deck-slide-list'), exit: !p.querySelector('.deck-exit').hidden, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; })()`
   // `presenting` is set by the fullscreenchange handler, which runs after fullscreenElement exists.
   let layout
   await eventually(async () => {

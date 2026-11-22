@@ -29,7 +29,7 @@ test('a new request continues an interrupted confirmed deck after restart withou
   legacy.close()
   decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
   const upgraded = new DatabaseSync(join(dir, 'deck.sqlite'))
-  assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 9)
+  assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 10)
   upgraded.close()
   assert.deepEqual(decks.generation('chat').receipt, receipt)
   assert.equal(decks.generation('chat').state, 'incomplete')

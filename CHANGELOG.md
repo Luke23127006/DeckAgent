@@ -10,6 +10,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add HTML Basic version 3 with seven controlled layout skeletons, unchanged theme roles, content capacities and offline geometry checks. Preserve pinned versions 1/2 and saved artifacts; scale the same 1280x720 canvas in Preview and fullscreen. Include an offline layout gallery and Vietnamese capacity coverage.
+
 - Resume saved image progress in later review requests without restaging unchanged Briefs and Outlines. Apply explicit image provider changes to new searches, retain prepared images and their provenance, keep question-only turns read-only, and report stale image IDs as workflow errors with current positions.
 
 - Resolve Commons thumbnail and Pexels stock-photo origins, preserve distinct licence and source-read diagnostics, and retain per-image attempt history. Allow model-ranked image alternatives and one restricted recovery run before saving an unresolved Outline. Deck schema 10 preserves prior data and marks the Pexels licence contract.

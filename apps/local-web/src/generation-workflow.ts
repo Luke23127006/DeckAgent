@@ -96,6 +96,11 @@ export class GenerationWorkflow implements RequestRuntime {
           'The slides array lists only unfinished slides. Published slides are retained and must not be regenerated or changed. A continuation is a new user request, not a replay of previous tools.',
           'Host supplies wrapper, viewport and theme. Supply static HTML fragments and optional parsed CSS. No scripts, URLs, SVG, imports, events, custom variables or arbitrary colours/fonts. Use effective var(--color-text), var(--font-body), var(--type-body), etc; theme role dots become hyphens.',
           'Choose one compatible layout ID. custom is allowed only when fallbackAllowed. Include all planned title/content/block text and selected image captions, no hidden text. Do not truncate, silently repair, invent missing facts or substitute model memory for facts requiring sources. Preserve placeholders and provenance.',
+          ...(plan.generation.design.template.version === 3
+            ? [
+                'HTML Basic v3 has controlled layout geometry. Use the supplied starter structure and CSS exactly. To change content, call record_slide_content and refresh through read_slide_draft before appending. No custom layout fallback, geometry rewrite, text shrinking or truncation. Layout/capacity failures require a compatible recorded document or an explicit Outline revision.',
+              ]
+            : []),
           'Use prepared selected attachment images only via attach_slide_image, then asset:<assetId>. Chunk UTF-8 text into <=8192 bytes, sequence from zero, final true on the last chunk. Publish with expectedRevision 0 for the initial slide. On validation errors correct your own stage explicitly; discard unused stages.',
           ...(!portable
             ? [

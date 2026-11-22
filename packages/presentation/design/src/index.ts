@@ -95,11 +95,26 @@ const templateV2: Template = immutable({
     },
   ],
 })
+const templateV3: Template = immutable({
+  ...templateV2,
+  version: 3,
+  layouts: templateV2.layouts.map(layout => ({
+    ...layout,
+    contentKinds: layout.id === 'section' ? ['lead', 'text'] : layout.contentKinds,
+    capacity: {
+      ...layout.capacity,
+      ...(layout.id === 'section' ? { lead: 180, text: 300 } : {}),
+      ...(layout.id === 'image-text' ? { bullet: 100, caption: 120 } : {}),
+      ...(layout.id === 'image-pair' ? { bullet: 90, caption: 100 } : {}),
+    },
+  })),
+})
 function selectedTemplate(value: unknown): Template {
-  if (value === undefined) return templateV2
+  if (value === undefined) return templateV3
   if (isRecord(value) && only(value, ['id', 'version']) && value.id === template.id) {
     if (value.version === 1) return template
     if (value.version === 2) return templateV2
+    if (value.version === 3) return templateV3
   }
   throw new DesignError('DESIGN_TEMPLATE_NOT_FOUND')
 }
@@ -112,7 +127,7 @@ export function listDesignSystems(): readonly DesignSystem[] {
 }
 export function listTemplates(format: string): readonly Template[] {
   if (format !== 'html') throw new DesignError('DESIGN_FORMAT_UNAVAILABLE')
-  return [templateV2, template]
+  return [templateV3, templateV2, template]
 }
 function reference(value: unknown, expected: CatalogRef, code: string): void {
   if (
@@ -336,6 +351,14 @@ export function findCompatibleLayouts(
     if (layout.id === 'cover')
       return count('subtitle') <= 1 && plan.blocks.every(b => 'text' in b && length(b.text) <= c.subtitle!)
     if (layout.id === 'section')
+      if (template.version >= 3)
+        return (
+          count('lead') <= 1 &&
+          count('text') <= 1 &&
+          plan.blocks.length >= 1 &&
+          plan.blocks.every(b => 'text' in b && length(b.text) <= (b.kind === 'lead' ? c.lead! : c.text!))
+        )
+    if (layout.id === 'section')
       return plan.blocks.length === 1 && plan.blocks.every(b => 'text' in b && length(b.text) <= c.lead!)
     if (layout.id === 'title-body')
       return plan.blocks.length === 1 && plan.blocks.every(b => b.kind === 'bullets' && bulletsFit(b.items))
@@ -369,7 +392,7 @@ export function findCompatibleLayouts(
       )
     )
   })
-  return immutable({ candidates, fallbackAllowed: candidates.length === 0 })
+  return immutable({ candidates, fallbackAllowed: candidates.length === 0 && template.version < 3 })
 }
 
 export function resolveLayout(plan: unknown, id: string, templateRef?: CatalogRef) {

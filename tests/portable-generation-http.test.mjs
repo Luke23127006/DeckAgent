@@ -7,7 +7,7 @@ import { DeckClient, BriefClient, OutlineClient } from '../packages/client/runti
 import { startApp, finished } from './fixtures/b02-helpers.mjs'
 import { brief } from './fixtures/brief.mjs'
 
-test('Create deck prepares images, then MCP templates publish all seven layouts through the real local renderer', {
+for (const templateVersion of [2, 3]) test(`Create deck prepares images, then MCP templates v${templateVersion} publish all seven layouts through the real local renderer`, {
   timeout: 180000,
 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'portable-generation-http-'))
@@ -61,7 +61,7 @@ test('Create deck prepares images, then MCP templates publish all seven layouts 
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const draft = {
     ...brief(),
-    template: { id: 'html-basic', version: 2 },
+    template: { id: 'html-basic', version: templateVersion },
     proposedSlideCount: 7,
     purpose: 'Explain',
     presenterNotes: true,

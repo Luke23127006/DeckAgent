@@ -10,7 +10,9 @@ import type {
   SlideNode,
 } from '@deckagent/presentation-document'
 import { compileArtifact, materializeArtifact, htmlCapabilities } from './policy.ts'
+import { controlledStarter, verifyControlledLayout } from './controlled-template.ts'
 export { compileArtifact, materializeArtifact, htmlCapabilities } from './policy.ts'
+export { inspectControlledLayout } from './layout-inspection.ts'
 
 const escapeHtml = (v: string) =>
   v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
@@ -136,9 +138,16 @@ export class HtmlFormatAdapter implements FormatAdapter {
   readonly id = 'html'
   constructor(private readonly template?: HtmlTemplateBundle) {}
   context(input: FormatContext) {
+    const controlled =
+      !this.template && input.design.template.id === 'html-basic' && input.design.template.version === 3
     return {
-      starter: starter(input, this.template?.style),
+      starter: controlled ? controlledStarter(input) : starter(input, this.template?.style),
       rules: [
+        ...(controlled
+          ? [
+              'HTML Basic v3 owns layout geometry. Use the exact starter structure and CSS. Change content through record_slide_content, then read_slide_draft; do not add wrappers, styles or inline geometry. Images use contain to preserve the full image.',
+            ]
+          : []),
         `Allowed HTML tags: ${htmlCapabilities.tags.join(', ')}.`,
         `Allowed attributes: ${htmlCapabilities.attributes.join(', ')}.`,
         `Allowed geometry properties: ${htmlCapabilities.geometry.join(', ')}.`,
@@ -151,11 +160,12 @@ export class HtmlFormatAdapter implements FormatAdapter {
       if (
         this.template
           ? input.design.template.id !== this.template.id || input.design.template.version !== this.template.version
-          : input.design.template.id !== 'html-basic' || ![1, 2].includes(input.design.template.version)
+          : input.design.template.id !== 'html-basic' || ![1, 2, 3].includes(input.design.template.version)
       )
         throw new FormatError('FORMAT_TEMPLATE_UNAVAILABLE')
       verifyContent(source, input)
       const html = compileArtifact(source, input.design, input.assets)
+      if (!this.template && input.design.template.version === 3) verifyControlledLayout(source, input)
       return {
         bytes: new TextEncoder().encode(html),
         preview: materializeArtifact(html, input.assets),
@@ -163,7 +173,12 @@ export class HtmlFormatAdapter implements FormatAdapter {
           format: 'html',
           mediaType: 'text/html',
           extension: 'html',
-          policyVersion: input.document ? 'html-document-v2' : 'b04-artifact-v1',
+          policyVersion:
+            !this.template && input.design.template.version === 3
+              ? 'html-layout-v3'
+              : input.document
+                ? 'html-document-v2'
+                : 'b04-artifact-v1',
           template: input.design.template,
           ...(input.document ? { documentVersion: 1 as const } : {}),
         },
