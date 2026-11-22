@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the `review-change` skill: a new subagent reviews a change against the convention files in `docs/conventions/` and reports only the mistakes that `pnpm check` cannot find.
+- Add the `correct` skill: find the mistake classes that agents repeat in this repository and stop each one at the highest level that works, from architecture to a Lesson Learned.
 - Add `docs/UCs/quality-attributes.md` with one quality attribute scenario for each of the 11 old quality requirements. Each scenario has the six SEI parts, and the security scenarios cite OWASP ASVS 5.0.0 and the OWASP Top 10 for LLM Applications 2025.
 - Add the gap analysis of each use case file against its independent baseline. Each gap becomes a new rule, an accepted risk with its reason, or an open question.
 - Add the open questions that the gap analysis found, and a question about the default language of a deck.
