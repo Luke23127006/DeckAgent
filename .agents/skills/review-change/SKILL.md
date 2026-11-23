@@ -13,7 +13,7 @@ The agent that made a change also believes it. A reviewer with a new context has
 1. Select checks for the changed files and affected consumers using `AGENTS.md`, section `Kiểm chứng theo thay đổi`. Run those checks. Fix errors from those checks before the review. Do not run `pnpm check` unless the user explicitly requests that command. Do not replace it with all its component commands. Give the reviewer the scope and results of the selected checks.
 2. Start one new subagent (Agent tool, `general-purpose`). Do not use a fork, because a fork gets your context. Give the subagent only:
    - The commands that show the change: `git diff`, `git diff --cached`, and `git status --short` for new files.
-   - The standards: the convention files in `docs/conventions/` for the changed files (`code.md`, `testware.md`, `docs.md`, `use-cases.md`, `architecture.md`, `mermaid.md`), and the lessons in `LESSONS.md` with a scope that applies.
+   - The standards: the convention files in `docs/conventions/` for the changed files (`code.md`, `project-structure.md`, `testware.md`, `docs.md`, `use-cases.md`, `architecture.md`, `mermaid.md`), and the lessons in `LESSONS.md` with a scope that applies.
    - The evidence that you have for your claims: commands that you ran and their results, and the faults or mutants that made a test fail. Give the facts, not your reasons for the change.
    - The checklist below, and the output format.
 3. Do not change files during the review. When the subagent reports, fix each finding that it reports, or tell the user why you keep it.

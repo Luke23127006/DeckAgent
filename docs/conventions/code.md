@@ -1,221 +1,114 @@
 # Coding Guidelines
 
-Đọc file này để biết cách viết code production trong DeckAgent, bảo vệ contracts, kiểm tra dữ liệu và xử lý lỗi mà không tạo abstraction không cần thiết.
+Đọc file này để biết cách viết code production trong DeckAgent: naming, TypeScript, comment, validation, state và error handling.
 
-## Phạm vi và ưu tiên
+Vị trí đặt code, public API và dependency được phép nằm trong [Project Structure](project-structure.md). Cách viết test nằm trong [Testware](testware.md). Khi framework hoặc tool đang dùng đã có convention, áp dụng convention đó. File này chỉ quy định phần framework không quy định.
 
-1. Tuân thủ Tech Stack trong [Project: DeckAgent](../../AGENTS.md) [[1]](#ref-1) và dependency boundaries trong [Project Structure](project-structure.md) [[2]](#ref-2).
-2. Strict boundaries, flexible implementation: bảo vệ trách nhiệm của từng component nhưng không bắt buộc class, interface, mapper hoặc layer theo template.
-3. File này quy định cách triển khai code. Vị trí đặt code, public API ownership và allowed dependencies thuộc [Project Structure](project-structure.md) [[2]](#ref-2). Tầng rule của repo nằm trong [Conventions](README.md) [[3]](#ref-3).
-4. Quy tắc kiểm tra được bằng máy phải được enforce bằng type, lint hoặc check phù hợp. Không ghi một quy tắc là đã được enforce nếu check chưa tồn tại.
-5. Test code tuân theo [Testware](testware.md). File này chỉ quy định những yêu cầu của production code có ảnh hưởng đến khả năng kiểm thử.
+Mỗi quy tắc ghi công cụ chặn nó trong ngoặc. Không ghi một quy tắc là đã chặn bằng máy khi check đó chưa có trong repo.
 
-## Naming conventions
+## Naming
 
-Tên phải thể hiện ý nghĩa của dữ liệu, hành vi hoặc responsibility.
-
-* Function dùng tên mô tả operation hoặc kết quả mà caller nhận được.
-* Type và interface dùng tên mô tả contract hoặc khái niệm được biểu diễn.
-* Boolean dùng tên thể hiện điều kiện có thể xác định là đúng hoặc sai.
-* Các operation có side effect phải có tên giúp caller nhận biết tác động quan trọng.
-* Không sử dụng tên chung như `data`,   `manager`,  `handler` hoặc `service` khi tên đó không giúp phân biệt responsibility.
-* Giữ tên nhất quán cho cùng một khái niệm giữa các module.
-
-Không bắt buộc hậu tố `Controller` , `Service` , `Repository` , `Manager` hoặc `Handler` . Chỉ sử dụng khi tên đó mô tả đúng vai trò của component.
-
-Không đổi tên một khái niệm chỉ để tránh lặp từ.
+- Function mang tên operation hoặc kết quả mà caller nhận. Operation có side effect quan trọng mang tên cho caller thấy side effect đó, ví dụ `publishDeck`, không phải `processDeck` *(review)*.
+- Type và interface mang tên contract hoặc khái niệm mà chúng biểu diễn *(review)*.
+- Boolean mang tên một điều kiện đúng hoặc sai, ví dụ `isPublished` *(review)*.
+- Một khái niệm có một tên trong mọi module. Không đổi tên chỉ để tránh lặp từ *(review)*.
+- Không dùng `data`, `manager`, `handler`, `service` khi tên đó không phân biệt được trách nhiệm. Hậu tố `Controller`, `Service`, `Repository` chỉ dùng khi hậu tố mô tả đúng vai trò *(review)*.
 
 ## TypeScript
 
-### Contracts và trạng thái
+- Khi state có tập giá trị xác định, dùng union hoặc discriminated union. Khi mỗi state có dữ liệu riêng, type gắn dữ liệu với state tương ứng *(review)*.
+- Không tạo type phức tạp khi chỉ runtime validation xác định được dữ liệu hợp lệ *(review)*.
+- Invariant mà type bảo vệ được thì đặt vào type, không đặt vào comment *(review)*.
+- Không dùng `any`, type assertion hoặc non-null assertion để bỏ qua một lỗi type. Khi operation cần một giá trị, kiểm precondition hoặc sửa contract để bảo đảm giá trị đó *(review)*.
+- Phân biệt "không tồn tại", "chưa cung cấp" và `null` khi ba trường hợp có nghĩa khác nhau. Không thêm optional field chỉ để một object dùng chung cho nhiều operation không liên quan *(review)*.
 
-Sử dụng TypeScript để biểu diễn những trạng thái và operation hợp lệ.
-
-* Dùng union type hoặc discriminated union khi các trạng thái có tập giá trị xác định.
-* Khi các trạng thái có dữ liệu khác nhau, type phải thể hiện mối quan hệ giữa trạng thái và dữ liệu tương ứng.
-* Không biểu diễn một invariant quan trọng chỉ bằng comment nếu type có thể bảo vệ invariant đó.
-* Không tạo type phức tạp khi runtime validation vẫn là cơ chế duy nhất có thể xác định tính hợp lệ.
-* Không dùng `any` hoặc type assertion để bỏ qua một lỗi type chưa được giải quyết.
-
-TypeScript không thay thế runtime validation. Dữ liệu từ HTTP, file, database, model hoặc external service vẫn phải được kiểm tra tại boundary thích hợp.
-
-### Nullability và optional values
-
-Phân biệt dữ liệu không tồn tại, dữ liệu chưa được cung cấp và dữ liệu có giá trị `null` khi các trường hợp có ý nghĩa khác nhau.
-
-Không dùng non-null assertion chỉ vì caller kỳ vọng dữ liệu luôn tồn tại. Nếu operation yêu cầu dữ liệu, phải kiểm tra precondition hoặc thiết kế contract bảo đảm điều kiện đó.
-
-Không thêm optional fields chỉ để một object có thể sử dụng trong nhiều operation không liên quan.
-
-### Async operations và resource lifetime
-
-Một operation bất đồng bộ phải xác định ai sở hữu cancellation và resource cleanup.
-
-* Truyền cancellation signal qua những operation cần hỗ trợ dừng.
-* Kiểm tra cancellation trước side effect khi việc dừng phải ngăn side effect đó.
-* Không coi cancellation là rollback của một side effect đã hoàn tất.
-* Đóng file handle, process, stream và resource khác khi operation kết thúc hoặc thất bại.
-* Không tạo background operation không có owner quản lý lifecycle và failure.
-* Không bỏ qua Promise rejection của operation có ảnh hưởng đến state hoặc dữ liệu.
-
-Khi operation thay đổi durable state, không được báo hoàn tất trước khi điều kiện hoàn tất mà contract yêu cầu đã được bảo đảm.
+TypeScript không thay runtime validation. Dữ liệu từ HTTP, file, database, model hoặc external service phải được kiểm tại boundary (xem [Validation](#validation)) *(review)*.
 
 ## Comments
 
-Comment giải thích thông tin mà tên, type và cấu trúc code không thể hiện đầy đủ.
+Comment chỉ ghi điều mà tên, type và cấu trúc code không thể hiện được *(review)*:
 
-Các trường hợp phù hợp gồm:
+- Security invariant hoặc trust assumption.
+- Lý do một operation phải giữ thứ tự.
+- Ràng buộc của external protocol hoặc dependency.
+- Lý do code không dùng được cách đơn giản hơn.
+- Điều kiện phải giữ để bảo vệ compatibility hoặc recovery.
 
-* Security invariant hoặc trust assumption.
-* Lý do một operation phải giữ thứ tự thực hiện.
-* Ràng buộc của external protocol hoặc dependency.
-* Lý do một implementation không thể sử dụng cách đơn giản hơn.
-* Điều kiện cần giữ để bảo vệ compatibility hoặc recovery.
+Không viết comment lặp lại câu lệnh bên dưới. Khi sửa code làm comment sai, sửa hoặc xoá comment đó *(review)*. Comment đầu file test thuộc [Testware](testware.md).
 
-Không dùng comment chỉ để diễn đạt lại câu lệnh ngay bên dưới.
+## Contracts và data
 
-Khi code thay đổi làm comment không còn chính xác, cập nhật hoặc bỏ comment đó.
+### Contract
 
-Quy tắc comment đầu file test thuộc [Testware](testware.md), không thuộc section này.
+- Public contract chỉ chứa dữ liệu và operation mà consumer cần. Không đưa private detail vào contract để consumer tiện truy cập *(review)*.
+- Không tạo interface cho mỗi class hoặc function khi interface không bảo vệ một boundary thực *(review)*.
+- Hai operation có precondition hoặc authority khác nhau dùng hai contract khác nhau *(review)*.
+- Contract không cấp authority cho caller chỉ vì caller tạo được object cùng hình dạng *(review)*.
+- Khi sửa public contract, kiểm mọi consumer của contract đó *(typecheck, review)*. Typecheck chỉ thấy consumer nằm trong `tsc -b`.
 
-## Contracts, validation và data representation
+### Validation
 
-### Contract ownership
+Kiểm dữ liệu tại boundary nơi dữ liệu không còn được một trusted contract bảo đảm. Mỗi boundary kiểm điều kiện riêng, nên validation ở boundary này không thay validation ở boundary khác *(review)*.
 
-Mỗi contract phải có owner rõ ràng theo [Project Structure](project-structure.md).
+| Boundary | Kiểm |
+| --- | --- |
+| Local HTTP transport | Shape, syntax, transport constraint của request |
+| Application workflow | Application precondition |
+| Domain operation | Domain invariant, state transition |
+| Agent tool execution | Tool argument, capability của request |
+| Filesystem access | Path, file identity, resource restriction |
+| External integration | Protocol message, external response |
+| Browser transport | Shape của response trước khi UI dùng |
 
-* Public contract chỉ công bố dữ liệu và operations mà consumer cần.
-* Private implementation details không được đưa vào public contract chỉ để consumer truy cập thuận tiện.
-* Không tạo interface cho mỗi class hoặc function nếu interface không bảo vệ một boundary thực tế.
-* Không dùng một contract chung cho nhiều operation khi các operation có preconditions hoặc authority khác nhau.
-* Khi thay đổi public contract, kiểm tra các consumer và compatibility requirements liên quan.
+Không dùng dữ liệu do model trả về để xác định user permission hoặc resource authority *(review)*.
 
-Contract không được cấp thêm authority cho caller chỉ vì caller có thể tạo object cùng hình dạng.
+### Representation
 
-### Runtime validation
+Wire, domain, persistence và external protocol là bốn representation có thể khác nhau. Chỉ tạo mapper khi hai representation khác nhau về quyền truy cập, validation hoặc compatibility. Khi đó, chuyển đổi tại boundary giữa chúng *(review)*.
 
-Kiểm tra dữ liệu tại boundary nơi dữ liệu không còn được bảo đảm bởi một trusted contract.
+Không đưa credential, private storage field hoặc internal error detail vào public representation *(review)*.
 
-Ví dụ:
+## State, async và side effect
 
-| Boundary | Nội dung cần kiểm tra |
-|---|---|
-| Local HTTP transport | Request shape, syntax và transport constraints |
-| Application workflow | Application preconditions |
-| Domain operation | Domain invariants và state transitions |
-| Agent tool execution | Tool arguments và request-scoped capability |
-| Filesystem access | Path, file identity và resource restrictions |
-| External integration | Protocol messages và external responses |
-| Browser transport | Response shape trước khi dùng trong UI |
+- Component thay đổi state kiểm precondition trước transition. Không component nào sửa dữ liệu trực tiếp mà bỏ qua transaction hoặc operation của owner. Owner của từng state nằm trong [Project Structure](project-structure.md#authority) *(review)*.
+- Không thay durable state bằng in-memory state khi contract yêu cầu persistence. Không coi nhiều storage operation là atomic khi chúng không cùng một transaction *(review)*.
+- Không báo hoàn tất trước khi điều kiện hoàn tất của contract đã đạt, kể cả khi dữ liệu đã ghi một phần *(review)*.
+- Khi operation có thể chạy lại sau lỗi hoặc restart, định nghĩa kết quả của lần chạy lặp *(review)*.
+- Truyền cancellation signal tới mọi operation phải dừng được. Kiểm cancellation trước side effect mà việc dừng phải ngăn. Cancellation không rollback side effect đã xong *(review)*.
+- Mỗi operation đóng file handle, process và stream của nó khi kết thúc hoặc thất bại. Mỗi background operation có một owner quản lý lifecycle và failure. Không bỏ qua Promise rejection của operation có ảnh hưởng tới state *(review)*.
+- Khi test cần mô phỏng clock, process hoặc external service, operation nhận dependency đó qua boundary. Cách test dùng fake nằm trong [Testware](testware.md) *(review)*.
+- Không sửa production contract chỉ để một test phụ thuộc implementation detail tiếp tục pass *(review)*.
 
-Validation ở một boundary không thay thế validation của boundary khác khi hai boundary bảo vệ các điều kiện khác nhau.
+## Error handling
 
-Không dựa vào dữ liệu do model cung cấp để xác định user permission hoặc resource authority.
+### Biểu diễn
 
-### Data representation
+Error mô tả failure theo ngữ nghĩa của component phát hiện lỗi:
 
-Phân biệt các representation khi chúng có trách nhiệm khác nhau.
+| Component | Error mô tả |
+| --- | --- |
+| Domain | Domain operation không hợp lệ hoặc thất bại |
+| Integration | Failure của runtime hoặc external protocol |
+| Application workflow | Operation không hoàn thành theo workflow policy |
+| Local Transport | Failure trả cho caller qua transport, dưới dạng wire error payload |
+| Browser | Thông báo lỗi hiển thị cho người dùng |
 
-* Wire representation mô tả dữ liệu được phép trao đổi giữa Browser và Local Host.
-* Domain representation mô tả dữ liệu và invariant thuộc domain owner.
-* Persistence representation mô tả cách dữ liệu được lưu.
-* External protocol representation mô tả dữ liệu của integration.
+Không dùng HTTP status làm error contract của domain, Request Lifecycle hoặc agent runtime *(review)*. Chọn error representation theo cách caller cần xử lý lỗi. Không bắt buộc custom error class cho mọi error code. Không tạo một Error Service chung sở hữu mọi lỗi *(review)*.
 
-Không bắt buộc tạo mapper giữa hai representation giống nhau về ý nghĩa và constraints.
+### Chuyển lỗi và recovery
 
-Khi hai representation có khác biệt về quyền truy cập, validation hoặc compatibility, việc chuyển đổi phải được thực hiện tại boundary phù hợp.
+- Caller nhận đủ thông tin để thực hiện failure policy của mình. Không gộp một failure mà caller cần phân biệt vào một lỗi chung *(review)*.
+- Khi chuyển đổi error, giữ nghĩa của failure. Error translation không thay đổi domain state. Không biến operation thất bại thành kết quả thành công *(review)*.
+- Không bỏ qua error để operation chạy tiếp. Không coi mọi exception là recoverable *(review)*.
+- Component sở hữu operation quyết định retry, rollback, cleanup hoặc terminal failure. Integration adapter không quyết định terminal status của request ([Project Structure](project-structure.md#authority)) *(review)*.
+- Chỉ retry khi chạy lặp đúng với ngữ nghĩa của operation. Không retry side effect có thể tạo bản trùng khi chưa có cơ chế chống trùng *(review)*.
+- Recovery dùng operation của authoritative owner. Sau failure, owner của partial result quyết định giữ, đánh dấu hay xoá result đó *(review)*.
 
-Không đưa credentials, private storage fields hoặc internal error details vào public representation chỉ vì các fields đó có trong internal object.
+### Log và response
 
-### State và side effects
+- Log ghi đủ thông tin để chẩn đoán lỗi. Log không ghi credential, nội dung riêng của người dùng hoặc dữ liệu nhạy cảm *(review)*.
+- Không trả raw external error, stack trace hoặc internal detail cho untrusted caller *(review)*.
 
-Component thay đổi state phải bảo vệ invariants thuộc responsibility của mình.
+## Pattern không bắt buộc
 
-* Kiểm tra preconditions trước state transition.
-* Không bỏ qua transaction hoặc state operation của owner để sửa dữ liệu trực tiếp.
-* Không dùng in-memory state thay cho durable state khi contract yêu cầu persistence.
-* Không giả định nhiều storage operations là atomic nếu chúng không thuộc cùng transaction.
-* Khi operation có thể được gọi lại sau lỗi hoặc restart, xác định hành vi đối với repeated execution.
-* Không công bố kết quả hoàn tất khi dữ liệu vẫn ở trạng thái chưa hoàn tất.
-
-## Error handling và testing
-
-### Error representation
-
-Error phải mô tả failure theo ngữ nghĩa của component phát hiện lỗi.
-
-* Domain error mô tả domain operation không hợp lệ hoặc thất bại.
-* Integration error mô tả failure của runtime hoặc external protocol.
-* Application failure mô tả operation không thể hoàn thành theo workflow policy.
-* Transport error mô tả failure được biểu diễn cho caller qua transport.
-
-Không dùng HTTP status code làm error contract nội bộ của domain hoặc agent runtime.
-
-Không bắt buộc tạo custom error class cho mọi error code. Chọn error representation phù hợp với contract và cách caller cần xử lý.
-
-### Error propagation
-
-Caller phải nhận đủ thông tin để thực hiện failure policy thuộc trách nhiệm của caller.
-
-* Không chuyển một failure có ý nghĩa thành lỗi chung nếu caller cần phân biệt failure đó.
-* Không trả internal error details cho untrusted caller.
-* Không để error translation thay đổi domain state.
-* Không coi mọi exception là recoverable.
-* Không bỏ qua error chỉ để operation tiếp tục chạy.
-
-Khi cần chuyển đổi error, giữ nguyên ý nghĩa của failure. Không biến một operation thất bại thành kết quả thành công.
-
-### Recovery và cancellation
-
-Component sở hữu operation quyết định retry, rollback, cleanup hoặc terminal failure.
-
-* Retry chỉ được thực hiện khi repeated execution phù hợp với operation semantics.
-* Không retry side effect có thể tạo kết quả trùng lặp nếu chưa có cơ chế bảo vệ.
-* Cancellation không tự động hoàn tác durable changes đã hoàn tất.
-* Recovery phải sử dụng operation của authoritative state owner.
-* Không để integration adapter tự quyết định terminal state của application request.
-* Khi một operation thất bại sau khi đã tạo partial results, xử lý các kết quả đó theo lifecycle contract.
-
-### Error reporting
-
-Error reporting phải cung cấp thông tin cần thiết để chẩn đoán nhưng không làm lộ dữ liệu được bảo vệ.
-
-Không ghi credentials, private user content hoặc dữ liệu nhạy cảm vào log chỉ để thuận tiện debug.
-
-Không đưa raw external error hoặc stack trace vào public response nếu chúng có thể chứa thông tin nội bộ.
-
-### Testability
-
-Production code phải cho phép kiểm tra hành vi qua public operations và các boundary có thể kiểm soát.
-
-* Không export private implementation chỉ để test truy cập.
-* Không tạo abstraction chỉ để mock internal modules.
-* Khi operation phụ thuộc clock, external service hoặc process, cho phép kiểm soát dependency tại boundary phù hợp nếu test cần mô phỏng hành vi.
-* Không thay đổi production contract chỉ để một test phụ thuộc implementation details tiếp tục pass.
-
-Cách viết test, fake, assertion và test environment thuộc [Testware](testware.md).
-
-## Những điều không bắt buộc
-
-DeckAgent không bắt buộc sử dụng các pattern sau cho mọi component:
-
-* Class thay cho function.
-* Interface cho mỗi implementation.
-* Dependency injection framework.
-* Controller/Service/Repository layers.
-* Mapper giữa mọi representation.
-* Result type cho mọi operation.
-* Custom error class cho mọi failure.
-* Factory cho mọi object.
-* Folder riêng cho từng loại utility.
-* Abstraction được tạo trước khi có consumer hoặc dependency requirement.
-
-Sử dụng pattern khi nó bảo vệ một contract, invariant, dependency boundary hoặc giải quyết một nhu cầu triển khai cụ thể.
-
-Không loại bỏ abstraction đang bảo vệ một boundary chỉ vì hiện tại abstraction đó có một implementation.
-
-## References
-
-1. <a id="ref-1"></a>[Project: DeckAgent](../../AGENTS.md)
-2. <a id="ref-2"></a>[Project Structure](project-structure.md)
-3. <a id="ref-3"></a>[Conventions](README.md)
+DeckAgent không bắt buộc class thay function, interface cho mỗi implementation, DI framework, layer Controller/Service/Repository, mapper giữa mọi representation, Result type cho mọi operation, factory cho mọi object, hoặc folder riêng cho từng loại utility. Dùng một pattern khi pattern đó bảo vệ một contract, invariant hoặc dependency boundary, hoặc giải quyết một nhu cầu triển khai cụ thể. Không tạo abstraction trước khi có consumer. Không tạo abstraction chỉ để mock internal module. Không bỏ một abstraction đang bảo vệ boundary chỉ vì abstraction đó mới có một implementation *(review)*. Quy tắc về layer và folder nằm trong [Project Structure](project-structure.md#khi-nào-tạo-folder-hoặc-package).

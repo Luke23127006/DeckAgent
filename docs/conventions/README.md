@@ -65,8 +65,8 @@ Một quy tắc kiểm được bằng máy thì được chặn theo thứ tự
 
 | File | Output |
 | --- | --- |
-| [code.md](code.md) | Code production: naming, TypeScript, validation, error handling, trách nhiệm từng layer |
-| [project-structure.md](project-structure.md) | Folder, layer và dependency boundaries của source code |
+| [code.md](code.md) | Code production: naming, TypeScript, comment, validation, state, error handling |
+| [project-structure.md](project-structure.md) | Cấu trúc source code mục tiêu: ownership, vị trí code, dependency boundaries |
 | [testware.md](testware.md) | Test code |
 | [docs.md](docs.md) | Mọi tài liệu trong `docs/`: cấu trúc, ngôn ngữ, trích dẫn, ID |
 | [use-cases.md](use-cases.md) | Tài liệu trong `docs/UCs/` |

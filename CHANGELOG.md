@@ -6,7 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
-- Add the reference structure of DeckAgent to `docs/conventions/project-structure.md`: the runtime and package ownership, a folder reference for each application and package, the dependency rules, and the check that enforces each boundary.
+- Add the target structure of DeckAgent to `docs/conventions/project-structure.md`. The file gives the runtime ownership, the state authority of each owner, one table row for each folder and package, and the dependency rules. It also gives the enforcement status of each boundary: the tool that stops it now, and the check that the refactor adds.
+- Add a `Check` layer to `docs/conventions/README.md` that answers how a violation is stopped, plus a decision diagram that places a new rule in Content, Convention, Skill, Lesson or Router.
 - Extend the gap analysis of the chats, deck, providers, requests and workspaces use cases with five standards: the OWASP Top 10 for LLM Applications 2025, OWASP ASVS 5.0.0 and the Microsoft HAX Guidelines for Human-AI Interaction. Each new gap cites the standard item, and each accepted risk names the rule that answers it.
 - Add four open questions for the gaps that no rule decides: the secret files that the agent reads without a prompt (OQ-068), the resource limit of one request (OQ-069), the valid base URL of a custom model API (OQ-070), and the link inside a project folder that points outside it (OQ-071).
 - Add the `review-change` skill: a new subagent reviews a change against the convention files in `docs/conventions/` and reports only the mistakes that `pnpm check` cannot find.
@@ -20,11 +21,14 @@ Notable changes to this repository. The newest changes are at the top.
 - Add the use case index in `docs/UCs/README.md` (actors, use case map, files, ID prefixes, glossary), the six area file skeletons, and the open question OQ-001 about an independent baseline for the gap analysis.
 - Add the implementation plan that moves the spec in `docs/00-old/spec/` to use case files in `docs/UCs/`, and add `UCs` as a `refactor` workstream of the implementation-plan skill.
 - Add agent skills for test design techniques, test risk, estimation and defect classification, UI design review, and writing use cases and architecture documents.
-- Check documentation structure and citations with `check:docs`, forbid comments in code with `check:comments`, and run both checks from a Claude Code hook after each edit.
+- Check documentation structure and citations with `check:docs`, and run `check:docs` from a Claude Code hook after each edit.
 
 ### Changed
 
-- Rewrite `docs/conventions/code.md` from a plan of six empty sections into the rules of production code: naming, TypeScript contracts and nullability, async lifetime, comments, runtime validation, data representation, state, error representation and propagation, recovery, and the patterns that DeckAgent does not require.
+- Rewrite `docs/conventions/code.md` from a plan of six empty sections into the rules of production code. The rules cover naming, TypeScript, comments, contracts, runtime validation, data representation, state, async lifetime and error handling. The file also lists the patterns that DeckAgent does not require. Each rule names the tool that stops it.
+- Rewrite `docs/conventions/project-structure.md` into the rules of the target source structure, under the headings principle, C4 level, folder and package. The file gives the runtime ownership, the state authority of each owner, one table row for each folder and package, and the dependency rules. It also gives the enforcement status of each boundary: the tool that stops it now, and the check that the refactor adds.
+- State the same rules without repetition in `docs/conventions/code.md`: keep the constraint and drop the phrase that restates it.
+- The `review-change` reviewer also reads `docs/conventions/project-structure.md`.
 - Replace the vague words "thay đổi nhiều" in three rules with a condition that a tester can check. The rules are about material conflicts, missing material and missing research. The condition is a change to the main point of a planned slide.
 - Make the rule about missing research ask the user only when the system cannot write the main point of a planned slide. For missing content of a sourced type, the system writes a placeholder, so the rule no longer conflicts with the placeholder rule.
 - Drop the wait-time requirements for the first slide and for a changed slide, because the time depends on the model and the provider.
@@ -39,6 +43,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Removed
 
+- Remove the `check:comments` script and `scripts/check-no-comments.mjs` with its test. The comment rules in `docs/conventions/code.md` are enforced by review.
 - Remove the `domain-modeling` and `spec-authoring` agent skills.
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.
 
