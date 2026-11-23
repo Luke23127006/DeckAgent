@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the codebase refactor plan with 15 tasks across nine waves. Specify file ownership, contracts, migration order, regression checks and deferred behavior work.
 - Add the target structure of DeckAgent to `docs/conventions/project-structure.md`. The file gives the runtime ownership, the state authority of each owner, one table row for each folder and package, and the dependency rules. It also gives the enforcement status of each boundary: the tool that stops it now, and the check that the refactor adds.
 - Add a `Check` layer to `docs/conventions/README.md` that answers how a violation is stopped, plus a decision diagram that places a new rule in Content, Convention, Skill, Lesson or Router.
 - Extend the gap analysis of the chats, deck, providers, requests and workspaces use cases with five standards: the OWASP Top 10 for LLM Applications 2025, OWASP ASVS 5.0.0 and the Microsoft HAX Guidelines for Human-AI Interaction. Each new gap cites the standard item, and each accepted risk names the rule that answers it.
