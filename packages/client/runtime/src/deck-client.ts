@@ -106,7 +106,10 @@ export class DeckClient {
             !c.url.startsWith('https://') ||
             typeof c.author !== 'string' ||
             typeof c.licenseUrl !== 'string' ||
-            !['public-domain', 'CC0', 'CC BY', 'unknown'].includes(String(c.license)) ||
+            !['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'].includes(String(c.license)) ||
+            (c.evidence !== undefined && c.evidence !== 'image-metadata' && c.evidence !== 'pexels-cdn') ||
+            (c.downloadUrl !== undefined &&
+              (typeof c.downloadUrl !== 'string' || !c.downloadUrl.startsWith('https://'))) ||
             c.unknownLicense !== (c.license === 'unknown') ||
             typeof c.retrievedAt !== 'string',
         ))

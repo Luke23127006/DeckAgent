@@ -5,6 +5,14 @@ import { imageFailure } from './image-review-client.ts'
 
 export type OutlineAction = (type: 'confirm' | 'cancel', proposal: OutlineProposal) => void
 
+function layoutIssues(proposal: OutlineProposal) {
+  return proposal.layoutIssues ?? []
+}
+
+function confirmationBlocked(proposal: OutlineProposal): boolean {
+  return layoutIssues(proposal).length > 0 || !!proposal.imageReview?.some(n => n.required && n.status !== 'prepared')
+}
+
 /** Stable cards preserve reading expansion/focus. All content is text, never model-authored DOM. */
 export class OutlineView {
   private readonly cards = new Map<
@@ -12,6 +20,7 @@ export class OutlineView {
     {
       node: HTMLElement
       status: HTMLElement
+      blockers: HTMLElement
       actions: HTMLElement
       buttons: readonly HTMLButtonElement[]
       proposal: OutlineProposal
@@ -43,7 +52,7 @@ export class OutlineView {
           busy ||
           card.proposal.status !== 'current' ||
           !this.action ||
-          (index === 0 && !!card.proposal.imageReview?.some(n => n.required && n.status !== 'prepared'))
+          (index === 0 && confirmationBlocked(card.proposal))
   }
 
   render(proposal: OutlineProposal): HTMLElement {
@@ -54,6 +63,8 @@ export class OutlineView {
       node.dataset.outlineId = proposal.outlineId
       node.setAttribute('aria-label', 'Outline đề xuất')
       const status = element('p', '', 'outline-status')
+      const blockers = element('div', undefined, 'outline-layout-blockers')
+      blockers.setAttribute('role', 'status')
       const overview = element('p', proposal.overview, 'outline-overview')
       const imageButtons: HTMLButtonElement[] = []
       const slides = proposal.slides.map((slide, index) => {
@@ -142,6 +153,28 @@ export class OutlineView {
                 link.target = '_blank'
                 link.rel = 'noopener noreferrer'
                 figure.append(element('p', `${review.credit.author} · ${review.credit.license}`), link)
+                if (review.credit.licenseUrl.startsWith('https://')) {
+                  const license = element('a', 'Điều kiện sử dụng ảnh')
+                  license.href = review.credit.licenseUrl
+                  license.target = '_blank'
+                  license.rel = 'noopener noreferrer'
+                  figure.append(document.createTextNode(' · '), license)
+                }
+              }
+              if (review.attempts?.length) {
+                const audit = element('details')
+                audit.append(element('summary', `Lịch sử kiểm tra ảnh (${review.attempts.length} lần)`))
+                for (const attempt of review.attempts) {
+                  audit.append(element('p', imageFailure(attempt.code)))
+                  for (const check of attempt.checks)
+                    audit.append(
+                      element(
+                        'p',
+                        `${new URL(check.sourceUrl).hostname}: ${imageFailure(check.code)}${check.httpStatus ? ` (HTTP ${check.httpStatus})` : ''}`,
+                      ),
+                    )
+                }
+                figure.append(audit)
               }
               const replace = button('Tìm ảnh khác', () =>
                 this.revise?.(
@@ -188,7 +221,7 @@ export class OutlineView {
         ...buttons.filter(control => !imageButtons.includes(control)),
         element('p', 'Hoặc gõ thay đổi bạn muốn vào khung bên dưới.'),
       )
-      node.append(element('h3', 'Đề xuất outline'), status, overview, viewing, ...slides)
+      node.append(element('h3', 'Đề xuất outline'), status, blockers, overview, viewing, ...slides)
       if (proposal.brief) {
         node.append(element('p', `${proposal.slides.length} slide · Brief v${proposal.brief.version}`))
         for (const item of proposal.revisionSuggestions ?? []) node.append(element('p', `Gợi ý sửa: ${item}`))
@@ -221,15 +254,36 @@ export class OutlineView {
         node.append(briefDetails(proposal.brief))
       }
       if (!this.dock) node.append(actions)
-      card = { node, status, actions, buttons, proposal }
+      card = { node, status, blockers, actions, buttons, proposal }
       this.cards.set(proposal.outlineId, card)
     }
     card.proposal = proposal
+    const issues = layoutIssues(proposal)
+    card.blockers.replaceChildren(
+      ...issues.map(issue => {
+        const field = issue.path.endsWith('.title')
+          ? 'Tiêu đề'
+          : issue.path.endsWith('.caption')
+            ? 'Chú thích ảnh'
+            : 'Nội dung'
+        return element(
+          'p',
+          issue.actual !== undefined && issue.limit !== undefined
+            ? `Slide ${issue.slideIndex + 1} · ${field}: ${issue.actual} ký tự, tối đa ${issue.limit}. Yêu cầu sửa outline để diễn đạt gọn hơn và giữ ý chính.`
+            : `Slide ${issue.slideIndex + 1} · Nội dung chưa phù hợp bố cục. Yêu cầu sửa outline để sắp xếp lại nội dung và giữ các yêu cầu đã chọn.`,
+        )
+      }),
+    )
+    card.blockers.hidden = issues.length === 0
     const label =
       proposal.status === 'confirmed'
         ? 'Đã xác nhận · chỉ đọc'
         : proposal.status === 'current'
-          ? 'Hiện tại · chờ bạn xác nhận'
+          ? issues.length
+            ? 'Chưa thể xác nhận · cần sửa nội dung cho phù hợp bố cục'
+            : proposal.imageReview?.some(n => n.required && n.status !== 'prepared')
+              ? `Chưa thể xác nhận · còn ${proposal.imageReview.filter(n => n.required && n.status !== 'prepared').length} ảnh bắt buộc chưa chuẩn bị`
+              : 'Hiện tại · chờ bạn xác nhận'
           : proposal.status === 'cancelled'
             ? 'Đã hủy'
             : 'Đề xuất cũ · không còn là hiện tại'
@@ -242,10 +296,7 @@ export class OutlineView {
     }
     for (const [index, control] of card.buttons.entries())
       control.disabled =
-        this.busy ||
-        proposal.status !== 'current' ||
-        !this.action ||
-        (index === 0 && !!proposal.imageReview?.some(n => n.required && n.status !== 'prepared'))
+        this.busy || proposal.status !== 'current' || !this.action || (index === 0 && confirmationBlocked(proposal))
     return card.node
   }
 }

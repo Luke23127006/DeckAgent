@@ -1,0 +1,21 @@
+---
+status: accepted
+---
+
+# Own slide geometry in versioned executable layouts
+
+HTML Basic version 3 provides seven controlled compositions under the existing DeckAgent Neutral theme. Separate slide, composition and component selectors prevent a layout selector from turning the outer slide into a nested content grid. Each layout owns its skeleton, spacing, text regions, image frames and caption placement. Image-text allocates two fifths of the available column width to text and three fifths to the image. Image-pair shares image and caption rows so unequal captions do not change the two frame sizes. Images retain their full content through `contain`; crop controls are not introduced.
+
+The model selects a compatible layout and records content in the existing SlideDocument contract. For version 3 it submits the supplied starter without changing its structure or CSS. The HTML adapter compares parsed structure and CSS, allowing formatting whitespace while rejecting geometry edits. A content change uses the existing document tool followed by a refreshed draft. This narrows native source authoring for the controlled version; the version 1/2 source paths and the [portable content boundary](0009-portable-slide-documents-and-format-adapters.md) remain available.
+
+Catalog capacities describe the supported content of each composition. Version 3 permits no custom fallback when none fits. Confirmation rejects an incompatible Outline before creating a generation intent, and the adapter checks actual recorded content again before build. Errors identify the slide or layout. Existing correction limits apply; fitting never hides required content, truncates text, shrinks the theme or changes the requested slide count. Explicit optional image omissions use the corresponding one-image or text-only visual variant; Deck still rejects missing required images before build.
+
+The catalog assessment also runs during Outline staging, before image search or proposal commit, with at most two repair submissions in the current request. Read snapshots derive optional layout diagnostics from the same assessment for both new and historical proposals. The client displays these diagnostics and blocks incompatible confirmation through reload, while the Host retains the final guard. This additive read contract changes no stored content or database schema; older clients retain the confirmation guard and older responses remain readable. Deploy the Host and client together for early guidance. The [layout reference](../development/portable-slide-content.md#controlled-html-layouts) defines diagnostic fields and repair behavior.
+
+The HTML package owns a self-contained geometry probe executed by the offline render browser. A Host-authored policy marker enables it only for version 3 artifacts. It checks separate title/content regions, useful image areas, captions below images and equal side-by-side regions. Generic content, visibility, decoding and overflow checks still run. The descriptor records `html-layout-v3`. A different native format continues to consume SlideDocument and owns its own layout validation.
+
+New selections default to version 3; explicit template references stay pinned. Saved artifacts, visual snapshots, confirmations and image records are not rewritten. A confirmed deck keeps its template during continuation. An unconfirmed plan can select a new template through a new reviewed proposal; confirmed plans are not upgraded implicitly. This introduces no database migration or SlideDocument schema change. Deploy catalog, HTML adapter and Host together.
+
+Thumbnail, stage Preview and fullscreen use the same 1280×720 viewport and scale it to available space. The frame remains sandboxed. Motion applies to the stage rather than overwriting the iframe's fitting transform. The application layout and theme remain unchanged.
+
+The [layout reference](../development/portable-slide-content.md#controlled-html-layouts) owns capacities, checks and gallery commands. Browser coverage includes short and near-capacity Vietnamese content, unequal captions and the existing resize/fullscreen flow. Local MCP coverage publishes all seven layouts and retains the pinned version 2 path. These checks establish bounded geometry and content preservation, not arbitrary aesthetic preference or image relevance.

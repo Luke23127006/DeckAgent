@@ -71,6 +71,16 @@ export interface SlideContentPlan {
   readonly title: string
   readonly blocks: readonly ContentBlock[]
 }
+export interface LayoutIssue {
+  readonly code: 'DESIGN_LAYOUT_INCOMPATIBLE'
+  readonly slideIndex: number
+  readonly path: string
+  readonly message: string
+  readonly expected: string
+  readonly layoutId?: Layout['id']
+  readonly actual?: number
+  readonly limit?: number
+}
 export class DesignError extends Error {
   constructor(readonly code: string) {
     super(code)

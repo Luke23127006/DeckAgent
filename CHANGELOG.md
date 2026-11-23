@@ -40,6 +40,7 @@ Notable changes to this repository. The newest changes are at the top.
 ### Fixed
 
 - Run workspace discovery in the build with the pnpm that runs the script, so a different `pnpm` on PATH no longer fails the build.
+- Validate controlled-layout capacities before Outline image search and commit; return exact fields and Unicode counts with at most two repair submissions. Show derived layout blockers for saved Outlines across reload, retain existing image progress, and preserve the confirmation error instead of reporting a connection failure.
 
 ### Removed
 
@@ -48,6 +49,12 @@ Notable changes to this repository. The newest changes are at the top.
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.
 
 ### Added
+
+- Add HTML Basic version 3 with seven controlled layout skeletons, unchanged theme roles, content capacities and offline geometry checks. Preserve pinned versions 1/2 and saved artifacts; scale the same 1280x720 canvas in Preview and fullscreen. Include an offline layout gallery and Vietnamese capacity coverage.
+
+- Resume saved image progress in later review requests without restaging unchanged Briefs and Outlines. Apply explicit image provider changes to new searches, retain prepared images and their provenance, keep question-only turns read-only, and report stale image IDs as workflow errors with current positions.
+
+- Resolve Commons thumbnail and Pexels stock-photo origins, preserve distinct licence and source-read diagnostics, and retain per-image attempt history. Allow model-ranked image alternatives and one restricted recovery run before saving an unresolved Outline. Deck schema 10 preserves prior data and marks the Pexels licence contract.
 
 - Review public-image candidates against each slide role using Tavily or explicitly selected Commons. Keep selection reasons, local thumbnails and immutable credits; require accepted image-specific licence evidence, block duplicate images within a slide and preserve unchanged choices across reviews. Add bounded public-image downloads and durable search attempts in Deck schema 9.
 

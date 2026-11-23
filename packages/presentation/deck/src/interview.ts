@@ -1,6 +1,7 @@
 import type { BriefDraft, InterviewTopic } from './contracts.ts'
 import { validateBriefDraft } from './brief-store.ts'
 import type { InterviewState } from './contracts.ts'
+import { listTemplates } from '@deckagent/design'
 
 const questions: readonly [InterviewTopic, string, readonly string[]][] = [
   ['topic', 'Bạn muốn trình bày chủ đề gì?', []],
@@ -109,7 +110,9 @@ export function skipInterview(input: unknown): BriefDraft {
     ...(!draft.generationFormat && (!draft.requestedFormat || draft.requestedFormat === 'html')
       ? { generationFormat: 'html' }
       : {}),
-    ...(!draft.template ? { template: { id: 'html-basic', version: 2 } } : {}),
+    ...(!draft.template
+      ? { template: { id: listTemplates('html')[0]!.id, version: listTemplates('html')[0]!.version } }
+      : {}),
     ...(!draft.designSystem ? { designSystem: { id: 'deckagent-neutral', version: 1 } } : {}),
   })
 }

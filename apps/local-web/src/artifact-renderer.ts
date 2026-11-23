@@ -3,6 +3,7 @@ import { access, mkdir, mkdtemp, readFile, rm, lstat, realpath } from 'node:fs/p
 import { dirname, join, resolve, sep } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { DeckError } from '@deckagent/deck'
+import { inspectControlledLayout } from '@deckagent/html-format'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 let running = 0
@@ -211,6 +212,8 @@ export function artifactRenderer(root: string) {
           if(s.color===background) return failure('ARTIFACT_UNREADABLE',n.parentElement);
         }
         for(const image of document.images){const r=image.getBoundingClientRect();if(!r.width||!r.height||r.left<0||r.top<0||r.right>1281||r.bottom>721)return failure('ARTIFACT_OVERFLOW',image)}
+        const layoutIssue = (${inspectControlledLayout.toString()})();
+        if(layoutIssue) return layoutIssue;
         return {code:'ok'};
       })()`
       const report = await protocol.call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
@@ -228,6 +231,7 @@ export function artifactRenderer(root: string) {
         'ARTIFACT_REQUIRED_CONTENT_MISSING',
         'ARTIFACT_UNREADABLE',
         'ARTIFACT_OVERFLOW',
+        'ARTIFACT_LAYOUT_GEOMETRY',
       ]
       const validation = report.result.value
       if (validation.code !== 'ok') {

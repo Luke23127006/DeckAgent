@@ -12,13 +12,13 @@ import { startLocalWeb } from '../apps/local-web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
-async function eventually(operation, message, { retries = 200, intervalMs = 50 } = {}) {
+async function eventually(operation, message, { retries = 200, intervalMs = 50, describe } = {}) {
   for (let i = 0; i < retries; i++) {
     const value = await operation()
     if (value) return value
     await delay(intervalMs)
   }
-  throw new Error(message)
+  throw new Error(describe ? `${message}: ${JSON.stringify(await describe())}` : message)
 }
 
 async function chooseChat(evaluate, id) {
@@ -709,6 +709,12 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   await eventually(
     () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
     'Second Outline not shown',
+    {
+      describe: () =>
+        evaluate(
+          `({text:document.querySelector('.messages')?.innerText.slice(-3500),draft:document.querySelector('.composer textarea').value,stop:document.querySelector('.stop-action').hidden})`,
+        ),
+    },
   )
   await evaluate(
     `[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click(); true`,
@@ -809,6 +815,7 @@ test('web-image Outline completion clears request controls and history reopens a
     ],
   }
   await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
+  let unknownLicence = false
   const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
   app = await startLocalWeb({
     dataDir: join(dir, 'data'),
@@ -828,8 +835,8 @@ test('web-image Outline completion clears request controls and history reopens a
                         descriptionurl: 'https://commons.wikimedia.org/wiki/File:Forest.png',
                         extmetadata: {
                           Artist: { value: 'Forest photographer' },
-                          LicenseShortName: { value: 'CC BY 4.0' },
-                          LicenseUrl: { value: 'https://creativecommons.org/licenses/by/4.0/' },
+                          LicenseShortName: { value: unknownLicence ? '' : 'CC BY 4.0' },
+                          LicenseUrl: { value: unknownLicence ? '' : 'https://creativecommons.org/licenses/by/4.0/' },
                           ImageDescription: { value: 'A forest ecosystem with trees' },
                         },
                       },
@@ -924,6 +931,61 @@ test('web-image Outline completion clears request controls and history reopens a
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.startsWith('Keep this draft')`), true)
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value.includes('replace:true')`), true)
   assert.equal(await requestCount(app, target), 1, 'Replace prepares a review request, never sends it silently')
+  unknownLicence = true
+  const unresolved = structuredClone(plan)
+  unresolved.slides[0].blocks[0].query = 'another forest ecosystem'
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: unresolved, selectImages: true }))
+  await evaluate(
+    `{const input=document.querySelector('.composer textarea');input.value='Find another image [workflow]';input.dispatchEvent(new Event('input'));}true`,
+  )
+  await eventually(
+    () => evaluate(`!document.querySelector('.send-action').disabled`),
+    'Image revision is not ready to send',
+  )
+  await evaluate(`document.querySelector('.composer').requestSubmit();true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('1') && document.querySelector('.stop-action').hidden`,
+      ),
+    'Missing-image status not visible',
+    {
+      describe: () =>
+        evaluate(
+          `({text:document.querySelector('.messages')?.innerText.slice(-3500),status:document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent,draft:document.querySelector('.composer textarea').value,stop:document.querySelector('.stop-action').hidden})`,
+        ),
+    },
+  )
+  assert.equal(await evaluate(`document.querySelector('.outline-actions button').disabled`), true)
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('chưa chuẩn bị')`,
+    ),
+    true,
+  )
+  unknownLicence = false
+  await writeFile(`${log}.workflow.json`, JSON.stringify({ resumeImages: true }))
+  await evaluate(
+    `{const input=document.querySelector('.composer textarea');input.value='Hoàn thiện phần ảnh còn thiếu giúp tôi [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit();}true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận') && document.querySelector('.stop-action').hidden`,
+      ),
+    'Resumed image progress is not ready for confirmation',
+  )
+  assert.equal(await requestCount(app, target), 3)
+  assert.equal(await evaluate(`document.querySelector('.outline-actions button').disabled`), false)
+  await protocol.call('Page.reload')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận')`,
+      ),
+    'Reload lost the resumed image progress',
+  )
+  assert.equal(await requestCount(app, target), 3, 'Reload does not replay image continuation')
 })
 
 test('saving a Custom API model ID from the input makes it available without a separate Add click', {
@@ -1529,6 +1591,17 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   )
   await resizeDeck(protocol, evaluate, '.published-deck-sidebar', 640)
   // Fullscreen needs a real user gesture; a scripted click() carries no activation.
+  await eventually(
+    () =>
+      evaluate(`(()=>{
+    const frame=document.querySelector('.published-deck-sidebar .deck-stage iframe');
+    const stage=frame.parentElement;const rect=frame.getBoundingClientRect(),box=stage.getBoundingClientRect();
+    const expected=Math.min(stage.clientWidth/1280,stage.clientHeight/720);
+    return frame.offsetWidth===1280 && frame.offsetHeight===720 && Math.abs(rect.width-1280*expected)<1 &&
+      Math.abs(rect.height-720*expected)<1 && Math.abs(rect.x+rect.width/2-box.x-box.width/2)<1;
+  })()`),
+    'Preview must scale the complete 1280x720 canvas without reflow or clipping',
+  )
   // A CDP-created background tab can reject fullscreen as 'not granted' even after a real click.
   await protocol.call('Page.bringToFront')
   assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
@@ -1550,7 +1623,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     clickCount: 1,
   })
   await eventually(() => evaluate('Boolean(document.fullscreenElement)'), 'Published deck fullscreen failed')
-  const presenting = `(() => { const p=document.fullscreenElement; const r=p.querySelector('.deck-stage iframe').getBoundingClientRect(); const hidden=selector => getComputedStyle(p.querySelector(selector)).display==='none'; return { ok: p.dataset.presenting==='true' && hidden('header') && hidden('.deck-slide-list') && !p.querySelector('.deck-exit').hidden && Math.abs(r.width/r.height-16/9)<.02 && r.width<=innerWidth && r.height<=innerHeight, presenting: p.dataset.presenting, header: hidden('header'), list: hidden('.deck-slide-list'), exit: !p.querySelector('.deck-exit').hidden, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; })()`
+  const presenting = `(() => { const p=document.fullscreenElement;const frame=p.querySelector('.deck-stage iframe'); const r=frame.getBoundingClientRect(); const hidden=selector => getComputedStyle(p.querySelector(selector)).display==='none'; return { ok: p.dataset.presenting==='true' && frame.offsetWidth===1280 && frame.offsetHeight===720 && hidden('header') && hidden('.deck-slide-list') && !p.querySelector('.deck-exit').hidden && Math.abs(r.width/r.height-16/9)<.02 && r.width<=innerWidth && r.height<=innerHeight, presenting: p.dataset.presenting, header: hidden('header'), list: hidden('.deck-slide-list'), exit: !p.querySelector('.deck-exit').hidden, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; })()`
   // `presenting` is set by the fullscreenchange handler, which runs after fullscreenElement exists.
   let layout
   await eventually(async () => {

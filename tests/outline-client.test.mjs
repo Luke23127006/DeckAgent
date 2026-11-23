@@ -61,6 +61,39 @@ test('saved web-image Outlines remain readable and malformed image blocks are re
   )
   const client = new OutlineClient(`http://127.0.0.1:${server.address().port}`, 'fixture-token')
   assert.deepEqual(await client.snapshot('chat'), valid)
+  const issue = {
+    code: 'DESIGN_LAYOUT_INCOMPATIBLE',
+    slideIndex: 0,
+    path: 'slides[0].blocks[0].caption',
+    message: 'Caption too long',
+    expected: 'Shorten caption',
+    layoutId: 'image-pair',
+    actual: 111,
+    limit: 100,
+  }
+  value = structuredClone(valid)
+  value.proposals[0].layoutIssues = [issue]
+  assert.deepEqual((await client.snapshot('chat')).proposals[0].layoutIssues, [issue])
+  for (const malformed of [
+    null,
+    { ...issue, slideIndex: 1 },
+    { ...issue, actual: 90 },
+    { ...issue, limit: undefined },
+    { ...issue, path: 'slides[1].title' },
+    { ...issue, layoutId: 'invented' },
+    { ...issue, message: '' },
+  ]) {
+    value = structuredClone(valid)
+    value.proposals[0].layoutIssues = [malformed]
+    await assert.rejects(client.snapshot('chat'), /INVALID_RESPONSE/)
+  }
+  value = structuredClone(valid)
+  delete value.proposals[0].layoutIssues
+  assert.equal(
+    (await client.snapshot('chat')).proposals[0].layoutIssues,
+    undefined,
+    'Older Host responses remain readable',
+  )
   for (const block of [
     { kind: 'web-image', query: '' },
     { kind: 'web-image', query: 'x'.repeat(501) },

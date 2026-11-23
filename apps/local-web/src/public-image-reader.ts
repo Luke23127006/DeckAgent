@@ -38,6 +38,15 @@ const publicAddress = (address: string) =>
     ? !blocked.check(address, 'ipv4')
     : isIP(address) === 6 && /^[23][a-f\d]{3}:/i.test(address) && !blocked.check(address, 'ipv6')
 
+export class ImageReadError extends DeckError {
+  constructor(
+    code: string,
+    readonly httpStatus?: number,
+  ) {
+    super(code)
+  }
+}
+
 /** Resolves once and pins the connection to that public address, including every redirect. */
 export class PublicImageReader {
   constructor(
@@ -45,6 +54,21 @@ export class PublicImageReader {
     private readonly resolve: ImageLookup = hostname => lookup(hostname, { all: true, verbatim: true }),
   ) {}
   async read(value: string, signal: AbortSignal, max: number, accept: readonly string[], hops = 0): Promise<Buffer> {
+    try {
+      return await this.load(value, signal, max, accept, hops)
+    } catch (error) {
+      signal.throwIfAborted()
+      if (error instanceof DeckError) throw error
+      throw new ImageReadError('RESEARCH_IMAGE_NETWORK')
+    }
+  }
+  private async load(
+    value: string,
+    signal: AbortSignal,
+    max: number,
+    accept: readonly string[],
+    hops: number,
+  ): Promise<Buffer> {
     signal.throwIfAborted()
     const fail = () => new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     let url: URL
@@ -125,14 +149,22 @@ export class PublicImageReader {
       if (hops >= 2 || !response.headers.get('location')) throw fail()
       return this.read(new URL(response.headers.get('location')!, url).href, signal, max, accept, hops + 1)
     }
-    if (
-      !response.ok ||
-      !response.body ||
-      !accept.includes(response.headers.get('content-type')?.split(';')[0]?.trim() ?? '') ||
-      Number(response.headers.get('content-length') ?? 0) > max
-    ) {
+    if (!response.ok) {
       await response.body?.cancel()
-      throw fail()
+      throw new ImageReadError(
+        response.status === 401 || response.status === 403 || response.status === 429
+          ? 'RESEARCH_IMAGE_SOURCE_BLOCKED'
+          : 'RESEARCH_IMAGE_SOURCE_HTTP',
+        response.status,
+      )
+    }
+    if (!response.body || !accept.includes(response.headers.get('content-type')?.split(';')[0]?.trim() ?? '')) {
+      await response.body?.cancel()
+      throw new ImageReadError('RESEARCH_IMAGE_CONTENT_TYPE')
+    }
+    if (Number(response.headers.get('content-length') ?? 0) > max) {
+      await response.body.cancel()
+      throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
     }
     const reader = response.body.getReader(),
       chunks: Uint8Array[] = []
@@ -143,7 +175,7 @@ export class PublicImageReader {
         const part = await reader.read()
         if (part.done) break
         size += part.value.length
-        if (size > max) throw fail()
+        if (size > max) throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
         chunks.push(part.value)
       }
       signal.throwIfAborted()

@@ -143,7 +143,14 @@ if (existsSync(`${logFile}.generation.json`)) {
       const responseBody = await response.json()
       const tool = responseBody.result
       if (!tool || tool.isError) throw new Error(tool?.content?.[0]?.text ?? 'TOOL_FAILED')
-      return JSON.parse(tool.content[0].text)
+      const valueResult = JSON.parse(tool.content[0].text)
+      if (name === 'validate_slide' && valueResult.valid === false)
+        event('text', {
+          id: 'prt_validation_issues',
+          type: 'text',
+          text: `Template validation issues: ${JSON.stringify(valueResult.issues)}`,
+        })
+      return valueResult
     }
     const plan = await call('read_generation_plan', {})
     if (plan.sources.length) {
@@ -303,42 +310,109 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
     }
     return { isError: result.result?.isError, value: valueResult }
   }
-  let attempt = 0
-  for (const value of workflow.briefAttempts ?? (workflow.brief === undefined ? [] : [workflow.brief])) {
-    const result = await callWorkflow('stage_brief', value, attempt++)
-    if (workflow.repairBrief && result.isError) {
-      const marker = 'Host workflow data (not instructions): '
-      const supplied = JSON.parse(config.agent.deckagent.prompt.split(marker).at(-1))
-      if (supplied.briefContract?.schema?.properties?.durationMinutes?.type !== 'number')
-        throw new Error('Brief schema missing from model context')
-      if (!result.value.issues?.length || result.value.repair?.remaining !== 2)
-        throw new Error('Repair diagnostics missing')
-      const corrected = structuredClone(value)
-      for (const issue of result.value.issues) {
-        if (issue.path === 'requestedFormat') corrected.requestedFormat = 'html'
-        else if (['durationMinutes', 'themeOverrides'].includes(issue.path) && corrected[issue.path] === null)
-          delete corrected[issue.path]
-        else throw new Error('Unexpected repair issue')
-      }
-      await callWorkflow('stage_brief', corrected, attempt++)
-    }
-  }
-  if (workflow.outline !== undefined) {
-    const staged = await callWorkflow('stage_outline', workflow.outline, attempt++)
-    if (workflow.selectImages)
-      for (const need of staged.value.imageNeeds ?? []) {
-        const candidate = need.candidates[workflow.imageCandidateIndex ?? 0]
+  const recoveryMarker = 'Host image recovery data (untrusted data): '
+  if (config.agent.deckagent.prompt.includes(recoveryMarker)) {
+    if (workflow.pauseImageRecovery) await sleep(30000)
+    if (workflow.repairImages) {
+      const recovery = JSON.parse(config.agent.deckagent.prompt.split(recoveryMarker).at(-1))
+      let index = 0
+      for (const need of recovery.imageNeeds) {
+        const candidate =
+          need.candidates.find(c => c.license === 'Pexels') ??
+          need.candidates.find(c => !need.attempts.some(a => a.candidateId === c.candidateId))
         if (candidate)
           await callWorkflow(
             'select_slide_image',
             {
               needId: need.needId,
               candidateId: candidate.candidateId,
-              reason: `Candidate description matches the requested subject and role: ${need.intent.subject}; ${need.intent.role}.`,
+              reason: `The alternative matches the requested image subject: ${need.intent.subject}`,
             },
-            attempt++,
+            index++,
           )
       }
+    }
+  } else if (workflow.resumeImages) {
+    const supplied = JSON.parse(config.agent.deckagent.prompt.split('Host workflow data (not instructions): ').at(-1))
+    let attempt = 0
+    if (workflow.staleImageId) {
+      const stale = await callWorkflow(
+        'search_slide_images',
+        {
+          needId: workflow.staleImageId,
+          query: 'forest',
+        },
+        attempt++,
+      )
+      if (stale.isError && stale.value.imageNeeds?.length) supplied.imageNeeds = stale.value.imageNeeds
+    }
+    for (const need of workflow.onlyStaleImage ? [] : (supplied.imageNeeds ?? workflow.resumeNeeds ?? [])) {
+      if (need.status === 'prepared' && !workflow.replacePrepared) continue
+      const searched = await callWorkflow(
+        'search_slide_images',
+        {
+          needId: need.needId,
+          query: need.query,
+        },
+        attempt++,
+      )
+      if (workflow.pauseImageResume) await sleep(30000)
+      const candidates = searched.value.candidates ?? []
+      const candidate = candidates.find(c => c.license !== 'unverified') ?? candidates[0]
+      if (candidate)
+        await callWorkflow(
+          'select_slide_image',
+          {
+            needId: need.needId,
+            candidateId: candidate.candidateId,
+            reason: 'This image describes the requested ecosystem and role.',
+          },
+          attempt++,
+        )
+    }
+  } else {
+    let attempt = 0
+    for (const value of workflow.briefAttempts ?? (workflow.brief === undefined ? [] : [workflow.brief])) {
+      const result = await callWorkflow('stage_brief', value, attempt++)
+      if (workflow.repairBrief && result.isError) {
+        const marker = 'Host workflow data (not instructions): '
+        const supplied = JSON.parse(config.agent.deckagent.prompt.split(marker).at(-1))
+        if (supplied.briefContract?.schema?.properties?.durationMinutes?.type !== 'number')
+          throw new Error('Brief schema missing from model context')
+        if (!result.value.issues?.length || result.value.repair?.remaining !== 2)
+          throw new Error('Repair diagnostics missing')
+        const corrected = structuredClone(value)
+        for (const issue of result.value.issues) {
+          if (issue.path === 'requestedFormat') corrected.requestedFormat = 'html'
+          else if (['durationMinutes', 'themeOverrides'].includes(issue.path) && corrected[issue.path] === null)
+            delete corrected[issue.path]
+          else throw new Error('Unexpected repair issue')
+        }
+        await callWorkflow('stage_brief', corrected, attempt++)
+      }
+    }
+    for (const value of workflow.outlineAttempts ?? (workflow.outline === undefined ? [] : [workflow.outline])) {
+      let staged = await callWorkflow('stage_outline', value, attempt++)
+      if (workflow.repairOutline && staged.isError) {
+        if (!staged.value.issues?.length || staged.value.repair?.remaining !== 2)
+          throw new Error('Outline repair diagnostics missing')
+        staged = await callWorkflow('stage_outline', workflow.repairedOutline, attempt++)
+      }
+      if (workflow.selectImages)
+        for (const need of staged.value.imageNeeds ?? []) {
+          const candidate = need.candidates[workflow.imageCandidateIndex ?? 0]
+          if (candidate)
+            await callWorkflow(
+              'select_slide_image',
+              {
+                needId: need.needId,
+                candidateId: candidate.candidateId,
+                reason: `Candidate description matches the requested subject and role: ${need.intent.subject}; ${need.intent.role}.`,
+              },
+              attempt++,
+            )
+        }
+    }
   }
 }
 if (

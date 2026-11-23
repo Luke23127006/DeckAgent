@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { DesignError } from '@deckagent/design'
+import { DesignError, reviewLayouts } from '@deckagent/design'
 import { FormatError } from '@deckagent/presentation-document'
 export { decodeSlideDocument, documentText, FormatError } from '@deckagent/presentation-document'
 export type {
@@ -36,6 +36,8 @@ export type { GenerationCapability } from './contracts.ts'
 export type { ContentProvenance } from './contracts.ts'
 export type { PreparedResearchImage, ImageCredit } from './contracts.ts'
 export type { ImageNeed, ImageResolver, ImageSelection, OutlineImageReview } from './contracts.ts'
+export type { ImageAttempt, ImageSourceCheck } from './contracts.ts'
+export { ImagePreparationError } from './contracts.ts'
 export { outlineImageNeeds } from './image-needs.ts'
 export type { ArtifactPublication, ArtifactAsset, PreparedImageAsset, StageChunk, StageStatus } from './contracts.ts'
 import type { ConfirmationReceipt, GenerationSnapshot, GenerationGrant, DeckOptions } from './contracts.ts'
@@ -148,7 +150,18 @@ export class DeckService implements DeckReader, DeckPublisher {
       return {
         ...snapshot,
         proposals: snapshot.proposals.map(p =>
-          p.brief ? { ...p, imageReview: this.artifacts.imageReview(sessionId, p) } : p,
+          p.brief
+            ? {
+                ...p,
+                imageReview: this.artifacts.imageReview(sessionId, p),
+                layoutIssues: p.brief.design
+                  ? reviewLayouts(
+                      p.slides.map(s => ({ title: s.title, blocks: s.blocks ?? [] })),
+                      p.brief.design.template,
+                    )
+                  : [],
+              }
+            : p,
         ),
       }
     })
@@ -335,6 +348,13 @@ export class DeckService implements DeckReader, DeckPublisher {
           throw new DeckError('BRIEF_STALE')
         if (!interviewState(b.draft).readyForOutline || !b.design || !p.slides.length)
           throw new DeckError('BRIEF_INCOMPLETE')
+        if (b.design.template.id === 'html-basic' && b.design.template.version === 3) {
+          const issues = reviewLayouts(
+            p.slides.map(s => ({ title: s.title, blocks: s.blocks ?? [] })),
+            b.design.template,
+          )
+          if (issues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', issues)
+        }
         if (this.artifacts.imageBlockers(sessionId, p).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
         this.insertPlan(sessionId, p)
         this.outlines.confirm(sessionId, p)

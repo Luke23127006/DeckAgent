@@ -40,6 +40,7 @@ const activityNames: Readonly<Record<string, string>> = {
   prepare_slide_images: 'Chuẩn bị ảnh cho Outline',
   search_slide_images: 'Tìm ảnh theo nội dung slide',
   select_slide_image: 'Chọn và kiểm tra ảnh',
+  recover_slide_images: 'Tìm và chuẩn bị ảnh còn thiếu',
   validate_slide: 'Kiểm tra bản nháp slide',
   append_slide: 'Soạn nội dung slide',
   attach_slide_image: 'Thêm ảnh đã chọn',
