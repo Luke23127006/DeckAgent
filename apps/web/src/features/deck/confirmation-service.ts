@@ -128,6 +128,7 @@ export class ConfirmationService {
         error instanceof DeckWorkflowFailure ||
         (error instanceof Error &&
           (error.name === 'RequestFailure' ||
+            error.name === 'RequestPreparationFailure' ||
             ('status' in error && typeof error.status === 'number' && 'code' in error && typeof error.code === 'string')))
       )
         throw error

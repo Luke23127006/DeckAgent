@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { validateLegacySlideHtml } from '../packages/presentation/html/lib/index.js'
 
 const plan = {
   outlineId: 'outline-1',
@@ -22,7 +23,7 @@ const publication = {
 
 test('published content is immutable, ordered and durable; retry does not publish twice', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-deck-'))
-  let decks = new DeckService(join(dir, 'decks.sqlite'))
+  let decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -46,7 +47,7 @@ test('published content is immutable, ordered and durable; retry does not publis
   decks.publish('chat', { ...publication, publicationId: 'publish-2', expectedRevision: 1, html: '<h1>Updated</h1>' })
   assert.equal(decks.content('chat', 'intro', 1).html, publication.html)
   decks.close()
-  decks = new DeckService(join(dir, 'decks.sqlite'))
+  decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   const restored = decks.snapshot('chat')
   assert.equal(restored.version, 3)
   assert.deepEqual(
@@ -64,7 +65,7 @@ test('published content is immutable, ordered and durable; retry does not publis
 
 test('invalid identity, active HTML and cancelled publication leave the deck unchanged', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-reject-'))
-  const decks = new DeckService(join(dir, 'decks.sqlite'))
+  const decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

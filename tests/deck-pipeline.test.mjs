@@ -6,6 +6,7 @@ import test from 'node:test'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { validateLegacySlideHtml } from '../packages/presentation/html/lib/index.js'
 import { startLocalWeb } from '../apps/web/lib/index.js'
 import { DeckClient } from '../apps/web/lib/browser/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
@@ -85,7 +86,7 @@ test('A saved deck reads through Host snapshot, content and events; the chat say
   await seededChats.open('pipeline')
   await seededChats.append('pipeline', [{ role: 'user', content: 'Two slides please' }])
   seededChats.close()
-  const seeded = new DeckService(join(database, 'decks.sqlite'))
+  const seeded = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   seeded.confirm('pipeline', confirmed)
   seeded.publish('pipeline', {
     outlineId: 'outline-1',

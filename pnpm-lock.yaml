@@ -101,9 +101,6 @@ importers:
       '@deckagent/design':
         specifier: workspace:*
         version: link:../design
-      '@deckagent/html-format':
-        specifier: workspace:*
-        version: link:../html
       '@deckagent/presentation-document':
         specifier: workspace:*
         version: link:../document

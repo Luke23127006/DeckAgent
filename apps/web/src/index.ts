@@ -8,7 +8,7 @@ import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/s
 import type { ModelSelection } from '@deckagent/session-persistence'
 import { WorkspaceRegistry } from '@deckagent/workspace-registry'
 import { DeckService } from '@deckagent/deck'
-import { HtmlFormatAdapter } from '@deckagent/html-format'
+import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import {
   page,
@@ -137,6 +137,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       const sessionStore = sessions
       decks = new DeckService(join(layout.databases, 'decks.sqlite'), {
         formats: [new HtmlFormatAdapter()],
+        legacyHtmlPolicy: validateLegacySlideHtml,
         researchImage: (_id, query, signal) => commonsImages.find(query, signal),
         artifactRoot: join(layout.files, 'decks'),
         renderCheck: artifactRenderer(join(layout.files, 'runtime', 'artifact-check')),

@@ -29,7 +29,6 @@ import type {
   BriefProposalInput,
   OutlineProposal as SavedOutline,
 } from './contracts.ts'
-import { HtmlFormatAdapter } from '@deckagent/html-format'
 import {
   decodeSlideDocument,
   documentText,
@@ -107,7 +106,7 @@ export class ArtifactStorage {
     private readonly db: DatabaseSync,
     private readonly options: DeckOptions,
   ) {
-    const formats = options.formats ?? [new HtmlFormatAdapter()]
+    const formats = options.formats ?? []
     this.formats = new Map(formats.map(format => [format.id, format]))
     if (this.formats.size !== formats.length) throw new DeckError('FORMAT_DUPLICATE')
     if (!options.artifactRoot) return

@@ -5,6 +5,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { HtmlFormatAdapter } from '../packages/presentation/html/lib/index.js'
 import { PptxFormatAdapter, inspectPptx } from '../packages/presentation/pptx/lib/index.js'
 import { resolveDesign } from '../packages/presentation/design/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
@@ -15,6 +16,7 @@ async function fixture(t, options = {}) {
   const digest = createHash('sha256').update(png).digest('hex')
   let calls = 0
   const config = {
+    formats: [new HtmlFormatAdapter()],
     artifactRoot: join(dir, 'artifacts'),
     activeRequest: () => true,
     renderCheck: async () => {},

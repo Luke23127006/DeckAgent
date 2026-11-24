@@ -127,6 +127,7 @@ export interface GenerationGrant {
 }
 export interface DeckOptions {
   readonly formats?: readonly FormatAdapter[]
+  readonly legacyHtmlPolicy?: (source: unknown) => void
   readonly researchImage?: (sessionId: string, query: string, signal: AbortSignal) => Promise<PreparedResearchImage>
   readonly activeRequest?: (sessionId: string, requestId: string) => boolean
   readonly artifactRoot?: string

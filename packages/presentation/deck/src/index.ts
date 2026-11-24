@@ -22,7 +22,6 @@ import type {
   PublishSlide,
   SlideContent,
 } from './contracts.ts'
-import { validateSlideHtml } from './html-policy.ts'
 import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
 import { BriefStorage } from './brief-store.ts'
@@ -839,7 +838,13 @@ export class DeckService implements DeckReader, DeckPublisher {
         input.expectedRevision < 0
       )
         throw new DeckError('DECK_INVALID_PUBLICATION')
-      validateSlideHtml(input.html)
+      if (!this.options.legacyHtmlPolicy) throw new DeckError('DECK_CONFIG')
+      try {
+        this.options.legacyHtmlPolicy(input.html)
+      } catch (error) {
+        if (error instanceof FormatError && error.code === 'DECK_UNSAFE_HTML') throw new DeckError('DECK_UNSAFE_HTML')
+        throw error
+      }
       if (this.generations.get(sessionId)) throw new DeckError('GENERATION_GRANT_REQUIRED')
       const fingerprint = createHash('sha256')
         .update(JSON.stringify([input.outlineId, input.slideId, input.expectedRevision, input.html]))

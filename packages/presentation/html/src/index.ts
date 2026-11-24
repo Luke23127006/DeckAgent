@@ -13,6 +13,7 @@ import { compileArtifact, materializeArtifact, htmlCapabilities } from './policy
 import { controlledStarter, verifyControlledLayout } from './controlled-template.ts'
 export { compileArtifact, materializeArtifact, htmlCapabilities } from './policy.ts'
 export { inspectControlledLayout } from './layout-inspection.ts'
+export { validateLegacySlideHtml } from './legacy-policy.ts'
 
 const escapeHtml = (v: string) =>
   v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')

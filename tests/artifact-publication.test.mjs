@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckService, DeckError } from '../packages/presentation/deck/lib/index.js'
+import { HtmlFormatAdapter } from '../packages/presentation/html/lib/index.js'
 import { createHash } from 'node:crypto'
 import { brief } from './fixtures/brief.mjs'
 
@@ -13,6 +14,7 @@ async function fixture(t, options = {}, image) {
   let active = true
   const closeAfter = []
   const decks = new DeckService(join(dir, 'deck.sqlite'), {
+    formats: [new HtmlFormatAdapter()],
     activeRequest: () => active,
     artifactRoot: join(dir, 'artifacts'),
     renderCheck: async () => {},
@@ -124,6 +126,7 @@ test('public image bytes and attribution survive reopen; missing essential image
   })
   await cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: 'web-publish' })
   const reopened = new DeckService(join(f.dir, 'deck.sqlite'), {
+    formats: [new HtmlFormatAdapter()],
     artifactRoot: join(f.dir, 'artifacts'),
     renderCheck: async () => {},
     researchImage: async () => {
@@ -386,7 +389,10 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
   db.close()
   f.decks.close()
   await writeFile(join(f.dir, 'artifacts', 'keep-user-file.txt'), 'keep')
-  const reopened = new DeckService(join(f.dir, 'deck.sqlite'), { artifactRoot: join(f.dir, 'artifacts') })
+  const reopened = new DeckService(join(f.dir, 'deck.sqlite'), {
+    formats: [new HtmlFormatAdapter()],
+    artifactRoot: join(f.dir, 'artifacts'),
+  })
   f.closeAfter.push(reopened)
   assert.deepEqual(reopened.content('chat', slideId, 1), good)
   const files = await readdir(join(f.dir, 'artifacts'))

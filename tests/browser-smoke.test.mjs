@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { startLocalWeb } from '../apps/web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
+import { validateLegacySlideHtml } from '../packages/presentation/html/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
 async function eventually(operation, message, { retries = 200, intervalMs = 50, describe } = {}) {
@@ -402,7 +403,7 @@ test('Outline review names its exact target, hides resolved interview questions 
     },
   ])
   chats.close()
-  const decks = new DeckService(join(database, 'decks.sqlite'))
+  const decks = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   const b = decks.saveBrief('review-controls', {
     expectedVersion: 0,
     draft: {
@@ -1374,7 +1375,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     ])
   }
   chats.close()
-  const decks = new DeckService(join(database, 'decks.sqlite'))
+  const decks = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   decks.confirm('browser-deck', {
     outlineId: 'confirmed',
     slides: [

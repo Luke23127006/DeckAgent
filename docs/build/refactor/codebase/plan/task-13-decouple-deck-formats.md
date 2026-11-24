@@ -57,7 +57,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move legacy HTML policy**
+- [x] **Step 1: Move legacy HTML policy**
 
 Move the current legacy HTML validation algorithm into the HTML package.
 Keep its byte limit and rejection conditions unchanged.
@@ -65,7 +65,7 @@ Throw FormatError with code `DECK_UNSAFE_HTML` for that legacy policy.
 The Deck compatibility operation translates that code to its existing DeckError.
 No other failure becomes a successful publication.
 
-- [ ] **Step 2: Make adapter registration explicit**
+- [x] **Step 2: Make adapter registration explicit**
 
 Remove `HtmlFormatAdapter` imports from Deck.
 Build the adapter map from `options.formats ?? []`.
@@ -79,7 +79,7 @@ Missing legacy policy raises `DECK_CONFIG` before writing.
 This compatibility dependency supports current consumers.
 It does not add HTML conversion to the Deck domain.
 
-- [ ] **Step 3: Preserve publication ownership**
+- [x] **Step 3: Preserve publication ownership**
 
 Keep staging, grant identity, expected revision, and idempotent receipt checks in Deck.
 Keep conversion and HTML/CSS validation inside the adapter.
@@ -87,7 +87,7 @@ Keep browser rendering checks behind the existing renderCheck callback.
 Keep the cancellation check immediately before the publication transaction.
 Do not collapse the filesystem and SQLite writes into a claimed shared transaction.
 
-- [ ] **Step 4: Check current formats**
+- [x] **Step 4: Check current formats**
 
 Remove the concrete HTML dependency and TypeScript reference from Deck.
 Keep the application dependency on the HTML adapter.
@@ -101,7 +101,7 @@ Run `rg -n "@deckagent/(html-format|pptx)" packages/presentation/deck/src packag
 Expected: exit code 1 with no matches.
 Do not change Pexels eligibility or custom-layout behavior in this structural task.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 
