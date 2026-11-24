@@ -1,8 +1,8 @@
 import { AttachmentParser, SourceError, attachmentLimits } from '@deckagent/file-tools'
-import type { AttachmentManagement, AttachmentView, ChatDraft, RequestStore } from '@deckagent/host-api'
+import type { AttachmentManagement, AttachmentView, ChatDraft } from '@deckagent/host-api'
 import { HttpError } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
-import type { AttachmentRecord, MemoryDraftStore, SqliteSessionStore } from '@deckagent/session-persistence'
+import type { AttachmentRecord, MemoryDraftStore, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ManagedAttachments } from './managed-attachments.ts'
 
 export function attachmentView(item: AttachmentRecord): AttachmentView {

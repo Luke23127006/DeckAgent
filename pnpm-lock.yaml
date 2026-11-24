@@ -82,6 +82,9 @@ importers:
       '@deckagent/host-contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@deckagent/session-persistence':
+        specifier: workspace:*
+        version: link:../../session/persistence
       busboy:
         specifier: 1.6.0
         version: 1.6.0

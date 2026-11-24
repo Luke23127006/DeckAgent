@@ -53,14 +53,14 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move the persistence interface**
+- [x] **Step 1: Move the persistence interface**
 
 Create `request-store.ts` in Session.
 Express `RequestStore` with Session-owned record and approval types.
 Preserve the full structural contract, including optional approval storage.
 Do not move execution maps, runtime invocation, or terminal-status policy into Session.
 
-- [ ] **Step 2: Change consumers**
+- [x] **Step 2: Change consumers**
 
 Import `RequestStore` from the public Session package in RequestController and AttachmentService.
 Remove the declaration from Host API.
@@ -68,14 +68,14 @@ Keep a named Host API type re-export only until its current production consumers
 Add the direct workspace dependency and TypeScript project reference.
 Update the lockfile offline without changing dependency versions.
 
-- [ ] **Step 3: Check data ownership**
+- [x] **Step 3: Check data ownership**
 
 Keep `RequestLog.admit` atomic across the message, request record, and attachment associations.
 Keep `RequestLog.finish` as a durable operation.
 Only Request Lifecycle selects the requested terminal status.
 No consumer receives the Session database handle.
 
-- [ ] **Step 4: Check the boundary**
+- [x] **Step 4: Check the boundary**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:model-requests`.
@@ -85,7 +85,7 @@ Run `rg -n "@deckagent/(host-api|host-contracts)" packages/session/persistence/s
 Expected: exit code 1 with no matches.
 For this absence check, exit code 1 is PASS.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

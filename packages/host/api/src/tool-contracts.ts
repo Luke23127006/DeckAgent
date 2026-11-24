@@ -1,11 +1,6 @@
+import type { ApprovalStep } from '@deckagent/session-persistence'
 export type { ApprovalView } from '@deckagent/host-contracts'
-
-export interface ApprovalStep {
-  readonly key: string
-  readonly operation: 'read-file'
-  readonly target: string
-  readonly reason: string
-}
+export type { ApprovalStep }
 
 export interface ToolSchema {
   readonly name: string

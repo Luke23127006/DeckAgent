@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
+import type { RequestStore } from '@deckagent/session-persistence'
 import type {
   AgentRequest,
   PreparedRequest,
   RequestEvent,
   RequestRuntime,
   RequestSnapshot,
-  RequestStore,
   RuntimeEvent,
   RuntimeOutcome,
   StoredRequest,

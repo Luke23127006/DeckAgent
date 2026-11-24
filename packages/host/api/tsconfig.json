@@ -9,6 +9,7 @@
   ],
   "references": [
     { "path": "../../presentation/deck" },
+    { "path": "../../session/persistence" },
     { "path": "../contracts" }
   ]
 }

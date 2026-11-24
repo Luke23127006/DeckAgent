@@ -14,6 +14,7 @@
   "dependencies": {
     "@deckagent/deck": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
+    "@deckagent/session-persistence": "workspace:*",
     "busboy": "1.6.0"
   },
   "devDependencies": {

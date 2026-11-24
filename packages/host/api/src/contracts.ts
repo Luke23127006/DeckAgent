@@ -1,13 +1,11 @@
 import type { DeckReader, OutlineReader } from '@deckagent/deck'
 import type {
   AgentRequest,
-  ApprovalView,
   AttachmentView,
   BriefView,
   ChatDraft,
   ConfirmationResult,
   ModelSelection,
-  RequestEvent,
   RequestEventBody,
   RequestSnapshot,
   StoredActivity,
@@ -46,7 +44,9 @@ export type {
   WorkspaceList,
   WorkspaceView,
 } from '@deckagent/host-contracts'
-import type { ApprovalStep, PreparedTools, RequestTools } from './tool-contracts.ts'
+import type { PreparedTools, RequestTools } from './tool-contracts.ts'
+import type { RequestStore } from '@deckagent/session-persistence'
+export type { RequestStore }
 export type {
   ApprovalStep,
   ApprovalView,
@@ -59,39 +59,6 @@ export type {
 
 /** What a runtime may report; the Host alone writes status events. */
 export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' | 'approval' }>
-
-/** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
-export interface RequestStore {
-  readonly approvals?: {
-    create(
-      requestId: string,
-      step: ApprovalStep,
-    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
-    decide(
-      requestId: string,
-      approvalId: string,
-      decision: 'allow-once' | 'refuse',
-    ): { readonly approval: ApprovalView; readonly events: readonly RequestEvent[] }
-    pending(requestId: string): ApprovalView | undefined
-  }
-  /** Saves the user's message and the active request together. Throws when the chat already has an active request. */
-  admit(input: {
-    readonly publicResearch?: boolean
-    readonly requestId: string
-    readonly sessionId: string
-    readonly input: string
-    readonly selection: ModelSelection
-    readonly attachmentIds?: readonly string[]
-    readonly draftRevision?: number
-  }): StoredRequest
-  append(requestId: string, event: RuntimeEvent): RequestEvent
-  /** Ends an active request once; `undefined` when it had already ended. */
-  finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined
-  get(requestId: string): StoredRequest | undefined
-  events(requestId: string, after?: number): readonly RequestEvent[]
-  text(requestId: string): string
-  activeFor(sessionId: string): string | undefined
-}
 
 /** A request the runtime accepted: its settings are frozen at admission (FR-042). Holds no secret visible to the Host API. */
 export interface PreparedRequest {

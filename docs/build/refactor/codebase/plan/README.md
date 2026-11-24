@@ -65,6 +65,8 @@ An executor must not select another design during a task.
 - Run commands from the repository root in Git Bash on Windows.
 - Use Node.js 22.19.0, the CI version.
 - Use `corepack pnpm@11.28.5`. Do not install a different Node or package-manager version.
+- On Windows, run `install --offline` and `build` outside the sandbox when `EPERM` blocks writes to `lib/`.
+- On Windows, run `test:attachments` and `test:model-requests` outside the sandbox when `EPERM` or `EBUSY` blocks or hangs them.
 - Preserve another person's changes. Never reset, clean, or overwrite unrelated work.
 - Do not commit, push, publish, or call a real provider.
 - Do not read the user's real application data, credentials, or `.env` values.
@@ -181,7 +183,7 @@ Each relevant task names the suite or supplies its new test code.
 | 03 | 0 | Done | [Add boundary and dependency graph checker](task-03-boundary-checker.md) |
 | 04 | 0 | Done | [Record baseline of boundaries and test suites](task-04-record-baseline.md) |
 | 05 | 1 | Done | [Extract browser-safe wire contracts](task-05-extract-wire-contracts.md) |
-| 06 | 1 | Pending | [Put the persistence contract in Session](task-06-move-request-persistence-contract.md) |
+| 06 | 1 | Done | [Put the persistence contract in Session](task-06-move-request-persistence-contract.md) |
 | 07 | 2 | Pending | [Separate Request Lifecycle errors from HTTP](task-07-separate-lifecycle-errors.md) |
 | 08 | 3 | Pending | [Move the local application to apps/web](task-08-move-local-application.md) |
 | 09 | 3 | Pending | [Put Browser code in the application](task-09-consolidate-browser.md) |

@@ -28,6 +28,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move `RequestStore` and `ApprovalStep` contracts into `@deckagent/session-persistence` (`packages/session/persistence/src/request-store.ts`), update `RequestController` and `AttachmentService` to import them from Session, and keep a temporary `RequestStore` re-export on `@deckagent/host-api`.
 - Rewrite `docs/conventions/code.md` from a plan of six empty sections into the rules of production code. The rules cover naming, TypeScript, comments, contracts, runtime validation, data representation, state, async lifetime and error handling. The file also lists the patterns that DeckAgent does not require. Each rule names the tool that stops it.
 - Rewrite `docs/conventions/project-structure.md` into the rules of the target source structure, under the headings principle, C4 level, folder and package. The file gives the runtime ownership, the state authority of each owner, one table row for each folder and package, and the dependency rules. It also gives the enforcement status of each boundary: the tool that stops it now, and the check that the refactor adds.
 - State the same rules without repetition in `docs/conventions/code.md`: keep the constraint and drop the phrase that restates it.
