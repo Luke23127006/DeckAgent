@@ -9,10 +9,10 @@ Run these commands from the repository root in Windows PowerShell:
 ```powershell
 pnpm install --frozen-lockfile
 pnpm build
-pnpm start:local-web
+pnpm web
 ```
 
-The last command starts the local Host and opens the Web app in your browser. Keep the terminal running while using the Web app; **Ctrl+C** stops the Host. After the initial install/build, `pnpm start:local-web` alone reopens it. After pulling source changes, run `pnpm build` and restart the Host.
+The last command starts the local Host and opens the Web app in your browser. Keep the terminal running while using the Web app; **Ctrl+C** stops the Host. After the initial install/build, `pnpm web` alone reopens it. After pulling source changes, run `pnpm build` and restart the Host.
 
 Requires Node.js `^22.19.0` or `>=24.0.0` and pnpm `11.28.5`. Windows x64 installation includes OpenCode 1.19.5 as an application dependency; no global OpenCode installation or PATH change is needed. Keep optional dependencies enabled. Other platforms require a separately supplied compatible CLI and are not verified by this installation path.
 

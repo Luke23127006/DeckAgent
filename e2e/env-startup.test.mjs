@@ -117,6 +117,6 @@ test('Local Web opens the management API with missing or malformed environment k
 
 test('Local Web shows help when no .env exists', { timeout: 10000 }, async t => {
   const dir = await directory(t)
-  const output = await launch(t, dir, 'start:local-web', ['--help'])
+  const output = await launch(t, dir, 'web', ['--help'])
   assert.equal(output.code, 0)
 })
