@@ -67,7 +67,7 @@ Apply this table in top-to-bottom order to every finding in `packages/host/contr
 | A file, type, or seam protects a real invariant or two-adapter boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file counts, export counts, and workspace importers**
+- [x] **Step 1: Measure live file counts, export counts, and workspace importers**
 
 Run:
 
@@ -77,7 +77,7 @@ node -e "const fs=require('node:fs'); const {execFileSync}=require('node:child_p
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 15` and `"totalLines": 3067` (7 files in `packages/host/contracts/` totaling 1,501 lines and 8 files in `packages/host/api/` totaling 1,566 lines).
 
-- [ ] **Step 2: Audit every file and exported symbol in `packages/host/contracts/`**
+- [x] **Step 2: Audit every file and exported symbol in `packages/host/contracts/`**
 
 Read all 7 files in `packages/host/contracts/src/` and `packages/host/contracts/package.json`.
 Run a read-only symbol usage check over all importers of `@deckagent/host-contracts` found in Step 1:
@@ -93,7 +93,7 @@ Record exact file-and-line observations for:
 2. Internal cohesion of `packages/host/contracts/src/validation.ts` (766 lines, including `decodeBoundProposal` at line 599, 94 lines) versus `packages/host/contracts/src/brief-validation.ts` (111 lines). List every exported decoder, its internal helpers, duplicated validation logic, and caller list.
 3. Re-exports from `@deckagent/presentation-document` at `packages/host/contracts/src/index.ts` (lines 1-6). Check whether downstream callers import them through `@deckagent/host-contracts` or directly from `@deckagent/presentation-document`.
 
-- [ ] **Step 3: Audit every file, export, and seam in `packages/host/api/`**
+- [x] **Step 3: Audit every file, export, and seam in `packages/host/api/`**
 
 Read all 8 files in `packages/host/api/src/`, `packages/host/api/package.json`, `packages/host/api/tests/host-api.test.mjs`, and `packages/host/api/tests/request-failure.test.mjs`.
 Run a read-only symbol usage check over all importers of `@deckagent/host-api` found in Step 1:
@@ -111,7 +111,7 @@ Record exact file-and-line observations for:
 4. Transport versus Request Lifecycle seam: check whether `packages/host/api/src/request-controller.ts` stays free of HTTP types and status codes. Check whether each management interface in `contracts.ts` (`WebManagement`, `WorkspaceManagement`, `BriefManagement`, `AttachmentManagement`, `HostOptions`) has two adapters or only one pass-through adapter.
 5. Deck import in Local Host transport: inspect `import { DeckError, deckFailureMessage } from '@deckagent/deck'` at `packages/host/api/src/index.ts` (line 4) and its call sites in `index.ts` and `deck-routes.ts`. Compare with `docs/conventions/project-structure.md` (`host/api/` authority table) to check whether this is a proper transport error translation or an ownership leak.
 
-- [ ] **Step 4: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 4: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of exported symbols, concepts, and call steps callers must know for `@deckagent/host-contracts` and `@deckagent/host-api`. Name every leaked internal symbol, unused export, or pass-through re-export.
@@ -121,12 +121,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new Local Host HTTP endpoint for an existing management feature.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). List any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 5: Check that no repository file changed outside task checkboxes**
+- [x] **Step 5: Check that no repository file changed outside task checkboxes**
 
 Run: `git status --short`
 Expected: PASS. No tracked file under `packages/`, `apps/`, `e2e/`, `tests/`, or `docs/conventions/` shows new changes from this task.
 
-- [ ] **Step 6: Report and stop**
+- [x] **Step 6: Report and stop**
 
 Send this report and STOP for owner approval before writing Revision 2b refactor tasks:
 - Files changed: `docs/build/refactor/module-design/plan/task-06-diagnose-host-contracts-and-api.md` (checkboxes only)

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 6 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-06-diagnose-host-contracts-and-api.md`) for `packages/host/contracts/` and `packages/host/api/`, record 16 classified findings and the owner approvals (F11 no action, F15 and F16 convention updates), and close Task 6 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 5 Phase 1 exit report (`docs/build/refactor/module-design/reports/task-05-fix-timeout-and-verify-phase1-exit.md`), record the measured `v2` and `v3` timings plus all 18 non-live suites and 5 root tool test files passing with `# fail 0`, and close Task 5 in `docs/build/refactor/module-design/plan/`.
 - Add Revision 2 Slice 2A diagnosis to `docs/build/refactor/module-design/plan/`: Task 6 audits `packages/host/contracts/` and `packages/host/api/`, and Task 7 audits `packages/session/persistence/` and its host seam. Both tasks are read-only and stop for owner approval before Revision 2b changes code.
 - Add the Task 4 Phase 1 triage and AST baseline report (`docs/build/refactor/module-design/reports/task-04-record-phase1-triage-and-baseline.md`), record the approved 14-area tiers and AST baseline in `docs/build/refactor/module-design/README.md`, and close Task 4 in `docs/build/refactor/module-design/plan/`.

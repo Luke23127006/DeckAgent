@@ -75,7 +75,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 3 | Done | [Investigate portable-generation-http REQUEST_TIMEOUT baseline failure](task-03-investigate-timeout-failure.md) ([report](../reports/task-03-investigate-timeout-failure.md)) |
 | 4 | Done | [Record approved 14-area triage and AST baseline](task-04-record-phase1-triage-and-baseline.md) ([report](../reports/task-04-record-phase1-triage-and-baseline.md)) |
 | 5 | Done | [Fix portable-generation-http timeout, harden scanner tests, and check Phase 1 exit gate](task-05-fix-timeout-and-verify-phase1-exit.md) ([report](../reports/task-05-fix-timeout-and-verify-phase1-exit.md)) |
-| 6 | Pending | [Diagnose host/contracts and host/api module design](task-06-diagnose-host-contracts-and-api.md) |
+| 6 | Done | [Diagnose host/contracts and host/api module design](task-06-diagnose-host-contracts-and-api.md) ([report](../reports/task-06-diagnose-host-contracts-and-api.md)) |
 | 7 | Pending | [Diagnose session/persistence module design and host seam](task-07-diagnose-session-persistence.md) |
 
 ## Next revision
