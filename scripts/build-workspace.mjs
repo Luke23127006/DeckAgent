@@ -75,7 +75,7 @@ for (const pkg of packages) {
     await build({
       cwd: resolve(pkg.path),
       config: false,
-      entry: ['lib/browser-types/index.js', 'lib/browser-types/boot.js'],
+      entry: ['lib/browser-types/boot.js'],
       outDir: 'lib/browser',
       format: ['esm'],
       platform: 'browser',

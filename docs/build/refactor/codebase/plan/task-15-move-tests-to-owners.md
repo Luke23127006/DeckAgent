@@ -58,7 +58,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move the existing tests**
+- [x] **Step 1: Move the existing tests**
 
 Apply every row. A row with the same source and destination requires no move.
 
@@ -134,7 +134,7 @@ Keep `packages/host/api/tests/request-failure.test.mjs` in place.
 Mixed storage/application tests remain in e2e for this revision.
 Do not split those files while moving them.
 
-- [ ] **Step 2: Rebind fixtures and imports**
+- [x] **Step 2: Rebind fixtures and imports**
 
 Move the fixture sets listed in Files.
 Fix each fixture path relative to its new module URL.
@@ -152,7 +152,7 @@ Application-owned integration tests import their own compiled implementation.
 Remove the unused Browser root index only after all its consumers move.
 Preserve `startLocalWeb` and the CLI public entry.
 
-- [ ] **Step 3: Preserve verification commands**
+- [x] **Step 3: Preserve verification commands**
 
 Change root test scripts to the exact destinations in the table.
 Keep each suite's previous file membership.
@@ -163,7 +163,7 @@ Keep root developer-tool tests under `tests/`.
 Include `e2e/` in the root lint command.
 Do not enable live suites in ordinary CI.
 
-- [ ] **Step 4: Check test discovery**
+- [x] **Step 4: Check test discovery**
 
 Run `corepack pnpm@11.28.5 build`.
 Run every non-live test script from the baseline report, one script at a time.
@@ -175,7 +175,7 @@ Compare test and skip counts with the Wave 0 baseline.
 The new request-failure test adds one case to its owning suite.
 Any other count difference is a STOP condition.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

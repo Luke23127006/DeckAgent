@@ -59,25 +59,8 @@ import type { ImageLookup } from './integrations/images/index.ts'
 import { artifactRenderer } from './integrations/rendering/index.ts'
 import type { RequestRuntime } from '@deckagent/host-api'
 
-export { ManagedAttachments } from './features/attachments/index.ts'
-export { CommonsImages, PublicImageReader } from './integrations/images/index.ts'
-export { WebImageResearch, imagePageCredit } from './features/deck/index.ts'
-export { TavilyClient } from './integrations/research/index.ts'
-export { prepareSourceTools } from './features/sources/index.ts'
-export { openToolBridge, pinnedVersion } from './integrations/opencode/index.ts'
-export type { AttachmentUpload } from './features/attachments/index.ts'
-
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
-export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
-export {
-  CredentialError,
-  ProtectedFileCredentialStore,
-  UnavailableCredentialStore,
-  defaultCredentialStore,
-} from './integrations/credentials/index.ts'
-export type { CredentialStore } from './integrations/credentials/index.ts'
-export type { ProviderConnection, ProviderStoreOptions } from './features/providers/index.ts'
-export type { OpenCodeOptions } from './integrations/opencode/index.ts'
+export type { ProviderConnection } from './features/providers/index.ts'
 
 export interface LocalWebOptions {
   /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
