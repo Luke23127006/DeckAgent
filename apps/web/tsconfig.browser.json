@@ -16,6 +16,9 @@
   "references": [
     {
       "path": "../../packages/host/contracts"
+    },
+    {
+      "path": "../../packages/presentation/document"
     }
   ]
 }

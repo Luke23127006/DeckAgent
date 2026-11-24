@@ -28,7 +28,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
 
 ## Steps
 
-- [ ] **Step 1: Create `packages/host/contracts/src/validation-primitives.ts` (F6)**
+- [x] **Step 1: Create `packages/host/contracts/src/validation-primitives.ts` (F6)**
 
   Create `packages/host/contracts/src/validation-primitives.ts` exporting shared Zod primitives and helpers used by all four validator files:
   - `nonEmptyText`: `z.string().min(1).refine(s => !!s.trim() && s.isWellFormed())`
@@ -42,7 +42,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
   - `invalidResponse(): never` throwing `new Error('INVALID_RESPONSE')`
   - `invalidGenerationResponse(): never` throwing `new Error('INVALID_GENERATION_RESPONSE')`
 
-- [ ] **Step 2: Create `packages/host/contracts/src/request-validation.ts` (F3, F6, F16)**
+- [x] **Step 2: Create `packages/host/contracts/src/request-validation.ts` (F3, F6, F16)**
 
   Create `packages/host/contracts/src/request-validation.ts` with Zod schemas and zero `as` assertions:
 
@@ -60,7 +60,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
      - Throw `new RequestValidationError('INVALID_REQUEST', 'Request payload is invalid')` when `!input.isWellFormed()` or any schema check fails.
      - Return a clean `AgentRequest` object without `as boolean` or any other type assertion.
 
-- [ ] **Step 3: Move brief, outline, and generation decoders into domain modules (F6)**
+- [x] **Step 3: Move brief, outline, and generation decoders into domain modules (F6)**
 
   1. Update `packages/host/contracts/src/brief-validation.ts`:
      - Import shared primitives from `./validation-primitives.ts`.
@@ -72,7 +72,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
      - Export `decodeGeneration(value: unknown, sessionId: string): GenerationSnapshot` ported from `validation.ts` lines 694 to 766 using Zod schemas, calling `isDesignSnapshot` from `./brief-validation.ts`, and throwing `invalidGenerationResponse()` on mismatch.
   4. Remove `packages/host/contracts/src/validation.ts`.
 
-- [ ] **Step 4: Drop `@deckagent/presentation-document` re-exports and narrow 18 unused exports (F7, F8)**
+- [x] **Step 4: Drop `@deckagent/presentation-document` re-exports and narrow 18 unused exports (F7, F8)**
 
   1. Update `apps/web/package.json`:
      - Add `"@deckagent/presentation-document": "workspace:*"` in `dependencies` in alphabetical order.
@@ -94,7 +94,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
      - Remove the remaining 15 unused nested type exports (`CatalogRef`, `DesignSnapshot`, `InterviewTopic`, `ThemeValues`, `ContentBlock`, `DeckSlide`, `GenerationSnapshot`, `ImageAttempt`, `ImageSelection`, `ImageSourceCheck`, `LayoutIssue`, `OutlineChanges`, `OutlineImageReview`, `OutlineTarget`, `WebImageIntent`) while keeping them exported from their source files (`brief.ts`, `deck.ts`).
      - Export `decodeAgentRequest`, `RequestValidationError`, `type RequestValidationCode`, `decodeAttachment`, `requestEvent` from `./request-validation.ts`, `decodeBriefView` from `./brief-validation.ts`, `decodeBoundProposal` from `./outline-validation.ts`, and `decodeGeneration` from `./generation-validation.ts`.
 
-- [ ] **Step 5: Add unit tests for `host/contracts` decoders**
+- [x] **Step 5: Add unit tests for `host/contracts` decoders**
 
   Create `packages/host/contracts/tests/validation.test.mjs` with the required Testware top comment header [[3]](#ref-3):
   - Import `decodeAgentRequest`, `RequestValidationError`, `decodeAttachment`, `requestEvent`, `decodeBriefView`, `decodeBoundProposal`, and `decodeGeneration` from `../lib/index.js`.
@@ -102,7 +102,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
   - Test `decodeAttachment`, `requestEvent`, `decodeBriefView`, `decodeBoundProposal`, and `decodeGeneration` error paths (`INVALID_RESPONSE` and `INVALID_GENERATION_RESPONSE`).
   - Add `packages/host/contracts/tests/validation.test.mjs` to `test:tools-browser` in `package.json`.
 
-- [ ] **Step 6: Build, check browser bundle isolation, lint, scan, and run tests**
+- [x] **Step 6: Build, check browser bundle isolation, lint, scan, and run tests**
 
   Run:
 
@@ -138,7 +138,7 @@ Read this file to execute approved findings F3 (request decoder), F6, F7, and F8
 
   **STOP** if `tsc -b` fails on declaration emit, if `boot.js` contains any `node:` import, or if any suite fails.
 
-- [ ] **Step 7: Mark task done, write the report, and commit and push**
+- [x] **Step 7: Mark task done, write the report, and commit and push**
 
   1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 10 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` with a link to `../reports/task-10-refactor-host-contracts.md`.
   2. Create `docs/build/refactor/module-design/reports/task-10-refactor-host-contracts.md` with:

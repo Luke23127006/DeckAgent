@@ -18,6 +18,7 @@
     "@deckagent/file-tools": "workspace:*",
     "@deckagent/host-api": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
+    "@deckagent/presentation-document": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
     "@deckagent/workspace-registry": "workspace:*",
     "@modelcontextprotocol/sdk": "1.26.0"

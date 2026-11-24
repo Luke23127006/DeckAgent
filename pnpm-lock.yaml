@@ -83,6 +83,9 @@ importers:
       '@deckagent/html-format':
         specifier: workspace:*
         version: link:../../packages/presentation/html
+      '@deckagent/presentation-document':
+        specifier: workspace:*
+        version: link:../../packages/presentation/document
       '@deckagent/session-persistence':
         specifier: workspace:*
         version: link:../../packages/session/persistence

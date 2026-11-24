@@ -31,7 +31,7 @@
     "check:boundaries:report": "node scripts/check-boundaries.mjs --report",
     "scan:module-design": "node scripts/scan-module-design.mjs",
     "test:session-persistence": "node --test packages/session/persistence/tests/session-persistence.test.mjs",
-    "test:tools-browser": "node --test packages/host/api/tests/host-api.test.mjs apps/web/tests/browser-runtime.test.mjs e2e/local-web.test.mjs",
+    "test:tools-browser": "node --test packages/host/contracts/tests/validation.test.mjs packages/host/api/tests/host-api.test.mjs apps/web/tests/browser-runtime.test.mjs e2e/local-web.test.mjs",
     "web": "node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",
     "start:local": "npm exec --yes --package=node@22.19.0 -- node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",
     "package:opencode": "node scripts/package-opencode.mjs",

@@ -1,41 +1,20 @@
-export {
-  decodeArtifactDescriptor,
-  decodeContentOrigins,
-  decodeSlideDocument,
-} from '@deckagent/presentation-document'
-export type { ArtifactDescriptor, ContentOrigin, SlideDocument } from '@deckagent/presentation-document'
 export type {
   BriefDraft,
   BriefRecord,
   BriefSnapshot,
   BriefSourceRef,
   BriefView,
-  CatalogRef,
-  DesignSnapshot,
   InterviewState,
-  InterviewTopic,
-  ThemeValues,
 } from './brief.ts'
 export type {
   ConfirmationReceipt,
   ConfirmationTarget,
-  ContentBlock,
   DeckChange,
-  DeckSlide,
   DeckSnapshot,
-  GenerationSnapshot,
-  ImageAttempt,
   ImageCredit,
-  ImageSelection,
-  ImageSourceCheck,
-  LayoutIssue,
-  OutlineChanges,
-  OutlineImageReview,
   OutlineProposal,
   OutlineSnapshot,
-  OutlineTarget,
   SlideContent,
-  WebImageIntent,
 } from './deck.ts'
 export type {
   ProviderProtocol,
@@ -67,9 +46,12 @@ export type {
   TerminalStatus,
 } from './requests.ts'
 export {
+  decodeAgentRequest,
   decodeAttachment,
-  decodeBoundProposal,
-  decodeBriefView,
-  decodeGeneration,
   requestEvent,
-} from './validation.ts'
+  RequestValidationError,
+  type RequestValidationCode,
+} from './request-validation.ts'
+export { decodeBriefView } from './brief-validation.ts'
+export { decodeBoundProposal } from './outline-validation.ts'
+export { decodeGeneration } from './generation-validation.ts'

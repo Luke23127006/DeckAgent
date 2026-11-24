@@ -1,10 +1,6 @@
 import type { ImageCredit, DeckChange, DeckSnapshot, SlideContent } from '@deckagent/host-contracts'
-import {
-  decodeArtifactDescriptor,
-  decodeContentOrigins,
-  decodeGeneration,
-  decodeSlideDocument,
-} from '@deckagent/host-contracts'
+import { decodeGeneration } from '@deckagent/host-contracts'
+import { decodeArtifactDescriptor, decodeContentOrigins, decodeSlideDocument } from '@deckagent/presentation-document'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
