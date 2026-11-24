@@ -46,12 +46,12 @@ Apply this table to the measured timings and failure output from Steps 2 through
 | All three runs (isolated x2, `test:images`, `test:generation-publication`) exit with code 0 and print `# fail 0` | Classify as non-reproducible in current run. Record exact `duration_ms` margins relative to the 30000 ms budget in `b02-helpers.mjs`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check compiled build artifacts match source**
+- [x] **Step 1: Check compiled build artifacts match source**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: PASS. The command exits with code 0.
 
-- [ ] **Step 2: Measure isolated runs of `e2e/portable-generation-http.test.mjs`**
+- [x] **Step 2: Measure isolated runs of `e2e/portable-generation-http.test.mjs`**
 
 Run the command two times in sequence:
 
@@ -60,7 +60,7 @@ Run the command two times in sequence:
 
 Expected: Both commands finish within 180 seconds. Record exact exit code, pass/fail status, `duration_ms`, and any `errorCode` for both template versions (`v2` and `v3`) on each run. Do not stop early when a run exits non-zero. Record its exact failure output and continue to Step 3.
 
-- [ ] **Step 3: Measure `test:images` and `test:generation-publication` suite runs**
+- [x] **Step 3: Measure `test:images` and `test:generation-publication` suite runs**
 
 Run each command separately:
 
@@ -69,7 +69,7 @@ Run each command separately:
 
 Expected: Both commands run to completion. Record exact exit code, `# tests`, `# pass`, `# fail`, `# skipped`, and the exact failing test number, name, `errorCode`, and `duration_ms` for every test in `portable-generation-http.test.mjs`. Stop immediately if any test outside `portable-generation-http.test.mjs` fails.
 
-- [ ] **Step 4: Audit timeout and renderer budgets in code**
+- [x] **Step 4: Audit timeout and renderer budgets in code**
 
 Read the exact lines listed in `Read first` and record these four values in the report:
 - Production default `timeoutMs` in `apps/web/src/integrations/opencode/runtime.ts` (line 252).
@@ -77,12 +77,12 @@ Read the exact lines listed in `Read first` and record these four values in the 
 - Per-slide renderer timeout and concurrency cap in `apps/web/src/integrations/rendering/artifact-renderer.ts` (lines 104-106).
 - Browser spawn count per 7-slide deck in `artifact-renderer.ts` (line 122) and cleanup behavior in `finally` (lines 258-270).
 
-- [ ] **Step 5: Check that no repository files changed outside checkboxes**
+- [x] **Step 5: Check that no repository files changed outside checkboxes**
 
 Run: `git status --short`
 Expected: PASS. No tracked production, test, or doc file shows new modifications from this task.
 
-- [ ] **Step 6: Report and stop**
+- [x] **Step 6: Report and stop**
 
 Apply the [Root-cause decision table](#root-cause-decision-table) and send this report, then STOP (do not implement a fix until the owner approves Revision 1b):
 - Files changed: `docs/build/refactor/module-design/plan/task-03-investigate-timeout-failure.md` (checkboxes only)

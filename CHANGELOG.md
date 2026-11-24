@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 3 timeout diagnosis report (`docs/build/refactor/module-design/reports/task-03-investigate-timeout-failure.md`) and close Task 3 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 2 quantitative scan and 14-area triage report (`docs/build/refactor/module-design/reports/task-02-scan-and-triage.md`) and close Task 2 in `docs/build/refactor/module-design/plan/`.
 - Add the quantitative module-design scanner (`scripts/scan-module-design.mjs`), the `scan:module-design` npm script, and unit tests (`tests/scan-module-design.test.mjs`) for Task 1 of `refactor/module-design`.
 - Add the Phase 1 implementation plan under `docs/build/refactor/module-design/plan/`: decisions, global constraints, review focus, and three tasks for the quantitative scanner, the 14-area triage table, and the `portable-generation-http.test.mjs` timeout diagnosis.
