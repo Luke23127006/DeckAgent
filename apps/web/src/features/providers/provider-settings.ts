@@ -1,11 +1,11 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { HttpError } from '@deckagent/host-api'
 import type { ModelSelection, ProviderProtocol, ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
 import { builtInProviders } from './built-in-providers.ts'
-import { CredentialError, ProtectedFileCredentialStore } from './credential-store.ts'
-import type { CredentialStore } from './credential-store.ts'
-import { ProviderCheckError, listModels, validBaseUrl } from './provider-catalog.ts'
-import type { ProviderEndpoint } from './provider-catalog.ts'
+import { ProviderFailure } from './failures.ts'
+import { CredentialError, ProtectedFileCredentialStore } from '../../integrations/credentials/index.ts'
+import type { CredentialStore } from '../../integrations/credentials/index.ts'
+import { ProviderCheckError, validBaseUrl } from '../../integrations/providers/index.ts'
+import type { ProviderEndpoint } from '../../integrations/providers/index.ts'
 
 export const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
 
@@ -86,12 +86,12 @@ function parse(id: string, value: unknown): ProviderInput {
     (value.key !== undefined && (typeof value.key !== 'string' || (value.key !== '' && !keyText.test(value.key)))) ||
     (value.new !== undefined && typeof value.new !== 'boolean')
   )
-    throw new HttpError(400, 'INVALID_PROVIDER')
-  if (!validBaseUrl(value.baseUrl)) throw new HttpError(400, 'INVALID_PROVIDER', { field: 'baseUrl' })
+    throw new ProviderFailure('INVALID_PROVIDER')
+  if (!validBaseUrl(value.baseUrl)) throw new ProviderFailure('INVALID_PROVIDER', { field: 'baseUrl' })
   const protocol = value.protocol as ProviderProtocol
   const models = value.models.map(model => String(model))
   if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
-    throw new HttpError(400, 'INVALID_PROVIDER', { field: 'models' })
+    throw new ProviderFailure('INVALID_PROVIDER', { field: 'models' })
   return {
     displayName: value.displayName.trim(),
     protocol,
@@ -103,18 +103,18 @@ function parse(id: string, value: unknown): ProviderInput {
 }
 
 /** Failed checks save nothing and say which kind of refusal it was; no provider text is passed on. */
-function checkFailure(error: unknown): HttpError {
+function checkFailure(error: unknown): ProviderFailure {
   if (error instanceof ProviderCheckError) {
-    if (error.code === 'PROVIDER_REFUSED_KEY') return new HttpError(422, 'PROVIDER_KEY_REFUSED')
-    if (error.code === 'PROVIDER_NO_ANSWER') return new HttpError(504, 'PROVIDER_NO_ANSWER')
-    if (error.code === 'PROVIDER_TLS') return new HttpError(504, 'PROVIDER_NO_ANSWER', { reason: 'certificate' })
+    if (error.code === 'PROVIDER_REFUSED_KEY') return new ProviderFailure('PROVIDER_KEY_REFUSED')
+    if (error.code === 'PROVIDER_NO_ANSWER') return new ProviderFailure('PROVIDER_NO_ANSWER')
+    if (error.code === 'PROVIDER_TLS') return new ProviderFailure('PROVIDER_NO_ANSWER', { reason: 'certificate' })
     if (error.code === 'PROVIDER_RATE_LIMIT')
-      return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
+      return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
     if (error.code === 'PROVIDER_HTTP')
-      return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
-    return new HttpError(422, 'PROVIDER_CHECK_FAILED', { reason: 'protocol' })
+      return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
+    return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: 'protocol' })
   }
-  return new HttpError(504, 'PROVIDER_NO_ANSWER')
+  return new ProviderFailure('PROVIDER_NO_ANSWER')
 }
 
 /**
@@ -144,7 +144,7 @@ export class ProviderStore {
         this.deleted.add(id)
         continue
       }
-      if (!record(data)) throw new HttpError(500, 'SETTINGS_STORAGE')
+      if (!record(data)) throw new ProviderFailure('SETTINGS_STORAGE')
       // Older files kept the protected key inside the provider row (B01). It moves to the credential store unchanged.
       let credentialRef = typeof data.credentialRef === 'string' ? data.credentialRef : undefined
       if (typeof data.encryptedKey === 'string' && this.credentials instanceof ProtectedFileCredentialStore) {
@@ -232,9 +232,9 @@ export class ProviderStore {
   /** Capture the settings of one request; later changes do not reach it (FR-042). */
   runSettings(selection: ModelSelection): ProviderRunSettings {
     const saved = this.providers.get(selection.provider)
-    if (!saved || !saved.models.includes(selection.model)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
+    if (!saved || !saved.models.includes(selection.model)) throw new ProviderFailure('MODEL_NOT_SELECTABLE')
     const key = this.keys.get(saved.id)
-    if (saved.credentialRef && !key) throw new HttpError(409, 'PROVIDER_KEY_UNAVAILABLE')
+    if (saved.credentialRef && !key) throw new ProviderFailure('PROVIDER_KEY_UNAVAILABLE')
     return {
       provider: saved.id,
       protocol: saved.protocol,
@@ -250,25 +250,25 @@ export class ProviderStore {
       const previous = this.providers.get(id)
       const template = builtInProviders.find(provider => provider.id === id)
       // BR-008: one saved configuration per provider ID; built-in IDs are reserved even before they are saved.
-      if (input.isNew && previous) throw new HttpError(409, 'PROVIDER_ID_TAKEN', { provider: previous.displayName })
+      if (input.isNew && previous) throw new ProviderFailure('PROVIDER_ID_TAKEN', { provider: previous.displayName })
       if (template && (input.protocol !== template.protocol || input.baseUrl !== template.baseUrl))
-        throw new HttpError(409, 'PROVIDER_ID_TAKEN', { provider: template.displayName, builtIn: true })
+        throw new ProviderFailure('PROVIDER_ID_TAKEN', { provider: template.displayName, builtIn: true })
       if ([...this.providers.values()].some(other => other.id !== id && other.displayName === input.displayName))
-        throw new HttpError(409, 'PROVIDER_NAME_EXISTS')
-      if (previous && previous.protocol !== input.protocol) throw new HttpError(409, 'PROTOCOL_IMMUTABLE')
+        throw new ProviderFailure('PROVIDER_NAME_EXISTS')
+      if (previous && previous.protocol !== input.protocol) throw new ProviderFailure('PROTOCOL_IMMUTABLE')
       const hadKey = !!previous && (!!previous.credentialRef || this.keys.has(id))
       const endpointChanged = !!previous && previous.baseUrl !== input.baseUrl
       // A saved key is never sent to a new endpoint the user did not give a key for.
-      if (endpointChanged && hadKey && input.key === undefined) throw new HttpError(409, 'NEW_ENDPOINT_REQUIRES_KEY')
-      if (template && input.key === '') throw new HttpError(400, 'PROVIDER_KEY_REQUIRED', { missing: 'key' })
+      if (endpointChanged && hadKey && input.key === undefined) throw new ProviderFailure('NEW_ENDPOINT_REQUIRES_KEY')
+      if (template && input.key === '') throw new ProviderFailure('PROVIDER_KEY_REQUIRED', { missing: 'key' })
       const key = input.key === undefined ? this.keys.get(id) : input.key || undefined
-      if (template && !key) throw new HttpError(400, 'PROVIDER_KEY_REQUIRED', { missing: 'key' })
-      if (input.key && !this.credentials.persistent) throw new HttpError(422, 'CREDENTIAL_STORE_UNAVAILABLE')
+      if (template && !key) throw new ProviderFailure('PROVIDER_KEY_REQUIRED', { missing: 'key' })
+      if (input.key && !this.credentials.persistent) throw new ProviderFailure('CREDENTIAL_STORE_UNAVAILABLE')
       if (!previous || endpointChanged || input.key !== undefined) {
+        if (!this.options.check) throw new ProviderFailure('PROVIDER_NO_ANSWER')
         const endpoint = { protocol: input.protocol, baseUrl: input.baseUrl }
         try {
-          if (this.options.check) await this.options.check(endpoint, key)
-          else await listModels(endpoint, key, { pages: 1, signal: this.catalogAbort.signal })
+          await this.options.check(endpoint, key)
         } catch (error) {
           throw checkFailure(error)
         }
@@ -279,10 +279,7 @@ export class ProviderStore {
         try {
           created = await this.credentials.save(input.key)
         } catch (error) {
-          throw new HttpError(
-            error instanceof CredentialError && error.code === 'CREDENTIAL_STORE_UNAVAILABLE' ? 422 : 500,
-            error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED',
-          )
+          throw new ProviderFailure(error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED')
         }
         credentialRef = created
       } else if (input.key === '') credentialRef = undefined
@@ -298,7 +295,7 @@ export class ProviderStore {
         this.write(saved)
       } catch {
         if (created) await this.credentials.remove(created).catch(() => {})
-        throw new HttpError(500, 'SETTINGS_STORAGE')
+        throw new ProviderFailure('SETTINGS_STORAGE')
       }
       this.providers.set(id, saved)
       this.deleted.delete(id)
@@ -315,7 +312,7 @@ export class ProviderStore {
   remove(id: string): Promise<void> {
     return this.serialize(async () => {
       const previous = this.providers.get(id)
-      if (!previous) throw new HttpError(404, 'PROVIDER_NOT_FOUND')
+      if (!previous) throw new ProviderFailure('PROVIDER_NOT_FOUND')
       // A tombstone keeps a startup flag from bringing a deleted configuration back.
       this.db
         .prepare(
@@ -333,13 +330,12 @@ export class ProviderStore {
   /** The provider's model catalog (FR-058). Changes no added model. */
   async catalog(id: string): Promise<readonly string[]> {
     const saved = this.providers.get(id)
-    if (!saved) throw new HttpError(404, 'PROVIDER_NOT_FOUND')
+    if (!saved) throw new ProviderFailure('PROVIDER_NOT_FOUND')
+    if (!this.options.catalog) throw new ProviderFailure('CATALOG_UNAVAILABLE', { reason: 'no-answer' })
     const endpoint = { protocol: saved.protocol, baseUrl: saved.baseUrl }
     const key = this.keys.get(id)
     try {
-      return this.options.catalog
-        ? await this.options.catalog(endpoint, key, this.catalogAbort.signal)
-        : await listModels(endpoint, key, { signal: this.catalogAbort.signal, timeoutMs: 30_000 })
+      return await this.options.catalog(endpoint, key, this.catalogAbort.signal)
     } catch (error) {
       const reason =
         error instanceof ProviderCheckError
@@ -349,7 +345,7 @@ export class ProviderStore {
               ? 'no-answer'
               : 'unusable'
           : 'no-answer'
-      throw new HttpError(502, 'CATALOG_UNAVAILABLE', { reason })
+      throw new ProviderFailure('CATALOG_UNAVAILABLE', { reason })
     }
   }
 

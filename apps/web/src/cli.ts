@@ -4,8 +4,8 @@ import path from 'node:path'
 import { parseArgs, promisify } from 'node:util'
 import { StorageError, resolveStorageRoot, startLocalWeb } from './index.ts'
 import type { LocalWebOptions, ProviderConnection } from './index.ts'
-import { protocols } from './provider-settings.ts'
-import { validBaseUrl } from './provider-catalog.ts'
+import { protocols } from './features/providers/index.ts'
+import { validBaseUrl } from './integrations/providers/index.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)

@@ -359,7 +359,10 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
   const sourceBundle = await readFile(join(root, 'packages', 'tools', 'filesystem', 'lib', 'index.js'), 'utf8')
   assert.equal(sourceBundle.includes('@deckagent/agent-runtime'), false)
   assert.equal(sourceBundle.includes('@deepseek-ai/cordis'), false)
-  const sourceComposition = await readFile(join(root, 'apps', 'web', 'src', 'source-tools.ts'), 'utf8')
+  const sourceComposition = await readFile(
+    join(root, 'apps', 'web', 'src', 'features', 'sources', 'source-tools.ts'),
+    'utf8',
+  )
   assert.equal(
     sourceComposition.includes('registerFileTools'),
     false,

@@ -3,17 +3,20 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { errorCode, isContextOverflow, parseEvent } from '../apps/web/lib/types/opencode/events.js'
+import { errorCode, isContextOverflow, parseEvent } from '../apps/web/lib/types/integrations/opencode/events.js'
 import {
   encodeConfiguration,
   isolatedEnvironment,
   pinnedVersion,
   runtimeConfiguration,
   safeConfiguration,
-} from '../apps/web/lib/types/opencode/config.js'
-import { seedPrompt } from '../apps/web/lib/types/opencode/history.js'
-import { UnsupportedProviderError, providerConfiguration } from '../apps/web/lib/types/opencode/provider.js'
-import { runProcess } from '../apps/web/lib/types/opencode/process.js'
+} from '../apps/web/lib/types/integrations/opencode/config.js'
+import { seedPrompt } from '../apps/web/lib/types/integrations/opencode/history.js'
+import {
+  UnsupportedProviderError,
+  providerConfiguration,
+} from '../apps/web/lib/types/integrations/opencode/provider.js'
+import { runProcess } from '../apps/web/lib/types/integrations/opencode/process.js'
 
 const settings = {
   provider: 'fixture',

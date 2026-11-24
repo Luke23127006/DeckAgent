@@ -23,42 +23,48 @@ import {
 import { WebState } from './web-state.ts'
 import { createChatOperations } from './features/chats/index.ts'
 import { createWorkspaceOperations } from './features/workspaces/index.ts'
-import { chatManagement, mapApplicationFailure, workspaceManagement } from './local-transport.ts'
-import { ProviderStore } from './provider-settings.ts'
-import type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
-import { defaultCredentialStore } from './credential-store.ts'
-import type { CredentialStore } from './credential-store.ts'
-import { OpenCodeRuntime, findExecutable } from './opencode/runtime.ts'
-import type { OpenCodeOptions } from './opencode/runtime.ts'
+import {
+  attachmentManagement,
+  chatManagement,
+  mapApplicationFailure,
+  workspaceManagement,
+} from './local-transport.ts'
+import { ProviderStore } from './features/providers/index.ts'
+import type { ProviderConnection, ProviderStoreOptions } from './features/providers/index.ts'
+import { listModels } from './integrations/providers/index.ts'
+import { defaultCredentialStore } from './integrations/credentials/index.ts'
+import type { CredentialStore } from './integrations/credentials/index.ts'
+import { OpenCodeRuntime, findExecutable } from './integrations/opencode/index.ts'
+import type { OpenCodeOptions } from './integrations/opencode/index.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
-import { ManagedAttachments } from './managed-attachments.ts'
-import { prepareSourceTools } from './source-tools.ts'
-import { AttachmentService } from './attachment-service.ts'
+import { ManagedAttachments, AttachmentService } from './features/attachments/index.ts'
+import { prepareSourceTools } from './features/sources/index.ts'
 import { attachmentStyle } from './attachment-style.ts'
-import { ResearchService } from './research-service.ts'
+import { ResearchService } from './features/research/index.ts'
+import { TavilyClient } from './integrations/research/index.ts'
 import { researchStyle } from './research-style.ts'
-import { BriefService } from './brief-service.ts'
-import { DeckWorkflow } from './deck-workflow.ts'
-import { ConfirmationService } from './confirmation-service.ts'
-import { GenerationWorkflow } from './generation-workflow.ts'
-import { generationReport } from './generation-report.ts'
-import { CommonsImages } from './commons-images.ts'
-import { WebImageResearch } from './image-research.ts'
-import { PublicImageReader } from './public-image-reader.ts'
-import type { ImageLookup } from './public-image-reader.ts'
-import { artifactRenderer } from './artifact-renderer.ts'
+import {
+  BriefService,
+  ConfirmationService,
+  DeckWorkflow,
+  GenerationWorkflow,
+  WebImageResearch,
+  generationReport,
+} from './features/deck/index.ts'
+import { CommonsImages, PublicImageReader } from './integrations/images/index.ts'
+import type { ImageLookup } from './integrations/images/index.ts'
+import { artifactRenderer } from './integrations/rendering/index.ts'
 import type { RequestRuntime } from '@deckagent/host-api'
 
-export { ManagedAttachments } from './managed-attachments.ts'
-export { CommonsImages } from './commons-images.ts'
-export { WebImageResearch, imagePageCredit } from './image-research.ts'
-export { PublicImageReader } from './public-image-reader.ts'
-export { TavilyClient } from './tavily.ts'
-export { prepareSourceTools } from './source-tools.ts'
-export { openToolBridge } from './opencode/mcp-bridge.ts'
-export type { AttachmentUpload } from './managed-attachments.ts'
+export { ManagedAttachments } from './features/attachments/index.ts'
+export { CommonsImages, PublicImageReader } from './integrations/images/index.ts'
+export { WebImageResearch, imagePageCredit } from './features/deck/index.ts'
+export { TavilyClient } from './integrations/research/index.ts'
+export { prepareSourceTools } from './features/sources/index.ts'
+export { openToolBridge, pinnedVersion } from './integrations/opencode/index.ts'
+export type { AttachmentUpload } from './features/attachments/index.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { StorageErrorCode, StorageLayout } from './storage-root.ts'
@@ -67,11 +73,10 @@ export {
   ProtectedFileCredentialStore,
   UnavailableCredentialStore,
   defaultCredentialStore,
-} from './credential-store.ts'
-export type { CredentialStore } from './credential-store.ts'
-export type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
-export { pinnedVersion } from './opencode/config.ts'
-export type { OpenCodeOptions } from './opencode/runtime.ts'
+} from './integrations/credentials/index.ts'
+export type { CredentialStore } from './integrations/credentials/index.ts'
+export type { ProviderConnection, ProviderStoreOptions } from './features/providers/index.ts'
+export type { OpenCodeOptions } from './integrations/opencode/index.ts'
 
 export interface LocalWebOptions {
   /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
@@ -186,7 +191,14 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       state.db,
       options.credentials ?? defaultCredentialStore(layout.root),
       {
-        ...options.providerAccess,
+        check:
+          options.providerAccess?.check ??
+          (async (endpoint, key) => {
+            await listModels(endpoint, key, { pages: 1 })
+          }),
+        catalog:
+          options.providerAccess?.catalog ??
+          ((endpoint, key, signal) => listModels(endpoint, key, { signal, timeoutMs: 30_000 })),
         modelsRemoved: async (provider, models) => {
           await store.clearSelections(provider, models)
         },
@@ -219,7 +231,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       options.credentials ?? defaultCredentialStore(layout.root),
       store,
       options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
-      options.researchAccess?.fetch,
+      new TavilyClient(options.researchAccess?.fetch),
     )
     const images = new WebImageResearch(
       research,
@@ -303,7 +315,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
             ...(attachmentIds === undefined ? {} : { attachmentIds }),
           }),
       },
-      attachments: inputs,
+      attachments: attachmentManagement(inputs),
       ...(options.port === undefined ? {} : { port: options.port }),
       readHistory: id => store.read(id),
       management: {

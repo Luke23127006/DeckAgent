@@ -1,4 +1,9 @@
-import { HttpError } from '@deckagent/host-api'
+export class TavilyError extends Error {
+  constructor(readonly code: string) {
+    super(code)
+    this.name = 'TavilyError'
+  }
+}
 
 export interface ResearchResult {
   readonly requestId?: string
@@ -12,7 +17,7 @@ export interface ResearchResult {
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-const failure = (code = 'RESEARCH_UNAVAILABLE') => new HttpError(503, code)
+const failure = (code = 'RESEARCH_UNAVAILABLE') => new TavilyError(code)
 
 export interface ImageSearchCandidate {
   readonly imageUrl: string
@@ -29,7 +34,7 @@ export class TavilyClient {
   async images(key: string, query: string, signal: AbortSignal): Promise<readonly ImageSearchCandidate[]> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
     if (!query.trim() || query.length > 500 || !query.isWellFormed())
-      throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+      throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,
@@ -125,7 +130,7 @@ export class TavilyClient {
       return value
     } catch (error) {
       signal.throwIfAborted()
-      if (error instanceof HttpError) throw error
+      if (error instanceof TavilyError) throw error
       throw failure()
     }
   }
@@ -163,7 +168,7 @@ export class TavilyClient {
   async search(key: string, query: string, signal: AbortSignal): Promise<ResearchResult> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
     if (!query.trim() || query.length > 1000 || !query.isWellFormed())
-      throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+      throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,

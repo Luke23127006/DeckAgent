@@ -10,17 +10,16 @@ import type {
   ImageSourceCheck,
   ImageAttempt,
 } from '@deckagent/deck'
-import { HttpError } from '@deckagent/host-api'
-import type { ResearchService } from './research-service.ts'
-import type { CommonsImages, CommonsCandidate } from './commons-images.ts'
-import { PublicImageReader, ImageReadError } from './public-image-reader.ts'
-import type { ImageSearchCandidate } from './tavily.ts'
-import { imageSource, ImageSourceError } from './image-source.ts'
+import { ResearchFailure } from '../research/index.ts'
+import type { ResearchService } from '../research/index.ts'
+import type { CommonsImages, CommonsCandidate } from '../../integrations/images/index.ts'
+import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from '../../integrations/images/index.ts'
+import type { ImageSearchCandidate } from '../../integrations/research/index.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
 const code = (error: unknown) =>
-  error instanceof DeckError || error instanceof HttpError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
+  error instanceof DeckError || error instanceof ResearchFailure ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
 const reference = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : object(value) && typeof value['@id'] === 'string' ? value['@id'] : undefined
 interface Candidate extends ImageSearchCandidate {

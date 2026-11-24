@@ -2,13 +2,14 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { createSourceAccess, SourceError, attachmentLimits } from '@deckagent/file-tools'
 import type { PreparedTools, ToolSchema, ToolResult } from '@deckagent/host-api'
-import { HttpError } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
 import type { SqliteSessionStore, AttachmentRecord } from '@deckagent/session-persistence'
 import type { ParsedAttachment } from '@deckagent/file-tools'
 import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
-import type { ManagedAttachments } from './managed-attachments.ts'
-import type { ResearchService } from './research-service.ts'
+import type { ManagedAttachments } from '../attachments/index.ts'
+import { ResearchFailure } from '../research/index.ts'
+import type { ResearchService } from '../research/index.ts'
+import { SourceToolFailure } from './failures.ts'
 
 const schema = (name: string, description: string, property: string, required: boolean): ToolSchema => ({
   name,
@@ -61,7 +62,7 @@ export async function prepareSourceTools(options: {
 }): Promise<PreparedTools> {
   const { sessionId, store, registry } = options
   const chat = await store.getInfo(sessionId)
-  if (!chat) throw new HttpError(404, 'SESSION_NOT_FOUND')
+  if (!chat) throw new SourceToolFailure('SESSION_NOT_FOUND')
   const workspace = chat.workspaceId ? await registry.get(chat.workspaceId) : undefined
   const root = workspace?.folderStatus === 'available' ? (workspace.folder ?? undefined) : undefined
   const denied = () => [
@@ -93,7 +94,7 @@ export async function prepareSourceTools(options: {
     ]
   } catch (error) {
     if (error instanceof SessionError && error.code === 'ATTACHMENT_NOT_FOUND')
-      throw new HttpError(404, 'ATTACHMENT_NOT_FOUND')
+      throw new SourceToolFailure('ATTACHMENT_NOT_FOUND')
     throw error
   }
   const sourceCatalogue = store.requests.sourceCatalogue(sessionId)
@@ -171,14 +172,14 @@ export async function prepareSourceTools(options: {
         return { isError: false, content: [{ type: 'text', text: JSON.stringify(source) }] }
       }
       if (name === 'research_public') {
-        if (!options.research) throw new HttpError(403, 'TOOL_NOT_ALLOWED')
+        if (!options.research) throw new SourceToolFailure('TOOL_NOT_ALLOWED')
         if (
           Object.keys(value).some(key => key !== 'query') ||
           typeof value.query !== 'string' ||
           !value.query.trim() ||
           value.query.length > 1000
         )
-          throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+          throw new SourceToolFailure('SOURCE_ARGUMENTS_INVALID')
         try {
           const sources = await options.research.search(value.query, context.requestId, sessionId, context.signal)
           return {
@@ -196,7 +197,10 @@ export async function prepareSourceTools(options: {
           }
         } catch (error) {
           context.signal.throwIfAborted()
-          const safe = error instanceof HttpError || error instanceof SessionError ? error.code : 'RESEARCH_UNAVAILABLE'
+          const safe =
+            error instanceof ResearchFailure || error instanceof SourceToolFailure || error instanceof SessionError
+              ? error.code
+              : 'RESEARCH_UNAVAILABLE'
           return {
             isError: true,
             content: [{ type: 'text', text: /^RESEARCH_[A-Z_]+$/.test(safe) ? safe : 'RESEARCH_UNAVAILABLE' }],

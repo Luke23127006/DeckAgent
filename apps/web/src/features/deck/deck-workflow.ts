@@ -10,7 +10,6 @@ import {
 import type { DeckService, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
 import { briefContractVersion, briefJsonSchema } from '@deckagent/deck/brief'
 import { listDesignSystems, listTemplates, reviewLayouts } from '@deckagent/design'
-import { HttpError } from '@deckagent/host-api'
 import type {
   AgentRequest,
   PreparedRequest,
@@ -21,6 +20,7 @@ import type {
 } from '@deckagent/host-api'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefService } from './brief-service.ts'
+import { DeckWorkflowFailure } from './failures.ts'
 import type { WebImageResearch } from './image-research.ts'
 
 const empty = (): BriefDraft => ({
@@ -99,8 +99,8 @@ export class DeckWorkflow implements RequestRuntime {
   async prepare(request: AgentRequest): Promise<PreparedRequest> {
     if (request.continueDeck) {
       const generation = this.decks.generation(request.sessionId)
-      if (!generation || generation.state !== 'incomplete') throw new HttpError(409, 'GENERATION_INCOMPLETE')
-      if (!this.generationRuntime) throw new HttpError(503, 'GENERATION_UNAVAILABLE')
+      if (!generation || generation.state !== 'incomplete') throw new DeckWorkflowFailure('GENERATION_INCOMPLETE')
+      if (!this.generationRuntime) throw new DeckWorkflowFailure('GENERATION_UNAVAILABLE')
       const publicResearch = (await this.briefs.get(request.sessionId)).current?.draft.sources.publicResearch === true
       const prepared = await this.generationRuntime.prepare({ ...request, publicResearch })
       return {
@@ -139,8 +139,8 @@ export class DeckWorkflow implements RequestRuntime {
     if (!request.deck) return this.runtime.prepare(request)
     const command = request.deck
     const snapshot = await this.briefs.get(request.sessionId)
-    if (snapshot.locked) throw new HttpError(409, 'BRIEF_LOCKED')
-    if (snapshot.version !== command.expectedBriefVersion) throw new HttpError(409, 'BRIEF_STALE')
+    if (snapshot.locked) throw new DeckWorkflowFailure('BRIEF_LOCKED')
+    if (snapshot.version !== command.expectedBriefVersion) throw new DeckWorkflowFailure('BRIEF_STALE')
     const outlines = this.decks.outlineSnapshot(request.sessionId)
     const current = outlines.proposals.find(p => p.outlineId === outlines.currentId)
     if (
@@ -150,14 +150,15 @@ export class DeckWorkflow implements RequestRuntime {
           current.outlineId !== command.expectedOutline.outlineId ||
           current.version !== command.expectedOutline.version
     )
-      throw new HttpError(409, 'OUTLINE_STALE')
+      throw new DeckWorkflowFailure('OUTLINE_STALE')
     if (['question', 'clarify', 'revise', 'restore'].includes(command.action) && !current)
-      throw new HttpError(409, 'OUTLINE_NOT_FOUND')
+      throw new DeckWorkflowFailure('OUTLINE_NOT_FOUND', undefined, 'current-outline-required')
     const restored =
       command.action === 'restore'
         ? outlines.proposals.find(p => p.outlineId === command.restoreOutlineId && p.brief)
         : undefined
-    if (command.action === 'restore' && !restored?.brief) throw new HttpError(404, 'OUTLINE_NOT_FOUND')
+    if (command.action === 'restore' && !restored?.brief)
+      throw new DeckWorkflowFailure('OUTLINE_NOT_FOUND', undefined, 'restore-outline-missing')
     const base = restored?.brief?.draft ?? snapshot.current?.draft ?? empty()
     const choice = command.sourceChoice ?? {
       material: base.sources.material || !!request.attachmentIds?.length,
@@ -559,7 +560,7 @@ export class DeckWorkflow implements RequestRuntime {
                 briefRepairLimit = briefFailures >= 3
                 const code = briefRepairLimit
                   ? 'BRIEF_REPAIR_LIMIT'
-                  : error instanceof DeckError || error instanceof HttpError
+                  : error instanceof DeckError || error instanceof DeckWorkflowFailure
                     ? error.code
                     : 'BRIEF_INVALID'
                 const issues =
@@ -588,7 +589,7 @@ export class DeckWorkflow implements RequestRuntime {
                 outlineRepairLimit = outlineFailures >= 3
                 outlineError = outlineRepairLimit
                   ? 'OUTLINE_REPAIR_LIMIT'
-                  : error instanceof DeckError || error instanceof HttpError
+                  : error instanceof DeckError || error instanceof DeckWorkflowFailure
                     ? error.code
                     : 'OUTLINE_INVALID'
                 return result(
@@ -617,7 +618,9 @@ export class DeckWorkflow implements RequestRuntime {
               }
               if (name === 'select_slide_image' || name === 'search_slide_images') {
                 const code =
-                  error instanceof DeckError || error instanceof HttpError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
+                  error instanceof DeckError || error instanceof DeckWorkflowFailure
+                    ? error.code
+                    : 'RESEARCH_IMAGE_UNAVAILABLE'
                 if (
                   [
                     'RESEARCH_IMAGE_CONTEXT_REQUIRED',
@@ -644,7 +647,7 @@ export class DeckWorkflow implements RequestRuntime {
               return result(
                 error instanceof DeckError
                   ? { code: error.code, issues: error.issues }
-                  : error instanceof HttpError
+                  : error instanceof DeckWorkflowFailure
                     ? error.code
                     : 'BRIEF_INVALID',
                 true,

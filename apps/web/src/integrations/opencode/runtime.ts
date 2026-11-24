@@ -14,7 +14,7 @@ import type {
 } from '@deckagent/host-api'
 import { SessionError, summarizedNotice } from '@deckagent/session-persistence'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { ProviderRunSettings, ProviderStore } from '../provider-settings.ts'
+import type { ProviderRunSettings, ProviderStore } from '../../features/providers/index.ts'
 import {
   encodeConfiguration,
   isolatedEnvironment,

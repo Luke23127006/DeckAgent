@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { HttpError } from '@deckagent/host-api'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { CredentialStore } from './credential-store.ts'
-import { TavilyClient } from './tavily.ts'
-import { record } from './web-state.ts'
+import type { CredentialStore } from '../../integrations/credentials/index.ts'
+import { TavilyError } from '../../integrations/research/index.ts'
+import type { TavilyClient } from '../../integrations/research/index.ts'
+import { record } from '../../web-state.ts'
+import { ResearchFailure } from './failures.ts'
 
 interface Configuration {
   readonly revision: string
@@ -17,17 +18,14 @@ interface Configuration {
 export class ResearchService {
   private queue: Promise<void> = Promise.resolve()
   private settingsQueue: Promise<void> = Promise.resolve()
-  private readonly client: TavilyClient
 
   constructor(
     private readonly db: DatabaseSync,
     private readonly credentials: CredentialStore,
     private readonly store: SqliteSessionStore,
     private readonly environmentKey: string | undefined,
-    fetcher?: typeof fetch,
-  ) {
-    this.client = new TavilyClient(fetcher)
-  }
+    private readonly client: Pick<TavilyClient, 'check' | 'search' | 'images'>,
+  ) {}
 
   private configuration(): Configuration {
     const row = this.db.prepare("SELECT value FROM preferences WHERE key = 'research'").get()
@@ -43,7 +41,7 @@ export class ResearchService {
       } catch {
         /* Fail closed on damaged configuration. */
       }
-      throw new HttpError(500, 'RESEARCH_UNAVAILABLE')
+      throw new ResearchFailure('RESEARCH_UNAVAILABLE')
     }
     return {
       revision: createHash('sha256')
@@ -63,13 +61,13 @@ export class ResearchService {
   }
 
   private async key(config: Configuration): Promise<string> {
-    if (config.disabled) throw new HttpError(503, 'RESEARCH_UNAVAILABLE')
+    if (config.disabled) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
     try {
       const key = config.reference ? await this.credentials.read(config.reference) : this.environmentKey
       if (!key?.trim() || key.length > 4096) throw new Error()
       return key
     } catch {
-      throw new HttpError(503, 'RESEARCH_KEY_UNAVAILABLE')
+      throw new ResearchFailure('RESEARCH_KEY_UNAVAILABLE')
     }
   }
 
@@ -87,11 +85,16 @@ export class ResearchService {
         (typeof value.key !== 'string' || !value.key.trim() || value.key.length > 4096)) ||
       (value.useEnvironment === true && value.key !== undefined)
     )
-      throw new HttpError(400, 'INVALID_REQUEST')
+      throw new ResearchFailure('INVALID_REQUEST')
     await this.change(async () => {
       const key = value.useEnvironment === true ? this.environmentKey : String(value.key)
-      if (!key) throw new HttpError(503, 'RESEARCH_KEY_UNAVAILABLE')
-      await this.client.check(key, AbortSignal.timeout(15_000))
+      if (!key) throw new ResearchFailure('RESEARCH_KEY_UNAVAILABLE')
+      try {
+        await this.client.check(key, AbortSignal.timeout(15_000))
+      } catch (error) {
+        if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+        throw error
+      }
       const previous = this.configuration()
       let reference: string | undefined
       try {
@@ -103,7 +106,7 @@ export class ResearchService {
           .run(JSON.stringify({ revision: randomUUID(), ...(reference ? { reference } : { environment: true }) }))
       } catch {
         if (reference) await this.credentials.remove(reference).catch(() => {})
-        throw new HttpError(500, 'RESEARCH_NOT_SAVED')
+        throw new ResearchFailure('RESEARCH_NOT_SAVED')
       }
       if (previous.reference) await this.credentials.remove(previous.reference).catch(() => {})
     })
@@ -133,10 +136,13 @@ export class ResearchService {
         this.store.requests.reserveResearch(requestId, sessionId)
         const work = this.queue.then(async () => {
           signal.throwIfAborted()
-          if (query.includes(key)) throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
-          const result = await this.client.search(key, query, signal)
+          if (query.includes(key)) throw new ResearchFailure('SOURCE_ARGUMENTS_INVALID')
+          const result = await this.client.search(key, query, signal).catch(error => {
+            if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+            throw error
+          })
           signal.throwIfAborted()
-          if (JSON.stringify(result).includes(key)) throw new HttpError(503, 'RESEARCH_UNAVAILABLE')
+          if (JSON.stringify(result).includes(key)) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
           return this.store.requests.recordResearch(requestId, sessionId, query, result)
         })
         this.queue = work.then(
@@ -151,12 +157,15 @@ export class ResearchService {
   /** Image-only capability: neither grants text research nor writes text source receipts. */
   async imageSearch(query: string, signal: AbortSignal) {
     const key = await this.key(this.configuration())
-    if (query.includes(key)) throw new HttpError(400, 'SOURCE_ARGUMENTS_INVALID')
+    if (query.includes(key)) throw new ResearchFailure('SOURCE_ARGUMENTS_INVALID')
     const work = this.queue.then(async () => {
       signal.throwIfAborted()
-      const images = await this.client.images(key, query, signal)
+      const images = await this.client.images(key, query, signal).catch(error => {
+        if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+        throw error
+      })
       signal.throwIfAborted()
-      if (JSON.stringify(images).includes(key)) throw new HttpError(503, 'RESEARCH_UNAVAILABLE')
+      if (JSON.stringify(images).includes(key)) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
       return images
     })
     this.queue = work.then(

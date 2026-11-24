@@ -1,8 +1,8 @@
 import { AttachmentParser, SourceError, attachmentLimits } from '@deckagent/file-tools'
 import type { AttachmentManagement, AttachmentView, ChatDraft } from '@deckagent/host-api'
-import { HttpError } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentRecord, MemoryDraftStore, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
+import { AttachmentFailure } from './failures.ts'
 import type { ManagedAttachments } from './managed-attachments.ts'
 
 export function attachmentView(item: AttachmentRecord): AttachmentView {
@@ -18,37 +18,36 @@ export function attachmentView(item: AttachmentRecord): AttachmentView {
   }
 }
 
+const knownAttachmentCodes = new Set([
+  'SESSION_NOT_FOUND',
+  'ATTACHMENT_NOT_FOUND',
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_CONFLICT',
+  'ATTACHMENT_NOT_READY',
+  'ATTACHMENT_REJECTED',
+  'UPLOAD_CANCELLED',
+  'DRAFT_TOO_LARGE',
+  'ATTACHMENT_TOO_LARGE',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'PARSING_LIMIT_EXCEEDED',
+  'ATTACHMENT_TYPE_UNSUPPORTED',
+  'ATTACHMENT_UNREADABLE',
+  'HOST_BUSY',
+  'INVALID_REQUEST',
+])
+
 function safeError(error: unknown): never {
-  if (error instanceof HttpError) throw error
-  if (error instanceof SessionError || error instanceof SourceError) {
-    const code = error.code
-    const status =
-      code === 'SESSION_NOT_FOUND' || code === 'ATTACHMENT_NOT_FOUND'
-        ? 404
-        : [
-              'DRAFT_CONFLICT',
-              'ATTACHMENT_CONFLICT',
-              'ATTACHMENT_NOT_READY',
-              'ATTACHMENT_REJECTED',
-              'UPLOAD_CANCELLED',
-            ].includes(code)
-          ? 409
-          : ['DRAFT_TOO_LARGE', 'ATTACHMENT_TOO_LARGE', 'ATTACHMENT_COUNT_EXCEEDED', 'PARSING_LIMIT_EXCEEDED'].includes(
-                code,
-              )
-            ? 413
-            : code === 'ATTACHMENT_TYPE_UNSUPPORTED'
-              ? 415
-              : code === 'ATTACHMENT_UNREADABLE'
-                ? 422
-                : code === 'HOST_BUSY'
-                  ? 429
-                  : code === 'INVALID_REQUEST'
-                    ? 400
-                    : 500
-    throw new HttpError(status, status === 500 ? 'ATTACHMENT_NOT_SAVED' : code)
+  if (error instanceof AttachmentFailure) throw error
+  const code =
+    error instanceof SessionError || error instanceof SourceError
+      ? error.code
+      : error instanceof Error && 'code' in error && typeof error.code === 'string'
+        ? error.code
+        : undefined
+  if (code !== undefined) {
+    throw new AttachmentFailure(knownAttachmentCodes.has(code) ? code : 'ATTACHMENT_NOT_SAVED')
   }
-  throw new HttpError(500, 'ATTACHMENT_NOT_SAVED')
+  throw new AttachmentFailure('ATTACHMENT_NOT_SAVED')
 }
 
 /** The existing storage owners remain private; every public operation binds the owning Chat. */
@@ -66,8 +65,8 @@ export class AttachmentService implements AttachmentManagement {
   ) {}
 
   private async chat(id: string): Promise<void> {
-    if (!(await this.store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-    if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (!(await this.store.getInfo(id))) throw new AttachmentFailure('SESSION_NOT_FOUND')
+    if (this.closed) throw new AttachmentFailure('HOST_CLOSED')
   }
 
   async draft(id: string): Promise<ChatDraft> {
@@ -94,17 +93,17 @@ export class AttachmentService implements AttachmentManagement {
       !input.text.isWellFormed() ||
       Object.keys(input).some(key => !['text', 'attachmentIds', 'expectedRevision'].includes(key))
     )
-      throw new HttpError(400, 'INVALID_REQUEST')
+      throw new AttachmentFailure('INVALID_REQUEST')
     const current = this.drafts.snapshot(id)
     const expected = 'expectedRevision' in input ? input.expectedRevision : current.revision
-    if (expected !== current.revision) throw new HttpError(409, 'DRAFT_CONFLICT')
+    if (expected !== current.revision) throw new AttachmentFailure('DRAFT_CONFLICT')
     const ids: unknown = 'attachmentIds' in input ? input.attachmentIds : current.attachmentIds
     if (!Array.isArray(ids) || ids.some(item => typeof item !== 'string') || new Set(ids).size !== ids.length)
-      throw new HttpError(400, 'INVALID_REQUEST')
+      throw new AttachmentFailure('INVALID_REQUEST')
     const selected: string[] = []
     for (const item of ids) {
       if (typeof item !== 'string' || !current.attachmentIds.includes(item))
-        throw new HttpError(404, 'ATTACHMENT_NOT_FOUND')
+        throw new AttachmentFailure('ATTACHMENT_NOT_FOUND')
       selected.push(item)
     }
     const removed = current.attachmentIds.filter(item => !selected.includes(item))
@@ -121,7 +120,7 @@ export class AttachmentService implements AttachmentManagement {
   async upload(input: Parameters<AttachmentManagement['upload']>[0]) {
     await this.chat(input.sessionId)
     if (this.drafts.snapshot(input.sessionId).attachmentIds.length >= attachmentLimits.files)
-      throw new HttpError(413, 'ATTACHMENT_COUNT_EXCEEDED')
+      throw new AttachmentFailure('ATTACHMENT_COUNT_EXCEEDED')
     let received: AttachmentRecord | undefined
     try {
       const item = await this.files.receive({ ...input, maxBytes: this.maxBytes })
@@ -129,7 +128,7 @@ export class AttachmentService implements AttachmentManagement {
       await input.complete
       input.signal.throwIfAborted()
       if (!this.drafts.snapshot(input.sessionId).attachmentIds.includes(item.attachmentId))
-        throw new HttpError(409, 'ATTACHMENT_CONFLICT')
+        throw new AttachmentFailure('ATTACHMENT_CONFLICT')
       const abort = new AbortController()
       const work = this.prepare(input.sessionId, item.attachmentId, abort.signal)
       this.preparing.set(item.attachmentId, { abort, work })
@@ -198,7 +197,7 @@ export class AttachmentService implements AttachmentManagement {
     await this.chat(id)
     try {
       this.store.attachments.get(id, attachmentId)
-      if (this.drafts.snapshot(id).revision !== expectedRevision) throw new HttpError(409, 'DRAFT_CONFLICT')
+      if (this.drafts.snapshot(id).revision !== expectedRevision) throw new AttachmentFailure('DRAFT_CONFLICT')
       await this.cancel(attachmentId)
       await this.files.remove(id, attachmentId, expectedRevision)
       return this.snapshot(id)

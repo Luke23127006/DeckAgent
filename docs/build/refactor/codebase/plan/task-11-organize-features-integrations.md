@@ -62,7 +62,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Apply the source placement**
+- [x] **Step 1: Apply the source placement**
 
 Use this table. Basenames stay unchanged.
 
@@ -100,7 +100,7 @@ Keep storage-root, web-state, CLI, static asset strings, and startup at their ex
 Image selection coordinates deck work, so it stays in the deck feature.
 Image HTTP clients and publisher metadata parsing belong to integrations.
 
-- [ ] **Step 2: Preserve dependency direction**
+- [x] **Step 2: Preserve dependency direction**
 
 Construct provider and research clients in startup.
 Pass the clients through existing constructor dependencies.
@@ -114,7 +114,7 @@ Use feature and integration `index.ts` files for external imports.
 Use relative imports inside each owner.
 Do not create a pass-through class for each moved file.
 
-- [ ] **Step 3: Remove HTTP errors from features**
+- [x] **Step 3: Remove HTTP errors from features**
 
 Keep each feature's safe failure code and safe detail.
 Move its existing status-selection expression into `local-transport.ts`.
@@ -131,7 +131,7 @@ Move no retry, cleanup, or terminal policy into the HTTP adapter.
 Update internal catches to test owner error types.
 Do not read a status number in a feature.
 
-- [ ] **Step 4: Check the moved owners**
+- [x] **Step 4: Check the moved owners**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:local-web`.
@@ -145,7 +145,7 @@ Report that baseline failure separately without fixing it. Stop on any other fai
 Check source-relative resource URLs after the additional integration directory.
 Do not use a successful warm build as proof that resource paths work.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

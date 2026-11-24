@@ -1,6 +1,5 @@
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckService, ConfirmationReceipt } from '@deckagent/deck'
-import { HttpError } from '@deckagent/host-api'
 import type {
   AgentRequest,
   RequestAdmission,
@@ -10,6 +9,7 @@ import type {
 } from '@deckagent/host-api'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefService } from './brief-service.ts'
+import { DeckWorkflowFailure } from './failures.ts'
 
 /** Serializes confirmation/admission per Chat without giving model tools a confirmation capability. */
 export class ConfirmationService {
@@ -45,7 +45,7 @@ export class ConfirmationService {
               Object.entries(old.receipt).find(([key]) => key === k)?.[1],
           )
         )
-          throw new HttpError(409, 'CONFIRMATION_CONFLICT')
+          throw new DeckWorkflowFailure('CONFIRMATION_CONFLICT')
         const request = this.sessions.requests.get(old.receipt.requestId)
         if (request)
           return {
@@ -61,14 +61,14 @@ export class ConfirmationService {
           }
       }
       const view = await this.briefs.get(sessionId)
-      if (view.sourceStates.some(s => s.status === 'unavailable')) throw new HttpError(409, 'SOURCE_UNAVAILABLE')
+      if (view.sourceStates.some(s => s.status === 'unavailable')) throw new DeckWorkflowFailure('SOURCE_UNAVAILABLE')
       if (
         !old &&
         (!view.current || view.current.briefId !== target.briefId || view.current.version !== target.briefVersion)
       )
-        throw new HttpError(409, 'BRIEF_STALE')
-      if (this.sessions.requests.activeFor(sessionId)) throw new HttpError(409, 'SESSION_BUSY')
-      if (!this.runtime) throw new HttpError(503, 'GENERATION_UNAVAILABLE')
+        throw new DeckWorkflowFailure('BRIEF_STALE')
+      if (this.sessions.requests.activeFor(sessionId)) throw new DeckWorkflowFailure('SESSION_BUSY')
+      if (!this.runtime) throw new DeckWorkflowFailure('GENERATION_UNAVAILABLE')
       const request: AgentRequest = {
         sessionId,
         input: 'Generate the explicitly confirmed Outline.',
@@ -79,7 +79,7 @@ export class ConfirmationService {
         old &&
         (old.selection.provider !== prepared.selection.provider || old.selection.model !== prepared.selection.model)
       )
-        throw new HttpError(409, 'GENERATION_MODEL_CHANGED')
+        throw new DeckWorkflowFailure('GENERATION_MODEL_CHANGED')
       const receipt: ConfirmationReceipt = this.decks.confirmGeneration(sessionId, target, prepared.selection)
       const admitted = await submit(request, {
         requestId: receipt.requestId,
@@ -124,17 +124,15 @@ export class ConfirmationService {
       })
       return { receipt, request: admitted }
     } catch (error) {
-      if (error instanceof HttpError) throw error
-      if (error instanceof DeckError)
-        throw new HttpError(
-          error.code === 'CONFIRMATION_INVALID'
-            ? 400
-            : error.code === 'DECK_STORAGE' || error.code === 'DECK_CORRUPT'
-              ? 500
-              : 409,
-          error.code,
-        )
-      throw new HttpError(500, 'CONFIRMATION_UNAVAILABLE')
+      if (
+        error instanceof DeckWorkflowFailure ||
+        (error instanceof Error &&
+          (error.name === 'RequestFailure' ||
+            ('status' in error && typeof error.status === 'number' && 'code' in error && typeof error.code === 'string')))
+      )
+        throw error
+      if (error instanceof DeckError) throw new DeckWorkflowFailure(error.code)
+      throw new DeckWorkflowFailure('CONFIRMATION_UNAVAILABLE')
     } finally {
       release()
       if (this.queues.get(sessionId) === tail) this.queues.delete(sessionId)
