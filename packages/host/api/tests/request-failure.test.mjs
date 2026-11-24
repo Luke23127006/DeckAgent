@@ -2,7 +2,7 @@
  * Tests: RequestController operation errors are RequestFailure instances independent of HTTP.
  * Environment: real SqliteSessionStore in a temporary directory; fake RequestRuntime replacing only the runtime boundary.
  * Run: node --test --test-reporter=tap packages/host/api/tests/request-failure.test.mjs
- * Expected values source: docs/build/refactor/codebase/plan/task-07-separate-lifecycle-errors.md (Step 1).
+ * Expected values source: docs/build/refactor/boundaries/plan/task-07-separate-lifecycle-errors.md (Step 1).
  */
 import assert from 'node:assert/strict'
 import { mkdtemp, rm } from 'node:fs/promises'

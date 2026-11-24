@@ -40,7 +40,7 @@ An executor must not select another design during a task.
 
 | Topic | Decision |
 | --- | --- |
-| Workstream | This revision is `refactor/codebase`. It does not add deck-editing, reasoning, or custom-design-system behavior. |
+| Workstream | This revision is `refactor/boundaries`. It does not add deck-editing, reasoning, or custom-design-system behavior. |
 | Comment policy | `docs/conventions/code.md` replaces the `No comments in code` decision in `docs/build/refactor/rules/plan/README.md`. Developers write comments only for the five reasons in `docs/conventions/code.md`. Lint-disable directives and TypeScript suppression comments (`@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`) remain forbidden. |
 | Boundary enforcement tools | Use `oxlint` (`eslint/no-restricted-imports`, `typescript/ban-ts-comment`, `typescript/no-explicit-any`) and `scripts/check-boundaries.mjs` built on the installed TypeScript compiler API. Do not install `dependency-cruiser`. |
 | Enforcement rollout | Tasks 01–03 install oxlint checks that pass today and `scripts/check-boundaries.mjs` with `--report` mode. Task 17 extends the checker for Browser features and integrations and removes `tsconfig.base.json` source aliases. It also enables strict `check:boundaries` in CI and updates the Enforcement table in Project Structure [[1]](#ref-1). |

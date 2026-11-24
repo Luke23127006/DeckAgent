@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add `docs/build/refactor/module-design/README.md` with static codebase measurements, the deep-module direction, a three-layer divide-and-conquer diagnosis method, revisable-convention guidance, and priority candidate areas.
 - Add `@deckagent/host-contracts` (`packages/host/contracts`) with browser-safe wire DTOs, boundary decoders (`decodeAttachment`, `requestEvent`, `decodeBriefView`, `decodeBoundProposal`, `decodeGeneration`, `decodeImageReview`, `isDesignSnapshot`), private Zod wire validation for Brief drafts, and portable-document decoder re-exports.
 - Add Wave 0 boundary checks (`scripts/check-boundaries.mjs`, `check:boundaries` / `check:boundaries:report`) and enable TypeScript safety and import-restriction rules in `.oxlintrc.json` with negative fixture tests.
 - Add the codebase refactor plan with 18 tasks across ten waves. Specify safety-net checks, file ownership, contracts, migration order, regression checks and deferred behavior work.
@@ -28,6 +29,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Rename `docs/build/refactor/codebase/` to `docs/build/refactor/boundaries/` and update active references in `docs/build/README.md`, `docs/build/refactor/boundaries/plan/README.md`, `packages/host/api/tests/request-failure.test.mjs`, and `tests/check-boundaries.test.mjs`.
 - Move 62 tests and their fixtures from `tests/` to behavior owners (`apps/web/tests/`, `packages/*/*/tests/`, and `e2e/`), add `apps/web/tests/fixtures/browser-driver.mjs` and `@deckagent/local-web` package exports, remove test-only re-exports from `apps/web/src/index.ts` and the unused `apps/web/src/browser/index.ts` root bundle, and include `e2e/` in `lint` and `packages/host/api/tests/request-failure.test.mjs` in `test:model-requests`.
 - Separate Browser transport (`apps/web/src/browser/transport/`) from UI features (`apps/web/src/browser/features/{chats,deck,attachments,providers,research,workspaces,requests}/`) with feature and transport `index.ts` entry points, keeping root shell modules (`boot.ts`, `index.ts`, `dom.ts`, `layout.ts`, `motion.ts`, `theme.ts`) and compiled bundle URLs unchanged.
 - Decouple `@deckagent/deck` from concrete `@deckagent/html-format`: move the legacy HTML validation policy (`validateLegacySlideHtml`) into `@deckagent/html-format` (`packages/presentation/html/src/legacy-policy.ts`), require explicit `formats` and `legacyHtmlPolicy` injection on `DeckOptions` (removing the implicit `HtmlFormatAdapter` fallback and `@deckagent/html-format` dependency from `@deckagent/deck`), wire both at startup in `apps/web/src/index.ts`, and pass `RequestPreparationFailure` through `ConfirmationService` in `apps/web/src/features/deck/confirmation-service.ts`.

@@ -6,7 +6,7 @@
  * - Removing escapesBrowserIntoHost check caused the Browser-to-Local-Host relative import test to fail.
  * - Removing the dynamic import() branch in extractImports caused the dynamic private import test to fail.
  * Run: node --test --test-reporter=tap tests/check-boundaries.test.mjs
- * Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/build/refactor/codebase/plan/task-03-boundary-checker.md.
+ * Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/build/refactor/boundaries/plan/task-03-boundary-checker.md.
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
