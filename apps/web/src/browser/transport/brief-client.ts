@@ -1,6 +1,6 @@
 import { decodeBriefView } from '@deckagent/host-contracts'
 import type { BriefDraft, BriefView, InterviewState } from '@deckagent/host-contracts'
-export { decodeBriefView, isDesignSnapshot } from '@deckagent/host-contracts'
+export { decodeBriefView } from '@deckagent/host-contracts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()

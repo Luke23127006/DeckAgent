@@ -1,5 +1,6 @@
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckService, ConfirmationReceipt } from '@deckagent/deck'
+import { RequestFailure } from '@deckagent/host-api'
 import type {
   AgentRequest,
   RequestAdmission,
@@ -126,9 +127,9 @@ export class ConfirmationService {
     } catch (error) {
       if (
         error instanceof DeckWorkflowFailure ||
+        error instanceof RequestFailure ||
         (error instanceof Error &&
-          (error.name === 'RequestFailure' ||
-            error.name === 'RequestPreparationFailure' ||
+          (error.name === 'RequestPreparationFailure' ||
             ('status' in error && typeof error.status === 'number' && 'code' in error && typeof error.code === 'string')))
       )
         throw error

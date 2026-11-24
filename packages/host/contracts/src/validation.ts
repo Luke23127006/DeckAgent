@@ -232,7 +232,7 @@ function theme(v: unknown, partial = false): boolean {
   )
 }
 
-export function isDesignSnapshot(v: unknown): v is DesignSnapshot {
+function isDesignSnapshot(v: unknown): v is DesignSnapshot {
   return (
     object(v) &&
     only(v, ['format', 'designSystem', 'template', 'theme', 'rules', 'brandAssets', 'viewport', 'fingerprint']) &&
@@ -416,7 +416,7 @@ function selection(v: unknown): ImageSelection {
   }
 }
 
-export function decodeImageReview(v: unknown): readonly OutlineImageReview[] {
+function decodeImageReview(v: unknown): readonly OutlineImageReview[] {
   if (!Array.isArray(v) || v.length > 32) return invalid()
   return v.map(item => {
     if (

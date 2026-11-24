@@ -48,7 +48,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Check the new structure**
+- [x] **Step 1: Check the new structure**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 lint`.
@@ -58,7 +58,7 @@ Expected: all commands exit with code 0.
 Boundary output contains `check-boundaries: 0 violation(s)`.
 Document output contains `0 error(s)`.
 
-- [ ] **Step 2: Run the affected regression suites**
+- [x] **Step 2: Run the affected regression suites**
 
 Run each command separately:
 
@@ -89,7 +89,7 @@ Report that pre-existing baseline failure separately without treating it as a re
 Compare counts with the Wave 0 baseline table in `README.md` and the added tests (`test:layouts` and `test:images` are subsets of `test:deck-review` and `test:generation-publication`).
 Use sequential suites to avoid shared-state interference.
 
-- [ ] **Step 3: Review authority and compatibility**
+- [x] **Step 3: Review authority and compatibility**
 
 Check that transport maps errors without selecting terminal status.
 Check that runtime completion remains evidence for Request Lifecycle.
@@ -103,7 +103,7 @@ Run the review-change workflow with its specified independent reviewer.
 Provide the diff, conventions, actual command output, and fault evidence.
 This review may report findings. It cannot edit implementation during review.
 
-- [ ] **Step 4: Report the limits of completion**
+- [x] **Step 4: Report the limits of completion**
 
 Report only completed structural tasks as complete.
 Report remaining boot decomposition and constant waits separately.
@@ -112,7 +112,7 @@ A local fake-provider run does not prove live-provider behavior.
 A skipped browser test does not prove Browser behavior.
 Do not claim that all new use cases work after structural refactoring.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

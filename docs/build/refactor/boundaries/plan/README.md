@@ -195,7 +195,7 @@ Each relevant task names the suite or supplies its new test code.
 | 15 | 7 | Done | [Move tests to the owners of their behavior](task-15-move-tests-to-owners.md) |
 | 16 | 7 | Done | [Remove constant waits from the request tests](task-16-remove-fixed-test-waits.md) |
 | 17 | 8 | Done | [Enforce imports and dependency direction](task-17-enforce-dependency-boundaries.md) |
-| 18 | 9 | Pending | [Check the structural refactor](task-18-verify-structural-refactor.md) |
+| 18 | 9 | Done | [Check the structural refactor](task-18-verify-structural-refactor.md) |
 
 ## Deferred behavior work
 

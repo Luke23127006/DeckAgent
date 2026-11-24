@@ -1,8 +1,9 @@
 /**
  * Tests: RequestController operation errors are RequestFailure instances independent of HTTP.
  * Environment: real SqliteSessionStore in a temporary directory; fake RequestRuntime replacing only the runtime boundary.
+ * Fault check: omitting the closed-state guard in RequestController.submit causes submit to invoke runtime.prepare and admit a request, failing assert.rejects and prepares === 0.
  * Run: node --test --test-reporter=tap packages/host/api/tests/request-failure.test.mjs
- * Expected values source: docs/build/refactor/boundaries/plan/task-07-separate-lifecycle-errors.md (Step 1).
+ * Expected values source: docs/conventions/project-structure.md (Request Lifecycle independence from HTTP) and docs/UCs/requests.md (FR-019).
  */
 import assert from 'node:assert/strict'
 import { mkdtemp, rm } from 'node:fs/promises'

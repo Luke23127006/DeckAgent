@@ -2,7 +2,7 @@
  * Tests: waitFor returns the first truthy condition result and propagates errors thrown by the condition.
  * Environment: pure Node.js unit test with in-memory condition callbacks and no external services or fake clocks.
  * Run: node --test --test-reporter=tap apps/web/tests/wait-for.test.mjs
- * Expected values source: docs/build/refactor/boundaries/plan/task-16-remove-fixed-test-waits.md (Step 1).
+ * Expected values source: docs/conventions/testware.md (deterministic condition-based waits).
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'

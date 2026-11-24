@@ -71,7 +71,5 @@ export {
   decodeBoundProposal,
   decodeBriefView,
   decodeGeneration,
-  decodeImageReview,
-  isDesignSnapshot,
   requestEvent,
 } from './validation.ts'
