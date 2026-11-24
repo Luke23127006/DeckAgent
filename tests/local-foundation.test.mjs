@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { StorageError, resolveStorageRoot, startLocalWeb } from '../apps/local-web/lib/index.js'
+import { StorageError, resolveStorageRoot, startLocalWeb } from '../apps/web/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -339,7 +339,7 @@ test('bad Application Storage fails clearly and leaves every file unchanged', as
 
 test('the Local Web production path loads no custom Agent Loop or Cordis runtime', async () => {
   for (const name of ['index.js', 'cli.js']) {
-    const bundle = await readFile(join(root, 'apps', 'local-web', 'lib', name), 'utf8')
+    const bundle = await readFile(join(root, 'apps', 'web', 'lib', name), 'utf8')
     for (const legacy of [
       '@deepseek-ai/cordis',
       '@deckagent/agent-runtime',
@@ -350,7 +350,7 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
     ])
       assert.equal(bundle.includes(legacy), false, `${name} must not reference ${legacy}`)
   }
-  const manifest = JSON.parse(await readFile(join(root, 'apps', 'local-web', 'package.json'), 'utf8'))
+  const manifest = JSON.parse(await readFile(join(root, 'apps', 'web', 'package.json'), 'utf8'))
   assert.deepEqual(
     Object.keys(manifest.dependencies).filter(name => /cordis|agent-runtime|presentation-tools/.test(name)),
     [],
@@ -359,7 +359,7 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
   const sourceBundle = await readFile(join(root, 'packages', 'tools', 'filesystem', 'lib', 'index.js'), 'utf8')
   assert.equal(sourceBundle.includes('@deckagent/agent-runtime'), false)
   assert.equal(sourceBundle.includes('@deepseek-ai/cordis'), false)
-  const sourceComposition = await readFile(join(root, 'apps', 'local-web', 'src', 'source-tools.ts'), 'utf8')
+  const sourceComposition = await readFile(join(root, 'apps', 'web', 'src', 'source-tools.ts'), 'utf8')
   assert.equal(
     sourceComposition.includes('registerFileTools'),
     false,

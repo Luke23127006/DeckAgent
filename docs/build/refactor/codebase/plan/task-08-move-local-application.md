@@ -93,14 +93,14 @@ apps/local-web/src/opencode/runtime.ts -> apps/web/src/opencode/runtime.ts
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move the application**
+- [x] **Step 1: Move the application**
 
 Move tracked files with `git mv`.
 Do not move `node_modules`, generated `lib`, or downloaded OpenCode resources.
 Do not rename the package during this task.
 Keep every source export and function body unchanged.
 
-- [ ] **Step 2: Update executable paths**
+- [x] **Step 2: Update executable paths**
 
 Change the root TypeScript reference from `apps/local-web` to `apps/web`.
 Change both startup scripts to the new CLI path.
@@ -112,12 +112,12 @@ Do not edit `docs/00-old/`.
 Do not rewrite historical plans to describe the new layout.
 For an active document, replace only a path that instructs a reader to run current code.
 
-- [ ] **Step 3: Refresh workspace metadata**
+- [x] **Step 3: Refresh workspace metadata**
 
 Run `corepack pnpm@11.28.5 install --lockfile-only --offline`.
 Expected: exit code 0. The importer path changes without external version changes.
 
-- [ ] **Step 4: Check startup and packaging**
+- [x] **Step 4: Check startup and packaging**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:env-startup`.
@@ -128,7 +128,7 @@ Run `rg -n "apps/local-web" package.json tsconfig.json scripts tests .gitignore`
 Expected: exit code 1 with no matches.
 Do not add a compatibility directory that redirects to the new application.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

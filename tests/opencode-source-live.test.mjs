@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { startLocalWeb } from '../apps/local-web/lib/index.js'
+import { startLocalWeb } from '../apps/web/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 import { MemoryCredentials, finished, waitFor } from './fixtures/b02-helpers.mjs'
 import { noisyAttachmentPng } from './fixtures/attachment-fixtures.mjs'

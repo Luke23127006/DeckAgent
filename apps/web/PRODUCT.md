@@ -61,7 +61,7 @@ Undecided (VISION open questions): whether a deck has one author by the nature o
 ## Evidence on Hand
 
 - Product spec: `docs/spec/` (use cases, requirements, business rules, backlog).
-- Sample slides for the deck canvas: `apps/local-web/src/sample-slides.ts`.
+- Sample slides for the deck canvas: `apps/web/src/sample-slides.ts`.
 - Absent: user research, testimonials, customers, benchmarks and usage data. Do not make any up.
 
 ## Product Principles

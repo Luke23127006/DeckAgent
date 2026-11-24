@@ -6,7 +6,7 @@ import test from 'node:test'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
-import { startLocalWeb } from '../apps/local-web/lib/index.js'
+import { startLocalWeb } from '../apps/web/lib/index.js'
 import { DeckClient } from '../packages/client/runtime/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
@@ -26,7 +26,7 @@ test('CLI imports the explicit confirmed-deck fixture without a model or cloud r
   const child = spawn(
     process.execPath,
     [
-      'apps/local-web/lib/cli.js',
+      'apps/web/lib/cli.js',
       '--confirmed-deck',
       'config/deck.confirmed.example.json',
       '--data-dir',

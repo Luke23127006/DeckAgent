@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
-import { CommonsImages } from '../apps/local-web/lib/index.js'
+import { CommonsImages } from '../apps/web/lib/index.js'
 
 const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
 const page = (license, url = 'https://upload.wikimedia.org/wikipedia/commons/example.png') => ({

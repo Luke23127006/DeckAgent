@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { startLocalWeb } from '../../apps/local-web/lib/index.js'
+import { startLocalWeb } from '../../apps/web/lib/index.js'
 import { HostClient } from '../../packages/client/runtime/lib/index.js'
 
 export const fakeCli = resolve(fileURLToPath(new URL('./fake-opencode.mjs', import.meta.url)))

@@ -28,6 +28,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move the local application from `apps/local-web` to `apps/web` while keeping `@deckagent/local-web`, and update startup scripts, OpenCode packaging paths, TypeScript references, lockfile importers, and test paths.
 - Separate Request Lifecycle operation errors (`RequestFailure`) from HTTP status mapping (`requestFailureResponse` in Host transport), switch `AttachmentService.requestStore().admit` preconditions to `SessionError`, and add `packages/host/api/tests/request-failure.test.mjs`.
 - Move `RequestStore` and `ApprovalStep` contracts into `@deckagent/session-persistence` (`packages/session/persistence/src/request-store.ts`), update `RequestController` and `AttachmentService` to import them from Session, and keep a temporary `RequestStore` re-export on `@deckagent/host-api`.
 - Rewrite `docs/conventions/code.md` from a plan of six empty sections into the rules of production code. The rules cover naming, TypeScript, comments, contracts, runtime validation, data representation, state, async lifetime and error handling. The file also lists the patterns that DeckAgent does not require. Each rule names the tool that stops it.

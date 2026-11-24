@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
-import { pinnedVersion, startLocalWeb } from '../apps/local-web/lib/index.js'
+import { pinnedVersion, startLocalWeb } from '../apps/web/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 import { MemoryCredentials, filesContaining, finished, waitFor } from './fixtures/b02-helpers.mjs'
 

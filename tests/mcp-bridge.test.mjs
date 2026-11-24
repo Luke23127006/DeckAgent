@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import * as local from '../apps/local-web/lib/index.js'
+import * as local from '../apps/web/lib/index.js'
 
 const tools = {
   context: 'fixture',

@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { StorageError, startLocalWeb } from '../apps/local-web/lib/index.js'
+import { StorageError, startLocalWeb } from '../apps/web/lib/index.js'
 import { HostClient } from '../packages/client/runtime/lib/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 

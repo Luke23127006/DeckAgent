@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import { MemoryDraftStore, SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
-import * as local from '../apps/local-web/lib/index.js'
+import * as local from '../apps/web/lib/index.js'
 import { AttachmentParser } from '../packages/tools/filesystem/lib/index.js'
 
 async function fixture(t) {
