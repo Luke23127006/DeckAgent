@@ -40,13 +40,13 @@ docs/build/<workstream>/<topic>/plan/
 | --- | --- | --- |
 | `feature` | The file name of the use case in `docs/UCs/`, without `.md` | For `docs/UCs/upload.md`, the topic is `upload` |
 | `fix` | `issue-<number>` of the GitHub Issue | `issue-58` |
-| `refactor` | One value from the next column | `rules`: conventions and the checks that enforce them. `codebase`: source structure, module boundaries, comments in code. `docs`: structure of the documents in `docs/`. `UCs`: migration and structure of the use case files in `docs/UCs/` |
+| `refactor` | One value from the next column | `rules`: conventions and the checks that enforce them. `boundaries`: source ownership, contracts, and dependency boundaries. `module-design`: internal module shape, code hygiene, testware alignment, and flow lookup maps. `docs`: structure of the documents in `docs/`. `UCs`: migration and structure of the use case files in `docs/UCs/` |
 | `ops` | One value from the next column | `ci`: CI workflows. `release`: versions and packages. `runtime`: the runtime environment and its provisioning |
 
 Get the workstream and the topic from the user request and from these tables. Ask the user before you write files in these cases:
 
 - The change fits two workstreams. For example, the plan adds behavior and also changes CI.
-- No table row gives the topic. For example, a `refactor` plan changes a part of the repository that `rules`, `codebase` and `docs` do not include.
+- No table row gives the topic. For example, a `refactor` plan changes a part of the repository that `rules`, `boundaries`, `module-design` and `docs` do not include.
 - A `feature` plan has no use case file in `docs/UCs/`.
 - A `fix` plan has no GitHub Issue.
 
