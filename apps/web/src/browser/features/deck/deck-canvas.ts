@@ -1,6 +1,6 @@
-import type { DeckClient } from './deck-client.ts'
+import type { DeckClient } from '../../transport/index.ts'
 import { DeckModel } from './deck-model.ts'
-import { button, element } from './dom.ts'
+import { button, element } from '../../dom.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
 
 /** Published HTML lays out at this viewport; every viewer scales the same canvas without reflow. */

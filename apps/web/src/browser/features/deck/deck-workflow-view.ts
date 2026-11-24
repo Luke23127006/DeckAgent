@@ -1,6 +1,6 @@
 import type { DeckRequest, OutlineProposal } from '@deckagent/host-contracts'
-import type { BriefClient } from './brief-client.ts'
-import { button, element } from './dom.ts'
+import type { BriefClient } from '../../transport/index.ts'
+import { button, element } from '../../dom.ts'
 import { briefDetails } from './brief-view.ts'
 
 /** Collects explicit user choices; only Host snapshots determine versions and locks. */

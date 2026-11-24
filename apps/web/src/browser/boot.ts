@@ -12,25 +12,26 @@ import type {
   WebSettings,
   WorkspaceList,
 } from '@deckagent/host-contracts'
-import { HostClient, HostRequestError, isActive } from './host-client.ts'
-import { ManagementClient } from './management-client.ts'
+import {
+  BriefClient,
+  ConfirmationClient,
+  DeckClient,
+  HostClient,
+  HostRequestError,
+  ManagementClient,
+  OutlineClient,
+  isActive,
+} from './transport/index.ts'
 import { button, element } from './dom.ts'
-import { modelPicker } from './model-picker.ts'
-import { settingsPanel } from './settings-panel.ts'
-import { mountDeckTab } from './deck-tab.ts'
-import { ConversationView } from './conversation-view.ts'
-import { DeckClient } from './deck-client.ts'
-import { mountDeckCanvas } from './deck-canvas.ts'
-import { OutlineClient } from './outline-client.ts'
-import { failureFeedback } from './request-feedback.ts'
+import { modelPicker, settingsPanel } from './features/providers/index.ts'
+import { DeckWorkflowView, mountDeckCanvas, mountDeckTab } from './features/deck/index.ts'
+import { ConversationView } from './features/chats/index.ts'
+import { failureFeedback } from './features/requests/index.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
-import { workspaceView } from './workspace-view.ts'
-import { AttachmentDraftView } from './attachment-view.ts'
-import { researchView } from './research-view.ts'
-import { BriefClient } from './brief-client.ts'
-import { ConfirmationClient } from './confirmation-client.ts'
-import { DeckWorkflowView } from './deck-workflow-view.ts'
+import { workspaceView } from './features/workspaces/index.ts'
+import { AttachmentDraftView } from './features/attachments/index.ts'
+import { researchView } from './features/research/index.ts'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {

@@ -1,5 +1,5 @@
 import type { DeckSnapshot } from '@deckagent/host-contracts'
-import type { DeckClient } from './deck-client.ts'
+import type { DeckClient } from '../../transport/index.ts'
 
 export interface DeckViewState {
   readonly snapshot?: DeckSnapshot

@@ -1,5 +1,5 @@
 import { button, element } from './dom.ts'
-import type { ManagementClient } from './management-client.ts'
+import type { ManagementClient } from './transport/index.ts'
 
 type Theme = 'light' | 'dark' | 'system'
 

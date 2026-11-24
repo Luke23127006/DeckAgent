@@ -1,4 +1,4 @@
-import { element } from './dom.ts'
+import { element } from '../../dom.ts'
 
 /** A small text-only formatting subset. Raw HTML and images never become application DOM. */
 function inline(parent: HTMLElement, text: string): void {

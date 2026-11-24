@@ -1,4 +1,4 @@
-import { element } from './dom.ts'
+import { element } from '../../dom.ts'
 
 /** Shared right-panel divider. Width persistence stays with each panel's existing layout owner. */
 export function mountDeckResizer(container: HTMLElement, initial: number, save: (width: number) => void): void {

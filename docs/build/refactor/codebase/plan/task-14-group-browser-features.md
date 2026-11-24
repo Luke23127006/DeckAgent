@@ -53,7 +53,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move transport files**
+- [x] **Step 1: Move transport files**
 
 Move these files from `apps/web/src/browser/` to `apps/web/src/browser/transport/`:
 `host-client.ts`, `management-client.ts`, `deck-client.ts`, `outline-client.ts`,
@@ -61,7 +61,7 @@ Move these files from `apps/web/src/browser/` to `apps/web/src/browser/transport
 Keep the remaining boundary decoder code in transport.
 The pure extracted wire validators remain in host/contracts.
 
-- [ ] **Step 2: Move UI files**
+- [x] **Step 2: Move UI files**
 
 Use this table. All paths are relative to `apps/web/src/browser/`.
 
@@ -87,7 +87,7 @@ Keep `boot.ts`, `dom.ts`, `layout.ts`, `motion.ts`, and `theme.ts` at Browser ro
 These files own Browser assembly, DOM construction, and shell behavior.
 Do not add a shared or common folder.
 
-- [ ] **Step 3: Update imports and output**
+- [x] **Step 3: Update imports and output**
 
 Use feature entry points for imports between features.
 Conversation UI can use Deck view operations.
@@ -100,7 +100,7 @@ Do not extract a new global store.
 Retain the existing compiled asset URLs through bundling.
 The root Browser index remains only until its test consumers move.
 
-- [ ] **Step 4: Check Browser behavior**
+- [x] **Step 4: Check Browser behavior**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:tools-browser`.
@@ -110,7 +110,7 @@ Expected: build exits with code 0. Suites print `# fail 0`.
 Inspect reconnect, failed-history opening, draft switching, outline confirmation, and deck selection assertions.
 A file move does not prove that boot's remaining state coordination is fully separated.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

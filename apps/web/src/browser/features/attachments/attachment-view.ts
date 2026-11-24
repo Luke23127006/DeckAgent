@@ -1,5 +1,5 @@
 import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
-import { button, element } from './dom.ts'
+import { button, element } from '../../dom.ts'
 
 const reasons: Readonly<Record<string, string>> = {
   ATTACHMENT_UNREADABLE: 'Không đọc được tệp. Kiểm tra tệp hoặc cung cấp bản có chữ.',

@@ -1,8 +1,15 @@
-export { HostClient, HostRequestError, isActive, requestEvent } from './host-client.ts'
+export {
+  BriefClient,
+  ConfirmationClient,
+  DeckClient,
+  HostClient,
+  HostRequestError,
+  ManagementClient,
+  ManagementError,
+  OutlineClient,
+  decodeBriefView,
+  isActive,
+  requestEvent,
+} from './transport/index.ts'
 export { LayoutSlots } from './layout.ts'
-export { DeckClient } from './deck-client.ts'
-export { DeckModel } from './deck-model.ts'
-export { OutlineClient } from './outline-client.ts'
-export { BriefClient, decodeBriefView } from './brief-client.ts'
-export { ConfirmationClient } from './confirmation-client.ts'
-export { ManagementClient, ManagementError } from './management-client.ts'
+export { DeckModel } from './features/deck/index.ts'

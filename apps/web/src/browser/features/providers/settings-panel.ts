@@ -1,7 +1,7 @@
 import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
-import { ManagementError } from './management-client.ts'
-import type { ManagementClient } from './management-client.ts'
-import { button, element, field } from './dom.ts'
+import { ManagementError } from '../../transport/index.ts'
+import type { ManagementClient } from '../../transport/index.ts'
+import { button, element, field } from '../../dom.ts'
 
 export function settingsPanel(
   client: ManagementClient,

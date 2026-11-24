@@ -1,7 +1,7 @@
 import type { OutlineProposal } from '@deckagent/host-contracts'
-import { button, element } from './dom.ts'
+import { button, element } from '../../dom.ts'
 import { briefDetails, briefFieldLabel, sourceReferences } from './brief-view.ts'
-import { imageFailure } from './image-review-client.ts'
+import { imageFailure } from '../../transport/index.ts'
 
 export type OutlineAction = (type: 'confirm' | 'cancel', proposal: OutlineProposal) => void
 

@@ -1,6 +1,6 @@
 import type { WebSettings } from '@deckagent/host-contracts'
-import { button, element, field } from './dom.ts'
-import type { ManagementClient } from './management-client.ts'
+import { button, element, field } from '../../dom.ts'
+import type { ManagementClient } from '../../transport/index.ts'
 
 const messages: Readonly<Record<string, string>> = {
   RESEARCH_FREE_ONLY: 'Chỉ nhận tài khoản Tavily Researcher miễn phí, không có PAYG. Kiểm tra gói tại Tavily.',

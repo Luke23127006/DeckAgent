@@ -7,12 +7,12 @@ import type {
   StoredActivity,
   StoredRequest,
 } from '@deckagent/host-contracts'
-import { button, element } from './dom.ts'
-import { OutlineView } from './outline-view.ts'
+import { button, element } from '../../dom.ts'
+import { OutlineView } from '../deck/index.ts'
+import type { OutlineAction } from '../deck/index.ts'
 import { messageContent } from './message-content.ts'
-import type { OutlineAction } from './outline-view.ts'
-import { isActive } from './host-client.ts'
-import { failureFeedback, offersSettings, requestFeedback } from './request-feedback.ts'
+import { isActive } from '../../transport/index.ts'
+import { failureFeedback, offersSettings, requestFeedback } from '../requests/index.ts'
 
 interface ActivityRow {
   readonly node: HTMLDetailsElement

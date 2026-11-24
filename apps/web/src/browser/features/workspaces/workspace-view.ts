@@ -1,7 +1,7 @@
 import type { WorkspaceList, WorkspaceView } from '@deckagent/host-contracts'
-import { button, element, field } from './dom.ts'
-import { ManagementError } from './management-client.ts'
-import type { ManagementClient } from './management-client.ts'
+import { button, element, field } from '../../dom.ts'
+import { ManagementError } from '../../transport/index.ts'
+import type { ManagementClient } from '../../transport/index.ts'
 
 const refusals: Readonly<Record<string, string>> = {
   'drive-root': 'đây là thư mục gốc của ổ đĩa',

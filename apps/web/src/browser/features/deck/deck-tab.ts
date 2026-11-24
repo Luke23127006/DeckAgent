@@ -1,4 +1,4 @@
-import { button, element } from './dom.ts'
+import { button, element } from '../../dom.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
 
 /** Sample-only tab. It has no Session–Deck mapping or publication/storage responsibilities. */

@@ -1,5 +1,5 @@
 import type { WebSettings } from '@deckagent/host-contracts'
-import { button, element } from './dom.ts'
+import { button, element } from '../../dom.ts'
 
 /** One accessible view over the existing selection control; choosing never submits a request. */
 export function modelPicker(select: HTMLSelectElement, manage: () => void, add: () => void) {

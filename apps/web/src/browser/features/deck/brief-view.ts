@@ -1,5 +1,5 @@
 import type { BriefRecord, BriefSourceRef } from '@deckagent/host-contracts'
-import { element } from './dom.ts'
+import { element } from '../../dom.ts'
 
 const fieldLabels: Readonly<Record<string, string>> = {
   topic: 'Chủ đề',
