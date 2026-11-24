@@ -15,7 +15,7 @@ Read this file to run the full Slice 2A exit gate across all non-live test suite
 
 ## Steps
 
-- [ ] **Step 1: Run build and static quality gates**
+- [x] **Step 1: Run build and static quality gates**
 
   Run:
 
@@ -25,7 +25,7 @@ Read this file to run the full Slice 2A exit gate across all non-live test suite
 
   Expected: exit code `0` with 0 errors across all five commands.
 
-- [ ] **Step 2: Run all 5 root tool test files**
+- [x] **Step 2: Run all 5 root tool test files**
 
   Run:
 
@@ -35,7 +35,7 @@ Read this file to run the full Slice 2A exit gate across all non-live test suite
 
   Expected: exit code `0`, `# fail 0`, `# skipped 0`.
 
-- [ ] **Step 3: Run all 18 non-live package test suites**
+- [x] **Step 3: Run all 18 non-live package test suites**
 
   Run each suite sequentially and record exact `# tests`, `# pass`, `# fail`, and `# skipped` counts:
 
@@ -62,7 +62,7 @@ Read this file to run the full Slice 2A exit gate across all non-live test suite
 
   **STOP** if any suite fails or skips a test. Report the exact failing test name and error without modifying production code.
 
-- [ ] **Step 4: Measure Slice 2A quantitative metrics delta**
+- [x] **Step 4: Measure Slice 2A quantitative metrics delta**
 
   Run:
 
@@ -83,7 +83,7 @@ Read this file to run the full Slice 2A exit gate across all non-live test suite
 
   Expected: `packages/host/contracts/src/index.ts` dropped from `65`, `packages/host/api/src/index.ts` is `22` (down from `56`), and `packages/session/persistence/src/index.ts` dropped from `32`.
 
-- [ ] **Step 5: Mark task done, write the Slice 2A exit report, and commit and push**
+- [x] **Step 5: Mark task done, write the Slice 2A exit report, and commit and push**
 
   1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 12 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` with a link to `../reports/task-12-verify-slice-2a-exit.md`.
   2. Create `docs/build/refactor/module-design/reports/task-12-verify-slice-2a-exit.md` with:

@@ -92,7 +92,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 9 | Done | [Refactor session/persistence and move MemoryDraftStore to apps/web](task-09-refactor-session-persistence.md) ([report](../reports/task-09-refactor-session-persistence.md)) |
 | 10 | Done | [Refactor host/contracts validation and narrow exports](task-10-refactor-host-contracts.md) ([report](../reports/task-10-refactor-host-contracts.md)) |
 | 11 | Done | [Refactor host/api boundaries, routes, and exports](task-11-refactor-host-api.md) ([report](../reports/task-11-refactor-host-api.md)) |
-| 12 | Pending | [Check Slice 2A exit gate and rescan metrics](task-12-verify-slice-2a-exit.md) |
+| 12 | Done | [Check Slice 2A exit gate and rescan metrics](task-12-verify-slice-2a-exit.md) ([report](../reports/task-12-verify-slice-2a-exit.md)) |
 
 ## Next revision
 
