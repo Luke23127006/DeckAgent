@@ -31,6 +31,7 @@ import {
 } from './local-transport.ts'
 import { ProviderStore } from './features/providers/index.ts'
 import type { ProviderConnection, ProviderStoreOptions } from './features/providers/index.ts'
+import { createRequestRuntime } from './features/requests/index.ts'
 import { listModels } from './integrations/providers/index.ts'
 import { defaultCredentialStore } from './integrations/credentials/index.ts'
 import type { CredentialStore } from './integrations/credentials/index.ts'
@@ -206,24 +207,35 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     )
     providers = catalog
     await catalog.load(options.connections, initial)
-    const runtime = new OpenCodeRuntime(
+    const openCode = new OpenCodeRuntime(
       await findExecutable(
         options.openCode?.executable ?? (process.env.DECKAGENT_OPENCODE?.trim() || undefined),
         process.env,
         options.openCode?.resourceDir ?? fileURLToPath(new URL('../resources/opencode/', import.meta.url)),
       ),
       join(layout.files, 'runtime', 'opencode'),
-      store,
-      catalog,
+      {
+        read: sessionId => store.read(sessionId),
+        requests: sessionId => store.requests.list(sessionId),
+        request: requestId => store.requests.get(requestId),
+        binding: sessionId => store.requests.binding(sessionId),
+        bind: binding => store.requests.bind(binding),
+        unbind: sessionId => store.requests.unbind(sessionId),
+      },
       options.openCode,
     )
-    await runtime.initialize()
+    await openCode.initialize()
+    const runtime = createRequestRuntime({
+      sessions: store,
+      providers: catalog,
+      runtime: openCode,
+    })
     const settings = (): WebSettings => ({
       research: research.settings(),
       providers: catalog.providerSettings(),
       persistentKeys: catalog.persistentKeys,
       builtIns: catalog.builtIns,
-      runtime: runtime.availability(),
+      runtime: openCode.availability(),
     })
     const drafts = new MemoryDraftStore()
     const research = new ResearchService(

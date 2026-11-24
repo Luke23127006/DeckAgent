@@ -59,7 +59,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Extract preparation policy**
+- [x] **Step 1: Extract preparation policy**
 
 Move chat existence, readable-history, selectable-model, and provider-snapshot checks into `features/requests/prepare-runtime.ts`.
 Retain all current failure codes.
@@ -77,7 +77,7 @@ Keep CHAT_UNREADABLE and NO_SELECTABLE_MODEL at 409.
 Keep runtime availability errors at 503.
 The integration reports runtime failures with codes and safe detail only.
 
-- [ ] **Step 2: Narrow persistence access**
+- [x] **Step 2: Narrow persistence access**
 
 Declare RuntimeSessionAccess in the integration contract.
 Wire its operations through public Session operations in startup.
@@ -85,7 +85,7 @@ The runtime receives this contract instead of SqliteSessionStore.
 Keep native-session binding as Session-owned durable data.
 Do not put native session IDs in wire DTOs.
 
-- [ ] **Step 3: Preserve runtime recovery**
+- [x] **Step 3: Preserve runtime recovery**
 
 Keep the current resume guards: chat, provider, model, context, and last completed request.
 Keep the existing retry only when the failed resume reports no work.
@@ -96,7 +96,7 @@ Request Lifecycle invokes that callback after a saved completed request.
 Keep version checking, isolated folders, process cancellation, event parsing, and output limits in the integration.
 Translate integration failures without HTTP status numbers.
 
-- [ ] **Step 4: Check runtime isolation**
+- [x] **Step 4: Check runtime isolation**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:model-requests`.
@@ -106,7 +106,7 @@ Expected: build exits with code 0. Suites print `# fail 0`.
 Use the fake CLI fixtures. Do not make paid provider calls.
 Check source imports no longer name SqliteSessionStore or HttpError inside the OpenCode integration.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

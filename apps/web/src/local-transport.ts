@@ -13,6 +13,8 @@ import { ChatWorkflowError } from './features/chats/index.ts'
 import type { ChatOperations, ChatWorkflowErrorCode } from './features/chats/index.ts'
 import { DeckWorkflowFailure } from './features/deck/index.ts'
 import { ProviderFailure } from './features/providers/index.ts'
+import { RequestPreparationFailure } from './features/requests/index.ts'
+import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { ResearchFailure } from './features/research/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
 import { WorkspaceWorkflowError } from './features/workspaces/index.ts'
@@ -58,6 +60,15 @@ const providerStatus: Readonly<Record<string, number>> = {
   SETTINGS_STORAGE: 500,
   CREDENTIAL_NOT_SAVED: 500,
   CREDENTIAL_UNAVAILABLE: 500,
+}
+
+const requestPreparationStatus: Readonly<Record<RequestPreparationFailureCode, number>> = {
+  SESSION_NOT_FOUND: 404,
+  CHAT_UNREADABLE: 409,
+  NO_SELECTABLE_MODEL: 409,
+  SESSION_UNAVAILABLE: 500,
+  RUNTIME_UNAVAILABLE: 503,
+  RUNTIME_VERSION_UNSUPPORTED: 503,
 }
 
 const researchStatus: Readonly<Record<string, number>> = {
@@ -163,6 +174,13 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
   if (error instanceof ProviderFailure) {
     return {
       status: providerStatus[error.code] ?? 500,
+      code: error.code,
+      ...(error.detail ? { detail: error.detail } : {}),
+    }
+  }
+  if (error instanceof RequestPreparationFailure) {
+    return {
+      status: requestPreparationStatus[error.code],
       code: error.code,
       ...(error.detail ? { detail: error.detail } : {}),
     }

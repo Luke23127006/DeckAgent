@@ -3,18 +3,11 @@ import { constants } from 'node:fs'
 import { access, mkdir, stat } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { delimiter, isAbsolute, join } from 'node:path'
-import { HttpError } from '@deckagent/host-api'
-import type {
-  AgentRequest,
-  PreparedRequest,
-  RequestRun,
-  RequestRuntime,
-  RuntimeEvent,
-  RuntimeOutcome,
-} from '@deckagent/host-api'
-import { SessionError, summarizedNotice } from '@deckagent/session-persistence'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { ProviderRunSettings, ProviderStore } from '../../features/providers/index.ts'
+import type { AgentRequest, RequestRun, RuntimeEvent, RuntimeOutcome } from '@deckagent/host-api'
+import { summarizedNotice } from '@deckagent/session-persistence'
+import type { ProviderRunSettings } from '../../features/providers/index.ts'
+import { OpenCodeError } from './contracts.ts'
+import type { OpenCodeExecutor, RuntimeSessionAccess } from './contracts.ts'
 import {
   encodeConfiguration,
   isolatedEnvironment,
@@ -95,7 +88,7 @@ interface Attempt {
  * The OpenCode CLI as DeckAgent's Agent Runtime (ADR-0002/0003/0004/0006): `opencode run --format json`, one isolated
  * run per request, native session resume only when its guard holds. The Host decides the request status.
  */
-export class OpenCodeRuntime implements RequestRuntime {
+export class OpenCodeRuntime implements OpenCodeExecutor {
   private versionCheck: Promise<boolean> | undefined
   private healthy = false
   private get launcher(): readonly string[] {
@@ -105,8 +98,7 @@ export class OpenCodeRuntime implements RequestRuntime {
   constructor(
     private readonly executable: string | undefined,
     private readonly runtimeRoot: string,
-    private readonly sessions: SqliteSessionStore,
-    private readonly providers: ProviderStore,
+    private readonly sessions: RuntimeSessionAccess,
     private readonly options: OpenCodeOptions = {},
   ) {}
 
@@ -121,38 +113,10 @@ export class OpenCodeRuntime implements RequestRuntime {
     return this.healthy ? { available: true } : { available: false, reason: 'RUNTIME_VERSION_UNSUPPORTED' }
   }
 
-  async prepare(request: AgentRequest): Promise<PreparedRequest> {
-    const info = await this.sessions.getInfo(request.sessionId).catch(() => undefined)
-    if (!info) throw new HttpError(404, 'SESSION_NOT_FOUND')
-    try {
-      await this.sessions.read(request.sessionId)
-    } catch (error) {
-      if (error instanceof SessionError && error.code === 'SESSION_CORRUPT') throw new HttpError(409, 'CHAT_UNREADABLE')
-      throw new HttpError(500, 'SESSION_UNAVAILABLE')
-    }
-    // FR-046: no selectable model, no request. The reason is said; no model is chosen for the chat.
-    const configured = this.providers.providerSettings()
-    if (!info.selection || !this.providers.selectable(info.selection)) {
-      const reason = !configured.length
-        ? 'no-provider'
-        : !configured.some(provider => provider.models.length)
-          ? 'no-model'
-          : info.selection
-            ? 'model-removed'
-            : info.removedSelection
-              ? 'model-removed'
-              : 'no-selection'
-      throw new HttpError(409, 'NO_SELECTABLE_MODEL', { reason })
-    }
-    const settings = this.providers.runSettings(info.selection)
-    if (!this.executable) throw new HttpError(503, 'RUNTIME_UNAVAILABLE')
+  async ensureAvailable(): Promise<void> {
+    if (!this.executable) throw new OpenCodeError('RUNTIME_UNAVAILABLE')
     if (!(await this.checkVersion(this.executable)))
-      throw new HttpError(503, 'RUNTIME_VERSION_UNSUPPORTED', { version: this.options.version ?? pinnedVersion })
-    const executable = this.executable
-    return {
-      selection: { provider: settings.provider, model: settings.model },
-      start: run => this.execute(executable, request, settings, run),
-    }
+      throw new OpenCodeError('RUNTIME_VERSION_UNSUPPORTED', { version: this.options.version ?? pinnedVersion })
   }
 
   private checkVersion(executable: string): Promise<boolean> {
@@ -195,23 +159,23 @@ export class OpenCodeRuntime implements RequestRuntime {
     return folders
   }
 
-  private async execute(
-    executable: string,
+  async execute(
     request: AgentRequest,
     settings: ProviderRunSettings,
     run: RequestRun,
   ): Promise<RuntimeOutcome> {
+    if (!this.executable) return { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }
+    const executable = this.executable
     const folders = await this.folders(request.sessionId)
     const context = `${folders.work}|${toolBoundary}|${run.tools?.context ?? 'no-source-capability'}|${createHash(
       'sha256',
     )
       .update(run.instructions ?? '')
       .digest('hex')}`
-    const log = this.sessions.requests
-    const binding = log.binding(request.sessionId)
-    const earlier = log.list(request.sessionId).filter(item => item.requestId !== run.requestId)
+    const binding = this.sessions.binding(request.sessionId)
+    const earlier = this.sessions.requests(request.sessionId).filter(item => item.requestId !== run.requestId)
     const history = await this.sessions.read(request.sessionId)
-    const current = log.get(run.requestId)
+    const current = this.sessions.request(run.requestId)
     const before = current ? history.slice(0, current.historyStart) : history.slice(0, -1)
     // Resume guard (ADR-0002): same chat, provider, model and context, and the last request of the chat is the
     // completed turn the native session holds. Otherwise a new native session, seeded with the saved conversation.
@@ -222,7 +186,7 @@ export class OpenCodeRuntime implements RequestRuntime {
       binding.selection.model === settings.model &&
       binding.context === context
     if (binding && !resumable) {
-      log.unbind(request.sessionId)
+      this.sessions.unbind(request.sessionId)
       await run.emit({ kind: 'notice', code: 'NEW_RUNTIME_SESSION' })
     }
     const fresh = () => seedPrompt(before, request.input)
@@ -236,7 +200,7 @@ export class OpenCodeRuntime implements RequestRuntime {
     )
     if (resumable && attempt.noWork && attempt.outcome.status === 'failed' && !run.signal.aborted) {
       // The native session could not be resumed (expired or missing). The chat keeps its history; a new session starts.
-      log.unbind(request.sessionId)
+      this.sessions.unbind(request.sessionId)
       await run.emit({ kind: 'notice', code: 'NEW_RUNTIME_SESSION' })
       attempt = await this.attempt(executable, settings, folders, run, fresh(), undefined)
     }
@@ -246,7 +210,7 @@ export class OpenCodeRuntime implements RequestRuntime {
     return {
       status: 'completed',
       commit: () =>
-        log.bind({
+        this.sessions.bind({
           sessionId: request.sessionId,
           nativeSessionId,
           selection: { provider: settings.provider, model: settings.model },
