@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 7 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-07-diagnose-session-persistence.md`) for `packages/session/persistence/` and its host seam, record 9 classified findings and the owner approvals (P8 type-level contract check and convention update, P9 move `MemoryDraftStore` to `apps/web/`), and close Task 7 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 6 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-06-diagnose-host-contracts-and-api.md`) for `packages/host/contracts/` and `packages/host/api/`, record 16 classified findings and the owner approvals (F11 no action, F15 and F16 convention updates), and close Task 6 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 5 Phase 1 exit report (`docs/build/refactor/module-design/reports/task-05-fix-timeout-and-verify-phase1-exit.md`), record the measured `v2` and `v3` timings plus all 18 non-live suites and 5 root tool test files passing with `# fail 0`, and close Task 5 in `docs/build/refactor/module-design/plan/`.
 - Add Revision 2 Slice 2A diagnosis to `docs/build/refactor/module-design/plan/`: Task 6 audits `packages/host/contracts/` and `packages/host/api/`, and Task 7 audits `packages/session/persistence/` and its host seam. Both tasks are read-only and stop for owner approval before Revision 2b changes code.

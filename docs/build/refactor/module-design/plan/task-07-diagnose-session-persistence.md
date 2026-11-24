@@ -63,7 +63,7 @@ Apply this table in top-to-bottom order to every finding in `packages/session/pe
 | A file, type, or seam protects a real invariant or two-adapter boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file counts, export counts, and workspace importers**
+- [x] **Step 1: Measure live file counts, export counts, and workspace importers**
 
 Run:
 
@@ -73,7 +73,7 @@ node -e "const fs=require('node:fs'); const {execFileSync}=require('node:child_p
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 9`, `"totalLines": 1875`, and `"assertionCount": 4` (all 4 inside `packages/session/persistence/src/requests.ts`).
 
-- [ ] **Step 2: Audit root exports, internal structure, type assertions, and seam contracts**
+- [x] **Step 2: Audit root exports, internal structure, type assertions, and seam contracts**
 
 Read all 9 files in `packages/session/persistence/src/`, `packages/session/persistence/package.json`, both test files in `packages/session/persistence/tests/`, and the three seam reference files (`packages/host/api/src/request-controller.ts`, `packages/host/api/src/contracts.ts`, `packages/host/contracts/src/requests.ts`).
 Run a read-only symbol usage check over all importers of `@deckagent/session-persistence` found in Step 1:
@@ -97,7 +97,7 @@ Record exact file-and-line observations for:
 5. `MemoryDraftStore` in `packages/session/persistence/src/draft-store.ts` (56 lines): list every caller of `MemoryDraftStore` and `draftLimit`. Check whether an in-memory volatile draft store fits `session/persistence/` ownership in `docs/conventions/project-structure.md` or exposes an ownership tension.
 6. Contract duplication across the Host seam: compare overlapping types in `packages/session/persistence/src/contracts.ts` (191 lines), `packages/host/contracts/src/requests.ts` (145 lines), and `packages/host/api/src/contracts.ts` (225 lines), such as `ApprovalView`, `ModelSelection`, `RequestEvent`, `RequestEventBody`, `RequestStatus`, `ActivityStatus`, and `TerminalStatus`. Record exact line numbers for each duplicate declaration and check whether `docs/conventions/project-structure.md` dependency rules force or justify the duplication.
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of exported symbols, exposed properties (`.requests`, `.attachments`), and concepts callers must know to use `@deckagent/session-persistence`. List every test-only export, leaked internal helper, or duplicated seam contract.
@@ -107,12 +107,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new persisted column or state transition to a request or approval record.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). List any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no repository file changed outside task checkboxes**
+- [x] **Step 4: Check that no repository file changed outside task checkboxes**
 
 Run: `git status --short`
 Expected: PASS. No tracked file under `packages/`, `apps/`, `e2e/`, `tests/`, or `docs/conventions/` shows new changes from this task.
 
-- [ ] **Step 5: Report and stop**
+- [x] **Step 5: Report and stop**
 
 Send this report and STOP for owner approval before writing Revision 2b refactor tasks:
 - Files changed: `docs/build/refactor/module-design/plan/task-07-diagnose-session-persistence.md` (checkboxes only)
