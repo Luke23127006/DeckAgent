@@ -138,7 +138,7 @@ jobs:
 
       - name: Generation confirmation and durable artifacts (local browser and fixtures)
         id: generation_publication
-        timeout-minutes: 2
+        timeout-minutes: 6
         run: pnpm test:generation-publication
 
       - name: Record verification evidence

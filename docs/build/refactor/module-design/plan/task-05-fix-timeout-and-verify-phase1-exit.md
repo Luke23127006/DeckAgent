@@ -308,7 +308,7 @@ test('formatScanReport outputs deterministic Markdown tables for areas, testware
 
 Expected: The updated tests close all four coverage limits from the Task 1 report and match Biome formatting.
 
-- [ ] **Step 3: Build and check targeted timeout and scanner tests**
+- [x] **Step 3: Build and check targeted timeout and scanner tests**
 
 Run these commands in order (run browser-spawning tests outside the Windows sandbox when the sandbox blocks local browser launch with `ARTIFACT_RENDERER_FAILED` or `EPERM`):
 
@@ -321,7 +321,7 @@ Run these commands in order (run browser-spawning tests outside the Windows sand
 
 Expected: Every command exits with code 0, `# fail 0`, and `# skipped 0`. Record the exact `v2` and `v3` `duration_ms` values from both isolated runs and from both suites to measure headroom against `120000` ms.
 
-- [ ] **Step 4: Run static checks and all five root tool test files**
+- [x] **Step 4: Run static checks and all five root tool test files**
 
 Run these commands:
 
@@ -333,7 +333,7 @@ Run these commands:
 
 Expected: Every command exits with code 0. `lint` reports `0 warnings and 0 errors`. `check:docs` reports `0 error(s)`. `check:boundaries` reports `0 violation(s)`. `biome format` reports 0 errors. Root tool tests report `# fail 0` and `# skipped 0`.
 
-- [ ] **Step 5: Run all remaining non-live test suites for Phase 1 exit**
+- [x] **Step 5: Run all remaining non-live test suites for Phase 1 exit**
 
 Run each remaining non-live test script in `package.json` (run outside the Windows sandbox only when `EPERM`, `EBUSY`, or local browser launch blocks it):
 

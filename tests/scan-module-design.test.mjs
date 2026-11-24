@@ -183,7 +183,10 @@ test('formatScanReport outputs deterministic Markdown tables for areas, testware
   const lines = report.split('\n')
   assert.equal(lines[0], '# Module Design Quantitative Scan')
   assert.equal(lines.includes('| packages/presentation/deck/ | 2 | 520 | 1 | 1 | 0 | 2 | 1 | 16 |'), true)
-  assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | packages/presentation/deck/ | 500 | 16 | 1 |'), true)
+  assert.equal(
+    lines.includes('| packages/presentation/deck/src/index.ts | packages/presentation/deck/ | 500 | 16 | 1 |'),
+    true,
+  )
   assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | 10 | DeckService.run | 90 |'), true)
   assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | 5 | DeckService |'), true)
   assert.equal(lines.includes('| e2e/ | 1 | 40 | 1 | 1 | 1 |'), true)

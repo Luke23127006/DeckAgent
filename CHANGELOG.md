@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 5 Phase 1 exit report (`docs/build/refactor/module-design/reports/task-05-fix-timeout-and-verify-phase1-exit.md`), record the measured `v2` and `v3` timings plus all 18 non-live suites and 5 root tool test files passing with `# fail 0`, and close Task 5 in `docs/build/refactor/module-design/plan/`.
+- Add Revision 2 Slice 2A diagnosis to `docs/build/refactor/module-design/plan/`: Task 6 audits `packages/host/contracts/` and `packages/host/api/`, and Task 7 audits `packages/session/persistence/` and its host seam. Both tasks are read-only and stop for owner approval before Revision 2b changes code.
 - Add the Task 4 Phase 1 triage and AST baseline report (`docs/build/refactor/module-design/reports/task-04-record-phase1-triage-and-baseline.md`), record the approved 14-area tiers and AST baseline in `docs/build/refactor/module-design/README.md`, and close Task 4 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 3 timeout diagnosis report (`docs/build/refactor/module-design/reports/task-03-investigate-timeout-failure.md`) and close Task 3 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 2 quantitative scan and 14-area triage report (`docs/build/refactor/module-design/reports/task-02-scan-and-triage.md`) and close Task 2 in `docs/build/refactor/module-design/plan/`.
@@ -34,6 +36,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Raise the `generation_publication` step `timeout-minutes` from `2` to `6` in `.github/workflows/workspace.yml`, because the full suite takes about 3 minutes and the previous limit expired in CI.
+- Extend `docs/build/refactor/module-design/plan/README.md` with the Revision 2 goal, CI timeout guardrail and Slice 2A diagnosis split decisions, review focuses 9 and 10, and the Codebase Design reference.
+- Wrap the long `formatScanReport` assertion in `tests/scan-module-design.test.mjs` to satisfy Biome formatting.
 - Complete Task 18 verification of `refactor/boundaries`: serialize `test:generation-publication` and `test:images` with `--test-concurrency=1` to avoid Windows Chromium lockfile contention, import `RequestFailure` directly in `ConfirmationService`, remove unused `decodeImageReview` and `isDesignSnapshot` public exports from `@deckagent/host-contracts` and browser transport, remove the remaining wall-clock assertion from the Stop test in `e2e/request-lifecycle.test.mjs`, and update test headers in `request-failure.test.mjs` and `wait-for.test.mjs`.
 - Enforce strict dependency boundaries across Browser features, Browser transport, integrations, Request Lifecycle, and internal relative imports in `scripts/check-boundaries.mjs` and `.oxlintrc.json`, remove workspace-source `paths` aliases from `tsconfig.base.json`, enable `pnpm check:boundaries` in `.github/workflows/workspace.yml`, and update the Enforcement table in `docs/conventions/project-structure.md` alongside negative-fixture tests in `tests/check-boundaries.test.mjs` and `tests/oxlint-boundaries.test.mjs`.
 - Expand `docs/build/refactor/module-design/README.md` into a 5-phase just-in-time abstract plan covering all 14 production areas, testware alignment, flow lookup maps, Definition of Done, and fresh-chat handoff rules, and update the `refactor` topic table in `.agents/skills/write-implementation-plan/SKILL.md` (`boundaries` and `module-design`) with synced mirrors.
