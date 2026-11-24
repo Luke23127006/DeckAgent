@@ -42,28 +42,28 @@ Apply this table in top-to-bottom order to every one of the 14 production areas:
 | `filesOver400 === 0`, `functionsOver80 === 0`, `typeAssertions === 0`, `serviceSymbols === 0`, and `smallNonBarrelFiles === 0` | Propose `Skip (untouched unless defect appears)` |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Run the Markdown quantitative scan**
+- [x] **Step 1: Run the Markdown quantitative scan**
 
 Run: `corepack pnpm@11.28.5 scan:module-design`
 Expected: PASS. The command exits with code 0 and prints `# Module Design Quantitative Scan` with all 14 production areas, testware counts, and co-change clusters.
 
-- [ ] **Step 2: Run the JSON quantitative scan and check area count**
+- [x] **Step 2: Run the JSON quantitative scan and check area count**
 
 Run: `corepack pnpm@11.28.5 scan:module-design --json | node -e "const fs=require('node:fs'); const d=JSON.parse(fs.readFileSync(0,'utf8')); if(d.areas.length!==14) process.exit(1); console.log(JSON.stringify({areaCount:d.areas.length, prodFiles:d.files.length, testFiles:d.tests.length, coChangePairs:d.coChanges.length}))"`
 Expected: PASS. The command exits with code 0 and prints `"areaCount":14`.
 
-- [ ] **Step 3: Classify all 14 areas and compare with the initial table**
+- [x] **Step 3: Classify all 14 areas and compare with the initial table**
 
 Apply the [Triage decision table](#triage-decision-table) to all 14 areas from Step 1.
 Compare each proposed tier against `docs/build/refactor/module-design/README.md` (lines 35-50).
 List every area whose computed tier differs from the initial table, with the exact metric values that triggered the difference.
 
-- [ ] **Step 4: Check that no repository files changed outside checkboxes**
+- [x] **Step 4: Check that no repository files changed outside checkboxes**
 
 Run: `git status --short`
 Expected: PASS. No tracked source file or `docs/build/refactor/module-design/README.md` shows new modifications from this task.
 
-- [ ] **Step 5: Report and stop**
+- [x] **Step 5: Report and stop**
 
 Send this report and STOP for owner approval of the 14-area triage table:
 - Files changed: `docs/build/refactor/module-design/plan/task-02-run-scan-and-triage.md` (checkboxes only)

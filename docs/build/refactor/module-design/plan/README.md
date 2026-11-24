@@ -60,7 +60,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | Task | Status | File |
 | --- | --- | --- |
 | 1 | Done | [Build quantitative module-design scanner and unit tests](task-01-quantitative-scan-script.md) |
-| 2 | Pending | [Run quantitative scan and draft 14-area triage table](task-02-run-scan-and-triage.md) |
+| 2 | Done | [Run quantitative scan and draft 14-area triage table](task-02-run-scan-and-triage.md) ([report](../reports/README.md)) |
 | 3 | Pending | [Investigate portable-generation-http REQUEST_TIMEOUT baseline failure](task-03-investigate-timeout-failure.md) |
 
 ## Next revision
