@@ -3,7 +3,7 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DeckError, deckFailureMessage } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
-import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
+import type { AgentRequest, HostOptions, HttpFailureResponse, RequestEvent, WebSession } from './contracts.ts'
 import { HttpError } from './http-error.ts'
 import { RequestController } from './request-controller.ts'
 import { RequestFailure } from './request-failure.ts'
@@ -29,6 +29,7 @@ export type {
   HistoryMessage,
   HostMessage,
   HostOptions,
+  HttpFailureResponse,
   ModelSelection,
   PreparedRequest,
   ProviderProtocol,
@@ -248,7 +249,7 @@ const requestFailureStatus: Readonly<Record<string, number>> = {
   GENERATION_LINK_FAILED: 500,
 }
 
-function requestFailureResponse(error: RequestFailure): { readonly status: number; readonly code: string } {
+function requestFailureResponse(error: RequestFailure): HttpFailureResponse {
   return { status: requestFailureStatus[error.code] ?? 500, code: error.code }
 }
 
@@ -280,7 +281,8 @@ export async function startHost(options: HostOptions) {
         res.destroy()
         return
       }
-      const mapped = error instanceof RequestFailure ? requestFailureResponse(error) : undefined
+      const mapped =
+        error instanceof RequestFailure ? requestFailureResponse(error) : options.mapApplicationFailure?.(error)
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
       const outline =
@@ -302,11 +304,12 @@ export async function startHost(options: HostOptions) {
           : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
             ? error.code
             : 'HOST_ERROR'
+      const detail = mapped?.detail ?? (known ? error.detail : undefined)
       json(res, status, {
         error: {
           code,
           message: deckFailureMessage(mapped || known || deck ? code : '') ?? 'Request could not be completed',
-          ...(known && error.detail ? { detail: error.detail } : {}),
+          ...(detail ? { detail } : {}),
         },
       })
     })

@@ -1,7 +1,14 @@
 import { DatabaseSync } from 'node:sqlite'
-import { HttpError } from '@deckagent/host-api'
-import type { WebPreferences, WebSession } from '@deckagent/host-api'
+import type { WebPreferences, WebSession } from '@deckagent/host-contracts'
 import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
+
+export type WebStateErrorCode = 'INVALID_SELECTION' | 'INVALID_REQUEST' | 'SETTINGS_SCHEMA' | 'SETTINGS_STORAGE'
+
+export class WebStateError extends Error {
+  constructor(readonly code: WebStateErrorCode) {
+    super(code)
+  }
+}
 
 export function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -17,7 +24,7 @@ export function selection(value: unknown): ModelSelection {
     !value.model.trim() ||
     value.model.length > 200
   ) {
-    throw new HttpError(400, 'INVALID_SELECTION')
+    throw new WebStateError('INVALID_SELECTION')
   }
   return { provider: value.provider, model: value.model }
 }
@@ -41,7 +48,7 @@ export class WebState {
         owner === 0 &&
         version === 0 &&
         !this.db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
-      if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new HttpError(500, 'SETTINGS_SCHEMA')
+      if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new WebStateError('SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
       // Requests and activities moved to Session persistence (B02); older files keep their unused tables unchanged.
       if (fresh)
@@ -52,7 +59,7 @@ export class WebState {
       this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
       this.db.prepare('SELECT id, payload FROM providers LIMIT 0').all()
       if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
-        throw new HttpError(500, 'SETTINGS_STORAGE')
+        throw new WebStateError('SETTINGS_STORAGE')
       this.db.exec('COMMIT')
     } catch (error) {
       this.db.close()
@@ -71,7 +78,7 @@ export class WebState {
       Object.keys(value).some(key => key !== 'theme') ||
       (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system')
     )
-      throw new HttpError(400, 'INVALID_REQUEST')
+      throw new WebStateError('INVALID_REQUEST')
     this.db
       .prepare(
         "INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",

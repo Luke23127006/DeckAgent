@@ -28,6 +28,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Extract workspace and chat application workflows into `apps/web/src/features/workspaces/` and `apps/web/src/features/chats/` with HTTP-independent `WorkspaceWorkflowError` and `ChatWorkflowError`, move HTTP validation and failure mapping into `apps/web/src/local-transport.ts`, replace `HttpError` in `apps/web/src/web-state.ts` with `WebStateError`, and add `HostOptions.mapApplicationFailure` (`HttpFailureResponse`) in `@deckagent/host-api`.
 - Move browser runtime sources from `packages/client/runtime/src` into `apps/web/src/browser`, compile Node and Browser with separate TypeScript configs (`apps/web/tsconfig.json` and `apps/web/tsconfig.browser.json`) and separate `tsdown` bundles (`apps/web/lib/browser/`), resolve browser assets relative to the application module, and remove `@deckagent/browser-runtime`.
 - Move the local application from `apps/local-web` to `apps/web` while keeping `@deckagent/local-web`, and update startup scripts, OpenCode packaging paths, TypeScript references, lockfile importers, and test paths.
 - Separate Request Lifecycle operation errors (`RequestFailure`) from HTTP status mapping (`requestFailureResponse` in Host transport), switch `AttachmentService.requestStore().admit` preconditions to `SessionError`, and add `packages/host/api/tests/request-failure.test.mjs`.

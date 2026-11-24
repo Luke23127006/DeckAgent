@@ -59,7 +59,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Extract workspace operations**
+- [x] **Step 1: Extract workspace operations**
 
 Move active-request checks and Registry/Session sequencing from startup into `features/workspaces/index.ts`.
 Keep Registry mutation and Session mutation in their current order.
@@ -71,7 +71,7 @@ The workflow checks every chat of the workspace before remove or relink.
 It refuses an active request without stopping that request.
 The Registry still owns folder policy and folder identity.
 
-- [ ] **Step 2: Extract chat operations**
+- [x] **Step 2: Extract chat operations**
 
 Move chat creation, model selection, listing, search, and Browser projection from startup.
 Retain the most recent selectable model rule.
@@ -79,7 +79,7 @@ Retain unreadable-chat records and ungrouped-chat visibility.
 Do not move request execution into this feature.
 Access Session and Deck only through their public operations.
 
-- [ ] **Step 3: Extract the transport adapters**
+- [x] **Step 3: Extract the transport adapters**
 
 Move request-body shape checks and current HTTP error mapping to `local-transport.ts`.
 Preserve the original status, code, safe detail, and route result.
@@ -95,7 +95,7 @@ Entry point creates dependencies and installs the adapters.
 Keep the current behavior for unresolved product questions.
 Do not mark those questions as resolved.
 
-- [ ] **Step 4: Check workflow compatibility**
+- [x] **Step 4: Check workflow compatibility**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:local-foundation`.
@@ -104,7 +104,7 @@ Expected: build exits with code 0. Suites print `# fail 0`.
 Review workspace removal, relink refusal, lost-folder access, chat search, and removed-model tests.
 The command results do not prove atomicity between separate databases.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

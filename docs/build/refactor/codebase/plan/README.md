@@ -187,7 +187,7 @@ Each relevant task names the suite or supplies its new test code.
 | 07 | 2 | Done | [Separate Request Lifecycle errors from HTTP](task-07-separate-lifecycle-errors.md) |
 | 08 | 3 | Done | [Move the local application to apps/web](task-08-move-local-application.md) |
 | 09 | 3 | Done | [Put Browser code in the application](task-09-consolidate-browser.md) |
-| 10 | 4 | Pending | [Extract chat and workspace workflows](task-10-extract-chat-workspace-workflows.md) |
+| 10 | 4 | Done | [Extract chat and workspace workflows](task-10-extract-chat-workspace-workflows.md) |
 | 11 | 4 | Pending | [Separate application features from integrations](task-11-organize-features-integrations.md) |
 | 12 | 5 | Pending | [Narrow the OpenCode runtime boundary](task-12-narrow-runtime-persistence.md) |
 | 13 | 5 | Pending | [Remove concrete format dependencies from Deck](task-13-decouple-deck-formats.md) |

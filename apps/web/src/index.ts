@@ -3,10 +3,10 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HttpError, startHost } from '@deckagent/host-api'
-import type { WebSession, WebSettings, WorkspaceList, WorkspaceManagement } from '@deckagent/host-api'
+import type { WebSettings } from '@deckagent/host-api'
 import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
-import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
-import { WorkspaceError, WorkspaceRegistry } from '@deckagent/workspace-registry'
+import type { ModelSelection } from '@deckagent/session-persistence'
+import { WorkspaceRegistry } from '@deckagent/workspace-registry'
 import { DeckService } from '@deckagent/deck'
 import { HtmlFormatAdapter } from '@deckagent/html-format'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
@@ -20,7 +20,10 @@ import {
   motionStyle,
   themeBootstrap,
 } from './ui-assets.ts'
-import { WebState, record, selection } from './web-state.ts'
+import { WebState } from './web-state.ts'
+import { createChatOperations } from './features/chats/index.ts'
+import { createWorkspaceOperations } from './features/workspaces/index.ts'
+import { chatManagement, mapApplicationFailure, workspaceManagement } from './local-transport.ts'
 import { ProviderStore } from './provider-settings.ts'
 import type { ProviderConnection, ProviderStoreOptions } from './provider-settings.ts'
 import { defaultCredentialStore } from './credential-store.ts'
@@ -93,52 +96,6 @@ export interface LocalWebOptions {
   readonly providerAccess?: Pick<ProviderStoreOptions, 'check' | 'catalog'>
   /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
-}
-
-const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
-  WORKSPACE_NOT_FOUND: 404,
-  WORKSPACE_DEFAULT: 409,
-  WORKSPACE_FOLDER_REQUIRED: 400,
-  WORKSPACE_FOLDER_INVALID: 400,
-  WORKSPACE_FOLDER_UNREADABLE: 422,
-  WORKSPACE_FOLDER_REFUSED: 422,
-  WORKSPACE_FOLDER_IN_USE: 409,
-  WORKSPACE_NAME_EMPTY: 400,
-  WORKSPACE_NAME_TOO_LONG: 400,
-  WORKSPACE_STORAGE: 500,
-  WORKSPACE_SCHEMA: 500,
-}
-
-/** Workspace failures become HTTP errors with safe details only: a workspace name or a refusal reason, never a path. */
-async function workspaceCall<T>(operation: () => T | Promise<T>): Promise<T> {
-  try {
-    return await operation()
-  } catch (error) {
-    if (!(error instanceof WorkspaceError)) throw error
-    const { workspaceName, reason, allowInside } = error.detail
-    throw new HttpError(workspaceStatus[error.code], error.code, {
-      ...(workspaceName === undefined ? {} : { workspaceName }),
-      ...(reason === undefined ? {} : { reason }),
-      ...(allowInside === undefined ? {} : { allowInside }),
-    })
-  }
-}
-
-async function chatCall<T>(operation: () => Promise<T>): Promise<T> {
-  try {
-    return await operation()
-  } catch (error) {
-    if (error instanceof SessionError && error.code === 'SESSION_NOT_FOUND')
-      throw new HttpError(404, 'SESSION_NOT_FOUND')
-    if (error instanceof SessionError && error.code === 'SESSION_CORRUPT') throw new HttpError(409, 'CHAT_UNREADABLE')
-    if (error instanceof SessionError && error.code === 'DRAFT_TOO_LARGE') throw new HttpError(413, 'DRAFT_TOO_LARGE')
-    throw error
-  }
-}
-
-function body(value: unknown, key: string): unknown {
-  if (!record(value) || Object.keys(value).some(name => name !== key)) throw new HttpError(400, 'INVALID_REQUEST')
-  return value[key]
 }
 
 /**
@@ -256,12 +213,6 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       builtIns: catalog.builtIns,
       runtime: runtime.availability(),
     })
-    // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
-    const requireNoActiveRequest = async (workspaceId: string) => {
-      const chats = (await store.list()).filter(chat => chat.workspaceId === workspaceId)
-      if (chats.some(chat => store.requests.activeFor(chat.sessionId)))
-        throw new HttpError(409, 'WORKSPACE_REQUEST_ACTIVE')
-    }
     const drafts = new MemoryDraftStore()
     const research = new ResearchService(
       state.db,
@@ -314,57 +265,11 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           body: await readFile(join(clientDir, name), 'utf8'),
         }
     }
-    const project = (chat: ChatSummary): WebSession => ({
-      ...state.project(
-        chat,
-        chat.readable && presentation.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0),
-      ),
-      hasDraft: drafts.get(chat.sessionId).trim() !== '' || drafts.snapshot(chat.sessionId).attachmentIds.length > 0,
-    })
-    const chat = async (id: string): Promise<WebSession> => {
-      const found = (await store.chats()).find(item => item.sessionId === id)
-      if (!found) throw new HttpError(404, 'SESSION_NOT_FOUND')
-      return project(found)
-    }
-    const listWorkspaces = async (): Promise<WorkspaceList> => ({
-      workspaces: await workspaces.list(),
-      selectedId: workspaces.selectedId(),
-    })
-    const workspaceManagement: WorkspaceManagement = {
-      list: () => workspaceCall(listWorkspaces),
-      add: value =>
-        workspaceCall(async () => {
-          await workspaces.add(body(value, 'folder'))
-          return listWorkspaces()
-        }),
-      select: value =>
-        workspaceCall(async () => {
-          const id = body(value, 'id')
-          if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-          workspaces.select(id)
-          return listWorkspaces()
-        }),
-      rename: (id, value) =>
-        workspaceCall(async () => {
-          workspaces.rename(id, body(value, 'name'))
-          return listWorkspaces()
-        }),
-      relink: (id, value) =>
-        workspaceCall(async () => {
-          await requireNoActiveRequest(id)
-          await workspaces.relink(id, body(value, 'folder'))
-          return listWorkspaces()
-        }),
-      remove: id =>
-        workspaceCall(async () => {
-          await requireNoActiveRequest(id)
-          workspaces.remove(id)
-          await store.ungroup(id)
-          return listWorkspaces()
-        }),
-    }
+    const workspaceOps = createWorkspaceOperations(workspaces, store)
+    const chatOps = createChatOperations(store, workspaces, state, presentation, drafts)
     const briefs = new BriefService(presentation, store)
     const host = await startHost({
+      mapApplicationFailure,
       confirmations: new ConfirmationService(
         presentation,
         store,
@@ -400,62 +305,31 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
       attachments: inputs,
       ...(options.port === undefined ? {} : { port: options.port }),
-      readHistory: id => chatCall(() => store.read(id)),
+      readHistory: id => store.read(id),
       management: {
         research: {
           save: value => research.save(value),
           remove: () => research.remove(),
-          sources: id =>
-            chatCall(async () => {
-              await chat(id)
-              return store.requests.researchSources(id)
-            }),
+          sources: async id => {
+            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+            return store.requests.researchSources(id)
+          },
         },
         preferences: { get: async () => state.preferences(), save: async value => state.savePreferences(value) },
         settings: async () => settings(),
         saveProvider: (id, value) => catalog.save(id, value),
         deleteProvider: id => catalog.remove(id),
         catalog: id => catalog.catalog(id),
-        sessions: async () => (await store.chats()).map(project),
-        async createSession(value) {
-          if (!record(value) || Object.keys(value).some(key => key !== 'selection'))
-            throw new HttpError(400, 'INVALID_SESSION')
-          // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
-          const chosen = value.selection === undefined ? state.lastSelection() : selection(value.selection)
-          if (chosen && !state.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-          const created = await store.create(workspaces.selectedId(), chosen)
-          return chat(created.sessionId)
+        ...chatManagement(chatOps),
+        activities: async id => {
+          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+          return store.requests.activities(id)
         },
-        async selectModel(id, value) {
-          const chosen = selection(value)
-          if (!state.selectable(chosen)) throw new HttpError(409, 'MODEL_NOT_SELECTABLE')
-          await chatCall(() => store.select(id, chosen))
-          state.rememberSelection(chosen)
-          return chat(id)
+        requests: async id => {
+          if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+          return store.requests.list(id)
         },
-        activities: id =>
-          chatCall(async () => {
-            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-            return store.requests.activities(id)
-          }),
-        requests: id =>
-          chatCall(async () => {
-            if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-            return store.requests.list(id)
-          }),
-        workspaces: workspaceManagement,
-        async searchSessions(value) {
-          const words = body(value, 'words')
-          if (typeof words !== 'string' || words.length > 500) throw new HttpError(400, 'INVALID_REQUEST')
-          const chats = await store.chats()
-          const found = new Set(
-            await store.search(
-              words,
-              chats.map(item => item.sessionId),
-            ),
-          )
-          return chats.filter(item => found.has(item.sessionId)).map(project)
-        },
+        workspaces: workspaceManagement(workspaceOps),
         drafts: {
           get: id => inputs.draft(id),
           save: (id, value) => inputs.save(id, value),

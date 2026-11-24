@@ -46,6 +46,7 @@ export type {
 } from '@deckagent/host-contracts'
 import type { PreparedTools, RequestTools } from './tool-contracts.ts'
 import type { RequestStore } from '@deckagent/session-persistence'
+import type { HttpErrorDetail } from './http-error.ts'
 export type { RequestStore }
 export type {
   ApprovalStep,
@@ -104,7 +105,14 @@ export interface HostMessage {
   readonly attachments?: readonly AttachmentView[]
 }
 
+export interface HttpFailureResponse {
+  readonly status: number
+  readonly code: string
+  readonly detail?: HttpErrorDetail
+}
+
 export interface HostOptions {
+  readonly mapApplicationFailure?: (error: unknown) => HttpFailureResponse | undefined
   readonly confirmations?: {
     confirm(
       sessionId: string,
