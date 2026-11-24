@@ -4,7 +4,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { DeckError, deckFailureMessage } from '@deckagent/deck'
 import { routeDeck } from './deck-routes.ts'
 import type { AgentRequest, HostOptions, RequestEvent, WebSession } from './contracts.ts'
-import { HttpError, RequestController } from './request-controller.ts'
+import { HttpError } from './http-error.ts'
+import { RequestController } from './request-controller.ts'
+import { RequestFailure } from './request-failure.ts'
 import { receiveAttachment } from './multipart.ts'
 
 export type { AttachmentView } from './contracts.ts'
@@ -57,7 +59,9 @@ export type {
   WorkspaceView,
 } from './contracts.ts'
 export type { HttpErrorDetail } from './http-error.ts'
-export { HttpError, RequestController } from './request-controller.ts'
+export { HttpError } from './http-error.ts'
+export { RequestController } from './request-controller.ts'
+export { RequestFailure } from './request-failure.ts'
 
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/
 /** Product maximum in Unicode code points; the JSON transport has a separate byte bound. */
@@ -225,6 +229,29 @@ function cursor(req: IncomingMessage): number {
   return Number(raw)
 }
 
+const requestFailureStatus: Readonly<Record<string, number>> = {
+  HOST_CLOSED: 503,
+  HOST_BUSY: 429,
+  REQUEST_NOT_FOUND: 404,
+  APPROVAL_NOT_FOUND: 404,
+  SESSION_NOT_FOUND: 404,
+  SESSION_BUSY: 409,
+  GENERATION_LINK_CONFLICT: 409,
+  APPROVAL_CONFLICT: 409,
+  REQUEST_CLOSED: 409,
+  DRAFT_CONFLICT: 409,
+  ATTACHMENT_REJECTED: 409,
+  ATTACHMENT_NOT_READY: 409,
+  ATTACHMENT_COUNT_EXCEEDED: 413,
+  REQUEST_EMPTY: 400,
+  REQUEST_NOT_SAVED: 500,
+  GENERATION_LINK_FAILED: 500,
+}
+
+function requestFailureResponse(error: RequestFailure): { readonly status: number; readonly code: string } {
+  return { status: requestFailureStatus[error.code] ?? 500, code: error.code }
+}
+
 /** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a request. */
 export async function startHost(options: HostOptions) {
   const token = randomBytes(32).toString('hex')
@@ -253,19 +280,32 @@ export async function startHost(options: HostOptions) {
         res.destroy()
         return
       }
+      const mapped = error instanceof RequestFailure ? requestFailureResponse(error) : undefined
       const known = error instanceof HttpError
       const deck = error instanceof DeckError
       const outline =
         deck &&
         ['OUTLINE_STALE', 'OUTLINE_ALREADY_CONFIRMED', 'OUTLINE_READ_ONLY', 'OUTLINE_LIMIT'].includes(error.code)
-      json(res, known ? error.status : outline ? 409 : deck && error.code === 'DECK_CONTENT_NOT_FOUND' ? 404 : 500, {
-        error: {
-          code: known
+      const status = mapped
+        ? mapped.status
+        : known
+          ? error.status
+          : outline
+            ? 409
+            : deck && error.code === 'DECK_CONTENT_NOT_FOUND'
+              ? 404
+              : 500
+      const code = mapped
+        ? mapped.code
+        : known
+          ? error.code
+          : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
             ? error.code
-            : outline || (deck && error.code === 'DECK_CONTENT_NOT_FOUND')
-              ? error.code
-              : 'HOST_ERROR',
-          message: deckFailureMessage(known || deck ? error.code : '') ?? 'Request could not be completed',
+            : 'HOST_ERROR'
+      json(res, status, {
+        error: {
+          code,
+          message: deckFailureMessage(mapped || known || deck ? code : '') ?? 'Request could not be completed',
           ...(known && error.detail ? { detail: error.detail } : {}),
         },
       })

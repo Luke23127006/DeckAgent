@@ -1,6 +1,6 @@
 import type { ServerResponse } from 'node:http'
 import type { DeckReader, DeckChange } from '@deckagent/deck'
-import { HttpError } from './request-controller.ts'
+import { HttpError } from './http-error.ts'
 
 /** Called only after Host authentication/origin checks. Subscribe before initial read.
  * Notices are invalidations, not an event log. Every reconnect starts at current version.

@@ -237,18 +237,22 @@ export class AttachmentService implements AttachmentManagement {
       admit: input => {
         const draft = this.drafts.snapshot(input.sessionId)
         if (input.draftRevision !== undefined && (input.draftRevision !== draft.revision || input.input !== draft.text))
-          throw new HttpError(409, 'DRAFT_CONFLICT')
-        if (draft.attachmentIds.length > attachmentLimits.files) throw new HttpError(413, 'ATTACHMENT_COUNT_EXCEEDED')
+          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
+        if (draft.attachmentIds.length > attachmentLimits.files)
+          throw new SessionError('ATTACHMENT_COUNT_EXCEEDED', 'ATTACHMENT_COUNT_EXCEEDED')
         for (const id of draft.attachmentIds) {
           const item = this.store.attachments.get(input.sessionId, id)
-          if (item.state !== 'ready')
-            throw new HttpError(409, item.state === 'rejected' ? 'ATTACHMENT_REJECTED' : 'ATTACHMENT_NOT_READY')
+          if (item.state !== 'ready') {
+            const code = item.state === 'rejected' ? 'ATTACHMENT_REJECTED' : 'ATTACHMENT_NOT_READY'
+            throw new SessionError(code, code)
+          }
         }
         const ids = input.attachmentIds ?? []
         if (ids.length !== draft.attachmentIds.length || ids.some(id => !draft.attachmentIds.includes(id)))
-          throw new HttpError(409, 'DRAFT_CONFLICT')
-        if (ids.length && input.draftRevision === undefined) throw new HttpError(409, 'DRAFT_CONFLICT')
-        if (!input.input.trim() && !ids.length) throw new HttpError(400, 'REQUEST_EMPTY')
+          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
+        if (ids.length && input.draftRevision === undefined)
+          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
+        if (!input.input.trim() && !ids.length) throw new SessionError('REQUEST_EMPTY', 'REQUEST_EMPTY')
         const admitted = log.admit(input)
         if (input.draftRevision !== undefined) this.drafts.clear(input.sessionId, input.draftRevision)
         return admitted

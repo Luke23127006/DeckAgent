@@ -51,7 +51,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Add a focused public-operation test**
+- [x] **Step 1: Add a focused public-operation test**
 
 Add this complete test file:
 
@@ -105,7 +105,7 @@ Run `node --test --test-reporter=tap packages/host/api/tests/request-failure.tes
 Expected: build exits with code 0. The test fails because `RequestFailure` does not exist.
 Do not count an unrelated setup failure as the expected failure.
 
-- [ ] **Step 2: Separate operation errors**
+- [x] **Step 2: Separate operation errors**
 
 Replace RequestController's constructed `HttpError` values with `RequestFailure`.
 Remove its HTTP error import and re-export.
@@ -118,7 +118,7 @@ RequestController converts these admitted codes to `RequestFailure`:
 Retain existing conversion of Session absence, active-request conflicts, and failed writes.
 Propagate runtime preparation failures to the transport without reading their HTTP fields.
 
-- [ ] **Step 3: Keep HTTP mapping in transport**
+- [x] **Step 3: Keep HTTP mapping in transport**
 
 Apply this table in Host transport:
 
@@ -136,7 +136,7 @@ Apply this table in Host transport:
 
 Do not change the existing wire payload or user messages.
 
-- [ ] **Step 4: Check public behavior**
+- [x] **Step 4: Check public behavior**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `node --test --test-reporter=tap packages/host/api/tests/request-failure.test.mjs tests/request-lifecycle.test.mjs tests/attachment-admission.test.mjs tests/step-approval.test.mjs`.
@@ -145,7 +145,7 @@ Run `rg -n "HttpError|http-error" packages/host/api/src/request-controller.ts`.
 Expected: exit code 1 with no matches.
 Keep existing HTTP tests. The new direct test does not prove HTTP compatibility.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

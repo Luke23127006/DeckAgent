@@ -12,9 +12,8 @@ import type {
   TerminalStatus,
   RequestAdmission,
 } from './contracts.ts'
-import { HttpError } from './http-error.ts'
+import { RequestFailure } from './request-failure.ts'
 import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools, ToolResult } from './tool-contracts.ts'
-export { HttpError } from './http-error.ts'
 
 interface Execution {
   readonly requestId: string
@@ -58,27 +57,27 @@ export class RequestController {
   ) {}
 
   async submit(request: AgentRequest, admission?: RequestAdmission): Promise<RequestSnapshot> {
-    if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+    if (this.closed) throw new RequestFailure('HOST_CLOSED')
     if (admission && this.store.get(admission.requestId)) {
       const saved = this.store.get(admission.requestId)!
-      if (saved.sessionId !== request.sessionId) throw new HttpError(409, 'GENERATION_LINK_CONFLICT')
+      if (saved.sessionId !== request.sessionId) throw new RequestFailure('GENERATION_LINK_CONFLICT')
       return this.get(admission.requestId)
     }
-    if (this.admitting.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
+    if (this.admitting.has(request.sessionId)) throw new RequestFailure('SESSION_BUSY')
     this.admitting.add(request.sessionId)
     try {
       const previous = this.busy.get(request.sessionId)
-      if (previous && !previous.ended) throw new HttpError(409, 'SESSION_BUSY')
+      if (previous && !previous.ended) throw new RequestFailure('SESSION_BUSY')
       // A stopped request already shows as stopped; its process gets a short time to end before the chat runs again.
       if (previous)
         await Promise.race([previous.work, new Promise(resolve => setTimeout(resolve, releaseWait).unref())])
-      if (this.busy.has(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
-      if (this.store.activeFor(request.sessionId)) throw new HttpError(409, 'SESSION_BUSY')
-      if (this.busy.size >= 16) throw new HttpError(429, 'HOST_BUSY')
+      if (this.busy.has(request.sessionId)) throw new RequestFailure('SESSION_BUSY')
+      if (this.store.activeFor(request.sessionId)) throw new RequestFailure('SESSION_BUSY')
+      if (this.busy.size >= 16) throw new RequestFailure('HOST_BUSY')
       const prepared = admission?.prepared ?? (await this.runtime.prepare(request))
       const publicResearch = prepared.publicResearch ?? request.publicResearch
       const tools = await this.prepareTools?.(request.sessionId, request.attachmentIds, publicResearch)
-      if (this.closed) throw new HttpError(503, 'HOST_CLOSED')
+      if (this.closed) throw new RequestFailure('HOST_CLOSED')
       const requestId = admission?.requestId ?? `req-${randomUUID()}`
       let admitted: StoredRequest
       try {
@@ -92,17 +91,24 @@ export class RequestController {
           ...(request.draftRevision === undefined ? {} : { draftRevision: request.draftRevision }),
         })
       } catch (error) {
-        if (error instanceof HttpError) throw error
         const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
-        if (code === 'REQUEST_ACTIVE') throw new HttpError(409, 'SESSION_BUSY')
-        if (code === 'SESSION_NOT_FOUND') throw new HttpError(404, 'SESSION_NOT_FOUND')
-        throw new HttpError(500, 'REQUEST_NOT_SAVED')
+        if (code === 'REQUEST_ACTIVE') throw new RequestFailure('SESSION_BUSY')
+        if (code === 'SESSION_NOT_FOUND') throw new RequestFailure('SESSION_NOT_FOUND')
+        if (
+          code === 'DRAFT_CONFLICT' ||
+          code === 'ATTACHMENT_COUNT_EXCEEDED' ||
+          code === 'ATTACHMENT_REJECTED' ||
+          code === 'ATTACHMENT_NOT_READY' ||
+          code === 'REQUEST_EMPTY'
+        )
+          throw new RequestFailure(code)
+        throw new RequestFailure('REQUEST_NOT_SAVED')
       }
       try {
         admission?.admitted()
       } catch {
         this.store.finish(requestId, 'failed', 'GENERATION_LINK_FAILED')
-        throw new HttpError(500, 'GENERATION_LINK_FAILED')
+        throw new RequestFailure('GENERATION_LINK_FAILED')
       }
       const execution: Execution = {
         requestId,
@@ -133,7 +139,7 @@ export class RequestController {
 
   get(requestId: string): RequestSnapshot {
     const request = this.store.get(requestId)
-    if (!request) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+    if (!request) throw new RequestFailure('REQUEST_NOT_FOUND')
     return {
       requestId,
       sessionId: request.sessionId,
@@ -146,7 +152,7 @@ export class RequestController {
   }
 
   decide(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): ApprovalView {
-    if (!this.store.approvals) throw new HttpError(404, 'APPROVAL_NOT_FOUND')
+    if (!this.store.approvals) throw new RequestFailure('APPROVAL_NOT_FOUND')
     try {
       const change = this.store.approvals.decide(requestId, approvalId, decision)
       for (const event of change.events) this.publish(event)
@@ -166,16 +172,16 @@ export class RequestController {
       return change.approval
     } catch (error) {
       const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
-      if (code === 'APPROVAL_NOT_FOUND' || code === 'REQUEST_NOT_FOUND') throw new HttpError(404, 'APPROVAL_NOT_FOUND')
-      if (code === 'APPROVAL_CONFLICT' || code === 'REQUEST_CLOSED') throw new HttpError(409, code)
+      if (code === 'APPROVAL_NOT_FOUND' || code === 'REQUEST_NOT_FOUND') throw new RequestFailure('APPROVAL_NOT_FOUND')
+      if (code === 'APPROVAL_CONFLICT' || code === 'REQUEST_CLOSED') throw new RequestFailure(code)
       const execution = this.executions.get(requestId)
       if (execution && !execution.ended) this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
-      throw new HttpError(500, 'REQUEST_NOT_SAVED')
+      throw new RequestFailure('REQUEST_NOT_SAVED')
     }
   }
 
   events(requestId: string, after: number): readonly RequestEvent[] {
-    if (!this.store.get(requestId)) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+    if (!this.store.get(requestId)) throw new RequestFailure('REQUEST_NOT_FOUND')
     return this.store.events(requestId, after)
   }
 
@@ -191,7 +197,7 @@ export class RequestController {
   stop(requestId: string): RequestSnapshot {
     const execution = this.executions.get(requestId)
     if (!execution) {
-      if (!this.store.get(requestId)) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+      if (!this.store.get(requestId)) throw new RequestFailure('REQUEST_NOT_FOUND')
       return this.get(requestId)
     }
     if (!execution.ended) {
