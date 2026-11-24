@@ -1,12 +1,18 @@
-import type { HistoryMessage, RequestSnapshot, RequestStatus, StoredActivity, StoredRequest } from '@deckagent/host-api'
+import type {
+  ApprovalView,
+  HistoryMessage,
+  OutlineSnapshot,
+  RequestSnapshot,
+  RequestStatus,
+  StoredActivity,
+  StoredRequest,
+} from '@deckagent/host-contracts'
 import { button, element } from './dom.ts'
-import type { OutlineSnapshot } from '@deckagent/deck'
 import { OutlineView } from './outline-view.ts'
 import { messageContent } from './message-content.ts'
 import type { OutlineAction } from './outline-view.ts'
 import { isActive } from './host-client.ts'
 import { failureFeedback, offersSettings, requestFeedback } from './request-feedback.ts'
-import type { ApprovalView } from '@deckagent/host-api'
 
 interface ActivityRow {
   readonly node: HTMLDetailsElement

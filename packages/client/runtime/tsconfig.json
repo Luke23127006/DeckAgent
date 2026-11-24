@@ -13,10 +13,8 @@
     "src"
   ],
   "references": [
-    { "path": "../../presentation/document" },
-    { "path": "../../presentation/deck" },
     {
-      "path": "../../host/api"
+      "path": "../../host/contracts"
     }
   ]
 }

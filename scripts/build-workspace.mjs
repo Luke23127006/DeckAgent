@@ -75,7 +75,7 @@ for (const pkg of packages) {
   if (pkg.name === '@deckagent/browser-runtime') {
     config.platform = 'browser'
     config.deps = {
-      alwaysBundle: ['@deckagent/presentation-document', '@deckagent/deck/brief', 'zod'],
+      alwaysBundle: ['@deckagent/host-contracts', '@deckagent/presentation-document', 'zod'],
       onlyBundle: [/^@deckagent\//, /^zod(?:\/|$)/, 'animejs'],
     }
   }

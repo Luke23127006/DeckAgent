@@ -1,6 +1,52 @@
-import type { BriefSnapshot, BriefSourceRef, DeckReader, OutlineReader } from '@deckagent/deck'
+import type { DeckReader, OutlineReader } from '@deckagent/deck'
+import type {
+  AgentRequest,
+  ApprovalView,
+  AttachmentView,
+  BriefView,
+  ChatDraft,
+  ConfirmationResult,
+  ModelSelection,
+  RequestEvent,
+  RequestEventBody,
+  RequestSnapshot,
+  StoredActivity,
+  StoredRequest,
+  TerminalStatus,
+  WebPreferences,
+  WebSession,
+  WebSettings,
+  WorkspaceList,
+} from '@deckagent/host-contracts'
 export type { BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef } from '@deckagent/deck'
-import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools } from './tool-contracts.ts'
+export type {
+  ActivityStatus,
+  AgentRequest,
+  AttachmentView,
+  BriefView,
+  ChatDraft,
+  ConfirmationResult,
+  DeckRequest,
+  HistoryMessage,
+  ModelSelection,
+  ProviderProtocol,
+  ProviderSettings,
+  ProviderTemplate,
+  RequestEvent,
+  RequestEventBody,
+  RequestSnapshot,
+  RequestStatus,
+  StoredActivity,
+  StoredRequest,
+  TerminalStatus,
+  WebPreferences,
+  WebSession,
+  WebSettings,
+  WorkspaceFolderStatus,
+  WorkspaceList,
+  WorkspaceView,
+} from '@deckagent/host-contracts'
+import type { ApprovalStep, PreparedTools, RequestTools } from './tool-contracts.ts'
 export type {
   ApprovalStep,
   ApprovalView,
@@ -11,124 +57,8 @@ export type {
   ToolSchema,
 } from './tool-contracts.ts'
 
-export interface ModelSelection {
-  readonly provider: string
-  readonly model: string
-}
-
-/** A generic chat request (B02). Generation entries arrive with their own builds. */
-export interface AgentRequest {
-  /** Explicit user request to finish an existing incomplete deck, without another confirmation. */
-  readonly continueDeck?: true
-  readonly deck?: DeckRequest
-  readonly publicResearch?: boolean
-  readonly sessionId: string
-  readonly input: string
-  readonly attachmentIds?: readonly string[]
-  readonly draftRevision?: number
-}
-export interface DeckRequest {
-  readonly action: 'collect' | 'skip' | 'revise' | 'question' | 'clarify' | 'restore'
-  readonly expectedBriefVersion: number
-  readonly expectedOutline: { readonly outlineId: string; readonly version: number } | null
-  readonly restoreOutlineId?: string
-  readonly formatChoice?: 'html'
-  readonly imageChoice?: 'none' | 'attachments' | 'public-research'
-  readonly imageProviderChoice?: 'tavily' | 'commons'
-  readonly sourceChoice?: {
-    readonly material: boolean
-    readonly modelKnowledge: boolean
-    readonly publicResearch: boolean
-  }
-}
-
-/** Safe history projection, independent of private managed-file metadata. */
-export interface AttachmentView {
-  readonly attachmentId: string
-  readonly name: string
-  readonly state: 'preparing' | 'ready' | 'rejected'
-  readonly byteSize: number
-  readonly detectedType?: string
-  readonly rejectionCode?: string
-  readonly preparation?: {
-    readonly parserVersion: string
-    readonly capabilities: readonly string[]
-    readonly completeness: 'complete' | 'partial'
-    readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
-  }
-  readonly source?: {
-    readonly sourceId: string
-    readonly version: number
-    readonly kind: 'attachment'
-    readonly label: string
-  }
-}
-
-/** Request lifecycle decided by the Host (ADR-0004). `active` and `waiting_approval` hold the chat's one active slot. */
-export type RequestStatus = 'active' | 'waiting_approval' | 'completed' | 'failed' | 'stopped' | 'interrupted'
-export type ActivityStatus = 'running' | 'completed' | 'failed' | 'stopped'
-export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
-
-/** Sanitized product events. Raw runtime output, provider errors and credentials never become an event. */
-export type RequestEventBody =
-  | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
-  | {
-      readonly kind: 'activity'
-      readonly id: string
-      readonly label: string
-      readonly type: 'model' | 'tool'
-      readonly status: ActivityStatus
-    }
-  | { readonly kind: 'text'; readonly part: string; readonly text: string }
-  | { readonly kind: 'notice'; readonly code: string }
-  | { readonly kind: 'approval'; readonly approval: ApprovalView }
-
 /** What a runtime may report; the Host alone writes status events. */
 export type RuntimeEvent = Exclude<RequestEventBody, { readonly kind: 'status' | 'approval' }>
-
-export type RequestEvent = RequestEventBody & {
-  readonly requestId: string
-  /** Monotonic within the request; the reconnect cursor. */
-  readonly sequence: number
-  readonly timestamp: string
-}
-
-/** Current state of one request, read from saved records. `sequence` is the newest saved event. */
-export interface RequestSnapshot {
-  readonly requestId: string
-  readonly sessionId: string
-  readonly status: RequestStatus
-  readonly errorCode?: string
-  /** Assistant text saved so far. */
-  readonly text: string
-  readonly sequence: number
-  readonly pendingApproval?: ApprovalView | null
-}
-
-export interface StoredRequest {
-  readonly publicResearch?: boolean
-  readonly requestId: string
-  readonly sessionId: string
-  readonly status: RequestStatus
-  readonly selection: ModelSelection
-  /** Index of the request's user message in the public history. */
-  readonly historyStart: number
-  readonly startedAt: string
-  readonly endedAt?: string
-  readonly errorCode?: string
-  readonly lastSequence: number
-  /** FR-079: the conversation before this request was summarized for the model; the summary starts here. */
-  readonly summarized?: true
-}
-
-export interface StoredActivity {
-  readonly requestId: string
-  readonly sequence: number
-  readonly id: string
-  readonly label: string
-  readonly type: 'model' | 'tool'
-  readonly status: ActivityStatus
-}
 
 /** Durable request records. The application adapts its storage owner; writes after a request ends are refused. */
 export interface RequestStore {
@@ -207,19 +137,6 @@ export interface HostMessage {
   readonly attachments?: readonly AttachmentView[]
 }
 
-/** Browser projection deliberately excludes provider protocol metadata and tool arguments. */
-export interface HistoryMessage {
-  readonly role: 'user' | 'assistant' | 'tool'
-  readonly content: string
-  /** An assistant reply of a request that did not finish: the part saved before it ended. */
-  readonly interrupted?: true
-  /** Optional tool identity for matching output to its Activity; no tool arguments. */
-  readonly toolCallId?: string
-  readonly name?: string
-  readonly isError?: boolean
-  readonly attachments?: readonly AttachmentView[]
-}
-
 export interface HostOptions {
   readonly confirmations?: {
     confirm(
@@ -258,109 +175,12 @@ export interface RequestAdmission {
   readonly prepared: PreparedRequest
   admitted(): void
 }
-export interface ConfirmationResult {
-  readonly receipt: import('@deckagent/deck').ConfirmationReceipt
-  readonly request: RequestSnapshot
-}
-
-export interface BriefView extends BriefSnapshot {
-  /** A receipt is not proof that the source bytes can still be read. Reads recheck B03 permissions. */
-  readonly sourceStates: readonly { readonly source: BriefSourceRef; readonly status: 'recorded' | 'unavailable' }[]
-}
-
 export interface BriefManagement {
   interview?(
     sessionId: string,
   ): Promise<{ readonly brief: BriefView; readonly state: import('@deckagent/deck').InterviewState }>
   get(sessionId: string, version?: number): Promise<BriefView>
   save(sessionId: string, value: unknown): Promise<BriefView>
-}
-
-/** API protocols of BR-005 V-4. */
-export type ProviderProtocol = 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
-
-export interface ProviderSettings {
-  readonly id: string
-  readonly displayName: string
-  readonly protocol: ProviderProtocol
-  readonly baseUrl: string
-  readonly models: readonly string[]
-  /** Whether a key is saved. No part of a key is ever returned (FR-040). */
-  readonly hasKey: boolean
-  /** The saved key can be read on this computer and account. */
-  readonly keyAvailable: boolean
-  readonly builtIn: boolean
-}
-
-export interface WebSettings {
-  readonly research?: {
-    readonly provider: 'tavily'
-    readonly configured: boolean
-    readonly environmentKey: boolean
-    readonly freeOnly: true
-  }
-  readonly providers: readonly ProviderSettings[]
-  /** The credential store of this computer can keep keys. */
-  readonly persistentKeys: boolean
-  readonly builtIns: readonly ProviderTemplate[]
-  /** Whether the Agent runtime can run requests, and why not. */
-  readonly runtime: { readonly available: boolean; readonly reason?: string }
-}
-
-export interface ProviderTemplate {
-  readonly id: string
-  readonly displayName: string
-  readonly protocol: ProviderProtocol
-  readonly baseUrl: string
-  /** What the user gives for this provider (BR-006). */
-  readonly needs: readonly ('key' | 'baseUrl')[]
-}
-
-export interface WebSession {
-  /** Derived from the first user message; absent on older Hosts. */
-  readonly title?: string
-  /** True only when at least one slide has a published revision. */
-  readonly hasSlides?: boolean
-  readonly sessionId: string
-  readonly createdAt: string
-  readonly updatedAt: string
-  readonly messageCount: number
-  readonly selection?: ModelSelection
-  /** The selected model was removed; the chat has no selected model (FR-065). */
-  readonly removedSelection?: ModelSelection
-  readonly selectable: boolean
-  readonly activeRequestId?: string
-  /** Workspace of the chat; `null` for an ungrouped chat. */
-  readonly workspaceId: string | null
-  /** False when the saved work of the chat cannot be read; the chat stays listed (FR-050). */
-  readonly readable: boolean
-  /** True while the Host keeps a non-empty draft for the chat. */
-  readonly hasDraft?: boolean
-}
-
-export type WorkspaceFolderStatus = 'none' | 'available' | 'unreadable' | 'different-folder'
-
-/** Browser projection of a workspace. The folder path is shown to the user who chose it, on the local Host only. */
-export interface WorkspaceView {
-  readonly id: string
-  readonly name: string
-  readonly folder: string | null
-  readonly isDefault: boolean
-  readonly folderStatus: WorkspaceFolderStatus
-}
-
-export interface WorkspaceList {
-  readonly workspaces: readonly WorkspaceView[]
-  /** The workspace in use. */
-  readonly selectedId: string
-}
-
-export interface ChatDraft {
-  readonly sessionId: string
-  readonly text: string
-  readonly attachmentIds?: readonly string[]
-  readonly revision?: number
-  readonly attachments?: readonly AttachmentView[]
 }
 
 export interface AttachmentManagement {
@@ -381,11 +201,6 @@ export interface AttachmentManagement {
     attachmentId: string,
     signal: AbortSignal,
   ): Promise<{ readonly body: Uint8Array; readonly contentType: string }>
-}
-
-/** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
-export interface WebPreferences {
-  readonly theme: 'light' | 'dark' | 'system'
 }
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */

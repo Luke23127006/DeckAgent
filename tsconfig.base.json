@@ -40,6 +40,9 @@
       "@deckagent/file-tools": [
         "./packages/tools/filesystem/src/index.ts"
       ],
+      "@deckagent/host-contracts": [
+        "./packages/host/contracts/src/index.ts"
+      ],
       "@deckagent/host-api": [
         "./packages/host/api/src/index.ts"
       ],

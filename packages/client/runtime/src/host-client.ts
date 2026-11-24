@@ -1,13 +1,13 @@
+import { decodeAttachment, requestEvent } from '@deckagent/host-contracts'
 import type {
   AgentRequest,
-  AttachmentView,
+  ApprovalView,
   HistoryMessage,
   RequestEvent,
   RequestSnapshot,
   RequestStatus,
-} from '@deckagent/host-api'
-
-import type { ApprovalView } from '@deckagent/host-api'
+} from '@deckagent/host-contracts'
+export { decodeAttachment, requestEvent } from '@deckagent/host-contracts'
 
 function approvalView(value: unknown): ApprovalView {
   if (
@@ -53,80 +53,6 @@ const statuses: readonly RequestStatus[] = [
 const code = /^[A-Z][A-Z0-9_]{0,63}$/
 const requestId = /^[\w-]{1,100}$/
 
-export function decodeAttachment(value: unknown): AttachmentView {
-  if (
-    !object(value) ||
-    typeof value.attachmentId !== 'string' ||
-    !/^att-[a-f0-9-]{36}$/.test(value.attachmentId) ||
-    typeof value.name !== 'string' ||
-    !value.name.trim() ||
-    !['preparing', 'ready', 'rejected'].includes(String(value.state)) ||
-    typeof value.byteSize !== 'number' ||
-    !Number.isSafeInteger(value.byteSize) ||
-    value.byteSize < 0 ||
-    (value.detectedType !== undefined && typeof value.detectedType !== 'string') ||
-    (value.rejectionCode !== undefined && (typeof value.rejectionCode !== 'string' || !code.test(value.rejectionCode)))
-  )
-    throw new Error('INVALID_RESPONSE')
-  const state = value.state
-  if (state !== 'preparing' && state !== 'ready' && state !== 'rejected') throw new Error('INVALID_RESPONSE')
-  let source: AttachmentView['source']
-  let preparation: AttachmentView['preparation']
-  if (value.preparation !== undefined) {
-    const prepared = value.preparation
-    if (
-      !object(prepared) ||
-      typeof prepared.parserVersion !== 'string' ||
-      !Array.isArray(prepared.capabilities) ||
-      prepared.capabilities.some(item => typeof item !== 'string') ||
-      (prepared.completeness !== 'complete' && prepared.completeness !== 'partial') ||
-      !Array.isArray(prepared.omitted)
-    )
-      throw new Error('INVALID_RESPONSE')
-    const omitted = prepared.omitted.map((item: unknown) => {
-      if (
-        !object(item) ||
-        typeof item.code !== 'string' ||
-        !code.test(item.code) ||
-        (item.entry !== undefined && typeof item.entry !== 'string')
-      )
-        throw new Error('INVALID_RESPONSE')
-      return { code: item.code, ...(typeof item.entry === 'string' ? { entry: item.entry } : {}) }
-    })
-    preparation = {
-      parserVersion: prepared.parserVersion,
-      capabilities: prepared.capabilities.map(item => String(item)),
-      completeness: prepared.completeness,
-      omitted,
-    }
-  }
-  if (value.source !== undefined) {
-    const item = value.source
-    if (
-      !object(item) ||
-      typeof item.sourceId !== 'string' ||
-      !item.sourceId ||
-      typeof item.version !== 'number' ||
-      !Number.isSafeInteger(item.version) ||
-      item.version < 1 ||
-      item.kind !== 'attachment' ||
-      typeof item.label !== 'string'
-    )
-      throw new Error('INVALID_RESPONSE')
-    source = { sourceId: item.sourceId, version: item.version, kind: 'attachment', label: item.label }
-  }
-  return {
-    attachmentId: value.attachmentId,
-    name: value.name,
-    state,
-    byteSize: value.byteSize,
-    ...(typeof value.detectedType === 'string' ? { detectedType: value.detectedType } : {}),
-    ...(typeof value.rejectionCode === 'string' ? { rejectionCode: value.rejectionCode } : {}),
-    ...(source ? { source } : {}),
-    ...(preparation ? { preparation } : {}),
-  }
-}
-
 /** Whether a request still holds its chat's active slot. */
 export function isActive(status: RequestStatus): boolean {
   return status === 'active' || status === 'waiting_approval'
@@ -167,56 +93,6 @@ function snapshot(value: unknown): RequestSnapshot {
     ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
     ...(pending === undefined ? {} : { pendingApproval: pending }),
   }
-}
-
-/** Only the documented event shapes; anything else is a broken stream, never rendered. */
-export function requestEvent(value: unknown): RequestEvent {
-  if (
-    !object(value) ||
-    typeof value.requestId !== 'string' ||
-    !requestId.test(value.requestId) ||
-    typeof value.sequence !== 'number' ||
-    !Number.isSafeInteger(value.sequence) ||
-    value.sequence < 1 ||
-    typeof value.timestamp !== 'string'
-  )
-    throw new Error('INVALID_RESPONSE')
-  const base = { requestId: value.requestId, sequence: value.sequence, timestamp: value.timestamp }
-  if (value.kind === 'status') {
-    if (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !code.test(value.errorCode)))
-      throw new Error('INVALID_RESPONSE')
-    return {
-      ...base,
-      kind: 'status',
-      status: status(value.status),
-      ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
-    }
-  }
-  if (
-    value.kind === 'activity' &&
-    typeof value.id === 'string' &&
-    typeof value.label === 'string' &&
-    (value.type === 'model' || value.type === 'tool') &&
-    ['running', 'completed', 'failed', 'stopped'].includes(String(value.status))
-  )
-    return {
-      ...base,
-      kind: 'activity',
-      id: value.id,
-      label: value.label,
-      type: value.type,
-      status: value.status as 'running' | 'completed' | 'failed' | 'stopped',
-    }
-  if (value.kind === 'text' && typeof value.part === 'string' && typeof value.text === 'string')
-    return { ...base, kind: 'text', part: value.part, text: value.text }
-  if (value.kind === 'notice' && typeof value.code === 'string' && code.test(value.code))
-    return { ...base, kind: 'notice', code: value.code }
-  if (value.kind === 'approval') {
-    const approval = approvalView(value.approval)
-    if (approval.requestId !== value.requestId) throw new Error('INVALID_RESPONSE')
-    return { ...base, kind: 'approval', approval }
-  }
-  throw new Error('INVALID_RESPONSE')
 }
 
 /** A refused Host call: `message` is the stable code; `detail` holds only safe facts such as a reason word. */

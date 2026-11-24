@@ -1,4 +1,4 @@
-import type { OutlineProposal } from '@deckagent/deck'
+import type { OutlineProposal } from '@deckagent/host-contracts'
 import { button, element } from './dom.ts'
 import { briefDetails, briefFieldLabel, sourceReferences } from './brief-view.ts'
 import { imageFailure } from './image-review-client.ts'

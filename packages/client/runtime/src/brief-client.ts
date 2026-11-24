@@ -1,140 +1,10 @@
-import { decodeBriefDraft } from '@deckagent/deck/brief'
-import type { BriefDraft, BriefSourceRef, DesignSnapshot } from '@deckagent/deck'
-import type { BriefView } from '@deckagent/host-api'
+import { decodeBriefView } from '@deckagent/host-contracts'
+import type { BriefDraft, BriefView, InterviewState } from '@deckagent/host-contracts'
+export { decodeBriefView, isDesignSnapshot } from '@deckagent/host-contracts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
-const integer = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(text)
-const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
-const reference = (v: unknown) =>
-  object(v) && only(v, ['id', 'version']) && text(v.id) && integer(v.version) && v.version > 0
-const source = (v: unknown): v is BriefSourceRef =>
-  object(v) &&
-  only(v, ['sourceId', 'version', 'kind']) &&
-  typeof v.sourceId === 'string' &&
-  /^src-[a-f0-9-]{36}$/.test(v.sourceId) &&
-  integer(v.version) &&
-  v.version > 0 &&
-  ['attachment', 'project-file', 'approved-file', 'research'].some(k => k === v.kind)
-const colors = [
-  'color.background',
-  'color.surface',
-  'color.text',
-  'color.muted',
-  'color.accent',
-  'color.onAccent',
-  'color.border',
-]
-const fonts = ['font.heading', 'font.body']
-const numbers = ['type.display', 'type.heading', 'type.body', 'type.caption', 'space.unit', 'type.lineHeight']
-function theme(v: unknown, partial = false): boolean {
-  if (!object(v) || !only(v, [...colors, ...fonts, ...numbers])) return false
-  if (!partial && Object.keys(v).length !== colors.length + fonts.length + numbers.length) return false
-  return Object.entries(v).every(([k, value]) =>
-    colors.includes(k)
-      ? typeof value === 'string' && /^#[a-f0-9]{6}$/i.test(value)
-      : fonts.includes(k)
-        ? text(value)
-        : typeof value === 'number' && Number.isFinite(value) && value > 0,
-  )
-}
-export function isDesignSnapshot(v: unknown): v is DesignSnapshot {
-  return (
-    object(v) &&
-    only(v, ['format', 'designSystem', 'template', 'theme', 'rules', 'brandAssets', 'viewport', 'fingerprint']) &&
-    v.format === 'html' &&
-    reference(v.designSystem) &&
-    reference(v.template) &&
-    theme(v.theme) &&
-    strings(v.rules) &&
-    Array.isArray(v.brandAssets) &&
-    v.brandAssets.length === 0 &&
-    object(v.viewport) &&
-    only(v.viewport, ['width', 'height']) &&
-    v.viewport.width === 1280 &&
-    v.viewport.height === 720 &&
-    typeof v.fingerprint === 'string' &&
-    /^[a-f0-9]{64}$/.test(v.fingerprint)
-  )
-}
-function draft(value: unknown): value is BriefDraft {
-  try {
-    decodeBriefDraft(value)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** Browser-safe structural decoding; selection policy, source access and snapshot integrity belong to Host. */
-export function decodeBriefView(v: unknown, sessionId: string): BriefView {
-  const invalid = (): never => {
-    throw new Error('INVALID_RESPONSE')
-  }
-  if (
-    !object(v) ||
-    !only(v, ['sessionId', 'version', 'current', 'locked', 'sourceStates']) ||
-    v.sessionId !== sessionId ||
-    !integer(v.version) ||
-    typeof v.locked !== 'boolean' ||
-    !Array.isArray(v.sourceStates)
-  )
-    return invalid()
-  const c = v.current
-  if (c === null) {
-    if (v.version !== 0 || v.sourceStates.length) return invalid()
-    return { sessionId, version: 0, current: null, locked: v.locked, sourceStates: [] }
-  }
-  if (
-    !object(c) ||
-    !only(c, ['sessionId', 'briefId', 'version', 'createdAt', 'draft', 'design']) ||
-    c.sessionId !== sessionId ||
-    typeof c.briefId !== 'string' ||
-    !/^brief-[a-f0-9-]{36}$/.test(c.briefId) ||
-    c.version !== v.version ||
-    !v.version ||
-    typeof c.createdAt !== 'string' ||
-    !Number.isFinite(Date.parse(c.createdAt)) ||
-    !draft(c.draft) ||
-    (c.design !== null && !isDesignSnapshot(c.design)) ||
-    (c.draft.generationFormat === 'html') !== (c.design !== null)
-  )
-    return invalid()
-  const refs = c.draft.sources.refs
-  if (v.sourceStates.length !== refs.length) return invalid()
-  const sourceStates = v.sourceStates.map((state: unknown, index) => {
-    const ref = refs[index]!
-    if (
-      !object(state) ||
-      !only(state, ['source', 'status']) ||
-      !source(state.source) ||
-      !['recorded', 'unavailable'].some(k => k === state.status) ||
-      state.source.sourceId !== ref.sourceId ||
-      state.source.version !== ref.version ||
-      state.source.kind !== ref.kind
-    )
-      return invalid()
-    return {
-      source: state.source,
-      status: state.status === 'recorded' ? ('recorded' as const) : ('unavailable' as const),
-    }
-  })
-  return {
-    sessionId,
-    version: v.version,
-    locked: v.locked,
-    current: {
-      sessionId,
-      briefId: c.briefId,
-      version: v.version,
-      createdAt: c.createdAt,
-      draft: c.draft,
-      design: c.design,
-    },
-    sourceStates,
-  }
-}
 
 export class BriefClient {
   constructor(
@@ -193,7 +63,7 @@ export class BriefClient {
     return this.request(sessionId, undefined, { expectedVersion, draft })
   }
 
-  async interview(sessionId: string): Promise<{ brief: BriefView; state: import('@deckagent/deck').InterviewState }> {
+  async interview(sessionId: string): Promise<{ brief: BriefView; state: InterviewState }> {
     const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/interview`, {
       headers: { authorization: `Bearer ${this.token}` },
       credentials: 'omit',

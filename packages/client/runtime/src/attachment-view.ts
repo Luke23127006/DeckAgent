@@ -1,4 +1,4 @@
-import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
+import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
 import { button, element } from './dom.ts'
 
 const reasons: Readonly<Record<string, string>> = {

@@ -1,4 +1,4 @@
-import type { DeckSnapshot } from '@deckagent/deck'
+import type { DeckSnapshot } from '@deckagent/host-contracts'
 import type { DeckClient } from './deck-client.ts'
 
 export interface DeckViewState {

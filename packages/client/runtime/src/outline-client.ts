@@ -1,5 +1,5 @@
-import type { OutlineProposal, OutlineSnapshot } from '@deckagent/deck'
-import { decodeBoundProposal } from './bound-outline-decoder.ts'
+import { decodeBoundProposal } from '@deckagent/host-contracts'
+import type { OutlineProposal, OutlineSnapshot } from '@deckagent/host-contracts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)

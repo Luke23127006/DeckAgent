@@ -1,5 +1,4 @@
-import type { DeckRequest } from '@deckagent/host-api'
-import type { OutlineProposal } from '@deckagent/deck'
+import type { DeckRequest, OutlineProposal } from '@deckagent/host-contracts'
 import type { BriefClient } from './brief-client.ts'
 import { button, element } from './dom.ts'
 import { briefDetails } from './brief-view.ts'

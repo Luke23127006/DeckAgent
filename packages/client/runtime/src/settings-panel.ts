@@ -1,4 +1,4 @@
-import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
+import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
 import { ManagementError } from './management-client.ts'
 import type { ManagementClient } from './management-client.ts'
 import { button, element, field } from './dom.ts'

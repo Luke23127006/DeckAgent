@@ -17,6 +17,9 @@
       "path": "packages/tools/filesystem"
     },
     {
+      "path": "packages/host/contracts"
+    },
+    {
       "path": "packages/host/api"
     },
     {

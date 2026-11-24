@@ -13,9 +13,7 @@
     "./boot": "./lib/boot.js"
   },
   "dependencies": {
-    "@deckagent/presentation-document": "workspace:*",
-    "@deckagent/deck": "workspace:*",
-    "@deckagent/host-api": "workspace:*"
+    "@deckagent/host-contracts": "workspace:*"
   },
   "devDependencies": {
     "animejs": "4.5.0"

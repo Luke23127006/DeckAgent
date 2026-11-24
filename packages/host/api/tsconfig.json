@@ -8,6 +8,7 @@
     "src"
   ],
   "references": [
-    { "path": "../../presentation/deck" }
+    { "path": "../../presentation/deck" },
+    { "path": "../contracts" }
   ]
 }

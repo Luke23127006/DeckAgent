@@ -180,7 +180,7 @@ Each relevant task names the suite or supplies its new test code.
 | 02 | 0 | Done | [Add oxlint import restriction rules and negative fixture tests](task-02-oxlint-import-rules.md) |
 | 03 | 0 | Done | [Add boundary and dependency graph checker](task-03-boundary-checker.md) |
 | 04 | 0 | Done | [Record baseline of boundaries and test suites](task-04-record-baseline.md) |
-| 05 | 1 | Pending | [Extract browser-safe wire contracts](task-05-extract-wire-contracts.md) |
+| 05 | 1 | Done | [Extract browser-safe wire contracts](task-05-extract-wire-contracts.md) |
 | 06 | 1 | Pending | [Put the persistence contract in Session](task-06-move-request-persistence-contract.md) |
 | 07 | 2 | Pending | [Separate Request Lifecycle errors from HTTP](task-07-separate-lifecycle-errors.md) |
 | 08 | 3 | Pending | [Move the local application to apps/web](task-08-move-local-application.md) |

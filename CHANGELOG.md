@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add `@deckagent/host-contracts` (`packages/host/contracts`) with browser-safe wire DTOs, boundary decoders (`decodeAttachment`, `requestEvent`, `decodeBriefView`, `decodeBoundProposal`, `decodeGeneration`, `decodeImageReview`, `isDesignSnapshot`), private Zod wire validation for Brief drafts, and portable-document decoder re-exports.
 - Add Wave 0 boundary checks (`scripts/check-boundaries.mjs`, `check:boundaries` / `check:boundaries:report`) and enable TypeScript safety and import-restriction rules in `.oxlintrc.json` with negative fixture tests.
 - Add the codebase refactor plan with 18 tasks across ten waves. Specify safety-net checks, file ownership, contracts, migration order, regression checks and deferred behavior work.
 - Add the target structure of DeckAgent to `docs/conventions/project-structure.md`. The file gives the runtime ownership, the state authority of each owner, one table row for each folder and package, and the dependency rules. It also gives the enforcement status of each boundary: the tool that stops it now, and the check that the refactor adds.

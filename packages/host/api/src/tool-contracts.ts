@@ -1,11 +1,4 @@
-export interface ApprovalView {
-  readonly approvalId: string
-  readonly requestId: string
-  readonly operation: 'read-file'
-  readonly target: string
-  readonly reason: string
-  readonly state: 'pending' | 'allowed' | 'refused' | 'cancelled'
-}
+export type { ApprovalView } from '@deckagent/host-contracts'
 
 export interface ApprovalStep {
   readonly key: string

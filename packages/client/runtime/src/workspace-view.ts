@@ -1,4 +1,4 @@
-import type { WorkspaceList, WorkspaceView } from '@deckagent/host-api'
+import type { WorkspaceList, WorkspaceView } from '@deckagent/host-contracts'
 import { button, element, field } from './dom.ts'
 import { ManagementError } from './management-client.ts'
 import type { ManagementClient } from './management-client.ts'

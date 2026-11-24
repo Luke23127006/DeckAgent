@@ -1,4 +1,4 @@
-import type { RequestStatus, StoredActivity } from '@deckagent/host-api'
+import type { RequestStatus, StoredActivity } from '@deckagent/host-contracts'
 
 const errors: Readonly<Record<string, readonly [string, string]>> = {
   OUTLINE_REPAIR_LIMIT: [

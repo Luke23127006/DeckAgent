@@ -1,12 +1,17 @@
 import type {
+  ApprovalView,
+  AttachmentView,
+  ChatDraft,
+  ConfirmationTarget,
   HistoryMessage,
+  OutlineProposal,
+  OutlineSnapshot,
   RequestSnapshot,
   RequestStatus,
   WebSession,
   WebSettings,
   WorkspaceList,
-} from '@deckagent/host-api'
-import type { OutlineSnapshot } from '@deckagent/deck'
+} from '@deckagent/host-contracts'
 import { HostClient, HostRequestError, isActive } from './host-client.ts'
 import { ManagementClient } from './management-client.ts'
 import { button, element } from './dom.ts'
@@ -21,14 +26,11 @@ import { failureFeedback } from './request-feedback.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
 import { workspaceView } from './workspace-view.ts'
-import type { ApprovalView } from '@deckagent/host-api'
-import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
 import { AttachmentDraftView } from './attachment-view.ts'
 import { researchView } from './research-view.ts'
 import { BriefClient } from './brief-client.ts'
 import { ConfirmationClient } from './confirmation-client.ts'
 import { DeckWorkflowView } from './deck-workflow-view.ts'
-import type { OutlineProposal, ConfirmationTarget } from '@deckagent/deck'
 
 /** Why Send is not offered for the open chat (FR-046, UC-003 A17); `undefined` when it is. The draft is always kept. */
 function sendBlocked(session: WebSession | undefined, settings: WebSettings): string | undefined {

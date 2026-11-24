@@ -1,6 +1,11 @@
+import { decodeAttachment } from '@deckagent/host-contracts'
 import type {
+  AttachmentView,
+  ChatDraft,
+  ProviderProtocol,
   ProviderSettings,
   ProviderTemplate,
+  RequestStatus,
   StoredActivity,
   StoredRequest,
   WebPreferences,
@@ -8,10 +13,7 @@ import type {
   WebSettings,
   WorkspaceList,
   WorkspaceView,
-} from '@deckagent/host-api'
-import type { ProviderProtocol, RequestStatus } from '@deckagent/host-api'
-import type { AttachmentView, ChatDraft } from '@deckagent/host-api'
-import { decodeAttachment } from './host-client.ts'
+} from '@deckagent/host-contracts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)

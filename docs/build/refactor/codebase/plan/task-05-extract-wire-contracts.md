@@ -102,7 +102,7 @@ ImageCredit, ImageSelection, ImageAttempt, ImageSourceCheck, OutlineImageReview
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 Use `@deckagent/host-contracts` as its name and `0.0.0` as its version.
 Use the existing ESM manifest and declaration layout.
@@ -111,7 +111,7 @@ Add project references and workspace dependencies for Host API and Browser.
 Use `corepack pnpm@11.28.5 install --lockfile-only --offline` to update workspace links.
 Expected: exit code 0. Preserve all external dependency versions.
 
-- [ ] **Step 2: Separate wire data from Host operations**
+- [x] **Step 2: Separate wire data from Host operations**
 
 Move the wire types listed in Interfaces.
 Keep `HostOptions`, `HostMessage`, `WebManagement`, `WorkspaceManagement`, `AttachmentManagement`, and `BriefManagement` in Host API.
@@ -123,7 +123,7 @@ Do not import `@deckagent/deck` into the wire package.
 Preserve domain declarations in their owner packages.
 Identical representations need no runtime mapper.
 
-- [ ] **Step 3: Move boundary validation**
+- [x] **Step 3: Move boundary validation**
 
 Move the listed decoders and their private helpers into `validation.ts`.
 Keep existing exported names available through the Browser entry during migration.
@@ -138,7 +138,7 @@ Do not import DeckError or @deckagent/deck/brief into the wire package.
 Do not move generation tools, grants, or domain operations into wire contracts.
 It cannot depend on Deck, Host API, Session, or application implementation.
 
-- [ ] **Step 4: Check compatibility**
+- [x] **Step 4: Check compatibility**
 
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 lint`.
@@ -148,7 +148,7 @@ Compare exported decoder behavior with the unchanged malformed-payload assertion
 Do not remove a decoder export solely because its tests use that export.
 A production Browser consumer must use the extracted decoder.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

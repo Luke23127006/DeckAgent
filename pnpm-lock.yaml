@@ -66,15 +66,9 @@ importers:
 
   packages/client/runtime:
     dependencies:
-      '@deckagent/deck':
+      '@deckagent/host-contracts':
         specifier: workspace:*
-        version: link:../../presentation/deck
-      '@deckagent/host-api':
-        specifier: workspace:*
-        version: link:../../host/api
-      '@deckagent/presentation-document':
-        specifier: workspace:*
-        version: link:../../presentation/document
+        version: link:../../host/contracts
     devDependencies:
       animejs:
         specifier: 4.5.0
@@ -85,6 +79,9 @@ importers:
       '@deckagent/deck':
         specifier: workspace:*
         version: link:../../presentation/deck
+      '@deckagent/host-contracts':
+        specifier: workspace:*
+        version: link:../contracts
       busboy:
         specifier: 1.6.0
         version: 1.6.0
@@ -92,6 +89,15 @@ importers:
       '@types/busboy':
         specifier: 1.5.4
         version: 1.5.4
+
+  packages/host/contracts:
+    dependencies:
+      '@deckagent/presentation-document':
+        specifier: workspace:*
+        version: link:../../presentation/document
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/presentation/deck:
     dependencies:

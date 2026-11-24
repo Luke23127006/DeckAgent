@@ -1,6 +1,5 @@
-import type { ConfirmationReceipt, ConfirmationTarget, GenerationSnapshot } from '@deckagent/deck'
-import type { ConfirmationResult } from '@deckagent/host-api'
-import { isDesignSnapshot } from './brief-client.ts'
+import type { ConfirmationReceipt, ConfirmationResult, ConfirmationTarget } from '@deckagent/host-contracts'
+export { decodeGeneration } from '@deckagent/host-contracts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const id = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
@@ -38,42 +37,6 @@ function receipt(v: unknown, sessionId: string): ConfirmationReceipt {
     briefVersion: v.briefVersion,
     fingerprint: v.fingerprint,
     createdAt: v.createdAt,
-  }
-}
-export function decodeGeneration(v: unknown, sessionId: string): GenerationSnapshot {
-  if (
-    !object(v) ||
-    v.format !== 'html' ||
-    !isDesignSnapshot(v.design) ||
-    !object(v.selection) ||
-    typeof v.selection.provider !== 'string' ||
-    !v.selection.provider ||
-    typeof v.selection.model !== 'string' ||
-    !v.selection.model ||
-    typeof v.formatLocked !== 'boolean' ||
-    (v.activeRequestId !== undefined && !id(v.activeRequestId)) ||
-    (v.startedAt !== null && (typeof v.startedAt !== 'string' || !Number.isFinite(Date.parse(v.startedAt))))
-  )
-    return invalid()
-  const r = receipt(v.receipt, sessionId)
-  const state = (['pending', 'admitted', 'generating', 'generated', 'incomplete'] as const).find(s => s === v.state)
-  if (
-    !state ||
-    r.fingerprint !== v.design.fingerprint ||
-    v.formatLocked !== (v.startedAt !== null) ||
-    (['pending', 'admitted'].includes(state) && v.startedAt !== null && !v.activeRequestId) ||
-    (['generating', 'generated'].includes(state) && v.startedAt === null)
-  )
-    return invalid()
-  return {
-    receipt: r,
-    ...(typeof v.activeRequestId === 'string' ? { activeRequestId: v.activeRequestId } : {}),
-    state,
-    format: 'html',
-    design: v.design,
-    formatLocked: v.formatLocked,
-    startedAt: v.startedAt,
-    selection: { provider: v.selection.provider, model: v.selection.model },
   }
 }
 
