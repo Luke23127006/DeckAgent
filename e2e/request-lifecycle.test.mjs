@@ -1,3 +1,16 @@
+/**
+ * Tests: Request persistence and Host request lifecycle (admission, single active request per chat, event ordering,
+ * cursor replay, Stop refusing late writes from a silent runtime, failures, reopened-store interruption, Host
+ * shutdown, and input validation).
+ * Environment: real SqliteSessionStore in temporary directories and real startHost over loopback HTTP; fake
+ * RequestRuntime replacing only the runtime boundary (synchronized with reached/released promises in the Stop test).
+ * Run: node --test --test-reporter=tap e2e/request-lifecycle.test.mjs
+ * Expected values source: docs/UCs/requests.md, docs/UCs/quality-attributes.md (NFR-011), and
+ * docs/build/refactor/boundaries/plan/task-16-remove-fixed-test-waits.md.
+ * Fault check: temporarily replacing `if (execution.ended) throw new Error('Request ended')` with
+ * `if (execution.ended) return` in packages/host/api/src/request-controller.ts failed the Stop test on
+ * `assert.equal(await lateWrite, 'refused')` (actual: 'accepted', expected: 'refused').
+ */
 import assert from 'node:assert/strict'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -274,42 +287,62 @@ test('Host persists before publishing, replays by cursor, and the runtime alone 
 })
 
 test('Stop ends a silent runtime at once, refuses its late writes, and the chat accepts the next request', async t => {
-  let lateWrite
+  let markReached
+  const reached = new Promise(resolve => {
+    markReached = resolve
+  })
+  let release
+  const released = new Promise(resolve => {
+    release = resolve
+  })
+  let resolveLateWrite
+  const lateWrite = new Promise(resolve => {
+    resolveLateWrite = resolve
+  })
   const { client, chats, store } = await hostFixture(t, async (run, request) => {
     if (request.input !== 'hang') return { status: 'completed' }
     await run.emit({ kind: 'text', part: 'p', text: 'Done part' })
-    // Sends nothing more and ignores the abort for a while, like a hung provider.
-    await new Promise(resolve => setTimeout(resolve, 300))
-    lateWrite = run.emit({ kind: 'text', part: 'late', text: 'late' }).then(
-      () => 'accepted',
-      () => 'refused',
+    markReached()
+    // Sends nothing more and ignores abort until the test releases it, like a hung provider.
+    await released
+    resolveLateWrite(
+      await run.emit({ kind: 'text', part: 'late', text: 'late' }).then(
+        () => 'accepted',
+        () => 'refused',
+      ),
     )
     return { status: 'completed' }
   })
-  const accepted = await client.send({ sessionId: chats[0].sessionId, input: 'hang' })
-  await new Promise(resolve => setTimeout(resolve, 50))
-  const started = Date.now()
-  const stopped = await client.stop(accepted.requestId)
-  assert.equal(stopped.status, 'stopped')
-  assert.ok(Date.now() - started < 1000, 'Stop shows its effect without waiting for the runtime')
-  assert.equal((await client.stop(accepted.requestId)).status, 'stopped', 'Stop is idempotent')
-  const next = await client.send({ sessionId: chats[0].sessionId, input: 'after' })
-  assert.equal(await lateWrite, 'refused')
-  assert.equal(
-    store.requests.get(accepted.requestId).status,
-    'stopped',
-    'A runtime "completed" after Stop changes nothing',
-  )
-  assert.equal(store.requests.text(accepted.requestId), 'Done part')
-  await collect(client, next.requestId)
-  assert.deepEqual(
-    (await client.history(chats[0].sessionId)).map(message => [message.role, message.interrupted ?? false]),
-    [
-      ['user', false],
-      ['assistant', true],
-      ['user', false],
-    ],
-  )
+  try {
+    const accepted = await client.send({ sessionId: chats[0].sessionId, input: 'hang' })
+    await reached
+    const started = performance.now()
+    const stopped = await client.stop(accepted.requestId)
+    assert.equal(stopped.status, 'stopped')
+    assert.ok(performance.now() - started < 1000, 'Stop shows its effect without waiting for the runtime')
+    assert.equal((await client.stop(accepted.requestId)).status, 'stopped', 'Stop is idempotent')
+    assert.equal(store.requests.get(accepted.requestId).status, 'stopped')
+    release()
+    assert.equal(await lateWrite, 'refused')
+    const next = await client.send({ sessionId: chats[0].sessionId, input: 'after' })
+    assert.equal(
+      store.requests.get(accepted.requestId).status,
+      'stopped',
+      'A runtime "completed" after Stop changes nothing',
+    )
+    assert.equal(store.requests.text(accepted.requestId), 'Done part')
+    await collect(client, next.requestId)
+    assert.deepEqual(
+      (await client.history(chats[0].sessionId)).map(message => [message.role, message.interrupted ?? false]),
+      [
+        ['user', false],
+        ['assistant', true],
+        ['user', false],
+      ],
+    )
+  } finally {
+    release()
+  }
 })
 
 test('failure, refused admission, two chats in parallel and Host shutdown', async t => {

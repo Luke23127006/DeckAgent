@@ -100,15 +100,7 @@ export async function finished(client, requestId) {
   return events
 }
 
-export async function waitFor(check, timeout = 10000) {
-  const until = Date.now() + timeout
-  while (Date.now() < until) {
-    const value = await check()
-    if (value) return value
-    await new Promise(done => setTimeout(done, 25))
-  }
-  throw new Error('Timed out waiting')
-}
+export { waitFor } from './wait-for.mjs'
 
 /** Every file under `folder` whose bytes contain `needle`. */
 export async function filesContaining(folder, needle) {

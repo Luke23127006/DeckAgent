@@ -51,7 +51,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Add the complete condition-wait tests**
+- [x] **Step 1: Add the complete condition-wait tests**
 
 ```js
 import assert from 'node:assert/strict'
@@ -79,7 +79,7 @@ test('waitFor propagates condition errors', async () => {
 Run `node --test --test-reporter=tap apps/web/tests/wait-for.test.mjs`.
 Expected: FAIL because `fixtures/wait-for.mjs` does not exist.
 
-- [ ] **Step 2: Implement the condition wait**
+- [x] **Step 2: Implement the condition wait**
 
 Implement the declared signature.
 Return the first truthy condition result.
@@ -88,7 +88,7 @@ Use a timeout watchdog with the existing `Timed out waiting` error.
 Yield with setImmediate between condition checks.
 Always release the watchdog resource when the wait finishes.
 
-- [ ] **Step 3: Replace the silent-runtime delay**
+- [x] **Step 3: Replace the silent-runtime delay**
 
 Replace the runtime's fixed 300 ms wait with a release promise.
 Resolve a reached promise after the first persisted text event.
@@ -99,14 +99,14 @@ Keep the new-request and retained-text assertions.
 Keep a real elapsed-time assertion for the user-visible Stop requirement.
 Do not represent a fake-clock result as an end-to-end latency measurement.
 
-- [ ] **Step 4: Replace attachment polling delays**
+- [x] **Step 4: Replace attachment polling delays**
 
 Replace the fixed 30 ms polling loop with waitFor.
 The condition reads the attachment endpoint and returns only a settled attachment.
 Assert `state === 'ready'` after the condition returns.
 Keep rejection cases and draft-preservation assertions unchanged.
 
-- [ ] **Step 5: Prove the tests detect the intended faults**
+- [x] **Step 5: Prove the tests detect the intended faults**
 
 Run the Stop test once with late-write rejection temporarily removed.
 Expected: FAIL on the late-write assertion.
@@ -119,7 +119,7 @@ Expected: `# fail 0`.
 Report other constant waits without changing them in this task.
 Broader timing cleanup belongs to the next revision.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

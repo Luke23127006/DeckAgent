@@ -74,12 +74,10 @@ test('upload creates a revisioned draft, prepares a bounded preview and rejects 
   const uploaded = await api(`sessions/${id}/attachments`, 'POST', form)
   assert.equal(uploaded.status, 202)
   const attachmentId = uploaded.data.attachment.attachmentId
-  let item
-  for (let i = 0; i < 100; i++) {
-    item = await api(`sessions/${id}/attachments/${attachmentId}`)
-    if (item.data.state !== 'preparing') break
-    await new Promise(resolve => setTimeout(resolve, 30))
-  }
+  const item = await waitFor(async () => {
+    const response = await api(`sessions/${id}/attachments/${attachmentId}`)
+    return response.data.state === 'preparing' ? undefined : response
+  })
   assert.equal(item.data.state, 'ready')
   assert.ok(item.data.preparation.parserVersion)
   const draft = await api(`sessions/${id}/draft`)
