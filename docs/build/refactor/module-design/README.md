@@ -18,36 +18,45 @@ Do not write implementation tasks for a later phase until the current phase pass
 
 ## Measured baseline
 
-A static scan on 2026-11-24 measured 156 production TypeScript files across 14 areas in `apps/` and `packages/` (excluding `lib/`, `tests/`, and `node_modules/`), totaling 26,180 lines.
-The repository also holds 67 test files (including 26 in `e2e/`) and 2 shared helpers in `scripts/lib/`.
+The Phase 1 AST scan on 2026-11-24 measured 156 production TypeScript files totaling 26,177 lines across 14 areas.
+The scan covers `apps/` and `packages/` and excludes `lib/`, `tests/`, and `node_modules/`.
+The repository also holds 68 test files and 2 shared helpers in `scripts/lib/`.
+Test files split across `e2e/` (26), `apps/web/tests/` (17), `packages/**/tests/` (20), and `tests/` (5).
 
 | Signal | Measured value | Notable locations |
 | --- | --- | --- |
 | Files over 400 lines | 17 files | `apps/web/src/browser/boot.ts` (1,263 lines), `packages/presentation/deck/src/index.ts` (1,065 lines), `packages/presentation/deck/src/artifact-store.ts` (985 lines), `apps/web/src/features/deck/deck-workflow.ts` (817 lines), `packages/host/contracts/src/validation.ts` (766 lines), `packages/host/api/src/index.ts` (711 lines) |
-| Wide public export surface | High in Deck | `packages/presentation/deck/src/contracts.ts` exports 49 symbols and `packages/presentation/deck/src/index.ts` exports 16 symbols |
-| Small files under 30 lines | 44 files | Repeated 9-to-12-line `failures.ts` files across 5 features and thin wrappers such as `apps/web/src/browser/transport/bound-outline-decoder.ts` (1 line) |
-| Non-`as const` type assertions | 90 occurrences | Concentrated in `apps/web/src` (51) and `packages/session/persistence` (14) |
+| Functions over 80 lines | 57 functions | Concentrated in `apps/web/src/browser/` (11), `apps/web/src/features/` (11), `packages/presentation/deck/` (11), and `apps/web/src/integrations/` (10) |
+| Wide public export surface | High in Deck and Host | `packages/presentation/deck/` (max 66 exports), `packages/host/contracts/` (max 65), `packages/host/api/` (max 56), and `packages/session/persistence/` (max 32) |
+| Non-barrel files under 30 lines | 21 files | `apps/web/src/features/` (7, including repeated short `failures.ts` files), `apps/web/src/` (4), and thin wrappers such as `apps/web/src/browser/transport/bound-outline-decoder.ts` (1 line) |
+| Non-`as const` type assertions | 32 occurrences | Spread across `apps/web/src/browser/` (7), `apps/web/src/features/` (6), `apps/web/src/integrations/` (4), `packages/session/persistence/` (4), and `packages/presentation/document/` (4) |
+| `*Service` declarations | 5 symbols | `apps/web/src/features/` (4) and `packages/presentation/deck/` (1) |
+| Testware baseline gaps | 68 test files | 62 files miss a top header, 6 files call fixed `setTimeout(`, and 2 files import `scripts/lib/` |
 | Architecture lookup docs | 1 file | `docs/architecture/` contains only `README.md` [[5]](#ref-5) |
-| Pre-existing test failure | 1 test | `portable-generation-http.test.mjs` #60 `REQUEST_TIMEOUT` in `test:generation-publication` [[1]](#ref-1) |
+| Pre-existing test failure | 1 test file | `e2e/portable-generation-http.test.mjs` `REQUEST_TIMEOUT` caused by `openCode.timeoutMs: 30000` in `b02-helpers.mjs` across 14 cold browser spawns per 7-slide deck [[1]](#ref-1) |
 
 ### Area inventory
 
-| Area | Files | Approximate lines | Files over 400 lines | Proposed tier |
+The owner approved all 14 area tiers on 2026-11-24 from the Task 2 AST scan report.
+`packages/workspace/registry/` and `packages/presentation/document/` moved from Skip to `Tier 2 (hygiene only)` to remove remaining type assertions.
+`packages/presentation/pptx/` stays `Skip unless defect appears` because its single 143-line file holds zero type assertions and zero `*Service` symbols.
+
+| Area | Files | Lines | Files over 400 lines | Approved tier |
 | --- | --- | --- | --- | --- |
-| `apps/web/src/browser/` | 36 | 6,800 | 5 | Tier 1 (Slice 2D) |
-| `apps/web/src/features/` | 28 | 3,890 | 2 | Tier 1 (Slice 2C) |
-| `packages/presentation/deck/` | 12 | 3,700 | 3 | Tier 1 (Slice 2B) |
-| `apps/web/src/integrations/` | 22 | 2,550 | 1 | Tier 1 (Slice 2C) |
-| `packages/session/persistence/` | 9 | 1,880 | 1 | Tier 1 (Slice 2A) |
-| `packages/host/api/` | 8 | 1,570 | 2 | Tier 1 (Slice 2A) |
-| `packages/host/contracts/` | 7 | 1,510 | 1 | Tier 1 (Slice 2A) |
-| `apps/web/src/` (root) | 10 | 1,350 | 1 | Tier 1 (Slice 2C) |
-| `packages/tools/filesystem/` | 7 | 849 | 0 | Tier 2 (hygiene only) |
-| `packages/presentation/html/` | 6 | 629 | 0 | Tier 2 (hygiene only) |
-| `packages/workspace/registry/` | 6 | 591 | 0 | Skip unless defect appears |
-| `packages/presentation/design/` | 2 | 576 | 1 | Tier 2 (inspect large file) |
-| `packages/presentation/document/` | 2 | 274 | 0 | Skip unless defect appears |
-| `packages/presentation/pptx/` | 1 | 144 | 0 | Skip unless defect appears |
+| `apps/web/src/browser/` | 36 | 6,766 | 5 | Tier 1 (Slice 2D) |
+| `apps/web/src/features/` | 28 | 3,865 | 2 | Tier 1 (Slice 2C) |
+| `packages/presentation/deck/` | 12 | 3,695 | 3 | Tier 1 (Slice 2B) |
+| `apps/web/src/integrations/` | 22 | 2,528 | 1 | Tier 1 (Slice 2C) |
+| `packages/session/persistence/` | 9 | 1,875 | 1 | Tier 1 (Slice 2A) |
+| `packages/host/api/` | 8 | 1,566 | 2 | Tier 1 (Slice 2A) |
+| `packages/host/contracts/` | 7 | 1,501 | 1 | Tier 1 (Slice 2A) |
+| `apps/web/src/` (root) | 10 | 1,342 | 1 | Tier 1 (Slice 2C) |
+| `packages/tools/filesystem/` | 7 | 842 | 0 | Tier 2 (hygiene only) |
+| `packages/presentation/html/` | 6 | 623 | 0 | Tier 2 (hygiene only) |
+| `packages/workspace/registry/` | 6 | 585 | 0 | Tier 2 (hygiene only) |
+| `packages/presentation/design/` | 2 | 574 | 1 | Tier 2 (inspect large file) |
+| `packages/presentation/document/` | 2 | 272 | 0 | Tier 2 (hygiene only) |
+| `packages/presentation/pptx/` | 1 | 143 | 0 | Skip unless defect appears |
 
 **Inferred:** The codebase still feels messy after structural boundary moves for two combined reasons.
 First, the boundary refactor moved ownership walls without reshaping large internal files or wide public interfaces.
@@ -101,7 +110,7 @@ Execute Phase 2 from core contracts outward so UI and workflow callers do not ch
 
 1. **Slice 2A (Host and Persistence):** `packages/host/contracts/`, `packages/host/api/`, and `packages/session/persistence/`.
 2. **Slice 2B (Presentation Deck Core):** `packages/presentation/deck/` (and `packages/presentation/design/` if contracts overlap).
-3. **Slice 2C (Application Features and Integrations):** `apps/web/src/features/` (including repeated `failures.ts` files), `apps/web/src/integrations/`, and `apps/web/src/index.ts`.
+3. **Slice 2C (Application Features and Integrations):** `apps/web/src/features/` (including repeated `failures.ts` files), `apps/web/src/integrations/`, and `apps/web/src/index.ts`. Slice 2C diagnosis also evaluates browser reuse in `apps/web/src/integrations/rendering/artifact-renderer.ts`, which Phase 1 deferred when raising the fixture timeout.
 4. **Slice 2D (Browser and `boot.ts`):** `apps/web/src/browser/`, focusing on `boot.ts`, `settings-panel.ts`, `management-client.ts`, `conversation-view.ts`, and 1-line wrappers.
 
 Each slice starts with an investigation task that ends with `STOP` and a decision table [[4]](#ref-4).

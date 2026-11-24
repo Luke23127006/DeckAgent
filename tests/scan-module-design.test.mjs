@@ -8,7 +8,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
-  AREA_ORDER,
   analyzeSourceFile,
   analyzeTestFile,
   classifyArea,
@@ -17,7 +16,6 @@ import {
 } from '../scripts/scan-module-design.mjs'
 
 test('classifyArea maps all 14 production areas and excludes build, test, and script paths', () => {
-  assert.equal(AREA_ORDER.length, 14)
   assert.equal(classifyArea('apps/web/src/browser/boot.ts'), 'apps/web/src/browser/')
   assert.equal(classifyArea('apps/web/src/features/deck/deck-workflow.ts'), 'apps/web/src/features/')
   assert.equal(classifyArea('apps/web/src/integrations/opencode/runtime.ts'), 'apps/web/src/integrations/')
@@ -33,8 +31,11 @@ test('classifyArea maps all 14 production areas and excludes build, test, and sc
   assert.equal(classifyArea('packages/presentation/document/src/index.ts'), 'packages/presentation/document/')
   assert.equal(classifyArea('packages/presentation/pptx/src/index.ts'), 'packages/presentation/pptx/')
   assert.equal(classifyArea('apps/web/lib/index.js'), null)
-  assert.equal(classifyArea('apps/web/tests/web-session.test.mjs'), null)
-  assert.equal(classifyArea('packages/host/api/tests/host-api.test.mjs'), null)
+  assert.equal(classifyArea('apps/web/lib/index.ts'), null)
+  assert.equal(classifyArea('apps/web/src/lib/generated.ts'), null)
+  assert.equal(classifyArea('apps/web/tests/helper.ts'), null)
+  assert.equal(classifyArea('packages/host/api/tests/fixture.tsx'), null)
+  assert.equal(classifyArea('packages/host/api/node_modules/pkg/index.ts'), null)
   assert.equal(classifyArea('e2e/portable-generation-http.test.mjs'), null)
   assert.equal(classifyArea('scripts/check-boundaries.mjs'), null)
 })
@@ -78,7 +79,7 @@ test('analyzeSourceFile separates re-export barrel files from non-barrel small f
     "export type { HostOptions } from './types.ts'",
     "export * from './events.ts'",
   ].join('\n')
-  const wrapper = "export const decode = (value: unknown) => value\n"
+  const wrapper = 'export const decode = (value: unknown) => value\n'
 
   const barrelResult = analyzeSourceFile('apps/web/src/features/deck/index.ts', barrel)
   const wrapperResult = analyzeSourceFile('apps/web/src/browser/transport/bound-outline-decoder.ts', wrapper)
@@ -118,14 +119,25 @@ test('computeCoChangePairs excludes commits over maxFilesPerCommit and sorts det
     bulkCommit,
     bulkCommit,
     bulkCommit,
-    ['apps/web/src/a.ts', 'apps/web/src/b.ts', 'apps/web/src/c.ts'],
+    ['apps/web/src/b.ts', 'apps/web/src/c.ts'],
+    ['apps/web/src/c.ts', 'apps/web/src/b.ts'],
+    ['apps/web/src/b.ts', 'apps/web/src/c.ts'],
+    ['apps/web/src/b.ts', 'apps/web/src/c.ts'],
+    ['apps/web/src/a.ts', 'apps/web/src/d.ts'],
+    ['apps/web/src/d.ts', 'apps/web/src/a.ts'],
+    ['apps/web/src/a.ts', 'apps/web/src/d.ts'],
+    ['apps/web/src/a.ts', 'apps/web/src/b.ts'],
     ['apps/web/src/b.ts', 'apps/web/src/a.ts'],
     ['apps/web/src/a.ts', 'apps/web/src/b.ts'],
     ['apps/web/src/a.ts', 'apps/web/src/c.ts'],
   ]
 
   const pairs = computeCoChangePairs(commits, { maxFilesPerCommit: 20, minCount: 3 })
-  assert.deepEqual(pairs, [{ files: ['apps/web/src/a.ts', 'apps/web/src/b.ts'], count: 3 }])
+  assert.deepEqual(pairs, [
+    { files: ['apps/web/src/b.ts', 'apps/web/src/c.ts'], count: 4 },
+    { files: ['apps/web/src/a.ts', 'apps/web/src/b.ts'], count: 3 },
+    { files: ['apps/web/src/a.ts', 'apps/web/src/d.ts'], count: 3 },
+  ])
 })
 
 test('formatScanReport outputs deterministic Markdown tables for areas, testware, and co-changes', () => {
@@ -168,9 +180,16 @@ test('formatScanReport outputs deterministic Markdown tables for areas, testware
     coChanges: [{ files: ['apps/web/src/a.ts', 'apps/web/src/b.ts'], count: 4 }],
   })
 
-  assert.equal(report.includes('# Module Design Quantitative Scan'), true)
-  assert.equal(report.includes('packages/presentation/deck/'), true)
-  assert.equal(report.includes('DeckService.run'), true)
-  assert.equal(report.includes('e2e/sample.test.mjs'), true)
-  assert.equal(report.includes('apps/web/src/a.ts <-> apps/web/src/b.ts'), true)
+  const lines = report.split('\n')
+  assert.equal(lines[0], '# Module Design Quantitative Scan')
+  assert.equal(lines.includes('| packages/presentation/deck/ | 2 | 520 | 1 | 1 | 0 | 2 | 1 | 16 |'), true)
+  assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | packages/presentation/deck/ | 500 | 16 | 1 |'), true)
+  assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | 10 | DeckService.run | 90 |'), true)
+  assert.equal(lines.includes('| packages/presentation/deck/src/index.ts | 5 | DeckService |'), true)
+  assert.equal(lines.includes('| e2e/ | 1 | 40 | 1 | 1 | 1 |'), true)
+  assert.equal(
+    lines.includes('| e2e/sample.test.mjs | e2e/ | 40 | no | 12 | ../scripts/lib/browser-session.mjs |'),
+    true,
+  )
+  assert.equal(lines.includes('| apps/web/src/a.ts <-> apps/web/src/b.ts | 4 |'), true)
 })

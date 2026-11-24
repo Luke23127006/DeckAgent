@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 4 Phase 1 triage and AST baseline report (`docs/build/refactor/module-design/reports/task-04-record-phase1-triage-and-baseline.md`), record the approved 14-area tiers and AST baseline in `docs/build/refactor/module-design/README.md`, and close Task 4 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 3 timeout diagnosis report (`docs/build/refactor/module-design/reports/task-03-investigate-timeout-failure.md`) and close Task 3 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 2 quantitative scan and 14-area triage report (`docs/build/refactor/module-design/reports/task-02-scan-and-triage.md`) and close Task 2 in `docs/build/refactor/module-design/plan/`.
 - Add the quantitative module-design scanner (`scripts/scan-module-design.mjs`), the `scan:module-design` npm script, and unit tests (`tests/scan-module-design.test.mjs`) for Task 1 of `refactor/module-design`.

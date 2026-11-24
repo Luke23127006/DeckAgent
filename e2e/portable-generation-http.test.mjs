@@ -17,6 +17,7 @@ for (const templateVersion of [2, 3])
     let lookups = 0,
       offline = false
     const f = await startApp(dir, {
+      openCode: { timeoutMs: 120000 },
       options: {
         providerAccess: { check: async () => {}, catalog: async () => ['model-a'] },
         researchAccess: {
