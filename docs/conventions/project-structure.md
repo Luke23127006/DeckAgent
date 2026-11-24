@@ -148,14 +148,14 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 
 | Rule | Chặn bởi | Check mục tiêu |
 | --- | --- | --- |
-| Import package chỉ qua `exports`, không qua private subpath, relative path hoặc alias | review | Import restriction trong oxlint |
-| Browser không import Node-only module | review | Browser build và import restriction |
-| Feature không import private implementation của feature khác | review | Import restriction |
-| Package graph và feature graph không có vòng | review | Import graph check |
-| `host/contracts/` không import runtime implementation | review | Import restriction |
-| Request Lifecycle không import transport | review | Import restriction |
-| `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | review | Package dependency check |
-| Package không import application. Domain package không import runtime implementation | review | Package dependency check |
+| Import package chỉ qua `exports`, không qua private subpath, relative path hoặc alias | `oxlint` (`no-restricted-imports`), `check:boundaries` (`private-package-import`, `tsconfig-private-alias`, `unresolved-internal-import`) | — |
+| Browser không import Node-only module | Browser build, `oxlint` (`no-restricted-imports`), `check:boundaries` (`browser-node-import`) | — |
+| Feature, Browser feature và integration không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`) | — |
+| Package graph, feature graph và Browser feature graph không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`) | — |
+| `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | — |
+| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | — |
+| `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
+| Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 
 Ưu tiên TypeScript, `exports` và lint trước khi viết check script riêng. Chỉ viết check script khi công cụ hiện có không kiểm được boundary. Mỗi check kiểm một ownership rule trong file này. Check không chứa bản sao của toàn bộ kiến trúc. Mỗi check phải có negative fixture hoặc test chứng minh check bắt được vi phạm. Build thành công không phải bằng chứng duy nhất cho dependency boundary.

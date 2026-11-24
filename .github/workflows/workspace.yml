@@ -53,6 +53,10 @@ jobs:
         id: build
         run: pnpm build
 
+      - name: Enforce dependency boundaries
+        id: boundaries
+        run: pnpm check:boundaries
+
       - name: Lint (oxlint)
         id: lint
         run: pnpm lint
@@ -145,6 +149,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
+          BOUNDARIES_RESULT: ${{ steps.boundaries.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
           SESSIONS_RESULT: ${{ steps.sessions.outcome }}
           TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
@@ -170,6 +175,7 @@ jobs:
           - Environment: windows-2022, Node 22.19.0; pnpm from package.json
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
+          - Dependency boundaries (check:boundaries): $env:BOUNDARIES_RESULT
           - Lint (oxlint): $env:LINT_RESULT
           - Session persistence (local SQLite): $env:SESSIONS_RESULT
           - Host API / browser client: $env:TOOLS_BROWSER_RESULT

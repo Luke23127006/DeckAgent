@@ -95,9 +95,9 @@ test('rejects @deckagent/deck import in apps/web/src/browser', () => {
   assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
 })
 
-test('rejects node:fs/promises subpath import in legacy packages/client/runtime/src', () => {
+test('rejects node:fs/promises subpath import in apps/web/src/browser', () => {
   const result = lintFixture(
-    'packages/client/runtime/src/sample.ts',
+    'apps/web/src/browser/sample.ts',
     "import { readFile } from 'node:fs/promises'\nconsole.log(readFile)\n",
   )
   assert.equal(result.status, 1)
@@ -147,6 +147,17 @@ test('rejects relative http-error import inside packages/host/api/src/lifecycle'
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
   assert.match(result.diagnostics[0].message, /\.\.\/http-error\.ts/)
+  assert.match(result.diagnostics[0].help, /Request Lifecycle must not import HTTP transport modules\./)
+})
+
+test('rejects relative http-error import inside packages/host/api/src/request-controller.ts', () => {
+  const result = lintFixture(
+    'packages/host/api/src/request-controller.ts',
+    "import { HttpError } from './http-error.ts'\nexport type T = typeof HttpError\n",
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 1)
+  assert.match(result.diagnostics[0].message, /\.\/http-error\.ts/)
   assert.match(result.diagnostics[0].help, /Request Lifecycle must not import HTTP transport modules\./)
 })
 

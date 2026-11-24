@@ -22,36 +22,6 @@
     "noUnusedParameters": true,
     "types": [
       "node"
-    ],
-    "paths": {
-      "@deckagent/deck/brief": ["./packages/presentation/deck/src/brief.ts"],
-      "@deckagent/design": [
-        "./packages/presentation/design/src/index.ts"
-      ],
-      "@deckagent/deck": [
-        "./packages/presentation/deck/src/index.ts"
-      ],
-      "@deckagent/workspace-registry": [
-        "./packages/workspace/registry/src/index.ts"
-      ],
-      "@deckagent/session-persistence": [
-        "./packages/session/persistence/src/index.ts"
-      ],
-      "@deckagent/file-tools": [
-        "./packages/tools/filesystem/src/index.ts"
-      ],
-      "@deckagent/host-contracts": [
-        "./packages/host/contracts/src/index.ts"
-      ],
-      "@deckagent/host-api": [
-        "./packages/host/api/src/index.ts"
-      ],
-      "@deckagent/presentation-document": [
-        "./packages/presentation/document/src/index.ts"
-      ],
-      "@deckagent/html-format": [
-        "./packages/presentation/html/src/index.ts"
-      ]
-    }
+    ]
   }
 }

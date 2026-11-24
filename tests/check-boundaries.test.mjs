@@ -59,7 +59,7 @@ test('checkBoundaries accepts valid production and owner-local test imports', ()
       content: "import { startHost } from '@deckagent/host-api'\nimport { run } from './features/deck/index.ts'\n",
     },
     { path: 'apps/web/src/browser/transport/client.ts', content: "import type { Req } from '@deckagent/host-contracts'\n" },
-    { path: 'apps/web/src/features/deck/index.ts', content: "import { load } from '../research/index.ts'\n" },
+    { path: 'apps/web/src/features/deck/index.ts', content: "import { load } from '../research/index.ts'\nexport const run = () => load()\n" },
     { path: 'apps/web/src/features/research/index.ts', content: 'export const load = () => 1\n' },
     {
       path: 'packages/presentation/html/src/index.ts',
@@ -97,6 +97,7 @@ test('checkBoundaries rejects undeclared subpath and cross-workspace relative im
   const files = [
     { path: 'apps/web/src/a.ts', content: "import { x } from '@deckagent/deck/secret'\n" },
     { path: 'apps/web/src/b.ts', content: "import { y } from '../../../packages/presentation/deck/src/index.ts'\n" },
+    { path: 'packages/presentation/deck/src/index.ts', content: 'export const y = 1\n' },
   ]
   assert.deepEqual(findings(files), [
     { path: 'apps/web/src/a.ts', line: 1, rule: 'private-package-import' },
@@ -123,6 +124,7 @@ test('checkBoundaries rejects node builtin, host package, and Local Host relativ
         "import { chat } from '../features/chats/index.ts'",
       ].join('\n'),
     },
+    { path: 'apps/web/src/features/chats/index.ts', content: 'export const chat = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [
     { path: 'apps/web/src/browser/boot.ts', line: 1, rule: 'browser-node-import' },
@@ -143,6 +145,7 @@ test('checkBoundaries rejects runtime imports in host contracts', () => {
 test('checkBoundaries rejects transport imports in Request Lifecycle', () => {
   const files = [
     { path: 'packages/host/api/src/request-controller.ts', content: "import { HttpError } from './http-error.ts'\n" },
+    { path: 'packages/host/api/src/http-error.ts', content: 'export class HttpError extends Error {}\n' },
     { path: 'packages/host/api/src/lifecycle/controller.ts', content: "import http from 'node:http'\n" },
   ]
   assert.deepEqual(findings(files), [
@@ -186,6 +189,7 @@ test('checkBoundaries rejects package importing app and domain importing host ru
 test('checkBoundaries rejects private import across features', () => {
   const files = [
     { path: 'apps/web/src/features/deck/workflow.ts', content: "import { helper } from '../research/tavily.ts'\n" },
+    { path: 'apps/web/src/features/research/tavily.ts', content: 'export const helper = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [
     { path: 'apps/web/src/features/deck/workflow.ts', line: 1, rule: 'feature-private-import' },
@@ -217,6 +221,87 @@ test('checkBoundaries detects a three-way feature cycle with full chain', () => 
     [{ path: 'apps/web/src/features/a', line: 1, rule: 'feature-cycle' }],
   )
   assert.match(result[0].message, /a -> b -> c -> a/)
+})
+
+test('checkBoundaries rejects private import across browser features', () => {
+  const files = [
+    {
+      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
+      content: "import { model } from '../deck/deck-model.ts'\n",
+    },
+    { path: 'apps/web/src/browser/features/deck/deck-model.ts', content: 'export const model = 1\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    {
+      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
+      line: 1,
+      rule: 'browser-feature-private-import',
+    },
+  ])
+})
+
+test('checkBoundaries detects a browser feature cycle separately from host features', () => {
+  const files = [
+    { path: 'apps/web/src/browser/features/a/index.ts', content: "import { b } from '../b/index.ts'\n" },
+    { path: 'apps/web/src/browser/features/b/index.ts', content: "import { a } from '../a/index.ts'\n" },
+  ]
+  const result = checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths: {} })
+  assert.deepEqual(
+    result.map(({ path, line, rule }) => ({ path, line, rule })),
+    [{ path: 'apps/web/src/browser/features/a', line: 1, rule: 'browser-feature-cycle' }],
+  )
+  assert.match(result[0].message, /a -> b -> a/)
+})
+
+test('checkBoundaries rejects browser transport importing browser UI features', () => {
+  const files = [
+    {
+      path: 'apps/web/src/browser/transport/host-client.ts',
+      content: "import { render } from '../features/chats/index.ts'\n",
+    },
+    { path: 'apps/web/src/browser/features/chats/index.ts', content: 'export const render = () => 1\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/web/src/browser/transport/host-client.ts', line: 1, rule: 'browser-transport-ui-import' },
+  ])
+})
+
+test('checkBoundaries rejects private import into integrations', () => {
+  const files = [
+    {
+      path: 'apps/web/src/features/research/research-service.ts',
+      content: "import { search } from '../../integrations/research/tavily.ts'\n",
+    },
+    { path: 'apps/web/src/integrations/research/tavily.ts', content: 'export const search = () => 1\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/web/src/features/research/research-service.ts', line: 1, rule: 'integration-private-import' },
+  ])
+})
+
+test('checkBoundaries rejects unresolved relative import in production source', () => {
+  const files = [
+    { path: 'apps/web/src/features/chats/index.ts', content: "import { missing } from './missing-module.ts'\n" },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/web/src/features/chats/index.ts', line: 1, rule: 'unresolved-internal-import' },
+  ])
+})
+
+test('checkBoundaries accepts public browser feature and integration index imports', () => {
+  const files = [
+    {
+      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
+      content: "import { deck } from '../deck/index.ts'\n",
+    },
+    { path: 'apps/web/src/browser/features/deck/index.ts', content: 'export const deck = 1\n' },
+    {
+      path: 'apps/web/src/features/research/research-service.ts',
+      content: "import { search } from '../../integrations/research/index.ts'\n",
+    },
+    { path: 'apps/web/src/integrations/research/index.ts', content: 'export const search = () => 1\n' },
+  ]
+  assert.deepEqual(findings(files), [])
 })
 
 test('formatReport formats per-violation lines and summarizes by rule', () => {

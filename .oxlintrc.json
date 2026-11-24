@@ -42,33 +42,6 @@
       }
     },
     {
-      "files": ["**/packages/client/runtime/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
-      "rules": {
-        "eslint/no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "@deckagent/*/src/*",
-                  "@deckagent/*/lib/*",
-                  "**/packages/*/*/src/*",
-                  "**/packages/*/*/lib/*",
-                  "**/apps/*/src/*",
-                  "**/apps/*/lib/*"
-                ],
-                "message": "Import another package through its public exports only."
-              },
-              {
-                "group": ["node:*", "node:*/*"],
-                "message": "Browser code must not import Node-only modules."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "files": ["**/apps/web/src/browser/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
       "rules": {
         "eslint/no-restricted-imports": [
@@ -148,7 +121,10 @@
       }
     },
     {
-      "files": ["**/packages/host/api/src/lifecycle/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/packages/host/api/src/lifecycle/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/packages/host/api/src/request-controller.ts"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",

@@ -64,7 +64,7 @@ Keep implementation constraints [[2]](#ref-2) and test behavior [[3]](#ref-3).
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Check the remaining enforcement gaps**
+- [x] **Step 1: Check the remaining enforcement gaps**
 
 Run `corepack pnpm@11.28.5 check:boundaries:report`.
 Inspect all 12 rules in `scripts/check-boundaries.mjs` and the 5 overrides in `.oxlintrc.json`.
@@ -72,7 +72,7 @@ Check that Wave 0 violations are down to zero after Tasks 05 through 15.
 Check these remaining gaps: Browser feature private imports and cycles, Browser transport importing Browser UI features, and integration private imports.
 Also check unresolved relative imports, `request-controller.ts` in `.oxlintrc.json`, and `tsconfig.base.json` source aliases.
 
-- [ ] **Step 2: Add negative-fixture tests for the new rules**
+- [x] **Step 2: Add negative-fixture tests for the new rules**
 
 Add test cases to `tests/check-boundaries.test.mjs` covering:
 
@@ -88,7 +88,7 @@ Add a test case to `tests/oxlint-boundaries.test.mjs` checking that `packages/ho
 Run `node --test --test-reporter=tap tests/check-boundaries.test.mjs tests/oxlint-boundaries.test.mjs`.
 Expected: FAIL on the newly added test cases before implementation.
 
-- [ ] **Step 3: Implement the extended checks**
+- [x] **Step 3: Implement the extended checks**
 
 Update `scripts/check-boundaries.mjs` to enforce the five added rules while keeping all 12 Wave 0 rules and existing tests passing.
 Sort diagnostics by path, line, and rule.
@@ -99,7 +99,7 @@ Write any new violation messages in English following `.agents/skills/asd-ste100
 Update `.oxlintrc.json` to add `**/packages/host/api/src/request-controller.ts` to the Request Lifecycle override.
 Update `.oxlintrc.json` to remove the obsolete `**/packages/client/runtime/src/**` override after Task 09 removes `packages/client/runtime`.
 
-- [ ] **Step 4: Remove source aliases**
+- [x] **Step 4: Remove source aliases**
 
 Remove workspace-source mappings from `tsconfig.base.json`.
 Resolve cross-package code through package exports and project references.
@@ -107,7 +107,7 @@ Keep owner-local relative imports.
 Do not add re-export bridges to hide violations.
 Fix any remaining production import that `check:boundaries` rejects without changing behavior or ownership.
 
-- [ ] **Step 5: Enable strict enforcement in CI and update documentation**
+- [x] **Step 5: Enable strict enforcement in CI and update documentation**
 
 Add a `check:boundaries` step after `build` in `.github/workflows/workspace.yml`.
 Update the Enforcement table in `docs/conventions/project-structure.md` so each enforced row reflects the active `oxlint` and `check:boundaries` checks.
@@ -127,7 +127,7 @@ The boundary check prints `check-boundaries: 0 violation(s)`.
 `check:docs` reports `0 error(s)`.
 For each negative fixture, report its expected rule and observed failure.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

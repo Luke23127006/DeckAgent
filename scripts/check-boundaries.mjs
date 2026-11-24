@@ -82,6 +82,16 @@ const featureOfPath = value => {
   return match === null ? null : match[1]
 }
 
+const browserFeatureOfPath = value => {
+  const match = /^apps\/web\/src\/browser\/features\/([^/]+)\//.exec(value)
+  return match === null ? null : match[1]
+}
+
+const integrationOfPath = value => {
+  const match = /^apps\/web\/src\/integrations\/([^/]+)\//.exec(value)
+  return match === null ? null : match[1]
+}
+
 const lineOf = (sourceFile, node) => sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
 
 export const extractImports = (filePath, sourceText) => {
@@ -167,16 +177,20 @@ export const checkBoundaries = snapshot => {
   const workspacesByDepth = [...workspaces].toSorted((left, right) => right.dir.length - left.dir.length)
   const ownerOf = filePath => workspacesByDepth.find(workspace => isUnder(filePath, workspace.dir))
   const files = snapshot.files.map(file => ({ path: toPosix(file.path), content: file.content }))
+  const fileSet = new Set(files.map(file => file.path))
   const violations = []
   const add = (filePath, line, rule, message) => violations.push({ path: filePath, line, rule, message })
   const packageEdges = []
   const featureEdges = []
+  const browserFeatureEdges = []
 
   for (const file of files) {
     const owner = ownerOf(file.path)
     const testSource = isTestFile(file.path)
     const productionSource = owner !== undefined && !testSource
     const sourceFeature = productionSource ? featureOfPath(file.path) : null
+    const sourceBrowserFeature = productionSource ? browserFeatureOfPath(file.path) : null
+    const sourceIntegration = productionSource ? integrationOfPath(file.path) : null
     for (const entry of extractImports(file.path, file.content)) {
       const { line, specifier } = entry
       const packageSpecifier = parsePackageSpecifier(specifier)
@@ -217,6 +231,15 @@ export const checkBoundaries = snapshot => {
       }
 
       if (!productionSource) continue
+
+      if (resolved !== null && !fileSet.has(resolved)) {
+        add(
+          file.path,
+          line,
+          'unresolved-internal-import',
+          `Relative import "${specifier}" does not resolve to a file in the repository snapshot.`,
+        )
+      }
 
       if (BROWSER_DIRECTORIES.some(directory => isUnder(file.path, directory))) {
         const importedPackage = packageSpecifier === null ? null : packageSpecifier.name
@@ -338,6 +361,48 @@ export const checkBoundaries = snapshot => {
         featureEdges.push([sourceFeature, targetFeature])
       }
 
+      const targetBrowserFeature = resolved === null ? null : browserFeatureOfPath(resolved)
+      if (sourceBrowserFeature !== null && targetBrowserFeature !== null) {
+        if (targetBrowserFeature !== sourceBrowserFeature) {
+          const publicEntry = `apps/web/src/browser/features/${targetBrowserFeature}/index`
+          if (stripExtension(resolved) !== publicEntry) {
+            add(
+              file.path,
+              line,
+              'browser-feature-private-import',
+              `Browser feature "${sourceBrowserFeature}" must not import "${resolved}" of browser feature "${targetBrowserFeature}". Import the public index of browser feature "${targetBrowserFeature}".`,
+            )
+          }
+        }
+        browserFeatureEdges.push([sourceBrowserFeature, targetBrowserFeature])
+      }
+
+      if (
+        isUnder(file.path, 'apps/web/src/browser/transport') &&
+        resolved !== null &&
+        isUnder(resolved, 'apps/web/src/browser/features')
+      ) {
+        add(
+          file.path,
+          line,
+          'browser-transport-ui-import',
+          `Browser transport must not import "${specifier}" from browser UI features.`,
+        )
+      }
+
+      const targetIntegration = resolved === null ? null : integrationOfPath(resolved)
+      if (targetIntegration !== null && sourceIntegration !== targetIntegration) {
+        const publicEntry = `apps/web/src/integrations/${targetIntegration}/index`
+        if (stripExtension(resolved) !== publicEntry) {
+          add(
+            file.path,
+            line,
+            'integration-private-import',
+            `Code outside integration "${targetIntegration}" must not import "${resolved}". Import the public index of integration "${targetIntegration}".`,
+          )
+        }
+      }
+
       if (targetWorkspace !== undefined) {
         packageEdges.push([owner.name, targetWorkspace.name])
       }
@@ -409,6 +474,18 @@ export const checkBoundaries = snapshot => {
       1,
       'feature-cycle',
       `Feature dependency cycle: ${describeCycle(cycle)}. Break the cycle by changing ownership.`,
+    )
+  }
+
+  const browserFeatures = [
+    ...new Set(files.map(file => browserFeatureOfPath(file.path)).filter(feature => feature !== null)),
+  ]
+  for (const cycle of findCycles(browserFeatures, browserFeatureEdges)) {
+    add(
+      `apps/web/src/browser/features/${cycle[0]}`,
+      1,
+      'browser-feature-cycle',
+      `Browser feature dependency cycle: ${describeCycle(cycle)}. Change ownership to break the cycle.`,
     )
   }
 
