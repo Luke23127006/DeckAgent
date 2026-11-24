@@ -21,23 +21,21 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Linter rule set | The categories `correctness` and `suspicious`, at level `error`. Three rules are off. `eslint/no-shadow` and `unicorn/consistent-function-scoping` are style rules with 85 of 122 findings. `unicorn/prefer-add-event-listener` has 5 findings, and 3 of them are on an MCP transport, not on a DOM object. Add each other rule one by one, with a reason. Do not enable a whole category. |
 | Biome format | A clone with LF line endings shows 33 files that Biome would change. The cause is not the CRLF line endings. Task 12 formats the files. |
 | Linter plugins | oxlint 1.94.0 loads a JS plugin through `jsPlugins` in `.oxlintrc.json`. A rule reads the comments with `context.sourceCode.getAllComments()`. A test used one rule on one file. No test used the whole repository or rules that need types. |
-| Comments in code | No comments in code. Decisions go into code, tests and ADRs. The scope is in [Comment scope](#comment-scope). |
+| Comments in code | Comments obey `docs/conventions/code.md` (five listed reasons only). Lint-disable directives and TypeScript suppression comments (`@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`) remain forbidden. |
 | Citations in documents | One number for each source file. The text shows the number only, as `[[1]](#ref-1)`. The text does not show a location in the source. |
 | Purpose line | Each Markdown file in scope starts with one sentence that tells which information the file gives. |
 | Plan language | Plans in `docs/build/` are in English. Other documents in `docs/` are in Vietnamese. |
 
 ## Comment scope
 
-The comment rule applies to each file that git tracks or that is new and not ignored, in `apps/`, `packages/`, `scripts/` and `tests/`, with one of these extensions: `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.mjs`, `.cjs`. It also applies to each `tsconfig*.json` file.
+The suppression ban applies to each file that git tracks or that is new and not ignored, in `apps/`, `packages/`, `scripts/` and `tests/`, with one of these extensions: `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.mjs`, `.cjs`.
 
 The rule does not apply to:
 
 - Text in strings and template literals.
-- The shebang line (`#!`).
 - Paths that contain `/lib/`, `/dist/` or `node_modules/`.
-- `docs/00-old/`.
 
-Each comment kind is forbidden: line comments, block comments, JSDoc, `TODO`, `FIXME`, lint-disable directives, `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`, triple-slash directives, bundler pragmas and code in comments.
+Forbidden directives: lint-disable directives, `@ts-expect-error`, `@ts-ignore` and `@ts-nocheck`. Commented-out code is also forbidden by review. Other comments obey the five allowed reasons in `docs/conventions/code.md`.
 
 ## Global Constraints
 
@@ -46,7 +44,7 @@ Each comment kind is forbidden: line comments, block comments, JSDoc, `TODO`, `F
 - Package manager: `corepack pnpm@11.28.5`. Do not use the `pnpm` command directly.
 - Module format: new scripts are ES modules with the extension `.mjs`. Use `import`, not `require`.
 - Tests: run tests with `node --test --test-reporter=tap <files>`. A passing run contains `# fail 0`.
-- New code files contain no comments of any kind. Names, types and tests carry the meaning.
+- Comments in new code files obey `docs/conventions/code.md`. Lint-disable directives and TypeScript suppression comments are forbidden.
 - Text that a tool prints (error messages, check output) is in English and obeys `.agents/skills/asd-ste100/SKILL.md` in strict mode.
 - Vietnamese text in `docs/conventions/` and `AGENTS.md` obeys `.agents/skills/ste-vi/SKILL.md`.
 - Do not change files in `docs/00-old/`.
@@ -83,9 +81,8 @@ Each comment kind is forbidden: line comments, block comments, JSDoc, `TODO`, `F
 The next revision of this plan adds these tasks. Do not start them from this revision.
 
 - Add `noImplicitReturns` and `noPropertyAccessFromIndexSignature` to `tsconfig.base.json`.
-- Add the oxlint rule `deckagent/no-comments`. Add the comment scanner to the hook and to CI.
-- Remove the existing comments, one package for each task, with a decision table.
-- Add dependency-cruiser and knip.
+- Audit existing comments with a KEEP/REMOVE decision table against `docs/conventions/code.md` (moved to `docs/build/refactor/codebase/plan/README.md`).
+- Evaluate `knip` for unused-code checks. Dependency boundaries use `oxlint` and `scripts/check-boundaries.mjs` instead of `dependency-cruiser`.
 - Add the test rules:
   - No `mock.module` on app modules.
   - No app constants in tests.

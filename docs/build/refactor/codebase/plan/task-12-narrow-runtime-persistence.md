@@ -1,4 +1,4 @@
-# Task 09: Narrow the OpenCode runtime boundary
+# Task 12: Narrow the OpenCode runtime boundary
 
 Read this file to learn the steps that narrow the opencode runtime boundary.
 

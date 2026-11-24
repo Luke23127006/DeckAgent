@@ -1,4 +1,4 @@
-# Task 03: Put the persistence contract in Session
+# Task 06: Put the persistence contract in Session
 
 Read this file to learn the steps that put the persistence contract in session.
 

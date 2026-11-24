@@ -1,4 +1,4 @@
-# Task 12: Move tests to the owners of their behavior
+# Task 15: Move tests to the owners of their behavior
 
 Read this file to learn the steps that move tests to the owners of their behavior.
 
@@ -75,6 +75,7 @@ Apply every row. A row with the same source and destination requires no move.
 | `tests/browser-runtime.test.mjs` | `apps/web/tests/browser-runtime.test.mjs` |
 | `tests/browser-smoke.test.mjs` | `e2e/browser-smoke.test.mjs` |
 | `tests/chat-persistence.test.mjs` | `packages/session/persistence/tests/chat-persistence.test.mjs` |
+| `tests/check-boundaries.test.mjs` | `tests/check-boundaries.test.mjs` |
 | `tests/check-docs.test.mjs` | `tests/check-docs.test.mjs` |
 | `tests/commons-images.test.mjs` | `apps/web/tests/commons-images.test.mjs` |
 | `tests/confirmation-host.test.mjs` | `e2e/confirmation-host.test.mjs` |
@@ -112,6 +113,7 @@ Apply every row. A row with the same source and destination requires no move.
 | `tests/opencode-source-live.test.mjs` | `e2e/opencode-source-live.test.mjs` |
 | `tests/outline-client.test.mjs` | `apps/web/tests/outline-client.test.mjs` |
 | `tests/outline-state.test.mjs` | `packages/presentation/deck/tests/outline-state.test.mjs` |
+| `tests/oxlint-boundaries.test.mjs` | `tests/oxlint-boundaries.test.mjs` |
 | `tests/portable-generation-http.test.mjs` | `e2e/portable-generation-http.test.mjs` |
 | `tests/portable-generation.test.mjs` | `e2e/portable-generation.test.mjs` |
 | `tests/post-edit-hook.test.mjs` | `tests/post-edit-hook.test.mjs` |
@@ -154,8 +156,8 @@ Preserve `startLocalWeb` and the CLI public entry.
 
 Change root test scripts to the exact destinations in the table.
 Keep each suite's previous file membership.
-Add suite membership for the three developer-tool tests in the final verification command.
-Keep the boundary fixture tests in the root tooling test directory.
+Add suite membership for the four developer-tool tests in the final verification command.
+Keep `tests/oxlint-boundaries.test.mjs` and `tests/check-boundaries.test.mjs` in the root tooling test directory.
 Add `packages/host/api/tests/request-failure.test.mjs` to `test:model-requests`.
 Keep root developer-tool tests under `tests/`.
 Include `e2e/` in the root lint command.
@@ -167,8 +169,9 @@ Run `corepack pnpm@11.28.5 build`.
 Run every non-live test script from the baseline report, one script at a time.
 Run `corepack pnpm@11.28.5 test:tools-browser`.
 Run `corepack pnpm@11.28.5 test:browser-smoke`.
-Expected: build exits with code 0. Each suite prints `# fail 0`.
-Compare test and skip counts with the baseline.
+Expected: build exits with code 0. Each suite prints `# fail 0`, except for the recorded baseline failure in `portable-generation-http.test.mjs` (test #60, `REQUEST_TIMEOUT`).
+Report that baseline failure separately without fixing it. Stop on any other failure.
+Compare test and skip counts with the Wave 0 baseline.
 The new request-failure test adds one case to its owning suite.
 Any other count difference is a STOP condition.
 

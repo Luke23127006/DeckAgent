@@ -1,4 +1,4 @@
-# Task 05: Move the local application to apps/web
+# Task 08: Move the local application to apps/web
 
 Read this file to learn the steps that move the local application to apps/web.
 

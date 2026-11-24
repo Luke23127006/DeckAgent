@@ -1,4 +1,4 @@
-# Task 08: Separate application features from integrations
+# Task 11: Separate application features from integrations
 
 Read this file to learn the steps that separate application features from integrations.
 
@@ -140,7 +140,8 @@ Run `corepack pnpm@11.28.5 test:attachments`.
 Run `corepack pnpm@11.28.5 test:research`.
 Run `corepack pnpm@11.28.5 test:deck-review`.
 Run `corepack pnpm@11.28.5 test:generation-publication`.
-Expected: build exits with code 0. Each suite prints `# fail 0`.
+Expected: build exits with code 0. Each suite prints `# fail 0`, except for the recorded baseline failure in `portable-generation-http.test.mjs` (test #60, `REQUEST_TIMEOUT`).
+Report that baseline failure separately without fixing it. Stop on any other failure in `test:generation-publication`.
 Check source-relative resource URLs after the additional integration directory.
 Do not use a successful warm build as proof that resource paths work.
 

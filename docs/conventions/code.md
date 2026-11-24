@@ -19,7 +19,7 @@ Mỗi quy tắc ghi công cụ chặn nó trong ngoặc. Không ghi một quy t�
 - Khi state có tập giá trị xác định, dùng union hoặc discriminated union. Khi mỗi state có dữ liệu riêng, type gắn dữ liệu với state tương ứng *(review)*.
 - Không tạo type phức tạp khi chỉ runtime validation xác định được dữ liệu hợp lệ *(review)*.
 - Invariant mà type bảo vệ được thì đặt vào type, không đặt vào comment *(review)*.
-- Không dùng `any`, type assertion hoặc non-null assertion để bỏ qua một lỗi type. Khi operation cần một giá trị, kiểm precondition hoặc sửa contract để bảo đảm giá trị đó *(review)*.
+- Không dùng `any` *(lint: oxlint `typescript/no-explicit-any`)*, type assertion hoặc non-null assertion *(review)* để bỏ qua một lỗi type. Khi operation cần một giá trị, kiểm precondition hoặc sửa contract để bảo đảm giá trị đó *(review)*.
 - Phân biệt "không tồn tại", "chưa cung cấp" và `null` khi ba trường hợp có nghĩa khác nhau. Không thêm optional field chỉ để một object dùng chung cho nhiều operation không liên quan *(review)*.
 
 TypeScript không thay runtime validation. Dữ liệu từ HTTP, file, database, model hoặc external service phải được kiểm tại boundary (xem [Validation](#validation)) *(review)*.

@@ -1,4 +1,4 @@
-# Task 10: Remove concrete format dependencies from Deck
+# Task 13: Remove concrete format dependencies from Deck
 
 Read this file to learn the steps that remove concrete format dependencies from deck.
 
@@ -95,7 +95,8 @@ Run `corepack pnpm@11.28.5 install --lockfile-only --offline`.
 Run `corepack pnpm@11.28.5 build`.
 Run `corepack pnpm@11.28.5 test:slide-pipeline`.
 Run `corepack pnpm@11.28.5 test:generation-publication`.
-Expected: metadata and build commands exit with code 0. Suites print `# fail 0`.
+Expected: metadata and build commands exit with code 0. `test:slide-pipeline` prints `# fail 0`.
+In `test:generation-publication`, report the recorded baseline failure in `portable-generation-http.test.mjs` (test #60, `REQUEST_TIMEOUT`) separately without fixing it. Stop on any other failure.
 Run `rg -n "@deckagent/(html-format|pptx)" packages/presentation/deck/src packages/presentation/deck/package.json`.
 Expected: exit code 1 with no matches.
 Do not change Pexels eligibility or custom-layout behavior in this structural task.

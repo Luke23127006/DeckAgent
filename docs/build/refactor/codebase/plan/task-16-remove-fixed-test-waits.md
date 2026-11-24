@@ -1,4 +1,4 @@
-# Task 13: Remove constant waits from the request tests
+# Task 16: Remove constant waits from the request tests
 
 Read this file to learn the steps that remove constant waits from the request tests.
 

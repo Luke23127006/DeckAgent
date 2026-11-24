@@ -6,6 +6,181 @@
   "rules": {
     "eslint/no-shadow": "off",
     "unicorn/consistent-function-scoping": "off",
-    "unicorn/prefer-add-event-listener": "off"
-  }
+    "unicorn/prefer-add-event-listener": "off",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": true,
+        "ts-ignore": true,
+        "ts-nocheck": true
+      }
+    ],
+    "typescript/no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/apps/**/*.{ts,tsx,mts,cts,js,mjs,cjs}", "**/packages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/packages/client/runtime/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": ["node:*", "node:*/*"],
+                "message": "Browser code must not import Node-only modules."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/apps/web/src/browser/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": ["node:*", "node:*/*"],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/host-api",
+                  "@deckagent/session-persistence",
+                  "@deckagent/workspace-registry",
+                  "@deckagent/file-tools",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "@deckagent/html-format",
+                  "@deckagent/pptx-format"
+                ],
+                "message": "Browser code must not import Local Host or domain packages."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/packages/host/contracts/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*",
+                  "@deckagent/host-api",
+                  "@deckagent/browser-runtime",
+                  "@deckagent/session-persistence",
+                  "@deckagent/workspace-registry",
+                  "@deckagent/file-tools",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "@deckagent/html-format",
+                  "@deckagent/pptx-format"
+                ],
+                "message": "Host contracts must not import runtime implementations."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/packages/host/api/src/lifecycle/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:http",
+                  "node:https",
+                  "../http-error*",
+                  "./http-error*",
+                  "../deck-routes*",
+                  "../multipart*",
+                  "../transport/*"
+                ],
+                "message": "Request Lifecycle must not import HTTP transport modules."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

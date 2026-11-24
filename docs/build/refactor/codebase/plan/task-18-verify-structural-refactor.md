@@ -1,4 +1,4 @@
-# Task 15: Check the structural refactor
+# Task 18: Check the structural refactor
 
 Read this file to learn the steps that check the structural refactor.
 
@@ -55,7 +55,7 @@ Run `corepack pnpm@11.28.5 lint`.
 Run `corepack pnpm@11.28.5 check:boundaries`.
 Run `corepack pnpm@11.28.5 check:docs`.
 Expected: all commands exit with code 0.
-Boundary output contains `check-boundaries: 0 error(s)`.
+Boundary output contains `check-boundaries: 0 violation(s)`.
 Document output contains `0 error(s)`.
 
 - [ ] **Step 2: Run the affected regression suites**
@@ -81,11 +81,12 @@ corepack pnpm@11.28.5 test:generation-publication
 corepack pnpm@11.28.5 test:layouts
 corepack pnpm@11.28.5 test:images
 corepack pnpm@11.28.5 test:browser-smoke
-node --test --test-reporter=tap tests/check-docs.test.mjs tests/post-edit-hook.test.mjs tests/check-boundaries.test.mjs
+node --test --test-reporter=tap tests/check-docs.test.mjs tests/post-edit-hook.test.mjs tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs
 ```
 
-Expected: each command exits with code 0 and prints `# fail 0`.
-Compare counts with the baseline and the explicitly added tests.
+Expected: each command exits with code 0 and prints `# fail 0`, except for the recorded baseline failure in `portable-generation-http.test.mjs` (test #60, `REQUEST_TIMEOUT`, which runs in `test:generation-publication` and `test:images`).
+Report that pre-existing baseline failure separately without treating it as a refactor regression. Stop on any other failure.
+Compare counts with the Wave 0 baseline table in `README.md` and the added tests (`test:layouts` and `test:images` are subsets of `test:deck-review` and `test:generation-publication`).
 Use sequential suites to avoid shared-state interference.
 
 - [ ] **Step 3: Review authority and compatibility**

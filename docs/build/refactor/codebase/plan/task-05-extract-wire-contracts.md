@@ -1,4 +1,4 @@
-# Task 02: Extract browser-safe wire contracts
+# Task 05: Extract browser-safe wire contracts
 
 Read this file to learn the steps that extract browser-safe wire contracts.
 

@@ -1,4 +1,4 @@
-# Task 07: Extract chat and workspace workflows
+# Task 10: Extract chat and workspace workflows
 
 Read this file to learn the steps that extract chat and workspace workflows.
 

@@ -27,6 +27,8 @@
     "format": "biome format --write",
     "format:check": "biome format",
     "check:docs": "node scripts/check-docs.mjs",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "check:boundaries:report": "node scripts/check-boundaries.mjs --report",
     "test:session-persistence": "node --test tests/session-persistence.test.mjs",
     "test:tools-browser": "node --test tests/host-api.test.mjs tests/browser-runtime.test.mjs tests/local-web.test.mjs",
     "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/local-web/lib/cli.js",
