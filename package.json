@@ -5,7 +5,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
-    "test:local-foundation": "node --test packages/workspace/registry/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
+    "test:local-foundation": "node --test packages/workspace/registry/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs apps/web/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
     "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/web/tests/opencode-adapter.test.mjs e2e/model-requests.test.mjs packages/host/api/tests/request-failure.test.mjs apps/web/tests/wait-for.test.mjs",
     "test:source-permissions": "node --test packages/tools/filesystem/tests/source-access.test.mjs apps/web/tests/mcp-bridge.test.mjs e2e/step-approval.test.mjs e2e/source-requests.test.mjs",
     "test:attachments": "node --test packages/tools/filesystem/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
@@ -32,7 +32,7 @@
     "scan:module-design": "node scripts/scan-module-design.mjs",
     "test:session-persistence": "node --test packages/session/persistence/tests/session-persistence.test.mjs",
     "test:tools-browser": "node --test packages/host/api/tests/host-api.test.mjs apps/web/tests/browser-runtime.test.mjs e2e/local-web.test.mjs",
-    "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",
+    "web": "node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",
     "start:local": "npm exec --yes --package=node@22.19.0 -- node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",
     "package:opencode": "node scripts/package-opencode.mjs",
     "test:opencode-resources": "node --test apps/web/tests/opencode-resources.test.mjs",

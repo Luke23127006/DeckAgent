@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
-import { MemoryDraftStore, SqliteSessionStore, chatTitle } from '../lib/index.js'
+import { SqliteSessionStore } from '../lib/index.js'
 
 const stores = new WeakMap()
 
@@ -82,15 +82,18 @@ test('chats are named from their first user message; an unreadable chat stays li
   const raw = new DatabaseSync(join(dir, 'sessions.sqlite'))
   raw.prepare("UPDATE messages SET payload='{not json' WHERE session_id='bad'").run()
   raw.close()
+  await store.open('empty')
   const chats = await store.chats()
   const good = chats.find(chat => chat.sessionId === 'good')
   const bad = chats.find(chat => chat.sessionId === 'bad')
+  const empty = chats.find(chat => chat.sessionId === 'empty')
   assert.equal(good.readable, true)
   assert.equal([...good.title].length, 65, '64 characters and an ellipsis')
   assert.ok(good.title.startsWith('Kế hoạch tái chế'))
   assert.deepEqual([bad.readable, bad.title, bad.messageCount], [false, '', 1])
   await assert.rejects(store.read('bad'), { code: 'SESSION_CORRUPT' })
-  assert.equal(chatTitle([]), '')
+  assert.equal(empty.title, '')
+  assert.equal(empty.readable, true)
 })
 
 test('search matches every word in the name or the conversation of each chat only, without case, after NFC', async t => {
@@ -145,17 +148,31 @@ test('chats of a removed workspace become ungrouped with their model; reconcilia
   assert.equal((await store.chats()).length, 3, 'No chat is deleted')
 })
 
-test('drafts belong to one chat each, are capped, and live only in memory', () => {
-  const drafts = new MemoryDraftStore()
-  drafts.set('a', 'Draft A')
-  drafts.set('b', 'Draft B')
-  assert.equal(drafts.get('a'), 'Draft A')
-  assert.equal(drafts.get('b'), 'Draft B')
-  assert.equal(drafts.get('c'), '')
-  drafts.set('a', '')
-  assert.equal(drafts.get('a'), '')
-  assert.equal(drafts.get('b'), 'Draft B')
-  assert.equal(drafts.set('a', 'đ'.repeat(16000)).length, 16000)
-  assert.throws(() => drafts.set('a', 'x'.repeat(16001)), { code: 'DRAFT_TOO_LARGE' })
-  assert.equal(new MemoryDraftStore().get('b'), '', 'A new store, as after a restart, keeps no draft')
+test('corrupt research_sources rows throw SESSION_CORRUPT', async t => {
+  const dir = await directory(t)
+  const store = storeIn(t, dir)
+  const session = await store.create('default')
+  store.requests.admit({
+    requestId: 'req-research-corrupt',
+    sessionId: session.sessionId,
+    input: 'find sources',
+    selection: { provider: 'p', model: 'm' },
+  })
+  const raw = new DatabaseSync(join(dir, 'sessions.sqlite'))
+  raw
+    .prepare('INSERT INTO research_sources (id, request_id, session_id, payload) VALUES (?, ?, ?, ?)')
+    .run('src-bad-json', 'req-research-corrupt', session.sessionId, '{not json')
+  raw.close()
+  assert.throws(() => store.requests.researchSources(session.sessionId), {
+    name: 'SessionError',
+    code: 'SESSION_CORRUPT',
+  })
+
+  const rawMissing = new DatabaseSync(join(dir, 'sessions.sqlite'))
+  rawMissing.prepare('UPDATE research_sources SET payload = ? WHERE id = ?').run('{"sourceId":"bad"}', 'src-bad-json')
+  rawMissing.close()
+  assert.throws(() => store.requests.researchSources(session.sessionId), {
+    name: 'SessionError',
+    code: 'SESSION_CORRUPT',
+  })
 })

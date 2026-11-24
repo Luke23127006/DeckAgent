@@ -29,12 +29,6 @@ export interface AttachmentPreparation {
   readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
 }
 
-export interface DraftSnapshot {
-  readonly text: string
-  readonly attachmentIds: readonly string[]
-  readonly revision: number
-}
-
 export interface ToolCall {
   readonly id: string
   readonly name: string

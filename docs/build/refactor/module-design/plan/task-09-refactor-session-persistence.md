@@ -34,7 +34,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
 
 ## Steps
 
-- [ ] **Step 1: Move `MemoryDraftStore` and `DraftSnapshot` to `apps/web/src/draft-store.ts` (P9)**
+- [x] **Step 1: Move `MemoryDraftStore` and `DraftSnapshot` to `apps/web/src/draft-store.ts` (P9)**
 
   1. Create `apps/web/src/draft-store.ts` containing:
      - `export interface DraftSnapshot { readonly text: string; readonly attachmentIds: readonly string[]; readonly revision: number }`
@@ -61,7 +61,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
      - Add `apps/web/tests/draft-store.test.mjs` to the `test:local-foundation` script in `package.json`.
   7. Remove `packages/session/persistence/src/draft-store.ts` and remove `DraftSnapshot` from `packages/session/persistence/src/contracts.ts`.
 
-- [ ] **Step 2: Create `packages/session/persistence/src/request-validation.ts` (P4, P5)**
+- [x] **Step 2: Create `packages/session/persistence/src/request-validation.ts` (P4, P5)**
 
   Create `packages/session/persistence/src/request-validation.ts` with zero `as` assertions and zero `!` non-null assertions:
 
@@ -73,7 +73,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
      - Check every field of `ResearchSource` (`sourceId`, `version === 1`, `kind === 'research'`, `provider === 'tavily'`, `query`, `title`, `url`, `content`, `partial === true`, `fingerprint`, `retrievedAt`, `providerRequestId?: string`, and `location` `{ kind: 'research-result', start: 0, end: non-negative safe integer }`).
      - Reject unexpected keys and throw `new SessionError('SESSION_CORRUPT', 'Stored research source does not match the supported format')` on any mismatch.
 
-- [ ] **Step 3: Split `packages/session/persistence/src/requests.ts` into focused modules (P3)**
+- [x] **Step 3: Split `packages/session/persistence/src/requests.ts` into focused modules (P3)**
 
   Split `requests.ts` into three helper modules plus the `RequestLog` facade without changing any public method signature or SQL statement:
 
@@ -92,7 +92,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
      - Replace the remaining non-null assertions in `requests.ts` (lines 152 and 529) with explicit undefined checks throwing `SessionError`.
      - Check that every new and modified file in `packages/session/persistence/src/` stays under 250 lines and every function stays under 80 lines.
 
-- [ ] **Step 4: Narrow `packages/session/persistence/src/index.ts` exports and update tests (P1, P2)**
+- [x] **Step 4: Narrow `packages/session/persistence/src/index.ts` exports and update tests (P1, P2)**
 
   1. In `packages/session/persistence/src/index.ts`:
      - Remove `RequestLog`, `validateEvent`, `draftLimit`, `chatTitle`, and `MemoryDraftStore` from root exports.
@@ -104,7 +104,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
        - Insert a malformed JSON row (`'{not json'`) into `research_sources` and assert `store.requests.researchSources(sessionId)` throws `{ name: 'SessionError', code: 'SESSION_CORRUPT' }`.
        - Insert a valid JSON object with missing fields (`'{"sourceId":"bad"}'`) into `research_sources` and assert `store.requests.researchSources(sessionId)` throws `{ name: 'SessionError', code: 'SESSION_CORRUPT' }`.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, scan, and run tests**
+- [x] **Step 5: Build, check boundaries, lint, format, scan, and run tests**
 
   Run:
 
@@ -132,7 +132,7 @@ Read this file to execute approved findings P1, P2, P3, P4, P5, and P9 in `packa
 
   **STOP** if `tsc -b` fails on declaration emit for any removed type export, if any suite fails, or if `assertions` is not `0`.
 
-- [ ] **Step 6: Mark task done, write the report, and commit and push**
+- [x] **Step 6: Mark task done, write the report, and commit and push**
 
   1. Mark Steps 1 to 5 as `- [x]` in this file. Update the Task 9 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` with a link to `../reports/task-09-refactor-session-persistence.md`.
   2. Create `docs/build/refactor/module-design/reports/task-09-refactor-session-persistence.md` with:

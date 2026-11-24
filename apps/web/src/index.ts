@@ -4,8 +4,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HttpError, startHost } from '@deckagent/host-api'
 import type { WebSettings } from '@deckagent/host-api'
-import { MemoryDraftStore, SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
+import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ModelSelection } from '@deckagent/session-persistence'
+import { MemoryDraftStore } from './draft-store.ts'
 import { WorkspaceRegistry } from '@deckagent/workspace-registry'
 import { DeckService } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
@@ -23,12 +24,7 @@ import {
 import { WebState } from './web-state.ts'
 import { createChatOperations } from './features/chats/index.ts'
 import { createWorkspaceOperations } from './features/workspaces/index.ts'
-import {
-  attachmentManagement,
-  chatManagement,
-  mapApplicationFailure,
-  workspaceManagement,
-} from './local-transport.ts'
+import { attachmentManagement, chatManagement, mapApplicationFailure, workspaceManagement } from './local-transport.ts'
 import { ProviderStore } from './features/providers/index.ts'
 import type { ProviderConnection, ProviderStoreOptions } from './features/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'

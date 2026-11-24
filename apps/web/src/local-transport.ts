@@ -8,6 +8,7 @@ import type {
 } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
 import { WorkspaceError } from '@deckagent/workspace-registry'
+import { DraftError } from './draft-store.ts'
 import { AttachmentFailure } from './features/attachments/index.ts'
 import { ChatWorkflowError } from './features/chats/index.ts'
 import type { ChatOperations, ChatWorkflowErrorCode } from './features/chats/index.ts'
@@ -212,6 +213,10 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
       code: error.code,
       ...(error.detail ? { detail: error.detail } : {}),
     }
+  }
+  if (error instanceof DraftError) {
+    const status = error.code === 'DRAFT_TOO_LARGE' ? 413 : error.code === 'DRAFT_CONFLICT' ? 409 : 400
+    return { status, code: error.code }
   }
   if (error instanceof WebStateError) {
     const status = error.code === 'INVALID_SELECTION' || error.code === 'INVALID_REQUEST' ? 400 : 500

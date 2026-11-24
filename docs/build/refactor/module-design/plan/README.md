@@ -89,7 +89,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 6 | Done | [Diagnose host/contracts and host/api module design](task-06-diagnose-host-contracts-and-api.md) ([report](../reports/task-06-diagnose-host-contracts-and-api.md)) |
 | 7 | Done | [Diagnose session/persistence module design and host seam](task-07-diagnose-session-persistence.md) ([report](../reports/task-07-diagnose-session-persistence.md)) |
 | 8 | Pending | [Update Project Structure conventions for Slice 2A](task-08-update-slice-2a-conventions.md) |
-| 9 | Pending | [Refactor session/persistence and move MemoryDraftStore to apps/web](task-09-refactor-session-persistence.md) |
+| 9 | Done | [Refactor session/persistence and move MemoryDraftStore to apps/web](task-09-refactor-session-persistence.md) ([report](../reports/task-09-refactor-session-persistence.md)) |
 | 10 | Pending | [Refactor host/contracts validation and narrow exports](task-10-refactor-host-contracts.md) |
 | 11 | Pending | [Refactor host/api boundaries, routes, and exports](task-11-refactor-host-api.md) |
 | 12 | Pending | [Check Slice 2A exit gate and rescan metrics](task-12-verify-slice-2a-exit.md) |

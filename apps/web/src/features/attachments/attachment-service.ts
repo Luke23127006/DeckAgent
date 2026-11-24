@@ -1,7 +1,8 @@
 import { AttachmentParser, SourceError, attachmentLimits } from '@deckagent/file-tools'
 import type { AttachmentManagement, AttachmentView, ChatDraft } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
-import type { AttachmentRecord, MemoryDraftStore, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
+import type { AttachmentRecord, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
+import type { MemoryDraftStore } from '../../draft-store.ts'
 import { AttachmentFailure } from './failures.ts'
 import type { ManagedAttachments } from './managed-attachments.ts'
 
@@ -249,8 +250,7 @@ export class AttachmentService implements AttachmentManagement {
         const ids = input.attachmentIds ?? []
         if (ids.length !== draft.attachmentIds.length || ids.some(id => !draft.attachmentIds.includes(id)))
           throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
-        if (ids.length && input.draftRevision === undefined)
-          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
+        if (ids.length && input.draftRevision === undefined) throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
         if (!input.input.trim() && !ids.length) throw new SessionError('REQUEST_EMPTY', 'REQUEST_EMPTY')
         const admitted = log.admit(input)
         if (input.draftRevision !== undefined) this.drafts.clear(input.sessionId, input.draftRevision)

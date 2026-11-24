@@ -1,6 +1,7 @@
 import type { DeckService } from '@deckagent/deck'
 import type { WebSession } from '@deckagent/host-contracts'
-import type { ChatSummary, MemoryDraftStore, ModelSelection, SqliteSessionStore } from '@deckagent/session-persistence'
+import type { ChatSummary, ModelSelection, SqliteSessionStore } from '@deckagent/session-persistence'
+import type { MemoryDraftStore } from '../../draft-store.ts'
 import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
 import type { WebState } from '../../web-state.ts'
 import { ChatWorkflowError } from './contracts.ts'
@@ -18,10 +19,7 @@ export function createChatOperations(
   drafts: MemoryDraftStore,
 ): ChatOperations {
   const project = (chat: ChatSummary): WebSession => ({
-    ...web.project(
-      chat,
-      chat.readable && decks.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0),
-    ),
+    ...web.project(chat, chat.readable && decks.snapshot(chat.sessionId).slides.some(slide => slide.revision > 0)),
     hasDraft: drafts.get(chat.sessionId).trim() !== '' || drafts.snapshot(chat.sessionId).attachmentIds.length > 0,
   })
 

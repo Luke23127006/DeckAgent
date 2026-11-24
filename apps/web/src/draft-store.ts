@@ -1,7 +1,22 @@
-import { SessionError } from './contracts.ts'
-import type { DraftSnapshot } from './contracts.ts'
+export interface DraftSnapshot {
+  readonly text: string
+  readonly attachmentIds: readonly string[]
+  readonly revision: number
+}
 
-export const draftLimit = 16_000
+export type DraftErrorCode = 'DRAFT_TOO_LARGE' | 'DRAFT_CONFLICT' | 'INVALID_REQUEST'
+
+export class DraftError extends Error {
+  constructor(
+    public readonly code: DraftErrorCode,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'DraftError'
+  }
+}
+
+const draftLimit = 16_000
 
 /**
  * The draft of each chat while DeckAgent runs (FR-038): every open interface reads the same draft,
@@ -16,7 +31,7 @@ export class MemoryDraftStore {
 
   set(chatId: string, text: string): string {
     if (typeof text !== 'string' || [...text].length > draftLimit)
-      throw new SessionError('DRAFT_TOO_LARGE', 'Draft is longer than the supported limit')
+      throw new DraftError('DRAFT_TOO_LARGE', 'Draft is longer than the supported limit')
     const current = this.snapshot(chatId)
     this.save(chatId, { ...current, text }, current.revision)
     return text
@@ -33,15 +48,15 @@ export class MemoryDraftStore {
   ): DraftSnapshot {
     const current = this.snapshot(chatId)
     if (expectedRevision !== current.revision)
-      throw new SessionError('DRAFT_CONFLICT', 'The draft changed. Reload it before saving')
+      throw new DraftError('DRAFT_CONFLICT', 'The draft changed. Reload it before saving')
     if (typeof value.text !== 'string' || [...value.text].length > draftLimit)
-      throw new SessionError('DRAFT_TOO_LARGE', 'Draft is longer than the supported limit')
+      throw new DraftError('DRAFT_TOO_LARGE', 'Draft is longer than the supported limit')
     if (
       !Array.isArray(value.attachmentIds) ||
       new Set(value.attachmentIds).size !== value.attachmentIds.length ||
       value.attachmentIds.some(id => typeof id !== 'string' || !/^att-[a-f0-9-]{36}$/.test(id))
     )
-      throw new SessionError('INVALID_REQUEST', 'Invalid draft attachment references')
+      throw new DraftError('INVALID_REQUEST', 'Invalid draft attachment references')
     const next = { text: value.text, attachmentIds: [...value.attachmentIds], revision: current.revision + 1 }
     this.drafts.set(chatId, next)
     return structuredClone(next)
