@@ -16,13 +16,13 @@ Read this file to record the four owner-approved Slice 2A ownership and dependen
 
 ## Steps
 
-- [ ] **Step 1: Read the target sections of Project Structure**
+- [x] **Step 1: Read the target sections of Project Structure**
 
   Read `docs/conventions/project-structure.md` lines 91 to 145. Check that the table rows `host/api/`, `host/contracts/`, `session/persistence/`, and `Local Host transport` match the Task 6 and Task 7 reports.
 
   **STOP** if the table structure differs from lines 91 to 145.
 
-- [ ] **Step 2: Apply the four approved convention updates in Vietnamese**
+- [x] **Step 2: Apply the four approved convention updates in Vietnamese**
 
   Update `docs/conventions/project-structure.md` in Vietnamese matching Documentation Conventions [[5]](#ref-5):
 
@@ -41,7 +41,7 @@ Read this file to record the four owner-approved Slice 2A ownership and dependen
      - Append to column `Được phụ thuộc`: `, type-level reader port của domain package (như DeckReader, OutlineReader)`.
      - Append to column `Không được phụ thuộc`: `, runtime class hoặc hàm của domain package`.
 
-- [ ] **Step 3: Check documentation rules**
+- [x] **Step 3: Check documentation rules**
 
   Run:
 
@@ -59,7 +59,7 @@ Read this file to record the four owner-approved Slice 2A ownership and dependen
 
   Check that the diff modifies only the five items from Step 2.
 
-- [ ] **Step 4: Mark task done, write the report, and commit and push**
+- [x] **Step 4: Mark task done, write the report, and commit and push**
 
   1. Mark Steps 1 to 3 as `- [x]` in this file. Update the Task 8 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` with a link to `../reports/task-08-update-slice-2a-conventions.md`.
   2. Create `docs/build/refactor/module-design/reports/task-08-update-slice-2a-conventions.md` with:

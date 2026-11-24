@@ -92,14 +92,14 @@ Feature không bắt buộc có `service.ts`, `controller.ts` hoặc `repository
 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
-| `host/api/` | Local Host nhận command và quản lý request execution thế nào? | Local HTTP/SSE transport, authentication và validation tại transport, Request Lifecycle, request event, approval coordination | Browser UI, Deck invariant, process của OpenCode, SQLite implementation của Session |
-| `host/contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Wire DTO, event envelope, protocol error payload, validator tại runtime boundary | HTTP server, RequestController, RequestStore, Browser client, mọi type chỉ Host API dùng |
+| `host/api/` | Local Host nhận command và quản lý request execution thế nào? | Local HTTP/SSE transport và HTTP framing (readJson, giới hạn kích thước body, multipart, header, xác thực, ánh xạ HTTP status), route dispatch, Request Lifecycle, request event, approval coordination | Browser UI, Deck invariant, process của OpenCode, SQLite implementation của Session, decode payload wire JSON thuần (thuộc host/contracts/), runtime của domain package (chỉ import type-level reader port) |
+| `host/contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Wire DTO, event envelope, protocol error payload, bộ decode và kiểm tra wire payload thuần cho cả request (như decodeAgentRequest) và response tại runtime boundary | HTTP server, RequestController, RequestStore, Browser client, mọi type chỉ Host API dùng |
 | `presentation/deck/` | Deck state và publication thay đổi hợp lệ thế nào? | Deck lifecycle, Brief và Outline state, generation state và grant, revision và publication invariant, artifact ownership. Có thể giữ private persistence | Request Lifecycle, concrete HTML/PPTX adapter, workflow xuyên domain |
 | `presentation/design/` | Design system, template và layout xác định thế nào? | Design contract, design system và template catalog, theme, layout, compatibility rule | Deck lifecycle, generation, native conversion |
 | `presentation/document/` | Nội dung slide được biểu diễn và kiểm tra thế nào trước khi gắn với format? | SlideDocument, content node, provenance contract, document validation, FormatAdapter contract | Publication authority, concrete conversion |
 | `presentation/html/` | Portable content thành HTML artifact an toàn thế nào? | HTML conversion, giới hạn HTML/CSS, HTML validation | Deck lifecycle, request permission, publication authority |
 | `presentation/pptx/` | Portable content thành PPTX artifact thế nào? | PPTX conversion, font mapping, PPTX validation | Deck lifecycle, request permission, publication authority |
-| `session/persistence/` | Chat, message, request và approval được lưu và khôi phục thế nào? | Durable record của chat, message, attachment, request, approval. Transaction trong phạm vi Session | Request execution authority, Deck lifecycle, Workspace |
+| `session/persistence/` | Chat, message, request và approval được lưu và khôi phục thế nào? | Durable record của chat, message, attachment, request, approval. Transaction trong phạm vi Session | Request execution authority, Deck lifecycle, Workspace, trạng thái draft tạm trong bộ nhớ (thuộc apps/web/) |
 | `workspace/registry/` | Workspace và folder association được quản lý thế nào? | Workspace record và identity, folder association và folder policy, persistence và recovery của Registry | Chat lifecycle, request execution |
 | `tools/filesystem/` | Agent truy cập file trong phạm vi được cấp thế nào? | Path validation, access restriction, bounded read, file identity | User approval, request admission, agent tool policy |
 
@@ -108,6 +108,7 @@ Ba điểm dễ sai trong các package trên:
 - Local Transport và Request Lifecycle cùng nằm trong `host/api/` nhưng là hai trách nhiệm riêng. Transport gọi public operation của Request Lifecycle. Request Lifecycle không import HTTP transport và không dùng HTTP status làm error contract.
 - `host/contracts/` chỉ chứa contract an toàn cho cả Browser và Local Host. Không chuyển toàn bộ type của Host API vào package này.
 - Request Lifecycle dùng persistence contract của `session/persistence/`. Không component nào sửa Session state qua SQLite implementation.
+- `host/contracts/` và `session/persistence/` giữ hai bản sao độc lập của các type request dùng chung vì Browser import `host/contracts/` và không được phụ thuộc `session/persistence/`. `host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) để chặn lệch contract.
 
 ### Tests, scripts và docs
 
@@ -123,7 +124,7 @@ Ba điểm dễ sai trong các package trên:
 | --- | --- | --- |
 | Browser | Browser module, Browser transport, `host/contracts` | Node-only module, Local Host implementation |
 | Browser transport | `host/contracts` | RequestController, SQLite, private module của Host |
-| Local Host transport | Request Lifecycle, operation dành cho application | Browser implementation |
+| Local Host transport | Request Lifecycle, operation dành cho application, type-level reader port của domain package (như DeckReader, OutlineReader) | Browser implementation, runtime class hoặc hàm của domain package |
 | Application workflow | Public API của domain và capability, public operation của feature khác | Private persistence implementation |
 | Integration | Runtime và protocol contract, capability cần dùng | Browser UI, HTTP error mapping |
 | `index.ts` | Concrete implementation cần wiring | — |
