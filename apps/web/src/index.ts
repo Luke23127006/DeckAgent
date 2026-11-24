@@ -306,7 +306,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           researchStyle,
       },
     }
-    const clientDir = dirname(fileURLToPath(import.meta.resolve('@deckagent/browser-runtime')))
+    const clientDir = join(dirname(fileURLToPath(import.meta.url)), 'browser')
     for (const name of await readdir(clientDir)) {
       if (/^[\w-]+\.js$/.test(name))
         assets[`/client/${name}`] = {

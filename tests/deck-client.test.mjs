@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import test from 'node:test'
-import { DeckClient } from '../packages/client/runtime/lib/index.js'
+import { DeckClient } from '../apps/web/lib/browser/index.js'
 
 test('Deck client authenticates SSE, decodes fragmented frames and rejects malformed or cross-Session state', async t => {
   let malformed = false,

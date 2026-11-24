@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
-import { ConfirmationClient } from '../packages/client/runtime/lib/index.js'
+import { ConfirmationClient } from '../apps/web/lib/browser/index.js'
 import * as design from '../packages/presentation/design/lib/index.js'
 
 const longBullet =

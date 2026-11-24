@@ -46,9 +46,6 @@
       "@deckagent/host-api": [
         "./packages/host/api/src/index.ts"
       ],
-      "@deckagent/browser-runtime": [
-        "./packages/client/runtime/src/index.ts"
-      ],
       "@deckagent/presentation-document": [
         "./packages/presentation/document/src/index.ts"
       ],

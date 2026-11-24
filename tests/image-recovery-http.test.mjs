@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startApp, finished, runs, waitFor, MemoryCredentials } from './fixtures/b02-helpers.mjs'
-import { BriefClient, OutlineClient, DeckClient } from '../packages/client/runtime/lib/index.js'
+import { BriefClient, OutlineClient, DeckClient } from '../apps/web/lib/browser/index.js'
 import { brief } from './fixtures/brief.mjs'
 
 async function fixture(t, { pexels = true, pause = false, preparedForest = false } = {}) {

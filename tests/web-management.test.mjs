@@ -6,7 +6,7 @@ import test from 'node:test'
 import { startLocalWeb } from '../apps/web/lib/index.js'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { HostClient, ManagementClient, ManagementError } from '../packages/client/runtime/lib/index.js'
+import { HostClient, ManagementClient, ManagementError } from '../apps/web/lib/browser/index.js'
 import { DatabaseSync } from 'node:sqlite'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 

@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { startHost } from '../packages/host/api/lib/index.js'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient } from '../apps/web/lib/browser/index.js'
 
 // B02: the in-request question/reply contract was removed (ADR-0004: a question ends its request, the reply is a new
 // request), so its waiting-snapshot case is gone. The browser follows saved request events instead of snapshots.

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
 import { pinnedVersion, startLocalWeb } from '../apps/web/lib/index.js'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient } from '../apps/web/lib/browser/index.js'
 import { MemoryCredentials, filesContaining, finished, waitFor } from './fixtures/b02-helpers.mjs'
 
 // Real OpenCode CLI smoke (B02-IMP-02). Opt-in: DECKAGENT_OPENCODE_LIVE=1; DECKAGENT_OPENCODE optionally overrides the

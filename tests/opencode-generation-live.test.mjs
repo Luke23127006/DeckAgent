@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startLocalWeb } from '../apps/web/lib/index.js'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
-import { HostClient, ConfirmationClient, DeckClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient, ConfirmationClient, DeckClient } from '../apps/web/lib/browser/index.js'
 import { MemoryCredentials, finished, filesContaining } from './fixtures/b02-helpers.mjs'
 import { brief } from './fixtures/brief.mjs'
 

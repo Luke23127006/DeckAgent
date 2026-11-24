@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { SessionError, SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 import { HttpError, startHost } from '../packages/host/api/lib/index.js'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient } from '../apps/web/lib/browser/index.js'
 
 const selection = { provider: 'fixture', model: 'model-a' }
 

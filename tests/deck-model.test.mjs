@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { setTimeout as delay } from 'node:timers/promises'
-import { DeckModel } from '../packages/client/runtime/lib/index.js'
+import { DeckModel } from '../apps/web/lib/browser/index.js'
 
 const slide = (slideId, revision) => ({
   slideId,

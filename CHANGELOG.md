@@ -28,6 +28,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move browser runtime sources from `packages/client/runtime/src` into `apps/web/src/browser`, compile Node and Browser with separate TypeScript configs (`apps/web/tsconfig.json` and `apps/web/tsconfig.browser.json`) and separate `tsdown` bundles (`apps/web/lib/browser/`), resolve browser assets relative to the application module, and remove `@deckagent/browser-runtime`.
 - Move the local application from `apps/local-web` to `apps/web` while keeping `@deckagent/local-web`, and update startup scripts, OpenCode packaging paths, TypeScript references, lockfile importers, and test paths.
 - Separate Request Lifecycle operation errors (`RequestFailure`) from HTTP status mapping (`requestFailureResponse` in Host transport), switch `AttachmentService.requestStore().admit` preconditions to `SessionError`, and add `packages/host/api/tests/request-failure.test.mjs`.
 - Move `RequestStore` and `ApprovalStep` contracts into `@deckagent/session-persistence` (`packages/session/persistence/src/request-store.ts`), update `RequestController` and `AttachmentService` to import them from Session, and keep a temporary `RequestStore` re-export on `@deckagent/host-api`.

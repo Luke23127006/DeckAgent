@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import test from 'node:test'
-import { OutlineClient } from '../packages/client/runtime/lib/index.js'
+import { OutlineClient } from '../apps/web/lib/browser/index.js'
 import { resolveDesign } from '../packages/presentation/design/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'

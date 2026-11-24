@@ -7,6 +7,9 @@
   "include": [
     "src"
   ],
+  "exclude": [
+    "src/browser/**"
+  ],
   "references": [
     { "path": "../../packages/presentation/html" },
     { "path": "../../packages/presentation/design" },
@@ -16,7 +19,7 @@
       "path": "../../packages/host/api"
     },
     {
-      "path": "../../packages/client/runtime"
+      "path": "./tsconfig.browser.json"
     },
     {
       "path": "../../packages/session/persistence"

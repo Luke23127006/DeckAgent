@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
 import { startLocalWeb } from '../apps/web/lib/index.js'
-import { DeckClient } from '../packages/client/runtime/lib/index.js'
+import { DeckClient } from '../apps/web/lib/browser/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
 const confirmed = {

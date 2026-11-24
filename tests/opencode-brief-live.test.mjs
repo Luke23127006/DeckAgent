@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startLocalWeb } from '../apps/web/lib/index.js'
-import { HostClient, BriefClient, OutlineClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient, BriefClient, OutlineClient } from '../apps/web/lib/browser/index.js'
 import { MemoryCredentials, finished } from './fixtures/b02-helpers.mjs'
 import { brief } from './fixtures/brief.mjs'
 

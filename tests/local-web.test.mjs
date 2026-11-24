@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { StorageError, startLocalWeb } from '../apps/web/lib/index.js'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient } from '../apps/web/lib/browser/index.js'
 import { SqliteSessionStore } from '../packages/session/persistence/lib/index.js'
 
 test('Local Web serves the page and fixed assets only; saved history survives a restart without a model', async t => {

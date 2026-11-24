@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
-import { BriefClient, decodeBriefView } from '../packages/client/runtime/lib/index.js'
+import { BriefClient, decodeBriefView } from '../apps/web/lib/browser/index.js'
 import { resolveDesign } from '../packages/presentation/design/lib/index.js'
 import { brief } from './fixtures/brief.mjs'
 

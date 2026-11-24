@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { startLocalWeb } from '../apps/web/lib/index.js'
-import { HostClient } from '../packages/client/runtime/lib/index.js'
+import { HostClient } from '../apps/web/lib/browser/index.js'
 import { MemoryCredentials, finished } from './fixtures/b02-helpers.mjs'
 
 const executable = process.env.DECKAGENT_OPENCODE

@@ -34,7 +34,6 @@ function discoverWorkspacePackages() {
 const extraEntries = {
   '@deckagent/deck': ['lib/types/brief.js'],
   '@deckagent/file-tools': ['lib/types/parser-worker.js'],
-  '@deckagent/browser-runtime': ['lib/types/boot.js'],
   '@deckagent/local-web': ['lib/types/cli.js'],
 }
 
@@ -72,12 +71,23 @@ for (const pkg of packages) {
     dts: false,
     clean: false,
   }
-  if (pkg.name === '@deckagent/browser-runtime') {
-    config.platform = 'browser'
-    config.deps = {
-      alwaysBundle: ['@deckagent/host-contracts', '@deckagent/presentation-document', 'zod'],
-      onlyBundle: [/^@deckagent\//, /^zod(?:\/|$)/, 'animejs'],
-    }
+  if (pkg.name === '@deckagent/local-web') {
+    await build({
+      cwd: resolve(pkg.path),
+      config: false,
+      entry: ['lib/browser-types/index.js', 'lib/browser-types/boot.js'],
+      outDir: 'lib/browser',
+      format: ['esm'],
+      platform: 'browser',
+      target: 'es2024',
+      fixedExtension: false,
+      dts: false,
+      clean: false,
+      deps: {
+        alwaysBundle: ['@deckagent/host-contracts', '@deckagent/presentation-document', 'zod'],
+        onlyBundle: [/^@deckagent\//, /^zod(?:\/|$)/, 'animejs'],
+      },
+    })
   }
   if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name])
   await build(config)

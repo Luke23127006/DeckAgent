@@ -86,14 +86,14 @@ packages/client/runtime/src/workspace-view.ts -> apps/web/src/browser/workspace-
 - Commit or push.
 - Change a product rule, a database schema, or an unresolved product decision.
 
-- [ ] **Step 1: Move Browser sources**
+- [x] **Step 1: Move Browser sources**
 
 Move each source file with its basename unchanged.
 Do not split `boot.ts` during the move.
 Replace imports from Host API and Deck with the wire package.
 Use explicit wire-package exports for portable-document validation.
 
-- [ ] **Step 2: Separate compilation targets**
+- [x] **Step 2: Separate compilation targets**
 
 Set the Browser project's `rootDir` to `src/browser`.
 Set its `outDir` to `lib/browser-types`.
@@ -106,7 +106,7 @@ Retain the existing anime.js and pure-contract bundling behavior.
 Keep Node output in `apps/web/lib/`.
 The Browser build must finish before the Host reads Browser assets.
 
-- [ ] **Step 3: Update asset loading and consumers**
+- [x] **Step 3: Update asset loading and consumers**
 
 Resolve the Browser asset directory relative to the application module.
 Do not use `import.meta.resolve('@deckagent/browser-runtime')`.
@@ -115,7 +115,7 @@ Change current tests to the new Browser output path.
 Do not create application package exports solely for those tests.
 Remove the old Browser workspace dependency, references, path alias, and importer.
 
-- [ ] **Step 4: Check the two environments**
+- [x] **Step 4: Check the two environments**
 
 Run `corepack pnpm@11.28.5 install --lockfile-only --offline`.
 Run `corepack pnpm@11.28.5 build`.
@@ -126,7 +126,7 @@ Run `rg -n "@deckagent/(host-api|deck|session-persistence)|node:" apps/web/src/b
 Expected: exit code 1 with no matches.
 Browser decoding still checks payloads before UI use.
 
-- [ ] **Final step: Report and stop**
+- [x] **Final step: Report and stop**
 
 Send this report in the conversation:
 

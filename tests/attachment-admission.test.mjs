@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startLocalWeb } from '../apps/web/lib/index.js'
 import { startApp, finished, waitFor } from './fixtures/b02-helpers.mjs'
-import { ManagementClient } from '../packages/client/runtime/lib/index.js'
+import { ManagementClient } from '../apps/web/lib/browser/index.js'
 import { startHost, HttpError } from '../packages/host/api/lib/index.js'
 import { Readable } from 'node:stream'
 

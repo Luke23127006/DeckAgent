@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { DeckService } from '../packages/presentation/deck/lib/index.js'
-import { ConfirmationClient, DeckClient, ManagementClient } from '../packages/client/runtime/lib/index.js'
+import { ConfirmationClient, DeckClient, ManagementClient } from '../apps/web/lib/browser/index.js'
 import { brief } from './fixtures/brief.mjs'
 import { startApp, finished, waitFor, MemoryCredentials } from './fixtures/b02-helpers.mjs'
 

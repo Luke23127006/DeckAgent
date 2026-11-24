@@ -23,9 +23,6 @@
       "path": "packages/host/api"
     },
     {
-      "path": "packages/client/runtime"
-    },
-    {
       "path": "apps/web"
     },
     {
