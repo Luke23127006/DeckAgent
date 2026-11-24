@@ -61,6 +61,13 @@ The folder contains these files:
 | `README.md` | The plan header, Decisions, Global Constraints, Review Focus, the Tasks table and Next revision. See [Plan README](#plan-readme). |
 | `task-NN-<slug>.md` | One task. `NN` is the task number with two digits (`01`, `02`). `<slug>` is the task name in kebab-case. See [Task file](#task-file). |
 
+Task reports go in the sibling folder `docs/build/<workstream>/<topic>/reports/`:
+
+| File | Content |
+| --- | --- |
+| `README.md` | Index table of all task reports for the plan. |
+| `task-NN-<slug>.md` | Execution report written after Task `NN` finishes. |
+
 After you create the folder, add a link to `<topic>/plan/README.md` in `docs/build/README.md`. Each file in `docs/` must have a link from the nearest `README.md`.
 
 ## Before you write tasks
@@ -93,7 +100,7 @@ Every task must obey all ten rules.
    - Add a comment, a lint-disable directive or `@ts-expect-error`.
    - Commit or push.
 9. **Decision tables for judgment.** When a task needs judgment (for example, to sort comments or to rename symbols), give a decision table: `Signal | Action`. Each row has one signal that the executor can see in the file, and one action. The last row is always: `No row matches | Add the item to the report. Do not change it.`
-10. **Fixed report.** Each task ends with the report step in [Task file](#task-file). The task is complete only when each command in the report has the expected output.
+10. **Fixed report file.** Each task ends with the report step in [Task file](#task-file). The executor marks the task `Done` in `plan/README.md`, writes `docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md`, and updates `reports/README.md`. The task is complete only when each command in the report has the expected output and the report file exists.
 
 ## Skill map
 
@@ -117,7 +124,7 @@ The `README.md` of the plan folder has this structure:
 
 Read this file to learn the goal, the decisions, the global constraints and the task order of <feature>.
 
-> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
+> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
 **Goal:** <one sentence>
 
@@ -141,9 +148,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 ## Tasks
 
-| Task | File |
-| --- | --- |
-| 1 | [<Component name>](task-01-<slug>.md) |
+| Task | Status | File |
+| --- | --- | --- |
+| 1 | Pending | [<Component name>](task-01-<slug>.md) |
 
 ## Next revision
 
@@ -168,6 +175,10 @@ Read this file to learn the steps of Task N, which <one verb phrase>.
 - Create: `<exact/path>`
 - Change: `<exact/path>` (lines a-b)
 - Test: `<exact/path>`
+- Change: `docs/build/<workstream>/<topic>/plan/README.md`
+- Change: `docs/build/<workstream>/<topic>/plan/task-NN-<slug>.md`
+- Change: `docs/build/<workstream>/<topic>/reports/README.md`
+- Create: `docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md`
 
 **Interfaces:**
 - Uses: <exact names and signatures from earlier tasks>
@@ -201,13 +212,17 @@ Expected: FAIL. The output contains `<exact text>`.
 Run: `node --test <path>`
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 5: Report and stop**
+- [ ] **Step 5: Write the report file and stop**
 
-Send this report:
-- Files changed: <list>
-- Commands run, with the last 20 lines of output of each command
-- Items that a decision table sent to the report
-- What the commands do not prove
+1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task N row in `docs/build/<workstream>/<topic>/plan/README.md` to `Done` and link `../reports/task-NN-<slug>.md`.
+2. Create `docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md` with:
+   - One-sentence purpose line after H1 (`Read this file to ...`)
+   - Files changed: <list>
+   - Commands run, with exit codes and key output of each command
+   - Items that a decision table sent to the report
+   - What the commands do not prove
+3. Add a row for Task N in `docs/build/<workstream>/<topic>/reports/README.md` and run `corepack pnpm@11.28.5 check:docs`.
+4. Mark Step 5 as `- [x]`, stop, and send the report summary.
 ````
 
 ## Self-review
@@ -222,5 +237,6 @@ After you write the complete plan, do these checks:
 6. **Proportion.** If code blocks are most of the plan, replace function bodies with signatures and tests.
 7. **Language.** The linter command in [Overview](#overview) exits with code 0.
 8. **Location.** The plan is in `docs/build/<workstream>/<topic>/plan/`. The Tasks table links each task file. `docs/build/README.md` links the plan README.
+9. **Task reports.** Each task lists `reports/task-NN-<slug>.md`, `reports/README.md`, and `plan/README.md` in `Files`, and ends with the report-writing step.
 
 Fix each problem in the plan. Then give the user the path of the plan and ask the user to review it.

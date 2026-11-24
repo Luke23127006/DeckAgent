@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add Revision 2b Slice 2A refactor tasks (`task-08` through `task-12`) to `docs/build/refactor/module-design/plan/` covering Project Structure convention updates, `session/persistence` decomposition and `MemoryDraftStore` relocation, `host/contracts` Zod validation unification, `host/api` lifecycle/transport separation, and the Slice 2A exit gate.
 - Add the Task 7 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-07-diagnose-session-persistence.md`) for `packages/session/persistence/` and its host seam, record 9 classified findings and the owner approvals (P8 type-level contract check and convention update, P9 move `MemoryDraftStore` to `apps/web/`), and close Task 7 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 6 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-06-diagnose-host-contracts-and-api.md`) for `packages/host/contracts/` and `packages/host/api/`, record 16 classified findings and the owner approvals (F11 no action, F15 and F16 convention updates), and close Task 6 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 5 Phase 1 exit report (`docs/build/refactor/module-design/reports/task-05-fix-timeout-and-verify-phase1-exit.md`), record the measured `v2` and `v3` timings plus all 18 non-live suites and 5 root tool test files passing with `# fail 0`, and close Task 5 in `docs/build/refactor/module-design/plan/`.
@@ -38,6 +39,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Require a task report file (`docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md`) and report index update after each task in `.agents/skills/write-implementation-plan/SKILL.md` (with synced `.claude` and `.codex` mirrors), and add the mark-done, report, and commit-push workflow to `docs/build/refactor/module-design/plan/`.
 - Raise the `generation_publication` step `timeout-minutes` from `2` to `6` in `.github/workflows/workspace.yml`, because the full suite takes about 3 minutes and the previous limit expired in CI.
 - Extend `docs/build/refactor/module-design/plan/README.md` with the Revision 2 goal, CI timeout guardrail and Slice 2A diagnosis split decisions, review focuses 9 and 10, and the Codebase Design reference.
 - Wrap the long `formatScanReport` assertion in `tests/scan-module-design.test.mjs` to satisfy Biome formatting.
