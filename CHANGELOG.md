@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the quantitative module-design scanner (`scripts/scan-module-design.mjs`), the `scan:module-design` npm script, and unit tests (`tests/scan-module-design.test.mjs`) for Task 1 of `refactor/module-design`.
+- Add the Phase 1 implementation plan under `docs/build/refactor/module-design/plan/`: decisions, global constraints, review focus, and three tasks for the quantitative scanner, the 14-area triage table, and the `portable-generation-http.test.mjs` timeout diagnosis.
 - Add `docs/build/refactor/module-design/README.md` with static codebase measurements, the deep-module direction, a three-layer divide-and-conquer diagnosis method, revisable-convention guidance, and priority candidate areas.
 - Add `@deckagent/host-contracts` (`packages/host/contracts`) with browser-safe wire DTOs, boundary decoders (`decodeAttachment`, `requestEvent`, `decodeBriefView`, `decodeBoundProposal`, `decodeGeneration`, `decodeImageReview`, `isDesignSnapshot`), private Zod wire validation for Brief drafts, and portable-document decoder re-exports.
 - Add Wave 0 boundary checks (`scripts/check-boundaries.mjs`, `check:boundaries` / `check:boundaries:report`) and enable TypeScript safety and import-restriction rules in `.oxlintrc.json` with negative fixture tests.

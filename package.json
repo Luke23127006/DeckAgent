@@ -29,6 +29,7 @@
     "check:docs": "node scripts/check-docs.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:boundaries:report": "node scripts/check-boundaries.mjs --report",
+    "scan:module-design": "node scripts/scan-module-design.mjs",
     "test:session-persistence": "node --test packages/session/persistence/tests/session-persistence.test.mjs",
     "test:tools-browser": "node --test packages/host/api/tests/host-api.test.mjs apps/web/tests/browser-runtime.test.mjs e2e/local-web.test.mjs",
     "start:local-web": "node --env-file-if-exists=.env --use-system-ca apps/web/lib/cli.js",

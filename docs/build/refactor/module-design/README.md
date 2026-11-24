@@ -13,7 +13,7 @@ When module diagnosis shows that a rule forces shallow wrappers, awkward ownersh
 Do not add pass-through layers to force code into an existing rule.
 
 All post-boundary refactor work stays under `docs/build/refactor/module-design/`.
-Write implementation tasks into `docs/build/refactor/module-design/plan/` one phase at a time as sequential revisions [[4]](#ref-4).
+Write implementation tasks into [Module Design Implementation Plan](plan/README.md) one phase at a time as sequential revisions [[4]](#ref-4).
 Do not write implementation tasks for a later phase until the current phase passes its exit gate.
 
 ## Measured baseline
@@ -97,7 +97,7 @@ Investigate and fix the pre-existing `portable-generation-http.test.mjs` (#60 `R
 
 ### Phase 2: Deep-module refactor (Inside-Out slices)
 
-**Proposed:** Execute Phase 2 from core contracts outward so UI and workflow callers do not change twice:
+Execute Phase 2 from core contracts outward so UI and workflow callers do not change twice (approved order: Slice 2A before Slice 2B):
 
 1. **Slice 2A (Host and Persistence):** `packages/host/contracts/`, `packages/host/api/`, and `packages/session/persistence/`.
 2. **Slice 2B (Presentation Deck Core):** `packages/presentation/deck/` (and `packages/presentation/design/` if contracts overlap).
@@ -161,10 +161,10 @@ A new chat starts the next phase with four steps:
 
 ## Open inputs
 
-**Open:** Resolve these items before creating `docs/build/refactor/module-design/plan/` Revision 1:
+The owner resolved all Phase 1 entry-gate inputs on 2026-11-24:
 
-- Record one or two recent incidents where inspecting agent code or fixing a bug felt slow or risky, so Phase 1 targets real friction.
-- Decide whether Slice 2B (`packages/presentation/deck/`) should run before Slice 2A (`packages/host/` and `packages/session/persistence/`) if deck-editing feature work starts early.
+- **Friction anchor:** The owner added no extra personal incident beyond the measured baseline. Phase 1 uses the recorded baseline friction points (`portable-generation-http.test.mjs` #60 `REQUEST_TIMEOUT`, mixed-responsibility god-files led by `apps/web/src/browser/boot.ts` and `packages/presentation/deck/`, wide Deck exports, and missing architecture flow maps).
+- **Phase 2 slice order:** Keep the default Inside-Out order — run Slice 2A (`packages/host/` and `packages/session/persistence/`) before Slice 2B (`packages/presentation/deck/`) so workflow and UI callers do not change twice.
 
 ## References
 
