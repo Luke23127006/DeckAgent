@@ -19,6 +19,9 @@
       "path": "../../packages/host/api"
     },
     {
+      "path": "../../packages/host/contracts"
+    },
+    {
       "path": "./tsconfig.browser.json"
     },
     {

@@ -11,7 +11,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { RequestController, RequestFailure } from '../lib/index.js'
+import { RequestController } from '../lib/types/lifecycle/request-controller.js'
+import { RequestFailure } from '../lib/types/lifecycle/request-failure.js'
 
 test('closed Request Lifecycle refuses work with an operation error', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-request-failure-'))
@@ -35,14 +36,11 @@ test('closed Request Lifecycle refuses work with an operation error', async t =>
   }
   const controller = new RequestController(store.requests, runtime)
   await controller.close()
-  await assert.rejects(
-    controller.submit({ sessionId: chat.sessionId, input: 'hello' }),
-    error => {
-      assert.equal(error instanceof RequestFailure, true)
-      assert.equal(error.code, 'HOST_CLOSED')
-      return true
-    },
-  )
+  await assert.rejects(controller.submit({ sessionId: chat.sessionId, input: 'hello' }), error => {
+    assert.equal(error instanceof RequestFailure, true)
+    assert.equal(error.code, 'HOST_CLOSED')
+    return true
+  })
   assert.equal(prepares, 0)
   assert.deepEqual(store.requests.list(chat.sessionId), [])
 })

@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type { ModelSelection, ProviderProtocol, ProviderSettings, ProviderTemplate } from '@deckagent/host-api'
+import type { ModelSelection, ProviderProtocol, ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
 import { builtInProviders } from './built-in-providers.ts'
 import { ProviderFailure } from './failures.ts'
 import { CredentialError, ProtectedFileCredentialStore } from '../../integrations/credentials/index.ts'

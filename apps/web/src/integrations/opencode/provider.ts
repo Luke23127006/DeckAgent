@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ProviderProtocol } from '@deckagent/host-api'
+import type { ProviderProtocol } from '@deckagent/host-contracts'
 import type { ProviderRunSettings } from '../../features/providers/index.ts'
 
 /** Only SDK packages bundled with the pinned CLI. A user-given ID never becomes a package or native provider name. */

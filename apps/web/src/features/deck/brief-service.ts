@@ -2,7 +2,8 @@ import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
 import type { DeckService, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { BriefManagement, BriefView } from '@deckagent/host-api'
+import type { BriefManagement } from '@deckagent/host-api'
+import type { BriefView } from '@deckagent/host-contracts'
 import { DeckWorkflowFailure } from './failures.ts'
 
 /** Composition verifies source ownership, without reading external files or granting research access. */

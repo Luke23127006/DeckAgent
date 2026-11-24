@@ -1,4 +1,4 @@
-import type { ProviderProtocol } from '@deckagent/host-api'
+import type { ProviderProtocol } from '@deckagent/host-contracts'
 
 export interface ProviderEndpoint {
   readonly protocol: ProviderProtocol

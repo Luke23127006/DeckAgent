@@ -1,4 +1,4 @@
-import type { ProviderTemplate } from '@deckagent/host-api'
+import type { ProviderTemplate } from '@deckagent/host-contracts'
 
 /**
  * Built-in providers of BR-005 (V-1, V-6): stable IDs in every release. Each needs a key; its base URL is fixed,

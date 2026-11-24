@@ -1,4 +1,5 @@
-import type { AgentRequest, PreparedRequest, RequestRuntime } from '@deckagent/host-api'
+import type { PreparedRequest, RequestRuntime } from '@deckagent/host-api'
+import type { AgentRequest } from '@deckagent/host-contracts'
 import { SessionError } from '@deckagent/session-persistence'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ProviderStore } from '../providers/index.ts'

@@ -1,13 +1,8 @@
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckService, ConfirmationReceipt } from '@deckagent/deck'
 import { RequestFailure } from '@deckagent/host-api'
-import type {
-  AgentRequest,
-  RequestAdmission,
-  RequestRuntime,
-  RequestSnapshot,
-  ConfirmationResult,
-} from '@deckagent/host-api'
+import type { RequestAdmission, RequestRuntime } from '@deckagent/host-api'
+import type { AgentRequest, ConfirmationResult, RequestSnapshot } from '@deckagent/host-contracts'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefService } from './brief-service.ts'
 import { DeckWorkflowFailure } from './failures.ts'
@@ -130,7 +125,10 @@ export class ConfirmationService {
         error instanceof RequestFailure ||
         (error instanceof Error &&
           (error.name === 'RequestPreparationFailure' ||
-            ('status' in error && typeof error.status === 'number' && 'code' in error && typeof error.code === 'string')))
+            ('status' in error &&
+              typeof error.status === 'number' &&
+              'code' in error &&
+              typeof error.code === 'string')))
       )
         throw error
       if (error instanceof DeckError) throw new DeckWorkflowFailure(error.code)

@@ -1,3 +1,4 @@
+import { DeckError } from '@deckagent/deck'
 import { HttpError } from '@deckagent/host-api'
 import type {
   AttachmentManagement,
@@ -205,6 +206,19 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
       status: sourceToolStatus[error.code] ?? 500,
       code: error.code,
       ...(error.detail ? { detail: error.detail } : {}),
+    }
+  }
+  if (error instanceof DeckError) {
+    if (
+      error.code === 'OUTLINE_STALE' ||
+      error.code === 'OUTLINE_ALREADY_CONFIRMED' ||
+      error.code === 'OUTLINE_READ_ONLY' ||
+      error.code === 'OUTLINE_LIMIT'
+    ) {
+      return { status: 409, code: error.code }
+    }
+    if (error.code === 'DECK_CONTENT_NOT_FOUND') {
+      return { status: 404, code: error.code }
     }
   }
   if (error instanceof DeckWorkflowFailure) {

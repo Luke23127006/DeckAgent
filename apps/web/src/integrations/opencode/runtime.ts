@@ -3,7 +3,8 @@ import { constants } from 'node:fs'
 import { access, mkdir, stat } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { delimiter, isAbsolute, join } from 'node:path'
-import type { AgentRequest, RequestRun, RuntimeEvent, RuntimeOutcome } from '@deckagent/host-api'
+import type { RequestRun, RuntimeEvent, RuntimeOutcome } from '@deckagent/host-api'
+import type { AgentRequest } from '@deckagent/host-contracts'
 import { summarizedNotice } from '@deckagent/session-persistence'
 import type { ProviderRunSettings } from '../../features/providers/index.ts'
 import { OpenCodeError } from './contracts.ts'
@@ -159,11 +160,7 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
     return folders
   }
 
-  async execute(
-    request: AgentRequest,
-    settings: ProviderRunSettings,
-    run: RequestRun,
-  ): Promise<RuntimeOutcome> {
+  async execute(request: AgentRequest, settings: ProviderRunSettings, run: RequestRun): Promise<RuntimeOutcome> {
     if (!this.executable) return { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }
     const executable = this.executable
     const folders = await this.folders(request.sessionId)

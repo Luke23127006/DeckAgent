@@ -10,14 +10,8 @@ import {
 import type { DeckService, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
 import { briefContractVersion, briefJsonSchema } from '@deckagent/deck/brief'
 import { listDesignSystems, listTemplates, reviewLayouts } from '@deckagent/design'
-import type {
-  AgentRequest,
-  PreparedRequest,
-  RequestRuntime,
-  RequestRun,
-  ToolResult,
-  ToolSchema,
-} from '@deckagent/host-api'
+import type { PreparedRequest, RequestRuntime, RequestRun, ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { AgentRequest } from '@deckagent/host-contracts'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefService } from './brief-service.ts'
 import { DeckWorkflowFailure } from './failures.ts'

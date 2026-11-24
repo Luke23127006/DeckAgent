@@ -1,4 +1,5 @@
-import type { AgentRequest, RequestRun, RuntimeOutcome } from '@deckagent/host-api'
+import type { RequestRun, RuntimeOutcome } from '@deckagent/host-api'
+import type { AgentRequest } from '@deckagent/host-contracts'
 import type { Message, RequestRecord, RuntimeBinding } from '@deckagent/session-persistence'
 import type { ProviderRunSettings } from '../../features/providers/index.ts'
 

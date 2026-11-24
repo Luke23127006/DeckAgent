@@ -55,7 +55,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
 
 ## Steps
 
-- [ ] **Step 1: Isolate Request Lifecycle in `packages/host/api/src/lifecycle/` (F10)**
+- [x] **Step 1: Isolate Request Lifecycle in `packages/host/api/src/lifecycle/` (F10)**
 
   Existing rules in `.oxlintrc.json` and `scripts/check-boundaries.mjs` enforce `lifecycle-transport-import` on every file under `packages/host/api/src/lifecycle/`.
 
@@ -64,7 +64,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
   3. Create `packages/host/api/src/lifecycle/contracts.ts` containing only lifecycle ports (zero HTTP imports): `RuntimeEvent`, `PreparedRequest`, `RequestRun`, `RuntimeOutcome`, `RequestRuntime`, and `RequestAdmission`. Import `AgentRequest`, `ModelSelection`, and `RequestEventBody` from `@deckagent/host-contracts`, `RequestTools` from `./tool-contracts.ts`, and type-only `GenerationCapability` and `GenerationGrant` from `@deckagent/deck`.
   4. Create `packages/host/api/src/lifecycle/request-controller.ts` from `src/request-controller.ts`, importing wire DTOs from `@deckagent/host-contracts`, lifecycle contracts from `./contracts.ts`, `RequestFailure` from `./request-failure.ts`, and tool contracts from `./tool-contracts.ts`.
 
-- [ ] **Step 2: Create compile-time contract sync check `packages/host/api/src/contract-sync.ts` (P8)**
+- [x] **Step 2: Create compile-time contract sync check `packages/host/api/src/contract-sync.ts` (P8)**
 
   Create `packages/host/api/src/contract-sync.ts` with zero runtime statements (type-only imports only):
   - Import `ModelSelection`, `RequestStatus`, `ActivityStatus`, `TerminalStatus`, `RequestEventBody`, `ApprovalView`, `RequestEvent`, `StoredRequest`, `StoredActivity` from `@deckagent/host-contracts`.
@@ -72,7 +72,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
   - Define `type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never` and assert all 9 pairs (`type _SyncModelSelection = AssertEqual<HostModelSelection, PersistedModelSelection>`, through `StoredActivity` and `ActivityRecord`).
   - Export `type ContractSyncVerified = true` and reference it as a type import in `packages/host/api/src/index.ts` so TypeScript always checks the file during `tsc -b`.
 
-- [ ] **Step 3: Create transport contracts and move `DeckError` mapping out of `host/api` (F1, F10)**
+- [x] **Step 3: Create transport contracts and move `DeckError` mapping out of `host/api` (F1, F10)**
 
   1. Create `packages/host/api/src/transport/http-error.ts` from `src/http-error.ts`.
   2. Create `packages/host/api/src/transport/multipart.ts` from `src/multipart.ts`, updating its imports to `./http-error.ts` and `./contracts.ts` (keep `receiveAttachment` intact per approved finding F13).
@@ -87,7 +87,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
      - Import `deckFailureMessage` alongside `DeckService` from `@deckagent/deck`.
      - Pass `failureMessage: deckFailureMessage` inside `startHost({ ... })`.
 
-- [ ] **Step 4: Split `startHost`, `route`, SSE, and error handling into `packages/host/api/src/transport/` (F3, F4, F5)**
+- [x] **Step 4: Split `startHost`, `route`, SSE, and error handling into `packages/host/api/src/transport/` (F3, F4, F5)**
 
   Create focused transport modules with zero `as` assertions, zero `!` non-null assertions, every file under 250 lines, and every function under 80 lines (except `receiveAttachment` in `multipart.ts` per F13):
 
@@ -106,7 +106,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
   7. Create `packages/host/api/src/transport/request-routes.ts`:
      - Export `routeRequests(req, res, pathname, controller, maxFiles, streams)` handling `POST /api/requests` (using `readAgentRequest`), `POST /api/requests/:id/approvals/:aid/decision`, `POST /api/requests/:id/stop`, `GET /api/requests/:id`, and `GET /api/requests/:id/events` (using `openSseStream` from `./sse.ts` while preserving subscribe-before-replay ordering and replay buffering). Replace every regex `!` with explicit destructuring checks.
 
-- [ ] **Step 5: Rewrite `packages/host/api/src/index.ts`, remove old files, and update callers (F2, F9)**
+- [x] **Step 5: Rewrite `packages/host/api/src/index.ts`, remove old files, and update callers (F2, F9)**
 
   1. Rewrite `packages/host/api/src/index.ts` (target under 130 lines, zero `@deckagent/deck` import, zero `!` assertions):
      - Export only `host/api`'s 22 own public symbols: `startHost`, `HttpError`, `RequestFailure`, `type HttpErrorDetail`, `type HostOptions`, `type HttpFailureResponse`, `type HostMessage`, `type BriefManagement`, `type AttachmentManagement`, `type WebManagement`, `type WorkspaceManagement`, `type RuntimeEvent`, `type PreparedRequest`, `type RequestRun`, `type RuntimeOutcome`, `type RequestRuntime`, `type RequestAdmission`, `type PreparedTools`, `type RequestTools`, `type ToolContext`, `type ToolResult`, `type ToolSchema`.
@@ -133,7 +133,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
      - `apps/web/src/integrations/opencode/runtime.ts`
      - `apps/web/src/integrations/providers/provider-catalog.ts`
 
-- [ ] **Step 6: Build, check boundaries, lint, format, scan, and run tests**
+- [x] **Step 6: Build, check boundaries, lint, format, scan, and run tests**
 
   Run:
 
@@ -169,7 +169,7 @@ Read this file to execute approved findings F1, F2, F3 (transport wiring), F4, F
 
   **STOP** if `runtimeDeck > 0`, `nonNull > 0`, `assertions > 0`, `over400 > 0`, or any test fails.
 
-- [ ] **Step 7: Mark task done, write the report, and commit and push**
+- [x] **Step 7: Mark task done, write the report, and commit and push**
 
   1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 11 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` with a link to `../reports/task-11-refactor-host-api.md`.
   2. Create `docs/build/refactor/module-design/reports/task-11-refactor-host-api.md` with:

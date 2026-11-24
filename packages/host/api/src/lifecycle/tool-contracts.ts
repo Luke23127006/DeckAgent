@@ -1,6 +1,4 @@
 import type { ApprovalStep } from '@deckagent/session-persistence'
-export type { ApprovalView } from '@deckagent/host-contracts'
-export type { ApprovalStep }
 
 export interface ToolSchema {
   readonly name: string

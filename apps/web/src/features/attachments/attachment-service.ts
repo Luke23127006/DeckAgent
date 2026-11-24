@@ -1,5 +1,6 @@
 import { AttachmentParser, SourceError, attachmentLimits } from '@deckagent/file-tools'
-import type { AttachmentManagement, AttachmentView, ChatDraft } from '@deckagent/host-api'
+import type { AttachmentManagement } from '@deckagent/host-api'
+import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
 import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentRecord, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { MemoryDraftStore } from '../../draft-store.ts'

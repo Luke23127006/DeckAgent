@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { findCompatibleLayouts, listTemplates } from '@deckagent/design'
 import { DeckError, FormatError, decodeSlideDocument } from '@deckagent/deck'
-import type { RequestRuntime, AgentRequest, PreparedRequest, ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { RequestRuntime, PreparedRequest, ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { AgentRequest } from '@deckagent/host-contracts'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ContentProvenance, BriefSourceRef } from '@deckagent/deck'
 

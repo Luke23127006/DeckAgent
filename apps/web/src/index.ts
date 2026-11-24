@@ -3,12 +3,12 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HttpError, startHost } from '@deckagent/host-api'
-import type { WebSettings } from '@deckagent/host-api'
+import type { WebSettings } from '@deckagent/host-contracts'
 import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ModelSelection } from '@deckagent/session-persistence'
 import { MemoryDraftStore } from './draft-store.ts'
 import { WorkspaceRegistry } from '@deckagent/workspace-registry'
-import { DeckService } from '@deckagent/deck'
+import { DeckService, deckFailureMessage } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import {
@@ -274,6 +274,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     const briefs = new BriefService(presentation, store)
     const host = await startHost({
       mapApplicationFailure,
+      failureMessage: deckFailureMessage,
       confirmations: new ConfirmationService(
         presentation,
         store,

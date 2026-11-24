@@ -1,19 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import type { RequestStore } from '@deckagent/session-persistence'
 import type {
   AgentRequest,
-  PreparedRequest,
   RequestEvent,
-  RequestRuntime,
   RequestSnapshot,
-  RuntimeEvent,
-  RuntimeOutcome,
   StoredRequest,
   TerminalStatus,
-  RequestAdmission,
-} from './contracts.ts'
+} from '@deckagent/host-contracts'
+import type { ApprovalStep, ApprovalView, RequestStore } from '@deckagent/session-persistence'
+import type { PreparedRequest, RequestAdmission, RequestRuntime, RuntimeEvent, RuntimeOutcome } from './contracts.ts'
 import { RequestFailure } from './request-failure.ts'
-import type { ApprovalStep, ApprovalView, PreparedTools, RequestTools, ToolResult } from './tool-contracts.ts'
+import type { PreparedTools, RequestTools, ToolResult } from './tool-contracts.ts'
 
 interface Execution {
   readonly requestId: string
@@ -32,6 +28,22 @@ interface Execution {
 
 /** How long a new request waits for a stopped execution to release its chat. */
 const releaseWait = 5000
+
+const admitFailureCodes = new Set([
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'ATTACHMENT_REJECTED',
+  'ATTACHMENT_NOT_READY',
+  'REQUEST_EMPTY',
+])
+
+function mapAdmitError(error: unknown): RequestFailure {
+  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
+  if (code === 'REQUEST_ACTIVE') return new RequestFailure('SESSION_BUSY')
+  if (code === 'SESSION_NOT_FOUND') return new RequestFailure('SESSION_NOT_FOUND')
+  if (typeof code === 'string' && admitFailureCodes.has(code)) return new RequestFailure(code)
+  return new RequestFailure('REQUEST_NOT_SAVED')
+}
 
 /**
  * Host authority for the request lifecycle (ADR-0004): admission with one active request per chat,
@@ -58,10 +70,12 @@ export class RequestController {
 
   async submit(request: AgentRequest, admission?: RequestAdmission): Promise<RequestSnapshot> {
     if (this.closed) throw new RequestFailure('HOST_CLOSED')
-    if (admission && this.store.get(admission.requestId)) {
-      const saved = this.store.get(admission.requestId)!
-      if (saved.sessionId !== request.sessionId) throw new RequestFailure('GENERATION_LINK_CONFLICT')
-      return this.get(admission.requestId)
+    if (admission) {
+      const saved = this.store.get(admission.requestId)
+      if (saved) {
+        if (saved.sessionId !== request.sessionId) throw new RequestFailure('GENERATION_LINK_CONFLICT')
+        return this.get(admission.requestId)
+      }
     }
     if (this.admitting.has(request.sessionId)) throw new RequestFailure('SESSION_BUSY')
     this.admitting.add(request.sessionId)
@@ -91,18 +105,7 @@ export class RequestController {
           ...(request.draftRevision === undefined ? {} : { draftRevision: request.draftRevision }),
         })
       } catch (error) {
-        const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
-        if (code === 'REQUEST_ACTIVE') throw new RequestFailure('SESSION_BUSY')
-        if (code === 'SESSION_NOT_FOUND') throw new RequestFailure('SESSION_NOT_FOUND')
-        if (
-          code === 'DRAFT_CONFLICT' ||
-          code === 'ATTACHMENT_COUNT_EXCEEDED' ||
-          code === 'ATTACHMENT_REJECTED' ||
-          code === 'ATTACHMENT_NOT_READY' ||
-          code === 'REQUEST_EMPTY'
-        )
-          throw new RequestFailure(code)
-        throw new RequestFailure('REQUEST_NOT_SAVED')
+        throw mapAdmitError(error)
       }
       try {
         admission?.admitted()
@@ -160,13 +163,7 @@ export class RequestController {
       if (execution?.waiting?.approvalId === approvalId) {
         const waiter = execution.waiting
         delete execution.waiting
-        for (const listener of execution.waitListeners) {
-          try {
-            listener(false)
-          } catch {
-            /* An observer cannot change a saved decision. */
-          }
-        }
+        this.notifyWaiters(execution, false)
         waiter.resolve(change.approval.state === 'allowed')
       }
       return change.approval
@@ -210,9 +207,7 @@ export class RequestController {
 
   subscribe(listener: (event: RequestEvent) => void): () => void {
     this.listeners.add(listener)
-    return () => {
-      this.listeners.delete(listener)
-    }
+    return () => this.listeners.delete(listener)
   }
 
   /** Host shutdown: active work did not finish and is never resumed (FR-019). */
@@ -236,9 +231,7 @@ export class RequestController {
         onApprovalWait: listener => {
           execution.waitListeners.add(listener)
           listener(!!execution.waiting)
-          return () => {
-            execution.waitListeners.delete(listener)
-          }
+          return () => execution.waitListeners.delete(listener)
         },
         emit: async (event: RuntimeEvent) => {
           if (execution.ended) throw new Error('Request ended')
@@ -247,10 +240,7 @@ export class RequestController {
             saved = this.store.append(execution.requestId, event)
           } catch (error) {
             // A write the Host cannot save stops the work instead of continuing unrecorded (UC-003 A50).
-            if (!execution.ended) {
-              this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
-              execution.abort.abort()
-            }
+            if (!execution.ended) this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
             throw error
           }
           this.publish(saved)
@@ -319,6 +309,16 @@ export class RequestController {
     }
   }
 
+  private notifyWaiters(execution: Execution, waiting: boolean): void {
+    for (const listener of execution.waitListeners) {
+      try {
+        listener(waiting)
+      } catch {
+        /* An observer cannot grant or refuse a step. */
+      }
+    }
+  }
+
   private async approve(execution: Execution, step: ApprovalStep): Promise<boolean> {
     if (execution.ended || execution.abort.signal.aborted || !this.store.approvals) return false
     let change: ReturnType<NonNullable<RequestStore['approvals']>['create']>
@@ -326,20 +326,13 @@ export class RequestController {
       change = this.store.approvals.create(execution.requestId, step)
     } catch {
       this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
-      execution.abort.abort()
       throw new Error('REQUEST_NOT_SAVED')
     }
     if (change.approval.state === 'refused') return false
     const allowed = new Promise<boolean>(resolve => {
       execution.waiting = { approvalId: change.approval.approvalId, resolve }
     })
-    for (const listener of execution.waitListeners) {
-      try {
-        listener(true)
-      } catch {
-        /* An observer cannot grant or refuse a step. */
-      }
-    }
+    this.notifyWaiters(execution, true)
     for (const event of change.events) this.publish(event)
     return allowed
   }
@@ -357,14 +350,15 @@ export class RequestController {
           const activityId = `tool-${randomUUID()}`
           const emit = (status: 'running' | 'completed' | 'failed') => {
             if (execution.ended) return
-            const saved = this.store.append(execution.requestId, {
-              kind: 'activity',
-              id: activityId,
-              label: name,
-              type: 'tool',
-              status,
-            })
-            this.publish(saved)
+            this.publish(
+              this.store.append(execution.requestId, {
+                kind: 'activity',
+                id: activityId,
+                label: name,
+                type: 'tool',
+                status,
+              }),
+            )
           }
           try {
             emit('running')
@@ -382,14 +376,12 @@ export class RequestController {
             const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
             if (code === 'SESSION_STORAGE' || code === 'SESSION_CLOSED' || code === 'SESSION_CORRUPT') {
               this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
-              execution.abort.abort()
               return failure('REQUEST_NOT_SAVED')
             }
             try {
               emit('failed')
             } catch {
               this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
-              execution.abort.abort()
             }
             return failure(typeof code === 'string' && /^SOURCE_[A-Z_]+$/.test(code) ? code : 'TOOL_FAILED')
           }
