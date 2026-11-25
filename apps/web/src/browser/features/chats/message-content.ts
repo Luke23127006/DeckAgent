@@ -33,28 +33,49 @@ function inline(parent: HTMLElement, text: string): void {
   parent.append(document.createTextNode(text.slice(offset)))
 }
 
-const listItem = (line: string) => /^ {0,3}(?:([-*+])|([0-9]{1,9})[.)])\s+(.+)$/.exec(line)
-const heading = (line: string) => /^ {0,3}(#{1,6})\s+(.+)$/.exec(line)
-const fence = (line: string) => /^ {0,3}(`{3,}|~{3,})/.exec(line)
+function parseFence(line: string): { readonly marker: string } | null {
+  const match = /^ {0,3}(`{3,}|~{3,})/.exec(line)
+  const marker = match?.[1]
+  return marker === undefined ? null : { marker }
+}
+
+function parseHeading(line: string): { readonly level: number; readonly text: string } | null {
+  const match = /^ {0,3}(#{1,6})\s+(.+)$/.exec(line)
+  const marker = match?.[1]
+  const text = match?.[2]
+  return marker === undefined || text === undefined ? null : { level: marker.length, text }
+}
+
+function parseListItem(
+  line: string,
+): { readonly ordered: boolean; readonly start?: string; readonly text: string } | null {
+  const match = /^ {0,3}(?:([-*+])|([0-9]{1,9})[.)])\s+(.+)$/.exec(line)
+  const text = match?.[3]
+  if (text === undefined) return null
+  const start = match?.[2]
+  return start === undefined ? { ordered: false, text } : { ordered: true, start, text }
+}
 
 export function messageContent(text: string): HTMLElement {
   const content = element('div', undefined, 'message-content')
   const lines = text.replace(/\r\n?/g, '\n').split('\n')
   let index = 0
   while (index < lines.length) {
-    const line = lines[index++]!
+    const line = lines[index++]
+    if (line === undefined) break
     if (!line.trim()) continue
-    const code = fence(line)
+    const code = parseFence(line)
     if (code) {
       const body: string[] = []
       while (index < lines.length) {
-        const next = lines[index++]!
-        const closing = fence(next)
+        const next = lines[index++]
+        if (next === undefined) break
+        const closing = parseFence(next)
         if (
           closing &&
-          closing[1]![0] === code[1]![0] &&
-          closing[1]!.length >= code[1]!.length &&
-          next.trim() === closing[1]
+          closing.marker[0] === code.marker[0] &&
+          closing.marker.length >= code.marker.length &&
+          next.trim() === closing.marker
         )
           break
         body.push(next)
@@ -64,25 +85,25 @@ export function messageContent(text: string): HTMLElement {
       content.append(pre)
       continue
     }
-    const title = heading(line)
+    const title = parseHeading(line)
     if (title) {
-      const node = element(title[1]!.length <= 2 ? 'h2' : 'h3')
-      inline(node, title[2]!)
+      const node = element(title.level <= 2 ? 'h2' : 'h3')
+      inline(node, title.text)
       content.append(node)
       continue
     }
-    const item = listItem(line)
+    const item = parseListItem(line)
     if (item) {
-      const ordered = !!item[2]
-      const list = ordered ? element('ol') : element('ul')
-      if (ordered) list.setAttribute('start', item[2]!)
+      const list = item.ordered ? element('ol') : element('ul')
+      if (item.start !== undefined) list.setAttribute('start', item.start)
       let current = item
       for (;;) {
         const node = element('li')
-        inline(node, current[3]!)
+        inline(node, current.text)
         list.append(node)
-        const next = index < lines.length ? listItem(lines[index]!) : null
-        if (!next || !!next[2] !== ordered) break
+        const peek = lines[index]
+        const next = peek !== undefined ? parseListItem(peek) : null
+        if (!next || next.ordered !== item.ordered) break
         current = next
         index++
       }
@@ -91,8 +112,8 @@ export function messageContent(text: string): HTMLElement {
     }
     const paragraph = [line]
     while (index < lines.length) {
-      const next = lines[index]!
-      if (!next.trim() || heading(next) || fence(next) || listItem(next)) break
+      const next = lines[index]
+      if (next === undefined || !next.trim() || parseHeading(next) || parseFence(next) || parseListItem(next)) break
       paragraph.push(next)
       index++
     }

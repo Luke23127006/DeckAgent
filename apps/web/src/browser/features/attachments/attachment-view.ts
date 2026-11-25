@@ -11,7 +11,7 @@ const reasons: Readonly<Record<string, string>> = {
   HOST_BUSY: 'Đang có nhiều tệp được chuẩn bị. Hãy thử lại sau.',
 }
 
-export function attachmentReason(code?: string): string {
+function attachmentReason(code?: string): string {
   return reasons[code ?? ''] ?? 'Tệp chưa dùng được. Bỏ tệp rồi thử lại.'
 }
 

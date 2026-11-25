@@ -52,7 +52,7 @@ Read this file to split `conversation-view.ts`, `workspace-view.ts`, and `resear
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 6 checks pass.
 
-- [ ] **Step 1: Extract `chats/request-row.ts` and shrink `conversation-view.ts` (`BF3`, `BF7`)**
+- [x] **Step 1: Extract `chats/request-row.ts` and shrink `conversation-view.ts` (`BF3`, `BF7`)**
 
 1. Create `apps/web/src/browser/features/chats/request-row.ts` (under 260 lines, every function under 65 lines):
    - Move `ActivityRow`, `outcomes`, `activityNames`, `RequestRow`, request row creation (`conversation-view.ts` lines 207-256), request updates (`lines 266-358`), and approval card rendering (`lines 360-402`).
@@ -76,7 +76,7 @@ while (this.container.children.length > nodes.length) {
 }
 ```
 
-- [ ] **Step 2: Remove all 12 `!` assertions in `chats/message-content.ts` (`BF7`)**
+- [x] **Step 2: Remove all 12 `!` assertions in `chats/message-content.ts` (`BF7`)**
 
 In `apps/web/src/browser/features/chats/message-content.ts` (keep every function under 75 lines):
 
@@ -91,7 +91,7 @@ In `apps/web/src/browser/features/chats/message-content.ts` (keep every function
    - For lists, set `start` when `item.start !== undefined`, render `current.text`, and peek with `const peek = lines[index]; const next = peek !== undefined ? parseListItem(peek) : null`.
    - For paragraphs, bind `const next = lines[index]` and break when `next === undefined || !next.trim() || parseHeading(next) || parseFence(next) || parseListItem(next)`.
 
-- [ ] **Step 3: Replace regex matching in `requests/request-feedback.ts`**
+- [x] **Step 3: Replace regex matching in `requests/request-feedback.ts`**
 
 In `apps/web/src/browser/features/requests/request-feedback.ts`:
 
@@ -110,7 +110,7 @@ export function offersSettings(code?: string): boolean {
 
    Note: unknown or missing codes keep returning `true` because the fallback `detail` sends the user to model settings.
 
-- [ ] **Step 4: Narrow internal exports and split `workspace-view.ts` and `research-view.ts` (`BF4`, `BF5`, `BF6`)**
+- [x] **Step 4: Narrow internal exports and split `workspace-view.ts` and `research-view.ts` (`BF4`, `BF5`, `BF6`)**
 
 1. In `apps/web/src/browser/features/attachments/attachment-view.ts` line 14, remove `export` from `function attachmentReason`.
 2. In `apps/web/src/browser/features/workspaces/workspace-view.ts`:
@@ -121,7 +121,7 @@ export function offersSettings(code?: string): boolean {
 3. In `apps/web/src/browser/features/research/research-view.ts`:
    - Extract file-local `createResearchDialog`, `renderResearchSources`, and `createResearchControls` so every function is under 65 lines and `researchView` is under 65 lines.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, measure AST metrics, and run suites**
+- [x] **Step 5: Build, check boundaries, lint, format, measure AST metrics, and run suites**
 
 Run:
 
@@ -153,7 +153,7 @@ corepack pnpm@11.28.5 test:local-web && corepack pnpm@11.28.5 test:tools-browser
 
 Expected: PASS. All three suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 6: Mark task done, write the report file, and commit and push**
+- [x] **Step 6: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 37 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-37-refactor-browser-remaining-features.md`.
 2. Create `docs/build/refactor/module-design/reports/task-37-refactor-browser-remaining-features.md` with:

@@ -1,6 +1,6 @@
 import type { RequestStatus, StoredActivity } from '@deckagent/host-contracts'
 
-const errors: Readonly<Record<string, readonly [string, string]>> = {
+const errors: Readonly<Record<string, readonly [string, string, boolean?]>> = {
   OUTLINE_REPAIR_LIMIT: [
     'Chưa chuẩn bị được Outline hợp lệ',
     'Đã hết hai lượt sửa tự động. Xem các vị trí còn lỗi trong phản hồi; Outline và ảnh đã lưu trước đó được giữ nguyên.',
@@ -150,6 +150,7 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   RUNTIME_FAILED: [
     'Yêu cầu chưa hoàn tất',
     'OpenCode dừng khi chưa xong. Kiểm tra kết nối và cài đặt model rồi gửi yêu cầu mới.',
+    true,
   ],
   REQUEST_TIMEOUT: ['Yêu cầu chạy quá lâu', 'Phần đã lưu được giữ. Kiểm tra kết nối rồi gửi yêu cầu mới.'],
   REQUEST_NOT_SAVED: [
@@ -176,24 +177,29 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   NO_SELECTABLE_MODEL: [
     'Chat chưa có model để chạy',
     'Chọn một model trong chat này, hoặc thêm provider và model trong Cài đặt model. Bản nháp được giữ nguyên.',
+    true,
   ],
   PROVIDER_KEY_UNAVAILABLE: [
     'Key đã lưu không dùng được',
     'Nhập lại key trong Cài đặt model. Bản nháp được giữ nguyên.',
+    true,
   ],
   PROVIDER_UNSUPPORTED: [
     'Cấu hình provider chưa được hỗ trợ',
     'Kiểm tra API protocol và key trong Cài đặt model. Hệ thống không tự đổi model.',
+    true,
   ],
   PROVIDER_MODEL_UNAVAILABLE: [
     'Provider không tìm thấy model',
     'Kiểm tra model ID trong Cài đặt model. Hệ thống không tự đổi model.',
+    true,
   ],
   REQUEST_TEXT_TOO_LONG: ['Yêu cầu quá dài', 'Hãy rút gọn nội dung trước khi gửi. Bản nháp được giữ nguyên.'],
   HOST_BUSY: ['DeckAgent đang chạy nhiều yêu cầu', 'Đợi một yêu cầu kết thúc rồi gửi lại.'],
   REQUEST_FAILED: [
     'Yêu cầu chưa hoàn tất',
     'Kiểm tra phần đã lưu, kết nối và cài đặt model trước khi gửi yêu cầu mới.',
+    true,
   ],
   INVALID_RESPONSE: [
     'Chưa đọc được dữ liệu từ Host',
@@ -206,11 +212,13 @@ const errors: Readonly<Record<string, readonly [string, string]>> = {
   PROVIDER_HTTP: [
     'Nhà cung cấp model báo lỗi',
     'Kiểm tra kết nối và cấu hình trong Cài đặt model rồi gửi lại. Hệ thống không tự thử lại.',
+    true,
   ],
   PROVIDER_TIMEOUT: ['Nhà cung cấp model phản hồi quá lâu', 'Kiểm tra kết nối rồi gửi yêu cầu mới khi sẵn sàng.'],
   PROVIDER_AUTH: [
     'Nhà cung cấp model từ chối key hoặc model',
     'Kiểm tra API key và quyền dùng model trong Cài đặt model.',
+    true,
   ],
   PROVIDER_RATE_LIMIT: [
     'Đã đạt giới hạn sử dụng của nhà cung cấp',
@@ -235,9 +243,10 @@ export function failureFeedback(code?: string) {
   }
 }
 
-/** The settings shortcut is offered only when the failure copy itself sends the user to settings. */
+/** The settings shortcut is offered only for codes whose failure copy sends the user to model settings. */
 export function offersSettings(code?: string): boolean {
-  return /cài đặt model/i.test(failureFeedback(code).detail)
+  if (typeof code === 'string' && Object.hasOwn(errors, code)) return errors[code]?.[2] === true
+  return true
 }
 
 /** What the request row says. Stopped is not failure (FR-018); not finished says why when it is known (FR-019). */
