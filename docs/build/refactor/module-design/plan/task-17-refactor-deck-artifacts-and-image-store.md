@@ -57,7 +57,7 @@ Read this file to decompose `artifact-store.ts`, fold `provenance.ts` and `image
 - Add `any`, type assertions (`as Type`), non-null assertions (`!`), comments beyond the five allowed reasons, lint-disable directives, or `@ts-expect-error`.
 - Commit or push before Step 8 checks pass.
 
-- [ ] **Step 1: Add fail-first tests for corrupt SQLite JSON in `packages/presentation/deck/tests/artifact-publication.test.mjs`**
+- [x] **Step 1: Add fail-first tests for corrupt SQLite JSON in `packages/presentation/deck/tests/artifact-publication.test.mjs`**
 
 Append these two tests at the end of `packages/presentation/deck/tests/artifact-publication.test.mjs`:
 
@@ -94,7 +94,7 @@ test('corrupt artifact_revisions manifest JSON fails with ARTIFACT_CORRUPT on no
 })
 ```
 
-- [ ] **Step 2: Run the new tests and check that they fail before implementation**
+- [x] **Step 2: Run the new tests and check that they fail before implementation**
 
 Run:
 
@@ -104,7 +104,7 @@ node --test packages/presentation/deck/tests/artifact-publication.test.mjs
 
 Expected: FAIL. Both new tests fail because unguarded `JSON.parse` currently throws `SyntaxError`, which `DeckService.access` maps to `DECK_STORAGE` instead of `ARTIFACT_CORRUPT`.
 
-- [ ] **Step 3: Create `packages/presentation/deck/src/artifact-fs.ts` and remove `provenance.ts`**
+- [x] **Step 3: Create `packages/presentation/deck/src/artifact-fs.ts` and remove `provenance.ts`**
 
 Create `packages/presentation/deck/src/artifact-fs.ts` (under 180 lines, every function under 60 lines, zero `as`, zero `!`):
 1. Define `export const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])` and `export const IMAGE_LICENSES = ['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'] as const`.
@@ -124,7 +124,7 @@ Create `packages/presentation/deck/src/artifact-fs.ts` (under 180 lines, every f
    - Methods: `path(name: string): string`, `exists(name: string): boolean`, `write(name: string, bytes: string | Uint8Array): void`, `read(name: string, fingerprint: string, limit: number): Buffer`, `remove(name: string): void`, `listFiles(): readonly string[]`.
 9. Remove `packages/presentation/deck/src/provenance.ts`.
 
-- [ ] **Step 4: Create `packages/presentation/deck/src/image-store.ts` and remove `image-needs.ts`**
+- [x] **Step 4: Create `packages/presentation/deck/src/image-store.ts` and remove `image-needs.ts`**
 
 Create `packages/presentation/deck/src/image-store.ts` (under 320 lines, every method under 75 lines, zero `as`, zero `!`):
 1. Move `export function outlineImageNeeds(outline: BoundOutlineDraft | OutlineProposal): readonly ImageNeed[]` verbatim from `image-needs.ts` (using `sha256Hex` from `./errors.ts`).
@@ -140,7 +140,7 @@ Create `packages/presentation/deck/src/image-store.ts` (under 320 lines, every m
      - In `preparedRecord`, parse rows with `parsePreparedRecord(r.payload)` (removes `as PreparedRecord`).
      - In `imageReview`, `imagePreview`, and `restoredImage`, replace all three `outline.slides[need.slideIndex]!` assertions with explicit `const slide = outline.slides[need.slideIndex]; if (!slide) throw new DeckError(...)` (`DECK_CONTENT_NOT_FOUND` for `imageReview`/`imagePreview`, `RESEARCH_IMAGE_SELECTION_REQUIRED` for `restoredImage`).
 
-- [ ] **Step 5: Create `packages/presentation/deck/src/artifact-readback.ts`**
+- [x] **Step 5: Create `packages/presentation/deck/src/artifact-readback.ts`**
 
 Create `packages/presentation/deck/src/artifact-readback.ts` (under 180 lines, every method under 60 lines, zero `as`, zero `!`):
 1. Export `export class ArtifactReadback`:
@@ -152,7 +152,7 @@ Create `packages/presentation/deck/src/artifact-readback.ts` (under 180 lines, e
    - In `native(row)`: guard legacy `manifest.design.template` access with `isRecord(manifest.design) && isRecord(manifest.design.template)` (throwing `DeckError('ARTIFACT_CORRUPT')` if corrupt).
    - In `recover()`: parse `prepared_images.payload` with `parsePreparedRecord(row.payload)` and `artifact_revisions.manifest` with `parseJsonObject(row.manifest)`.
 
-- [ ] **Step 6: Reduce `packages/presentation/deck/src/artifact-store.ts` to staging and preparation only, and wire `index.ts`**
+- [x] **Step 6: Reduce `packages/presentation/deck/src/artifact-store.ts` to staging and preparation only, and wire `index.ts`**
 
 1. Update `packages/presentation/deck/src/artifact-store.ts` (must be under 390 lines, every method under 75 lines, zero `as`, zero `!`):
    - Constructor accepts `(files: ArtifactFileStore, images: PreparedImageStore, formats: ReadonlyMap<string, FormatAdapter>, options: DeckOptions)`.
@@ -167,7 +167,7 @@ Create `packages/presentation/deck/src/artifact-readback.ts` (under 180 lines, e
    - Delegate image methods (`prepareOutlineImages`, `reserveImageSearch`, `outlineImagePreview`, `restoredOutlineImage`, `imageBlockers`, `commitBriefProposal` image commit, `outlineSnapshot` image review, `confirmGeneration` image blockers) to `this.images`.
    - Delegate readback methods (`provenance`, `slideMetadata`, `content`, `nativeArtifact`) to `this.readback`.
 
-- [ ] **Step 7: Build, check metrics, and run tests**
+- [x] **Step 7: Build, check metrics, and run tests**
 
 Run:
 
@@ -199,7 +199,7 @@ node --test packages/presentation/deck/tests/artifact-publication.test.mjs && co
 
 Expected: PASS. All tests pass with `# fail 0` and `# skipped 0`, including both new `ARTIFACT_CORRUPT` tests.
 
-- [ ] **Step 8: Mark task done, write the report file, and commit and push**
+- [x] **Step 8: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 7 as `- [x]` in this file. Update the Task 17 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-17-refactor-deck-artifacts-and-image-store.md`.
 2. Create `docs/build/refactor/module-design/reports/task-17-refactor-deck-artifacts-and-image-store.md` with:

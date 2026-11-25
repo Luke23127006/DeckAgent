@@ -29,6 +29,10 @@ import { saveBoundOutline } from './bound-outline.ts'
 import { GenerationStorage, validateConfirmation, sameConfirmation, deckVersion } from './generation-store.ts'
 import { interviewState } from './interview.ts'
 import { ArtifactStorage } from './artifact-store.ts'
+import { ArtifactFileStore } from './artifact-fs.ts'
+import { ArtifactStaging } from './artifact-stage.ts'
+import { PreparedImageStore } from './image-store.ts'
+import { ArtifactReadback } from './artifact-readback.ts'
 import type { ArtifactPublication, ArtifactAsset, StageChunk, StageStatus } from './generation-contracts.ts'
 import type { GenerationCapability } from './generation-contracts.ts'
 export type { GenerationCapability } from './generation-contracts.ts'
@@ -37,7 +41,7 @@ export type { PreparedResearchImage, ImageCredit } from './generation-contracts.
 export type { ImageNeed, ImageResolver, ImageSelection, OutlineImageReview } from './generation-contracts.ts'
 export type { ImageAttempt, ImageSourceCheck } from './generation-contracts.ts'
 export { ImagePreparationError } from './errors.ts'
-export { outlineImageNeeds } from './image-needs.ts'
+export { outlineImageNeeds } from './image-store.ts'
 export type {
   ArtifactPublication,
   ArtifactAsset,
@@ -99,6 +103,8 @@ export class DeckService implements DeckReader, DeckPublisher {
   private readonly briefs: BriefStorage
   private readonly generations: GenerationStorage
   private readonly artifacts: ArtifactStorage
+  private readonly images: PreparedImageStore
+  private readonly readback: ArtifactReadback
   private readonly grants = new WeakSet<object>()
   private readonly publicationsInFlight = new Map<string, Promise<PublishedSlide>>()
   private closed = false
@@ -118,7 +124,15 @@ export class DeckService implements DeckReader, DeckPublisher {
       this.briefs = new BriefStorage(db)
       this.outlines = new OutlineStorage(db, this.briefs)
       this.generations = new GenerationStorage(db)
-      this.artifacts = new ArtifactStorage(db, options)
+      const formats = options.formats ?? []
+      const formatMap = new Map(formats.map(format => [format.id, format]))
+      if (formatMap.size !== formats.length) throw new DeckError('FORMAT_DUPLICATE')
+      const files = new ArtifactFileStore(options.artifactRoot)
+      this.images = new PreparedImageStore(db, files, options)
+      const staging = new ArtifactStaging(files, this.images, formatMap)
+      this.readback = new ArtifactReadback(db, files, formatMap)
+      this.artifacts = new ArtifactStorage(files, staging, formatMap, options)
+      if (files.root) this.readback.recover()
     } catch (error) {
       db?.close()
       throw error instanceof DeckError ? error : new DeckError('DECK_STORAGE')
@@ -156,7 +170,7 @@ export class DeckService implements DeckReader, DeckPublisher {
           p.brief
             ? {
                 ...p,
-                imageReview: this.artifacts.imageReview(sessionId, p),
+                imageReview: this.images.imageReview(sessionId, p),
                 layoutIssues: p.brief.design
                   ? reviewLayouts(
                       p.slides.map(s => ({ title: s.title, blocks: s.blocks ?? [] })),
@@ -212,25 +226,14 @@ export class DeckService implements DeckReader, DeckPublisher {
     resolver?: import('./generation-contracts.ts').ImageResolver,
   ): Promise<object> {
     this.id(sessionId)
-    return this.artifacts.prepareImages(sessionId, input, signal, resolver)
+    return this.images.prepareImages(sessionId, input, signal, resolver)
   }
   reserveImageSearch(sessionId: string, requestId: string): void {
     this.access(() =>
       this.transaction(() => {
         this.id(sessionId)
         this.id(requestId)
-        if (this.options.activeRequest && !this.options.activeRequest(sessionId, requestId))
-          throw new DeckError('REQUEST_CLOSED')
-        const previous = this.db
-          .prepare('SELECT session_id,attempts FROM image_search_attempts WHERE request_id=?')
-          .get(requestId)
-        if (previous && (previous.session_id !== sessionId || Number(previous.attempts) >= 5))
-          throw new DeckError('RESEARCH_IMAGE_BUDGET')
-        this.db
-          .prepare(
-            `INSERT INTO image_search_attempts VALUES(?,?,1) ON CONFLICT(request_id) DO UPDATE SET attempts=attempts+1`,
-          )
-          .run(requestId, sessionId)
+        this.images.reserveImageSearch(sessionId, requestId)
       }),
     )
   }
@@ -239,7 +242,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       this.id(sessionId)
       const outline = this.outlines.snapshot(sessionId).proposals.find(p => p.outlineId === outlineId)
       if (!outline) throw new DeckError('DECK_CONTENT_NOT_FOUND')
-      return this.artifacts.imagePreview(sessionId, outline, needId)
+      return this.images.imagePreview(sessionId, outline, needId)
     })
   }
   restoredOutlineImage(
@@ -251,14 +254,14 @@ export class DeckService implements DeckReader, DeckPublisher {
       this.id(sessionId)
       const outline = this.outlines.snapshot(sessionId).proposals.find(p => p.outlineId === outlineId)
       if (!outline) throw new DeckError('DECK_CONTENT_NOT_FOUND')
-      return this.artifacts.restoredImage(sessionId, outline, needId)
+      return this.images.restoredImage(sessionId, outline, needId)
     })
   }
   imageBlockers(sessionId: string): readonly { code: string; message: string }[] {
     return this.access(() => {
       const state = this.outlines.snapshot(sessionId)
       const outline = state.proposals.find(p => p.outlineId === state.currentId)
-      return outline ? this.artifacts.imageBlockers(sessionId, outline) : []
+      return outline ? this.images.imageBlockers(sessionId, outline) : []
     })
   }
   commitBriefProposal(sessionId: string, input: BriefProposalInput, preparedImages?: object): BriefRecord {
@@ -299,7 +302,7 @@ export class DeckService implements DeckReader, DeckPublisher {
             brief,
             state,
           )
-          this.artifacts.commitImages(sessionId, input, outline, preparedImages)
+          this.images.commitImages(sessionId, input, outline, preparedImages)
         }
         this.db
           .prepare('INSERT INTO brief_request_receipts VALUES(?,?,?,?,?)')
@@ -358,7 +361,7 @@ export class DeckService implements DeckReader, DeckPublisher {
           )
           if (issues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', issues)
         }
-        if (this.artifacts.imageBlockers(sessionId, p).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
+        if (this.images.imageBlockers(sessionId, p).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
         this.insertPlan(sessionId, p)
         this.outlines.confirm(sessionId, p)
         fresh = true
@@ -867,7 +870,7 @@ export class DeckService implements DeckReader, DeckPublisher {
       const row = this.db
         .prepare('SELECT manifest FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
         .get(sessionId, slideId, revision)
-      return row ? this.artifacts.provenance(row) : []
+      return row ? this.readback.provenance(row) : []
     })
   }
 
@@ -884,9 +887,9 @@ export class DeckService implements DeckReader, DeckPublisher {
         .get(sessionId, slideId, revision)
       return row
         ? {
-            provenance: this.artifacts.provenance(row),
-            ...this.artifacts.imageMetadata(row),
-            ...(this.artifacts.notes(row) ? { notes: this.artifacts.notes(row)! } : {}),
+            provenance: this.readback.provenance(row),
+            ...this.readback.imageMetadata(row),
+            ...(this.readback.notes(row) ? { notes: this.readback.notes(row)! } : {}),
           }
         : {}
     })
@@ -909,11 +912,11 @@ export class DeckService implements DeckReader, DeckPublisher {
           sessionId,
           slideId,
           revision,
-          html: this.artifacts.content(artifact),
-          provenance: this.artifacts.provenance(artifact),
-          ...this.artifacts.metadata(artifact),
-          ...this.artifacts.imageMetadata(artifact),
-          ...(this.artifacts.notes(artifact) ? { notes: this.artifacts.notes(artifact)! } : {}),
+          html: this.readback.content(artifact),
+          provenance: this.readback.provenance(artifact),
+          ...this.readback.metadata(artifact),
+          ...this.readback.imageMetadata(artifact),
+          ...(this.readback.notes(artifact) ? { notes: this.readback.notes(artifact)! } : {}),
         }
       return { sessionId, slideId, revision, html: String(row.html) }
     })
@@ -935,7 +938,7 @@ export class DeckService implements DeckReader, DeckPublisher {
         .prepare('SELECT * FROM artifact_revisions WHERE session_id=? AND slide_id=? AND revision=?')
         .get(sessionId, slideId, revision)
       if (!row) throw new DeckError('DECK_CONTENT_NOT_FOUND')
-      return this.artifacts.native(row)
+      return this.readback.native(row)
     })
   }
 

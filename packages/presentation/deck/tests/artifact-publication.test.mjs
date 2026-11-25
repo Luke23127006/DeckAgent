@@ -4,7 +4,7 @@ import { mkdtemp, rm, readdir, writeFile, readFile, mkdir, symlink } from 'node:
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService, DeckError } from '../lib/index.js'
+import { DeckService, DeckError, outlineImageNeeds } from '../lib/index.js'
 import { HtmlFormatAdapter } from '@deckagent/html-format'
 import { createHash } from 'node:crypto'
 import { brief } from './fixtures/brief.mjs'
@@ -82,7 +82,9 @@ async function fixture(t, options = {}, image) {
 }
 
 test('public image bytes and attribution survive reopen; missing essential images never publish', async t => {
-  const bytes = await readFile(new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(
+    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   const digest = createHash('sha256').update(bytes).digest('hex')
   let calls = 0
   const credit = {
@@ -165,7 +167,9 @@ test('public image bytes and attribution survive reopen; missing essential image
 })
 
 test('layout retries reuse fetched web images without exhausting the request image budget', async t => {
-  const bytes = await readFile(new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(
+    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   const digest = createHash('sha256').update(bytes).digest('hex')
   let calls = 0
   let renderCalls = 0
@@ -414,7 +418,9 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
 })
 
 test('managed PNG assets retain provenance, materialize only published bytes and reject foreign attachment identities', async t => {
-  const bytes = await readFile(new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(
+    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   const attachmentId = 'att-00000000-0000-0000-0000-000000000001'
   const source = { sourceId: 'src-00000000-0000-0000-0000-000000000001', version: 1, kind: 'attachment' }
   const f = await fixture(
@@ -471,4 +477,31 @@ test('artifact storage refuses a redirected managed parent before creating files
   })
   assert.deepEqual(await readdir(project), ['notes.txt'])
   assert.equal(await readFile(join(project, 'notes.txt'), 'utf8'), 'unchanged source')
+})
+
+test('corrupt prepared_images JSON fails with ARTIFACT_CORRUPT instead of DECK_STORAGE', async t => {
+  const f = await fixture(t, {}, { web: true })
+  const db = new DatabaseSync(join(f.dir, 'deck.sqlite'))
+  f.closeAfter.push(db)
+  db.prepare('INSERT INTO prepared_images VALUES(?,?,?,?)').run('chat', f.p.outlineId, 'corrupt-key', '{not-valid-json')
+  const needId = outlineImageNeeds(f.p)[0].needId
+  assert.throws(() => f.decks.restoredOutlineImage('chat', f.p.outlineId, needId), { code: 'ARTIFACT_CORRUPT' })
+})
+
+test('corrupt artifact_revisions manifest JSON fails with ARTIFACT_CORRUPT on notes and provenance readback', async t => {
+  const f = await fixture(t)
+  const db = new DatabaseSync(join(f.dir, 'deck.sqlite'))
+  f.closeAfter.push(db)
+  const slideId = f.p.slides[0].slideId
+  db.prepare('INSERT INTO revisions VALUES(?,?,?,?)').run('chat', slideId, 1, '')
+  db.prepare('INSERT INTO artifact_revisions VALUES(?,?,?,?,?,?)').run(
+    'chat',
+    slideId,
+    1,
+    'artifact-00000000-0000-0000-0000-000000000001',
+    'a'.repeat(64),
+    '{not-valid-json',
+  )
+  assert.throws(() => f.decks.provenance('chat', slideId, 1), { code: 'ARTIFACT_CORRUPT' })
+  assert.throws(() => f.decks.slideMetadata('chat', slideId, 1), { code: 'ARTIFACT_CORRUPT' })
 })
