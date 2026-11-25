@@ -54,7 +54,7 @@ Read this file to split `image-research.ts` and `generation-workflow.ts`, remove
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 6 checks pass.
 
-- [ ] **Step 1: Update `apps/web/tests/image-research.test.mjs` to test JSON-LD license rules through `WebImageResearch.prepare` (`FD1`)**
+- [x] **Step 1: Update `apps/web/tests/image-research.test.mjs` to test JSON-LD license rules through `WebImageResearch.prepare` (`FD1`)**
 
 1. On line 5 of `apps/web/tests/image-research.test.mjs`, change the import to `import { WebImageResearch } from '../lib/types/features/deck/index.js'`.
 2. Replace lines 197-231 (`test('licence evidence must identify the exact image and an accepted licence', ...)`) with an async test that exercises every exact JSON-LD rule through `WebImageResearch.prepare` with a fake `reader`:
@@ -100,7 +100,7 @@ test('licence evidence must identify the exact image and an accepted licence', a
 })
 ```
 
-- [ ] **Step 2: Split `image-research.ts` into `image-credit.ts`, `image-review-run.ts`, and `image-research.ts` (`FD1`, `FD3`, `FD7`)**
+- [x] **Step 2: Split `image-research.ts` into `image-credit.ts`, `image-review-run.ts`, and `image-research.ts` (`FD1`, `FD3`, `FD7`)**
 
 1. Create `apps/web/src/features/deck/image-credit.ts`:
    - Move `imagePageCredit` and its JSON-LD parsing logic from `image-research.ts` lines 23-24 and 42-115.
@@ -120,7 +120,7 @@ test('licence evidence must identify the exact image and an accepted licence', a
    - Remove line 2 (`export type { OutlineNotFoundReason } from './failures.ts'`).
    - Change line 8 to `export { WebImageResearch } from './image-research.ts'`.
 
-- [ ] **Step 3: Create `generation-prompts.ts` and `generation-tools.ts` (`FD4`, `FD6`)**
+- [x] **Step 3: Create `generation-prompts.ts` and `generation-tools.ts` (`FD4`, `FD6`)**
 
 1. Create `apps/web/src/features/deck/generation-prompts.ts`:
    - Move `operations` and `schemas` (export as `generationToolSchemas`) from `generation-workflow.ts` lines 15-45.
@@ -147,7 +147,7 @@ function isProvenanceKind(value: unknown): value is ContentProvenance['kind'] {
    - Export `createGenerationTools(...)` returning the `RequestTools` object (under 65 lines).
    - Keep every function in `generation-tools.ts` under 75 lines, with zero `as` and zero `!`.
 
-- [ ] **Step 4: Simplify `apps/web/src/features/deck/generation-workflow.ts` (`FD4`, `FD7`)**
+- [x] **Step 4: Simplify `apps/web/src/features/deck/generation-workflow.ts` (`FD4`, `FD7`)**
 
 In `apps/web/src/features/deck/generation-workflow.ts`:
 1. Keep `export class GenerationWorkflow implements RequestRuntime` with its exact constructor `(runtime, sessions)` and `prepare(request)` signature.
@@ -163,7 +163,7 @@ const brief = briefRecord.draft
 4. Call `buildGenerationContext`, `buildGenerationInstructions`, and `createGenerationTools` from `./generation-prompts.ts` and `./generation-tools.ts`.
 5. Keep `generation-workflow.ts` under 90 lines and every function under 70 lines.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, check AST metrics, and run deck generation and image suites**
+- [x] **Step 5: Build, check boundaries, lint, format, check AST metrics, and run deck generation and image suites**
 
 Run:
 
@@ -195,7 +195,7 @@ corepack pnpm@11.28.5 test:images && corepack pnpm@11.28.5 test:generation-publi
 
 Expected: PASS. All three suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 6: Mark task done, write the report file, and commit and push**
+- [x] **Step 6: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Update the Task 25 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-25-refactor-deck-image-research-and-generation-workflow.md`.
 2. Create `docs/build/refactor/module-design/reports/task-25-refactor-deck-image-research-and-generation-workflow.md` with:

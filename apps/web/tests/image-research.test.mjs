@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { TavilyClient } from '../lib/types/integrations/research/index.js'
 import { PublicImageReader } from '../lib/types/integrations/images/index.js'
-import { WebImageResearch, imagePageCredit } from '../lib/types/features/deck/index.js'
+import { WebImageResearch } from '../lib/types/features/deck/index.js'
 import { DeckStore, outlineImageNeeds } from '@deckagent/deck'
 import { DatabaseSync } from 'node:sqlite'
 import { createHash } from 'node:crypto'
@@ -10,7 +10,9 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const png = await readFile(new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+const png = await readFile(
+  new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+)
 const digest = createHash('sha256').update(png).digest('hex')
 const credit = {
   url: 'https://photos.example/solar',
@@ -194,40 +196,43 @@ test('unknown licences are blocked in reviewed plans; failed selections do not c
   assert.equal(f.downloads.length, 0)
 })
 
-test('licence evidence must identify the exact image and an accepted licence', () => {
-  const html = object => `<script type="application/ld+json">${JSON.stringify(object)}</script>`
+test('licence evidence must identify the exact image and an accepted licence', async t => {
+  const imageUrl = 'https://photos.example/solar.png'
   const item = {
     '@type': 'ImageObject',
-    contentUrl: 'https://photos.example/solar.png',
+    contentUrl: imageUrl,
     creator: { name: 'Author' },
     license: credit.licenseUrl,
   }
-  assert.equal(imagePageCredit(html(item), item.contentUrl, credit.url).license, 'CC BY')
-  assert.equal(
-    imagePageCredit(html({ ...item, contentUrl: 'https://photos.example/other.png' }), item.contentUrl, credit.url),
-    undefined,
-  )
-  assert.equal(
-    imagePageCredit(
-      html({ ...item, license: 'https://creativecommons.org/licenses/by-sa/4.0/' }),
-      item.contentUrl,
-      credit.url,
-    ),
-    undefined,
-  )
-  assert.equal(imagePageCredit(html({ ...item, '@type': 'Article' }), item.contentUrl, credit.url), undefined)
-  assert.equal(
-    imagePageCredit(html({ ...item, license: { '@id': credit.licenseUrl } }), item.contentUrl, credit.url).license,
-    'CC BY',
-  )
-  const rejected = []
-  imagePageCredit(
-    html({ ...item, license: 'https://creativecommons.org/licenses/by-nc/4.0/' }),
-    item.contentUrl,
-    credit.url,
-    code => rejected.push(code),
-  )
-  assert.deepEqual(rejected, ['RESEARCH_IMAGE_LICENSE_UNSUPPORTED'])
+  const prepareWith = async payload => {
+    const html = `<script type="application/ld+json">${JSON.stringify(payload)}</script>`
+    const images = new WebImageResearch(
+      { imageSearch: async () => [] },
+      { candidates: async () => [] },
+      {
+        read: async url => (url === imageUrl ? png : Buffer.from(html)),
+      },
+    )
+    t.after(() => images.close())
+    return images.prepare(
+      { candidateId: 'json-ld-check', imageUrl, title: '', description: 'Solar', sourceUrl: credit.url },
+      AbortSignal.timeout(5000),
+    )
+  }
+  assert.equal((await prepareWith(item)).credit.license, 'CC BY')
+  await assert.rejects(prepareWith({ ...item, contentUrl: 'https://photos.example/other.png' }), {
+    code: 'RESEARCH_IMAGE_LICENSE_REQUIRED',
+  })
+  await assert.rejects(prepareWith({ ...item, license: 'https://creativecommons.org/licenses/by-sa/4.0/' }), {
+    code: 'RESEARCH_IMAGE_LICENSE_UNSUPPORTED',
+  })
+  await assert.rejects(prepareWith({ ...item, '@type': 'Article' }), {
+    code: 'RESEARCH_IMAGE_LICENSE_REQUIRED',
+  })
+  assert.equal((await prepareWith({ ...item, license: { '@id': credit.licenseUrl } })).credit.license, 'CC BY')
+  await assert.rejects(prepareWith({ ...item, license: 'https://creativecommons.org/licenses/by-nc/4.0/' }), {
+    code: 'RESEARCH_IMAGE_LICENSE_UNSUPPORTED',
+  })
 })
 
 test('a top-level Pexels stock image resolves its source and retains its platform licence without scraping a blocked page', async t => {
