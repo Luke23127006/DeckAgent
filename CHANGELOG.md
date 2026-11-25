@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Revise the Task 5 run preparation diagnosis in `docs/build/refactor/target-structure/plan/`. Task 5 reads the route and controller files, has the `prompt-input` kind and the `composition-root` owner, and runs the STE lint on its report. The plan README lists the new failure mode in Review Focus.
 - Add the Task 2 Tech Stack report (`docs/build/refactor/target-structure/reports/task-02-write-tech-stack.md`), with the version values that the checks compared and the limit of what those checks prove.
 - Add the Target Structure Refactor reports index and the Task 1 report (`docs/build/refactor/target-structure/reports/`). They record the start state, the checks and the limit of what the checks prove for the Project Structure replacement.
 - Add Revision 3 Slice 2B read-only diagnosis tasks (`task-13` and `task-14`) to `docs/build/refactor/module-design/plan/`. Task 13 audits `packages/presentation/deck/` core, stores, and public surface, and Task 14 audits artifact storage and its `packages/presentation/design/` contract seam.

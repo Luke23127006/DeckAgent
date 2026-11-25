@@ -26,6 +26,11 @@ In the target layout, each module registers a contribution (instructions, tools,
 - `apps/web/src/integrations/opencode/mcp-bridge.ts` (178 lines)
 - `apps/web/src/integrations/opencode/resources.ts` (45 lines)
 - `apps/web/src/index.ts` (391 lines)
+- `packages/host/api/src/transport/request-routes.ts` (105 lines)
+- `packages/host/api/src/transport/session-routes.ts` (158 lines)
+- `packages/host/api/src/lifecycle/request-controller.ts` (397 lines)
+- `apps/web/src/features/deck/confirmation-coordinator.ts` (137 lines)
+- `apps/web/src/integrations/opencode/history.ts` (39 lines)
 
 **Files:**
 
@@ -60,11 +65,14 @@ In the target layout, each module registers a contribution (instructions, tools,
 
 ## Part decision table
 
-Apply the rows from top to bottom to each place that builds a part of a run. Use the first row that matches. Write the kind and the owner. The owner is the folder under `apps/web/src/features/`, `apps/web/src/integrations/` or `packages/host/api/src/` that contains the code.
+Apply the rows from top to bottom to each place that builds a part of a run. Use the first row that matches. Write the kind and the owner. The owner is the folder under `apps/web/src/features/`, `apps/web/src/integrations/` or `packages/host/api/src/` that contains the code. For code in `apps/web/src/index.ts`, the owner is `composition-root`.
+
+A type declaration is not a row, because it builds nothing. This applies to `contracts.ts`, `tool-contracts.ts` and `transport/contracts.ts`.
 
 | Signal | Action |
 | --- | --- |
 | The code builds a string that becomes `RequestRun.instructions` or a system prompt | Kind `instructions`. |
+| The code builds text that the model reads as user input, and the text is not `RequestRun.instructions`. For example, the quote of earlier messages in `seedPrompt`. | Kind `prompt-input`. |
 | The code builds `ToolSchema` values, a tool manifest or a tool `context` string, or the `execute` function of `PreparedTools` | Kind `tools`. |
 | The code builds a `GenerationCapability`, a `GenerationGrant` or the `publicResearch` value | Kind `grant`. |
 | The code selects or freezes the model, the provider settings or the chat settings at admission | Kind `settings`. |
@@ -113,8 +121,10 @@ Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/`
    - A count of rows for each kind and for each owner.
    - The four facts from Step 3.
    - Items with kind `unclassified`.
+   - The fact that the current code has no skill. The command is `grep -rniE "skill" apps/web/src packages --include=*.ts -l`, and it prints no line. State the result in the report.
    - What the commands do not prove: the search finds parts by name only. A part that the code builds under another name is in the report only when Step 2 found it by reading.
 3. Add a row for Task 5 in `docs/build/refactor/target-structure/reports/README.md`, with the same columns as the Task 1 row. Run `corepack pnpm@11.28.5 check:docs`. Expected: the output contains `0 error(s)`.
-4. Mark Step 5 as `- [x]`.
+4. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py docs/build/refactor/target-structure/reports/task-05-diagnose-run-preparation.md`. Expected: PASS. The output shows 0 hard violations. FAIL: fix the text and run the command again.
+5. Mark Step 5 as `- [x]`.
 
 **STOP** and send the report summary. Do not start Task 6 until a person approves the part table.
