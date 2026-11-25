@@ -148,7 +148,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 29 | Done | [Check Slice 2C exit gate and rescan metrics](task-29-verify-slice-2c-exit.md) ([report](../reports/task-29-verify-slice-2c-exit.md)) |
 | 30 | Done | [Diagnose browser boot, shell utilities, and transport](task-30-diagnose-browser-boot-shell-and-transport.md) ([report](../reports/task-30-diagnose-browser-boot-shell-and-transport.md)) |
 | 31 | Done | [Diagnose browser/features/deck UI modules](task-31-diagnose-browser-deck-feature.md) ([report](../reports/task-31-diagnose-browser-deck-feature.md)) |
-| 32 | Pending | [Diagnose non-deck browser UI features](task-32-diagnose-browser-non-deck-features.md) |
+| 32 | Done | [Diagnose non-deck browser UI features](task-32-diagnose-browser-non-deck-features.md) ([report](../reports/task-32-diagnose-browser-non-deck-features.md)) |
 
 ## Next revision
 
