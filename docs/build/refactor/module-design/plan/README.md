@@ -4,9 +4,9 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you finish a step, change its `- [ ]` to `- [x]` in the task file. After all checks pass, mark the task `Done` in this file, write the task report, and commit and push only the task files. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Diagnose `apps/web/src/browser/` across three read-only tasks (`boot.ts` and `transport/`, `browser/features/deck/`, and the six non-deck browser features), then stop for owner approval before Revision 5b.
+**Goal:** Apply the owner-approved Slice 2D convention update and deep-module refactors across `apps/web/src/browser/`, then pass the Slice 2D and Phase 2 exit gate before Phase 3.
 
-**Approach:** Revisions 1 to 4b (Tasks 1 to 29) closed Phase 1, Slice 2A, Slice 2B, and Slice 2C. Revision 5 runs three read-only Slice 2D diagnosis tasks (Tasks 30 to 32) inside the 1,500 to 3,500 line session budget [[1]](#ref-1). Revision 5b applies owner-approved Slice 2D refactors and convention updates after the STOP gate.
+**Approach:** Revisions 1 to 5 (Tasks 1 to 32) closed Phase 1, Slices 2A to 2C, and the Slice 2D diagnosis for `apps/web/src/browser/`. Revision 5b (Tasks 33 to 39) updates the Slice 2D transport convention and refactors `browser/transport/`, `browser/features/`, and `boot.ts` in inside-out order [[1]](#ref-1). Task 39 checks the Slice 2D exit gate, and Revision 6 starts Phase 3 after it passes.
 
 **Tech stack:** Windows, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod, and `node:test`.
 
@@ -51,6 +51,11 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | Slice 2C non-deck features and web root | Fold the four small root asset files into `ui-assets.ts` (`FA1`), the four single-caller `failures.ts` files into their sibling modules (`FA2`), and `chats/contracts.ts` and `workspaces/contracts.ts` into their `index.ts` files (`FA3`). Remove five unused feature barrel exports (`FA4`). Rename `AttachmentService` and `ResearchService` to `AttachmentCoordinator` and `ResearchCoordinator` (`FA9`). Split `source-tools.ts`, `index.ts`, `local-transport.ts`, and `cli.ts` under 80 lines per function, move `SESSION_NOT_FOUND` guards into `local-transport.ts`, and replace all 3 `as` and 7 `!` assertions (`FA5`, `FA6`, `FA7`, `FA8`, `FA10`). |
 | Slice 2C exit gate | Tasks 23 to 29 passed `build`, `check:boundaries`, `lint`, `check:docs`, Biome on 60 Slice 2C files, and all 5 root tool tests (69 pass, 0 fail). Seventeen of 18 non-live suites passed (321 pass), and the owner accepted one pre-existing `test:browser-smoke` host-timing flake (`Create deck UI`). `features/`, `integrations/`, and `apps/web/src/` root reached 0 files over 400 lines, 0 functions over 80 lines, 0 `as`, 0 `!`, 0 `*Service`, and 0 reverse imports. |
 | Slice 2D diagnosis split | Split `apps/web/src/browser/` (36 files, 6,762 lines) into three read-only diagnosis tasks. Task 30 covers `boot.ts`, browser root utilities, and `transport/` (14 files, 3,175 lines). Task 31 covers `browser/features/deck/` (8 files, 1,381 lines). Task 32 covers the six non-deck `browser/features/` folders (14 files, 2,206 lines). |
+| Slice 2D convention update | Update Project Structure [[2]](#ref-2) (`### apps/web/` line 84) so `src/browser/transport/` owns HTTP/SSE error mapping to typed client error codes while user-facing error copy lives in `src/browser/` or `src/browser/features/` (`BB9`, `BD7`). |
+| Browser transport refactor | Remove `transport/bound-outline-decoder.ts` (`BB2`) and the five pass-through decoder exports from `transport/index.ts` and `browser-driver.mjs` (`BB6`). Extract internal `transport/http.ts` and `transport/management-decoders.ts`, remove unused `ManagementClient.draft` and `saveDraft`, keep all six public client classes, and remove all 3 `as` and 2 `!` assertions in `transport/` (`BB5`, `BB8`, `BB12`). Keep existing 401 and timeout behavior unchanged. |
+| Browser deck feature refactor | Move `imageFailure` from `transport/image-review-client.ts` into `browser/features/deck/outline-image-review.ts` and remove `transport/image-review-client.ts` (`BB3`, `BD1`). Split `deck-canvas.ts`, `outline-view.ts`, `deck-resizer.ts`, and `deck-tab.ts` under 400 lines and 80 lines per function (`BD2`, `BD3`, `BD4`). Change `DeckModel` in `browser/features/deck/index.ts` to `export type { DeckModel }` and import `DeckModel` from `deck-model.js` in `apps/web/tests/deck-model.test.mjs` (`BD5`). Remove 1 `as` and 4 `!` assertions (`BD6`). |
+| Non-deck browser features refactor | Split `settings-panel.ts` into `provider-errors.ts`, `settings-dom.ts`, and `provider-model-draft.ts`, drop overwritten DOM lines, and split `model-picker.ts` (`BF1`, `BF2`). Split `conversation-view.ts` into `request-row.ts`, split `workspace-view.ts` and `research-view.ts`, drop 4 unused internal exports, and remove 1 `as` and 21 `!` assertions across the six folders (`BF3` to `BF7`). Replace the `/cài đặt model/i` check in `offersSettings` (`request-feedback.ts`) with an explicit per-code flag while keeping the unknown-code fallback `true`. |
+| Browser boot and shell refactor | Remove dead `apps/web/src/browser/layout.ts` (`BB1`) and keep `dom.ts` (`BB10`), `motion.ts`, and `theme.ts` (`BB11`). Split `boot.ts` into `shell-dom.ts`, `draft-sync.ts`, `chat-navigation.ts`, and `request-runner.ts` under 300 lines per file and remove all 2 `as` and 5 `!` assertions (`BB4`, `BB7`). |
 
 ## Global Constraints
 
@@ -112,6 +117,13 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 33. Browser root and `transport/` diagnosis audits `boot.ts` (1,263 lines), `management-client.ts` (564 lines), 3 small non-barrel files, `bound-outline-decoder.ts` (1 line), 15 `transport/index.ts` exports, 5 `as`, and 7 `!` assertions. Check: [Task 30](task-30-diagnose-browser-boot-shell-and-transport.md).
 34. `apps/web/src/browser/features/deck/` diagnosis audits `deck-canvas.ts` (414 lines), 6 functions over 80 lines, 6 barrel exports, 1 `as`, and 4 `!` assertions. Check: [Task 31](task-31-diagnose-browser-deck-feature.md).
 35. Non-deck `apps/web/src/browser/features/` diagnosis audits `settings-panel.ts` (604 lines), `conversation-view.ts` (519 lines), 5 functions over 80 lines, 9 barrel exports, 1 `as`, and 21 `!` assertions. Check: [Task 32](task-32-diagnose-browser-non-deck-features.md).
+36. `docs/conventions/project-structure.md` line 84 assigns HTTP/SSE error code mapping to `src/browser/transport/` and user-facing UI copy to `src/browser/` or `src/browser/features/` (`BB9`, `BD7`). Check: [Task 33](task-33-update-slice-2d-conventions.md).
+37. `apps/web/src/browser/transport/` removes `bound-outline-decoder.ts` and five pass-through exports, extracts `http.ts` and `management-decoders.ts`, drops unused `draft` and `saveDraft`, and eliminates all 3 `as` and 2 `!` assertions. Test: [Task 34](task-34-refactor-browser-transport.md).
+38. `apps/web/src/browser/features/deck/` absorbs `imageFailure` into `outline-image-review.ts` and removes `transport/image-review-client.ts`. It splits `deck-canvas.ts`, `outline-view.ts`, `deck-resizer.ts`, and `deck-tab.ts`, narrows `DeckModel`, and eliminates 1 `as` and 4 `!` assertions. Test: [Task 35](task-35-refactor-browser-deck-feature.md).
+39. `apps/web/src/browser/features/providers/` splits `settings-panel.ts` and `model-picker.ts`, drops overwritten DOM setup, and eliminates 1 `as` and 6 `!` assertions. Test: [Task 36](task-36-refactor-browser-providers-feature.md).
+40. `chats/`, `requests/`, `attachments/`, `workspaces/`, and `research/` split `conversation-view.ts`, `workspace-view.ts`, and `research-view.ts`, replace regex matching in `offersSettings` with an explicit flag, drop 4 unused internal exports, and eliminate 15 `!` assertions. Test: [Task 37](task-37-refactor-browser-remaining-features.md).
+41. `apps/web/src/browser/` removes `layout.ts`, splits `boot.ts` into `shell-dom.ts`, `draft-sync.ts`, `chat-navigation.ts`, and `request-runner.ts` under 300 lines, and eliminates 2 `as` and 5 `!` assertions. Test: [Task 38](task-38-refactor-browser-boot-and-shell.md).
+42. All 18 non-live suites, 5 root tool tests, static checks, Biome, and Slice 2D scan targets pass with 0 failures and close Phase 2. Test: [Task 39](task-39-verify-slice-2d-exit.md).
 
 ## Tasks
 
@@ -149,10 +161,17 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 30 | Done | [Diagnose browser boot, shell utilities, and transport](task-30-diagnose-browser-boot-shell-and-transport.md) ([report](../reports/task-30-diagnose-browser-boot-shell-and-transport.md)) |
 | 31 | Done | [Diagnose browser/features/deck UI modules](task-31-diagnose-browser-deck-feature.md) ([report](../reports/task-31-diagnose-browser-deck-feature.md)) |
 | 32 | Done | [Diagnose non-deck browser UI features](task-32-diagnose-browser-non-deck-features.md) ([report](../reports/task-32-diagnose-browser-non-deck-features.md)) |
+| 33 | Done | [Update Project Structure conventions for Slice 2D](task-33-update-slice-2d-conventions.md) ([report](../reports/task-33-update-slice-2d-conventions.md)) |
+| 34 | Pending | [Refactor browser transport clients, HTTP helpers, and assertions](task-34-refactor-browser-transport.md) |
+| 35 | Pending | [Refactor browser/features/deck and move imageFailure from transport](task-35-refactor-browser-deck-feature.md) |
+| 36 | Pending | [Refactor browser/features/providers settings-panel and model-picker](task-36-refactor-browser-providers-feature.md) |
+| 37 | Pending | [Refactor browser chats, requests, attachments, workspaces, and research](task-37-refactor-browser-remaining-features.md) |
+| 38 | Pending | [Remove layout.ts and split browser boot.ts into shell modules](task-38-refactor-browser-boot-and-shell.md) |
+| 39 | Pending | [Check Slice 2D and Phase 2 exit gate and rescan metrics](task-39-verify-slice-2d-exit.md) |
 
 ## Next revision
 
-- Revision 5b waits for owner approval of the Tasks 30 to 32 finding tables. It applies approved Slice 2D refactors and convention updates across `apps/web/src/browser/` and runs the Slice 2D exit gate.
+- Revision 6 waits for the Task 39 Slice 2D and Phase 2 exit gate report. It runs Phase 3 repo-wide Tier 2 hygiene (`packages/presentation/design/` D12/D13, remaining Tier 2 areas, remaining type assertions, comment `KEEP`/`REMOVE` audit, remaining `*Service` symbols, and optional lint guardrails).
 
 ## References
 

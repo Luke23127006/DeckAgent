@@ -81,7 +81,7 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | --- | --- | --- | --- |
 | `apps/web/` | Local application được tổ chức và vận hành thế nào? | Workflow riêng của application, Browser UI, local communication, adapter chỉ application dùng | Domain invariant và private persistence của package |
 | `src/browser/` | Người dùng tương tác với DeckAgent thế nào? | UI, UI-local state, navigation. `features/` nhóm UI theo product feature khi cần | Request execution authority, filesystem, SQLite, agent process |
-| `src/browser/transport/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response, error hiển thị cho Browser | Permission policy, Request Lifecycle, domain state transition |
+| `src/browser/transport/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client. Thông báo lỗi cho người dùng thuộc `src/browser/` hoặc `src/browser/features/` | Permission policy, Request Lifecycle, domain state transition, bảng văn bản lỗi UI |
 | `src/features/` | Application phối hợp các owner thế nào để hoàn thành một use case? | Application workflow, operation xuyên owner, application-level failure policy | Domain invariant của package, xử lý HTTP request/response, DOM |
 | `src/integrations/` | Application giao tiếp với external runtime hoặc service thế nào? | Protocol adapter, process lifecycle, external client. `opencode/` sở hữu process và protocol của OpenCode | Admission policy, domain invariant, terminal status của request, permission |
 | `src/index.ts` | Application khởi động và tắt thế nào? | Startup, shutdown, wiring concrete dependency, configuration, đăng ký capability và adapter | Domain operation, business rule của feature |
