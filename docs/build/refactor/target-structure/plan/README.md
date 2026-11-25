@@ -103,7 +103,7 @@ Revision 2b adds these failure modes:
 | 11 | Done | [Diagnose the Host application package](task-11-diagnose-host-application-package.md) ([report](../reports/task-11-diagnose-host-application-package.md)) |
 | 12 | Done | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) ([report](../reports/task-12-record-http-test-baseline.md)) |
 | 13 | Done | [Record the Phase 2 structure decisions in Project Structure](task-13-record-phase-2-structure-decisions.md) ([report](../reports/task-13-record-phase-2-structure-decisions.md)) |
-| 14 | Pending | [Add the HTTP edge characterization tests](task-14-add-http-edge-characterization-tests.md) |
+| 14 | Done | [Add the HTTP edge characterization tests](task-14-add-http-edge-characterization-tests.md) ([report](../reports/task-14-add-http-edge-characterization-tests.md)) |
 | 15 | Pending | [Move the Node code of the web app into apps/host](task-15-move-node-code-to-apps-host.md) |
 | 16 | Pending | [Measure the Express 5 defaults](task-16-measure-express-5-defaults.md) |
 

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the HTTP edge characterization tests (`e2e/http-edge.test.mjs`) and the `test:http-edge` script. The 12 black-box tests record 15 shared HTTP behaviors of the Local Host and 2 route facts of Task 9, so the move to Express 5 cannot drop them without a failed test.
 - Add the Task 13 Phase 2 structure decisions report (`docs/build/refactor/target-structure/reports/task-13-record-phase-2-structure-decisions.md`). Project Structure now decides the error map rule, points the `apps/web/src/local-transport.ts` row to it, and gives the one exception to the single-move rule for the Phase 2 move. Task 13 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add Revision 2b tasks (Tasks 13 to 16) to `docs/build/refactor/target-structure/plan/`: the Phase 2 structure decisions, the HTTP edge characterization tests, the move of the Node code into `apps/host/`, and the Express 5 measurement. The plan README records the Revision 2b decisions and failure modes.
 - Add the Task 8 Phase 1 exit report (`docs/build/refactor/target-structure/reports/task-08-check-phase-1-exit.md`). The four exit conditions pass: Project Structure, the Tech Stack section, the four contract shapes and `check:docs`. Task 8 is `Done`, so Phase 1 of the Target Structure Refactor is complete.

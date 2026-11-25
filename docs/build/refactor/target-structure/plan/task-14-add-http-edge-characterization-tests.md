@@ -55,13 +55,13 @@ The report of Task 10 lists 21 shared behaviors with `Not found` in the `Tests` 
 | `500 HOST_ERROR` (B31) | No HTTP request can make a route throw an unknown error. |
 | Field size, part count and header pair limits of multipart (B39, B40, B41) | The rule for `expectedRevision` rejects the same inputs with the same `400 INVALID_REQUEST`. A black-box test cannot see which check rejected the input. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `wc -l packages/host/api/src/index.ts packages/host/api/src/transport/http-io.ts packages/host/api/src/transport/sse.ts && git status --short`
 
 Expected: PASS. The line counts are `147`, `45` and `16`, and `git status --short` prints no line.
 
-- [ ] **Step 2: Create `e2e/http-edge.test.mjs`**
+- [x] **Step 2: Create `e2e/http-edge.test.mjs`**
 
 Write the text below as the complete file. Do not copy the outer fence.
 
@@ -319,7 +319,7 @@ Add this line to the `scripts` section of `package.json`, directly after the lin
     "test:http-edge": "node --test e2e/http-edge.test.mjs",
 ```
 
-- [ ] **Step 3: Build and lint**
+- [x] **Step 3: Build and lint**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -329,7 +329,7 @@ Run: `corepack pnpm@11.28.5 lint`
 
 Expected: PASS. The command exits with code 0.
 
-- [ ] **Step 4: Run the tests and make sure that they pass on the current server**
+- [x] **Step 4: Run the tests and make sure that they pass on the current server**
 
 Run: `corepack pnpm@11.28.5 test:http-edge`
 
@@ -337,7 +337,7 @@ Expected: PASS. The output contains `# pass 12` and `# fail 0`.
 
 This test records the current behavior, so it passes before a code change. Step 5 proves that two of the tests can fail.
 
-- [ ] **Step 5: Make sure that the tests can fail, then restore the code**
+- [x] **Step 5: Make sure that the tests can fail, then restore the code**
 
 Make these two temporary changes:
 
@@ -354,13 +354,13 @@ Run: `git checkout -- packages/host/api/src/index.ts packages/host/api/src/trans
 
 Expected: PASS. The output contains `# pass 12` and `# fail 0`.
 
-- [ ] **Step 6: Check the changed files**
+- [x] **Step 6: Check the changed files**
 
 Run: `git status --short`
 
 Expected: PASS. The output has these lines and no other line outside `docs/build/refactor/target-structure/`: ` M package.json` and `?? e2e/http-edge.test.mjs`.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 14 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-14-add-http-edge-characterization-tests.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-14-add-http-edge-characterization-tests.md` with:
