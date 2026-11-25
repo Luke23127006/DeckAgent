@@ -50,7 +50,7 @@ Read this file to split `settings-panel.ts` and `model-picker.ts`, remove dead D
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 5 checks pass.
 
-- [ ] **Step 1: Extract `provider-errors.ts`, `settings-dom.ts`, and `provider-model-draft.ts` (`BF1`, `BF6`)**
+- [x] **Step 1: Extract `provider-errors.ts`, `settings-dom.ts`, and `provider-model-draft.ts` (`BF1`, `BF6`)**
 
 1. Create `apps/web/src/browser/features/providers/provider-errors.ts` (under 55 lines):
    - Move `saveFailure(error: unknown): string` verbatim from `settings-panel.ts` lines 260-293, importing `ManagementError` from `../../transport/index.ts`.
@@ -63,7 +63,7 @@ Read this file to split `settings-panel.ts` and `model-picker.ts`, remove dead D
 3. Create `apps/web/src/browser/features/providers/provider-model-draft.ts` (under 100 lines, every function under 45 lines):
    - Export `createModelDraftController` owning `parseModelList`, `renderModels`, `addManualModel`, `addCatalog`, and `loadCatalog` (`settings-panel.ts` lines 63-87 and 407-450).
 
-- [ ] **Step 2: Shrink `settings-panel.ts` under 280 lines and remove `value!.id` (`BF1`, `BF6`)**
+- [x] **Step 2: Shrink `settings-panel.ts` under 280 lines and remove `value!.id` (`BF1`, `BF6`)**
 
 In `apps/web/src/browser/features/providers/settings-panel.ts`:
 
@@ -78,7 +78,7 @@ dom.kind.value = isBuiltIn ? value.id : ''
 
 4. Keep `fill`, `refresh`, `perform`, `renderStep`, `requestClose`, and `settingsPanel` under 70 lines each and keep the file under 280 lines. Keep the two `as const` literals unchanged.
 
-- [ ] **Step 3: Split `model-picker.ts` and remove its `as` and `!` assertions (`BF2`, `BF6`)**
+- [x] **Step 3: Split `model-picker.ts` and remove its `as` and `!` assertions (`BF2`, `BF6`)**
 
 In `apps/web/src/browser/features/providers/model-picker.ts`:
 
@@ -103,7 +103,7 @@ trigger.textContent =
       : 'Chưa có model'
 ```
 
-- [ ] **Step 4: Build, check boundaries, lint, format, measure AST metrics, and run suites**
+- [x] **Step 4: Build, check boundaries, lint, format, measure AST metrics, and run suites**
 
 Run:
 
@@ -135,7 +135,7 @@ corepack pnpm@11.28.5 test:local-web && corepack pnpm@11.28.5 test:tools-browser
 
 Expected: PASS. Both suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 36 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-36-refactor-browser-providers-feature.md`.
 2. Create `docs/build/refactor/module-design/reports/task-36-refactor-browser-providers-feature.md` with:

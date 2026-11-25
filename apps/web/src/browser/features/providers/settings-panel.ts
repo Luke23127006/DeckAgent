@@ -1,7 +1,30 @@
 import type { ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
 import { ManagementError } from '../../transport/index.ts'
 import type { ManagementClient } from '../../transport/index.ts'
-import { button, element, field } from '../../dom.ts'
+import { button, element } from '../../dom.ts'
+import { saveFailure } from './provider-errors.ts'
+import { createSettingsDom } from './settings-dom.ts'
+import type { SettingsDom } from './settings-dom.ts'
+import { createModelDraftController } from './provider-model-draft.ts'
+import type { ModelDraftController } from './provider-model-draft.ts'
+
+interface PanelState {
+  client: ManagementClient
+  changed: () => Promise<void>
+  workspace: HTMLElement
+  returned: () => void
+  dom: SettingsDom
+  draft: ModelDraftController
+  providers: readonly ProviderSettings[]
+  builtIns: readonly ProviderTemplate[]
+  busy: boolean
+  opening: boolean
+  baseline: string
+  selectedId: string
+  selectedKind: string
+  wizard: boolean
+  step: number
+}
 
 export function settingsPanel(
   client: ManagementClient,
@@ -9,596 +32,340 @@ export function settingsPanel(
   workspace: HTMLElement,
   returned: () => void,
 ) {
-  const dialog = element('dialog', undefined, 'settings-dialog')
-  const title = element('h2', 'Cài đặt Provider')
-  const message = element('p')
-  message.setAttribute('role', 'status')
-  const chooser = element('select')
-  const providerList = element('section', undefined, 'provider-list')
-  providerList.setAttribute('aria-label', 'Provider đã cấu hình')
-  // Rows that start a new provider. They live in the popup's left column beside the saved providers.
-  const addList = element('div', undefined, 'provider-add')
-  const pageTitle = element('h3', '', 'settings-pagetitle')
-  const navButtons = () => dialog.querySelectorAll<HTMLButtonElement>('.provider-list button, .provider-add button')
-  const kind = element('select')
-  const form = element('form')
-  const fields = element('fieldset')
-  const id = element('input')
-  id.required = true
-  id.pattern = '[A-Za-z0-9_.\\-]+'
-  id.maxLength = 100
-  id.placeholder = 'river-ai'
-  const providerIdField = field('Provider ID', id)
-  const idHint = element('small', 'ID không có dấu cách, ví dụ river-ai. Tên hiển thị bên dưới có thể là River AI.')
-  idHint.id = 'provider-id-help'
-  id.setAttribute('aria-describedby', idHint.id)
-  providerIdField.append(idHint)
-  const name = element('input')
-  name.required = true
-  name.maxLength = 100
-  const protocol = element('select')
-  // BR-005 V-4: the API protocols of a custom model API.
-  for (const [value, label] of [
-    ['chat-completions', 'OpenAI Chat Completions'],
-    ['responses', 'OpenAI Responses'],
-    ['anthropic-messages', 'Anthropic Messages'],
-    ['gemini', 'Google Gemini'],
-  ] as const)
-    protocol.append(new Option(label, value))
-  const url = element('input')
-  url.type = 'url'
-  url.required = true
-  const key = element('input')
-  key.type = 'password'
-  key.autocomplete = 'new-password'
-  key.maxLength = 4096
-  const removeKey = element('input')
-  removeKey.type = 'checkbox'
-  const models = element('textarea')
-  models.rows = 4
-  models.placeholder = 'Nhập model ID, mỗi dòng một ID'
-  const available = element('select')
-  available.multiple = true
-  available.size = 5
-  const loadCatalog = button('Load model catalog', () => {
-    const providerId = chooser.value
-    if (!providerId) return
-    perform(async () => {
-      const catalog = await client.catalog(providerId)
-      available.replaceChildren(...catalog.map(id => new Option(id, id)))
-      if (available.parentElement) available.parentElement.hidden = !catalog.length
-      addCatalog.hidden = !catalog.length
-      message.textContent = catalog.length
-        ? 'Chọn model để thêm hoặc nhập model ID bằng tay. Catalog không bảo đảm quyền truy cập hoặc tương thích.'
-        : 'Catalog trống. Bạn có thể nhập model ID bằng tay.'
-    }).catch(showUnexpected)
+  let panel: PanelState
+  const dom = createSettingsDom({
+    loadCatalog: () => panel.draft.loadCatalog(),
+    addCatalog: () => panel.draft.addCatalog(),
+    addManualModel: () => panel.draft.addManualModel(),
+    removeProvider: () => {
+      removeProvider(panel)
+    },
+    next: () => nextStep(panel),
+    previous: () => previousStep(panel),
+    requestClose: () => {
+      requestClose(panel)
+    },
+    submit: event => submitProvider(panel, event),
   })
-  const addCatalog = button('Add selected models', () => {
-    const added = [...available.selectedOptions].map(option => option.value)
-    models.value = [
-      ...new Set([
-        ...models.value
-          .split(/\r?\n/)
-          .map(value => value.trim())
-          .filter(Boolean),
-        ...added,
-      ]),
-    ].join('\n')
-  })
-  const save = element('button', 'Save provider')
-  save.type = 'submit'
-  const remove = button('Delete provider', () => {
-    if (!chooser.value || !confirm('Xóa cấu hình provider này? Chat vẫn giữ lịch sử và sẽ cần chọn model khác.')) return
-    perform(async () => {
-      await client.remove(chooser.value)
-      await refresh()
-      await changed()
-    }).catch(showUnexpected)
-  })
-  let providers: readonly ProviderSettings[] = []
-  let builtIns: readonly ProviderTemplate[] = []
-  let busy = false
-  let opening = false
-  let baseline = ''
-  let selectedId = ''
-  let selectedKind = ''
-  let wizard = false
-  let step = 1
-  const snapshot = () =>
-    JSON.stringify([
-      id.value,
-      name.value,
-      protocol.value,
-      url.value,
-      key.value,
-      removeKey.checked,
-      models.value,
-      manual.value,
-    ])
-  const canDiscard = () =>
-    !busy &&
-    (snapshot() === baseline || confirm('Bỏ các thay đổi chưa lưu? Cấu hình đã lưu và nội dung chat vẫn được giữ.'))
-  function showUnexpected() {
-    message.textContent = 'Không cập nhật được cài đặt.'
+  panel = {
+    client,
+    changed,
+    workspace,
+    returned,
+    dom,
+    draft: createModelDraftController(
+      dom.draftNodes,
+      client,
+      action => perform(panel, action),
+      () => showUnexpected(panel),
+    ),
+    providers: [],
+    builtIns: [],
+    busy: false,
+    opening: false,
+    baseline: '',
+    selectedId: '',
+    selectedKind: '',
+    wizard: false,
+    step: 1,
   }
-  function fill(value?: ProviderSettings) {
-    const template = builtIns.find(template => template.id === (value?.id ?? kind.value))
-    id.value = value?.id ?? template?.id ?? ''
-    id.disabled = !!value || !!template
-    name.value = value?.displayName ?? template?.displayName ?? ''
-    protocol.value = value?.protocol ?? template?.protocol ?? 'chat-completions'
-    protocol.disabled = !!value || !!template
-    url.value = value?.baseUrl ?? template?.baseUrl ?? ''
-    url.disabled = !!template
-    key.value = ''
-    removeKey.checked = false
-    removeKey.disabled = !!template
-    key.required = !!template && !value?.keyAvailable
-    models.value = value?.models.join('\n') ?? ''
-    manual.value = ''
-    remove.disabled = !value
-    remove.hidden = wizard || !value
-    loadCatalog.disabled = !value
-    available.replaceChildren()
-    if (available.parentElement) available.parentElement.hidden = true
-    addCatalog.hidden = true
-    for (const input of [id, protocol, url]) if (input.parentElement) input.parentElement.hidden = !!template
-    if (kind.parentElement) kind.parentElement.hidden = true
-    if (removeKey.parentElement) removeKey.parentElement.hidden = !!template
-    message.textContent = value?.hasKey
-      ? value.keyAvailable
-        ? 'Đã lưu key. Để trống ô key để giữ nguyên.'
-        : 'Key đã lưu không dùng được với tài khoản Windows này. Hãy nhập lại key.'
-      : 'Chưa lưu key. Nhập key nếu provider yêu cầu.'
-    for (const card of providerList.querySelectorAll<HTMLButtonElement>('button[data-provider]'))
-      card.setAttribute('aria-pressed', String(card.dataset.provider === value?.id))
-    for (const row of addList.querySelectorAll<HTMLButtonElement>('button[data-offer]'))
-      row.setAttribute('aria-pressed', String(!value && chooser.value === `new:${row.dataset.offer}`))
-    pageTitle.textContent = value?.displayName ?? `Thêm ${template?.displayName ?? 'Custom model API'}`
-    baseline = snapshot()
-    renderModels()
+  dom.kind.addEventListener('change', () => changeKind(panel))
+  dom.chooser.addEventListener('change', () => changeChooser(panel))
+  attachDialog(panel)
+  return panelApi(panel)
+}
+
+function snapshot(panel: PanelState): string {
+  const { dom } = panel
+  return JSON.stringify([
+    dom.id.value,
+    dom.name.value,
+    dom.protocol.value,
+    dom.url.value,
+    dom.key.value,
+    dom.removeKey.checked,
+    dom.models.value,
+    dom.manual.value,
+  ])
+}
+
+function canDiscard(panel: PanelState): boolean {
+  return (
+    !panel.busy &&
+    (snapshot(panel) === panel.baseline ||
+      confirm('Bỏ các thay đổi chưa lưu? Cấu hình đã lưu và nội dung chat vẫn được giữ.'))
+  )
+}
+
+function showUnexpected(panel: PanelState) {
+  panel.dom.message.textContent = 'Không cập nhật được cài đặt.'
+}
+
+function fill(panel: PanelState, value?: ProviderSettings) {
+  panel.dom.fillForm(value, panel.builtIns, panel.wizard)
+  panel.baseline = snapshot(panel)
+  panel.draft.renderModels()
+}
+
+function renderStep(panel: PanelState) {
+  const { dom } = panel
+  dom.showStep(panel.wizard, panel.step)
+  fill(
+    panel,
+    panel.providers.find(provider => provider.id === dom.chooser.value),
+  )
+  dom.lockConnection(panel.wizard && panel.step !== 2)
+}
+
+function changeKind(panel: PanelState) {
+  const { dom } = panel
+  if (!canDiscard(panel)) {
+    dom.kind.value = panel.selectedKind
+    return
   }
-  kind.addEventListener('change', () => {
-    if (!canDiscard()) {
-      kind.value = selectedKind
-      return
-    }
-    selectedKind = kind.value
-    chooser.value = `new:${kind.value || 'custom'}`
-    selectedId = chooser.value
-    fill()
-  })
-  chooser.addEventListener('change', () => {
-    if (!canDiscard()) {
-      chooser.value = selectedId
-      return
-    }
-    selectedId = chooser.value
-    const value = providers.find(provider => provider.id === chooser.value)
-    kind.value = value
-      ? builtIns.some(template => template.id === value.id)
-        ? value.id
-        : ''
-      : chooser.value.startsWith('new:') && chooser.value !== 'new:custom'
-        ? chooser.value.slice(4)
-        : ''
-    kind.disabled = !!value
-    selectedKind = kind.value
-    fill(value)
-  })
-  async function refresh(selectedId = '') {
-    const settings = await client.settings()
-    providers = settings.providers
-    builtIns = settings.builtIns
-    kind.replaceChildren(
-      ...builtIns.map(template => {
-        const option = new Option(template.displayName, template.id)
-        option.disabled = providers.some(provider => provider.id === template.id)
-        return option
-      }),
-      new Option('Custom model API', ''),
+  panel.selectedKind = dom.kind.value
+  dom.chooser.value = `new:${dom.kind.value || 'custom'}`
+  panel.selectedId = dom.chooser.value
+  fill(panel)
+}
+
+function changeChooser(panel: PanelState) {
+  const { dom } = panel
+  if (!canDiscard(panel)) {
+    dom.chooser.value = panel.selectedId
+    return
+  }
+  panel.selectedId = dom.chooser.value
+  const value = panel.providers.find(provider => provider.id === dom.chooser.value)
+  dom.kind.value = value
+    ? panel.builtIns.some(template => template.id === value.id)
+      ? value.id
+      : ''
+    : dom.chooser.value.startsWith('new:') && dom.chooser.value !== 'new:custom'
+      ? dom.chooser.value.slice(4)
+      : ''
+  dom.kind.disabled = !!value
+  panel.selectedKind = dom.kind.value
+  fill(panel, value)
+}
+
+async function refresh(panel: PanelState, selectedId = '') {
+  const { dom, client } = panel
+  const settings = await client.settings()
+  panel.providers = settings.providers
+  panel.builtIns = settings.builtIns
+  dom.kind.replaceChildren(
+    ...panel.builtIns.map(template => {
+      const option = new Option(template.displayName, template.id)
+      option.disabled = panel.providers.some(provider => provider.id === template.id)
+      return option
+    }),
+    new Option('Custom model API', ''),
+  )
+  dom.kind.value = ''
+  dom.kind.disabled = false
+  const saved = element('optgroup')
+  saved.label = 'Cấu hình đã lưu'
+  for (const provider of panel.providers) saved.append(new Option(provider.displayName, provider.id))
+  const offered = element('optgroup')
+  offered.label = 'Thêm cấu hình'
+  for (const template of panel.builtIns)
+    if (!panel.providers.some(provider => provider.id === template.id))
+      offered.append(new Option(template.displayName, `new:${template.id}`))
+  offered.append(new Option('Custom model API', 'new:custom'))
+  dom.chooser.replaceChildren(saved, offered)
+  renderProviderList(panel)
+  dom.chooser.value = selectedId || 'new:custom'
+  const value = panel.providers.find(provider => provider.id === selectedId)
+  const isBuiltIn = value !== undefined && panel.builtIns.some(template => template.id === value.id)
+  dom.kind.value = isBuiltIn ? value.id : ''
+  dom.kind.disabled = !!value
+  panel.selectedKind = dom.kind.value
+  fill(panel, value)
+  if (!settings.persistentKeys)
+    dom.message.textContent =
+      'Máy này chưa có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ (hiện chỉ Windows), nên không lưu được key. Custom model API không cần key vẫn dùng được.'
+}
+
+function renderProviderList(panel: PanelState) {
+  const { dom } = panel
+  dom.providerList.replaceChildren(element('h3', 'Provider đã lưu'))
+  if (!panel.providers.length) dom.providerList.append(element('p', 'Chưa có provider. Thêm kết nối bên dưới.'))
+  for (const provider of panel.providers) {
+    const card = button('', () => {
+      if (panel.busy) return
+      dom.chooser.value = provider.id
+      dom.chooser.dispatchEvent(new Event('change'))
+    })
+    card.dataset.provider = provider.id
+    card.append(
+      element('strong', provider.displayName),
+      element(
+        'small',
+        `${panel.builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Có key' : provider.hasKey ? 'Key đã lưu không dùng được' : 'Chưa có key'}`,
+      ),
+      element('span', provider.models.length ? provider.models.join(' · ') : 'Chưa thêm model'),
     )
-    kind.value = ''
-    kind.disabled = false
-    const saved = element('optgroup')
-    saved.label = 'Cấu hình đã lưu'
-    for (const provider of providers) saved.append(new Option(provider.displayName, provider.id))
-    const offered = element('optgroup')
-    offered.label = 'Thêm cấu hình'
-    for (const template of builtIns)
-      if (!providers.some(provider => provider.id === template.id))
-        offered.append(new Option(template.displayName, `new:${template.id}`))
-    offered.append(new Option('Custom model API', 'new:custom'))
-    chooser.replaceChildren(saved, offered)
-    providerList.replaceChildren(element('h3', 'Provider đã lưu'))
-    if (!providers.length) providerList.append(element('p', 'Chưa có provider. Thêm kết nối bên dưới.'))
-    for (const provider of providers) {
-      const card = button('', () => {
-        if (busy) return
-        chooser.value = provider.id
-        chooser.dispatchEvent(new Event('change'))
-      })
-      card.dataset.provider = provider.id
-      card.append(
-        element('strong', provider.displayName),
-        element(
-          'small',
-          `${builtIns.some(template => template.id === provider.id) ? 'Built-in' : 'Custom API'} · ${provider.keyAvailable ? 'Có key' : provider.hasKey ? 'Key đã lưu không dùng được' : 'Chưa có key'}`,
-        ),
-        element('span', provider.models.length ? provider.models.join(' · ') : 'Chưa thêm model'),
-      )
-      providerList.append(card)
-    }
-    addList.replaceChildren(element('h3', 'Thêm provider'))
-    const offers: readonly (readonly [string, string])[] = [
-      ...builtIns
-        .filter(template => !providers.some(provider => provider.id === template.id))
-        .map(template => [template.id, template.displayName] as const),
-      ['custom', 'Custom model API'],
-    ]
-    for (const [offer, label] of offers) {
-      const row = button('', () => {
-        if (busy) return
-        chooser.value = `new:${offer}`
-        chooser.dispatchEvent(new Event('change'))
-      })
-      row.dataset.offer = offer
-      row.append(element('strong', label))
-      addList.append(row)
-    }
-    chooser.value = selectedId || 'new:custom'
-    const value = providers.find(provider => provider.id === selectedId)
-    kind.value = builtIns.some(template => template.id === value?.id) ? value!.id : ''
-    kind.disabled = !!value
-    selectedKind = kind.value
-    fill(value)
-    if (!settings.persistentKeys)
-      message.textContent =
-        'Máy này chưa có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ (hiện chỉ Windows), nên không lưu được key. Custom model API không cần key vẫn dùng được.'
+    dom.providerList.append(card)
   }
-  /** What failed and what to do next. Provider messages are never shown (they can echo a key). */
-  function saveFailure(error: unknown): string {
-    const code = error instanceof Error ? error.message : ''
-    const detail = error instanceof ManagementError ? error.detail : {}
-    if (code === 'PROVIDER_ID_TAKEN')
-      return `Provider ID này đã thuộc về ${typeof detail.provider === 'string' ? detail.provider : 'một cấu hình khác'}${detail.builtIn ? ' (provider có sẵn)' : ''}. Hãy chọn provider ID khác. Chưa lưu gì.`
-    if (code === 'PROVIDER_KEY_REQUIRED') return 'Provider này cần key. Nhập key của tài khoản bạn. Chưa lưu gì.'
-    if (code === 'PROVIDER_KEY_REFUSED')
-      return 'Provider từ chối key hoặc quyền truy cập. Kiểm tra key rồi lưu lại. Chưa lưu gì; key đã lưu trước đó được giữ.'
-    if (code === 'PROVIDER_NO_ANSWER')
-      return `Provider không trả lời${detail.reason === 'certificate' ? ' (chứng chỉ bảo mật không hợp lệ)' : ''}. Kiểm tra Base URL và kết nối mạng. Chưa lưu gì.`
-    if (code === 'PROVIDER_CHECK_FAILED')
-      return `Provider không chấp nhận lần kiểm tra${detail.reason === 'rate-limit' ? ' (đã đạt giới hạn sử dụng)' : typeof detail.reason === 'string' && detail.reason.startsWith('http-') ? ` (HTTP ${detail.reason.slice(5)})` : ''}. Kiểm tra Base URL và API protocol. Chưa lưu gì.`
-    if (code === 'CREDENTIAL_STORE_UNAVAILABLE')
-      return 'Máy này không có nơi lưu key được bảo vệ mà DeckAgent hỗ trợ. Key không được lưu dạng văn bản thường. Chưa lưu gì.'
-    if (code === 'CREDENTIAL_NOT_SAVED') return 'Không lưu được key vào nơi lưu key của máy. Chưa lưu gì; thử lại.'
-    if (code === 'PROVIDER_BUSY') return 'Provider đang được sử dụng. Đợi yêu cầu kết thúc trước khi xóa.'
-    if (code === 'NEW_ENDPOINT_REQUIRES_KEY')
-      return 'Nhập key cho Base URL mới hoặc chọn gỡ key đã lưu. Key cũ không được gửi tới địa chỉ mới.'
-    if (code === 'PROVIDER_NAME_EXISTS') return 'Hãy chọn tên hiển thị không trùng.'
-    if (code === 'PROTOCOL_IMMUTABLE') return 'Không đổi được API protocol của cấu hình đã lưu. Hãy tạo cấu hình mới.'
-    if (code === 'INVALID_PROVIDER' && detail.field === 'providerId')
-      return 'Provider ID chỉ nhận chữ không dấu, số, dấu chấm, gạch dưới và gạch nối; không có dấu cách. Ví dụ: river-ai. Tên hiển thị vẫn có thể là River AI.'
-    if (code === 'INVALID_PROVIDER')
-      return 'Thông tin chưa hợp lệ. Base URL phải là HTTPS, hoặc HTTP tới chính máy này. Chưa lưu gì.'
-    if (code === 'AUTH_REQUIRED')
-      return 'Phiên kết nối Host không còn hợp lệ (AUTH_REQUIRED). Mở lại liên kết do Host hiện tại cung cấp rồi thử lại.'
-    if (code === 'SETTINGS_REQUEST_FAILED')
-      return 'Host không xử lý được yêu cầu lưu (SETTINGS_REQUEST_FAILED). Kiểm tra kết nối và mở lại cài đặt trước khi thử lại.'
-    if (code === 'CATALOG_UNAVAILABLE')
-      return 'Chưa lấy được model catalog (CATALOG_UNAVAILABLE). Bạn vẫn có thể nhập model ID bằng tay; cấu hình đã lưu được giữ.'
-    if (code === 'INVALID_RESPONSE')
-      return 'Chưa đọc được phản hồi hợp lệ từ Host (INVALID_RESPONSE). Mở lại cài đặt để kiểm tra kết quả đã lưu.'
-    return 'Chưa xác nhận được kết quả lưu. Kiểm tra kết nối và mở lại cài đặt để đối chiếu trước khi thử lại.'
+  dom.addList.replaceChildren(element('h3', 'Thêm provider'))
+  const offers: readonly (readonly [string, string])[] = [
+    ...panel.builtIns
+      .filter(template => !panel.providers.some(provider => provider.id === template.id))
+      .map(template => [template.id, template.displayName] as const),
+    ['custom', 'Custom model API'],
+  ]
+  for (const [offer, label] of offers) {
+    const row = button('', () => {
+      if (panel.busy) return
+      dom.chooser.value = `new:${offer}`
+      dom.chooser.dispatchEvent(new Event('change'))
+    })
+    row.dataset.offer = offer
+    row.append(element('strong', label))
+    dom.addList.append(row)
   }
-  async function perform(action: () => Promise<void>) {
-    if (busy) return
-    busy = true
-    fields.disabled = true
-    save.disabled = true
-    chooser.disabled = true
-    for (const card of navButtons()) card.disabled = true
-    remove.disabled = true
-    close.disabled = true
-    cancel.disabled = true
-    next.disabled = true
+}
+
+async function perform(panel: PanelState, action: () => Promise<void>) {
+  if (panel.busy) return
+  panel.busy = true
+  panel.dom.setBusy(true, false)
+  try {
+    await action()
+  } catch (error) {
+    panel.dom.message.textContent = saveFailure(error)
+  } finally {
+    panel.busy = false
+    panel.dom.setBusy(
+      false,
+      panel.providers.some(provider => provider.id === panel.dom.chooser.value),
+    )
+  }
+}
+
+async function removeProvider(panel: PanelState) {
+  const { dom, client } = panel
+  if (!dom.chooser.value || !confirm('Xóa cấu hình provider này? Chat vẫn giữ lịch sử và sẽ cần chọn model khác.'))
+    return
+  await perform(panel, async () => {
+    await client.remove(dom.chooser.value)
+    await refresh(panel)
+    await panel.changed()
+  }).catch(() => showUnexpected(panel))
+}
+
+function submitProvider(panel: PanelState, event: SubmitEvent) {
+  event.preventDefault()
+  const { dom, client } = panel
+  panel.draft.addManualModel()
+  const credential = dom.key.value
+  dom.key.value = ''
+  const value = {
+    displayName: dom.name.value,
+    protocol: dom.protocol.value,
+    baseUrl: dom.url.value,
+    models: panel.draft.values(),
+    ...(dom.removeKey.checked ? { key: '' } : credential ? { key: credential } : {}),
+    // A new configuration never replaces a saved one with the same provider ID (BR-008).
+    ...(panel.providers.some(provider => provider.id === dom.id.value) ? {} : { new: true }),
+  }
+  perform(panel, async () => {
+    await client.save(dom.id.value, value)
+    panel.baseline = snapshot(panel)
     try {
-      await action()
+      await refresh(panel, dom.id.value)
+      panel.selectedId = dom.chooser.value
+      await panel.changed()
     } catch (error) {
-      message.textContent = saveFailure(error)
-    } finally {
-      busy = false
-      fields.disabled = false
-      save.disabled = false
-      chooser.disabled = false
-      for (const card of navButtons()) card.disabled = false
-      remove.disabled = !providers.some(provider => provider.id === chooser.value)
-      close.disabled = false
-      cancel.disabled = false
-      next.disabled = false
+      const code =
+        error instanceof ManagementError
+          ? error.message
+          : error instanceof Error && error.message === 'INVALID_RESPONSE'
+            ? 'INVALID_RESPONSE'
+            : 'UI_REFRESH_FAILED'
+      dom.message.textContent = `Host đã lưu cấu hình, nhưng chưa cập nhật được giao diện (${code}). Mở lại cài đặt để đọc kết quả đã lưu.`
+      return
     }
+    dom.message.textContent = value.models.length
+      ? `Đã lưu ${value.models.length} model. Bạn có thể chọn model trong chat.`
+      : 'Đã lưu kết nối, chưa thêm model. Nhập model ID hoặc lấy catalog, thêm model rồi lưu.'
+    if (panel.wizard && panel.step === 2) {
+      panel.step = 3
+      renderStep(panel)
+    } else if (panel.wizard && panel.step === 3 && value.models.length)
+      dom.message.textContent = 'Đã lưu model. Bấm Xong để quay lại chat; model chưa được tự chọn.'
+  }).catch(() => showUnexpected(panel))
+}
+
+function nextStep(panel: PanelState) {
+  if (panel.step === 1) {
+    panel.step = 2
+    renderStep(panel)
+    panel.dom.name.focus()
   }
-  form.addEventListener('submit', event => {
-    event.preventDefault()
-    addManualModel()
-    const credential = key.value
-    key.value = ''
-    const value = {
-      displayName: name.value,
-      protocol: protocol.value,
-      baseUrl: url.value,
-      models: models.value
-        .split(/\r?\n/)
-        .map(value => value.trim())
-        .filter(Boolean),
-      ...(removeKey.checked ? { key: '' } : credential ? { key: credential } : {}),
-      // A new configuration never replaces a saved one with the same provider ID (BR-008).
-      ...(providers.some(provider => provider.id === id.value) ? {} : { new: true }),
-    }
-    perform(async () => {
-      await client.save(id.value, value)
-      baseline = snapshot()
-      try {
-        await refresh(id.value)
-        selectedId = chooser.value
-        await changed()
-      } catch (error) {
-        const code =
-          error instanceof ManagementError
-            ? error.message
-            : error instanceof Error && error.message === 'INVALID_RESPONSE'
-              ? 'INVALID_RESPONSE'
-              : 'UI_REFRESH_FAILED'
-        message.textContent = `Host đã lưu cấu hình, nhưng chưa cập nhật được giao diện (${code}). Mở lại cài đặt để đọc kết quả đã lưu.`
-        return
-      }
-      message.textContent = value.models.length
-        ? `Đã lưu ${value.models.length} model. Bạn có thể chọn model trong chat.`
-        : 'Đã lưu kết nối, chưa thêm model. Nhập model ID hoặc lấy catalog, thêm model rồi lưu.'
-      if (wizard && step === 2) {
-        step = 3
-        renderStep()
-      } else if (wizard && step === 3 && value.models.length)
-        message.textContent = 'Đã lưu model. Bấm Xong để quay lại chat; model chưa được tự chọn.'
-    }).catch(showUnexpected)
-  })
-  function requestClose() {
-    if (!dialog.open) return true
-    if (!canDiscard()) return false
-    key.value = ''
-    dialog.close()
-    delete workspace.dataset.view
-    return true
+}
+
+function previousStep(panel: PanelState) {
+  if (canDiscard(panel)) {
+    panel.step = 1
+    renderStep(panel)
   }
-  const close = button('', requestClose)
-  close.className = 'settings-back'
-  close.title = 'Đóng cài đặt'
-  close.setAttribute('aria-label', 'Đóng cài đặt')
-  const cancel = button('Hủy', requestClose)
-  const connection = element('section', undefined, 'settings-section')
-  connection.append(
-    element('h3', 'Kết nối'),
-    field('Provider type', kind),
-    providerIdField,
-    field('Display name', name),
-    field('API protocol', protocol),
-    field('Base URL', url),
-  )
-  const credentials = element('section', undefined, 'settings-section')
-  credentials.append(
-    element('h3', 'API key'),
-    element('p', 'Saved keys are never displayed. Leave blank to keep the saved key.'),
-    field('API key', key),
-    field('Remove saved key', removeKey),
-  )
-  const modelSection = element('section', undefined, 'settings-section')
-  modelSection.append(
-    element('h3', 'Model'),
-    element('p', 'Enter exact model IDs, one per line. Removing an ID affects future requests; chat history is kept.'),
-    field('Added model IDs', models),
-    loadCatalog,
-    field('Model catalog', available),
-    addCatalog,
-  )
-  const modelChips = element('div', undefined, 'model-chips')
-  const manual = element('input')
-  manual.placeholder = 'Model ID, kể cả ID không có trong catalog'
-  manual.setAttribute('aria-label', 'Thêm bằng model ID')
-  function addManualModel() {
-    const value = manual.value.trim()
-    if (!value) return
-    models.value = [
-      ...new Set([
-        ...models.value
-          .split(/\r?\n/)
-          .map(value => value.trim())
-          .filter(Boolean),
-        value,
-      ]),
-    ].join('\n')
-    manual.value = ''
-    renderModels()
-  }
-  const addManual = button('Thêm', addManualModel)
-  manual.addEventListener('keydown', event => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      addManual.click()
-    }
-  })
-  function renderModels() {
-    modelChips.replaceChildren()
-    for (const model of models.value
-      .split(/\r?\n/)
-      .map(value => value.trim())
-      .filter(Boolean)) {
-      const chip = element('span', undefined, 'model-chip')
-      const remove = button('', () => {
-        models.value = models.value
-          .split(/\r?\n/)
-          .filter(value => value.trim() !== model)
-          .join('\n')
-        renderModels()
-        manual.focus()
-      })
-      remove.setAttribute('aria-label', `Gỡ model ${model}`)
-      chip.append(element('span', model), remove)
-      modelChips.append(chip)
-    }
-  }
-  models.addEventListener('input', renderModels)
-  addCatalog.addEventListener('click', renderModels)
-  const manualRow = element('div', undefined, 'manual-model-row')
-  manualRow.append(manual, addManual)
-  const advanced = element('details', undefined, 'model-raw-editor')
-  advanced.append(element('summary', 'Sửa danh sách model ID'), field('Added model IDs', models))
-  // Catalog and manual entry share the same draft; nothing persists until Save.
-  modelSection.replaceChildren(
-    element('h3', '3 · Thêm model'),
-    element('p', 'Catalog không bảo đảm quyền truy cập hoặc tương thích. Bạn có thể thêm model ID bằng tay.'),
-    modelChips,
-    manualRow,
-    loadCatalog,
-    field('Model catalog', available),
-    addCatalog,
-    advanced,
-  )
-  const savedProviders = element('details', undefined, 'saved-providers')
-  savedProviders.append(element('summary', 'Cấu hình đã lưu'), providerList)
-  const providerStep = element('section', undefined, 'provider-step')
-  providerStep.append(
-    element('h3', '1 · Chọn provider'),
-    element('p', 'Key lấy từ tài khoản của bạn với provider. Yêu cầu dùng cấu hình này sẽ được gửi tới provider đó.'),
-    field('Provider configuration', chooser),
-    field('Provider type', kind),
-    savedProviders,
-  )
-  // Provider selection belongs to step 1, not to the connection form.
-  for (const label of connection.querySelectorAll('label'))
-    if (label.querySelector('span')?.textContent === 'Provider type') label.remove()
-  const footer = element('footer', undefined, 'settings-footer')
-  const next = button('Tiếp tục →', () => {
-    if (step === 1) {
-      step = 2
-      renderStep()
-      name.focus()
-    }
-  })
-  const previous = button('← Quay lại', () => {
-    if (canDiscard()) {
-      step = 1
-      renderStep()
-    }
-  })
-  const finish = button('Xong', requestClose)
-  footer.append(remove, previous, next, finish, cancel, save)
-  save.setAttribute('form', 'provider-settings-form')
-  form.id = 'provider-settings-form'
-  fields.append(providerStep, connection, credentials, modelSection)
-  form.append(fields)
-  const header = element('header', undefined, 'settings-header')
-  header.append(title, close)
-  const body = element('div', undefined, 'settings-body')
-  body.append(pageTitle, message, form)
-  // Popup layout: saved providers and "add" rows on the left, the selected provider's form and actions on the right.
-  const nav = element('div', undefined, 'settings-nav')
-  nav.setAttribute('role', 'group')
-  nav.setAttribute('aria-label', 'Provider')
-  nav.append(providerList, addList)
-  const main = element('div', undefined, 'settings-main')
-  main.append(body, footer)
-  const layout = element('div', undefined, 'settings-layout')
-  layout.append(nav, main)
-  dialog.append(header, layout)
+}
+
+function requestClose(panel: PanelState): boolean {
+  if (!panel.dom.dialog.open) return true
+  if (!canDiscard(panel)) return false
+  panel.dom.key.value = ''
+  panel.dom.dialog.close()
+  delete panel.workspace.dataset.view
+  return true
+}
+
+function attachDialog(panel: PanelState) {
+  const { dialog } = panel.dom
   // Escape and a click on the scrim both go through requestClose, so unsaved changes are still guarded.
   dialog.addEventListener('cancel', event => {
     event.preventDefault()
-    requestClose()
+    requestClose(panel)
   })
   let pressedScrim = false
   dialog.addEventListener('pointerdown', event => {
     pressedScrim = event.target === dialog
   })
   dialog.addEventListener('click', event => {
-    if (pressedScrim && event.target === dialog) requestClose()
+    if (pressedScrim && event.target === dialog) requestClose(panel)
     pressedScrim = false
   })
   dialog.addEventListener('close', () => {
-    key.value = ''
-    delete workspace.dataset.view
-    returned()
+    panel.dom.key.value = ''
+    delete panel.workspace.dataset.view
+    panel.returned()
   })
-  workspace.append(dialog)
-  function renderStep() {
-    dialog.classList.toggle('settings-wizard', wizard)
-    title.textContent = wizard ? `Thêm provider · ${step}/3` : 'Cài đặt model'
-    // The popup picks providers from its left column; the step-1 chooser stays in the DOM because the rows drive it.
-    providerStep.hidden = !wizard || step !== 1
-    pageTitle.hidden = wizard
-    connection.querySelector('h3')!.textContent = wizard ? '2 · Thông tin kết nối và tên' : 'Kết nối'
-    modelSection.querySelector('h3')!.textContent = wizard ? '3 · Thêm model' : 'Model'
-    if (wizard && providerList.parentElement !== savedProviders) savedProviders.append(providerList)
-    else if (!wizard && providerList.parentElement !== nav) nav.prepend(providerList)
-    connection.hidden = wizard && step !== 2
-    credentials.hidden = wizard && step !== 2
-    modelSection.hidden = wizard && step !== 3
-    next.hidden = !wizard || step !== 1
-    previous.hidden = !wizard || step !== 2
-    finish.hidden = !wizard || step !== 3
-    save.hidden = wizard && step === 1
-    remove.hidden = wizard
-    save.textContent = wizard && step === 2 ? 'Lưu kết nối →' : 'Lưu'
-    // Validation concerns the visible step. Step 3 uses the connection just saved.
-    connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => {
-      input.disabled = false
-    })
-    fill(providers.find(provider => provider.id === chooser.value))
-    if (wizard && step !== 2)
-      connection.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input,select').forEach(input => {
-        input.disabled = true
-      })
-    key.disabled = wizard && step !== 2
+  panel.workspace.append(dialog)
+}
+
+async function openPanel(panel: PanelState, quick: boolean) {
+  if (panel.dom.dialog.open || panel.opening) return
+  panel.opening = true
+  try {
+    panel.wizard = quick
+    panel.step = 1
+    await refresh(panel)
+    panel.selectedId = panel.dom.chooser.value
+    renderStep(panel)
+    // Full settings is a popup too. The attribute only marks that settings is open.
+    if (!panel.wizard) panel.workspace.dataset.view = 'settings'
+    panel.dom.dialog.showModal()
+    panel.dom.close.focus()
+  } finally {
+    panel.opening = false
   }
-  // Keep stable English field identities for existing automation; translate visible labels.
-  const labels: Readonly<Record<string, string>> = {
-    'Provider configuration': 'Provider',
-    'Provider type': 'Loại provider',
-    'Provider ID': 'Provider ID',
-    'Display name': 'Tên hiển thị',
-    'API protocol': 'API protocol',
-    'Base URL': 'Base URL',
-    'API key': 'Key',
-    'Remove saved key': 'Gỡ key đã lưu',
-    'Added model IDs': 'Danh sách model ID',
-    'Model catalog': 'Model catalog',
-  }
-  for (const label of dialog.querySelectorAll('label')) {
-    const span = label.querySelector('span')
-    if (span && labels[span.textContent ?? '']) span.textContent = labels[span.textContent ?? '']!
-  }
-  credentials.querySelector('p')!.textContent =
-    'Sau khi lưu, không hiện lại bất kỳ phần nào của key. Để trống để giữ key đã lưu.'
-  loadCatalog.textContent = 'Lấy model catalog'
-  addCatalog.textContent = 'Thêm model đã chọn'
-  remove.textContent = 'Xóa cấu hình'
+}
+
+function panelApi(panel: PanelState) {
   return {
-    leave: requestClose,
-    open: async (quick = false) => {
-      if (dialog.open || opening) return
-      opening = true
-      try {
-        wizard = quick
-        step = 1
-        await refresh()
-        selectedId = chooser.value
-        renderStep()
-        // Full settings is a popup too. The attribute only marks that settings is open.
-        if (!wizard) workspace.dataset.view = 'settings'
-        dialog.showModal()
-        close.focus()
-      } finally {
-        opening = false
-      }
-    },
+    leave: () => requestClose(panel),
+    open: async (quick = false) => openPanel(panel, quick),
   }
 }
