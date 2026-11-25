@@ -129,7 +129,7 @@ Revision 3 adds these failure modes:
 | 17 | Done | [Serve every route through Express](task-17-serve-routes-through-express.md) ([report](../reports/task-17-serve-routes-through-express.md)) |
 | 18 | Done | [Add the folder-level import rules for the HTTP edge and the Browser](task-18-add-folder-import-rules.md) ([report](../reports/task-18-add-folder-import-rules.md)) |
 | 19 | Done | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) ([report](../reports/task-19-check-phase-2-exit.md)) |
-| 20 | Pending | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) |
+| 20 | Done | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) ([report](../reports/task-20-diagnose-workspaces-module.md)) |
 
 ## Next revision
 

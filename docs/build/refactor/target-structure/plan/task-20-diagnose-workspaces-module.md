@@ -40,7 +40,7 @@ The `workspaces` module is the first module of Phase 3. Its code is in four plac
 - Commit or push.
 - Propose a type, a file name, an SQL statement or a route for the move. This task records facts only.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -54,7 +54,7 @@ Run: `git grep -n "^| 19 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Record the module files**
+- [x] **Step 2: Record the module files**
 
 Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').readFileSync(f, 'utf8').split(/\r?\n/).length - 1, f)" apps/host/src/features/workspaces/index.ts packages/workspace/registry/src/contracts.ts packages/workspace/registry/src/folder-policy.ts packages/workspace/registry/src/index.ts packages/workspace/registry/src/registry.ts packages/workspace/registry/src/schema.ts packages/workspace/registry/src/workspace-name.ts packages/workspace/registry/tests/workspace-registry.test.mjs`
 
@@ -69,7 +69,7 @@ Read each of the eight files in full. Read these ranges also:
 
 Write the table `Module files` with the columns `File | Lines | Responsibility`. Add one row for each of the eight files and one row for each of the four ranges. In `Responsibility`, write one sentence about what the code does, from the code that you read. Do not write where the code goes after the move.
 
-- [ ] **Step 3: Record the callers of the registry**
+- [x] **Step 3: Record the callers of the registry**
 
 Run: `git grep -n -E "registry\.[a-zA-Z]+\b" -- apps/host/src ':!apps/host/src/features/workspaces'`
 
@@ -99,7 +99,7 @@ Write the table `Callers` with the columns `Caller | Line | Member | Caller area
 | The path starts with `packages/session/persistence/` | session store (own copy of the name) |
 | No row matches | Write `unknown` and add the line to the list `Open items` of the report. |
 
-- [ ] **Step 4: Record the calls into other stores**
+- [x] **Step 4: Record the calls into other stores**
 
 Run: `git grep -n -E "sessions\.[a-zA-Z.]+\(" -- apps/host/src/features/workspaces`
 
@@ -107,7 +107,7 @@ Expected: PASS. Three lines: 34, 35 and 61 of `apps/host/src/features/workspaces
 
 Write the table `Calls into other stores` with the columns `Line | Call | Operation that makes the call`. `Operation` is the member of `WorkspaceOperations` (`list`, `add`, `select`, `rename`, `relink` or `remove`) that runs the call. Read the function `requireNoActiveRequest` to find the operations of lines 34 and 35.
 
-- [ ] **Step 5: Record the write sites**
+- [x] **Step 5: Record the write sites**
 
 Run: `git grep -n -E "\.run\(|exec\('(BEGIN|COMMIT|ROLLBACK)" -- packages/workspace/registry/src/registry.ts`
 
@@ -132,7 +132,7 @@ Write the table `Write sites` with the columns `Line | Public method | Table | I
 | `remove` | `DELETE /api/workspaces/:workspaceId` |
 | No row matches | Write `none` and add the line to the list `Open items` of the report. |
 
-- [ ] **Step 6: Record the Browser reads**
+- [x] **Step 6: Record the Browser reads**
 
 Run: `git grep -n -E "management\.(workspaces|addWorkspace|selectWorkspace|renameWorkspace|relinkWorkspace|removeWorkspace)\(" -- apps/web/src/browser`
 
@@ -142,7 +142,7 @@ Read 30 lines before each line of the output and 10 lines after each line of the
 
 Write the table `Browser reads` with the columns `File | Line | Client method | Function that makes the call | Event that runs the function`. `Event` is the user action or the timer that you see in the code, for example a click handler, `focus` or `setInterval`. When the code that you read does not show the event, write `not in the lines read`.
 
-- [ ] **Step 7: Record the deck notice path and the schema upgrade path**
+- [x] **Step 7: Record the deck notice path and the schema upgrade path**
 
 Read these ranges:
 
@@ -164,7 +164,7 @@ Write the table `Deck notice path` with the columns `Step | File and line | What
 
 Write the table `Schema upgrade path` with the columns `Database | Condition on user_version and application_id | Action | File and line`. Write one row for each branch of the `if` and `else if` chain in the two `schema.ts` files. Add one row for the test in `chat-persistence.test.mjs` that opens a database with an old `user_version`. Its `Action` is the value that the test asserts.
 
-- [ ] **Step 8: Record the tests**
+- [x] **Step 8: Record the tests**
 
 Run: `git grep -l -E "['\`]workspaces" -- e2e apps/host/tests apps/web/tests`
 
@@ -180,7 +180,7 @@ Expected: PASS. One line. It contains `packages/workspace/registry/tests/workspa
 
 Write the table `Tests` with the columns `File | Suite in package.json | Workspace routes or methods that the file calls`. Add one row for each of the seven test files. To find the suite, run `git grep -n "<file path>" -- package.json` for each file. When the output has no line, write `no suite`.
 
-- [ ] **Step 9: Write the report file and stop**
+- [x] **Step 9: Write the report file and stop**
 
 1. Mark Steps 1 to 8 as `- [x]` in this file. Change the Task 20 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and link `../reports/task-20-diagnose-workspaces-module.md`.
 2. Create `docs/build/refactor/target-structure/reports/task-20-diagnose-workspaces-module.md` with:
