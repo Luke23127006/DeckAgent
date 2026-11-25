@@ -6,7 +6,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 **Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -38,11 +38,15 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | `helmet` and `multer` (Revision 2b) | Phase 2 does not use them. Phase 2 keeps `setSecurityHeaders` and `multipart.ts` and wraps them as Express middleware. A later revision evaluates `helmet` after the header tests of Task 14 exist. The `attachments` move in Phase 3 decides `multer`. |
 | HTTP contract during Phase 2 | The Express app keeps the current contract. Paths match with exact letter case and without a trailing slash. Responses have no `X-Powered-By` and no `ETag`. An unknown path gets a JSON `404 NOT_FOUND` body, and `HEAD` and `OPTIONS` get `404`. A query string gets `400 INVALID_REQUEST`. Each path parameter keeps its current character class. Task 16 measures which Express settings this needs. |
 | Paths in `docs/architecture/` (Revision 2b) | Task 15 changes the code paths in `docs/architecture/10-agent-core.md` that the move makes wrong. It does not change the ADR status. |
+| Express code (Revision 2c) | `apps/host/src/http/` holds the Express app, the shared checks, the error handler and `startHost`. `@deckagent/host-api` exports `createHostRoutes`, which builds the `RequestController` and registers the four route registrars in the current match order. `startHost` is no longer a package export. Tests outside `apps/host/` import it from the fixture `apps/host/tests/fixtures/http-host.mjs`. |
+| Express versions (Revision 2c) | `express` 5.2.1 and `@types/express` 5.0.6 in `@deckagent/host-api` and `@deckagent/host`. Task 16 measured 5.2.1. |
+| Path parameter classes (Revision 2c) | The middleware `params()` checks each class and calls `next('route')` on a mismatch, because Express 5.2.1 rejects a regular expression in a route path. A `%` in an `/api/` path gets `404 NOT_FOUND` before the router. |
+| Folder-level rules (Revision 2c) | One `no-restricted-imports` override for `apps/host/src/http/`, and `@deckagent/host` in the Browser override. Each has negative fixtures in `tests/oxlint-boundaries.test.mjs`. |
 | Commit | Executors do not commit or push. A person commits after approving the report. |
 
 ## Global Constraints
 
-- Shell: Git Bash on Windows. Run every command from the repository root `C:/Users/Duy/Desktop/DeckAgent`.
+- Shell: PowerShell 5.1 or Git Bash on Windows. Run every command from the repository root `C:/Users/Duy/Desktop/DeckAgent`. The commands of Revision 2c use only `git`, `node` and `corepack pnpm@11.28.5`, so they run in both shells. When a step names a shell-specific form, write the form that you ran in the report.
 - Package manager: `corepack pnpm@11.28.5`. Do not run `pnpm` without `corepack`. Do not install packages, except with the exact install command of a task step.
 - Docs check: `corepack pnpm@11.28.5 check:docs`. PASS: the output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0.
 - Language: files in `docs/build/` are in English. Files in `docs/conventions/`, `docs/architecture/` and `AGENTS.md` are in Vietnamese and keep English technical terms.
@@ -53,7 +57,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 - Do not change `docs/build/refactor/target-structure/README.md` or the research files next to it.
 - Do not add a comment, a lint-disable directive or `@ts-expect-error`.
 - Do not commit or push.
-- Write reports in English with `asd-ste100` strict mode. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py <report-file>` on each report. When `python` is not available in Git Bash, run the same command in PowerShell.
+- Write reports in English with `asd-ste100` strict mode. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py <report-file>` on each report. When `python` is not available, run the same script with `python3` or `python3.12`.
 
 ## Review Focus
 
@@ -86,6 +90,13 @@ Revision 2b adds these failure modes:
 16. A Host test stays in `apps/web/tests/` and imports Host code across the application boundary. Owner: [Task 15](task-15-move-node-code-to-apps-host.md), the test move table.
 17. The Express configuration of Revision 2c relies on a default that Express 5.2.1 does not have. Owner: [Task 16](task-16-measure-express-5-defaults.md), the `Match` column.
 
+Revision 2c adds these failure modes:
+
+18. A route registrar registers a route whose parameter class is wider than the current class, for example `:id` without `params()`. Owner: [Task 17](task-17-serve-routes-through-express.md), the route rules table and `test:http-edge`.
+19. A test outside `apps/host/` still imports `startHost` from `@deckagent/host-api` through a dynamic import, which a text search misses. Owner: [Task 17](task-17-serve-routes-through-express.md), Step 7 runs every suite.
+20. A new lint rule passes on every input, so it cannot catch a wrong import. Owner: [Task 18](task-18-add-folder-import-rules.md), Step 4 breaks each rule and expects three failed tests.
+21. The exit check counts a changed expected value as a path change. Owner: [Task 19](task-19-check-phase-2-exit.md), Step 4. No check covers this case, so the reviewer reads the import and path lines of the diff.
+
 ## Tasks
 
 | Task | Status | File |
@@ -106,15 +117,18 @@ Revision 2b adds these failure modes:
 | 14 | Done | [Add the HTTP edge characterization tests](task-14-add-http-edge-characterization-tests.md) ([report](../reports/task-14-add-http-edge-characterization-tests.md)) |
 | 15 | Done | [Move the Node code of the web app into apps/host](task-15-move-node-code-to-apps-host.md) ([report](../reports/task-15-move-node-code-to-apps-host.md)) |
 | 16 | Done | [Measure the Express 5 defaults](task-16-measure-express-5-defaults.md) ([report](../reports/task-16-measure-express-5-defaults.md)) |
+| 17 | Pending | [Serve every route through Express](task-17-serve-routes-through-express.md) |
+| 18 | Pending | [Add the folder-level import rules for the HTTP edge and the Browser](task-18-add-folder-import-rules.md) |
+| 19 | Pending | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) |
 
 ## Next revision
 
-Revision 2c writes the Express tasks after a person approves the reports of Tasks 13 to 16. It uses the `Match` column of Task 16 for the Express settings. It has these tasks:
+Revision 3 starts Phase 3 (domain modules) after a person approves the report of Task 19. It starts with a diagnosis of the `workspaces` module, the first module in the Phase 3 order. The diagnosis lists the routes, the service code, the store code and the error map rows of `workspaces`, and the callers of each. These items wait for the diagnosis:
 
-- Create `apps/host/src/http/` with the Express app, the security header middleware, the origin, query string and bearer checks, the asset handler and the error handler. Keep `requestTimeout`, `headersTimeout` and the `clientError` handler on the server.
-- Rewrite the four route files in `packages/host/api/src/transport/` as Express router registrars. The registrars keep the path parameter class, the method and the status of each route in the route table of Task 9. Remove the regular expression routing and `startHost`.
-- Add the folder-level `no-restricted-imports` rules for `apps/host/src/http/` and `apps/web/src/`, each with a negative fixture in `tests/oxlint-boundaries.test.mjs` (TS-09).
-- Check the Phase 2 exit condition: every non-live suite and `test:http-edge` pass with the expected values of Tasks 12 and 14.
+- The move of the `workspaces` routes from `packages/host/api/src/transport/management-routes.ts` to `apps/host/src/modules/workspaces/workspaces.routes.ts`.
+- The place of the shared route helpers `params`, `param` and `route` when the first registrar leaves `packages/host/api/`.
+- The folder-level rules for `apps/host/src/modules/`, each with a negative fixture.
+- The decision about `helmet`, with the header tests of Task 14 as evidence.
 ## References
 
 1. <a id="ref-1"></a>[Project Structure](../../../../conventions/project-structure.md)
