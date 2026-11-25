@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add Revision 3 Slice 2B read-only diagnosis tasks (`task-13` and `task-14`) to `docs/build/refactor/module-design/plan/`. Task 13 audits `packages/presentation/deck/` core, stores, and public surface, and Task 14 audits artifact storage and its `packages/presentation/design/` contract seam.
 - Add Revision 2b Slice 2A refactor tasks (`task-08` through `task-12`) to `docs/build/refactor/module-design/plan/` covering Project Structure convention updates, `session/persistence` decomposition and `MemoryDraftStore` relocation, `host/contracts` Zod validation unification, `host/api` lifecycle/transport separation, and the Slice 2A exit gate.
 - Add the Task 7 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-07-diagnose-session-persistence.md`) for `packages/session/persistence/` and its host seam, record 9 classified findings and the owner approvals (P8 type-level contract check and convention update, P9 move `MemoryDraftStore` to `apps/web/`), and close Task 7 in `docs/build/refactor/module-design/plan/`.
 - Add the Task 6 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-06-diagnose-host-contracts-and-api.md`) for `packages/host/contracts/` and `packages/host/api/`, record 16 classified findings and the owner approvals (F11 no action, F15 and F16 convention updates), and close Task 6 in `docs/build/refactor/module-design/plan/`.

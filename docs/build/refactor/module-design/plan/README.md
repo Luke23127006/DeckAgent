@@ -1,12 +1,12 @@
 # Module Design Refactor Implementation Plan
 
-Read this file to learn the goal, decisions, global constraints, and task order for Phase 1 and Phase 2 Slice 2A.
+Read this file to learn the goal, decisions, global constraints, and task order for Phase 1 and Phase 2.
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you finish a step, change its `- [ ]` to `- [x]` in the task file. After all checks pass, mark the task `Done` in this file, write the task report, and commit and push only the task files. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Refactor Phase 2 Slice 2A (`packages/session/persistence/`, `packages/host/contracts/`, and `packages/host/api/`) using the approved Task 6 and Task 7 diagnosis decisions, then pass the Slice 2A exit gate.
+**Goal:** Run read-only deep-module diagnosis on Phase 2 Slice 2B (`packages/presentation/deck/` and `packages/presentation/design/`) and stop for owner approval.
 
-**Approach:** Revisions 1 and 1b (Tasks 1 to 5) passed the Phase 1 exit gate. Revision 2 (Tasks 6 and 7) completed Slice 2A diagnosis and recorded owner approvals. Revision 2b (Tasks 8 to 12) updates Project Structure conventions and refactors the three Slice 2A packages inside-out. Task 12 checks all 18 non-live suites and all 5 root tool test files.
+**Approach:** Revisions 1 and 1b (Tasks 1 to 5) passed the Phase 1 exit gate. Revisions 2 and 2b (Tasks 6 to 12) diagnosed, refactored, and passed the exit gate for Slice 2A (`packages/session/persistence/`, `packages/host/contracts/`, and `packages/host/api/`). Revision 3 (Tasks 13 and 14) runs read-only diagnosis on Slice 2B in two focused sessions. It stops for owner approval before Revision 3b edits code.
 
 **Tech stack:** Windows, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod, and `node:test`.
 
@@ -16,7 +16,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 | Topic | Decision |
 | --- | --- |
-| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 and 1b closed Phase 1, Revision 2 diagnosed Slice 2A, and Revision 2b executes approved Slice 2A refactors [[1]](#ref-1). |
+| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 and 1b closed Phase 1, Revisions 2 and 2b closed Slice 2A, and Revision 3 diagnoses Slice 2B [[1]](#ref-1). |
 | Scanner script | Place the static scanner at `scripts/scan-module-design.mjs` and its unit tests at `tests/scan-module-design.test.mjs`. Add `"scan:module-design": "node scripts/scan-module-design.mjs"` in `package.json`. |
 | Scanner parser | Parse TypeScript and JavaScript files with the installed `typescript` compiler API (`ts.createSourceFile`), matching `scripts/check-boundaries.mjs`. Add no new npm dependency. |
 | Production area scope | Scan tracked and non-ignored `.ts` and `.tsx` files under `apps/` and `packages/`, excluding `lib/`, `tests/`, and `node_modules/`. Group files into the 14 areas listed in Module Design Refactor [[1]](#ref-1). |
@@ -35,6 +35,8 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | Host contracts unification | Split `packages/host/contracts/src/validation.ts` into `validation-primitives.ts`, `request-validation.ts`, `brief-validation.ts`, `outline-validation.ts`, and `generation-validation.ts` using Zod schemas while preserving `INVALID_RESPONSE` and `INVALID_GENERATION_RESPONSE` errors (F6). Move the pure `AgentRequest` JSON decoder (`decodeAgentRequest`) into `request-validation.ts` (F3, F16). Remove `@deckagent/presentation-document` re-exports from `host/contracts` and add `"@deckagent/presentation-document": "workspace:*"` to `apps/web/package.json` (F7). Narrow 18 unused nested exports from `host/contracts/src/index.ts` (F8). |
 | Host API split and boundary alignment | Move `DeckError` HTTP mapping to `apps/web/src/local-transport.ts` and pass `failureMessage: deckFailureMessage` through `HostOptions` so `host/api` drops its runtime `@deckagent/deck` import (F1, F15). Place lifecycle files in `packages/host/api/src/lifecycle/` and transport files in `packages/host/api/src/transport/` so existing `oxlint` and `check:boundaries` rules enforce the seam (F5, F10). Add `packages/host/api/src/contract-sync.ts` for compile-time contract equality (P8). Share `transport/sse.ts` between request events and `deck-routes.ts`, and remove all 24 non-null assertions in `host/api` (F4, F5). Narrow root exports to 22 symbols and update `apps/web/src` callers to import wire DTOs from `@deckagent/host-contracts` (F2, F9). |
 | Task completion workflow | After all checks of a task pass, mark all step checkboxes `- [x]` and mark the task `Done` in `plan/README.md`. Next, write the task report and update `reports/README.md`. Then commit and push only the task files with a conventional commit message before stopping. |
+| Slice 2A exit gate | Tasks 8 to 12 passed `build`, `check:boundaries`, `lint`, `check:docs`, 5 root tool test files (69 pass, 0 fail), and 18 non-live suites (331 pass, 0 fail). All three Slice 2A packages reached 0 files over 400 lines and 0 type assertions. |
+| Slice 2B diagnosis split | Split Slice 2B diagnosis into two tasks. Task 13 covers `packages/presentation/deck/` core, stores, and public surface (10 files, 2,672 lines). Task 14 covers artifact storage and the `packages/presentation/design/` seam (4 files, 1,597 lines). Each session stays inside the 1,500 to 3,500 line budget [[1]](#ref-1). |
 
 ## Global Constraints
 
@@ -76,6 +78,8 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 13. `packages/host/contracts/` splits validation into Zod-backed domain modules, owns `decodeAgentRequest`, drops `@deckagent/presentation-document` re-exports, and keeps the browser bundle Node-free. Test: [Task 10](task-10-refactor-host-contracts.md).
 14. `packages/host/api/` drops its runtime `@deckagent/deck` import, isolates `lifecycle/` from `transport/`, checks contract parity at compile time, eliminates all 24 non-null assertions, and exposes 22 own symbols. Test: [Task 11](task-11-refactor-host-api.md).
 15. All 18 non-live suites, all 5 root tool test files, boundary checks, lint, format, and docs checks pass after Slice 2A. Test: [Task 12](task-12-verify-slice-2a-exit.md).
+16. `packages/presentation/deck/` core diagnosis audits all 66 root exports, all 7 `./brief` exports, `DeckService` (`*Service`, 1,065 lines), `contracts.ts` (446 lines), and `provenance.ts` (11 lines). It also audits all 15 non-null assertions. Check: [Task 13](task-13-diagnose-deck-core-and-surface.md).
+17. Artifact storage and design seam diagnosis audits `artifact-store.ts` (985 lines), `image-needs.ts` (38 lines), and `packages/presentation/design/` (574 lines, 20 exports). It also audits all 5 type assertions and all 20 non-null assertions. Check: [Task 14](task-14-diagnose-deck-artifacts-and-design-seam.md).
 
 ## Tasks
 
@@ -93,10 +97,13 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 10 | Done | [Refactor host/contracts validation and narrow exports](task-10-refactor-host-contracts.md) ([report](../reports/task-10-refactor-host-contracts.md)) |
 | 11 | Done | [Refactor host/api boundaries, routes, and exports](task-11-refactor-host-api.md) ([report](../reports/task-11-refactor-host-api.md)) |
 | 12 | Done | [Check Slice 2A exit gate and rescan metrics](task-12-verify-slice-2a-exit.md) ([report](../reports/task-12-verify-slice-2a-exit.md)) |
+| 13 | Pending | [Diagnose presentation/deck core, stores, and public surface](task-13-diagnose-deck-core-and-surface.md) |
+| 14 | Pending | [Diagnose presentation/deck artifact storage and design contract seam](task-14-diagnose-deck-artifacts-and-design-seam.md) |
 
 ## Next revision
 
-- Revisions 3 to 5 wait for Task 12 to pass the Slice 2A exit gate. They run Slice 2B (`packages/presentation/deck/`), Slice 2C (`apps/web/src/features/`, `integrations/`, `apps/web/src/` root), and Slice 2D (`apps/web/src/browser/`). Slice 2C includes `artifact-renderer.ts` browser reuse evaluation. Each slice starts with a read-only diagnosis task and STOP gate.
+- Revision 3b waits for owner approval of the Task 13 and Task 14 diagnosis tables. It runs the approved Slice 2B refactors for `packages/presentation/deck/` (and `packages/presentation/design/` if approved) plus the Slice 2B exit gate.
+- Revisions 4 and 5 wait for the Slice 2B exit gate. They run Slice 2C (`apps/web/src/features/`, `integrations/`, `apps/web/src/` root, including `artifact-renderer.ts` browser reuse evaluation) and Slice 2D (`apps/web/src/browser/`). Each slice starts with a read-only diagnosis task and STOP gate.
 
 ## References
 
