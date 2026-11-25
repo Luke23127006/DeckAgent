@@ -41,7 +41,7 @@ Read this file to learn the steps of Task 2, which writes the tools and the targ
 - Commit or push.
 - Change the words of the text in Step 2.
 
-- [ ] **Step 1: Check the versions in the repository**
+- [x] **Step 1: Check the versions in the repository**
 
 Run: `sed -n 5,7p AGENTS.md && grep -n '"node": \|"@biomejs/biome"\|"oxlint"\|"typescript"\|"packageManager"' package.json && grep -n '"zod"' packages/host/contracts/package.json && grep -n "pinnedVersion = " apps/web/src/integrations/opencode/config.ts`
 
@@ -62,7 +62,7 @@ export const pinnedVersion = '1.19.5'
 
 Each `grep` line starts with its line number and a colon. Ignore the line numbers when you compare. FAIL: a line is missing or a version is different.
 
-- [ ] **Step 2: Write the section**
+- [x] **Step 2: Write the section**
 
 In `AGENTS.md`, replace the two lines `## Tech Stack` and the empty line after it with the text below. Keep one empty line before `## Commands`. Do not copy the outer fence.
 
@@ -80,19 +80,19 @@ In `AGENTS.md`, replace the two lines `## Tech Stack` and the empty line after i
 - Thư viện đích đã chọn, chưa cài: Express 5 với `multer` và `helmet` cho Local Host, React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
 ```
 
-- [ ] **Step 3: Check the section**
+- [x] **Step 3: Check the section**
 
 Run: `sed -n 5p AGENTS.md | tr -d '\r' && sed -n 5,17p AGENTS.md | grep -c "^- " && grep -n "^## Commands" AGENTS.md | tr -d '\r'`
 
 Expected: PASS. The output is `## Tech Stack`, then `9`, then `17:## Commands`. FAIL: any other output. `AGENTS.md` uses CRLF line endings. Keep CRLF line endings in the new lines.
 
-- [ ] **Step 4: Run the docs check**
+- [x] **Step 4: Run the docs check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 2 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-02-write-tech-stack.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-02-write-tech-stack.md` with:

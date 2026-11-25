@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 2 Tech Stack report (`docs/build/refactor/target-structure/reports/task-02-write-tech-stack.md`), with the version values that the checks compared and the limit of what those checks prove.
 - Add the Target Structure Refactor reports index and the Task 1 report (`docs/build/refactor/target-structure/reports/`). They record the start state, the checks and the limit of what the checks prove for the Project Structure replacement.
 - Add Revision 3 Slice 2B read-only diagnosis tasks (`task-13` and `task-14`) to `docs/build/refactor/module-design/plan/`. Task 13 audits `packages/presentation/deck/` core, stores, and public surface, and Task 14 audits artifact storage and its `packages/presentation/design/` contract seam.
 - Add Revision 2b Slice 2A refactor tasks (`task-08` through `task-12`) to `docs/build/refactor/module-design/plan/` covering Project Structure convention updates, `session/persistence` decomposition and `MemoryDraftStore` relocation, `host/contracts` Zod validation unification, `host/api` lifecycle/transport separation, and the Slice 2A exit gate.
@@ -41,6 +42,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Write the `## Tech Stack` section of `AGENTS.md` with the current tools and their versions from `package.json` and the OpenCode config, and with the chosen target libraries without versions.
+- Mark Task 2 `Done` in `docs/build/refactor/target-structure/plan/README.md` with its report link, and check Steps 1 to 5 in `task-02-write-tech-stack.md`.
 - Replace `docs/conventions/project-structure.md` with the target layout. The file gives the target tree of `apps/host/`, `apps/web/` and `packages/`, the module shape, the dependency rules with a diagram, the move rules for old and new code, and the enforcement table with each target check.
 - Mark Task 1 `Done` in `docs/build/refactor/target-structure/plan/README.md` with its report link, and check Steps 1 to 5 in `task-01-update-project-structure.md`.
 - Require a task report file (`docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md`) and report index update after each task in `.agents/skills/write-implementation-plan/SKILL.md` (with synced `.claude` and `.codex` mirrors), and add the mark-done, report, and commit-push workflow to `docs/build/refactor/module-design/plan/`.

@@ -4,6 +4,16 @@
 
 ## Tech Stack
 
+- Node.js `^22.19.0 || >=24.0.0` (`engines` trong `package.json`). `start:local` chạy Node 22.19.0.
+- pnpm 11.28.5. Luôn gọi qua `corepack pnpm@11.28.5`.
+- TypeScript 6.0.3, build bằng `tsc -b`.
+- Zod 4.6.7 cho validation tại boundary.
+- `node:sqlite` với SQL viết tay.
+- OpenCode 1.19.5 làm agent runtime.
+- `node:test` cho test.
+- oxlint 1.94.0 cho lint, Biome 2.5.15 cho format.
+- Thư viện đích đã chọn, chưa cài: Express 5 với `multer` và `helmet` cho Local Host, React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
+
 ## Commands
 
 ## Router
