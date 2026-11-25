@@ -81,7 +81,7 @@ A type declaration is not a row, because it builds nothing. This applies to `con
 | The code passes a part from one object to another without a change | Kind `pass-through`. |
 | No row matches | Kind `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Find the files that use the run parts**
+- [x] **Step 1: Find the files that use the run parts**
 
 Run: `git ls-files 'apps/web/src/**/*.ts' 'apps/web/src/*.ts' 'packages/host/api/src/**/*.ts' | grep -v '^apps/web/src/browser/' | xargs grep -lwE "instructions|PreparedTools|RequestTools|GenerationCapability|GenerationGrant|publicResearch" | wc -l`
 
@@ -91,11 +91,11 @@ Run: `git ls-files 'apps/web/src/**/*.ts' 'apps/web/src/*.ts' 'packages/host/api
 
 Expected: PASS. The command exits with code 0. Each line has the form `<path>:<line>:<text>`.
 
-- [ ] **Step 2: Classify each place that builds a part**
+- [x] **Step 2: Classify each place that builds a part**
 
 Read the lines from the second command of Step 1, and read `prepare-runtime.ts` and `resources.ts` in full. For each place that builds a part of a run, apply the [Part decision table](#part-decision-table). Write one row in the report table `ID | Location (file:lines) | Kind | Owner | Inputs | Consumer`. `Inputs` are the values that the code reads, for example `deck snapshot` or `selected sources`. `Consumer` is the function or the object that receives the part.
 
-- [ ] **Step 3: Record the order of preparation**
+- [x] **Step 3: Record the order of preparation**
 
 Record these facts in the report, with file and line:
 
@@ -104,13 +104,13 @@ Record these facts in the report, with file and line:
 3. For each feature folder that adds a part (for example `features/deck/` and `features/sources/`), the condition that decides whether the part is in the run. For example: the chat has a deck that the user accepted.
 4. Each part that the OpenCode adapter converts to an OpenCode format, and the function that converts it.
 
-- [ ] **Step 4: Check that no code changed**
+- [x] **Step 4: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 5 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-05-diagnose-run-preparation.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-05-diagnose-run-preparation.md` with:
