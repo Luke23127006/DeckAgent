@@ -17,3 +17,7 @@ __pycache__/
 /apps/*/lib/
 /apps/web/resources/opencode/
 *.tsbuildinfo
+
+# Log
+
+*.log 
