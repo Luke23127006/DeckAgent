@@ -72,7 +72,7 @@ Read this file to split `packages/presentation/deck/src/contracts.ts`, reduce lo
 - Add `any`, type assertions (`as Type`), non-null assertions (`!`), comments beyond the five allowed reasons, lint-disable directives, or `@ts-expect-error`.
 - Commit or push before Step 8 checks pass.
 
-- [ ] **Step 1: Split `contracts.ts` into five focused domain modules and remove `contracts.ts`**
+- [x] **Step 1: Split `contracts.ts` into five focused domain modules and remove `contracts.ts`**
 
 Create these five files with zero `@deckagent/design` re-exports in `brief-contracts.ts` or `deck-contracts.ts`. Keep existing `index.ts` re-exports working temporarily via direct imports from `@deckagent/design` until export narrowing runs:
 
@@ -96,7 +96,7 @@ Create these five files with zero `@deckagent/design` re-exports in `brief-contr
 
 Update internal imports in `brief-store.ts`, `artifact-store.ts`, `image-needs.ts`, and `provenance.ts` to point to `./errors.ts` and the new `*-contracts.ts` files.
 
-- [ ] **Step 2: Split `decodeBriefDraft` in `packages/presentation/deck/src/brief.ts` under 80 lines**
+- [x] **Step 2: Split `decodeBriefDraft` in `packages/presentation/deck/src/brief.ts` under 80 lines**
 
 Update imports in `brief.ts` to use `./errors.ts` (`DeckError`, `isRecord`) and `./brief-contracts.ts` (`BriefDraft`, `BriefSourceRef`, `InterviewTopic`).
 Split `decodeBriefDraft` (currently 111 lines) into three cohesive functions, each under 80 lines:
@@ -106,7 +106,7 @@ Split `decodeBriefDraft` (currently 111 lines) into three cohesive functions, ea
 
 Preserve every error code, path format, and message verbatim.
 
-- [ ] **Step 3: Refactor `schema.ts` and `interview.ts` to remove long `initialize` and 5 `!` assertions**
+- [x] **Step 3: Refactor `schema.ts` and `interview.ts` to remove long `initialize` and 5 `!` assertions**
 
 1. In `packages/presentation/deck/src/schema.ts`:
    - Update import of `DeckError` from `./errors.ts`.
@@ -131,7 +131,7 @@ if (!draft.template) {
 
    - Spread `...(templateRef ? { template: templateRef } : {})` into the `validateBriefDraft(...)` input.
 
-- [ ] **Step 4: Split `saveBoundOutline` in `bound-outline.ts` and `OutlineStorage.snapshot` in `outline-store.ts`**
+- [x] **Step 4: Split `saveBoundOutline` in `bound-outline.ts` and `OutlineStorage.snapshot` in `outline-store.ts`**
 
 1. In `packages/presentation/deck/src/bound-outline.ts`:
    - Import `DeckError`, `isRecord`, `validId` from `./errors.ts`, `BriefRecord` from `./brief-contracts.ts`, and outline types from `./outline-contracts.ts`.
@@ -152,7 +152,7 @@ if (!created) throw new DeckError('DECK_CORRUPT')
 return created
 ```
 
-- [ ] **Step 5: Move `generation_intents` SQL writes into `generation-store.ts`**
+- [x] **Step 5: Move `generation_intents` SQL writes into `generation-store.ts`**
 
 In `packages/presentation/deck/src/generation-store.ts`:
 1. Import `DeckError`, `isRecord`, `validId` from `./errors.ts`, `BriefRecord` from `./brief-contracts.ts`, and `ConfirmationReceipt`, `ConfirmationTarget`, `GenerationSnapshot` from `./generation-contracts.ts`.
@@ -175,14 +175,14 @@ In `packages/presentation/deck/src/generation-store.ts`:
    - `reconcile(requestExists?: (sessionId: string, requestId: string) => boolean): void`:
      - Run the loop from `index.ts` lines 461-471.
 
-- [ ] **Step 6: Wire `index.ts` to the split modules without changing public exports yet**
+- [x] **Step 6: Wire `index.ts` to the split modules without changing public exports yet**
 
 In `packages/presentation/deck/src/index.ts`:
 1. Update all `./contracts.ts` imports and re-exports to point to `./errors.ts`, `./brief-contracts.ts`, `./outline-contracts.ts`, `./generation-contracts.ts`, `./deck-contracts.ts`, and `@deckagent/design` (for `CatalogRef`, `ContentBlock`, `DesignSnapshot`, `ThemeValues`).
 2. Construct `this.briefs = new BriefStorage(db)` before `this.outlines = new OutlineStorage(db, this.briefs)`.
 3. Delegate `continueGeneration`, `admitGeneration`, `startGeneration`, `finishGeneration`, and `reconcileGenerations` to `this.generations.continueActive`, `.admit`, `.start`, `.finish`, and `.reconcile`, calling `this.notify(sessionId, version)` with the returned version (for `finishGeneration`, preserve the existing behavior: always notify using `version ?? deckVersion(this.db, sessionId)` so existing tests see the same notifications).
 
-- [ ] **Step 7: Build, check boundaries, lint, format, and run deck test suites**
+- [x] **Step 7: Build, check boundaries, lint, format, and run deck test suites**
 
 Run:
 
@@ -222,7 +222,7 @@ corepack pnpm@11.28.5 test:brief-foundation && corepack pnpm@11.28.5 test:outlin
 
 Expected: PASS. Every suite exits with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 8: Mark task done, write the report file, and commit and push**
+- [x] **Step 8: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 7 as `- [x]` in this file. Update the Task 16 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-16-refactor-deck-contracts-and-core-stores.md`.
 2. Create `docs/build/refactor/module-design/reports/task-16-refactor-deck-contracts-and-core-stores.md` with:

@@ -110,7 +110,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 13 | Done | [Diagnose presentation/deck core, stores, and public surface](task-13-diagnose-deck-core-and-surface.md) ([report](../reports/task-13-diagnose-deck-core-and-surface.md)) |
 | 14 | Done | [Diagnose presentation/deck artifact storage and design contract seam](task-14-diagnose-deck-artifacts-and-design-seam.md) ([report](../reports/task-14-diagnose-deck-artifacts-and-design-seam.md)) |
 | 15 | Done | [Update Project Structure conventions for Slice 2B](task-15-update-slice-2b-conventions.md) ([report](../reports/task-15-update-slice-2b-conventions.md)) |
-| 16 | Pending | [Split presentation/deck contracts and refactor core stores](task-16-refactor-deck-contracts-and-core-stores.md) |
+| 16 | Done | [Split presentation/deck contracts and refactor core stores](task-16-refactor-deck-contracts-and-core-stores.md) ([report](../reports/task-16-refactor-deck-contracts-and-core-stores.md)) |
 | 17 | Pending | [Split deck artifact storage, extract image store, and guard assertions](task-17-refactor-deck-artifacts-and-image-store.md) |
 | 18 | Pending | [Rename DeckService to DeckStore, narrow exports, and check contract parity](task-18-rename-deck-store-narrow-exports-and-contract-sync.md) |
 | 19 | Pending | [Check Slice 2B exit gate and rescan metrics](task-19-verify-slice-2b-exit.md) |

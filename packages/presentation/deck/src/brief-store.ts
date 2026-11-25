@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { decodeDesignSnapshot, resolveDesign, DesignError } from '@deckagent/design'
-import { DeckError, validId } from './contracts.ts'
-import type { BriefDraft, BriefRecord, BriefSnapshot } from './contracts.ts'
+import { DeckError, validId } from './errors.ts'
+import type { BriefDraft, BriefRecord, BriefSnapshot } from './brief-contracts.ts'
 import { decodeBriefDraft } from './brief.ts'
 import type { ValidationIssue } from '@deckagent/presentation-document'
 

@@ -1,6 +1,7 @@
-import type { BriefDraft, InterviewTopic } from './contracts.ts'
+import type { BriefDraft, InterviewTopic } from './brief-contracts.ts'
 import { validateBriefDraft } from './brief-store.ts'
-import type { InterviewState } from './contracts.ts'
+import type { InterviewState } from './brief-contracts.ts'
+import { DeckError } from './errors.ts'
 import { listTemplates } from '@deckagent/design'
 
 const questions: readonly [InterviewTopic, string, readonly string[]][] = [
@@ -103,6 +104,12 @@ export function skipInterview(input: unknown): BriefDraft {
     const note = `Interview ${topic} was skipped; no specific requirement was supplied.`
     if (!assumptions.includes(note)) assumptions.push(note)
   }
+  let templateRef: { readonly id: string; readonly version: number } | undefined
+  if (!draft.template) {
+    const defaultTemplate = listTemplates('html')[0]
+    if (!defaultTemplate) throw new DeckError('DECK_CONFIG')
+    templateRef = { id: defaultTemplate.id, version: defaultTemplate.version }
+  }
   return validateBriefDraft({
     ...draft,
     answers,
@@ -110,9 +117,7 @@ export function skipInterview(input: unknown): BriefDraft {
     ...(!draft.generationFormat && (!draft.requestedFormat || draft.requestedFormat === 'html')
       ? { generationFormat: 'html' }
       : {}),
-    ...(!draft.template
-      ? { template: { id: listTemplates('html')[0]!.id, version: listTemplates('html')[0]!.version } }
-      : {}),
+    ...(templateRef ? { template: templateRef } : {}),
     ...(!draft.designSystem ? { designSystem: { id: 'deckagent-neutral', version: 1 } } : {}),
   })
 }

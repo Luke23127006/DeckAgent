@@ -1,13 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { decodeDesignSnapshot } from '@deckagent/design'
-import { DeckError, validId } from './contracts.ts'
-import type { ConfirmationTarget, ConfirmationReceipt, GenerationSnapshot, BriefRecord } from './contracts.ts'
+import { DeckError, isRecord, validId } from './errors.ts'
+import type { BriefRecord } from './brief-contracts.ts'
+import type {
+  ConfirmationTarget,
+  ConfirmationReceipt,
+  GenerationGrant,
+  GenerationSnapshot,
+} from './generation-contracts.ts'
 
-const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 export function validateConfirmation(value: unknown): ConfirmationTarget {
   if (
-    !object(value) ||
+    !isRecord(value) ||
     Object.keys(value).length !== 5 ||
     Object.keys(value).some(
       k => !['confirmationId', 'outlineId', 'outlineVersion', 'briefId', 'briefVersion'].includes(k),
@@ -39,6 +44,12 @@ export function sameConfirmation(a: ConfirmationTarget, b: ConfirmationTarget): 
   )
 }
 
+export function deckVersion(db: DatabaseSync, sessionId: string): number {
+  const row = db.prepare('SELECT version FROM decks WHERE session_id=?').get(sessionId)
+  if (!row) throw new DeckError('DECK_CORRUPT')
+  return Number(row.version)
+}
+
 export class GenerationStorage {
   constructor(private readonly db: DatabaseSync) {}
 
@@ -48,9 +59,9 @@ export class GenerationStorage {
     try {
       const value: unknown = JSON.parse(String(row.payload))
       if (
-        !object(value) ||
-        !object(value.receipt) ||
-        !object(value.selection) ||
+        !isRecord(value) ||
+        !isRecord(value.receipt) ||
+        !isRecord(value.selection) ||
         typeof value.selection.provider !== 'string' ||
         !value.selection.provider ||
         typeof value.selection.model !== 'string' ||
@@ -145,5 +156,91 @@ export class GenerationStorage {
       }),
     )
     return receipt
+  }
+
+  continueActive(
+    sessionId: string,
+    requestId: string,
+    selection: GenerationSnapshot['selection'],
+    activeRequest?: (sessionId: string, requestId: string) => boolean,
+  ): number {
+    const generation = this.get(sessionId)
+    if (!generation) throw new DeckError('GENERATION_NOT_FOUND')
+    if (generation.state !== 'incomplete') throw new DeckError('GENERATION_ALREADY_STARTED')
+    if (!activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
+    if (!selection.provider || !selection.model) throw new DeckError('CONFIRMATION_INVALID')
+    const row = this.db.prepare('SELECT payload FROM generation_intents WHERE session_id=?').get(sessionId)
+    if (!row) throw new DeckError('GENERATION_NOT_FOUND')
+    const payload: unknown = JSON.parse(String(row.payload))
+    if (!isRecord(payload)) throw new DeckError('DECK_CORRUPT')
+    this.db
+      .prepare("UPDATE generation_intents SET state='admitted',payload=? WHERE session_id=?")
+      .run(JSON.stringify({ ...payload, activeRequestId: requestId, selection }), sessionId)
+    this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
+    return deckVersion(this.db, sessionId)
+  }
+
+  admit(
+    sessionId: string,
+    intentId: string,
+    requestId: string,
+    activeRequest?: (sessionId: string, requestId: string) => boolean,
+  ): number {
+    const g = this.get(sessionId)
+    if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
+      throw new DeckError('GENERATION_NOT_FOUND')
+    if (!activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
+    if (g.state !== 'pending') throw new DeckError('GENERATION_ALREADY_ADMITTED')
+    this.db.prepare("UPDATE generation_intents SET state='admitted' WHERE session_id=?").run(sessionId)
+    this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
+    return deckVersion(this.db, sessionId)
+  }
+
+  start(
+    sessionId: string,
+    intentId: string,
+    requestId: string,
+    activeRequest?: (sessionId: string, requestId: string) => boolean,
+  ): { readonly grant: GenerationGrant; readonly version: number } {
+    if (!activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
+    const g = this.get(sessionId)
+    if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
+      throw new DeckError('GENERATION_NOT_FOUND')
+    if (g.state !== 'admitted' || (g.startedAt && !g.activeRequestId)) throw new DeckError('GENERATION_ALREADY_STARTED')
+    this.db
+      .prepare("UPDATE generation_intents SET state='generating',started_at=COALESCE(started_at,?) WHERE session_id=?")
+      .run(new Date().toISOString(), sessionId)
+    this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
+    return { grant: Object.freeze({ sessionId, intentId, requestId }), version: deckVersion(this.db, sessionId) }
+  }
+
+  finish(
+    sessionId: string,
+    intentId: string,
+    requestId: string,
+    outcome: 'completed' | 'failed' | 'stopped' | 'interrupted',
+  ): number | null {
+    const g = this.get(sessionId)
+    if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
+      throw new DeckError('GENERATION_NOT_FOUND')
+    if (g.state === 'generated' || g.state === 'incomplete') return null
+    const unfinished = this.db.prepare('SELECT 1 FROM slides WHERE session_id=? AND revision=0').get(sessionId)
+    this.db
+      .prepare('UPDATE generation_intents SET state=? WHERE session_id=?')
+      .run(outcome === 'completed' && g.startedAt && !unfinished ? 'generated' : 'incomplete', sessionId)
+    this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
+    return deckVersion(this.db, sessionId)
+  }
+
+  reconcile(requestExists?: (sessionId: string, requestId: string) => boolean): void {
+    for (const row of this.db
+      .prepare(
+        "SELECT session_id,request_id,state FROM generation_intents WHERE state IN ('pending','admitted','generating')",
+      )
+      .all()) {
+      if (row.state === 'pending' && !requestExists?.(String(row.session_id), String(row.request_id))) continue
+      this.db.prepare("UPDATE generation_intents SET state='incomplete' WHERE session_id=?").run(String(row.session_id))
+      this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(String(row.session_id))
+    }
   }
 }

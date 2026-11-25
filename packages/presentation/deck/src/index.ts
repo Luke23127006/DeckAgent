@@ -11,7 +11,7 @@ export type {
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { DeckError, validId } from './contracts.ts'
+import { DeckError, validId } from './errors.ts'
 import type {
   ConfirmedDeckPlan,
   DeckChange,
@@ -21,25 +21,31 @@ import type {
   PublishedSlide,
   PublishSlide,
   SlideContent,
-} from './contracts.ts'
+} from './deck-contracts.ts'
 import { initialize } from './schema.ts'
 import { OutlineStorage } from './outline-store.ts'
 import { BriefStorage } from './brief-store.ts'
 import { saveBoundOutline } from './bound-outline.ts'
-import { GenerationStorage, validateConfirmation, sameConfirmation } from './generation-store.ts'
+import { GenerationStorage, validateConfirmation, sameConfirmation, deckVersion } from './generation-store.ts'
 import { interviewState } from './interview.ts'
 import { ArtifactStorage } from './artifact-store.ts'
-import type { ArtifactPublication, ArtifactAsset, StageChunk, StageStatus } from './contracts.ts'
-import type { GenerationCapability } from './contracts.ts'
-export type { GenerationCapability } from './contracts.ts'
-export type { ContentProvenance } from './contracts.ts'
-export type { PreparedResearchImage, ImageCredit } from './contracts.ts'
-export type { ImageNeed, ImageResolver, ImageSelection, OutlineImageReview } from './contracts.ts'
-export type { ImageAttempt, ImageSourceCheck } from './contracts.ts'
-export { ImagePreparationError } from './contracts.ts'
+import type { ArtifactPublication, ArtifactAsset, StageChunk, StageStatus } from './generation-contracts.ts'
+import type { GenerationCapability } from './generation-contracts.ts'
+export type { GenerationCapability } from './generation-contracts.ts'
+export type { ContentProvenance } from './generation-contracts.ts'
+export type { PreparedResearchImage, ImageCredit } from './generation-contracts.ts'
+export type { ImageNeed, ImageResolver, ImageSelection, OutlineImageReview } from './generation-contracts.ts'
+export type { ImageAttempt, ImageSourceCheck } from './generation-contracts.ts'
+export { ImagePreparationError } from './errors.ts'
 export { outlineImageNeeds } from './image-needs.ts'
-export type { ArtifactPublication, ArtifactAsset, PreparedImageAsset, StageChunk, StageStatus } from './contracts.ts'
-import type { ConfirmationReceipt, GenerationSnapshot, GenerationGrant, DeckOptions } from './contracts.ts'
+export type {
+  ArtifactPublication,
+  ArtifactAsset,
+  PreparedImageAsset,
+  StageChunk,
+  StageStatus,
+} from './generation-contracts.ts'
+import type { ConfirmationReceipt, GenerationSnapshot, GenerationGrant, DeckOptions } from './generation-contracts.ts'
 export { validateConfirmation } from './generation-store.ts'
 export type {
   ConfirmationReceipt,
@@ -47,33 +53,31 @@ export type {
   GenerationSnapshot,
   GenerationGrant,
   DeckOptions,
-} from './contracts.ts'
-import type { BoundOutlineInput } from './contracts.ts'
-import type { BriefProposalInput } from './contracts.ts'
+} from './generation-contracts.ts'
+import type { BoundOutlineInput } from './outline-contracts.ts'
+import type { BriefProposalInput } from './brief-contracts.ts'
 export { validateBoundOutline } from './bound-outline.ts'
-export type { BoundOutlineDraft, BoundOutlineInput, OutlineChanges } from './contracts.ts'
-export type { BriefProposalInput } from './contracts.ts'
-export type { ContentBlock } from './contracts.ts'
-import type { BriefRecord, BriefSnapshot } from './contracts.ts'
+export type { BoundOutlineDraft, BoundOutlineInput, OutlineChanges } from './outline-contracts.ts'
+export type { BriefProposalInput } from './brief-contracts.ts'
+export type { ContentBlock } from '@deckagent/design'
+import type { BriefRecord, BriefSnapshot } from './brief-contracts.ts'
 export { validateBriefDraft } from './brief-store.ts'
 export { interviewState, skipInterview } from './interview.ts'
-export type { InterviewState } from './contracts.ts'
-export type {
-  BriefDraft,
-  BriefRecord,
-  BriefSnapshot,
-  BriefSourceRef,
-  InterviewTopic,
-  DesignSnapshot,
-  CatalogRef,
-  ThemeValues,
-} from './contracts.ts'
-import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './contracts.ts'
+export type { InterviewState } from './brief-contracts.ts'
+export type { BriefDraft, BriefRecord, BriefSnapshot, BriefSourceRef, InterviewTopic } from './brief-contracts.ts'
+export type { DesignSnapshot, CatalogRef, ThemeValues } from '@deckagent/design'
+import type { OutlineDraft, OutlineProposal, OutlineSnapshot, OutlineTarget } from './outline-contracts.ts'
 
-import { deckFailureMessage } from './contracts.ts'
-export { DeckError, deckFailureMessage } from './contracts.ts'
+import { deckFailureMessage } from './errors.ts'
+export { DeckError, deckFailureMessage } from './errors.ts'
 export { validateOutlineDraft } from './outline-store.ts'
-export type { OutlineDraft, OutlineProposal, OutlineReader, OutlineSnapshot, OutlineTarget } from './contracts.ts'
+export type {
+  OutlineDraft,
+  OutlineProposal,
+  OutlineReader,
+  OutlineSnapshot,
+  OutlineTarget,
+} from './outline-contracts.ts'
 export type {
   ConfirmedDeckPlan,
   DeckChange,
@@ -84,7 +88,7 @@ export type {
   PublishedSlide,
   PublishSlide,
   SlideContent,
-} from './contracts.ts'
+} from './deck-contracts.ts'
 
 /** One authoritative deck per Session. Own close() after Host/Agent teardown.
  * All methods are synchronous so a committed state and its notice have one order.
@@ -111,8 +115,8 @@ export class DeckService implements DeckReader, DeckPublisher {
       db = new DatabaseSync(path)
       initialize(db)
       this.db = db
-      this.outlines = new OutlineStorage(db)
       this.briefs = new BriefStorage(db)
+      this.outlines = new OutlineStorage(db, this.briefs)
       this.generations = new GenerationStorage(db)
       this.artifacts = new ArtifactStorage(db, options)
     } catch (error) {
@@ -205,7 +209,7 @@ export class DeckService implements DeckReader, DeckPublisher {
     sessionId: string,
     input: BriefProposalInput,
     signal: AbortSignal,
-    resolver?: import('./contracts.ts').ImageResolver,
+    resolver?: import('./generation-contracts.ts').ImageResolver,
   ): Promise<object> {
     this.id(sessionId)
     return this.artifacts.prepareImages(sessionId, input, signal, resolver)
@@ -242,7 +246,7 @@ export class DeckService implements DeckReader, DeckPublisher {
     sessionId: string,
     outlineId: string,
     needId: string,
-  ): import('./contracts.ts').PreparedResearchImage {
+  ): import('./generation-contracts.ts').PreparedResearchImage {
     return this.access(() => {
       this.id(sessionId)
       const outline = this.outlines.snapshot(sessionId).proposals.find(p => p.outlineId === outlineId)
@@ -367,65 +371,29 @@ export class DeckService implements DeckReader, DeckPublisher {
 
   /** A user-admitted new request continues only missing slides; confirmation and first start stay immutable. */
   continueGeneration(sessionId: string, requestId: string, selection: GenerationSnapshot['selection']): void {
-    this.access(() =>
-      this.transaction(() => {
-        this.id(requestId)
-        const generation = this.generations.get(sessionId)
-        if (!generation) throw new DeckError('GENERATION_NOT_FOUND')
-        if (generation.state !== 'incomplete') throw new DeckError('GENERATION_ALREADY_STARTED')
-        if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
-        if (!selection.provider || !selection.model) throw new DeckError('CONFIRMATION_INVALID')
-        const row = this.db.prepare('SELECT payload FROM generation_intents WHERE session_id=?').get(sessionId)!
-        const payload = JSON.parse(String(row.payload))
-        this.db
-          .prepare("UPDATE generation_intents SET state='admitted',payload=? WHERE session_id=?")
-          .run(JSON.stringify({ ...payload, activeRequestId: requestId, selection }), sessionId)
-        this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
-      }),
-    )
-    this.notify(sessionId, this.snapshot(sessionId).version)
+    const version = this.access(() => {
+      this.id(requestId)
+      return this.transaction(() =>
+        this.generations.continueActive(sessionId, requestId, selection, this.options.activeRequest),
+      )
+    })
+    this.notify(sessionId, version)
   }
 
   admitGeneration(sessionId: string, intentId: string, requestId: string): void {
-    this.access(() =>
-      this.transaction(() => {
-        const g = this.generations.get(sessionId)
-        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
-          throw new DeckError('GENERATION_NOT_FOUND')
-        if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
-        if (g.state !== 'pending') throw new DeckError('GENERATION_ALREADY_ADMITTED')
-        this.db.prepare("UPDATE generation_intents SET state='admitted' WHERE session_id=?").run(sessionId)
-        this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
-      }),
+    const version = this.access(() =>
+      this.transaction(() => this.generations.admit(sessionId, intentId, requestId, this.options.activeRequest)),
     )
-    this.notify(
-      sessionId,
-      Number(this.db.prepare('SELECT version FROM decks WHERE session_id=?').get(sessionId)!.version),
-    )
+    this.notify(sessionId, version)
   }
 
   startGeneration(sessionId: string, intentId: string, requestId: string): GenerationGrant {
     return this.access(() => {
-      const grant = this.transaction(() => {
-        const g = this.generations.get(sessionId)
-        if (!this.options.activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
-        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
-          throw new DeckError('GENERATION_NOT_FOUND')
-        if (g.state !== 'admitted' || (g.startedAt && !g.activeRequestId))
-          throw new DeckError('GENERATION_ALREADY_STARTED')
-        this.db
-          .prepare(
-            "UPDATE generation_intents SET state='generating',started_at=COALESCE(started_at,?) WHERE session_id=?",
-          )
-          .run(new Date().toISOString(), sessionId)
-        this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
-        return Object.freeze({ sessionId, intentId, requestId })
-      })
-      this.grants.add(grant)
-      this.notify(
-        sessionId,
-        Number(this.db.prepare('SELECT version FROM decks WHERE session_id=?').get(sessionId)!.version),
+      const { grant, version } = this.transaction(() =>
+        this.generations.start(sessionId, intentId, requestId, this.options.activeRequest),
       )
+      this.grants.add(grant)
+      this.notify(sessionId, version)
       return grant
     })
   }
@@ -436,41 +404,14 @@ export class DeckService implements DeckReader, DeckPublisher {
     requestId: string,
     outcome: 'completed' | 'failed' | 'stopped' | 'interrupted',
   ): void {
-    this.access(() =>
-      this.transaction(() => {
-        const g = this.generations.get(sessionId)
-        if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
-          throw new DeckError('GENERATION_NOT_FOUND')
-        if (g.state === 'generated' || g.state === 'incomplete') return
-        const unfinished = this.db.prepare('SELECT 1 FROM slides WHERE session_id=? AND revision=0').get(sessionId)
-        this.db
-          .prepare('UPDATE generation_intents SET state=? WHERE session_id=?')
-          .run(outcome === 'completed' && g.startedAt && !unfinished ? 'generated' : 'incomplete', sessionId)
-        this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
-      }),
+    const version = this.access(() =>
+      this.transaction(() => this.generations.finish(sessionId, intentId, requestId, outcome)),
     )
-    this.notify(
-      sessionId,
-      Number(this.db.prepare('SELECT version FROM decks WHERE session_id=?').get(sessionId)!.version),
-    )
+    this.notify(sessionId, version ?? deckVersion(this.db, sessionId))
   }
 
   reconcileGenerations(requestExists?: (sessionId: string, requestId: string) => boolean): void {
-    this.access(() =>
-      this.transaction(() => {
-        for (const row of this.db
-          .prepare(
-            "SELECT session_id,request_id,state FROM generation_intents WHERE state IN ('pending','admitted','generating')",
-          )
-          .all()) {
-          if (row.state === 'pending' && !requestExists?.(String(row.session_id), String(row.request_id))) continue
-          this.db
-            .prepare("UPDATE generation_intents SET state='incomplete' WHERE session_id=?")
-            .run(String(row.session_id))
-          this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(String(row.session_id))
-        }
-      }),
-    )
+    this.access(() => this.transaction(() => this.generations.reconcile(requestExists)))
   }
 
   private granted(grant: GenerationGrant): { generation: GenerationSnapshot; outline: OutlineProposal } {
@@ -557,7 +498,11 @@ export class DeckService implements DeckReader, DeckPublisher {
         check()
         return this.appendStage(grant, stageId, chunk)
       },
-      provenance: (stageId: string, records: readonly import('./contracts.ts').ContentProvenance[], notes?: string) => {
+      provenance: (
+        stageId: string,
+        records: readonly import('./generation-contracts.ts').ContentProvenance[],
+        notes?: string,
+      ) => {
         check()
         this.artifacts.setProvenance(grant, stageId, records, notes)
       },
@@ -915,7 +860,7 @@ export class DeckService implements DeckReader, DeckPublisher {
     sessionId: string,
     slideId: string,
     revision: number,
-  ): readonly import('./contracts.ts').ContentProvenance[] {
+  ): readonly import('./generation-contracts.ts').ContentProvenance[] {
     return this.access(() => {
       this.id(sessionId)
       this.id(slideId)

@@ -1,8 +1,9 @@
 import { z } from 'zod'
-import { DeckError } from './contracts.ts'
-import type { BriefDraft, ThemeValues } from './contracts.ts'
+import type { ThemeValues } from '@deckagent/design'
+import { DeckError, isRecord } from './errors.ts'
+import type { BriefDraft } from './brief-contracts.ts'
 import type { ValidationIssue } from '@deckagent/presentation-document'
-export type { BriefDraft, BriefSourceRef, InterviewTopic } from './contracts.ts'
+export type { BriefDraft, BriefSourceRef, InterviewTopic } from './brief-contracts.ts'
 
 export const briefContractVersion = 'brief-v1'
 export const briefTopics = [
@@ -110,7 +111,6 @@ function immutable<T>(value: T): T {
 }
 /** The same structural schema used by the Host decoder is supplied to model tools. */
 export const briefJsonSchema = immutable(z.toJSONSchema(shape, { io: 'input', target: 'draft-07' }))
-const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const fieldPath = (parts: readonly PropertyKey[]) =>
   parts
     .map((p, i) => {
@@ -119,6 +119,77 @@ const fieldPath = (parts: readonly PropertyKey[]) =>
       return /^[\w-]+$/.test(key) ? `${i ? '.' : ''}${key}` : `[${JSON.stringify(key)}]`
     })
     .join('') || 'brief'
+
+function collectCrossFieldIssues(value: Record<string, unknown>, add: (path: string, message: string) => void): void {
+  if (
+    value.generationFormat === 'html' &&
+    typeof value.requestedFormat === 'string' &&
+    value.requestedFormat !== 'html'
+  )
+    add(
+      'requestedFormat',
+      'With generationFormat html, use the canonical requestedFormat ID html. Preserve unsupported requests without generationFormat.',
+    )
+  const a = answers.safeParse(value.answers),
+    s = sources.safeParse(value.sources),
+    im = images.safeParse(value.images)
+  if (a.success && new Set(a.data.map(v => v.topic)).size !== a.data.length)
+    add('answers', 'Each Interview topic appears at most once.')
+  if (s.success) {
+    if (new Set(s.data.refs.map(r => `${r.sourceId}:${r.version}:${r.kind}`)).size !== s.data.refs.length)
+      add('sources.refs', 'Each source identity, version and kind appears at most once.')
+    s.data.refs.forEach((r, i) => {
+      if (r.kind === 'research' ? !s.data.material && !s.data.publicResearch : !s.data.material)
+        add(
+          `sources.refs[${i}]`,
+          'Reference only material or research allowed by the explicit source flags; a reference does not enable a flag.',
+        )
+    })
+  }
+  if (im.success) {
+    if (new Set(im.data.attachmentIds).size !== im.data.attachmentIds.length)
+      add('images.attachmentIds', 'Attachment IDs must be unique.')
+    if (im.data.mode !== 'attachments' && im.data.attachmentIds.length)
+      add('images.attachmentIds', 'Only attachments mode has attachment IDs.')
+    if (im.data.mode === 'attachments' && s.success && !s.data.material)
+      add(
+        'images.mode',
+        'Attachments mode requires the Host-admitted material choice; do not enable it to repair the payload.',
+      )
+    if (im.data.mode === 'unavailable' && !im.data.unmetRequirements.length)
+      add('images.unmetRequirements', 'Record the unmet image requirement for unavailable mode.')
+  }
+}
+
+function normalizeBriefDraft(data: z.infer<typeof shape>): BriefDraft {
+  const theme: Partial<ThemeValues> = {}
+  if (data.themeOverrides)
+    for (const [key, v] of Object.entries(data.themeOverrides)) if (v !== undefined) Object.assign(theme, { [key]: v })
+  return {
+    ...(data.topic !== undefined ? { topic: data.topic } : {}),
+    ...(data.audience !== undefined ? { audience: data.audience } : {}),
+    ...(data.durationMinutes !== undefined ? { durationMinutes: data.durationMinutes } : {}),
+    ...(data.purpose !== undefined ? { purpose: data.purpose } : {}),
+    ...(data.language !== undefined ? { language: data.language } : {}),
+    ...(data.requestedFormat !== undefined ? { requestedFormat: data.requestedFormat } : {}),
+    ...(data.presenterNotes !== undefined ? { presenterNotes: data.presenterNotes } : {}),
+    ...(data.generationFormat !== undefined ? { generationFormat: data.generationFormat } : {}),
+    ...(data.template !== undefined ? { template: data.template } : {}),
+    ...(data.designSystem !== undefined ? { designSystem: data.designSystem } : {}),
+    ...(data.themeOverrides !== undefined ? { themeOverrides: theme } : {}),
+    ...(data.proposedSlideCount !== undefined ? { proposedSlideCount: data.proposedSlideCount } : {}),
+    requirements: data.requirements,
+    answers: data.answers,
+    assumptions: data.assumptions,
+    sources: data.sources,
+    images: {
+      mode: data.images.mode,
+      attachmentIds: data.images.attachmentIds,
+      unmetRequirements: data.images.unmetRequirements,
+      ...(data.images.provider === undefined ? {} : { provider: data.images.provider }),
+    },
+  }
+}
 
 /** Pure structural decoding. No defaults, coercion, catalog lookup, storage or source grants. */
 export function decodeBriefDraft(value: unknown): BriefDraft {
@@ -148,46 +219,7 @@ export function decodeBriefDraft(value: unknown): BriefDraft {
           )
       else add(fieldPath(issue.path), `${issue.message} Optional fields must be omitted when unknown, not set to null.`)
     }
-  if (record(value)) {
-    if (
-      value.generationFormat === 'html' &&
-      typeof value.requestedFormat === 'string' &&
-      value.requestedFormat !== 'html'
-    )
-      add(
-        'requestedFormat',
-        'With generationFormat html, use the canonical requestedFormat ID html. Preserve unsupported requests without generationFormat.',
-      )
-    const a = answers.safeParse(value.answers),
-      s = sources.safeParse(value.sources),
-      im = images.safeParse(value.images)
-    if (a.success && new Set(a.data.map(v => v.topic)).size !== a.data.length)
-      add('answers', 'Each Interview topic appears at most once.')
-    if (s.success) {
-      if (new Set(s.data.refs.map(r => `${r.sourceId}:${r.version}:${r.kind}`)).size !== s.data.refs.length)
-        add('sources.refs', 'Each source identity, version and kind appears at most once.')
-      s.data.refs.forEach((r, i) => {
-        if (r.kind === 'research' ? !s.data.material && !s.data.publicResearch : !s.data.material)
-          add(
-            `sources.refs[${i}]`,
-            'Reference only material or research allowed by the explicit source flags; a reference does not enable a flag.',
-          )
-      })
-    }
-    if (im.success) {
-      if (new Set(im.data.attachmentIds).size !== im.data.attachmentIds.length)
-        add('images.attachmentIds', 'Attachment IDs must be unique.')
-      if (im.data.mode !== 'attachments' && im.data.attachmentIds.length)
-        add('images.attachmentIds', 'Only attachments mode has attachment IDs.')
-      if (im.data.mode === 'attachments' && s.success && !s.data.material)
-        add(
-          'images.mode',
-          'Attachments mode requires the Host-admitted material choice; do not enable it to repair the payload.',
-        )
-      if (im.data.mode === 'unavailable' && !im.data.unmetRequirements.length)
-        add('images.unmetRequirements', 'Record the unmet image requirement for unavailable mode.')
-    }
-  }
+  if (isRecord(value)) collectCrossFieldIssues(value, add)
   if (issues.length || !parsed.success)
     throw new DeckError(
       'BRIEF_INVALID',
@@ -203,32 +235,5 @@ export function decodeBriefDraft(value: unknown): BriefDraft {
           ]
         : issues,
     )
-  const d = parsed.data,
-    theme: Partial<ThemeValues> = {}
-  if (d.themeOverrides)
-    for (const [key, v] of Object.entries(d.themeOverrides)) if (v !== undefined) Object.assign(theme, { [key]: v })
-  return {
-    ...(d.topic !== undefined ? { topic: d.topic } : {}),
-    ...(d.audience !== undefined ? { audience: d.audience } : {}),
-    ...(d.durationMinutes !== undefined ? { durationMinutes: d.durationMinutes } : {}),
-    ...(d.purpose !== undefined ? { purpose: d.purpose } : {}),
-    ...(d.language !== undefined ? { language: d.language } : {}),
-    ...(d.requestedFormat !== undefined ? { requestedFormat: d.requestedFormat } : {}),
-    ...(d.presenterNotes !== undefined ? { presenterNotes: d.presenterNotes } : {}),
-    ...(d.generationFormat !== undefined ? { generationFormat: d.generationFormat } : {}),
-    ...(d.template !== undefined ? { template: d.template } : {}),
-    ...(d.designSystem !== undefined ? { designSystem: d.designSystem } : {}),
-    ...(d.themeOverrides !== undefined ? { themeOverrides: theme } : {}),
-    ...(d.proposedSlideCount !== undefined ? { proposedSlideCount: d.proposedSlideCount } : {}),
-    requirements: d.requirements,
-    answers: d.answers,
-    assumptions: d.assumptions,
-    sources: d.sources,
-    images: {
-      mode: d.images.mode,
-      attachmentIds: d.images.attachmentIds,
-      unmetRequirements: d.images.unmetRequirements,
-      ...(d.images.provider === undefined ? {} : { provider: d.images.provider }),
-    },
-  }
+  return normalizeBriefDraft(parsed.data)
 }

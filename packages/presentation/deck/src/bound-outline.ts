@@ -1,19 +1,25 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { validateContentPlan } from '@deckagent/design'
-import { DeckError, validId } from './contracts.ts'
+import { DeckError, isRecord, validId } from './errors.ts'
+import type { BriefRecord } from './brief-contracts.ts'
 import type {
   BoundOutlineDraft,
   BoundOutlineInput,
-  BriefRecord,
   OutlineProposal,
   OutlineChanges,
   OutlineSnapshot,
-} from './contracts.ts'
+} from './outline-contracts.ts'
 
-const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
 const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
+const exceedsOutlineSize = (value: unknown): boolean => {
+  try {
+    return Buffer.byteLength(JSON.stringify(value)) > 128 * 1024
+  } catch {
+    return true
+  }
+}
 
 export function validateBoundOutline(value: unknown): BoundOutlineDraft {
   const invalid = (
@@ -25,7 +31,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
     ])
   }
   if (
-    !object(value) ||
+    !isRecord(value) ||
     !only(value, ['overview', 'slides', 'revisionSuggestions']) ||
     !text(value.overview) ||
     !Array.isArray(value.revisionSuggestions) ||
@@ -34,14 +40,10 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
     !value.slides.length
   )
     return invalid()
-  try {
-    if (Buffer.byteLength(JSON.stringify(value)) > 128 * 1024) return invalid()
-  } catch {
-    return invalid()
-  }
+  if (exceedsOutlineSize(value)) return invalid()
   const slides = value.slides.map((s: unknown, index: number) => {
     if (
-      !object(s) ||
+      !isRecord(s) ||
       !only(s, ['slideId', 'title', 'content', 'blocks', 'sources']) ||
       (s.slideId !== undefined && !validId(s.slideId)) ||
       !text(s.title) ||
@@ -67,7 +69,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
     const kinds = ['attachment', 'project-file', 'approved-file', 'research'] as const
     const sources = s.sources.map((r: unknown) => {
       if (
-        !object(r) ||
+        !isRecord(r) ||
         !only(r, ['sourceId', 'version', 'kind']) ||
         typeof r.sourceId !== 'string' ||
         !/^src-[a-f0-9-]{36}$/.test(r.sourceId) ||
@@ -135,53 +137,9 @@ export function saveBoundOutline(
   brief: BriefRecord,
   state: OutlineSnapshot,
 ): OutlineProposal {
-  if (!validId(input.requestId) || !Number.isSafeInteger(input.responseIndex) || input.responseIndex < 0)
-    throw new DeckError('OUTLINE_INVALID')
-  if (state.confirmedId || db.prepare('SELECT 1 FROM decks WHERE session_id=?').get(sessionId))
-    throw new DeckError('OUTLINE_READ_ONLY')
-  if (brief.briefId !== input.expectedBrief.briefId || brief.version !== input.expectedBrief.version)
-    throw new DeckError('BRIEF_STALE')
-  const previous = state.proposals.find(p => p.outlineId === state.currentId)
-  if (
-    input.expectedOutline === null
-      ? !!previous
-      : !previous ||
-        previous.outlineId !== input.expectedOutline.outlineId ||
-        previous.version !== input.expectedOutline.version
-  )
-    throw new DeckError('OUTLINE_STALE')
-  if (state.proposals.some(p => p.requestId === input.requestId)) throw new DeckError('OUTLINE_REQUEST_CONFLICT')
-  if (
-    !brief.draft.topic ||
-    brief.draft.generationFormat !== 'html' ||
-    !brief.design ||
-    (!brief.draft.sources.refs.length && !brief.draft.sources.modelKnowledge && !brief.draft.sources.publicResearch) ||
-    brief.draft.images.mode === 'unavailable' ||
-    (brief.draft.images.mode === 'attachments' && !brief.draft.images.attachmentIds.length)
-  )
-    throw new DeckError('BRIEF_INCOMPLETE')
+  const previous = assertBoundOutlinePreconditions(db, sessionId, input, brief, state)
   const draft = validateBoundOutline(input.draft)
-  if (brief.draft.proposedSlideCount !== undefined && brief.draft.proposedSlideCount !== draft.slides.length)
-    throw new DeckError('OUTLINE_SLIDE_COUNT_MISMATCH')
-  const known = new Set(state.proposals.flatMap(p => p.slides.map(s => s.slideId)))
-  const slides = draft.slides.map(s => {
-    if (s.slideId && !known.has(s.slideId)) throw new DeckError('OUTLINE_SLIDE_NOT_FOUND')
-    if (
-      s.sources.some(
-        r =>
-          !brief.draft.sources.refs.some(
-            k => k.sourceId === r.sourceId && k.version === r.version && k.kind === r.kind,
-          ),
-      )
-    )
-      throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
-    if (s.blocks.some(b => b.kind === 'image' && !brief.draft.images.attachmentIds.includes(b.attachmentId)))
-      throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
-    if (s.blocks.some(b => b.kind === 'web-image') && brief.draft.images.mode !== 'public-research')
-      throw new DeckError('IMAGE_CHOICE_REQUIRED')
-    return { ...s, slideId: s.slideId ?? `slide-${randomUUID()}` }
-  })
-  if (new Set(slides.map(s => s.slideId)).size !== slides.length) throw new DeckError('OUTLINE_INVALID')
+  const slides = resolveBoundSlides(draft, brief, state)
   if (input.restoredFrom && !state.proposals.some(p => p.outlineId === input.restoredFrom))
     throw new DeckError('OUTLINE_NOT_FOUND')
   const proposal: OutlineProposal = {
@@ -215,4 +173,68 @@ export function saveBoundOutline(
     'INSERT INTO outline_heads VALUES(?,?,?,NULL) ON CONFLICT(session_id) DO UPDATE SET version=excluded.version,current_id=excluded.current_id',
   ).run(sessionId, proposal.version, proposal.outlineId)
   return proposal
+}
+
+function assertBoundOutlinePreconditions(
+  db: DatabaseSync,
+  sessionId: string,
+  input: BoundOutlineInput,
+  brief: BriefRecord,
+  state: OutlineSnapshot,
+): OutlineProposal | undefined {
+  if (!validId(input.requestId) || !Number.isSafeInteger(input.responseIndex) || input.responseIndex < 0)
+    throw new DeckError('OUTLINE_INVALID')
+  if (state.confirmedId || db.prepare('SELECT 1 FROM decks WHERE session_id=?').get(sessionId))
+    throw new DeckError('OUTLINE_READ_ONLY')
+  if (brief.briefId !== input.expectedBrief.briefId || brief.version !== input.expectedBrief.version)
+    throw new DeckError('BRIEF_STALE')
+  const previous = state.proposals.find(p => p.outlineId === state.currentId)
+  if (
+    input.expectedOutline === null
+      ? !!previous
+      : !previous ||
+        previous.outlineId !== input.expectedOutline.outlineId ||
+        previous.version !== input.expectedOutline.version
+  )
+    throw new DeckError('OUTLINE_STALE')
+  if (state.proposals.some(p => p.requestId === input.requestId)) throw new DeckError('OUTLINE_REQUEST_CONFLICT')
+  if (
+    !brief.draft.topic ||
+    brief.draft.generationFormat !== 'html' ||
+    !brief.design ||
+    (!brief.draft.sources.refs.length && !brief.draft.sources.modelKnowledge && !brief.draft.sources.publicResearch) ||
+    brief.draft.images.mode === 'unavailable' ||
+    (brief.draft.images.mode === 'attachments' && !brief.draft.images.attachmentIds.length)
+  )
+    throw new DeckError('BRIEF_INCOMPLETE')
+  return previous
+}
+
+function resolveBoundSlides(
+  draft: BoundOutlineDraft,
+  brief: BriefRecord,
+  state: OutlineSnapshot,
+): OutlineProposal['slides'] {
+  if (brief.draft.proposedSlideCount !== undefined && brief.draft.proposedSlideCount !== draft.slides.length)
+    throw new DeckError('OUTLINE_SLIDE_COUNT_MISMATCH')
+  const known = new Set(state.proposals.flatMap(p => p.slides.map(s => s.slideId)))
+  const slides = draft.slides.map(s => {
+    if (s.slideId && !known.has(s.slideId)) throw new DeckError('OUTLINE_SLIDE_NOT_FOUND')
+    if (
+      s.sources.some(
+        r =>
+          !brief.draft.sources.refs.some(
+            k => k.sourceId === r.sourceId && k.version === r.version && k.kind === r.kind,
+          ),
+      )
+    )
+      throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
+    if (s.blocks.some(b => b.kind === 'image' && !brief.draft.images.attachmentIds.includes(b.attachmentId)))
+      throw new DeckError('OUTLINE_SOURCE_NOT_FOUND')
+    if (s.blocks.some(b => b.kind === 'web-image') && brief.draft.images.mode !== 'public-research')
+      throw new DeckError('IMAGE_CHOICE_REQUIRED')
+    return { ...s, slideId: s.slideId ?? `slide-${randomUUID()}` }
+  })
+  if (new Set(slides.map(s => s.slideId)).size !== slides.length) throw new DeckError('OUTLINE_INVALID')
+  return slides
 }

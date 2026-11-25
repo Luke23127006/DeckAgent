@@ -1,6 +1,6 @@
 import { decodeContentOrigins } from '@deckagent/presentation-document'
-import { DeckError } from './contracts.ts'
-import type { ContentProvenance } from './contracts.ts'
+import { DeckError } from './errors.ts'
+import type { ContentProvenance } from './generation-contracts.ts'
 
 export function validateProvenance(value: unknown): readonly ContentProvenance[] {
   try {

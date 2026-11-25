@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { BoundOutlineDraft, ImageNeed, OutlineProposal } from './contracts.ts'
+import type { BoundOutlineDraft, OutlineProposal } from './outline-contracts.ts'
+import type { ImageNeed } from './generation-contracts.ts'
 
 /** Identity includes context and policy; a query alone never identifies a slide image. */
 export function outlineImageNeeds(outline: BoundOutlineDraft | OutlineProposal): readonly ImageNeed[] {

@@ -16,19 +16,21 @@ import {
 import { dirname, join, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { resolveLayout } from '@deckagent/design'
-import { DeckError, validId, ImagePreparationError } from './contracts.ts'
+import { DeckError, validId, ImagePreparationError } from './errors.ts'
 import type {
   ArtifactAsset,
   ArtifactPublication,
   DeckOptions,
   GenerationGrant,
   GenerationSnapshot,
-  OutlineProposal,
+  ImageAttempt,
+  ImageCredit,
+  PreparedResearchImage,
   StageChunk,
   StageStatus,
-  BriefProposalInput,
-  OutlineProposal as SavedOutline,
-} from './contracts.ts'
+} from './generation-contracts.ts'
+import type { OutlineProposal, OutlineProposal as SavedOutline } from './outline-contracts.ts'
+import type { BriefProposalInput } from './brief-contracts.ts'
 import {
   decodeSlideDocument,
   documentText,
@@ -43,11 +45,11 @@ import type {
   ArtifactDescriptor,
 } from '@deckagent/presentation-document'
 import { validateProvenance } from './provenance.ts'
-import type { ContentProvenance } from './contracts.ts'
+import type { ContentProvenance } from './generation-contracts.ts'
 import { validateBriefDraft } from './brief-store.ts'
 import { validateBoundOutline } from './bound-outline.ts'
 import { outlineImageNeeds } from './image-needs.ts'
-import type { ImageResolver, OutlineImageReview } from './contracts.ts'
+import type { ImageResolver, OutlineImageReview } from './generation-contracts.ts'
 
 interface PreparedRecord {
   query: string
@@ -57,7 +59,7 @@ interface PreparedRecord {
   slideId?: string
   asset?: ArtifactAsset
   failure?: string
-  attempts?: readonly import('./contracts.ts').ImageAttempt[]
+  attempts?: readonly ImageAttempt[]
 }
 
 const digest = (bytes: string | Uint8Array) => createHash('sha256').update(bytes).digest('hex')
@@ -97,10 +99,7 @@ export class ArtifactStorage {
   private readonly formats: ReadonlyMap<string, FormatAdapter>
   private readonly stages = new Map<string, Stage>()
   private readonly imageAttempts = new WeakMap<GenerationGrant, number>()
-  private readonly researchImages = new WeakMap<
-    GenerationGrant,
-    Map<string, Promise<import('./contracts.ts').PreparedResearchImage>>
-  >()
+  private readonly researchImages = new WeakMap<GenerationGrant, Map<string, Promise<PreparedResearchImage>>>()
   private readonly root: string | undefined
   constructor(
     private readonly db: DatabaseSync,
@@ -330,11 +329,7 @@ export class ArtifactStorage {
     if (!record?.asset) throw new DeckError('DECK_CONTENT_NOT_FOUND')
     return this.read(`${record.asset.assetId}.png`, record.asset.digest, 256 * 1024)
   }
-  restoredImage(
-    sessionId: string,
-    outline: SavedOutline,
-    needId: string,
-  ): import('./contracts.ts').PreparedResearchImage {
+  restoredImage(sessionId: string, outline: SavedOutline, needId: string): PreparedResearchImage {
     const need =
       this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared') ??
       outlineImageNeeds(outline).find(n => n.needId === needId)
@@ -735,7 +730,7 @@ export class ArtifactStorage {
   }
 
   imageMetadata(row: Record<string, unknown>): {
-    imageCredits: import('./contracts.ts').ImageCredit[]
+    imageCredits: ImageCredit[]
     imageOmissions: string[]
   } {
     const manifest = JSON.parse(String(row.manifest))
