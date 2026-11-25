@@ -1,8 +1,5 @@
 import type { ServerResponse } from 'node:http'
-import { RequestFailure } from '../lifecycle/request-failure.ts'
-import type { HostOptions, HttpFailureResponse } from './contracts.ts'
-import { HttpError } from './http-error.ts'
-import { json } from './http-io.ts'
+import { HttpError, RequestFailure, type HostOptions, type HttpFailureResponse } from '@deckagent/host-api'
 
 const requestFailureStatus: Readonly<Record<string, number>> = {
   HOST_CLOSED: 503,
@@ -38,11 +35,14 @@ export function writeRouteError(res: ServerResponse, error: unknown, options: Ho
   const status = mapped ? mapped.status : known ? error.status : 500
   const code = mapped ? mapped.code : known ? error.code : 'HOST_ERROR'
   const detail = mapped?.detail ?? (known ? error.detail : undefined)
-  json(res, status, {
-    error: {
-      code,
-      message: options.failureMessage?.(mapped || known ? code : '') ?? 'Request could not be completed',
-      ...(detail ? { detail } : {}),
-    },
-  })
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
+  res.end(
+    JSON.stringify({
+      error: {
+        code,
+        message: options.failureMessage?.(mapped || known ? code : '') ?? 'Request could not be completed',
+        ...(detail ? { detail } : {}),
+      },
+    }),
+  )
 }

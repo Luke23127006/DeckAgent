@@ -45,13 +45,13 @@ TS-09 in Target Structure Criteria requires a tool check for each dependency rul
 - Change the text of the rules or the tests in Step 2.
 - Keep the temporary change of Step 4.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short && node --test tests/oxlint-boundaries.test.mjs`
 
 Expected: PASS. `git status --short` prints no line. The test output contains `# pass 13` and `# fail 0`.
 
-- [ ] **Step 2: Run the edit script**
+- [x] **Step 2: Run the edit script**
 
 Save the script below as `deckagent-lint-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository.
 
@@ -219,7 +219,7 @@ Run from the repository root: `node <temporary folder>/deckagent-lint-edits.mjs`
 
 Expected: PASS. The output is `lint-edits: 3 files changed, 0 failures`.
 
-- [ ] **Step 3: Run the tests and the checks**
+- [x] **Step 3: Run the tests and the checks**
 
 Run: `node --test tests/oxlint-boundaries.test.mjs`
 
@@ -229,7 +229,7 @@ Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries && co
 
 Expected: PASS. The output contains `check-boundaries: 0 violation(s)` and `0 error(s)`.
 
-- [ ] **Step 4: Make sure that the new tests can fail, then restore the rules**
+- [x] **Step 4: Make sure that the new tests can fail, then restore the rules**
 
 1. Copy `.oxlintrc.json` to `oxlintrc.backup.json` in the temporary folder of the system.
 2. In `.oxlintrc.json`, change `"**/apps/host/src/http/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"` to `"**/apps/host/src/nohttp/**/*.ts"`.
@@ -245,13 +245,13 @@ Run: `node --test tests/oxlint-boundaries.test.mjs`
 
 Expected: PASS. The output contains `# pass 17` and `# fail 0`.
 
-- [ ] **Step 5: Check the changed paths**
+- [x] **Step 5: Check the changed paths**
 
 Run: `git status --short`
 
 Expected: PASS. The output has ` M .oxlintrc.json`, ` M docs/conventions/project-structure.md` and ` M tests/oxlint-boundaries.test.mjs`, and other lines only for files in `docs/build/refactor/target-structure/`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 18 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-18-add-folder-import-rules.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-18-add-folder-import-rules.md` with:

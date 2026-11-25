@@ -6,7 +6,8 @@ import { join } from 'node:path'
 import { startLocalWeb } from '@deckagent/host'
 import { startApp, finished, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { startHost, HttpError } from '@deckagent/host-api'
+import { HttpError } from '@deckagent/host-api'
+import { startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { Readable } from 'node:stream'
 
 async function fixture(t) {

@@ -72,7 +72,7 @@ The code of Step 3 follows these rules. Use them to review the code. Do not chan
 | The routes match the normalized path of `new URL(req.url, origin)` | The first middleware sets `req.url` to that path before the router runs. |
 | A rejected promise goes to `writeRouteError` | `route(handler)` sends a rejected promise and a thrown error to `next`. The lint rule `no-async-endpoint-handlers` rejects an `async` handler without this wrapper. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -82,7 +82,7 @@ Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').
 
 Expected: PASS. The counts are `147`, `158`, `147`, `105`, `37` and `48`, in this order.
 
-- [ ] **Step 2: Install Express and its types**
+- [x] **Step 2: Install Express and its types**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/host-api --filter @deckagent/host add express@5.2.1`
 
@@ -94,7 +94,7 @@ Run: `git diff --stat pnpm-lock.yaml`
 
 Expected: PASS. The output starts with `pnpm-lock.yaml | 120` and contains `1 file changed, 120 insertions(+)`.
 
-- [ ] **Step 3: Write the new code**
+- [x] **Step 3: Write the new code**
 
 Write each text below as the complete file. Do not copy the outer fence.
 
@@ -975,7 +975,7 @@ export async function startHost(options: HostOptions) {
 export { startHost } from '../../lib/types/http/start-host.js'
 ```
 
-- [ ] **Step 4: Delete the old error response file and move the HTTP test**
+- [x] **Step 4: Delete the old error response file and move the HTTP test**
 
 Run: `git rm packages/host/api/src/transport/error-response.ts`
 
@@ -983,7 +983,7 @@ Run: `git mv packages/host/api/tests/host-api.test.mjs apps/host/tests/http-serv
 
 Expected: PASS. Each command exits with code 0.
 
-- [ ] **Step 5: Run the edit script**
+- [x] **Step 5: Run the edit script**
 
 Save the script below as `deckagent-express-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository. The script reads each file with LF line endings, checks the number of matches of each text, and then replaces it.
 
@@ -1071,7 +1071,7 @@ Run from the repository root: `node <temporary folder>/deckagent-express-edits.m
 
 Expected: PASS. The output is `express-edits: 10 files changed, 0 failures`.
 
-- [ ] **Step 6: Build and run the checks**
+- [x] **Step 6: Build and run the checks**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -1101,7 +1101,7 @@ Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`.
 
-- [ ] **Step 7: Run the non-live suites**
+- [x] **Step 7: Run the non-live suites**
 
 Run each command below in order. For each command, write the exit code and the `# pass` and `# fail` lines in the report. When a command fails, run it one more time. When it fails two times, STOP.
 
@@ -1127,7 +1127,7 @@ Run each command below in order. For each command, write the exit code and the `
 | test:browser-smoke | `corepack pnpm@11.28.5 test:browser-smoke` | `# pass 13`, `# fail 0` |
 | test:env-startup | `corepack pnpm@11.28.5 test:env-startup` | `# pass 2`, `# fail 0` |
 
-- [ ] **Step 8: Check the changed paths**
+- [x] **Step 8: Check the changed paths**
 
 Run: `git status --short`
 
@@ -1159,7 +1159,7 @@ D  packages/host/api/src/transport/error-response.ts
 
 Git can show `R ` in place of `RM`, or `M ` in place of ` M`. Only the path matters.
 
-- [ ] **Step 9: Write the report file and stop**
+- [x] **Step 9: Write the report file and stop**
 
 1. Mark Steps 1 to 8 as `- [x]` in this file. Change the Task 17 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-17-serve-routes-through-express.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-17-serve-routes-through-express.md` with:

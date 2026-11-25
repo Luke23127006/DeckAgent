@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { request as httpRequest } from 'node:http'
-import { startHost } from '../lib/index.js'
+import { startHost } from '../lib/types/http/start-host.js'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 
 // B02: the Host owns admission, events, Stop and terminal status (ADR-0004). The legacy question/reply case and the

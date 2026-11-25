@@ -269,7 +269,7 @@ test('a source file is unchanged and a modified managed copy is reported unreada
 })
 
 test('history attachments survive the Host and client projection without exposing physical paths', async t => {
-  const { startHost } = await import('@deckagent/host-api')
+  const { startHost } = await import('../apps/host/tests/fixtures/http-host.mjs')
   const { HostClient } = await import('../apps/web/tests/fixtures/browser-driver.mjs')
   const { open } = await fixture(t)
   const store = open()

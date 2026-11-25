@@ -176,7 +176,8 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 
 | Folder cũ | Folder đích |
 | --- | --- |
-| `packages/host/api/src/index.ts`, `transport/http-io.ts`, `transport/error-response.ts`, `transport/sse.ts` | `apps/host/src/http/` |
+| `packages/host/api/src/transport/http-io.ts`, `transport/sse.ts`, `transport/multipart.ts`, `transport/http-error.ts`, `transport/route-params.ts` | `apps/host/src/http/` |
+| `packages/host/api/src/index.ts` (`createHostRoutes`) | `apps/host/src/server.ts` |
 | `packages/host/api/src/transport/*-routes.ts` | `apps/host/src/modules/<name>/<name>.routes.ts` |
 | `packages/host/api/src/lifecycle/` | `apps/host/src/runs/` |
 | `apps/host/src/local-transport.ts` | Error handler trong `apps/host/src/http/` và bảng ánh xạ lỗi của từng module, xem [Dependency rules](#dependency-rules) |
@@ -221,8 +222,9 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | `runs/` không import module, Express, SQL driver và adapter trong `runtimes/` |
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
 | Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
+| `http/` không import feature, integration, store hoặc storage package | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
 | Route không import store hoặc SQL driver. Service không import Express. Module không import store của module khác | — | `oxlint` (`no-restricted-imports`) theo folder, mỗi rule có negative fixture |
-| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
+| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host`, `@deckagent/host-api` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
 | Tool executor không tự cấp capability | — | `oxlint` (`no-restricted-imports`) cho `tools/executors/` |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 

@@ -18,7 +18,8 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
-import { HttpError, startHost } from '@deckagent/host-api'
+import { HttpError } from '@deckagent/host-api'
+import { startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 
 const selection = { provider: 'fixture', model: 'model-a' }

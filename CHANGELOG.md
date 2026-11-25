@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add folder-level `no-restricted-imports` rules for `apps/host/src/http/` and add `@deckagent/host` to the Browser override, with four negative fixtures in `tests/oxlint-boundaries.test.mjs`. The HTTP edge cannot import module services, stores or storage packages. Task 18 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the workspace package `@deckagent/host` (`apps/host/`) with the entry `lib/server.js` and the extra bundle entry `lib/cli.js`. It owns the composition root `src/server.ts`, the command line `src/cli.ts` and the folders `src/features/` and `src/integrations/`.
 - Add the Task 15 move report (`docs/build/refactor/target-structure/reports/task-15-move-node-code-to-apps-host.md`) with the 74 moved files, the changed callers and the result of each check after the move. Task 15 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the HTTP edge characterization tests (`e2e/http-edge.test.mjs`) and the `test:http-edge` script. The 12 black-box tests record 15 shared HTTP behaviors of the Local Host and 2 route facts of Task 9, so the move to Express 5 cannot drop them without a failed test.
@@ -52,6 +53,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Serve every Local Host route through Express 5.2.1 (`@types/express` 5.0.6). `apps/host/src/http/` holds the Express app, the shared checks, the error handler and `startHost`. `@deckagent/host-api` exports `createHostRoutes` in place of `startHost`, and its four route files are Express route registrars. The HTTP contract and the expected values of the HTTP tests stay the same. Tasks 17 and 19 have reports in `docs/build/refactor/target-structure/reports/`.
 - Move all Node code of `apps/web/src/` into `apps/host/src/` and keep the file and folder names. `apps/web/` now holds the Browser code and `index.ts`, the former `ui-assets.ts`, which reads the Browser files from the folder next to its own file. `@deckagent/host` calls `loadWebAssets(getTheme)` from `@deckagent/local-web`, and the scripts `web` and `start:local` start `node apps/host/lib/cli.js`.
 - Write the `## Tech Stack` section of `AGENTS.md` with the current tools and their versions from `package.json` and the OpenCode config, and with the chosen target libraries without versions.
 - Mark Task 2 `Done` in `docs/build/refactor/target-structure/plan/README.md` with its report link, and check Steps 1 to 5 in `task-02-write-tech-stack.md`.

@@ -12,7 +12,8 @@
 - OpenCode 1.19.5 làm agent runtime.
 - `node:test` cho test.
 - oxlint 1.94.0 cho lint, Biome 2.5.15 cho format.
-- Thư viện đích đã chọn, chưa cài: Express 5 với `multer` và `helmet` cho Local Host, React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
+- Express 5.2.1 cho HTTP của Local Host, type từ `@types/express` 5.0.6.
+- Thư viện đích đã chọn, chưa cài: `multer` và `helmet` cho Local Host, React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
 
 ## Commands
 

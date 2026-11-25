@@ -15,9 +15,11 @@
     "@deckagent/deck": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
-    "busboy": "1.6.0"
+    "busboy": "1.6.0",
+    "express": "5.2.1"
   },
   "devDependencies": {
-    "@types/busboy": "1.5.4"
+    "@types/busboy": "1.5.4",
+    "@types/express": "5.0.6"
   }
 }

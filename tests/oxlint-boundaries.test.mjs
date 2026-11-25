@@ -188,3 +188,68 @@ test('accepts valid public package imports and allowed browser contract imports'
   assert.equal(browserResult.status, 0, browserResult.output)
   assert.deepEqual(browserResult.diagnostics, [])
 })
+
+test('rejects @deckagent/host import in apps/web/src/browser', () => {
+  const result = lintFixture(
+    'apps/web/src/browser/transport/client.ts',
+    "import { startLocalWeb } from '@deckagent/host'\nconsole.log(startLocalWeb)\n",
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 1)
+  assert.match(result.diagnostics[0].message, /@deckagent\/host/)
+  assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
+})
+
+test('rejects feature, integration and store imports inside apps/host/src/http', () => {
+  const result = lintFixture(
+    'apps/host/src/http/app.ts',
+    [
+      "import { createChatOperations } from '../features/chats/index.ts'",
+      "import { OpenCodeRuntime } from '../integrations/opencode/index.ts'",
+      "import { MemoryDraftStore } from '../draft-store.ts'",
+      "import { mapApplicationFailure } from '../local-transport.ts'",
+      'console.log(createChatOperations, OpenCodeRuntime, MemoryDraftStore, mapApplicationFailure)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 4)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.match(diagnostic.help, /The HTTP edge must not import module services, stores or storage\./)
+  }
+})
+
+test('rejects storage package and node:sqlite imports inside apps/host/src/http', () => {
+  const result = lintFixture(
+    'apps/host/src/http/error-handler.ts',
+    [
+      "import { DatabaseSync } from 'node:sqlite'",
+      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { DeckStore } from '@deckagent/deck'",
+      'console.log(DatabaseSync, SqliteSessionStore, DeckStore)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 3)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.match(diagnostic.help, /The HTTP edge must not import module services, stores or storage\./)
+  }
+})
+
+test('accepts the Host API, Express and Node HTTP imports inside apps/host/src/http', () => {
+  const result = lintFixture(
+    'apps/host/src/http/start-host.ts',
+    [
+      "import { createServer } from 'node:http'",
+      "import { createHostRoutes } from '@deckagent/host-api'",
+      "import express from 'express'",
+      'console.log(createServer, createHostRoutes, express)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 0)
+  assert.equal(result.diagnostics.length, 0)
+})

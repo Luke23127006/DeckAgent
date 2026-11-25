@@ -1,147 +1,193 @@
-import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { WebSession } from '@deckagent/host-contracts'
+import type { Router } from 'express'
 import type { WebManagement, WorkspaceManagement } from './contracts.ts'
 import { json, readJson } from './http-io.ts'
+import { param, params, route, WORD_ID } from './route-params.ts'
 
-async function routeWorkspaces(
-  req: IncomingMessage,
-  res: ServerResponse,
-  pathname: string,
-  workspaces: WorkspaceManagement,
-): Promise<boolean> {
-  if (pathname === '/api/workspaces') {
-    if (req.method === 'GET') {
+const PROVIDER_ID = params({ providerId: /^[\w.-]{1,100}$/ })
+
+function registerWorkspaceRoutes(router: Router, workspaces: WorkspaceManagement): void {
+  router.get(
+    '/api/workspaces',
+    route(async (_req, res) => {
       json(res, 200, await workspaces.list())
-      return true
-    }
-    if (req.method === 'POST') {
+    }),
+  )
+  router.post(
+    '/api/workspaces',
+    route(async (req, res) => {
       json(res, 200, await workspaces.add(await readJson(req)))
-      return true
-    }
-  }
-  if (pathname === '/api/workspaces/selected' && req.method === 'PUT') {
-    json(res, 200, await workspaces.select(await readJson(req)))
-    return true
-  }
-  const workspace = /^\/api\/workspaces\/([\w-]{1,100})(\/folder)?$/.exec(pathname)
-  const [, workspaceId, folderTail] = workspace ?? []
-  if (workspaceId && workspaceId !== 'selected') {
-    if (!folderTail && req.method === 'PUT') {
-      json(res, 200, await workspaces.rename(workspaceId, await readJson(req)))
-      return true
-    }
-    if (!folderTail && req.method === 'DELETE') {
-      json(res, 200, await workspaces.remove(workspaceId))
-      return true
-    }
-    if (folderTail && req.method === 'PUT') {
-      json(res, 200, await workspaces.relink(workspaceId, await readJson(req)))
-      return true
-    }
-  }
-  return false
+    }),
+  )
+  router.put(
+    '/api/workspaces/selected',
+    route(async (req, res) => {
+      json(res, 200, await workspaces.select(await readJson(req)))
+    }),
+  )
+  const notSelected = params({ workspaceId: /^(?!selected$)[\w-]{1,100}$/ })
+  router.put(
+    '/api/workspaces/:workspaceId',
+    notSelected,
+    route(async (req, res) => {
+      json(res, 200, await workspaces.rename(param(req, 'workspaceId'), await readJson(req)))
+    }),
+  )
+  router.delete(
+    '/api/workspaces/:workspaceId',
+    notSelected,
+    route(async (req, res) => {
+      json(res, 200, await workspaces.remove(param(req, 'workspaceId')))
+    }),
+  )
+  router.put(
+    '/api/workspaces/:workspaceId/folder',
+    notSelected,
+    route(async (req, res) => {
+      json(res, 200, await workspaces.relink(param(req, 'workspaceId'), await readJson(req)))
+    }),
+  )
 }
 
-async function routeSettingsAndProviders(
-  req: IncomingMessage,
-  res: ServerResponse,
-  pathname: string,
-  management: WebManagement,
-): Promise<boolean> {
-  if (pathname === '/api/settings' && req.method === 'GET') {
-    json(res, 200, await management.settings())
-    return true
+function registerSettingsAndProviderRoutes(router: Router, management: WebManagement): void {
+  router.get(
+    '/api/settings',
+    route(async (_req, res) => {
+      json(res, 200, await management.settings())
+    }),
+  )
+  const research = management.research
+  if (research) {
+    router.put(
+      '/api/research',
+      route(async (req, res) => {
+        await research.save(await readJson(req))
+        json(res, 200, { ok: true })
+      }),
+    )
+    router.delete(
+      '/api/research',
+      route(async (_req, res) => {
+        await research.remove()
+        json(res, 200, { ok: true })
+      }),
+    )
   }
-  if (pathname === '/api/research' && management.research) {
-    if (req.method === 'PUT') {
-      await management.research.save(await readJson(req))
-      json(res, 200, { ok: true })
-      return true
-    }
-    if (req.method === 'DELETE') {
-      await management.research.remove()
-      json(res, 200, { ok: true })
-      return true
-    }
+  const preferences = management.preferences
+  if (preferences) {
+    router.get(
+      '/api/preferences',
+      route(async (_req, res) => {
+        json(res, 200, await preferences.get())
+      }),
+    )
+    router.put(
+      '/api/preferences',
+      route(async (req, res) => {
+        json(res, 200, await preferences.save(await readJson(req)))
+      }),
+    )
   }
-  if (pathname === '/api/preferences' && management.preferences) {
-    if (req.method === 'GET') {
-      json(res, 200, await management.preferences.get())
-      return true
-    }
-    if (req.method === 'PUT') {
-      json(res, 200, await management.preferences.save(await readJson(req)))
-      return true
-    }
-  }
-  const [, providerId] = /^\/api\/providers\/([\w.-]{1,100})$/.exec(pathname) ?? []
-  if (providerId && (req.method === 'PUT' || req.method === 'DELETE')) {
-    if (req.method === 'PUT') await management.saveProvider(providerId, await readJson(req))
-    else await management.deleteProvider(providerId)
-    json(res, 200, { saved: true })
-    return true
-  }
-  const [, catalogId] = /^\/api\/providers\/([\w.-]{1,100})\/catalog$/.exec(pathname) ?? []
-  if (catalogId && req.method === 'GET') {
-    json(res, 200, await management.catalog(catalogId))
-    return true
-  }
-  return false
+  router.put(
+    '/api/providers/:providerId',
+    PROVIDER_ID,
+    route(async (req, res) => {
+      await management.saveProvider(param(req, 'providerId'), await readJson(req))
+      json(res, 200, { saved: true })
+    }),
+  )
+  router.delete(
+    '/api/providers/:providerId',
+    PROVIDER_ID,
+    route(async (req, res) => {
+      await management.deleteProvider(param(req, 'providerId'))
+      json(res, 200, { saved: true })
+    }),
+  )
+  router.get(
+    '/api/providers/:providerId/catalog',
+    PROVIDER_ID,
+    route(async (req, res) => {
+      json(res, 200, await management.catalog(param(req, 'providerId')))
+    }),
+  )
 }
 
-export async function routeManagement(
-  req: IncomingMessage,
-  res: ServerResponse,
-  pathname: string,
+export function registerManagementRoutes(
+  router: Router,
   management: WebManagement,
   withActive: (sessions: readonly WebSession[]) => Promise<readonly WebSession[]>,
-): Promise<boolean> {
-  if (await routeSettingsAndProviders(req, res, pathname, management)) return true
-  const [, researchSessionId] = /^\/api\/sessions\/([\w-]{1,100})\/research-sources$/.exec(pathname) ?? []
-  if (researchSessionId && management.research && req.method === 'GET') {
-    json(res, 200, await management.research.sources(researchSessionId))
-    return true
+): void {
+  const session = params({ sessionId: WORD_ID })
+  registerSettingsAndProviderRoutes(router, management)
+  const research = management.research
+  if (research) {
+    router.get(
+      '/api/sessions/:sessionId/research-sources',
+      session,
+      route(async (req, res) => {
+        json(res, 200, await research.sources(param(req, 'sessionId')))
+      }),
+    )
   }
-  if (pathname === '/api/sessions') {
-    if (req.method === 'GET') {
+  router.get(
+    '/api/sessions',
+    route(async (_req, res) => {
       json(res, 200, await withActive(await management.sessions()))
-      return true
-    }
-    if (req.method === 'POST') {
+    }),
+  )
+  router.post(
+    '/api/sessions',
+    route(async (req, res) => {
       json(res, 201, await management.createSession(await readJson(req)))
-      return true
-    }
+    }),
+  )
+  router.put(
+    '/api/sessions/:sessionId/selection',
+    session,
+    route(async (req, res) => {
+      json(res, 200, await management.selectModel(param(req, 'sessionId'), await readJson(req)))
+    }),
+  )
+  router.get(
+    '/api/sessions/:sessionId/activities',
+    session,
+    route(async (req, res) => {
+      json(res, 200, await management.activities(param(req, 'sessionId')))
+    }),
+  )
+  router.get(
+    '/api/sessions/:sessionId/requests',
+    session,
+    route(async (req, res) => {
+      json(res, 200, await management.requests(param(req, 'sessionId')))
+    }),
+  )
+  const searchSessions = management.searchSessions?.bind(management)
+  if (searchSessions) {
+    router.post(
+      '/api/sessions/search',
+      route(async (req, res) => {
+        json(res, 200, await withActive(await searchSessions(await readJson(req))))
+      }),
+    )
   }
-  const [, sessionId, kind] = /^\/api\/sessions\/([\w-]{1,100})\/(selection|activities|requests)$/.exec(pathname) ?? []
-  if (sessionId && kind === 'selection' && req.method === 'PUT') {
-    json(res, 200, await management.selectModel(sessionId, await readJson(req)))
-    return true
+  const drafts = management.drafts
+  if (drafts) {
+    router.get(
+      '/api/sessions/:sessionId/draft',
+      session,
+      route(async (req, res) => {
+        json(res, 200, await drafts.get(param(req, 'sessionId')))
+      }),
+    )
+    router.put(
+      '/api/sessions/:sessionId/draft',
+      session,
+      route(async (req, res) => {
+        json(res, 200, await drafts.save(param(req, 'sessionId'), await readJson(req)))
+      }),
+    )
   }
-  if (sessionId && kind === 'activities' && req.method === 'GET') {
-    json(res, 200, await management.activities(sessionId))
-    return true
-  }
-  if (sessionId && kind === 'requests' && req.method === 'GET') {
-    json(res, 200, await management.requests(sessionId))
-    return true
-  }
-  if (pathname === '/api/sessions/search' && req.method === 'POST' && management.searchSessions) {
-    json(res, 200, await withActive(await management.searchSessions(await readJson(req))))
-    return true
-  }
-  const [, draftSessionId] = /^\/api\/sessions\/([\w-]{1,100})\/draft$/.exec(pathname) ?? []
-  if (draftSessionId && management.drafts) {
-    if (req.method === 'GET') {
-      json(res, 200, await management.drafts.get(draftSessionId))
-      return true
-    }
-    if (req.method === 'PUT') {
-      json(res, 200, await management.drafts.save(draftSessionId, await readJson(req)))
-      return true
-    }
-  }
-  if (management.workspaces && pathname.startsWith('/api/workspaces')) {
-    return routeWorkspaces(req, res, pathname, management.workspaces)
-  }
-  return false
+  if (management.workspaces) registerWorkspaceRoutes(router, management.workspaces)
 }
