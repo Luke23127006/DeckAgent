@@ -66,7 +66,7 @@ Apply the rows from top to bottom to each table. Use the first row that matches.
 | The Browser does not show the rows of the table | Class `internal`. Record the owner that reads the rows. |
 | No row matches | Class `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: List the files that run SQL and the tables**
+- [x] **Step 1: List the files that run SQL and the tables**
 
 Run: `git ls-files 'apps/web/src/*.ts' 'apps/web/src/**/*.ts' 'packages/*/*/src/*.ts' | xargs grep -lE "\.(prepare|exec)\(\s*['\`]" | wc -l && git ls-files 'apps/web/src/*.ts' 'apps/web/src/**/*.ts' 'packages/*/*/src/*.ts' | xargs grep -n "CREATE TABLE" | wc -l`
 
@@ -76,11 +76,11 @@ Run: `git ls-files 'apps/web/src/*.ts' 'apps/web/src/**/*.ts' 'packages/*/*/src/
 
 Expected: PASS. The output has 29 lines in 4 files: `apps/web/src/web-state.ts`, `packages/presentation/deck/src/schema.ts`, `packages/session/persistence/src/schema.ts` and `packages/workspace/registry/src/schema.ts`.
 
-- [ ] **Step 2: Classify each table**
+- [x] **Step 2: Classify each table**
 
 For each of the 29 tables, find the code that writes the table and the HTTP route that reads it. Use `grep -rn "<table name>" apps/web/src packages --include=*.ts` and exclude paths with `/lib/`. Apply the [Table decision table](#table-decision-table). Write one row in the report table `ID | Table | Schema (file:line) | Write sites (file:line) | Read route | Class | Record`.
 
-- [ ] **Step 3: Record the deck pattern and the other conflict checks**
+- [x] **Step 3: Record the deck pattern and the other conflict checks**
 
 Record these facts in the report, with file and line:
 
@@ -91,13 +91,13 @@ Record these facts in the report, with file and line:
 5. How `MemoryDraftStore` in `apps/web/src/draft-store.ts` decides to return `DRAFT_CONFLICT`. This is a second conflict check that is not a `version` in a store.
 6. Each other SSE route in `packages/host/api/src/transport/`, with its path and its event names.
 
-- [ ] **Step 4: Check that no code changed**
+- [x] **Step 4: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 6 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-06-diagnose-change-notice.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-06-diagnose-change-notice.md` with:

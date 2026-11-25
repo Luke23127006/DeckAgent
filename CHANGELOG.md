@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 6 change notice report (`docs/build/refactor/target-structure/reports/task-06-diagnose-change-notice.md`). It classifies the 29 tables of 4 schema files, records that only the deck sends a change notice, and lists the other conflict checks (`BRIEF_STALE`, `OUTLINE_STALE`, `DRAFT_CONFLICT`). Task 6 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the Task 5 run preparation report (`docs/build/refactor/target-structure/reports/task-05-diagnose-run-preparation.md`). It lists the 51 places that build a part of a run, each with a kind and an owner, and records the order of preparation, the condition of each feature folder and the parts that the OpenCode adapter converts. Task 5 is `Done`.
 - Revise the Task 5 run preparation diagnosis in `docs/build/refactor/target-structure/plan/`. Task 5 reads the route and controller files, has the `prompt-input` kind and the `composition-root` owner, and runs the STE lint on its report. The plan README lists the new failure mode in Review Focus.
 - Add the Task 2 Tech Stack report (`docs/build/refactor/target-structure/reports/task-02-write-tech-stack.md`), with the version values that the checks compared and the limit of what those checks prove.
