@@ -74,7 +74,7 @@ Apply this table in top-to-bottom order to every finding in the 10 core files of
 | A file, type, or seam protects a real invariant or contract boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file metrics, non-null assertions, and workspace importers**
+- [x] **Step 1: Measure live file metrics, non-null assertions, and workspace importers**
 
 Run:
 
@@ -84,7 +84,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 10`, `"totalLines": 2672`, `"nonNullTotal": 15`, `"root": 31`, and `"brief": 2`.
 
-- [ ] **Step 2: Audit all 66 root exports and all 7 `./brief` subpath exports**
+- [x] **Step 2: Audit all 66 root exports and all 7 `./brief` subpath exports**
 
 Run:
 
@@ -103,7 +103,7 @@ Record exact file-and-line observations for:
 5. Store files and helpers: inspect `bound-outline.ts` (218 lines, `saveBoundOutline` at line 131), `outline-store.ts` (198 lines, `snapshot` at line 45), `generation-store.ts` (149 lines), and `brief-store.ts` (132 lines). Inspect `interview.ts` (118 lines), `schema.ts` (101 lines), and `provenance.ts` (11 lines). Explain why `contracts.ts <-> index.ts` co-changed 9 times.
 6. All 15 non-null assertions (`!`) across `index.ts` (9), `schema.ts` (3), `interview.ts` (2), and `outline-store.ts` (1). Record exact line numbers and exact guard replacements.
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of exported symbols (`66` root + `7` `./brief`), `DeckService` method count (`45`), and concepts callers must know to use `@deckagent/deck`. Name every pass-through re-export, unused export, and test-only export.
@@ -113,12 +113,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new generation failure status or stage transition and emit a deck change event.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). Name any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no code or convention file changed**
+- [x] **Step 4: Check that no code or convention file changed**
 
 Run: `git status --short`
 Expected: PASS. No file under `packages/`, `apps/`, `e2e/`, `tests/`, `docs/conventions/`, or `docs/build/refactor/module-design/README.md` appears in the output.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 13 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` and link `../reports/task-13-diagnose-deck-core-and-surface.md`.
 2. Create `docs/build/refactor/module-design/reports/task-13-diagnose-deck-core-and-surface.md` with:
