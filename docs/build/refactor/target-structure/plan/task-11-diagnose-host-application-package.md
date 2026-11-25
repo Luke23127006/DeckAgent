@@ -63,13 +63,13 @@ The target folders come from the table in section `## Trong lúc chuyển` of `d
 | The specifier starts with `./` and no row above matches | Kind `local`. Target `Not in the table`. Write the exported names that the file uses. |
 | No row matches | Kind `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `grep -c "from '" apps/web/src/index.ts apps/web/src/cli.ts && grep -c "^export" apps/web/src/index.ts`
 
 Expected: PASS. The output is three lines: `apps/web/src/index.ts:30`, `apps/web/src/cli.ts:8` and `4`. FAIL: any other number.
 
-- [ ] **Step 2: List and classify each import**
+- [x] **Step 2: List and classify each import**
 
 Run: `grep -n "from '" apps/web/src/index.ts apps/web/src/cli.ts`
 
@@ -85,7 +85,7 @@ Then write these facts in the report, with file and line:
 4. Each field of `LocalWebOptions`, with its type.
 5. What `apps/web/src/cli.ts` does before it calls `startLocalWeb`, in order: arguments, environment variables and files that it reads.
 
-- [ ] **Step 3: List the callers of the two packages**
+- [x] **Step 3: List the callers of the two packages**
 
 Run: `grep -rln "@deckagent/local-web" --include=*.mjs --include=*.ts --include=*.json . | grep -v node_modules | grep -v "/lib/"`
 
@@ -99,7 +99,7 @@ For each test file in the first output, write one row in the report table `ID | 
 
 For the second output, write the number of files under each folder: `apps/web/src/features/`, `apps/web/src/integrations/`, `apps/web/src/` (other files), `apps/web/tests/`, `e2e/` and other folders.
 
-- [ ] **Step 4: List the paths that start, build and package the Host**
+- [x] **Step 4: List the paths that start, build and package the Host**
 
 Run: `grep -rn "apps/web/lib\|apps/web/" package.json scripts/build-workspace.mjs scripts/package-opencode.mjs e2e/env-startup.test.mjs e2e/deck-pipeline.test.mjs`
 
@@ -113,7 +113,7 @@ Also write these facts:
 2. The `dependencies` of `apps/web/package.json` and of `packages/host/api/package.json`.
 3. The `references` of `apps/web/tsconfig.json`, and the purpose of `apps/web/tsconfig.browser.json`.
 
-- [ ] **Step 5: List the checks that name the moved paths**
+- [x] **Step 5: List the checks that name the moved paths**
 
 Run: `grep -n "local-web\|apps/web\|host-api\|packages/host/api" scripts/check-boundaries.mjs .oxlintrc.json`
 
@@ -127,13 +127,13 @@ Expected: PASS. The command exits with code 0.
 
 For each line, write the test name. These tests are the negative fixtures of the rules that name the moved paths.
 
-- [ ] **Step 6: Check that no code changed**
+- [x] **Step 6: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 11 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-11-diagnose-host-application-package.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-11-diagnose-host-application-package.md` with:
