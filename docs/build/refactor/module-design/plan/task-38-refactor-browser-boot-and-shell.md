@@ -50,7 +50,7 @@ Read this file to remove dead `layout.ts`, split `boot.ts` into four internal sh
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Remove `layout.ts` and create `shell-dom.ts` (`BB1`, `BB4`, `BB7`)**
+- [x] **Step 1: Remove `layout.ts` and create `shell-dom.ts` (`BB1`, `BB4`, `BB7`)**
 
 1. Remove `apps/web/src/browser/layout.ts`.
 2. Create `apps/web/src/browser/shell-dom.ts` (under 290 lines, every function under 70 lines):
@@ -59,7 +59,7 @@ Read this file to remove dead `layout.ts`, split `boot.ts` into four internal sh
    - Own `setNavigation` (`deckagent-nav` in `localStorage`), `foldRecents` (`max-width:720px`), `openAccountMenu`, `closeAccountMenu`, `fitInput`, and the `ResizeObserver` updating `--navigation-height` (returning `dispose()` to disconnect it).
    - In the `document` `pointerdown` listener (`boot.ts:879-886`), guard `const target = event.target; if (!(target instanceof Node)) return` before `!accountMenu.contains(target) && !accountTrigger.contains(target)`, removing both `as Node` assertions.
 
-- [ ] **Step 2: Create `draft-sync.ts` (`BB4`)**
+- [x] **Step 2: Create `draft-sync.ts` (`BB4`)**
 
 Create `apps/web/src/browser/draft-sync.ts` (under 240 lines, every function under 65 lines) exporting `createDraftSync(options)`:
 
@@ -67,7 +67,7 @@ Create `apps/web/src/browser/draft-sync.ts` (under 240 lines, every function und
 2. Move the `500` ms `attachmentTimer` (`boot.ts` lines 1191-1210) and the `window` `focus` draft sync listener (`boot.ts` lines 1232-1249).
 3. Expose `dispose()` to clear `attachmentTimer`, remove the `focus` listener, and call `closePreview()`.
 
-- [ ] **Step 3: Create `chat-navigation.ts` (`BB4`)**
+- [x] **Step 3: Create `chat-navigation.ts` (`BB4`)**
 
 Create `apps/web/src/browser/chat-navigation.ts` (under 280 lines, every function under 70 lines) exporting `createChatNavigation(options)`:
 
@@ -75,7 +75,7 @@ Create `apps/web/src/browser/chat-navigation.ts` (under 280 lines, every functio
 2. Keep `open` loading all five resources before mutating `current` so a failed open leaves the old chat intact.
 3. Expose `dispose()` to clear `searchTimer`.
 
-- [ ] **Step 4: Create `request-runner.ts` (`BB4`, `BB7`)**
+- [x] **Step 4: Create `request-runner.ts` (`BB4`, `BB7`)**
 
 Create `apps/web/src/browser/request-runner.ts` (under 290 lines, every function under 75 lines) exporting `sendBlocked` and `createRequestRunner(options)`:
 
@@ -104,7 +104,7 @@ if (consumesDraft)
 
 3. Expose `abortWatch()` and `dispose()` (clearing `timer` and aborting `watch`).
 
-- [ ] **Step 5: Shrink `boot.ts` under 280 lines (`BB4`, `BB7`)**
+- [x] **Step 5: Shrink `boot.ts` under 280 lines (`BB4`, `BB7`)**
 
 Refactor `apps/web/src/browser/boot.ts` (under 280 lines, every function under 75 lines, zero `as`, zero `!`):
 
@@ -112,7 +112,7 @@ Refactor `apps/web/src/browser/boot.ts` (under 280 lines, every function under 7
 2. Mount `mountDeckTab`, `mountDeckCanvas`, `DeckWorkflowView`, `ConversationView`, `settingsPanel`, `workspaceView`, `modelPicker`, `researchView`, `AttachmentDraftView`, `themeControl`, and `initMotion`.
 3. Wire `createDraftSync`, `createChatNavigation`, `createRequestRunner`, `controls()`, `run()`, `model` `change` listener, `reconnect` button, `pagehide` and `pageshow` listeners, and the initial startup sequence (`refresh` then open remembered chat or `newChat`).
 
-- [ ] **Step 6: Build, check boundaries, lint, format, measure AST metrics, and run suites**
+- [x] **Step 6: Build, check boundaries, lint, format, measure AST metrics, and run suites**
 
 Run:
 
@@ -144,7 +144,7 @@ corepack pnpm@11.28.5 test:tools-browser && corepack pnpm@11.28.5 test:local-web
 
 Expected: PASS. All three suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 38 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-38-refactor-browser-boot-and-shell.md`.
 2. Create `docs/build/refactor/module-design/reports/task-38-refactor-browser-boot-and-shell.md` with:
