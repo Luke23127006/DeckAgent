@@ -4,9 +4,9 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you finish a step, change its `- [ ]` to `- [x]` in the task file. After all checks pass, mark the task `Done` in this file, write the task report, and commit and push only the task files. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Refactor Phase 2 Slice 2B (`packages/presentation/deck/` and `packages/host/api/src/contract-sync.ts`) using approved Task 13 and Task 14 decisions, then pass the exit gate.
+**Goal:** Run read-only deep-module diagnosis on Phase 2 Slice 2C (`apps/web/src/features/`, `apps/web/src/integrations/`, and `apps/web/src/` root) and stop for owner approval.
 
-**Approach:** Revisions 1 and 1b (Tasks 1 to 5) closed Phase 1. Revisions 2 and 2b (Tasks 6 to 12) closed Slice 2A. Revision 3 (Tasks 13 and 14) finished Slice 2B diagnosis and recorded owner approvals (`D1` to `D15`). Revision 3b (Tasks 15 to 19) updates Project Structure conventions, refactors `packages/presentation/deck/`, adds compile-time contract checks, and passes the Slice 2B exit gate.
+**Approach:** Revisions 1 to 3b (Tasks 1 to 19) closed Phase 1, Slice 2A, and Slice 2B. Revision 4 splits Slice 2C diagnosis into three context-sized tasks (Tasks 20 to 22), including browser reuse evaluation for `artifact-renderer.ts`. Each task audits exports, assertions, `*Service` symbols, small files, and seams, then stops for owner approval before Revision 4b refactors start.
 
 **Tech stack:** Windows, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod, and `node:test`.
 
@@ -16,7 +16,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 | Topic | Decision |
 | --- | --- |
-| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 to 2b closed Phase 1 and Slice 2A. Revision 3 diagnosed Slice 2B, and Revision 3b runs Slice 2B refactors [[1]](#ref-1). |
+| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 to 3b closed Phase 1, Slice 2A, and Slice 2B. Revision 4 runs Slice 2C diagnosis [[1]](#ref-1). |
 | Scanner script | Place the static scanner at `scripts/scan-module-design.mjs` and its unit tests at `tests/scan-module-design.test.mjs`. Add `"scan:module-design": "node scripts/scan-module-design.mjs"` in `package.json`. |
 | Scanner parser | Parse TypeScript and JavaScript files with the installed `typescript` compiler API (`ts.createSourceFile`), matching `scripts/check-boundaries.mjs`. Add no new npm dependency. |
 | Production area scope | Scan tracked and non-ignored `.ts` and `.tsx` files under `apps/` and `packages/`, excluding `lib/`, `tests/`, and `node_modules/`. Group files into the 14 areas listed in Module Design Refactor [[1]](#ref-1). |
@@ -41,7 +41,9 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | `presentation/design/` deferral | Defer `packages/presentation/design/` refactors (D12, D13) to Phase 3 Tier 2 hygiene. Keep `ContentBlock`, `WebImageIntent`, `DesignSnapshot`, and layout checks in `@deckagent/design` (D15). |
 | Deck contracts and core stores | Split `packages/presentation/deck/src/contracts.ts` into `errors.ts`, `brief-contracts.ts`, `outline-contracts.ts`, `generation-contracts.ts`, and `deck-contracts.ts` (D4). Split long functions under 80 lines in `brief.ts`, `bound-outline.ts`, `outline-store.ts`, and `schema.ts`, inject `BriefStorage` into `OutlineStorage`, and move `generation_intents` SQL writes into `generation-store.ts` (D3, D5, D6). Replace core `!` assertions with explicit guards (D7). |
 | Deck artifacts and image store | Remove `provenance.ts` and `image-needs.ts` (D1, D10). Extract `artifact-fs.ts`, `image-store.ts` (`PreparedImageStore` owning `prepared_images`, `image_search_attempts`, and `outlineImageNeeds`), and `artifact-readback.ts` (`ArtifactReadback`) so `artifact-store.ts` owns staging and preparation under 400 lines (D10). Guard all `as`, `!`, and `JSON.parse` calls with `DeckError('ARTIFACT_CORRUPT')` (D11). |
-| `DeckStore` rename and export narrowing | Rename `DeckService` to `DeckStore`, extract `deck-publication.ts` with the four staging wrappers hidden inside `generationCapability`, split the Brief, Outline and image authoring into `deck-authoring.ts`, the generation lifecycle into `deck-generation.ts`, the read path into `deck-reads.ts` and the runtime into `deck-runtime.ts` so `deck-store.ts` stays under 360 lines, and keep `index.ts` as a 31-export barrel (D2, D4, D5). Remove the `./brief` subpath from `packages/presentation/deck/package.json` and `scripts/build-workspace.mjs`, export `briefContractVersion` and `briefJsonSchema` from root, drop 11 pass-through re-exports, and update all callers (D2, D3, D5). |
+| `DeckStore` rename and export narrowing | Rename `DeckService` to `DeckStore` and keep `index.ts` as a 31-export barrel (D2, D4, D5). Extract `deck-publication.ts` with the four staging wrappers hidden inside `generationCapability`. Split authoring, generation, reads, and runtime into `deck-authoring.ts`, `deck-generation.ts`, `deck-reads.ts`, and `deck-runtime.ts` so `deck-store.ts` stays under 360 lines. Remove the `./brief` subpath from `packages/presentation/deck/package.json` and `scripts/build-workspace.mjs`, export `briefContractVersion` and `briefJsonSchema` from root, drop 11 pass-through re-exports, and update all callers (D2, D3, D5). |
+| Slice 2B exit gate | Tasks 15 to 19 passed `build`, `check:boundaries`, `lint`, `check:docs`, and Biome on touched paths. All 5 root tool test files (69 pass, 0 fail) and 18 non-live suites (333 pass, 0 fail) passed. `packages/presentation/deck/` reached 0 files over 400 lines, 0 functions over 80 lines, 0 type assertions, 0 non-null assertions, 0 `*Service` symbols, 31 root exports, and 1 subpath. |
+| Slice 2C diagnosis split | Split Slice 2C diagnosis into three read-only tasks inside the 1,500 to 3,500 line budget [[1]](#ref-1). Task 20 covers `apps/web/src/features/deck/` (8 files, 2,033 lines). Task 21 covers the other seven feature folders and `apps/web/src/` root (31 files, 3,258 lines). Task 22 covers `apps/web/src/integrations/` and `artifact-renderer.ts` browser reuse (22 files, 2,526 lines). |
 
 ## Global Constraints
 
@@ -90,6 +92,9 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 20. `PreparedImageStore`, `ArtifactReadback`, and `ArtifactStorage` split artifact concerns under 400 lines, remove `provenance.ts` and `image-needs.ts`, and throw `ARTIFACT_CORRUPT` on corrupt SQLite JSON. Test: [Task 17](task-17-refactor-deck-artifacts-and-image-store.md).
 21. `DeckStore` replaces `DeckService`, hides 4 staging wrappers, exports 31 symbols without `./brief` or pass-throughs, and passes 16 new `AssertEqual` checks in `packages/host/api/src/contract-sync.ts`. Test: [Task 18](task-18-rename-deck-store-narrow-exports-and-contract-sync.md).
 22. All 18 non-live suites, all 5 root tool tests, boundary checks, lint, docs, and Slice 2B scan targets pass with 0 failures. Test: [Task 19](task-19-verify-slice-2b-exit.md).
+23. `apps/web/src/features/deck/` diagnosis audits `deck-workflow.ts` (812 lines), `image-research.ts` (483 lines), `generation-workflow.ts` (384 lines), 2 `*Service` symbols, 3 type assertions, 9 non-null assertions, and `failures.ts` (12 lines). Check: [Task 20](task-20-diagnose-deck-feature-workflows.md).
+24. Non-deck features and `apps/web/src/` root diagnosis audits `index.ts` (403 lines), `local-transport.ts` (301 lines), and 10 small non-barrel files. It also audits 2 `*Service` symbols, 3 type assertions, and 7 non-null assertions. Check: [Task 21](task-21-diagnose-app-features-and-web-root.md).
+25. `apps/web/src/integrations/` diagnosis audits `opencode/runtime.ts` (469 lines), 10 functions over 80 lines, 4 type assertions, 10 non-null assertions, and browser reuse in `rendering/artifact-renderer.ts` (272 lines). Check: [Task 22](task-22-diagnose-integrations-and-renderer-reuse.md).
 
 ## Tasks
 
@@ -114,10 +119,14 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 17 | Done | [Split deck artifact storage, extract image store, and guard assertions](task-17-refactor-deck-artifacts-and-image-store.md) ([report](../reports/task-17-refactor-deck-artifacts-and-image-store.md)) |
 | 18 | Done | [Rename DeckService to DeckStore, narrow exports, and check contract parity](task-18-rename-deck-store-narrow-exports-and-contract-sync.md) ([report](../reports/task-18-rename-deck-store-narrow-exports-and-contract-sync.md)) |
 | 19 | Done | [Check Slice 2B exit gate and rescan metrics](task-19-verify-slice-2b-exit.md) ([report](../reports/task-19-verify-slice-2b-exit.md)) |
+| 20 | Pending | [Diagnose features/deck workflows and image research](task-20-diagnose-deck-feature-workflows.md) |
+| 21 | Pending | [Diagnose non-deck features and apps/web/src root](task-21-diagnose-app-features-and-web-root.md) |
+| 22 | Pending | [Diagnose apps/web/src/integrations and renderer browser reuse](task-22-diagnose-integrations-and-renderer-reuse.md) |
 
 ## Next revision
 
-- Revisions 4 and 5 wait for Task 19 to pass the Slice 2B exit gate. They run Slice 2C (`apps/web/src/features/`, `integrations/`, `apps/web/src/` root, including `artifact-renderer.ts` browser reuse evaluation) and Slice 2D (`apps/web/src/browser/`). Each slice starts with a read-only diagnosis task and STOP gate.
+- Revision 4b waits for owner approval of the Task 20, Task 21, and Task 22 finding tables. It runs Slice 2C convention updates, refactors, and the Slice 2C exit gate.
+- Revision 5 waits for the Slice 2C exit gate. It starts Slice 2D (`apps/web/src/browser/`) with read-only diagnosis tasks and a STOP gate.
 
 ## References
 
