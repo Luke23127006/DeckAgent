@@ -37,7 +37,7 @@ Read this file to record the approved Slice 2B contract-parity rule (`D8`, `D14`
 - Add a comment, a lint-disable directive, or `@ts-expect-error`.
 - Commit or push before Step 3 checks pass.
 
-- [ ] **Step 1: Update the independent contract-copy rule in `docs/conventions/project-structure.md`**
+- [x] **Step 1: Update the independent contract-copy rule in `docs/conventions/project-structure.md`**
 
 In `docs/conventions/project-structure.md`, find line 106 (`Ba điểm dễ sai trong các package trên:`) and line 111:
 
@@ -51,7 +51,7 @@ Replace line 106 with `Bốn điểm dễ sai trong các package trên:` and rep
 - `host/contracts/` giữ bản sao độc lập của các wire DTO dùng chung với `session/persistence/`, `presentation/deck/` và `presentation/design/`. Browser import `host/contracts/` và không được phụ thuộc runtime của các domain package đó. `host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) trong `contract-sync.ts` để chặn lệch contract.
 ```
 
-- [ ] **Step 2: Run documentation and Vietnamese STE checks**
+- [x] **Step 2: Run documentation and STE checks**
 
 Run:
 
@@ -64,18 +64,18 @@ Expected: PASS. Exit code `0` and output contains `0 error(s) in 0 file(s)`.
 Run:
 
 ```bash
-uv run python -I .agents/skills/asd-ste100/scripts/ste-lint-vi.py docs/conventions/project-structure.md
+uv run python -I .agents/skills/asd-ste100/scripts/ste-lint.py --baseline 5 docs/conventions/project-structure.md
 ```
 
-Expected: PASS. Exit code `0` with no new hard violations on the edited lines.
+Expected: PASS. Exit code `0` with no hard violation on the edited lines. The `--baseline 5` covers the 5 hard violations that already existed in `docs/conventions/project-structure.md` before this task.
 
-- [ ] **Step 3: Mark task done, write the report file, and commit and push**
+- [x] **Step 3: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 and 2 as `- [x]` in this file. Update the Task 15 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-15-update-slice-2b-conventions.md`.
 2. Create `docs/build/refactor/module-design/reports/task-15-update-slice-2b-conventions.md` with:
    - One-sentence purpose line after H1 (`Read this file to ...`).
    - Table of updated lines in `docs/conventions/project-structure.md` (`D8`, `D14`).
-   - Exact command outputs and exit codes for `check:docs` and `ste-lint-vi.py`.
+   - Exact command outputs and exit codes for `check:docs` and `ste-lint.py`.
 3. Add a Task 15 row to `docs/build/refactor/module-design/reports/README.md` and run `corepack pnpm@11.28.5 check:docs`. Expected: exit code `0` and `0 error(s)`.
 4. Mark Step 3 as `- [x]` in this file.
 5. Run `git status --short` and check that only the five files listed in `Files` changed. Stage only those five files, commit with a conventional commit message (example: `docs(conventions): record Slice 2B contract-parity rule`), and run `git push`.

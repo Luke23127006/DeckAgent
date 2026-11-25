@@ -103,12 +103,12 @@ Feature không bắt buộc có `service.ts`, `controller.ts` hoặc `repository
 | `workspace/registry/` | Workspace và folder association được quản lý thế nào? | Workspace record và identity, folder association và folder policy, persistence và recovery của Registry | Chat lifecycle, request execution |
 | `tools/filesystem/` | Agent truy cập file trong phạm vi được cấp thế nào? | Path validation, access restriction, bounded read, file identity | User approval, request admission, agent tool policy |
 
-Ba điểm dễ sai trong các package trên:
+Bốn điểm dễ sai trong các package trên:
 
 - Local Transport và Request Lifecycle cùng nằm trong `host/api/` nhưng là hai trách nhiệm riêng. Transport gọi public operation của Request Lifecycle. Request Lifecycle không import HTTP transport và không dùng HTTP status làm error contract.
 - `host/contracts/` chỉ chứa contract an toàn cho cả Browser và Local Host. Không chuyển toàn bộ type của Host API vào package này.
 - Request Lifecycle dùng persistence contract của `session/persistence/`. Không component nào sửa Session state qua SQLite implementation.
-- `host/contracts/` và `session/persistence/` giữ hai bản sao độc lập của các type request dùng chung vì Browser import `host/contracts/` và không được phụ thuộc `session/persistence/`. `host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) để chặn lệch contract.
+- `host/contracts/` giữ bản sao độc lập của các wire DTO dùng chung với `session/persistence/`, `presentation/deck/` và `presentation/design/`. Browser import `host/contracts/` và không được phụ thuộc runtime của các domain package đó. `host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) trong `contract-sync.ts` để chặn lệch contract.
 
 ### Tests, scripts và docs
 
