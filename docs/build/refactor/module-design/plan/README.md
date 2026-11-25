@@ -135,7 +135,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 21 | Done | [Diagnose non-deck features and apps/web/src root](task-21-diagnose-app-features-and-web-root.md) ([report](../reports/task-21-diagnose-app-features-and-web-root.md)) |
 | 22 | Done | [Diagnose apps/web/src/integrations and renderer browser reuse](task-22-diagnose-integrations-and-renderer-reuse.md) ([report](../reports/task-22-diagnose-integrations-and-renderer-reuse.md)) |
 | 23 | Done | [Refactor integrations OpenCode, images, and credentials](task-23-refactor-integrations-opencode-images-credentials.md) ([report](../reports/task-23-refactor-integrations-opencode-images-credentials.md)) |
-| 24 | Pending | [Refactor artifact-renderer for managed browser reuse](task-24-refactor-artifact-renderer-managed-browser-reuse.md) |
+| 24 | Done | [Refactor artifact-renderer for managed browser reuse](task-24-refactor-artifact-renderer-managed-browser-reuse.md) ([report](../reports/task-24-refactor-artifact-renderer-managed-browser-reuse.md)) |
 | 25 | Pending | [Refactor deck image research and generation workflow](task-25-refactor-deck-image-research-and-generation-workflow.md) |
 | 26 | Pending | [Refactor deck workflow, BriefCoordinator, and ConfirmationCoordinator](task-26-refactor-deck-workflow-and-coordinators.md) |
 | 27 | Pending | [Refactor non-deck application features](task-27-refactor-non-deck-features.md) |

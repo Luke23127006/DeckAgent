@@ -91,6 +91,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const initial = options.selection ? { ...options.selection } : undefined
   const layout = await prepareStorage(options.dataDir ?? resolveStorageRoot())
   const commonsImages = new CommonsImages(options.imageAccess?.fetch)
+  const renderer = artifactRenderer(join(layout.files, 'runtime', 'artifact-check'))
   let registry: WorkspaceRegistry | undefined
   let sessions: SqliteSessionStore | undefined
   let decks: DeckStore | undefined
@@ -119,7 +120,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
         legacyHtmlPolicy: validateLegacySlideHtml,
         researchImage: (_id, query, signal) => commonsImages.find(query, signal),
         artifactRoot: join(layout.files, 'decks'),
-        renderCheck: artifactRenderer(join(layout.files, 'runtime', 'artifact-check')),
+        renderCheck: (html, requiredText, signal) => renderer.render(html, requiredText, signal),
         preparedImage: async (id, attachmentId, signal) => {
           const item = sessionStore.attachments.get(id, attachmentId)
           if (
@@ -352,6 +353,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
           try {
             await host.close()
           } finally {
+            await renderer.close()
             await commonsImages.close()
             await images.close()
             await inputs.close()
@@ -378,6 +380,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       },
     }
   } catch (error) {
+    await renderer.close()
     await commonsImages.close()
     await imageResearch?.close()
     await preparation?.close()

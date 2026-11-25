@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtemp, rm, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -215,4 +215,80 @@ test('a prepared PNG and its result survive a Session terminal-write failure and
   assert.equal(starts, 1)
   assert.equal((await f.client.snapshot(result.receipt.requestId)).status, 'interrupted')
   assert.deepEqual(await new DeckClient(f.app.origin, f.app.token).content(id, p.slides[0].slideId, 1), first)
+})
+
+test('managed local renderer reuses one profile directory across renders and removes it on app close', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'artifact-reuse-'))
+  let entriesDuringRun = []
+  const runtime = {
+    async prepare() {
+      return {
+        selection: { provider: 'fixture', model: 'model' },
+        async start(run) {
+          const cap = run.presentation
+          const slideId = cap.plan().outline.slides[0].slideId
+          for (let revision = 0; revision < 2; revision++) {
+            const stage = cap.begin(slideId, 'title-body')
+            cap.append(stage.stageId, {
+              sequence: 0,
+              text: `<h1>Purpose</h1><ul><li>Explain ${revision}</li></ul>`,
+              final: true,
+            })
+            await cap.publish({
+              stageId: stage.stageId,
+              slideId,
+              publicationId: `reuse-${revision}`,
+              expectedRevision: revision,
+            })
+          }
+          entriesDuringRun = await readdir(join(dir, 'data', 'files', 'runtime', 'artifact-check'))
+          return { status: 'completed' }
+        },
+      }
+    },
+  }
+  const f = await startApp(dir, { options: { generationRuntime: runtime } })
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const id = (await f.call('sessions', 'POST', {})).data.sessionId
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
+  const draft = brief()
+  draft.sources.material = false
+  draft.sources.modelKnowledge = true
+  draft.proposedSlideCount = 1
+  draft.purpose = 'Explain'
+  draft.answers = [{ topic: 'images', value: 'None' }]
+  const b = decks.saveBrief(id, { expectedVersion: 0, draft })
+  const p = decks.proposeBoundOutline(id, {
+    requestId: 'reuse-review',
+    responseIndex: 1,
+    expectedOutline: null,
+    expectedBrief: { briefId: b.briefId, version: 1 },
+    draft: {
+      overview: 'Reuse plan',
+      revisionSuggestions: [],
+      slides: [
+        { title: 'Purpose', content: 'Explain', blocks: [{ kind: 'bullets', items: ['Explain'] }], sources: [] },
+      ],
+    },
+  })
+  decks.close()
+  await new ConfirmationClient(f.app.origin, f.app.token).confirm(id, {
+    confirmationId: 'reuse-confirm',
+    outlineId: p.outlineId,
+    outlineVersion: 1,
+    briefId: b.briefId,
+    briefVersion: 1,
+  })
+  await waitFor(
+    async () => (await new DeckClient(f.app.origin, f.app.token).snapshot(id)).generation.state === 'generated',
+  )
+  assert.equal(entriesDuringRun.filter(name => name.startsWith('render-')).length, 1)
+  await f.app.close()
+  const entriesAfterClose = await readdir(join(dir, 'data', 'files', 'runtime', 'artifact-check'))
+  assert.deepEqual(entriesAfterClose, [])
 })

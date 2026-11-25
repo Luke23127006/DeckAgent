@@ -51,7 +51,7 @@ Read this file to replace per-render cold Chromium spawns in `apps/web/src/integ
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Add a failing reuse and shutdown cleanup test in `e2e/artifact-rendering.test.mjs`**
+- [x] **Step 1: Add a failing reuse and shutdown cleanup test in `e2e/artifact-rendering.test.mjs`**
 
 Add `readdir` to the `node:fs/promises` import on line 3 of `e2e/artifact-rendering.test.mjs`. Append this test at the end of `e2e/artifact-rendering.test.mjs`:
 
@@ -141,14 +141,14 @@ node --test e2e/artifact-rendering.test.mjs
 
 Expected: FAIL. The new test fails because cold spawns remove the profile immediately (`entriesDuringRun` has `0` entries instead of `1`).
 
-- [ ] **Step 2: Create `apps/web/src/integrations/rendering/dom-validation.ts`**
+- [x] **Step 2: Create `apps/web/src/integrations/rendering/dom-validation.ts`**
 
 Move the DOM inspection script and validation check out of `artifact-renderer.ts`:
 1. Export `buildValidationExpression(requiredText: readonly string[]): string` containing the exact script from `artifact-renderer.ts` lines 182-218 (calling `inspectControlledLayout.toString()`).
 2. Export `assertValidationReport(report: unknown): void` checking `report.exceptionDetails`, `report.result.value.code`, and the exact six `allowedCodes` from `artifact-renderer.ts` lines 220-254.
 3. Keep every function in `dom-validation.ts` under 75 lines, with zero `as` and zero `!`.
 
-- [ ] **Step 3: Create `apps/web/src/integrations/rendering/cdp-browser.ts`**
+- [x] **Step 3: Create `apps/web/src/integrations/rendering/cdp-browser.ts`**
 
 Create the browser process and multiplexed CDP WebSocket helper (every function under 75 lines, zero `as`, zero `!`):
 1. Keep `executable()`, `rendererEnvironment()`, and `verifySafeRoot(root: string)` matching the exact logic from `artifact-renderer.ts` lines 10-59 and 112-121.
@@ -167,7 +167,7 @@ Create the browser process and multiplexed CDP WebSocket helper (every function 
 4. Export `disposeManagedBrowser(browser: ManagedBrowser, root: string): Promise<void>`:
    - Attempts `browser.cdp.call('Browser.close', {}, { signal: AbortSignal.timeout(2000) }).catch(() => {})`, closes the socket, kills `browser.child` if `exitCode === null`, waits up to `2000` ms for exit, and removes `browser.folder` when `resolve(browser.folder).startsWith(resolve(root) + sep)` and `(await realpath(root).catch(() => null)) === resolve(root)` with `{ recursive: true, force: true, maxRetries: 3, retryDelay: 100 }`.
 
-- [ ] **Step 4: Implement managed browser reuse in `artifact-renderer.ts` and update `rendering/index.ts`**
+- [x] **Step 4: Implement managed browser reuse in `artifact-renderer.ts` and update `rendering/index.ts`**
 
 1. In `apps/web/src/integrations/rendering/artifact-renderer.ts`:
    - Keep a module-level `let activeRenders = 0` to preserve the process-wide concurrency cap (`if (activeRenders >= 2) throw new DeckError('ARTIFACT_RENDERER_BUSY')`).
@@ -188,14 +188,14 @@ Create the browser process and multiplexed CDP WebSocket helper (every function 
      - `close()`: sets `closed = true`, waits for any in-flight `launching` promise to settle, and calls `recycle()`. Idempotent when called multiple times.
 2. In `apps/web/src/integrations/rendering/index.ts`, export `artifactRenderer` and `type ArtifactRenderer`.
 
-- [ ] **Step 5: Wire `renderer.render` and `renderer.close()` in `apps/web/src/index.ts`**
+- [x] **Step 5: Wire `renderer.render` and `renderer.close()` in `apps/web/src/index.ts`**
 
 In `apps/web/src/index.ts`:
 1. Construct `const renderer = artifactRenderer(join(layout.files, 'runtime', 'artifact-check'))` right after `const commonsImages = ...` (line 93).
 2. At line 122, pass `renderCheck: (html, requiredText, signal) => renderer.render(html, requiredText, signal)`.
 3. Call `await renderer.close()` in `close()` (after `await host.close()`, around line 355) and in the startup `catch` block (around line 381).
 
-- [ ] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run rendering and generation suites**
+- [x] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run rendering and generation suites**
 
 Run:
 
@@ -227,7 +227,7 @@ node --test e2e/artifact-rendering.test.mjs && node --test e2e/portable-generati
 
 Expected: PASS. Every command exits with code `0`, `# fail 0`, and `# skipped 0`. Record the `e2e/portable-generation-http.test.mjs` `duration_ms` in the report.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 24 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-24-refactor-artifact-renderer-managed-browser-reuse.md`.
 2. Create `docs/build/refactor/module-design/reports/task-24-refactor-artifact-renderer-managed-browser-reuse.md` with:
