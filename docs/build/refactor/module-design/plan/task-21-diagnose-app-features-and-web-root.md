@@ -76,7 +76,7 @@ Apply this table in top-to-bottom order to every finding across the 7 non-deck f
 | A file, type, or seam protects a real invariant or startup boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file metrics, small non-barrel files, assertions, and `*Service` symbols**
+- [x] **Step 1: Measure live file metrics, small non-barrel files, assertions, and `*Service` symbols**
 
 Run:
 
@@ -86,7 +86,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 31`, `"totalLines": 3258`, `"smallNonBarrelCount": 10`, `"longFnTotal": 5`, `"assertionTotal": 3`, `"nonNullTotal": 7`, and `"serviceTotal": 2`.
 
-- [ ] **Step 2: Audit all 33 barrel exports and inspect every file in scope**
+- [x] **Step 2: Audit all 33 barrel exports and inspect every file in scope**
 
 Run:
 
@@ -107,7 +107,7 @@ Record exact file-and-line observations for:
 4. `apps/web/src/features/sources/source-tools.ts` (345 lines, `prepareSourceTools` lines 53-345, `execute` lines 162-343) and `providers/provider-settings.ts` (374 lines): inspect long function splits and ownership seams. Inspect `attachments/attachment-service.ts` (275 lines), `attachments/managed-attachments.ts` (340 lines), and `research/research-service.ts` (177 lines), and propose non-`*Service` names for `AttachmentService` (line 56) and `ResearchService` (line 18).
 5. `apps/web/src/cli.ts` (165 lines, `main` lines 54-153, 100 lines), `web-state.ts` (135 lines), `storage-root.ts` (81 lines), and `draft-store.ts` (71 lines): inspect structure and error mapping. Record guards for all 3 type assertions (`provider-settings.ts` lines 80 and 91, `source-tools.ts` line 165). Record guards for all 7 non-null assertions (`cli.ts` line 49, `managed-attachments.ts` lines 332 and 333, `source-tools.ts` line 300, `web-state.ts` lines 45, 46, and 61).
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of barrel exports (`33`) across the 8 entry files, plus the count of distinct error classes mapped by `local-transport.ts`. Identify every redundant wrapper, pass-through export, or leaked internal.
@@ -117,12 +117,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new local SQLite store or background resource that opens during `startLocalWeb` and closes cleanly on startup failure or shutdown.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). Name any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no code or convention file changed**
+- [x] **Step 4: Check that no code or convention file changed**
 
 Run: `git status --short`
 Expected: PASS. No file under `packages/`, `apps/`, `e2e/`, `tests/`, `docs/conventions/`, or `docs/build/refactor/module-design/README.md` appears in the output.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 21 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` and link `../reports/task-21-diagnose-app-features-and-web-root.md`.
 2. Create `docs/build/refactor/module-design/reports/task-21-diagnose-app-features-and-web-root.md` with:
