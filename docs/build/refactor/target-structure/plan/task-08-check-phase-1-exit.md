@@ -47,13 +47,13 @@ Read this file to learn the steps of Task 8, which checks the exit condition of 
 | The command output is different from `Expected` | Write `FAIL` in the `Result` column. Do the next step. Stop after Step 5 |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
 Expected: PASS. The output is empty. FAIL: the output lists a file. A person must commit Task 7 before this task starts.
 
-- [ ] **Step 2: Check Project Structure**
+- [x] **Step 2: Check Project Structure**
 
 Condition: Project Structure describes the target layout and the rules for old and new code during the move.
 
@@ -61,7 +61,7 @@ Run: `grep -c "^## Cấu trúc đích$\|^## Trong lúc chuyển$" docs/conventio
 
 Expected: PASS. The output is `2`.
 
-- [ ] **Step 3: Check the Tech Stack section**
+- [x] **Step 3: Check the Tech Stack section**
 
 Condition: the Tech Stack section of AGENTS.md lists the chosen libraries.
 
@@ -69,7 +69,7 @@ Run: `grep -c "^## Tech Stack$" AGENTS.md && grep -c "Express 5" AGENTS.md && gr
 
 Expected: PASS. The output is three lines: `1`, `1` and `1`.
 
-- [ ] **Step 4: Check the four contract shapes**
+- [x] **Step 4: Check the four contract shapes**
 
 Condition: the run owner, the `AgentRuntime` port, the run preparation contribution and the change notice each have a written shape.
 
@@ -77,13 +77,13 @@ Run: `grep -c "^## ADR-00[1-4]: " docs/architecture/30-decisions.md && grep -c "
 
 Expected: PASS. The output is two lines: `4` and `4`.
 
-- [ ] **Step 5: Run the docs check**
+- [x] **Step 5: Run the docs check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 8 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-08-check-phase-1-exit.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-08-check-phase-1-exit.md` with:

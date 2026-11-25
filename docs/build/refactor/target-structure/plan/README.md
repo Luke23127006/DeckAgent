@@ -73,7 +73,7 @@ Revision 1b adds these failure modes:
 | 5 | Done | [Diagnose run preparation](task-05-diagnose-run-preparation.md) ([report](../reports/task-05-diagnose-run-preparation.md)) |
 | 6 | Done | [Diagnose the change notice and version](task-06-diagnose-change-notice.md) ([report](../reports/task-06-diagnose-change-notice.md)) |
 | 7 | Done | [Write the agent core contracts](task-07-write-agent-core-contracts.md) ([report](../reports/task-07-write-agent-core-contracts.md)) |
-| 8 | Pending | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) |
+| 8 | Done | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) ([report](../reports/task-08-check-phase-1-exit.md)) |
 
 ## Next revision
 
