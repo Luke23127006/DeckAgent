@@ -6,7 +6,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 **Goal:** Complete Phase 1 of the Target Structure Refactor. The conventions describe the target layout. AGENTS.md lists the tech stack. The four agent core contracts have the facts that their design needs.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b writes the contract shapes from the approved diagnosis reports.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -26,6 +26,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Where the contract shapes go | Revision 1b writes one ADR with status `Proposed` for each contract in `docs/architecture/30-decisions.md`, and the type shapes and flows in a new file `docs/architecture/10-agent-core.md`. Both files are in Vietnamese, because `docs/architecture/` is not in `docs/build/`. |
 | Diagnosis before design | Tasks 3 to 6 collect facts and stop. They do not propose type shapes. The planner writes the shapes in Revision 1b from the approved reports. |
 | Product question about old `version` | What a user sees when a write has an old `version` is the open question OQ-061 in `docs/open-questions.md`. Revision 1 adds no new open question. |
+| Run owner (Revision 1b) | A run has `RunOwner = { kind, id }` in place of `sessionId`. `runs/` keeps one active run for each owner with a unique index on `(owner_kind, owner_id)`. Different owners run in parallel. The HTTP wire keeps `sessionId` and the current codes. |
+| Change notice (Revision 1b) | One `version` and one notice topic for each aggregate that the user sees. Child tables increase the `version` of the parent aggregate. |
+| Contract text (Revision 1b) | Task 7 writes the complete Vietnamese texts of `docs/architecture/30-decisions.md`, `docs/architecture/10-agent-core.md` and `docs/architecture/README.md`. The texts are in the task file. |
 | Commit | Executors do not commit or push. A person commits after approving the report. |
 
 ## Global Constraints
@@ -54,6 +57,11 @@ These are the six failure modes most likely in Revision 1. No automated test cov
 5. The run preparation diagnosis misses a part that the code builds under another name, for example `seedPrompt` in `history.ts`. The search by name finds it only by chance. Owner: [Task 5](task-05-diagnose-run-preparation.md), Step 2 reads the files in full.
 6. The change notice diagnosis misses a store that writes user-visible state without a `version`. Owner: [Task 6](task-06-diagnose-change-notice.md), Step 1 lists every file that runs SQL.
 
+Revision 1b adds these failure modes:
+
+7. A contract type in `10-agent-core.md` keeps a `sessionId` field. Owner: [Task 7](task-07-write-agent-core-contracts.md), Step 5 counts `sessionId:`.
+8. An ADR states a fact that the diagnosis reports do not contain. Owner: [Task 7](task-07-write-agent-core-contracts.md). No check covers it, so the reviewer compares each `Bối cảnh` section with its report.
+
 ## Tasks
 
 | Task | Status | File |
@@ -64,12 +72,13 @@ These are the six failure modes most likely in Revision 1. No automated test cov
 | 4 | Done | [Diagnose the AgentRuntime port](task-04-diagnose-agent-runtime-port.md) ([report](../reports/task-04-diagnose-agent-runtime-port.md)) |
 | 5 | Done | [Diagnose run preparation](task-05-diagnose-run-preparation.md) ([report](../reports/task-05-diagnose-run-preparation.md)) |
 | 6 | Done | [Diagnose the change notice and version](task-06-diagnose-change-notice.md) ([report](../reports/task-06-diagnose-change-notice.md)) |
+| 7 | Pending | [Write the agent core contracts](task-07-write-agent-core-contracts.md) |
+| 8 | Pending | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) |
 
 ## Next revision
 
-- Revision 1b starts when a person approves the reports of Tasks 3 to 6. It writes four ADRs in `docs/architecture/30-decisions.md`: the run owner, the `AgentRuntime` port, the run preparation contribution and the change notice.
-- Revision 1b: write the type shapes and the flows of the four contracts in `docs/architecture/10-agent-core.md`, and add the file to the `Driver | File` matrix in `docs/architecture/README.md`.
-- Revision 1b: check the Phase 1 exit condition in Target Structure Refactor [[3]](#ref-3).
+- Phase 2 (Host application and Express edge) starts when a person approves the report of Task 8. It is Revision 2 of this plan.
+- Before Phase 2 tasks, a person decides whether to accept the four ADRs (status `Accepted`) or to keep them `Proposed` until Phase 4.
 
 ## References
 
