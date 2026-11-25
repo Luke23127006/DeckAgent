@@ -2,11 +2,11 @@
 
 Read this file to learn the goal, the decisions, the global constraints and the task order of the Target Structure Refactor.
 
-> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
+> **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. From Task 21, the last step of each task commits and pushes the work. When a STOP condition occurs, do not commit: stop and send the report. Do not start the next task until a person approves the report.
 
 **Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5. Phase 3: each domain module lives in `apps/host/src/modules/<name>/`, and each store has a `version` and a change notice.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition. Revision 3 (Task 20) starts Phase 3 with a diagnosis of the `workspaces` module that does not change code.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition. Revision 3 (Task 20) starts Phase 3 with a diagnosis of the `workspaces` module that does not change code. Revision 3b (Tasks 21 and 22) moves the `workspaces` module into `apps/host/src/modules/workspaces/` with no change of behavior, and adds the folder-level rules for `apps/host/src/modules/`.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -45,7 +45,14 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Workspaces schema upgrade (Revision 3) | The move of `workspaces` upgrades an existing `workspaces.sqlite` from schema 1 to schema 2 in place, in one transaction at startup, as `packages/session/persistence/src/schema.ts` does. Existing workspaces, names and the selection stay. |
 | Change feed (Revision 3) | The revision that moves `workspaces` also builds the `ChangeFeed` of ADR-004 in `apps/host/src/http/` and its SSE route for the topic `workspaces`. Later modules add a topic only. |
 | Revision 3 scope | Task 20 reads code, runs `git grep` and writes a report only. It changes no code, no test, no `package.json` and no file in `docs/architecture/`. |
-| Commit | Executors do not commit or push. A person commits after approving the report. |
+| Commit | Tasks 1 to 20: executors do not commit or push, and a person commits after approving the report. From Task 21: the last step of each task adds a `CHANGELOG.md` line, commits and pushes, with the exact commands of the step. A task with a STOP condition has no commit. A person approves the report before the next task starts. |
+| Revision 3b scope | Task 21 moves the code of the `workspaces` module and keeps the HTTP contract. Task 22 adds the folder-level rules for `apps/host/src/modules/`. The `version`, the schema 2, `expectedVersion`, `WORKSPACES_STALE`, the `ChangeFeed` and the Browser changes are in Revision 3c. |
+| Module files (Revision 3b) | `apps/host/src/modules/workspaces/` has `workspaces.store.ts` (the former `registry.ts`, class name `WorkspaceRegistry`), `workspaces.service.ts`, `workspaces.routes.ts`, `workspaces.errors.ts` and `index.ts`. The helper files `contracts.ts`, `folder-policy.ts`, `schema.ts` and `workspace-name.ts` keep their names. Code outside the module imports `index.ts` only. |
+| Module routes (Revision 3b) | A module exports a function that returns an Express `Router`. `server.ts` gives the routers in `HostOptions.routes`, and `createHostRoutes` mounts them after the management routes. `server.ts` registers the error map of the module before `mapApplicationFailure`. |
+| Route helpers (Revision 3b) | `@deckagent/host-api` exports `json`, `readJson`, `param`, `params` and `route` until the last route registrar leaves `packages/host/api/`. That revision moves the helpers into `apps/host/src/http/`. |
+| Calls between modules (Revision 3b) | The workspaces service receives the port `WorkspaceChats`, which the chats feature implements. `chats` and `sources` receive `WorkspaceLookup`, which has only the methods that they call. |
+| SSE route for change notices (Revision 3c) | One stream for all topics with the key `'host'`: `GET /api/changes`, with the event `change` and the data `{ topic, key, version }`. On connect, the Host sends the current `version` of each topic. A later module adds a topic to this stream and opens no new connection. |
+| Stale write of workspaces (Revision 3c) | When a write gets `WORKSPACES_STALE`, the Browser reads the list again, shows the new list and shows a message. The Browser does not send the write again. |
 
 ## Global Constraints
 
@@ -59,8 +66,8 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 - Do not change production code, test code, `package.json`, `.oxlintrc.json` or a file in `scripts/` in Revision 1.
 - Do not change `docs/build/refactor/target-structure/README.md` or the research files next to it.
 - Do not add a comment, a lint-disable directive or `@ts-expect-error`.
-- Do not commit or push.
-- Start a task only when `git status --short` prints no line. A person commits the work of each task before the next task starts. A check that reads a commit, for example `git grep` or `git diff <commit>`, does not see a file with no commit.
+- Commit and push only in the last step of a task, with the exact commands of that step, and only when no STOP condition occurred. Do not use `--force`. Do not skip a hook with `--no-verify`. Do not add a `Co-Authored-By` line or another AI attribution to the commit message. Tasks 1 to 20 have no commit step.
+- Start a task only when `git status --short` prints no line. A check that reads a commit, for example `git grep` or `git diff <commit>`, does not see a file with no commit.
 - Write reports in English with `asd-ste100` strict mode. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py <report-file>` on each report. When `python` is not available, run the same script with `python3` or `python3.12`.
 
 ## Review Focus
@@ -106,6 +113,14 @@ Revision 3 adds these failure modes:
 22. The diagnosis misses a caller of the registry outside `apps/host/src/features/workspaces/`, so the move breaks a caller in another module. Owner: [Task 20](task-20-diagnose-workspaces-module.md), Step 3.
 23. A write to `workspaces` or `registry_state` runs outside `this.transaction`, so a later `version` increase is not in the same transaction as the write. Owner: [Task 20](task-20-diagnose-workspaces-module.md), the column `Inside this.transaction` of Step 5.
 
+Revision 3b adds these failure modes:
+
+24. `createHostRoutes` mounts the workspaces router at another place in the route order, so a request reaches another route or `404 NOT_FOUND`. Owner: [Task 21](task-21-move-workspaces-module.md), `test:local-foundation` and `test:http-edge` in Step 7.
+25. A caller still imports `@deckagent/workspace-registry`, and the build passes because the old `lib/` output is on disk. Owner: [Task 21](task-21-move-workspaces-module.md), Step 3 removes `packages/workspace/` with its `lib/`.
+26. The error map of the module runs after `mapApplicationFailure`, so another branch maps a workspace error first. Owner: [Task 21](task-21-move-workspaces-module.md), the `Move rules` table. No test covers this case, so the reviewer reads `server.ts`.
+27. A later oxlint override replaces the groups of an earlier override for the same file. Then a routes file can import the store of another module. Owner: [Task 22](task-22-add-module-folder-rules.md), the routes fixture with `../chats/chats.store.ts`.
+28. A new module rule passes on every input. Owner: [Task 22](task-22-add-module-folder-rules.md), Step 5 breaks the rules and expects failed tests.
+
 ## Tasks
 
 | Task | Status | File |
@@ -130,18 +145,21 @@ Revision 3 adds these failure modes:
 | 18 | Done | [Add the folder-level import rules for the HTTP edge and the Browser](task-18-add-folder-import-rules.md) ([report](../reports/task-18-add-folder-import-rules.md)) |
 | 19 | Done | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) ([report](../reports/task-19-check-phase-2-exit.md)) |
 | 20 | Done | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) ([report](../reports/task-20-diagnose-workspaces-module.md)) |
+| 21 | Pending | [Move the workspaces module into apps/host/src/modules](task-21-move-workspaces-module.md) |
+| 22 | Pending | [Add the folder-level rules for apps/host/src/modules](task-22-add-module-folder-rules.md) |
 
 ## Next revision
 
-Revision 3b moves the `workspaces` module after a person approves the report of Task 20. These items wait for the report:
+Revision 3c adds the `version` and the change notice to the `workspaces` module after a person approves the reports of Tasks 21 and 22. These items wait for the reports:
 
-- The files of `apps/host/src/modules/workspaces/` (`workspaces.routes.ts`, `workspaces.service.ts`, `workspaces.store.ts`) and the public interface that `chats`, `sources` and `server.ts` use.
-- The schema 2 of `workspaces.sqlite` with the table `change_versions`, the upgrade from schema 1, and the test of the upgrade.
-- The `ChangeFeed` in `apps/host/src/http/`, the path of its SSE route, and the Browser code that reads the list again after a notice.
-- The `expectedVersion` check on the write routes of `workspaces` and the code `WORKSPACES_STALE`.
-- The place of the shared route helpers `params`, `param` and `route` when the first registrar leaves `packages/host/api/`.
-- The folder-level rules for `apps/host/src/modules/`, each with a negative fixture.
-- The decision about `helmet`, with the header tests of Task 14 as evidence.
+- The schema 2 of `workspaces.sqlite` with the table `change_versions(topic, key, version)`, the upgrade from schema 1 in one transaction, and a test of the upgrade like `packages/session/persistence/tests/chat-persistence.test.mjs:53`.
+- The `version` increase in the same transaction as each write. `select` and the `existing` branch of `add` move into `this.transaction`, because Task 20 found them outside a transaction.
+- The field `version` in `WorkspaceList`, the field `expectedVersion` in each write body with a Zod schema in `packages/host/contracts/`, and the code `WORKSPACES_STALE` with status `409`. The Zod schema replaces the function `field` of `workspaces.routes.ts`.
+- The order of `remove`: commit the workspace, ungroup the chats, then publish the notice.
+- The `ChangeFeed` in `apps/host/src/http/`, the route `GET /api/changes`, and the `publish` function that the store receives through its constructor.
+- The Browser code: one connection to `/api/changes`, a new read of the list after a newer `version`, and the message after `WORKSPACES_STALE`.
+
+A later revision decides `helmet`, with the header tests of Task 14 as evidence.
 ## References
 
 1. <a id="ref-1"></a>[Project Structure](../../../../conventions/project-structure.md)
