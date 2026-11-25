@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Target Structure Refactor reports index and the Task 1 report (`docs/build/refactor/target-structure/reports/`). They record the start state, the checks and the limit of what the checks prove for the Project Structure replacement.
 - Add Revision 3 Slice 2B read-only diagnosis tasks (`task-13` and `task-14`) to `docs/build/refactor/module-design/plan/`. Task 13 audits `packages/presentation/deck/` core, stores, and public surface, and Task 14 audits artifact storage and its `packages/presentation/design/` contract seam.
 - Add Revision 2b Slice 2A refactor tasks (`task-08` through `task-12`) to `docs/build/refactor/module-design/plan/` covering Project Structure convention updates, `session/persistence` decomposition and `MemoryDraftStore` relocation, `host/contracts` Zod validation unification, `host/api` lifecycle/transport separation, and the Slice 2A exit gate.
 - Add the Task 7 Slice 2A diagnosis report (`docs/build/refactor/module-design/reports/task-07-diagnose-session-persistence.md`) for `packages/session/persistence/` and its host seam, record 9 classified findings and the owner approvals (P8 type-level contract check and convention update, P9 move `MemoryDraftStore` to `apps/web/`), and close Task 7 in `docs/build/refactor/module-design/plan/`.
@@ -40,6 +41,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Replace `docs/conventions/project-structure.md` with the target layout. The file gives the target tree of `apps/host/`, `apps/web/` and `packages/`, the module shape, the dependency rules with a diagram, the move rules for old and new code, and the enforcement table with each target check.
+- Mark Task 1 `Done` in `docs/build/refactor/target-structure/plan/README.md` with its report link, and check Steps 1 to 5 in `task-01-update-project-structure.md`.
 - Require a task report file (`docs/build/<workstream>/<topic>/reports/task-NN-<slug>.md`) and report index update after each task in `.agents/skills/write-implementation-plan/SKILL.md` (with synced `.claude` and `.codex` mirrors), and add the mark-done, report, and commit-push workflow to `docs/build/refactor/module-design/plan/`.
 - Raise the `generation_publication` step `timeout-minutes` from `2` to `6` in `.github/workflows/workspace.yml`, because the full suite takes about 3 minutes and the previous limit expired in CI.
 - Extend `docs/build/refactor/module-design/plan/README.md` with the Revision 2 goal, CI timeout guardrail and Slice 2A diagnosis split decisions, review focuses 9 and 10, and the Codebase Design reference.

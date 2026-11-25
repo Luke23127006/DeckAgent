@@ -41,13 +41,13 @@ Read this file to learn the steps of Task 1, which replaces Project Structure wi
 - Commit or push.
 - Change the words of the text in Step 2. Only fix a link or an anchor that `check:docs` reports, and write each fix in the report.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `wc -l docs/conventions/project-structure.md && grep -c "^### Authority$\|^### Khi nào tạo folder hoặc package$\|^### Runtime$\|^### \`packages/\`$" docs/conventions/project-structure.md`
 
 Expected: PASS. The output contains `164 docs/conventions/project-structure.md` and then `4`.
 
-- [ ] **Step 2: Replace the whole content of `docs/conventions/project-structure.md`**
+- [x] **Step 2: Replace the whole content of `docs/conventions/project-structure.md`**
 
 Write the text below as the complete file. The file starts with the line `# Project Structure`. Do not copy the outer fence.
 
@@ -291,19 +291,19 @@ Không sửa dependency boundary bằng alias, re-export hoặc module `shared` 
 2. <a id="ref-2"></a>[Target Structure Refactor](../build/refactor/target-structure/README.md)
 ````
 
-- [ ] **Step 3: Check the headings, the anchors and the mapping table**
+- [x] **Step 3: Check the headings, the anchors and the mapping table**
 
 Run: `grep -c "^### Authority$\|^### Khi nào tạo folder hoặc package$\|^### Runtime$\|^### \`packages/\`$" docs/conventions/project-structure.md && grep -c "^## Trong lúc chuyển$\|^## Hình dạng module$\|^## Cấu trúc đích$" docs/conventions/project-structure.md && grep -c "^| \`packages/host/api/src/transport/\*-routes.ts\` | \`apps/host/src/modules/<name>/<name>.routes.ts\` |$" docs/conventions/project-structure.md && grep -c "lifecycle-transport-import" docs/conventions/project-structure.md`
 
 Expected: PASS. The output is four lines: `4`, `3`, `1` and `1`. FAIL: any other number.
 
-- [ ] **Step 4: Run the docs check**
+- [x] **Step 4: Run the docs check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0. When an error names a link or an anchor in `docs/conventions/project-structure.md`, fix only that link, run the command again, and write the fix in the report.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 1 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and link `../reports/task-01-update-project-structure.md` after the task link, in the form `([report](../reports/task-01-update-project-structure.md))`.
 2. Create `docs/build/refactor/target-structure/reports/task-01-update-project-structure.md` with:

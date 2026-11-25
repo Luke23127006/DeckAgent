@@ -1,73 +1,79 @@
 # Project Structure
 
-Đọc file này để biết cấu trúc source code mục tiêu của DeckAgent: component nào sở hữu trách nhiệm nào, code mới đặt ở đâu và component nào được phụ thuộc vào component nào.
+Đọc file này để biết cấu trúc source code đích của DeckAgent: component nào sở hữu trách nhiệm nào, code mới đặt ở đâu, component nào được phụ thuộc vào component nào, và code cũ cùng chạy với code mới thế nào trong lúc chuyển.
 
-File này mô tả kiến trúc mà repo refactor tới, không mô tả code hiện tại. Code mới đặt theo file này. Không tạo folder rỗng: chỉ tạo folder khi có code thuộc trách nhiệm của folder đó. Cách viết code nằm trong [Coding Guidelines](code.md). Cách viết test nằm trong [Testware](testware.md).
+File này mô tả kiến trúc mà repo refactor tới, không mô tả code hiện tại. Code mới đặt theo file này và theo [Trong lúc chuyển](#trong-lúc-chuyển). Không tạo folder rỗng: chỉ tạo folder khi có code thuộc trách nhiệm của folder đó. Cách viết code nằm trong [Coding Guidelines](code.md). Cách viết test nằm trong [Testware](testware.md).
 
 ## Nguyên tắc
 
 ### Strict boundaries, flexible implementation
 
-Mỗi application, package và folder có một trách nhiệm xác định. Mỗi component trả lời một câu hỏi, sở hữu một tập hành vi, state hoặc contract, và không sở hữu trách nhiệm của component khác.
+Mỗi application, package, module và folder có một trách nhiệm xác định. Mỗi component trả lời một câu hỏi, sở hữu một tập hành vi, state hoặc contract, và không sở hữu trách nhiệm của component khác.
 
 Không tạo class, interface, layer, package hoặc folder chỉ để theo một template. Không tạo `shared`, `common`, `utils` hoặc `errors` chung để né dependency boundary *(review)*.
 
 ### Runtime ownership
 
-DeckAgent là local application. Browser UI và Local Host là hai execution environment của cùng một application. HTTP/SSE trên localhost là transport nội bộ giữa hai môi trường này. DeckAgent không phải hosted backend.
+DeckAgent là local application gồm hai application: Browser (`apps/web/`) và Local Host (`apps/host/`). HTTP/SSE trên localhost là transport nội bộ giữa hai application này. DeckAgent không phải hosted backend.
 
 - Browser sở hữu UI, browser state và user interaction.
-- Local Host sở hữu application workflow, local runtime và quyền truy cập local capability (filesystem, process, SQLite).
-- Package sở hữu một domain hoặc một capability có trách nhiệm độc lập.
-- Entry point của application nối các concrete implementation và quản lý lifecycle.
+- Local Host sở hữu use case, vòng đời run, agent runtime và quyền truy cập local capability (filesystem, process, SQLite).
+- Package sở hữu một contract hoặc một capability thuần, không có I/O.
+- Composition root của application (`apps/host/src/server.ts`) nối các concrete implementation và quản lý lifecycle.
 
 Xác định owner theo trách nhiệm trước, sau đó mới xét runtime. Code liên quan tới giao diện không tự động thuộc Browser. Code chạy trên Node.js không tự động thuộc Local Host.
 
 ### Authority
 
-Mỗi state có đúng một authoritative owner. Component khác chỉ thay đổi state đó qua public operation của owner *(review, test)*.
+Mỗi state có đúng một authoritative owner. Component khác chỉ thay đổi state đó qua public operation của owner *(review, test)*. Người dùng ghi qua route, agent ghi qua tool, và cả hai gọi cùng một edit operation của module sở hữu state đó *(review)*.
 
 | Owner | Quyết định | Không quyết định |
 | --- | --- | --- |
-| Domain package | Domain invariant, state transition | Workflow xuyên nhiều domain |
-| Persistence owner | Durable record, transaction trong phạm vi của nó | Request execution |
-| Application workflow | Thứ tự gọi operation của nhiều owner, failure policy của operation xuyên owner | Private state của owner |
-| Request Lifecycle | Request execution state, cancellation, terminal status | HTTP semantics |
-| Agent Runtime | Cách thực thi agent | Terminal status của request |
-| Tool permission authority | Capability cấp cho một request | Cách thực thi tool |
-| Tool executor | Thực thi operation trong capability đã cấp | Cấp thêm capability |
-| Local Transport | Chuyển đổi giao tiếp giữa Browser và Local Host | Domain policy |
+| Service của module | Use case và business rule của module, thứ tự gọi operation của module khác | Private state của module khác, HTTP semantics |
+| Store của module | Durable record và transaction bảo vệ invariant của module, `version` của đối tượng | Request execution, business rule ngoài invariant |
+| Vòng đời run (`runs/lifecycle/`) | Trạng thái thực thi của run, cancellation, terminal status | HTTP semantics, rule riêng của owner của run |
+| Agent runtime adapter (`runtimes/<name>/`) | Cách thực thi agent | Terminal status của run |
+| Tool policy (`tools/policy/`) | Capability cấp cho một run | Cách thực thi tool |
+| Tool executor (`tools/executors/`) | Thực thi operation trong capability đã cấp | Cấp thêm capability |
+| HTTP edge (`http/`) | Chuyển đổi giao tiếp giữa Browser và Local Host | Domain policy |
 
 ### Khi nào tạo folder hoặc package
 
 Ưu tiên đặt code vào owner hiện có.
 
-- Tạo folder khi một trách nhiệm nội bộ cần tách riêng và có ownership, exclusion và dependency rõ ràng.
-- Tạo package khi component cần public contract và dependency boundary riêng. Package mới phải có consumer cụ thể hoặc một dependency cần chặn.
-- Không tạo package chỉ vì số file tăng, vì một feature cần code của feature khác, vì muốn có một layer theo Clean Architecture, hoặc vì muốn đặt interface vào một chỗ chung.
+- Tạo module trong `apps/host/src/modules/` khi một domain có state, route hoặc use case riêng.
+- Tạo folder bên trong module khi một trách nhiệm nội bộ cần tách riêng và có ownership, exclusion và dependency rõ ràng.
+- Tạo package khi component cần public contract và dependency boundary riêng, và không có I/O. Package mới phải có consumer cụ thể hoặc một dependency cần chặn.
+- Không tạo package chỉ vì số file tăng, vì một module cần code của module khác, vì muốn có một layer theo Clean Architecture, hoặc vì muốn đặt interface vào một chỗ chung.
 
 Khi hai component cần import lẫn nhau, xem lại ownership và chiều phụ thuộc trước khi tạo abstraction hoặc package mới.
 
-## Cấu trúc tham chiếu
+## Cấu trúc đích
 
 ```text
-apps/web/
-  src/
-    browser/            UI chạy trong Browser
-      features/
-      transport/
-    features/           application workflow trên Local Host
-    integrations/
-      opencode/
-    index.ts            startup, shutdown, wiring
-  tests/
+apps/host/src/
+  server.ts            composition root
+  http/                Express app, middleware, error handler, helper SSE, channel báo thay đổi
+  modules/<name>/      <name>.routes.ts, <name>.service.ts, <name>.store.ts
+  runs/
+    lifecycle/         run state machine, event log, approval, cancel
+    preparation/       gom phần góp của các module cho một run
+    budget/            giới hạn tài nguyên của một run
+    ports.ts           port AgentRuntime và port ToolExecutor
+  tools/
+    policy/            quyết run được đọc gì
+    executors/         thực thi tool trong capability đã cấp
+    sources/           nguồn tài liệu: filesystem, connector
+  runtimes/<name>/     adapter cho port AgentRuntime
+  db/                  connection và migration
+apps/host/tests/
+apps/web/src/          React và Vite, chia theo feature
+  api/                 HTTP/SSE client
+  features/<name>/
+apps/web/tests/
 packages/
-  host/api/
-  host/contracts/
+  contracts/
   presentation/{deck,design,document,html,pptx}/
-  session/persistence/
-  workspace/registry/
-  tools/filesystem/
   <group>/<package>/tests/
 e2e/
 scripts/
@@ -75,73 +81,132 @@ scripts/
 
 Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm vào component đó.
 
+### `apps/host/`
+
+| Path | Câu hỏi | Sở hữu | Không sở hữu |
+| --- | --- | --- | --- |
+| `src/server.ts` | Local Host khởi động và tắt thế nào? | Startup, shutdown, configuration, tạo service, gắn middleware, đăng ký route và phần góp vào run | Business rule, SQL |
+| `src/http/` | Mọi HTTP request đi qua những bước chung nào? | Express app, bearer auth, kiểm tra origin, security header, giới hạn body, multipart, error handler, helper SSE, channel chuyển notice thay đổi tới Browser | Route của module, business rule |
+| `src/modules/<name>/` | Một domain làm gì và lưu gì? | Route, use case, business rule, SQL của các bảng module sở hữu, `version` và notice thay đổi, phần góp của module vào run | Store của module khác, vòng đời run |
+| `src/runs/` | Một run chạy, dừng và kết thúc thế nào? | Vòng đời run, event log, approval, cancel, chuẩn bị run, ngân sách tài nguyên, port `AgentRuntime` và port `ToolExecutor` | Module, Express, SQL driver, adapter cụ thể, rule riêng của owner của run |
+| `src/tools/` | Agent truy cập tài liệu trong phạm vi được cấp thế nào? | Tool policy, tool executor, nguồn tài liệu | User approval, request admission |
+| `src/runtimes/<name>/` | Một agent runtime cụ thể chạy thế nào? | Process, protocol, MCP bridge, parse event, chuyển skill sang format của runtime | Terminal status của run, permission |
+| `src/db/` | Local Host mở database và migrate thế nào? | Connection, migration | SQL của module |
+
 ### `apps/web/`
 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
-| `apps/web/` | Local application được tổ chức và vận hành thế nào? | Workflow riêng của application, Browser UI, local communication, adapter chỉ application dùng | Domain invariant và private persistence của package |
-| `src/browser/` | Người dùng tương tác với DeckAgent thế nào? | UI, UI-local state, navigation. `features/` nhóm UI theo product feature khi cần | Request execution authority, filesystem, SQLite, agent process |
-| `src/browser/transport/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client. Thông báo lỗi cho người dùng thuộc `src/browser/` hoặc `src/browser/features/` | Permission policy, Request Lifecycle, domain state transition, bảng văn bản lỗi UI |
-| `src/features/` | Application phối hợp các owner thế nào để hoàn thành một use case? | Application workflow, operation xuyên owner, application-level failure policy | Domain invariant của package, xử lý HTTP request/response, DOM |
-| `src/integrations/` | Application giao tiếp với external runtime hoặc service thế nào? | Protocol adapter, process lifecycle, external client. `opencode/` sở hữu process và protocol của OpenCode | Admission policy, domain invariant, terminal status của request, permission |
-| `src/index.ts` | Application khởi động và tắt thế nào? | Startup, shutdown, wiring concrete dependency, configuration, đăng ký capability và adapter | Domain operation, business rule của feature |
-
-Feature không bắt buộc có `service.ts`, `controller.ts` hoặc `repository.ts`. Không tạo folder `composition/` khi `index.ts` đã đủ cho wiring.
+| `src/` | Người dùng tương tác với DeckAgent thế nào? | Component và page React, UI-local state, navigation, văn bản lỗi cho người dùng | Request execution authority, filesystem, SQLite, agent process |
+| `src/api/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client | Permission policy, vòng đời run, bảng văn bản lỗi UI |
+| `src/features/<name>/` | UI của một product feature gồm những gì? | Component, hook và state của feature. Feature có editor (ví dụ canvas) tách editor core thuần (model, command, undo) khỏi component React | Lệnh ghi không đi qua `src/api/` |
 
 ### `packages/`
 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
-| `host/api/` | Local Host nhận command và quản lý request execution thế nào? | Local HTTP/SSE transport và HTTP framing (readJson, giới hạn kích thước body, multipart, header, xác thực, ánh xạ HTTP status), route dispatch, Request Lifecycle, request event, approval coordination | Browser UI, Deck invariant, process của OpenCode, SQLite implementation của Session, decode payload wire JSON thuần (thuộc host/contracts/), runtime của domain package (chỉ import type-level reader port) |
-| `host/contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Wire DTO, event envelope, protocol error payload, bộ decode và kiểm tra wire payload thuần cho cả request (như decodeAgentRequest) và response tại runtime boundary | HTTP server, RequestController, RequestStore, Browser client, mọi type chỉ Host API dùng |
-| `presentation/deck/` | Deck state và publication thay đổi hợp lệ thế nào? | Deck lifecycle, Brief và Outline state, generation state và grant, revision và publication invariant, artifact ownership. Có thể giữ private persistence | Request Lifecycle, concrete HTML/PPTX adapter, workflow xuyên domain |
+| `contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Zod schema, wire DTO, event envelope, protocol error payload, decode wire payload | HTTP server, store, Browser client, type chỉ Local Host dùng |
 | `presentation/design/` | Design system, template và layout xác định thế nào? | Design contract, design system và template catalog, theme, layout, compatibility rule | Deck lifecycle, generation, native conversion |
 | `presentation/document/` | Nội dung slide được biểu diễn và kiểm tra thế nào trước khi gắn với format? | SlideDocument, content node, provenance contract, document validation, FormatAdapter contract | Publication authority, concrete conversion |
 | `presentation/html/` | Portable content thành HTML artifact an toàn thế nào? | HTML conversion, giới hạn HTML/CSS, HTML validation | Deck lifecycle, request permission, publication authority |
 | `presentation/pptx/` | Portable content thành PPTX artifact thế nào? | PPTX conversion, font mapping, PPTX validation | Deck lifecycle, request permission, publication authority |
-| `session/persistence/` | Chat, message, request và approval được lưu và khôi phục thế nào? | Durable record của chat, message, attachment, request, approval. Transaction trong phạm vi Session | Request execution authority, Deck lifecycle, Workspace, trạng thái draft tạm trong bộ nhớ (thuộc apps/web/) |
-| `workspace/registry/` | Workspace và folder association được quản lý thế nào? | Workspace record và identity, folder association và folder policy, persistence và recovery của Registry | Chat lifecycle, request execution |
-| `tools/filesystem/` | Agent truy cập file trong phạm vi được cấp thế nào? | Path validation, access restriction, bounded read, file identity | User approval, request admission, agent tool policy |
+| `presentation/deck/` | Deck state và publication thay đổi hợp lệ thế nào? | Deck lifecycle, Brief và Outline state, generation state và grant, revision và publication invariant, artifact ownership | Vòng đời run, concrete HTML/PPTX adapter, workflow xuyên domain |
 
-Bốn điểm dễ sai trong các package trên:
-
-- Local Transport và Request Lifecycle cùng nằm trong `host/api/` nhưng là hai trách nhiệm riêng. Transport gọi public operation của Request Lifecycle. Request Lifecycle không import HTTP transport và không dùng HTTP status làm error contract.
-- `host/contracts/` chỉ chứa contract an toàn cho cả Browser và Local Host. Không chuyển toàn bộ type của Host API vào package này.
-- Request Lifecycle dùng persistence contract của `session/persistence/`. Không component nào sửa Session state qua SQLite implementation.
-- `host/contracts/` giữ bản sao độc lập của các wire DTO dùng chung với `session/persistence/`, `presentation/deck/` và `presentation/design/`. Browser import `host/contracts/` và không được phụ thuộc runtime của các domain package đó. `host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) trong `contract-sync.ts` để chặn lệch contract.
+`Open`: `presentation/deck/` có thể giữ làm package hoặc chuyển vào `apps/host/src/modules/deck/` [[1]](#ref-1). Cho tới khi quyết, `presentation/deck/` giữ vị trí và rule hiện tại.
 
 ### Tests, scripts và docs
 
-- Test đặt cùng component sở hữu hành vi được kiểm: `apps/web/tests/`, `packages/<group>/<package>/tests/`. Test kiểm hành vi xuyên nhiều component đặt trong `e2e/`. Không bắt buộc chia `unit/`, `integration/`, `contract/`.
+- Test đặt cùng component sở hữu hành vi được kiểm: `apps/host/tests/`, `apps/web/tests/`, `packages/<group>/<package>/tests/`. Test kiểm hành vi xuyên nhiều component đặt trong `e2e/`. Không bắt buộc chia `unit/`, `integration/`, `contract/`.
 - `scripts/` chỉ chứa developer tooling (build, check, repository operation). Không đặt business logic hoặc runtime capability vào `scripts/`.
 - Ownership của tài liệu nằm trong [Documentation Conventions](docs.md). File này không thay tài liệu về system architecture, state machine hay database schema trong `docs/architecture/`.
 
+## Hình dạng module
+
+Một module trong `apps/host/src/modules/<name>/` bắt đầu với ba file:
+
+- `<name>.routes.ts` đăng ký Express route. File này parse input bằng Zod schema từ `packages/contracts`, gọi service và ghi response. File này không chứa business rule *(review)*.
+- `<name>.service.ts` chứa use case và business rule. File này không import Express *(review)*.
+- `<name>.store.ts` chứa SQL cho các bảng mà module sở hữu, tăng `version` sau mỗi lần ghi và phát notice thay đổi. Ngoài transaction bảo vệ một invariant, file này không chứa business rule *(review)*.
+
+Module chỉ thêm file khác khi có một trách nhiệm riêng, ví dụ phần dựng prompt hoặc phần góp vào run. Module không có HTTP surface thì không có file routes. Module không sở hữu bảng nào thì không có file store. Không tạo folder `controllers/`, `services/` hoặc `repositories/` dùng chung cho nhiều module *(review)*.
+
 ## Dependency rules
+
+```mermaid
+flowchart LR
+  WEB["Browser (apps/web)"] -- "HTTP và SSE" --> HTTP["HTTP edge (http/)"]
+  HTTP --> ROUTES["Route của module"]
+  ROUTES --> SERVICE["Service của module"]
+  SERVICE --> STORE["Store của module"]
+  SERVICE --> RUNS["Vòng đời run (runs/)"]
+  RUNS --> PORT["Port AgentRuntime"]
+  ADAPTER["Adapter runtime (runtimes/*)"] -. "hiện thực" .-> PORT
+```
 
 ### Runtime
 
 | From | Được phụ thuộc | Không được phụ thuộc |
 | --- | --- | --- |
-| Browser | Browser module, Browser transport, `host/contracts` | Node-only module, Local Host implementation |
-| Browser transport | `host/contracts` | RequestController, SQLite, private module của Host |
-| Local Host transport | Request Lifecycle, operation dành cho application, type-level reader port của domain package (như DeckReader, OutlineReader) | Browser implementation, runtime class hoặc hàm của domain package |
-| Application workflow | Public API của domain và capability, public operation của feature khác | Private persistence implementation |
-| Integration | Runtime và protocol contract, capability cần dùng | Browser UI, HTTP error mapping |
-| `index.ts` | Concrete implementation cần wiring | — |
+| `apps/web/` | `packages/contracts` | `apps/host/`, Node-only module, `packages/presentation/` runtime |
+| `http/` | Route registrar của module | Service và store của module, business rule |
+| Route của module | Service của cùng module, `packages/contracts` | Store, SQL driver |
+| Service của module | Store của cùng module, public operation của service module khác, public operation của `runs/` | Express, store của module khác |
+| Store của module | `db/`, `packages/contracts` | Express, service |
+| `runs/` | Port của `runs/`, `packages/contracts` | Module, Express, SQL driver, adapter trong `runtimes/` |
+| `runtimes/<name>/` | Port trong `runs/ports.ts`, `packages/contracts` | Module, Express |
+| `tools/executors/` | `tools/policy/`, `tools/sources/` | Module, tự cấp thêm capability |
+| `server.ts` | Concrete implementation cần wiring | — |
 
-### Package và feature
+### Package và module
 
 - Workspace khác chỉ import một package qua `package.json` `exports`. Không import `src/`, `lib/` hoặc private subpath của package khác, kể cả bằng relative path. Không dùng TypeScript path alias để vào private internals *(review)*.
-- Module trong cùng owner được import implementation của nhau. Public API của một package không tự cho component khác quyền phụ thuộc vào package đó: dependency vẫn theo các rule trong section này *(review)*.
-- Package không phụ thuộc application. Domain package không phụ thuộc Browser hoặc Local Host implementation *(review)*.
-- `host/contracts/` không phụ thuộc runtime implementation *(review)*.
+- Package không phụ thuộc application. Package trong `packages/presentation/` không có I/O *(review)*.
+- `packages/contracts/` không phụ thuộc runtime implementation *(review)*.
 - `deck/` phụ thuộc FormatAdapter contract, không phụ thuộc `html/` hay `pptx/`. Format adapter chỉ phụ thuộc contract cần thiết của `design/` và `document/` *(review)*.
-- Feature chỉ dùng public operation hoặc contract của feature khác. Dependency giữa hai feature chỉ đi một chiều. Feature chỉ công bố public operation khi có consumer bên ngoài feature *(review)*.
-- Khi nhiều feature cần một operation, xác định owner của operation trước khi chia sẻ operation đó *(review)*.
-- Package graph và feature graph không có vòng. Khi có vòng, sửa ownership. Không tạo module `shared` hay `common` để cắt vòng *(review)*.
+- Module chỉ dùng public operation của service module khác. Dependency giữa hai module chỉ đi một chiều. Module chỉ công bố public operation khi có consumer bên ngoài module *(review)*.
+- Khi nhiều module cần một operation, xác định owner của operation trước khi chia sẻ operation đó *(review)*.
+- Package graph và module graph không có vòng. Khi có vòng, sửa ownership. Không tạo module `shared` hay `common` để cắt vòng *(review)*.
 - Không re-export toàn bộ private module thành public API *(review)*. Quy tắc về export chỉ để test dùng nằm trong [Testware](testware.md).
 
-Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
+`Open`: bảng ánh xạ lỗi sang HTTP status có thể nằm ở từng module hoặc ở error handler chung trong `http/` [[1]](#ref-1). Cho tới khi quyết, bảng giữ vị trí hiện tại. Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
+
+## Trong lúc chuyển
+
+Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refactor [[2]](#ref-2) xong. Mỗi folder cũ sở hữu đúng trách nhiệm của folder đích trong bảng dưới.
+
+| Folder cũ | Folder đích |
+| --- | --- |
+| `packages/host/api/src/index.ts`, `transport/http-io.ts`, `transport/error-response.ts`, `transport/sse.ts` | `apps/host/src/http/` |
+| `packages/host/api/src/transport/*-routes.ts` | `apps/host/src/modules/<name>/<name>.routes.ts` |
+| `packages/host/api/src/lifecycle/` | `apps/host/src/runs/` |
+| `apps/web/src/local-transport.ts` | Error handler, xem `Open` ở [Dependency rules](#dependency-rules) |
+| `apps/web/src/features/<name>/` | `apps/host/src/modules/<name>/` |
+| `apps/web/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
+| `apps/web/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
+| `apps/web/src/index.ts` | `apps/host/src/server.ts` |
+| `packages/session/persistence/` | Store của `modules/chats/`, `modules/attachments/` và `runs/`, cùng với `apps/host/src/db/` |
+| `packages/workspace/registry/` | `apps/host/src/modules/workspaces/` |
+| `packages/tools/filesystem/` | `apps/host/src/tools/` |
+| `packages/host/contracts/` | `packages/contracts/` |
+| `apps/web/src/browser/transport/` | `apps/web/src/api/` |
+| `apps/web/src/browser/**`, `apps/web/src/ui-assets.ts` | Component và page React trong `apps/web/src/` |
+
+Rule khi đặt và chuyển code:
+
+1. Code mới của một khu vực đã có code cũ đặt vào folder đích khi folder đích của khu vực đó đã có. Khi folder đích chưa có, code mới đặt cạnh code cũ của khu vực đó và theo trách nhiệm của folder đích. Revision chuyển khu vực đó mang cả code cũ và code mới sang folder đích *(review)*.
+2. Code của một khu vực mới, không có folder cũ trong bảng trên, đặt theo trạng thái của `apps/host/` *(review)*:
+   - Khi `apps/host/` chưa có: đặt vào `apps/web/src/features/<name>/` và theo trách nhiệm của `apps/host/src/modules/<name>/`.
+   - Khi `apps/host/` đã có: đặt thẳng vào `apps/host/src/modules/<name>/`.
+3. Chỉ một revision trong plan của Target Structure Refactor chuyển folder cũ, hoặc tạo folder đích cho một khu vực đã có code cũ *(review)*.
+4. Revision chuyển code sửa mọi caller trong cùng revision. Không để lại file re-export ở path cũ *(review)*.
+5. HTTP contract giữa Browser và Local Host giữ nguyên trong lúc chuyển: path, status code và JSON body chỉ đổi khi revision ghi rõ thay đổi đó *(test)*.
+6. Rule của `check:boundaries` cho một path cũ còn hiệu lực cho tới khi revision chuyển path đó thêm rule theo folder kèm negative fixture *(check-boundaries)*.
+
+Ba rule của layout cũ còn hiệu lực cho tới khi code của chúng được chuyển:
+
+- Local Transport và Request Lifecycle cùng nằm trong `packages/host/api/` nhưng là hai trách nhiệm riêng. Request Lifecycle không import HTTP transport và không dùng HTTP status làm error contract.
+- `packages/host/api/` chỉ import type-level reader port của domain package (như DeckReader, OutlineReader), không import runtime class hoặc hàm của domain package.
+- `packages/host/contracts/` giữ bản sao độc lập của các wire DTO dùng chung với `session/persistence/`, `presentation/deck/` và `presentation/design/`. `packages/host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) trong `contract-sync.ts`.
 
 ## Enforcement
 
@@ -151,14 +216,22 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | --- | --- | --- |
 | Import package chỉ qua `exports`, không qua private subpath, relative path hoặc alias | `oxlint` (`no-restricted-imports`), `check:boundaries` (`private-package-import`, `tsconfig-private-alias`, `unresolved-internal-import`) | — |
 | Browser không import Node-only module | Browser build, `oxlint` (`no-restricted-imports`), `check:boundaries` (`browser-node-import`) | — |
-| Feature, Browser feature và integration không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`) | — |
-| Package graph, feature graph và Browser feature graph không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`) | — |
-| `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | — |
-| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | — |
+| Feature, Browser feature và integration không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`) | Rule theo folder cho `apps/host/src/modules/` và `apps/web/src/api/` |
+| Package graph, feature graph và Browser feature graph không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`) | Module graph trong `apps/host/src/modules/` không có vòng |
+| `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | Cùng rule cho `packages/contracts/` |
+| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | `runs/` không import module, Express, SQL driver và adapter trong `runtimes/` |
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
 | Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
+| Route không import store hoặc SQL driver. Service không import Express. Module không import store của module khác | — | `oxlint` (`no-restricted-imports`) theo folder, mỗi rule có negative fixture |
+| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
+| Tool executor không tự cấp capability | — | `oxlint` (`no-restricted-imports`) cho `tools/executors/` |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 
 Ưu tiên TypeScript, `exports` và lint trước khi viết check script riêng. Chỉ viết check script khi công cụ hiện có không kiểm được boundary. Mỗi check kiểm một ownership rule trong file này. Check không chứa bản sao của toàn bộ kiến trúc. Mỗi check phải có negative fixture hoặc test chứng minh check bắt được vi phạm. Build thành công không phải bằng chứng duy nhất cho dependency boundary.
 
 Không sửa dependency boundary bằng alias, re-export hoặc module `shared` chỉ để check pass.
+
+## References
+
+1. <a id="ref-1"></a>[Layout đích](../build/refactor/target-structure/target-layout.md)
+2. <a id="ref-2"></a>[Target Structure Refactor](../build/refactor/target-structure/README.md)

@@ -57,7 +57,7 @@ These are the five failure modes most likely in Revision 1. No automated test co
 
 | Task | Status | File |
 | --- | --- | --- |
-| 1 | Pending | [Update Project Structure to the target layout](task-01-update-project-structure.md) |
+| 1 | Done | [Update Project Structure to the target layout](task-01-update-project-structure.md) ([report](../reports/task-01-update-project-structure.md)) |
 | 2 | Pending | [Write the Tech Stack section of AGENTS.md](task-02-write-tech-stack.md) |
 | 3 | Pending | [Diagnose the run owner](task-03-diagnose-run-owner.md) |
 | 4 | Pending | [Diagnose the AgentRuntime port](task-04-diagnose-agent-runtime-port.md) |
