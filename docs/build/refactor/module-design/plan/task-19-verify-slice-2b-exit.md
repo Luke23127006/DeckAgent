@@ -35,7 +35,7 @@ Read this file to run quality checks, tool tests, all 18 non-live suites, and Sl
 - Run live suites (`test:research-live`, `test:opencode-live`).
 - Commit or push before Step 5 checks pass.
 
-- [ ] **Step 1: Run all five static quality checks**
+- [x] **Step 1: Run all five static quality checks**
 
 Run:
 
@@ -53,7 +53,7 @@ npx biome format packages/presentation/deck/src/ packages/host/api/src/contract-
 
 Expected: PASS. Exit code `0` with `0` formatting diffs (note Windows `CRLF` checkout state if repo-wide `format:check` reports untouched files).
 
-- [ ] **Step 2: Run all five root tool test files**
+- [x] **Step 2: Run all five root tool test files**
 
 Run:
 
@@ -63,7 +63,7 @@ node --test tests/check-boundaries.test.mjs tests/check-docs.test.mjs tests/oxli
 
 Expected: PASS. Exit code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 3: Run all 18 non-live package test suites**
+- [x] **Step 3: Run all 18 non-live package test suites**
 
 Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Chromium sandbox restrictions block it):
 
@@ -88,7 +88,7 @@ Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Ch
 
 Expected: PASS. All 18 suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 4: Measure Slice 2B before and after metrics**
+- [x] **Step 4: Measure Slice 2B before and after metrics**
 
 Run:
 
@@ -100,7 +100,7 @@ Compare against the Phase 1 baseline for `packages/presentation/deck/`:
 - Baseline: `12` files, `3,695` lines, `3` over 400, `11` fn over 80, `1` under 30, `2` type assertions, `21` non-null assertions, `1` `*Service`, `66` root exports, `2` package subpaths (`"."`, `"./brief"`).
 - Target: `0` over 400, `0` fn over 80, `0` under 30, `0` type assertions, `0` non-null assertions, `0` `*Service`, `31` root exports, `1` package subpath (`"."`).
 
-- [ ] **Step 5: Mark task done, write the Slice 2B exit report, and commit and push**
+- [x] **Step 5: Mark task done, write the Slice 2B exit report, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 19 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-19-verify-slice-2b-exit.md`.
 2. Create `docs/build/refactor/module-design/reports/task-19-verify-slice-2b-exit.md` with:

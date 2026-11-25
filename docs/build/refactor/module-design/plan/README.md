@@ -113,7 +113,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 16 | Done | [Split presentation/deck contracts and refactor core stores](task-16-refactor-deck-contracts-and-core-stores.md) ([report](../reports/task-16-refactor-deck-contracts-and-core-stores.md)) |
 | 17 | Done | [Split deck artifact storage, extract image store, and guard assertions](task-17-refactor-deck-artifacts-and-image-store.md) ([report](../reports/task-17-refactor-deck-artifacts-and-image-store.md)) |
 | 18 | Done | [Rename DeckService to DeckStore, narrow exports, and check contract parity](task-18-rename-deck-store-narrow-exports-and-contract-sync.md) ([report](../reports/task-18-rename-deck-store-narrow-exports-and-contract-sync.md)) |
-| 19 | Pending | [Check Slice 2B exit gate and rescan metrics](task-19-verify-slice-2b-exit.md) |
+| 19 | Done | [Check Slice 2B exit gate and rescan metrics](task-19-verify-slice-2b-exit.md) ([report](../reports/task-19-verify-slice-2b-exit.md)) |
 
 ## Next revision
 
