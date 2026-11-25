@@ -70,13 +70,13 @@ Apply each row to each route. A route can get more than one flag.
 | The route throws an `HttpError` before it calls the handler, for example `REQUESTS_UNAVAILABLE` when `controller` is `undefined` | Flag `route-error`. Write the status and the code. |
 | No row matches | Write `none` in `Flags`. When the route has a behavior that the columns do not show, add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `for f in management request session deck; do grep -c "req.method" packages/host/api/src/transport/$f-routes.ts; done`
 
 Expected: PASS. The output is four lines: `23`, `4`, `12` and `0`. FAIL: any other number.
 
-- [ ] **Step 2: List and classify each route**
+- [x] **Step 2: List and classify each route**
 
 Run: `grep -n "req.method\|\.exec(\|pathname ===\|pathname.startsWith" packages/host/api/src/transport/*-routes.ts`
 
@@ -90,7 +90,7 @@ Also write these facts in the report, with file and line:
 2. The checks that `route` does before it calls a route function, in their order.
 3. The paths that do not start with `/api/`, and the function that answers them.
 
-- [ ] **Step 3: Find the tests of each route**
+- [x] **Step 3: Find the tests of each route**
 
 For each route, take the last literal segment of the path pattern, for example `attachments`, `decision` or `catalog`. For a route without a literal segment after `/api/`, take the full path, for example `/api/sessions`. Run this command with the segment:
 
@@ -100,7 +100,7 @@ Expected: PASS. The command exits with code 0 or 1. Code 1 means that no file co
 
 Write the file names in the `Tests` column. When the command finds more than five files, write the first five and the total number.
 
-- [ ] **Step 4: Find the Browser client of each route**
+- [x] **Step 4: Find the Browser client of each route**
 
 Run: `grep -rn "/api/" apps/web/src/browser/transport`
 
@@ -108,13 +108,13 @@ Expected: PASS. The command exits with code 0.
 
 For each route, write in the report the function in `apps/web/src/browser/transport/` that calls the route. Write `Not called by the Browser` when no function calls the route.
 
-- [ ] **Step 5: Check that no code changed**
+- [x] **Step 5: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 9 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-09-inventory-http-routes.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-09-inventory-http-routes.md` with:
