@@ -33,7 +33,12 @@ function discoverWorkspacePackages() {
 // listed explicitly: workspace discovery enumerates packages, not bundler entries.
 const extraEntries = {
   '@deckagent/file-tools': ['lib/types/parser-worker.js'],
-  '@deckagent/local-web': ['lib/types/cli.js'],
+  '@deckagent/host': ['lib/types/cli.js'],
+}
+
+// An application whose public entry is not lib/types/index.js names its entry here.
+const mainEntries = {
+  '@deckagent/host': 'lib/types/server.js',
 }
 
 const discovered = discoverWorkspacePackages()
@@ -61,7 +66,7 @@ for (const pkg of packages) {
   const config = {
     cwd: resolve(pkg.path),
     config: false,
-    entry: ['lib/types/index.js'],
+    entry: [mainEntries[pkg.name] ?? 'lib/types/index.js'],
     outDir: 'lib',
     format: ['esm'],
     platform: 'node',

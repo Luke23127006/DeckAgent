@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
-import { startLocalWeb } from '@deckagent/local-web'
+import { startLocalWeb } from '@deckagent/host'
 import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 
@@ -27,7 +27,7 @@ test('CLI imports the explicit confirmed-deck fixture without a model or cloud r
   const child = spawn(
     process.execPath,
     [
-      'apps/web/lib/cli.js',
+      'apps/host/lib/cli.js',
       '--confirmed-deck',
       'config/deck.confirmed.example.json',
       '--data-dir',

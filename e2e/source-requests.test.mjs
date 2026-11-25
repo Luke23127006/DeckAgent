@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { finished, startApp, waitFor } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { finished, startApp, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 async function fixture(t, extra = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-source-requests-'))

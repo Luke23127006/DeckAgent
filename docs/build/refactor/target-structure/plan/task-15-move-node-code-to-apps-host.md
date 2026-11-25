@@ -67,13 +67,13 @@ A test file moves to `apps/host/tests/` when it imports Host code: a path under 
 | `brief-host.test.mjs`, `commons-images.test.mjs`, `draft-store.test.mjs`, `image-research.test.mjs`, `mcp-bridge.test.mjs`, `opencode-adapter.test.mjs`, `opencode-resources.test.mjs`, `research.test.mjs`, `research-image-generation.test.mjs`, `wait-for.test.mjs`, `web-management.test.mjs` | `brief-client.test.mjs`, `browser-runtime.test.mjs`, `deck-client.test.mjs`, `deck-model.test.mjs`, `layout-review.test.mjs`, `outline-client.test.mjs`, `web-session.test.mjs` |
 | `fixtures/b02-helpers.mjs`, `fixtures/fake-opencode.mjs`, `fixtures/wait-for.mjs` | `fixtures/browser-driver.mjs` |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short && wc -l apps/web/src/index.ts apps/web/src/ui-assets.ts apps/web/package.json scripts/build-workspace.mjs && grep -c "@deckagent/local-web" e2e/*.test.mjs | grep -vc ":0$"`
 
 Expected: PASS. `git status --short` prints no line. The line counts are `391`, `309`, `32` and `93`. The last line is `12`: eleven e2e files from the report of Task 11 and `e2e/http-edge.test.mjs`. FAIL: `git status --short` prints a line. A person must commit the work of Tasks 13 and 14 first.
 
-- [ ] **Step 2: Move the files**
+- [x] **Step 2: Move the files**
 
 Run each command from the repository root, in this order. Each command stops at the first error (`set -e`).
 
@@ -92,7 +92,7 @@ Run: `git status --short | grep -c "^R"`
 
 Expected: PASS. The output is `74`.
 
-- [ ] **Step 3: Create the package files of `apps/host`**
+- [x] **Step 3: Create the package files of `apps/host`**
 
 Write the text below as the complete file `apps/host/package.json`:
 
@@ -156,7 +156,7 @@ Write the text below as the complete file `apps/host/tsconfig.json`:
 }
 ```
 
-- [ ] **Step 4: Run the edit script**
+- [x] **Step 4: Run the edit script**
 
 Save the script below as `/tmp/deckagent-move-edits.mjs`, outside the repository. Each edit replaces an exact text and checks the number of matches first. When a count is different, the script prints the file, the expected count and the found count, and exits with code 1.
 
@@ -375,7 +375,7 @@ Run: `grep -rln "@deckagent/local-web\|apps/web/tests/fixtures/b02-helpers\|apps
 
 Expected: PASS. The output is `exit=1` and then `0`. No e2e file and no moved test names the old package or the old fixture paths, and no script starts the old command line.
 
-- [ ] **Step 5: Link the new workspace package**
+- [x] **Step 5: Link the new workspace package**
 
 Run: `corepack pnpm@11.28.5 install --offline`
 
@@ -385,7 +385,7 @@ Run: `git diff --stat pnpm-lock.yaml`
 
 Expected: PASS. The output is `pnpm-lock.yaml | 25 ++++++++++++++++++++-----`. The diff changes the `importers` entries of `.` (root), `apps/host` and `apps/web` only.
 
-- [ ] **Step 6: Build and run the checks**
+- [x] **Step 6: Build and run the checks**
 
 Run: `rm -rf apps/web/lib apps/host/lib && corepack pnpm@11.28.5 build`
 
@@ -403,7 +403,7 @@ Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`.
 
-- [ ] **Step 7: Run the non-live suites**
+- [x] **Step 7: Run the non-live suites**
 
 Run each command below in order. For each command, write the exit code and the `# pass` and `# fail` lines in the report.
 
@@ -431,7 +431,7 @@ Run each command below in order. For each command, write the exit code and the `
 
 The numbers other than `test:http-edge` come from the report of Task 12. When a command fails, run it one more time. When it fails two times, STOP.
 
-- [ ] **Step 8: Check the changed paths**
+- [x] **Step 8: Check the changed paths**
 
 Run: `git status --short | grep -v "^R  " | cut -c4- | grep -v "^apps/\|^e2e/\|^docs/build/refactor/target-structure/"`
 
@@ -441,7 +441,7 @@ Run: `ls apps/web/src`
 
 Expected: PASS. The output is `browser` and `index.ts`.
 
-- [ ] **Step 9: Write the report file and stop**
+- [x] **Step 9: Write the report file and stop**
 
 1. Mark Steps 1 to 8 as `- [x]` in this file. Change the Task 15 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-15-move-node-code-to-apps-host.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-15-move-node-code-to-apps-host.md` with:

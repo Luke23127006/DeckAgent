@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the workspace package `@deckagent/host` (`apps/host/`) with the entry `lib/server.js` and the extra bundle entry `lib/cli.js`. It owns the composition root `src/server.ts`, the command line `src/cli.ts` and the folders `src/features/` and `src/integrations/`.
+- Add the Task 15 move report (`docs/build/refactor/target-structure/reports/task-15-move-node-code-to-apps-host.md`) with the 74 moved files, the changed callers and the result of each check after the move. Task 15 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the HTTP edge characterization tests (`e2e/http-edge.test.mjs`) and the `test:http-edge` script. The 12 black-box tests record 15 shared HTTP behaviors of the Local Host and 2 route facts of Task 9, so the move to Express 5 cannot drop them without a failed test.
 - Add the Task 13 Phase 2 structure decisions report (`docs/build/refactor/target-structure/reports/task-13-record-phase-2-structure-decisions.md`). Project Structure now decides the error map rule, points the `apps/web/src/local-transport.ts` row to it, and gives the one exception to the single-move rule for the Phase 2 move. Task 13 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add Revision 2b tasks (Tasks 13 to 16) to `docs/build/refactor/target-structure/plan/`: the Phase 2 structure decisions, the HTTP edge characterization tests, the move of the Node code into `apps/host/`, and the Express 5 measurement. The plan README records the Revision 2b decisions and failure modes.
@@ -50,6 +52,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move all Node code of `apps/web/src/` into `apps/host/src/` and keep the file and folder names. `apps/web/` now holds the Browser code and `index.ts`, the former `ui-assets.ts`, which reads the Browser files from the folder next to its own file. `@deckagent/host` calls `loadWebAssets(getTheme)` from `@deckagent/local-web`, and the scripts `web` and `start:local` start `node apps/host/lib/cli.js`.
 - Write the `## Tech Stack` section of `AGENTS.md` with the current tools and their versions from `package.json` and the OpenCode config, and with the chosen target libraries without versions.
 - Mark Task 2 `Done` in `docs/build/refactor/target-structure/plan/README.md` with its report link, and check Steps 1 to 5 in `task-02-write-tech-stack.md`.
 - Replace `docs/conventions/project-structure.md` with the target layout. The file gives the target tree of `apps/host/`, `apps/web/` and `packages/`, the module shape, the dependency rules with a diagram, the move rules for old and new code, and the enforcement table with each target check.
@@ -92,6 +95,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Removed
 
+- Remove `apps/web/src/ui-assets.ts`, which `apps/web/src/index.ts` replaces, and the Node dependencies of `@deckagent/local-web`. `apps/web/package.json` keeps `@deckagent/host-contracts` and `@deckagent/presentation-document` only.
 - Remove the `check:comments` script and `scripts/check-no-comments.mjs` with its test. The comment rules in `docs/conventions/code.md` are enforced by review.
 - Remove the `domain-modeling` and `spec-authoring` agent skills.
 - Remove the Cordis runtime, chat CLI, provider adapters, native tool adapters, smoke fixtures and unused vendor packages. Build, workspace dependencies and CI now use the OpenCode path; keep storage, source-access and publication checks for the current application.

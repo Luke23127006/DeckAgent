@@ -179,17 +179,16 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | `packages/host/api/src/index.ts`, `transport/http-io.ts`, `transport/error-response.ts`, `transport/sse.ts` | `apps/host/src/http/` |
 | `packages/host/api/src/transport/*-routes.ts` | `apps/host/src/modules/<name>/<name>.routes.ts` |
 | `packages/host/api/src/lifecycle/` | `apps/host/src/runs/` |
-| `apps/web/src/local-transport.ts` | Error handler trong `apps/host/src/http/` và bảng ánh xạ lỗi của từng module, xem [Dependency rules](#dependency-rules) |
-| `apps/web/src/features/<name>/` | `apps/host/src/modules/<name>/` |
-| `apps/web/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
-| `apps/web/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
-| `apps/web/src/index.ts` | `apps/host/src/server.ts` |
+| `apps/host/src/local-transport.ts` | Error handler trong `apps/host/src/http/` và bảng ánh xạ lỗi của từng module, xem [Dependency rules](#dependency-rules) |
+| `apps/host/src/features/<name>/` | `apps/host/src/modules/<name>/` |
+| `apps/host/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
+| `apps/host/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
 | `packages/session/persistence/` | Store của `modules/chats/`, `modules/attachments/` và `runs/`, cùng với `apps/host/src/db/` |
 | `packages/workspace/registry/` | `apps/host/src/modules/workspaces/` |
 | `packages/tools/filesystem/` | `apps/host/src/tools/` |
 | `packages/host/contracts/` | `packages/contracts/` |
 | `apps/web/src/browser/transport/` | `apps/web/src/api/` |
-| `apps/web/src/browser/**`, `apps/web/src/ui-assets.ts` | Component và page React trong `apps/web/src/` |
+| `apps/web/src/browser/**`, `apps/web/src/index.ts` | Component và page React trong `apps/web/src/` |
 
 Rule khi đặt và chuyển code:
 

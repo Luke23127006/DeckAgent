@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckStore } from '@deckagent/deck'
 import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { startApp, MemoryCredentials, finished, waitFor } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, MemoryCredentials, finished, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 test('Stop at two of five, restart and explicitly continue publishes only missing slides on the same Deck', {

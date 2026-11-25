@@ -1,0 +1,30 @@
+{
+  "name": "@deckagent/host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/server.js",
+  "types": "lib/types/server.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/server.d.ts",
+      "default": "./lib/server.js"
+    }
+  },
+  "dependencies": {
+    "@deckagent/deck": "workspace:*",
+    "@deckagent/design": "workspace:*",
+    "@deckagent/file-tools": "workspace:*",
+    "@deckagent/host-api": "workspace:*",
+    "@deckagent/host-contracts": "workspace:*",
+    "@deckagent/html-format": "workspace:*",
+    "@deckagent/local-web": "workspace:*",
+    "@deckagent/presentation-document": "workspace:*",
+    "@deckagent/session-persistence": "workspace:*",
+    "@deckagent/workspace-registry": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.26.0"
+  },
+  "optionalDependencies": {
+    "opencode-windows-x64": "1.19.5"
+  }
+}

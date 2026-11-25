@@ -23,6 +23,9 @@ importers:
       '@deckagent/file-tools':
         specifier: workspace:*
         version: link:packages/tools/filesystem
+      '@deckagent/host':
+        specifier: workspace:*
+        version: link:apps/host
       '@deckagent/host-api':
         specifier: workspace:*
         version: link:packages/host/api
@@ -63,7 +66,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  apps/web:
+  apps/host:
     dependencies:
       '@deckagent/deck':
         specifier: workspace:*
@@ -83,6 +86,9 @@ importers:
       '@deckagent/html-format':
         specifier: workspace:*
         version: link:../../packages/presentation/html
+      '@deckagent/local-web':
+        specifier: workspace:*
+        version: link:../web
       '@deckagent/presentation-document':
         specifier: workspace:*
         version: link:../../packages/presentation/document
@@ -95,14 +101,23 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.26.0
         version: 1.26.0(zod@4.6.7)
-    devDependencies:
-      animejs:
-        specifier: 4.5.0
-        version: 4.5.0
     optionalDependencies:
       opencode-windows-x64:
         specifier: 1.19.5
         version: 1.19.5
+
+  apps/web:
+    dependencies:
+      '@deckagent/host-contracts':
+        specifier: workspace:*
+        version: link:../../packages/host/contracts
+      '@deckagent/presentation-document':
+        specifier: workspace:*
+        version: link:../../packages/presentation/document
+    devDependencies:
+      animejs:
+        specifier: 4.5.0
+        version: 4.5.0
 
   packages/host/api:
     dependencies:

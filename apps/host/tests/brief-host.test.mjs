@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startApp, runs, finished, waitFor } from './fixtures/b02-helpers.mjs'
-import { BriefClient, ManagementClient } from './fixtures/browser-driver.mjs'
+import { BriefClient, ManagementClient } from '../../web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 test('Brief Host persists explicit choices across restart without a model run or Deck, and isolates Chats', async t => {

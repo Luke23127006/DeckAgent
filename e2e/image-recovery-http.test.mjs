@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { startApp, finished, runs, waitFor, MemoryCredentials } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, finished, runs, waitFor, MemoryCredentials } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { BriefClient, OutlineClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 

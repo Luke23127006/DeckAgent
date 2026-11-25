@@ -26,6 +26,9 @@
       "path": "apps/web"
     },
     {
+      "path": "apps/host"
+    },
+    {
       "path": "packages/presentation/document"
     },
     {

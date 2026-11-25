@@ -4,9 +4,9 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { startLocalWeb } from '@deckagent/local-web'
+import { startLocalWeb } from '@deckagent/host'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { MemoryCredentials, finished, waitFor } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { MemoryCredentials, finished, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { noisyAttachmentPng } from './fixtures/attachment-fixtures.mjs'
 
 const executable = process.env.DECKAGENT_OPENCODE

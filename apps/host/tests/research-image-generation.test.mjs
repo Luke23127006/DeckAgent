@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckStore } from '@deckagent/deck'
-import { DeckClient } from './fixtures/browser-driver.mjs'
+import { DeckClient } from '../../web/tests/fixtures/browser-driver.mjs'
 import { startApp, MemoryCredentials, finished, runs } from './fixtures/b02-helpers.mjs'
 import { brief } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
 

@@ -4,9 +4,9 @@ import { createServer } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { startLocalWeb } from '@deckagent/local-web'
+import { startLocalWeb } from '@deckagent/host'
 import { HostClient, BriefClient, OutlineClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { MemoryCredentials, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { MemoryCredentials, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 function toolData(value, predicate) {

@@ -12,21 +12,10 @@
     }
   },
   "dependencies": {
-    "@deckagent/deck": "workspace:*",
-    "@deckagent/design": "workspace:*",
-    "@deckagent/html-format": "workspace:*",
-    "@deckagent/file-tools": "workspace:*",
-    "@deckagent/host-api": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
-    "@deckagent/presentation-document": "workspace:*",
-    "@deckagent/session-persistence": "workspace:*",
-    "@deckagent/workspace-registry": "workspace:*",
-    "@modelcontextprotocol/sdk": "1.26.0"
+    "@deckagent/presentation-document": "workspace:*"
   },
   "devDependencies": {
     "animejs": "4.5.0"
-  },
-  "optionalDependencies": {
-    "opencode-windows-x64": "1.19.5"
   }
 }

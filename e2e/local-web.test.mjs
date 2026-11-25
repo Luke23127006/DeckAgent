@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { StorageError, startLocalWeb } from '@deckagent/local-web'
+import { StorageError, startLocalWeb } from '@deckagent/host'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 

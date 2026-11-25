@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { startApp, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 

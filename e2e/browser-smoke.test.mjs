@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { startLocalWeb } from '@deckagent/local-web'
+import { startLocalWeb } from '@deckagent/host'
 import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
@@ -243,7 +243,7 @@ async function requestCount(app, sessionId) {
 // B02: requests run through the OpenCode CLI; the fake CLI fixture stands in for it (never live-model evidence).
 const fakeOpenCode = dir => ({
   executable: process.execPath,
-  launcherArgs: [fileURLToPath(new URL('../apps/web/tests/fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
+  launcherArgs: [fileURLToPath(new URL('../apps/host/tests/fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
   version: 'fake-1.0.0',
 })
 

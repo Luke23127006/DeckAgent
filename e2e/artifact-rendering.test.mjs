@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient, ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
-import { startApp, finished, waitFor, MemoryCredentials } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, finished, waitFor, MemoryCredentials } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 test('real local renderer blocks malicious, out-of-theme, missing and overflowing content without replacing the published revision', {
   timeout: 60000,

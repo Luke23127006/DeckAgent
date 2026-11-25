@@ -1,7 +1,7 @@
 /**
  * Tests volatile per-chat draft storage (FR-038): isolation per chat, 16,000-codepoint limit, and in-memory lifetime.
  * Environment: in-process Node test runner against the real MemoryDraftStore (no mocks or external services).
- * Run: `corepack pnpm@11.28.5 build && node --test apps/web/tests/draft-store.test.mjs` (also in `test:local-foundation`).
+ * Run: `corepack pnpm@11.28.5 build && node --test apps/host/tests/draft-store.test.mjs` (also in `test:local-foundation`).
  * Expected results: literal values derived from FR-038 draft requirements and DraftError codes.
  */
 import assert from 'node:assert/strict'

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { promisify } from 'node:util'
-import { startLocalWeb } from '../lib/index.js'
+import { startLocalWeb } from '../lib/server.js'
 
 test('a dependency installation supplies the pinned runtime without a global OpenCode or an override', {
   skip: process.platform !== 'win32' || process.arch !== 'x64',

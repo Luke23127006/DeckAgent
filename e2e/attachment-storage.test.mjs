@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { ManagedAttachments, MemoryDraftStore } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { ManagedAttachments, MemoryDraftStore } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { AttachmentParser } from '@deckagent/file-tools'
 
 async function fixture(t) {

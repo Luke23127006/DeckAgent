@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DeckClient, BriefClient, OutlineClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { startApp, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 for (const templateVersion of [2, 3])

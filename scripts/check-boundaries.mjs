@@ -78,7 +78,7 @@ const stripExtension = value => {
 }
 
 const featureOfPath = value => {
-  const match = /^apps\/web\/src\/features\/([^/]+)\//.exec(value)
+  const match = /^apps\/host\/src\/features\/([^/]+)\//.exec(value)
   return match === null ? null : match[1]
 }
 
@@ -88,7 +88,7 @@ const browserFeatureOfPath = value => {
 }
 
 const integrationOfPath = value => {
-  const match = /^apps\/web\/src\/integrations\/([^/]+)\//.exec(value)
+  const match = /^apps\/host\/src\/integrations\/([^/]+)\//.exec(value)
   return match === null ? null : match[1]
 }
 
@@ -348,7 +348,7 @@ export const checkBoundaries = snapshot => {
       const targetFeature = resolved === null ? null : featureOfPath(resolved)
       if (sourceFeature !== null && targetFeature !== null) {
         if (targetFeature !== sourceFeature) {
-          const publicEntry = `apps/web/src/features/${targetFeature}/index`
+          const publicEntry = `apps/host/src/features/${targetFeature}/index`
           if (stripExtension(resolved) !== publicEntry) {
             add(
               file.path,
@@ -392,7 +392,7 @@ export const checkBoundaries = snapshot => {
 
       const targetIntegration = resolved === null ? null : integrationOfPath(resolved)
       if (targetIntegration !== null && sourceIntegration !== targetIntegration) {
-        const publicEntry = `apps/web/src/integrations/${targetIntegration}/index`
+        const publicEntry = `apps/host/src/integrations/${targetIntegration}/index`
         if (stripExtension(resolved) !== publicEntry) {
           add(
             file.path,
@@ -470,7 +470,7 @@ export const checkBoundaries = snapshot => {
   const features = [...new Set(files.map(file => featureOfPath(file.path)).filter(feature => feature !== null))]
   for (const cycle of findCycles(features, featureEdges)) {
     add(
-      `apps/web/src/features/${cycle[0]}`,
+      `apps/host/src/features/${cycle[0]}`,
       1,
       'feature-cycle',
       `Feature dependency cycle: ${describeCycle(cycle)}. Break the cycle by changing ownership.`,

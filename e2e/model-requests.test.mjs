@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { defaultCredentialStore } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { defaultCredentialStore } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 import {
   MemoryCredentials,
@@ -14,7 +14,7 @@ import {
   runs,
   startApp,
   waitFor,
-} from '../apps/web/tests/fixtures/b02-helpers.mjs'
+} from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 const key = 'sk-deckagent-test-KEY-7f3a9c'
 

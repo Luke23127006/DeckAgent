@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
-import { startApp, waitFor, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { startApp, waitFor, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { DatabaseSync } from 'node:sqlite'
 
 test('authenticated concurrent confirmation schedules one request, denies mixed input, and Stop preserves the snapshot lock', async t => {

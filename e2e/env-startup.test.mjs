@@ -64,7 +64,7 @@ test('Local Web opens the management API with missing or malformed environment k
       [
         '--env-file-if-exists=.env',
         '--use-system-ca',
-        join(root, 'apps/web/lib/cli.js'),
+        join(root, 'apps/host/lib/cli.js'),
         '--config',
         config,
         '--provider',

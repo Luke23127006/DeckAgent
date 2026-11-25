@@ -8,7 +8,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs, promisify } from 'node:util'
 
-const appRoot = fileURLToPath(new URL('../apps/web/', import.meta.url))
+const appRoot = fileURLToPath(new URL('../apps/host/', import.meta.url))
 
 async function digest(file) {
   const hash = createHash('sha256')
@@ -20,7 +20,7 @@ async function main() {
   const { values } = parseArgs({ options: { output: { type: 'string' }, help: { type: 'boolean' } } })
   if (values.help) {
     console.log(
-      'pnpm package:opencode [--output <empty-directory>]\nPrepare installed OpenCode as release resources; defaults to apps/web/resources/opencode. No network download or global install.',
+      'pnpm package:opencode [--output <empty-directory>]\nPrepare installed OpenCode as release resources; defaults to apps/host/resources/opencode. No network download or global install.',
     )
     return
   }

@@ -14,6 +14,7 @@ import { checkBoundaries, extractImports, formatReport } from '../scripts/check-
 
 const baseWorkspaces = [
   { dir: 'apps/web', name: '@deckagent/web', exports: { '.': './lib/index.js' } },
+  { dir: 'apps/host', name: '@deckagent/host', exports: { '.': './lib/server.js' } },
   { dir: 'packages/host/api', name: '@deckagent/host-api', exports: { '.': './lib/index.js' } },
   { dir: 'packages/host/contracts', name: '@deckagent/host-contracts', exports: { '.': './lib/index.js' } },
   {
@@ -55,12 +56,12 @@ test('extractImports ignores imports inside comments and strings', () => {
 test('checkBoundaries accepts valid production and owner-local test imports', () => {
   const files = [
     {
-      path: 'apps/web/src/index.ts',
+      path: 'apps/host/src/server.ts',
       content: "import { startHost } from '@deckagent/host-api'\nimport { run } from './features/deck/index.ts'\n",
     },
     { path: 'apps/web/src/browser/transport/client.ts', content: "import type { Req } from '@deckagent/host-contracts'\n" },
-    { path: 'apps/web/src/features/deck/index.ts', content: "import { load } from '../research/index.ts'\nexport const run = () => load()\n" },
-    { path: 'apps/web/src/features/research/index.ts', content: 'export const load = () => 1\n' },
+    { path: 'apps/host/src/features/deck/index.ts', content: "import { load } from '../research/index.ts'\nexport const run = () => load()\n" },
+    { path: 'apps/host/src/features/research/index.ts', content: 'export const load = () => 1\n' },
     {
       path: 'packages/presentation/html/src/index.ts',
       content: "import { d } from '@deckagent/design'\nimport { doc } from '@deckagent/presentation-document'\n",
@@ -188,11 +189,11 @@ test('checkBoundaries rejects package importing app and domain importing host ru
 
 test('checkBoundaries rejects private import across features', () => {
   const files = [
-    { path: 'apps/web/src/features/deck/workflow.ts', content: "import { helper } from '../research/tavily.ts'\n" },
-    { path: 'apps/web/src/features/research/tavily.ts', content: 'export const helper = () => 1\n' },
+    { path: 'apps/host/src/features/deck/workflow.ts', content: "import { helper } from '../research/tavily.ts'\n" },
+    { path: 'apps/host/src/features/research/tavily.ts', content: 'export const helper = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/features/deck/workflow.ts', line: 1, rule: 'feature-private-import' },
+    { path: 'apps/host/src/features/deck/workflow.ts', line: 1, rule: 'feature-private-import' },
   ])
 })
 
@@ -211,14 +212,14 @@ test('checkBoundaries detects a package cycle and reports lowest directory', () 
 
 test('checkBoundaries detects a three-way feature cycle with full chain', () => {
   const files = [
-    { path: 'apps/web/src/features/a/index.ts', content: "import { b } from '../b/index.ts'\n" },
-    { path: 'apps/web/src/features/b/index.ts', content: "import { c } from '../c/index.ts'\n" },
-    { path: 'apps/web/src/features/c/index.ts', content: "import { a } from '../a/index.ts'\n" },
+    { path: 'apps/host/src/features/a/index.ts', content: "import { b } from '../b/index.ts'\n" },
+    { path: 'apps/host/src/features/b/index.ts', content: "import { c } from '../c/index.ts'\n" },
+    { path: 'apps/host/src/features/c/index.ts', content: "import { a } from '../a/index.ts'\n" },
   ]
   const result = checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths: {} })
   assert.deepEqual(
     result.map(({ path, line, rule }) => ({ path, line, rule })),
-    [{ path: 'apps/web/src/features/a', line: 1, rule: 'feature-cycle' }],
+    [{ path: 'apps/host/src/features/a', line: 1, rule: 'feature-cycle' }],
   )
   assert.match(result[0].message, /a -> b -> c -> a/)
 })
@@ -269,22 +270,22 @@ test('checkBoundaries rejects browser transport importing browser UI features', 
 test('checkBoundaries rejects private import into integrations', () => {
   const files = [
     {
-      path: 'apps/web/src/features/research/research-service.ts',
+      path: 'apps/host/src/features/research/research-service.ts',
       content: "import { search } from '../../integrations/research/tavily.ts'\n",
     },
-    { path: 'apps/web/src/integrations/research/tavily.ts', content: 'export const search = () => 1\n' },
+    { path: 'apps/host/src/integrations/research/tavily.ts', content: 'export const search = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/features/research/research-service.ts', line: 1, rule: 'integration-private-import' },
+    { path: 'apps/host/src/features/research/research-service.ts', line: 1, rule: 'integration-private-import' },
   ])
 })
 
 test('checkBoundaries rejects unresolved relative import in production source', () => {
   const files = [
-    { path: 'apps/web/src/features/chats/index.ts', content: "import { missing } from './missing-module.ts'\n" },
+    { path: 'apps/host/src/features/chats/index.ts', content: "import { missing } from './missing-module.ts'\n" },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/features/chats/index.ts', line: 1, rule: 'unresolved-internal-import' },
+    { path: 'apps/host/src/features/chats/index.ts', line: 1, rule: 'unresolved-internal-import' },
   ])
 })
 
@@ -296,10 +297,10 @@ test('checkBoundaries accepts public browser feature and integration index impor
     },
     { path: 'apps/web/src/browser/features/deck/index.ts', content: 'export const deck = 1\n' },
     {
-      path: 'apps/web/src/features/research/research-service.ts',
+      path: 'apps/host/src/features/research/research-service.ts',
       content: "import { search } from '../../integrations/research/index.ts'\n",
     },
-    { path: 'apps/web/src/integrations/research/index.ts', content: 'export const search = () => 1\n' },
+    { path: 'apps/host/src/integrations/research/index.ts', content: 'export const search = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [])
 })

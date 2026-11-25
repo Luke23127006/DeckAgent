@@ -4,9 +4,9 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { startLocalWeb } from '@deckagent/local-web'
+import { startLocalWeb } from '@deckagent/host'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { MemoryCredentials, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
+import { MemoryCredentials, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 const executable = process.env.DECKAGENT_OPENCODE
 const enabled = process.env.DECKAGENT_TAVILY_LIVE === '1' && !!process.env.TAVILY_API_KEY && !!executable
