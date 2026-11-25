@@ -26,6 +26,7 @@ export interface ProcessOptions {
 }
 
 const maxLine = 2 * 1024 * 1024
+const maxOutput = 16 * 1024 * 1024
 
 /** Ends the process and every child it started. Windows: taskkill /T; elsewhere the process group. */
 function killTree(pid: number): Promise<void> {
@@ -56,6 +57,70 @@ function killTree(pid: number): Promise<void> {
   return Promise.resolve()
 }
 
+function spawnCliProcess(executable: string, args: readonly string[], options: ProcessOptions) {
+  return spawn(executable, [...args], {
+    cwd: options.cwd,
+    env: options.env,
+    windowsHide: true,
+    shell: false,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    detached: process.platform !== 'win32',
+  })
+}
+
+interface LineReader {
+  push(data: string): void
+  flush(): void
+}
+
+/** One parsed JSON value per line, and the guards that end the process when the framing or the size is wrong. */
+function createLineReader(options: ProcessOptions, onMalformed: () => void): LineReader {
+  const limit = options.maxOutputBytes ?? maxOutput
+  let pending = ''
+  let total = 0
+  let malformed = false
+  const fail = () => {
+    if (malformed) return
+    malformed = true
+    onMalformed()
+  }
+  const line = (text: string) => {
+    if (!text.trim() || !options.onLine) return
+    let value: unknown
+    try {
+      value = JSON.parse(text)
+    } catch {
+      fail()
+      return
+    }
+    options.onLine(value)
+  }
+  return {
+    push(data: string) {
+      if (malformed) return
+      total += Buffer.byteLength(data)
+      if (total > limit) {
+        fail()
+        return
+      }
+      pending += data
+      const lines = pending.split('\n')
+      pending = lines.pop() ?? ''
+      if (pending.length > maxLine) {
+        fail()
+        return
+      }
+      for (const text of lines) {
+        if (malformed) return
+        line(text)
+      }
+    },
+    flush() {
+      if (!malformed && pending.trim()) line(pending)
+    },
+  }
+}
+
 /**
  * Runs the CLI directly, never through a shell, so no argument is interpreted. stderr is drained and dropped:
  * provider errors there can hold credentials. Resolves once the process ended, or soon after it was killed.
@@ -70,24 +135,15 @@ export function runProcess(
       resolve({ startFailed: false, code: null, malformed: false, killed: true, stdout: '' })
       return
     }
-    const limit = options.maxOutputBytes ?? 16 * 1024 * 1024
     let child: ReturnType<typeof spawn>
     try {
-      child = spawn(executable, [...args], {
-        cwd: options.cwd,
-        env: options.env,
-        windowsHide: true,
-        shell: false,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: process.platform !== 'win32',
-      })
+      child = spawnCliProcess(executable, args, options)
     } catch {
       resolve({ startFailed: true, code: null, malformed: false, killed: false, stdout: '' })
       return
     }
-    let pending = ''
-    let stdout = ''
-    let total = 0
+    const { stdin, stdout, stderr } = child
+    let collected = ''
     let malformed = false
     let killed = false
     let settled = false
@@ -96,7 +152,7 @@ export function runProcess(
       if (settled) return
       settled = true
       options.signal.removeEventListener('abort', abort)
-      resolve({ ...result, stdout: options.collect ? stdout : '' })
+      resolve({ ...result, stdout: options.collect ? collected : '' })
     }
     const stop = () => {
       if (child.pid === undefined || killing) return
@@ -108,49 +164,28 @@ export function runProcess(
       killed = true
       stop()
     }
-    options.signal.addEventListener('abort', abort, { once: true })
-    const line = (text: string) => {
-      if (!text.trim() || !options.onLine) return
-      let value: unknown
-      try {
-        value = JSON.parse(text)
-      } catch {
-        malformed = true
-        stop()
-        return
-      }
-      options.onLine(value)
+    if (!stdin || !stdout || !stderr) {
+      finish({ startFailed: true, code: null, malformed: false, killed: false })
+      return
     }
-    child.stdout!.setEncoding('utf8')
-    child.stdout!.on('data', (data: string) => {
-      if (malformed || killed) return
-      total += Buffer.byteLength(data)
-      if (total > limit) {
-        malformed = true
-        stop()
-        return
-      }
-      if (options.collect) stdout += data
-      pending += data
-      const lines = pending.split('\n')
-      pending = lines.pop() ?? ''
-      if (pending.length > maxLine) {
-        malformed = true
-        stop()
-        return
-      }
-      for (const text of lines) {
-        if (malformed || killed) return
-        line(text)
-      }
+    options.signal.addEventListener('abort', abort, { once: true })
+    const reader = createLineReader(options, () => {
+      malformed = true
+      stop()
     })
-    child.stderr!.resume()
-    child.stdin!.on('error', () => {})
+    stdout.setEncoding('utf8')
+    stdout.on('data', (data: string) => {
+      if (malformed || killed) return
+      if (options.collect) collected += data
+      reader.push(data)
+    })
+    stderr.resume()
+    stdin.on('error', () => {})
     child.on('error', () => finish({ startFailed: true, code: null, malformed, killed }))
     child.on('close', code => {
-      if (!malformed && !killed && pending.trim()) line(pending)
+      if (!malformed && !killed) reader.flush()
       void Promise.resolve(killing).then(() => finish({ startFailed: false, code, malformed, killed }))
     })
-    child.stdin!.end(options.input ?? '')
+    stdin.end(options.input ?? '')
   })
 }

@@ -3,10 +3,9 @@ import { constants } from 'node:fs'
 import { access, mkdir, stat } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { delimiter, isAbsolute, join } from 'node:path'
-import type { RequestRun, RuntimeEvent, RuntimeOutcome } from '@deckagent/host-api'
+import type { RequestRun, RuntimeOutcome } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
-import { summarizedNotice } from '@deckagent/session-persistence'
-import type { ProviderRunSettings } from '../../features/providers/index.ts'
+import type { ProviderRunSettings } from '../providers/index.ts'
 import { OpenCodeError } from './contracts.ts'
 import type { OpenCodeExecutor, RuntimeSessionAccess } from './contracts.ts'
 import {
@@ -16,14 +15,14 @@ import {
   runtimeConfiguration,
   safeConfiguration,
   toolBoundary,
+  type RuntimeFolders,
 } from './config.ts'
 import { openToolBridge } from './mcp-bridge.ts'
-import type { RuntimeFolders } from './config.ts'
-import { errorCode, isContextOverflow, parseEvent } from './events.ts'
 import { seedPrompt } from './history.ts'
 import { runProcess } from './process.ts'
 import { UnsupportedProviderError, selector } from './provider.ts'
 import { resourceExecutable } from './resources.ts'
+import { createAttemptTimer, createStreamTracker, type AttemptResult } from './stream-tracker.ts'
 
 export interface OpenCodeOptions {
   /** Absolute developer override. Absent: use app resources, the installed platform runtime, then PATH. */
@@ -76,13 +75,6 @@ export async function findExecutable(
     }
   }
   return undefined
-}
-
-interface Attempt {
-  readonly outcome: RuntimeOutcome
-  readonly nativeSessionId?: string
-  /** Nothing ran in the native session: a missing or unusable session to resume. */
-  readonly noWork: boolean
 }
 
 /**
@@ -164,11 +156,9 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
     if (!this.executable) return { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }
     const executable = this.executable
     const folders = await this.folders(request.sessionId)
-    const context = `${folders.work}|${toolBoundary}|${run.tools?.context ?? 'no-source-capability'}|${createHash(
-      'sha256',
-    )
-      .update(run.instructions ?? '')
-      .digest('hex')}`
+    const seed = createHash('sha256').update(run.instructions ?? '')
+    const instructions = seed.digest('hex')
+    const context = `${folders.work}|${toolBoundary}|${run.tools?.context ?? 'no-source-capability'}|${instructions}`
     const binding = this.sessions.binding(request.sessionId)
     const earlier = this.sessions.requests(request.sessionId).filter(item => item.requestId !== run.requestId)
     const history = await this.sessions.read(request.sessionId)
@@ -187,14 +177,9 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
       await run.emit({ kind: 'notice', code: 'NEW_RUNTIME_SESSION' })
     }
     const fresh = () => seedPrompt(before, request.input)
-    let attempt = await this.attempt(
-      executable,
-      settings,
-      folders,
-      run,
-      resumable ? request.input : fresh(),
-      resumable ? binding!.nativeSessionId : undefined,
-    )
+    const resumeSessionId = resumable && binding ? binding.nativeSessionId : undefined
+    const prompt = resumable ? request.input : fresh()
+    let attempt = await this.attempt(executable, settings, folders, run, prompt, resumeSessionId)
     if (resumable && attempt.noWork && attempt.outcome.status === 'failed' && !run.signal.aborted) {
       // The native session could not be resumed (expired or missing). The chat keeps its history; a new session starts.
       this.sessions.unbind(request.sessionId)
@@ -224,7 +209,7 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
     run: RequestRun,
     prompt: string,
     resume: string | undefined,
-  ): Promise<Attempt> {
+  ): Promise<AttemptResult> {
     let config: ReturnType<typeof runtimeConfiguration>
     const bridge = run.tools ? await openToolBridge({ tools: run.tools, signal: run.signal }) : undefined
     try {
@@ -235,94 +220,15 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
       )
     } catch (error) {
       await bridge?.close()
-      return {
-        outcome: {
-          status: 'failed',
-          errorCode: error instanceof UnsupportedProviderError ? 'PROVIDER_UNSUPPORTED' : 'RUNTIME_FAILED',
-        },
-        noWork: false,
-      }
+      const failure = error instanceof UnsupportedProviderError ? 'PROVIDER_UNSUPPORTED' : 'RUNTIME_FAILED'
+      return { outcome: { status: 'failed', errorCode: failure }, noWork: false }
     }
     const env = isolatedEnvironment(folders, encodeConfiguration(config), settings.key, bridge?.token)
-    const local = new AbortController()
-    let timedOut = false
-    let remaining = this.options.timeoutMs ?? 600_000
-    let started = Date.now()
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const arm = () => {
-      started = Date.now()
-      timer = setTimeout(() => {
-        timedOut = true
-        local.abort()
-      }, remaining)
-    }
-    arm()
-    let waiting = false
-    const unsubscribeWait = run.onApprovalWait?.(value => {
-      if (value === waiting) return
-      waiting = value
-      if (value) {
-        clearTimeout(timer)
-        remaining = Math.max(1, remaining - (Date.now() - started))
-      } else arm()
-    })
-    const signal = AbortSignal.any([run.signal, local.signal])
+    const timer = createAttemptTimer(this.options.timeoutMs ?? 600_000, run)
+    const tracker = createStreamTracker(run, () => timer.local.abort())
     try {
-      // The effective configuration is checked before any model work: a native tool or plugin that slipped in stops the run.
-      const audit = await runProcess(executable, [...this.launcher, 'debug', 'config', '--pure'], {
-        cwd: folders.work,
-        env,
-        signal,
-        collect: true,
-        maxOutputBytes: 4 * 1024 * 1024,
-      })
-      if (signal.aborted)
-        return { outcome: { status: 'failed', errorCode: timedOut ? 'REQUEST_TIMEOUT' : 'STOPPED' }, noWork: true }
-      if (audit.startFailed) return { outcome: { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }, noWork: true }
-      let resolved: unknown
-      try {
-        resolved = JSON.parse(audit.stdout)
-      } catch {
-        resolved = undefined
-      }
-      if (audit.code !== 0 || !safeConfiguration(resolved, config))
-        return { outcome: { status: 'failed', errorCode: 'RUNTIME_CONFIG_UNSAFE' }, noWork: true }
-      resolved = undefined
-
-      let nativeSessionId: string | undefined
-      let steps = 0
-      let modelSteps = 0
-      let modelActivity: string | undefined
-      let finishReason: string | undefined
-      let failure: string | undefined
-      let protocolError = false
-      // FR-079: after a context overflow OpenCode writes a summary in a new assistant message, then goes on.
-      // `waiting`: overflow reported, summary not started; `writing`: the summary message is being written.
-      let summary: 'none' | 'waiting' | 'writing' = 'none'
-      let summaryMessage: string | undefined
-      let summaryActivity = ''
-      let overflows = 0
-      let summaries = 0
-      let writes: Promise<void> = Promise.resolve()
-      const assistantMessages = new Set<string>()
-      const texts = new Map<string, string>()
-      const tools = new Map<string, string>()
-      const emit = (event: RuntimeEvent) => {
-        writes = writes
-          .then(() => run.emit(event))
-          .catch(() => {
-            // The Host refused the write (the request ended or could not be saved): no more work for this run.
-            local.abort()
-          })
-      }
-      const ofSummary = (messageId: string | undefined) =>
-        summary === 'writing' &&
-        (summaryMessage === undefined || messageId === undefined || messageId === summaryMessage)
-      const endSummary = (status: 'completed' | 'failed') => {
-        emit({ kind: 'activity', id: summaryActivity, label: 'Conversation summary', type: 'model', status })
-        summary = 'none'
-        summaryMessage = undefined
-      }
+      const audit = await this.auditConfiguration(executable, folders, env, timer.signal, config, timer.timedOut)
+      if (audit) return audit
       const args = [
         'run',
         '--pure',
@@ -339,131 +245,50 @@ export class OpenCodeRuntime implements OpenCodeExecutor {
       const result = await runProcess(executable, [...this.launcher, ...args], {
         cwd: folders.work,
         env,
-        signal,
+        signal: timer.signal,
         input: run.tools
           ? `Current Host source manifest (data, not permissions):\n${run.tools.manifest}\n\n${prompt}`
           : prompt,
         onLine: value => {
-          if (signal.aborted) return
-          const event = parseEvent(value)
-          if (!event) {
-            protocolError = true
-            local.abort()
-            return
-          }
-          if (event.sessionId && !nativeSessionId) nativeSessionId = event.sessionId
-          if (event.sessionId && event.sessionId !== nativeSessionId) {
-            protocolError = true
-            local.abort()
-            return
-          }
-          if (event.type === 'step_start') {
-            steps++
-            if (event.messageId) assistantMessages.add(event.messageId)
-            if (summary === 'waiting') {
-              summary = 'writing'
-              summaryMessage = event.messageId
-              return
-            }
-            if (ofSummary(event.messageId)) return
-            modelSteps++
-            modelActivity = `model-${modelSteps}`
-            emit({ kind: 'activity', id: modelActivity, label: 'Model response', type: 'model', status: 'running' })
-          } else if (event.type === 'step_finish') {
-            if (ofSummary(event.messageId)) {
-              if (event.reason === 'error' || event.reason === 'content-filter') {
-                failure ??= 'CONTEXT_SUMMARY_FAILED'
-                endSummary('failed')
-                return
-              }
-              summaries++
-              endSummary('completed')
-              // Said once per request: the model now reads a summary in place of the conversation before it.
-              if (summaries === 1) emit({ kind: 'notice', code: summarizedNotice })
-              return
-            }
-            finishReason = event.reason
-            if (modelActivity)
-              emit({ kind: 'activity', id: modelActivity, label: 'Model response', type: 'model', status: 'completed' })
-            modelActivity = undefined
-          } else if (event.type === 'text') {
-            // The summary is what the model reads, not the reply; the user keeps the whole conversation (FR-079).
-            if (ofSummary(event.messageId)) return
-            // A text part of a user message (such as OpenCode's own "continue" note after a summary) is not the reply.
-            if (event.messageId && !assistantMessages.has(event.messageId)) return
-            // Repeated frames of a part replace it; identical frames are not saved twice.
-            if (texts.get(event.partId) === event.text) return
-            texts.set(event.partId, event.text)
-            emit({ kind: 'text', part: event.partId, text: event.text })
-          } else if (event.type === 'tool') {
-            // Native tools are denied in this build: a denied call is a failed activity, not a failed request (FR-070).
-            if (tools.get(event.callId) === event.status) return
-            tools.set(event.callId, event.status)
-            // Host tools publish their own activities at the authorization boundary; ignore duplicate CLI records.
-            if (!event.tool.startsWith('deckagent_'))
-              emit({
-                kind: 'activity',
-                id: `tool-${event.callId}`,
-                label: event.tool,
-                type: 'tool',
-                status: event.status,
-              })
-          } else if (event.type === 'error') {
-            if (isContextOverflow(event) && summary === 'none') {
-              // The call was refused as too long; OpenCode summarizes and answers again.
-              overflows++
-              finishReason = undefined
-              if (modelActivity)
-                emit({ kind: 'activity', id: modelActivity, label: 'Model response', type: 'model', status: 'failed' })
-              modelActivity = undefined
-              summary = 'waiting'
-              summaryActivity = `summary-${overflows}`
-              emit({
-                kind: 'activity',
-                id: summaryActivity,
-                label: 'Conversation summary',
-                type: 'model',
-                status: 'running',
-              })
-              return
-            }
-            // An error while summarizing: the summary could not be written and the request does not finish.
-            if (summary !== 'none') {
-              failure ??= isContextOverflow(event) ? 'CONTEXT_SUMMARY_FAILED' : errorCode(event)
-              endSummary('failed')
-              return
-            }
-            failure ??= errorCode(event)
-          }
+          if (!timer.signal.aborted) tracker.onLine(value)
         },
       })
-      // A summary not written ends the request even when the CLI said nothing more (FR-079, as UC-003 A11).
-      if (summary !== 'none' && !failure && !run.signal.aborted && !timedOut) {
-        failure = 'CONTEXT_SUMMARY_FAILED'
-        endSummary('failed')
-      }
-      await writes
-      // Work was done when a step ran or the native session already took part in a summary: never retried elsewhere.
-      const noWork = steps === 0 && overflows === 0
-      if (run.signal.aborted) return { outcome: { status: 'failed', errorCode: 'STOPPED' }, noWork }
-      if (timedOut) return { outcome: { status: 'failed', errorCode: 'REQUEST_TIMEOUT' }, noWork }
-      if (result.startFailed) return { outcome: { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }, noWork: true }
-      if (protocolError || result.malformed)
-        return { outcome: { status: 'failed', errorCode: 'RUNTIME_PROTOCOL' }, noWork }
-      if (local.signal.aborted) return { outcome: { status: 'failed', errorCode: 'REQUEST_NOT_SAVED' }, noWork }
-      if (failure) return { outcome: { status: 'failed', errorCode: failure }, noWork }
-      // OpenCode 1.19.5 exits 1 after any reported error, including an overflow it then summarized and recovered from.
-      if (result.code !== 0 && !(result.code === 1 && summaries > 0))
-        return { outcome: { status: 'failed', errorCode: 'RUNTIME_FAILED' }, noWork }
-      // Exit 0 alone is not completion: the last step must have finished with a final answer, in a known native session.
-      if (!steps || !finishReason || finishReason === 'tool-calls' || !nativeSessionId)
-        return { outcome: { status: 'failed', errorCode: 'RUNTIME_INCOMPLETE' }, noWork }
-      return { outcome: { status: 'completed' }, nativeSessionId, noWork: false }
+      await tracker.finalize(run.signal.aborted, timer.timedOut())
+      return tracker.classify(result, run.signal.aborted, timer.timedOut(), timer.local.signal.aborted)
     } finally {
-      clearTimeout(timer)
-      unsubscribeWait?.()
+      timer.cleanup()
       bridge?.revoke()
       await bridge?.close()
     }
+  }
+
+  /** The effective configuration is checked before any model work: a native tool or plugin that slipped in stops the run. */
+  private async auditConfiguration(
+    executable: string,
+    folders: RuntimeFolders,
+    env: NodeJS.ProcessEnv,
+    signal: AbortSignal,
+    config: ReturnType<typeof runtimeConfiguration>,
+    timedOut: () => boolean,
+  ): Promise<AttemptResult | undefined> {
+    const audit = await runProcess(executable, [...this.launcher, 'debug', 'config', '--pure'], {
+      cwd: folders.work,
+      env,
+      signal,
+      collect: true,
+      maxOutputBytes: 4 * 1024 * 1024,
+    })
+    if (signal.aborted)
+      return { outcome: { status: 'failed', errorCode: timedOut() ? 'REQUEST_TIMEOUT' : 'STOPPED' }, noWork: true }
+    if (audit.startFailed) return { outcome: { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }, noWork: true }
+    let resolved: unknown
+    try {
+      resolved = JSON.parse(audit.stdout)
+    } catch {
+      resolved = undefined
+    }
+    if (audit.code !== 0 || !safeConfiguration(resolved, config))
+      return { outcome: { status: 'failed', errorCode: 'RUNTIME_CONFIG_UNSAFE' }, noWork: true }
+    return undefined
   }
 }

@@ -75,7 +75,7 @@ Read this file to split long functions in `apps/web/src/integrations/`, replace 
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Move `ProviderRunSettings` into `integrations/providers/` (`IN6`)**
+- [x] **Step 1: Move `ProviderRunSettings` into `integrations/providers/` (`IN6`)**
 
 1. In `apps/web/src/integrations/providers/provider-catalog.ts`, add `ProviderRunSettings` right after `ProviderEndpoint`:
 
@@ -94,7 +94,7 @@ export interface ProviderRunSettings {
 4. In `apps/web/src/features/providers/index.ts`, remove `ProviderRunSettings` from line 3.
 5. In `apps/web/src/integrations/opencode/config.ts`, `contracts.ts`, `provider.ts`, and `runtime.ts`, replace `../../features/providers/index.ts` with `../providers/index.ts`.
 
-- [ ] **Step 2: Replace `as` assertions in `opencode/config.ts` and `opencode/resources.ts`, and narrow `opencode/index.ts` (`IN4`, `IN5`)**
+- [x] **Step 2: Replace `as` assertions in `opencode/config.ts` and `opencode/resources.ts`, and narrow `opencode/index.ts` (`IN4`, `IN5`)**
 
 1. In `apps/web/src/integrations/opencode/config.ts` (lines 168-171), replace the `as Record<string, unknown>` cast:
 
@@ -122,7 +122,7 @@ function record(value: unknown): value is Record<string, unknown> {
    - Replace lines 19-20 with `if (!record(value)) return { present: true }` and read `value.*` directly.
 3. In `apps/web/src/integrations/opencode/index.ts`, remove `OpenCodeErrorCode`, `OpenCodeErrorDetail`, and `RuntimeSessionAccess` from line 3. Keep `OpenCodeExecutor`.
 
-- [ ] **Step 3: Split long functions and remove `!` assertions in `opencode/process.ts` and `opencode/mcp-bridge.ts` (`IN3`, `IN4`)**
+- [x] **Step 3: Split long functions and remove `!` assertions in `opencode/process.ts` and `opencode/mcp-bridge.ts` (`IN3`, `IN4`)**
 
 1. In `apps/web/src/integrations/opencode/process.ts`:
    - Keep `ProcessResult`, `ProcessOptions`, and `runProcess` exported with identical signatures.
@@ -135,7 +135,7 @@ function record(value: unknown): value is Record<string, unknown> {
    - Extract private helpers `isAuthorized(req, expectedHost, token, active)`, `readJsonBody(req, res)`, `createToolServer(tools, active)`, and `forwardMcpRequest(req, res, expectedHost, body, server)` inside `mcp-bridge.ts`.
    - Keep every function in `mcp-bridge.ts` under 70 lines.
 
-- [ ] **Step 4: Extract `opencode/stream-tracker.ts` and simplify `opencode/runtime.ts` (`IN2`, `IN4`)**
+- [x] **Step 4: Extract `opencode/stream-tracker.ts` and simplify `opencode/runtime.ts` (`IN2`, `IN4`)**
 
 1. Create `apps/web/src/integrations/opencode/stream-tracker.ts` (under 220 lines, every function under 75 lines) with:
    - `export interface AttemptResult { readonly outcome: RuntimeOutcome; readonly nativeSessionId?: string; readonly noWork: boolean }`.
@@ -147,7 +147,7 @@ function record(value: unknown): value is Record<string, unknown> {
    - Delegate timer setup, stream tracking, and outcome classification inside `attempt` to `createAttemptTimer` and `createStreamTracker`.
    - Keep `runtime.ts` under 300 lines and every function under 75 lines.
 
-- [ ] **Step 5: Split `images/` helpers, remove all `images/` assertions, and narrow `credentials/index.ts` (`IN7`, `IN8`)**
+- [x] **Step 5: Split `images/` helpers, remove all `images/` assertions, and narrow `credentials/index.ts` (`IN7`, `IN8`)**
 
 1. In `apps/web/src/integrations/images/commons-images.ts`:
    - Add private `extMetadataValue(ext: Record<string, unknown>, key: string): string` returning `object(entry) && typeof entry.value === 'string' ? entry.value : ''` (zero `as` assertions).
@@ -161,7 +161,7 @@ function record(value: unknown): value is Record<string, unknown> {
 3. In `apps/web/src/integrations/images/image-source.ts` (lines 29-31), bind `const id = match?.[1]` and `const slug = match?.[2]`, and guard `if (id && slug && (!slug.startsWith('pexels-photo-') || slug === \`pexels-photo-${id}\`))`. Remove `!`.
 4. In `apps/web/src/integrations/credentials/index.ts`, remove `UnavailableCredentialStore`.
 
-- [ ] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run integration suites**
+- [x] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run integration suites**
 
 Run:
 
@@ -193,7 +193,7 @@ corepack pnpm@11.28.5 test:model-requests && corepack pnpm@11.28.5 test:source-p
 
 Expected: PASS. All five suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 23 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-23-refactor-integrations-opencode-images-credentials.md`.
 2. Create `docs/build/refactor/module-design/reports/task-23-refactor-integrations-opencode-images-credentials.md` with:

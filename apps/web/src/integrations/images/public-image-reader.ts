@@ -38,6 +38,123 @@ const publicAddress = (address: string) =>
     ? !blocked.check(address, 'ipv4')
     : isIP(address) === 6 && /^[23][a-f\d]{3}:/i.test(address) && !blocked.check(address, 'ipv6')
 
+const fail = () => new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+
+function parsePublicUrl(value: string): URL {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    throw fail()
+  }
+  if (
+    value.length > 2048 ||
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.port ||
+    /(?:^|\.)(?:localhost|local|internal|home|lan)\.?$/i.test(url.hostname)
+  )
+    throw fail()
+  return url
+}
+
+async function resolvePublicAddress(hostname: string, signal: AbortSignal, resolve: ImageLookup): Promise<string> {
+  const addresses = isIP(hostname)
+    ? [{ address: hostname, family: isIP(hostname) }]
+    : await new Promise<Awaited<ReturnType<ImageLookup>>>((done, reject) => {
+        const aborted = () => reject(signal.reason)
+        signal.addEventListener('abort', aborted, { once: true })
+        resolve(hostname)
+          .then(done, reject)
+          .finally(() => signal.removeEventListener('abort', aborted))
+      })
+  signal.throwIfAborted()
+  const target = addresses[0]
+  if (!target || addresses.some(a => !publicAddress(a.address))) throw fail()
+  return target.address
+}
+
+function fetchPinnedHttps(
+  url: URL,
+  address: string,
+  hostname: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<Response> {
+  return new Promise<Response>((resolve, reject) => {
+    const req = request(
+      {
+        protocol: 'https:',
+        hostname: address,
+        servername: isIP(hostname) ? undefined : hostname,
+        port: 443,
+        method: 'GET',
+        path: `${url.pathname}${url.search}`,
+        headers: { ...headers, Host: url.host },
+        signal,
+      },
+      incoming => {
+        const responseHeaders = new Headers()
+        for (const [key, value] of Object.entries(incoming.headers))
+          if (value !== undefined) responseHeaders.set(key, Array.isArray(value) ? value.join(',') : value)
+        const status = incoming.statusCode ?? 0
+        if ([204, 205, 304].includes(status)) {
+          incoming.resume()
+          resolve(new Response(null, { status, headers: responseHeaders }))
+          return
+        }
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            incoming.on('data', chunk => {
+              incoming.pause()
+              controller.enqueue(Buffer.from(chunk))
+            })
+            incoming.on('end', () => controller.close())
+            incoming.on('error', error => controller.error(error))
+          },
+          pull() {
+            incoming.resume()
+          },
+          cancel() {
+            incoming.destroy()
+          },
+        })
+        resolve(new Response(stream, { status: incoming.statusCode ?? 502, headers: responseHeaders }))
+      },
+    )
+    req.on('error', reject)
+    req.end()
+  })
+}
+
+async function readBoundedBody(response: Response, signal: AbortSignal, max: number): Promise<Buffer> {
+  const body = response.body
+  if (!body) throw new ImageReadError('RESEARCH_IMAGE_CONTENT_TYPE')
+  if (Number(response.headers.get('content-length') ?? 0) > max) {
+    await body.cancel()
+    throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
+  }
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    for (;;) {
+      signal.throwIfAborted()
+      const part = await reader.read()
+      if (part.done) break
+      size += part.value.length
+      if (size > max) throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
+      chunks.push(part.value)
+    }
+    signal.throwIfAborted()
+    return Buffer.concat(chunks)
+  } finally {
+    await reader.cancel().catch(() => {})
+    reader.releaseLock()
+  }
+}
+
 export class ImageReadError extends DeckError {
   constructor(
     code: string,
@@ -70,84 +187,18 @@ export class PublicImageReader {
     hops: number,
   ): Promise<Buffer> {
     signal.throwIfAborted()
-    const fail = () => new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
-    let url: URL
-    try {
-      url = new URL(value)
-    } catch {
-      throw fail()
-    }
-    if (
-      value.length > 2048 ||
-      url.protocol !== 'https:' ||
-      url.username ||
-      url.password ||
-      url.port ||
-      /(?:^|\.)(?:localhost|local|internal|home|lan)\.?$/i.test(url.hostname)
-    )
-      throw fail()
+    const url = parsePublicUrl(value)
     const hostname = url.hostname.replace(/^\[|\]$/g, '')
-    const addresses = isIP(hostname)
-      ? [{ address: hostname, family: isIP(hostname) }]
-      : await new Promise<Awaited<ReturnType<ImageLookup>>>((resolve, reject) => {
-          const aborted = () => reject(signal.reason)
-          signal.addEventListener('abort', aborted, { once: true })
-          this.resolve(hostname)
-            .then(resolve, reject)
-            .finally(() => signal.removeEventListener('abort', aborted))
-        })
-    signal.throwIfAborted()
-    if (!addresses.length || addresses.some(a => !publicAddress(a.address))) throw fail()
+    const address = await resolvePublicAddress(hostname, signal, this.resolve)
     const headers = { Accept: accept.join(','), 'User-Agent': 'DeckAgent/0.0.0', 'Accept-Encoding': 'identity' }
     const response = this.fetcher
       ? await this.fetcher(url.href, { signal, redirect: 'manual', headers })
-      : await new Promise<Response>((resolve, reject) => {
-          const req = request(
-            {
-              protocol: 'https:',
-              hostname: addresses[0]!.address,
-              servername: isIP(hostname) ? undefined : hostname,
-              port: 443,
-              method: 'GET',
-              path: `${url.pathname}${url.search}`,
-              headers: { ...headers, Host: url.host },
-              signal,
-            },
-            incoming => {
-              const responseHeaders = new Headers()
-              for (const [key, value] of Object.entries(incoming.headers))
-                if (value !== undefined) responseHeaders.set(key, Array.isArray(value) ? value.join(',') : value)
-              if ([204, 205, 304].includes(incoming.statusCode ?? 0)) {
-                incoming.resume()
-                resolve(new Response(null, { status: incoming.statusCode!, headers: responseHeaders }))
-                return
-              }
-              const stream = new ReadableStream<Uint8Array>({
-                start(controller) {
-                  incoming.on('data', chunk => {
-                    incoming.pause()
-                    controller.enqueue(Buffer.from(chunk))
-                  })
-                  incoming.on('end', () => controller.close())
-                  incoming.on('error', error => controller.error(error))
-                },
-                pull() {
-                  incoming.resume()
-                },
-                cancel() {
-                  incoming.destroy()
-                },
-              })
-              resolve(new Response(stream, { status: incoming.statusCode ?? 502, headers: responseHeaders }))
-            },
-          )
-          req.on('error', reject)
-          req.end()
-        })
+      : await fetchPinnedHttps(url, address, hostname, headers, signal)
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       await response.body?.cancel()
-      if (hops >= 2 || !response.headers.get('location')) throw fail()
-      return this.read(new URL(response.headers.get('location')!, url).href, signal, max, accept, hops + 1)
+      const location = response.headers.get('location')
+      if (hops >= 2 || !location) throw fail()
+      return this.read(new URL(location, url).href, signal, max, accept, hops + 1)
     }
     if (!response.ok) {
       await response.body?.cancel()
@@ -162,27 +213,6 @@ export class PublicImageReader {
       await response.body?.cancel()
       throw new ImageReadError('RESEARCH_IMAGE_CONTENT_TYPE')
     }
-    if (Number(response.headers.get('content-length') ?? 0) > max) {
-      await response.body.cancel()
-      throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
-    }
-    const reader = response.body.getReader(),
-      chunks: Uint8Array[] = []
-    let size = 0
-    try {
-      for (;;) {
-        signal.throwIfAborted()
-        const part = await reader.read()
-        if (part.done) break
-        size += part.value.length
-        if (size > max) throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
-        chunks.push(part.value)
-      }
-      signal.throwIfAborted()
-      return Buffer.concat(chunks)
-    } finally {
-      await reader.cancel().catch(() => {})
-      reader.releaseLock()
-    }
+    return readBoundedBody(response, signal, max)
   }
 }

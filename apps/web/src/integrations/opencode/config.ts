@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { randomBytes } from 'node:crypto'
-import type { ProviderRunSettings } from '../../features/providers/index.ts'
+import type { ProviderRunSettings } from '../providers/index.ts'
 import { keyPlaceholder, keyVariable, providerConfiguration, selector } from './provider.ts'
 
 /** The OpenCode CLI version DeckAgent is built and tested against. Another version is refused, not guessed at. */
@@ -165,10 +165,11 @@ export function safeConfiguration(resolved: unknown, expected: ReturnType<typeof
     !!provider &&
     Object.keys(provider).join() === 'deckagent' &&
     !!agent &&
-    Object.keys(agent).every(
-      name =>
-        name === 'deckagent' || (record(agent[name]) && (agent[name] as Record<string, unknown>).disable === true),
-    ) &&
+    Object.keys(agent).every(name => {
+      if (name === 'deckagent') return true
+      const entry = agent[name]
+      return record(entry) && entry.disable === true
+    }) &&
     !!deckagent &&
     isDeepStrictEqual(deckagent.permission, expected.permission)
   )

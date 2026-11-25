@@ -5,6 +5,15 @@ export interface ProviderEndpoint {
   readonly baseUrl: string
 }
 
+/** The provider settings a request runs with, frozen at admission (FR-042). Host-only: it holds the key. */
+export interface ProviderRunSettings {
+  readonly provider: string
+  readonly protocol: ProviderProtocol
+  readonly baseUrl: string
+  readonly model: string
+  readonly key?: string
+}
+
 /** Why a check or a catalog lookup failed. Never holds a provider response body, a URL or a key. */
 export type ProviderFailure =
   | 'PROVIDER_REFUSED_KEY'

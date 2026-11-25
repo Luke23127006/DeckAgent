@@ -1,6 +1,6 @@
 export { pinnedVersion } from './config.ts'
 export { OpenCodeError } from './contracts.ts'
-export type { OpenCodeErrorCode, OpenCodeErrorDetail, OpenCodeExecutor, RuntimeSessionAccess } from './contracts.ts'
+export type { OpenCodeExecutor } from './contracts.ts'
 export { openToolBridge } from './mcp-bridge.ts'
 export { OpenCodeRuntime, findExecutable } from './runtime.ts'
 export type { OpenCodeOptions } from './runtime.ts'

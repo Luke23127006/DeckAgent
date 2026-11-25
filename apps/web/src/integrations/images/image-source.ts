@@ -27,8 +27,10 @@ export function imageSource(candidate: ImageSearchCandidate): {
   if (image.protocol !== 'https:' || image.username || image.password || image.port) return {}
   if (image.hostname === 'images.pexels.com') {
     const match = /^\/photos\/([1-9]\d{0,11})\/([\w-]+)\.(?:jpe?g|png)$/.exec(image.pathname)
-    if (match && (!match[2]!.startsWith('pexels-photo-') || match[2] === `pexels-photo-${match[1]}`)) {
-      const sourceUrl = `https://www.pexels.com/photo/${match[1]}/`
+    const id = match?.[1]
+    const slug = match?.[2]
+    if (id && slug && (!slug.startsWith('pexels-photo-') || slug === `pexels-photo-${id}`)) {
+      const sourceUrl = `https://www.pexels.com/photo/${id}/`
       const download = new URL(image.href)
       download.search = new URLSearchParams({
         auto: 'compress',

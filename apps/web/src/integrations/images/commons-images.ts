@@ -39,6 +39,76 @@ async function limited(response: Response, max: number): Promise<Buffer> {
   }
 }
 
+function extMetadataValue(ext: Record<string, unknown>, key: string): string {
+  const entry = ext[key]
+  return object(entry) && typeof entry.value === 'string' ? entry.value : ''
+}
+
+function buildSearchUrl(query: string, title?: string): URL {
+  const url = new URL('https://commons.wikimedia.org/w/api.php')
+  url.search = new URLSearchParams({
+    action: 'query',
+    generator: 'search',
+    gsrsearch: `${query} filetype:bitmap`,
+    gsrnamespace: '6',
+    gsrlimit: '5',
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata|size',
+    iiurlwidth: '1024',
+    format: 'json',
+    formatversion: '2',
+  }).toString()
+  if (title) {
+    for (const key of ['generator', 'gsrsearch', 'gsrnamespace', 'gsrlimit']) url.searchParams.delete(key)
+    url.searchParams.set('titles', title)
+  }
+  return url
+}
+
+function parseCandidatePage(page: unknown, fallbackTitle: string): CommonsCandidate | undefined {
+  if (!object(page) || !Array.isArray(page.imageinfo) || !object(page.imageinfo[0])) return undefined
+  const info = page.imageinfo[0]
+  const image =
+    safeUrl(info.thumburl ?? info.url, 'upload.wikimedia.org') ?? safeUrl(info.thumburl, 'thumb.wikimedia.org')
+  const source = safeUrl(info.descriptionurl, 'commons.wikimedia.org')
+  if (!image || !source || !object(info.extmetadata)) return undefined
+  const ext = info.extmetadata
+  const name = extMetadataValue(ext, 'LicenseShortName').trim()
+  const link = extMetadataValue(ext, 'LicenseUrl')
+  if (name && !/^CC0$|^public domain$|^CC BY [1-4]\.\d(?: [A-Z-]+)?$/i.test(name)) return undefined
+  let license: ImageCredit['license']
+  if (name === 'CC0' || /^https:\/\/creativecommons\.org\/publicdomain\/zero\/1\.0\/?$/.test(link)) license = 'CC0'
+  else if (/^public domain$/i.test(name) || (!name && extMetadataValue(ext, 'Copyrighted') === 'False'))
+    license = 'public-domain'
+  else if (
+    /^CC BY (?:[1-4]\.\d)(?: [A-Z-]+)?$/.test(name) &&
+    /^https:\/\/creativecommons\.org\/licenses\/by\/[1-4]\.\d\/?$/.test(link)
+  )
+    license = 'CC BY'
+  else if (!name && !link) license = 'unknown'
+  else return undefined
+  return {
+    imageUrl: image,
+    sourceUrl: source,
+    ...(safeUrl(info.url, 'upload.wikimedia.org') ? { originalUrl: String(info.url) } : {}),
+    title: typeof page.title === 'string' ? page.title.slice(0, 300) : fallbackTitle,
+    description: extMetadataValue(ext, 'ImageDescription')
+      .replace(/<[^>]*>/g, '')
+      .slice(0, 1500),
+    credit: {
+      url: source,
+      author:
+        extMetadataValue(ext, 'Artist')
+          .replace(/<[^>]*>/g, '')
+          .slice(0, 1000) || 'Chưa rõ tác giả',
+      license,
+      licenseUrl: link,
+      unknownLicense: license === 'unknown',
+      retrievedAt: new Date().toISOString(),
+    },
+  }
+}
+
 export interface CommonsCandidate {
   readonly originalUrl?: string
   readonly imageUrl: string
@@ -63,23 +133,7 @@ export class CommonsImages {
       'User-Agent': 'DeckAgent/0.0.0 (https://github.com/Luke23127006/DeckAgent)',
       Accept: 'application/json',
     }
-    const url = new URL('https://commons.wikimedia.org/w/api.php')
-    url.search = new URLSearchParams({
-      action: 'query',
-      generator: 'search',
-      gsrsearch: `${query} filetype:bitmap`,
-      gsrnamespace: '6',
-      gsrlimit: '5',
-      prop: 'imageinfo',
-      iiprop: 'url|extmetadata|size',
-      iiurlwidth: '1024',
-      format: 'json',
-      formatversion: '2',
-    }).toString()
-    if (title) {
-      for (const key of ['generator', 'gsrsearch', 'gsrnamespace', 'gsrlimit']) url.searchParams.delete(key)
-      url.searchParams.set('titles', title)
-    }
+    const url = buildSearchUrl(query, title)
     try {
       const metadata: unknown = JSON.parse(
         (
@@ -90,50 +144,8 @@ export class CommonsImages {
         object(metadata) && object(metadata.query) && Array.isArray(metadata.query.pages) ? metadata.query.pages : []
       const candidates: CommonsCandidate[] = []
       for (const page of pages.slice(0, 5)) {
-        if (!object(page) || !Array.isArray(page.imageinfo) || !object(page.imageinfo[0])) continue
-        const info = page.imageinfo[0]
-        const image =
-          safeUrl(info.thumburl ?? info.url, 'upload.wikimedia.org') ?? safeUrl(info.thumburl, 'thumb.wikimedia.org')
-        const source = safeUrl(info.descriptionurl, 'commons.wikimedia.org')
-        if (!image || !source || !object(info.extmetadata)) continue
-        const value = (key: string) =>
-          object(info.extmetadata) && object(info.extmetadata[key]) && typeof info.extmetadata[key].value === 'string'
-            ? (info.extmetadata[key].value as string)
-            : ''
-        const name = value('LicenseShortName').trim()
-        const link = value('LicenseUrl')
-        if (name && !/^CC0$|^public domain$|^CC BY [1-4]\.\d(?: [A-Z-]+)?$/i.test(name)) continue
-        let license: ImageCredit['license']
-        if (name === 'CC0' || /^https:\/\/creativecommons\.org\/publicdomain\/zero\/1\.0\/?$/.test(link))
-          license = 'CC0'
-        else if (/^public domain$/i.test(name) || (!name && value('Copyrighted') === 'False')) license = 'public-domain'
-        else if (
-          /^CC BY (?:[1-4]\.\d)(?: [A-Z-]+)?$/.test(name) &&
-          /^https:\/\/creativecommons\.org\/licenses\/by\/[1-4]\.\d\/?$/.test(link)
-        )
-          license = 'CC BY'
-        else if (!name && !link) license = 'unknown'
-        else continue
-        candidates.push({
-          imageUrl: image,
-          sourceUrl: source,
-          ...(safeUrl(info.url, 'upload.wikimedia.org') ? { originalUrl: String(info.url) } : {}),
-          title: typeof page.title === 'string' ? page.title.slice(0, 300) : query,
-          description: value('ImageDescription')
-            .replace(/<[^>]*>/g, '')
-            .slice(0, 1500),
-          credit: {
-            url: source,
-            author:
-              value('Artist')
-                .replace(/<[^>]*>/g, '')
-                .slice(0, 1000) || 'Chưa rõ tác giả',
-            license,
-            licenseUrl: link,
-            unknownLicense: license === 'unknown',
-            retrievedAt: new Date().toISOString(),
-          },
-        })
+        const candidate = parseCandidatePage(page, query)
+        if (candidate) candidates.push(candidate)
       }
       return candidates
     } catch {

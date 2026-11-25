@@ -5,7 +5,7 @@ import { ProviderFailure } from './failures.ts'
 import { CredentialError, ProtectedFileCredentialStore } from '../../integrations/credentials/index.ts'
 import type { CredentialStore } from '../../integrations/credentials/index.ts'
 import { ProviderCheckError, validBaseUrl } from '../../integrations/providers/index.ts'
-import type { ProviderEndpoint } from '../../integrations/providers/index.ts'
+import type { ProviderEndpoint, ProviderRunSettings } from '../../integrations/providers/index.ts'
 
 export const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
 
@@ -16,15 +16,6 @@ export interface ProviderConnection {
   readonly baseUrl: string
   /** Name of an environment variable, never the key itself. */
   readonly apiKeyEnv?: string
-}
-
-/** The provider settings a request runs with, frozen at admission (FR-042). Host-only: it holds the key. */
-export interface ProviderRunSettings {
-  readonly provider: string
-  readonly protocol: ProviderProtocol
-  readonly baseUrl: string
-  readonly model: string
-  readonly key?: string
 }
 
 interface SavedProvider {
