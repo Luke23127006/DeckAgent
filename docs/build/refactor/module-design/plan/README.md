@@ -6,7 +6,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 **Goal:** Apply the owner-approved Slice 2D convention update and deep-module refactors across `apps/web/src/browser/`, then pass the Slice 2D and Phase 2 exit gate before Phase 3.
 
-**Approach:** Revisions 1 to 5 (Tasks 1 to 32) closed Phase 1, Slices 2A to 2C, and the Slice 2D diagnosis for `apps/web/src/browser/`. Revision 5b (Tasks 33 to 39) updates the Slice 2D transport convention and refactors `browser/transport/`, `browser/features/`, and `boot.ts` in inside-out order [[1]](#ref-1). Task 39 checks the Slice 2D exit gate, and Revision 6 starts Phase 3 after it passes.
+**Approach:** Revisions 1 to 5 (Tasks 1 to 32) closed Phase 1, Slices 2A to 2C, and the Slice 2D diagnosis for `apps/web/src/browser/`. Revision 5b (Tasks 33 to 39) updates the Slice 2D transport convention and refactors `browser/transport/`, `browser/features/`, and `boot.ts` in inside-out order [[1]](#ref-1). Task 39 checks the Slice 2D exit gate and closes this workstream. Phases 3 to 5 are superseded, as Module Design Refactor [[1]](#ref-1) records.
 
 **Tech stack:** Windows, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod, and `node:test`.
 
@@ -171,7 +171,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 ## Next revision
 
-- Revision 6 waits for the Task 39 Slice 2D and Phase 2 exit gate report. It runs Phase 3 repo-wide Tier 2 hygiene (`packages/presentation/design/` D12/D13, remaining Tier 2 areas, remaining type assertions, comment `KEEP`/`REMOVE` audit, remaining `*Service` symbols, and optional lint guardrails).
+- No Revision 6. Task 39 closes this plan. The Phase 3 hygiene items (`packages/presentation/design/` D12/D13, remaining Tier 2 areas, remaining type assertions, comment `KEEP`/`REMOVE` audit, remaining `*Service` symbols, and lint guardrails) move to the Target Structure Refactor, as Module Design Refactor [[1]](#ref-1) records.
 
 ## References
 

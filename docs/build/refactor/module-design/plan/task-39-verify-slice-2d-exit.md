@@ -110,12 +110,13 @@ Compare `apps/web/src/browser/` against the Slice 2D pre-refactor baseline:
    - Table of all 5 static quality checks and 5 root tool test files with exit codes and counts.
    - Table of all 18 non-live suites with exact `# tests`, `# pass`, `# fail`, and `# skipped`.
    - Before and after Slice 2D metrics table plus the 8-area Phase 2 Tier 1 summary table.
-   - Statement that Slice 2D and Phase 2 passed their exit gates and Phase 3 (`Revision 6`) is ready.
+   - Statement that Slice 2D and Phase 2 passed their exit gates and that this workstream is closed. Phases 3 to 5 are superseded by the Target Structure Refactor.
+   - Result of `test:env-startup` in the full run. On 2026-11-25 it failed one time in a full run and its child process did not stop, but passed 4 of 4 runs alone. If it fails, record the failure output and the duration of the first test.
 3. Add a Task 39 row to `docs/build/refactor/module-design/reports/README.md` and run `corepack pnpm@11.28.5 check:docs`. Expected: exit code `0` and `0 error(s)`.
 4. Mark Step 5 as `- [x]` in this file.
 5. Run `git status --short` and check that only the four files in `Files` changed. Stage only those four files, commit with `docs(refactor): record Slice 2D and Phase 2 exit gate report`, and run `git push`.
 
-**STOP** and send the Task 39 report summary with the commit hash. Do not start Phase 3 until the owner approves the Slice 2D and Phase 2 exit report.
+**STOP** and send the Task 39 report summary with the commit hash. Do not start the Target Structure Refactor until the owner approves the Slice 2D and Phase 2 exit report.
 
 ## References
 

@@ -1,6 +1,6 @@
 # Module Design Refactor
 
-Read this file to follow the 5-phase abstract plan, baseline measurements, deep-module method, and handoff rules for the post-boundary refactor.
+Read this file to follow the abstract phase plan, baseline measurements, deep-module method, and closing conditions for the post-boundary refactor.
 
 ## Scope and relationship to boundaries
 
@@ -94,9 +94,11 @@ Separate diagnosis from implementation across three layers so each agent session
 | --- | --- | --- | --- | --- |
 | 1 | Full scan, triage, and baseline timeout fix | `plan/` Revision 1 | Open inputs resolved | All 14 areas classified into Tier 1, Tier 2, or Skip. All non-live test suites pass with `# fail 0` |
 | 2 | Deep-module refactor (Inside-Out slices) | `plan/` Revisions 2–5 | Phase 1 exit gate passed | Approved Tier 1 slices reshaped. Conventions updated where hard-fit appeared. `check:boundaries` and tests pass |
-| 3 | Repo-wide code hygiene and guardrails | `plan/` Revision 6 | Phase 2 exit gate passed | Remaining type assertions, comment audit (`KEEP` / `REMOVE`), and ambiguous `*Service` names resolved |
-| 4 | Testware alignment | `plan/` Revision 7 | Phase 3 exit gate passed | Test files obey Testware [[7]](#ref-7). Mixed `e2e/` splits and `scripts/lib/` helper moves done. Test-only exports removed |
-| 5 | Flow lookup maps and final exit audit | `plan/` Revision 8 | Phase 4 exit gate passed | Three flow docs published in Architecture [[5]](#ref-5). Before/After scan verifies all exit criteria |
+| 3 | Repo-wide code hygiene and guardrails | Superseded by Target Structure Refactor [[7]](#ref-7) | — | — |
+| 4 | Testware alignment | Superseded by Target Structure Refactor [[7]](#ref-7) | — | — |
+| 5 | Flow lookup maps and final exit audit | Superseded by Target Structure Refactor [[7]](#ref-7) | — | — |
+
+This workstream closes when Task 39 (Slice 2D and Phase 2 exit check) is `Done`. Phases 3 to 5 assume that the current layout is final. Target Structure Refactor [[7]](#ref-7) moves most of the code to new folders and rewrites the Browser in React, so work from Phases 3 to 5 done now would be done again. Its Carried items table lists where each item of Phases 3 to 5 goes. The Phase 3 to 5 sections below stay as the source of those items.
 
 ### Phase 1: Full scan, triage, and baseline timeout fix
 
@@ -129,13 +131,13 @@ Sweep remaining Coding Guidelines [[3]](#ref-3) items across Tier 2 and untouche
 
 ### Phase 4: Testware alignment
 
-Align the test suite with Testware [[7]](#ref-7) after production interfaces stabilize so tests are rewritten once:
+Align the test suite with Testware [[8]](#ref-8) after production interfaces stabilize so tests are rewritten once:
 
 - Add required file headers (behavior tested, fake environment, run command, expected-result source, and fail-first proof).
 - Replace production-constant imports in test inputs and expected values with independent literals.
 - Remove remaining fixed sleeps by using fake clocks or condition waits.
 - Split mixed `e2e/` test files into owner suites where fixture boundaries are explicit, and move shared helpers out of `scripts/lib/` [[1]](#ref-1).
-- Remove production exports that exist only for tests [[7]](#ref-7).
+- Remove production exports that exist only for tests [[8]](#ref-8).
 
 ### Phase 5: Flow lookup maps and final exit audit
 
@@ -150,23 +152,17 @@ End Phase 5 by rerunning the Phase 1 static scan to compare Before and After met
 
 ## Definition of done
 
-Stop refactoring and move to deferred product features once every condition below holds:
+This workstream is done when every condition below holds:
 
 - `build`, `lint`, `check:docs`, and `check:boundaries` pass with 0 errors.
 - All non-live test suites pass with `# fail 0` and 0 hidden skips, including `portable-generation-http.test.mjs`.
-- All 14 production areas have an explicit final status (`Refactored`, `Hygiene complete`, or `Skipped by decision`).
-- Testware rules hold across the suite: no production-constant expected values, no fixed sleeps, and no test-only production exports [[7]](#ref-7).
-- The three core flow lookup maps exist in Architecture [[5]](#ref-5) and match current file paths.
-- **Proposed:** No mixed-responsibility god-file remains unaddressed without a recorded rationale, and non-`as const` type assertions drop to 0 outside documented boundary exceptions.
+- The 8 Tier 1 areas are `Refactored`. The Tier 2 and Skip areas carry over to Target Structure Refactor [[7]](#ref-7).
+
+The testware rules, the flow lookup maps, and the final rescan moved to Target Structure Refactor [[7]](#ref-7).
 
 ## Fresh-chat handoff
 
-A new chat starts the next phase with four steps:
-
-1. Read this file and inspect `docs/build/refactor/module-design/plan/README.md` (when present) to find the last completed phase.
-2. Verify that the entry gate for the next phase is green.
-3. Run `/write-implementation-plan` to add only the next phase's revision to `docs/build/refactor/module-design/plan/` [[4]](#ref-4).
-4. Ask the user for any phase-specific open inputs before writing executable tasks.
+A new chat that finds Task 39 `Done` continues in Target Structure Refactor [[7]](#ref-7). It does not add a revision to `docs/build/refactor/module-design/plan/`.
 
 ## Open inputs
 
@@ -183,4 +179,5 @@ The owner resolved all Phase 1 entry-gate inputs on 2026-11-24:
 4. <a id="ref-4"></a>[Write Implementation Plan](../../../../.agents/skills/write-implementation-plan/SKILL.md)
 5. <a id="ref-5"></a>[Architecture](../../../architecture/README.md)
 6. <a id="ref-6"></a>[Codebase Design](../../../../.agents/skills/codebase-design/SKILL.md)
-7. <a id="ref-7"></a>[Testware](../../../conventions/testware.md)
+7. <a id="ref-7"></a>[Target Structure Refactor](../target-structure/README.md)
+8. <a id="ref-8"></a>[Testware](../../../conventions/testware.md)
