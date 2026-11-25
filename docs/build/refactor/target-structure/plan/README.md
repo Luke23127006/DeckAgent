@@ -4,13 +4,13 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Complete Phase 1 of the Target Structure Refactor. The conventions describe the target layout. AGENTS.md lists the tech stack. The four agent core contracts have the facts that their design needs.
+**Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
-**Spec:** Target Structure Refactor [[3]](#ref-3), Phase 1. Inputs: Target Layout [[4]](#ref-4), Current Gap [[5]](#ref-5), Target Structure Criteria [[6]](#ref-6), Libraries [[7]](#ref-7) and Feature Pressure [[8]](#ref-8).
+**Spec:** Target Structure Refactor [[3]](#ref-3), Phases 1 and 2. Inputs: Target Layout [[4]](#ref-4), Current Gap [[5]](#ref-5), Target Structure Criteria [[6]](#ref-6), Libraries [[7]](#ref-7) and Feature Pressure [[8]](#ref-8).
 
 ## Decisions
 
@@ -29,6 +29,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Run owner (Revision 1b) | A run has `RunOwner = { kind, id }` in place of `sessionId`. `runs/` keeps one active run for each owner with a unique index on `(owner_kind, owner_id)`. Different owners run in parallel. The HTTP wire keeps `sessionId` and the current codes. |
 | Change notice (Revision 1b) | One `version` and one notice topic for each aggregate that the user sees. Child tables increase the `version` of the parent aggregate. |
 | Contract text (Revision 1b) | Task 7 writes the complete Vietnamese texts of `docs/architecture/30-decisions.md`, `docs/architecture/10-agent-core.md` and `docs/architecture/README.md`. The texts are in the task file. |
+| ADR status (Revision 2) | ADR-001 to ADR-004 in `docs/architecture/30-decisions.md` keep status `Proposed` until Phase 4. Revision 2 does not change `docs/architecture/`. |
+| Revision 2 scope | Tasks 9 to 12 read code, run checks and write reports only. No task in Revision 2 changes production code, test code, `package.json`, a check script or `docs/architecture/`, and no task installs a package. |
+| Express defaults list | Task 10 compares the current behavior with a fixed list of Express 5 defaults that the planner took from the Express 5 API reference. The executor does not run Express. A later revision proves each difference with an HTTP test. |
 | Commit | Executors do not commit or push. A person commits after approving the report. |
 
 ## Global Constraints
@@ -62,6 +65,14 @@ Revision 1b adds these failure modes:
 7. A contract type in `10-agent-core.md` keeps a `sessionId` field. Owner: [Task 7](task-07-write-agent-core-contracts.md), Step 5 counts `sessionId:`.
 8. An ADR states a fact that the diagnosis reports do not contain. Owner: [Task 7](task-07-write-agent-core-contracts.md). No check covers it, so the reviewer compares each `Bối cảnh` section with its report.
 
+Revision 2 adds these failure modes:
+
+9. The route inventory misses a route that a branch answers without a method check, for example the deck routes. Owner: [Task 9](task-09-inventory-http-routes.md), Step 1 counts the method checks and Step 2 reads the files in full.
+10. A path parameter keeps its current character class only by chance after the move, because Express accepts any character other than `/`. Owner: [Task 9](task-09-inventory-http-routes.md), flag `param-pattern`.
+11. A shared behavior has no test, so the move to middleware can drop it with no failed test. Owner: [Task 10](task-10-diagnose-shared-http-behavior.md), `Not found` in the `Tests` column.
+12. An e2e test imports `@deckagent/local-web` directly, so a move of the composition root changes the test. Owner: [Task 11](task-11-diagnose-host-application-package.md), Step 3.
+13. A suite fails before Phase 2 changes code, and a later task reports the failure as a regression. Owner: [Task 12](task-12-record-http-test-baseline.md).
+
 ## Tasks
 
 | Task | Status | File |
@@ -74,11 +85,21 @@ Revision 1b adds these failure modes:
 | 6 | Done | [Diagnose the change notice and version](task-06-diagnose-change-notice.md) ([report](../reports/task-06-diagnose-change-notice.md)) |
 | 7 | Done | [Write the agent core contracts](task-07-write-agent-core-contracts.md) ([report](../reports/task-07-write-agent-core-contracts.md)) |
 | 8 | Done | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) ([report](../reports/task-08-check-phase-1-exit.md)) |
+| 9 | Pending | [Inventory the HTTP routes](task-09-inventory-http-routes.md) |
+| 10 | Pending | [Diagnose the shared HTTP behavior and the error maps](task-10-diagnose-shared-http-behavior.md) |
+| 11 | Pending | [Diagnose the Host application package](task-11-diagnose-host-application-package.md) |
+| 12 | Pending | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) |
 
 ## Next revision
 
-- Phase 2 (Host application and Express edge) starts when a person approves the report of Task 8. It is Revision 2 of this plan.
-- Before Phase 2 tasks, a person decides whether to accept the four ADRs (status `Accepted`) or to keep them `Proposed` until Phase 4.
+Revision 2b writes the Phase 2 implementation tasks after a person approves the reports of Tasks 9 to 12. Before Revision 2b, a person decides these points from the reports:
+
+- What `apps/host/` contains in Phase 2 and what it imports while the feature code stays in `apps/web/src/features/`. Input: Task 11.
+- Where the route registrars live until Phase 3 moves each module. Input: Tasks 9 and 11.
+- How the Express routes keep the current path parameter rules, method rules and 404 body. Input: Tasks 9 and 10.
+- Where the error map goes: one error handler in `http/` or one map in each module. This closes the `Open` point in Project Structure. Input: Task 10.
+- Whether `multer` and `helmet` replace `multipart.ts` and `setSecurityHeaders`. Input: Task 10. The rule from Libraries [[7]](#ref-7) applies: use a library only when the HTTP tests show the same behavior.
+- Which folder-level `no-restricted-imports` rules Phase 2 adds, each with a negative fixture in `tests/oxlint-boundaries.test.mjs` (TS-09). Input: Task 11.
 
 ## References
 

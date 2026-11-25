@@ -10,4 +10,4 @@
 | [refactor/module-design/README.md](refactor/module-design/README.md) | Module design refactor: codebase measurements, deep-module direction, and divide-and-conquer diagnosis |
 | [refactor/module-design/plan/README.md](refactor/module-design/plan/README.md) | Module design implementation plan (Revision 1: Phase 1 scan, triage, and timeout investigation) |
 | [refactor/target-structure/README.md](refactor/target-structure/README.md) | Target structure refactor: Express Host, domain modules, agent core ports, and React Browser |
-| [refactor/target-structure/plan/README.md](refactor/target-structure/plan/README.md) | Target structure implementation plan (Revision 1: Phase 1 conventions, tech stack, and agent core contract diagnosis. Revision 1b: agent core contracts and Phase 1 exit check) |
+| [refactor/target-structure/plan/README.md](refactor/target-structure/plan/README.md) | Target structure implementation plan (Revision 1: Phase 1 conventions, tech stack, and agent core contract diagnosis. Revision 1b: agent core contracts and Phase 1 exit check. Revision 2: Phase 2 diagnosis of routes, shared HTTP behavior, Host package and test baseline) |
