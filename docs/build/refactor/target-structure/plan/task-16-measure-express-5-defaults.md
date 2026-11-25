@@ -65,19 +65,19 @@ The report of Task 10 compares the current server with a list of Express 5 defau
 
 The planner ran `spike.mjs` one time on 2026-11-26 with Express 5.2.1 and Node.js v22.23.5. The expectations are the output of that run. E11 checks whether a route path can hold a regular expression for a parameter, for example `:id([0-9]+)`. C1 to C4 check the four settings `x-powered-by`, `etag`, `case sensitive routing` and `strict routing`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short && node --version`
 
 Expected: PASS. `git status --short` prints no line. The Node.js version starts with `v22.` or a major version of 24 or higher.
 
-- [ ] **Step 2: Create the temporary folder and install Express**
+- [x] **Step 2: Create the temporary folder and install Express**
 
 Run: `SPIKE=$(mktemp -d) && echo "$SPIKE" && cd "$SPIKE" && printf '{ "name": "express-spike", "private": true, "type": "module" }\n' > package.json && corepack pnpm@11.28.5 add express@5.2.1`
 
 Expected: PASS. The first line is a folder path outside `C:/Users/Duy/Desktop/DeckAgent`. The output contains `+ express 5.2.1`. Write the folder path in the report.
 
-- [ ] **Step 3: Write `spike.mjs` in the temporary folder**
+- [x] **Step 3: Write `spike.mjs` in the temporary folder**
 
 Write the text below as the complete file `spike.mjs` in the folder from Step 2. Do not copy the outer fence.
 
@@ -167,7 +167,7 @@ console.log(`C4 /api/sessions/ status=${(await send(c.port, 'GET', '/api/session
 c.server.close()
 ```
 
-- [ ] **Step 4: Run the script**
+- [x] **Step 4: Run the script**
 
 Run: `cd "<folder from Step 2>" && node spike.mjs 2>/dev/null`
 
@@ -175,13 +175,13 @@ Expected: PASS. The command exits with code 0. The output has 17 lines. Express 
 
 Copy the full output into the report. For each line, compare it with the [Planner expectations](#planner-expectations) and write `yes` or `no` in `Match`.
 
-- [ ] **Step 5: Check that the repository did not change**
+- [x] **Step 5: Check that the repository did not change**
 
 Run: `cd C:/Users/Duy/Desktop/DeckAgent && git status --short`
 
 Expected: PASS. The output names only files in `docs/build/refactor/target-structure/`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 16 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-16-measure-express-5-defaults.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-16-measure-express-5-defaults.md` with:
