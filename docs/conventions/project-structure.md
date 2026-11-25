@@ -168,7 +168,7 @@ flowchart LR
 - Package graph và module graph không có vòng. Khi có vòng, sửa ownership. Không tạo module `shared` hay `common` để cắt vòng *(review)*.
 - Không re-export toàn bộ private module thành public API *(review)*. Quy tắc về export chỉ để test dùng nằm trong [Testware](testware.md).
 
-`Open`: bảng ánh xạ lỗi sang HTTP status có thể nằm ở từng module hoặc ở error handler chung trong `http/` [[1]](#ref-1). Cho tới khi quyết, bảng giữ vị trí hiện tại. Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
+Bảng ánh xạ lỗi sang HTTP status chia theo owner của lỗi. Error handler chung trong `http/` ánh xạ `HttpError`, `RequestFailure` của `runs/` và lỗi không có trong bảng nào (`500 HOST_ERROR`). Mỗi module sở hữu bảng ánh xạ cho error class của module đó. `server.ts` đăng ký bảng của từng module với error handler. `http/` không import error class của module. Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
 
 ## Trong lúc chuyển
 
@@ -179,7 +179,7 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | `packages/host/api/src/index.ts`, `transport/http-io.ts`, `transport/error-response.ts`, `transport/sse.ts` | `apps/host/src/http/` |
 | `packages/host/api/src/transport/*-routes.ts` | `apps/host/src/modules/<name>/<name>.routes.ts` |
 | `packages/host/api/src/lifecycle/` | `apps/host/src/runs/` |
-| `apps/web/src/local-transport.ts` | Error handler, xem `Open` ở [Dependency rules](#dependency-rules) |
+| `apps/web/src/local-transport.ts` | Error handler trong `apps/host/src/http/` và bảng ánh xạ lỗi của từng module, xem [Dependency rules](#dependency-rules) |
 | `apps/web/src/features/<name>/` | `apps/host/src/modules/<name>/` |
 | `apps/web/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
 | `apps/web/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
@@ -197,7 +197,7 @@ Rule khi đặt và chuyển code:
 2. Code của một khu vực mới, không có folder cũ trong bảng trên, đặt theo trạng thái của `apps/host/` *(review)*:
    - Khi `apps/host/` chưa có: đặt vào `apps/web/src/features/<name>/` và theo trách nhiệm của `apps/host/src/modules/<name>/`.
    - Khi `apps/host/` đã có: đặt thẳng vào `apps/host/src/modules/<name>/`.
-3. Chỉ một revision trong plan của Target Structure Refactor chuyển folder cũ, hoặc tạo folder đích cho một khu vực đã có code cũ *(review)*.
+3. Chỉ một revision trong plan của Target Structure Refactor chuyển folder cũ, hoặc tạo folder đích cho một khu vực đã có code cũ *(review)*. Ngoại lệ duy nhất: revision của Phase 2 chuyển toàn bộ Node code trong `apps/web/src/` sang `apps/host/src/` và giữ tên file và tên folder (`features/`, `integrations/`). Phase 3 và Phase 4 chuyển các folder đó một lần nữa, sang folder đích trong bảng trên.
 4. Revision chuyển code sửa mọi caller trong cùng revision. Không để lại file re-export ở path cũ *(review)*.
 5. HTTP contract giữa Browser và Local Host giữ nguyên trong lúc chuyển: path, status code và JSON body chỉ đổi khi revision ghi rõ thay đổi đó *(test)*.
 6. Rule của `check:boundaries` cho một path cũ còn hiệu lực cho tới khi revision chuyển path đó thêm rule theo folder kèm negative fixture *(check-boundaries)*.

@@ -6,7 +6,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 **Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -32,12 +32,18 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | ADR status (Revision 2) | ADR-001 to ADR-004 in `docs/architecture/30-decisions.md` keep status `Proposed` until Phase 4. Revision 2 does not change `docs/architecture/`. |
 | Revision 2 scope | Tasks 9 to 12 read code, run checks and write reports only. No task in Revision 2 changes production code, test code, `package.json`, a check script or `docs/architecture/`, and no task installs a package. |
 | Express defaults list | Task 10 compares the current behavior with a fixed list of Express 5 defaults that the planner took from the Express 5 API reference. The executor does not run Express. A later revision proves each difference with an HTTP test. |
+| Host application (Revision 2b) | `apps/host/` is the workspace package `@deckagent/host`. Task 15 moves all Node code of `apps/web/src/` into `apps/host/src/` in one change: `index.ts` becomes `server.ts`, and `features/` and `integrations/` keep their names until Phases 3 and 4. `apps/web/` keeps the Browser code and `src/index.ts`, which is the former `ui-assets.ts` and exports `loadWebAssets`. `@deckagent/host` imports `loadWebAssets` from `@deckagent/local-web`. |
+| Route registrars (Revision 2b) | The route files stay in `packages/host/api/src/transport/` until Phase 3. Revision 2c rewrites them as Express routers in place. Each Phase 3 revision moves the routes and the feature code of one module into `apps/host/src/modules/<name>/` together. |
+| Error map (Revision 2b) | The error handler in `http/` maps `HttpError`, `RequestFailure` and unknown errors (`500 HOST_ERROR`). Each module owns the map of its own error class, and `server.ts` registers the maps. Phase 2 keeps `local-transport.ts` as one file. Phase 3 splits it by module. Task 13 writes this rule into Project Structure. |
+| `helmet` and `multer` (Revision 2b) | Phase 2 does not use them. Phase 2 keeps `setSecurityHeaders` and `multipart.ts` and wraps them as Express middleware. A later revision evaluates `helmet` after the header tests of Task 14 exist. The `attachments` move in Phase 3 decides `multer`. |
+| HTTP contract during Phase 2 | The Express app keeps the current contract. Paths match with exact letter case and without a trailing slash. Responses have no `X-Powered-By` and no `ETag`. An unknown path gets a JSON `404 NOT_FOUND` body, and `HEAD` and `OPTIONS` get `404`. A query string gets `400 INVALID_REQUEST`. Each path parameter keeps its current character class. Task 16 measures which Express settings this needs. |
+| Paths in `docs/architecture/` (Revision 2b) | Task 15 changes the code paths in `docs/architecture/10-agent-core.md` that the move makes wrong. It does not change the ADR status. |
 | Commit | Executors do not commit or push. A person commits after approving the report. |
 
 ## Global Constraints
 
 - Shell: Git Bash on Windows. Run every command from the repository root `C:/Users/Duy/Desktop/DeckAgent`.
-- Package manager: `corepack pnpm@11.28.5`. Do not run `pnpm` without `corepack`. Do not install packages.
+- Package manager: `corepack pnpm@11.28.5`. Do not run `pnpm` without `corepack`. Do not install packages, except with the exact install command of a task step.
 - Docs check: `corepack pnpm@11.28.5 check:docs`. PASS: the output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0.
 - Language: files in `docs/build/` are in English. Files in `docs/conventions/`, `docs/architecture/` and `AGENTS.md` are in Vietnamese and keep English technical terms.
 - Each new file in `docs/` starts with an H1 and one purpose sentence. English files use `Read this file to ...`. Vietnamese files use `Đọc file này để biết ...`.
@@ -73,6 +79,13 @@ Revision 2 adds these failure modes:
 12. An e2e test imports `@deckagent/local-web` directly, so a move of the composition root changes the test. Owner: [Task 11](task-11-diagnose-host-application-package.md), Step 3.
 13. A suite fails before Phase 2 changes code, and a later task reports the failure as a regression. Owner: [Task 12](task-12-record-http-test-baseline.md).
 
+Revision 2b adds these failure modes:
+
+14. A characterization test passes on any server, so it cannot catch a lost behavior. Owner: [Task 14](task-14-add-http-edge-characterization-tests.md), Step 5 breaks two behaviors and expects two failed tests.
+15. A test or a script names a path of the old place, for example `apps/web/lib/cli.js`, and still passes because an old build output is on disk. Owner: [Task 15](task-15-move-node-code-to-apps-host.md), Step 6 removes `apps/web/lib/` before the build.
+16. A Host test stays in `apps/web/tests/` and imports Host code across the application boundary. Owner: [Task 15](task-15-move-node-code-to-apps-host.md), the test move table.
+17. The Express configuration of Revision 2c relies on a default that Express 5.2.1 does not have. Owner: [Task 16](task-16-measure-express-5-defaults.md), the `Match` column.
+
 ## Tasks
 
 | Task | Status | File |
@@ -89,18 +102,19 @@ Revision 2 adds these failure modes:
 | 10 | Done | [Diagnose the shared HTTP behavior and the error maps](task-10-diagnose-shared-http-behavior.md) ([report](../reports/task-10-diagnose-shared-http-behavior.md)) |
 | 11 | Done | [Diagnose the Host application package](task-11-diagnose-host-application-package.md) ([report](../reports/task-11-diagnose-host-application-package.md)) |
 | 12 | Done | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) ([report](../reports/task-12-record-http-test-baseline.md)) |
+| 13 | Done | [Record the Phase 2 structure decisions in Project Structure](task-13-record-phase-2-structure-decisions.md) ([report](../reports/task-13-record-phase-2-structure-decisions.md)) |
+| 14 | Pending | [Add the HTTP edge characterization tests](task-14-add-http-edge-characterization-tests.md) |
+| 15 | Pending | [Move the Node code of the web app into apps/host](task-15-move-node-code-to-apps-host.md) |
+| 16 | Pending | [Measure the Express 5 defaults](task-16-measure-express-5-defaults.md) |
 
 ## Next revision
 
-Revision 2b writes the Phase 2 implementation tasks after a person approves the reports of Tasks 9 to 12. Before Revision 2b, a person decides these points from the reports:
+Revision 2c writes the Express tasks after a person approves the reports of Tasks 13 to 16. It uses the `Match` column of Task 16 for the Express settings. It has these tasks:
 
-- What `apps/host/` contains in Phase 2 and what it imports while the feature code stays in `apps/web/src/features/`. Input: Task 11.
-- Where the route registrars live until Phase 3 moves each module. Input: Tasks 9 and 11.
-- How the Express routes keep the current path parameter rules, method rules and 404 body. Input: Tasks 9 and 10.
-- Where the error map goes: one error handler in `http/` or one map in each module. This closes the `Open` point in Project Structure. Input: Task 10.
-- Whether `multer` and `helmet` replace `multipart.ts` and `setSecurityHeaders`. Input: Task 10. The rule from Libraries [[7]](#ref-7) applies: use a library only when the HTTP tests show the same behavior.
-- Which folder-level `no-restricted-imports` rules Phase 2 adds, each with a negative fixture in `tests/oxlint-boundaries.test.mjs` (TS-09). Input: Task 11.
-
+- Create `apps/host/src/http/` with the Express app, the security header middleware, the origin, query string and bearer checks, the asset handler and the error handler. Keep `requestTimeout`, `headersTimeout` and the `clientError` handler on the server.
+- Rewrite the four route files in `packages/host/api/src/transport/` as Express router registrars. The registrars keep the path parameter class, the method and the status of each route in the route table of Task 9. Remove the regular expression routing and `startHost`.
+- Add the folder-level `no-restricted-imports` rules for `apps/host/src/http/` and `apps/web/src/`, each with a negative fixture in `tests/oxlint-boundaries.test.mjs` (TS-09).
+- Check the Phase 2 exit condition: every non-live suite and `test:http-edge` pass with the expected values of Tasks 12 and 14.
 ## References
 
 1. <a id="ref-1"></a>[Project Structure](../../../../conventions/project-structure.md)
