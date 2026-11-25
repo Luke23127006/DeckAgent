@@ -33,8 +33,7 @@ export class TavilyClient {
 
   async images(key: string, query: string, signal: AbortSignal): Promise<readonly ImageSearchCandidate[]> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
-    if (!query.trim() || query.length > 500 || !query.isWellFormed())
-      throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
+    if (!query.trim() || query.length > 500 || !query.isWellFormed()) throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,
@@ -167,8 +166,7 @@ export class TavilyClient {
 
   async search(key: string, query: string, signal: AbortSignal): Promise<ResearchResult> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
-    if (!query.trim() || query.length > 1000 || !query.isWellFormed())
-      throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
+    if (!query.trim() || query.length > 1000 || !query.isWellFormed()) throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,

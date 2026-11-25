@@ -15,6 +15,7 @@ Read this file to run quality checks, root tool tests, all 18 non-live suites, a
 - Change: `docs/build/refactor/module-design/plan/task-29-verify-slice-2c-exit.md`
 - Change: `docs/build/refactor/module-design/reports/README.md`
 - Create: `docs/build/refactor/module-design/reports/task-29-verify-slice-2c-exit.md`
+- Change (format-only, owner-approved): `apps/web/src/integrations/research/tavily.ts`
 
 **Interfaces:**
 
@@ -35,7 +36,7 @@ Read this file to run quality checks, root tool tests, all 18 non-live suites, a
 - Run live suites (`test:research-live`, `test:opencode-live`).
 - Commit or push before Step 5 checks pass.
 
-- [ ] **Step 1: Run all five static quality checks**
+- [x] **Step 1: Run all five static quality checks**
 
 Run:
 
@@ -53,7 +54,7 @@ npx biome format apps/web/src/features/ apps/web/src/integrations/ apps/web/src/
 
 Expected: PASS. Exit code `0` with `0` formatting diffs.
 
-- [ ] **Step 2: Run all five root tool test files**
+- [x] **Step 2: Run all five root tool test files**
 
 Run:
 
@@ -63,7 +64,7 @@ node --test tests/check-boundaries.test.mjs tests/check-docs.test.mjs tests/oxli
 
 Expected: PASS. Exit code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 3: Run all 18 non-live package test suites**
+- [x] **Step 3: Run all 18 non-live package test suites**
 
 Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Chromium sandbox restrictions block it):
 
@@ -88,7 +89,7 @@ Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Ch
 
 Expected: PASS. All 18 suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 4: Measure Slice 2C before and after metrics**
+- [x] **Step 4: Measure Slice 2C before and after metrics**
 
 Run:
 
@@ -107,7 +108,7 @@ Compare against the Slice 2C pre-refactor baseline:
   - Baseline: `11` files, `1,429` lines, `1` over 400, `3` fn over 80, `4` small non-barrel, `0` type assertions, `4` non-null assertions, `0` `*Service`.
   - Target: `0` over 400, `0` fn over 80, `0` small non-barrel, `0` type assertions, `0` non-null assertions, `0` `*Service`.
 
-- [ ] **Step 5: Mark task done, write the Slice 2C exit report, and commit and push**
+- [x] **Step 5: Mark task done, write the Slice 2C exit report, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 29 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-29-verify-slice-2c-exit.md`.
 2. Create `docs/build/refactor/module-design/reports/task-29-verify-slice-2c-exit.md` with:
