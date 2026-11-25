@@ -63,13 +63,13 @@ Apply the rows from top to bottom to each `sessionId` site. Use the first row th
 | The site only passes `sessionId` to another function or object | Class `pass-through`. Record the callee. |
 | No row matches | Class `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Count the `sessionId` sites**
+- [x] **Step 1: Count the `sessionId` sites**
 
 Run: `grep -rnw sessionId packages/host/api/src/lifecycle | wc -l && grep -rnw sessionId apps/web/src/integrations/opencode | wc -l && grep -rnw sessionId packages/host/contracts/src/requests.ts | wc -l && grep -rnw sessionId apps/web/src/features/requests | wc -l`
 
 Expected: PASS. The output is four lines: `25`, `21`, `3` and `2`. FAIL: any other number.
 
-- [ ] **Step 2: List and classify each site**
+- [x] **Step 2: List and classify each site**
 
 Run: `grep -rnw sessionId packages/host/api/src/lifecycle apps/web/src/integrations/opencode packages/host/contracts/src/requests.ts apps/web/src/features/requests`
 
@@ -77,7 +77,7 @@ Expected: PASS. The output has 51 lines. Each line has the form `<path>:<line>:<
 
 For each of the 51 lines, read the code around the line and apply the [Site decision table](#site-decision-table). Write one row in the report table `ID | Location (file:line) | Class | Record`.
 
-- [ ] **Step 3: Record the storage and wire facts**
+- [x] **Step 3: Record the storage and wire facts**
 
 Run: `grep -n "session_id\|CREATE TABLE" packages/session/persistence/src/schema.ts`
 
@@ -90,13 +90,13 @@ Record these facts in the report, with file and line:
 3. The public methods of `RequestController` in `packages/host/api/src/lifecycle/request-controller.ts`, with the parameters of each method.
 4. The line in `request-controller.ts` that enforces one active request for each chat, and the error code that it returns. When no line enforces this rule, write `Not found` and the search that you did.
 
-- [ ] **Step 4: Check that no code changed**
+- [x] **Step 4: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 3 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-03-diagnose-run-owner.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-03-diagnose-run-owner.md` with:
