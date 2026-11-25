@@ -69,7 +69,7 @@ Apply this table in top-to-bottom order to every finding in `apps/web/src/integr
 | A file, type, or seam protects a real protocol or security invariant, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file metrics, assertions, and renderer importers**
+- [x] **Step 1: Measure live file metrics, assertions, and renderer importers**
 
 Run:
 
@@ -79,7 +79,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 22`, `"totalLines": 2526`, `"longFnTotal": 10`, `"assertionTotal": 4`, `"nonNullTotal": 10`, and `"rendererImporters": ["apps/web/src/index.ts"]`.
 
-- [ ] **Step 2: Audit all 30 integration barrel exports and inspect every file in `apps/web/src/integrations/`**
+- [x] **Step 2: Audit all 30 integration barrel exports and inspect every file in `apps/web/src/integrations/`**
 
 Run:
 
@@ -99,7 +99,7 @@ Record exact file-and-line observations for:
 3. `apps/web/src/integrations/images/` (4 files, 456 lines): inspect `commons-images.ts` (190 lines, `candidates` lines 59-143, `as` at line 101) and `image-source.ts` (73 lines, `!` at line 30). Inspect `public-image-reader.ts` (188 lines, `load` lines 65-187, 3 `!` at lines 108, 122, and 150).
 4. `apps/web/src/integrations/credentials/` (158 lines), `providers/` (175 lines), and `research/` (218 lines): inspect error contracts, timeout bounds, barrel exports, and whether `tavily.ts` leaks `ResearchFailure` from `features/research/` or reverses the feature-to-integration dependency direction.
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of barrel exports (`30`) across the 6 integration folders and list every unused, test-only, or leaked export. Check whether any integration imports a feature module (for example `tavily.ts` importing `ResearchFailure`).
@@ -109,12 +109,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new DOM visibility rule or lifecycle hook (`close()`) to `artifact-renderer.ts` and wire it in `apps/web/src/index.ts`.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). Name any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no code or convention file changed**
+- [x] **Step 4: Check that no code or convention file changed**
 
 Run: `git status --short`
 Expected: PASS. No file under `packages/`, `apps/`, `e2e/`, `tests/`, `docs/conventions/`, or `docs/build/refactor/module-design/README.md` appears in the output.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 22 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` and link `../reports/task-22-diagnose-integrations-and-renderer-reuse.md`.
 2. Create `docs/build/refactor/module-design/reports/task-22-diagnose-integrations-and-renderer-reuse.md` with:
