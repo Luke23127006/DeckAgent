@@ -63,7 +63,7 @@ Apply this table in top-to-bottom order to every finding in `artifact-store.ts`,
 | A file, type, or seam protects a real invariant or contract boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file metrics, assertions, and `@deckagent/design` importers**
+- [x] **Step 1: Measure live file metrics, assertions, and `@deckagent/design` importers**
 
 Run:
 
@@ -73,7 +73,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 4`, `"totalLines": 1597`, `"typeAssertionTotal": 5`, `"nonNullTotal": 20`, and `"designImporterCount": 22`.
 
-- [ ] **Step 2: Audit all 20 `@deckagent/design` exports and inspect artifact and design seams**
+- [x] **Step 2: Audit all 20 `@deckagent/design` exports and inspect artifact and design seams**
 
 Run:
 
@@ -92,7 +92,7 @@ Record exact file-and-line observations for:
 5. Exact boundary guards for all 3 type assertions (`line 148` theme keys cast and `line 313` double cast on `block.intent`) in `packages/presentation/design/src/index.ts`. Record guards for all 14 non-null assertions (`lines 345, 352, 354, 361, 364, 381-384, 392`).
 6. Cross-package contract seam between `packages/presentation/deck/` and `packages/presentation/design/`: explain why `deck/src/{index,contracts}.ts` co-changed 3 to 4 times with `design/src/{index,contracts}.ts`. Check whether `ContentBlock` and `WebImageIntent` belong in `design/` or `document/` or `deck/`, and state whether Slice 2B should refactor `packages/presentation/design/` together with `packages/presentation/deck/` or defer `design/` to Phase 3.
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of methods on `ArtifactStorage` (`36`), exported symbols in `@deckagent/design` (`20`), and concepts callers must know across the artifact and design seam. List every unused export, leaked internal, or cross-package re-export.
@@ -102,12 +102,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new metadata field to prepared research images stored during outline image preparation and consumed during slide staging.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). Name any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no code or convention file changed**
+- [x] **Step 4: Check that no code or convention file changed**
 
 Run: `git status --short`
 Expected: PASS. No file under `packages/`, `apps/`, `e2e/`, `tests/`, `docs/conventions/`, or `docs/build/refactor/module-design/README.md` appears in the output.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 14 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` and link `../reports/task-14-diagnose-deck-artifacts-and-design-seam.md`.
 2. Create `docs/build/refactor/module-design/reports/task-14-diagnose-deck-artifacts-and-design-seam.md` with:

@@ -98,7 +98,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 11 | Done | [Refactor host/api boundaries, routes, and exports](task-11-refactor-host-api.md) ([report](../reports/task-11-refactor-host-api.md)) |
 | 12 | Done | [Check Slice 2A exit gate and rescan metrics](task-12-verify-slice-2a-exit.md) ([report](../reports/task-12-verify-slice-2a-exit.md)) |
 | 13 | Done | [Diagnose presentation/deck core, stores, and public surface](task-13-diagnose-deck-core-and-surface.md) ([report](../reports/task-13-diagnose-deck-core-and-surface.md)) |
-| 14 | Pending | [Diagnose presentation/deck artifact storage and design contract seam](task-14-diagnose-deck-artifacts-and-design-seam.md) |
+| 14 | Done | [Diagnose presentation/deck artifact storage and design contract seam](task-14-diagnose-deck-artifacts-and-design-seam.md) ([report](../reports/task-14-diagnose-deck-artifacts-and-design-seam.md)) |
 
 ## Next revision
 
