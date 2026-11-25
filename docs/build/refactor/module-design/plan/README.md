@@ -4,9 +4,9 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you finish a step, change its `- [ ]` to `- [x]` in the task file. After all checks pass, mark the task `Done` in this file, write the task report, and commit and push only the task files. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Run read-only deep-module diagnosis on Phase 2 Slice 2C (`apps/web/src/features/`, `apps/web/src/integrations/`, and `apps/web/src/` root) and stop for owner approval.
+**Goal:** Run approved Phase 2 Slice 2C refactors across `apps/web/src/integrations/`, `apps/web/src/features/`, and `apps/web/src/` root, then pass the Slice 2C exit gate.
 
-**Approach:** Revisions 1 to 3b (Tasks 1 to 19) closed Phase 1, Slice 2A, and Slice 2B. Revision 4 splits Slice 2C diagnosis into three context-sized tasks (Tasks 20 to 22), including browser reuse evaluation for `artifact-renderer.ts`. Each task audits exports, assertions, `*Service` symbols, small files, and seams, then stops for owner approval before Revision 4b refactors start.
+**Approach:** Revisions 1 to 4 (Tasks 1 to 22) closed Phase 1, Slice 2A, Slice 2B, and Slice 2C diagnosis. Revision 4b applies all approved Slice 2C findings (`IN1`-`IN8`, `FD1`-`FD7`, `FA1`-`FA10`) across Tasks 23 to 28. Task 29 runs the Slice 2C exit gate. Slice 2C requires no convention update.
 
 **Tech stack:** Windows, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod, and `node:test`.
 
@@ -16,7 +16,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 
 | Topic | Decision |
 | --- | --- |
-| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 to 3b closed Phase 1, Slice 2A, and Slice 2B. Revision 4 runs Slice 2C diagnosis [[1]](#ref-1). |
+| Workstream and revision | This folder owns `refactor/module-design`. Revisions 1 to 4 closed Phase 1, Slice 2A, Slice 2B, and Slice 2C diagnosis. Revision 4b runs Slice 2C refactors and the exit gate [[1]](#ref-1). |
 | Scanner script | Place the static scanner at `scripts/scan-module-design.mjs` and its unit tests at `tests/scan-module-design.test.mjs`. Add `"scan:module-design": "node scripts/scan-module-design.mjs"` in `package.json`. |
 | Scanner parser | Parse TypeScript and JavaScript files with the installed `typescript` compiler API (`ts.createSourceFile`), matching `scripts/check-boundaries.mjs`. Add no new npm dependency. |
 | Production area scope | Scan tracked and non-ignored `.ts` and `.tsx` files under `apps/` and `packages/`, excluding `lib/`, `tests/`, and `node_modules/`. Group files into the 14 areas listed in Module Design Refactor [[1]](#ref-1). |
@@ -44,6 +44,11 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | `DeckStore` rename and export narrowing | Rename `DeckService` to `DeckStore` and keep `index.ts` as a 31-export barrel (D2, D4, D5). Extract `deck-publication.ts` with the four staging wrappers hidden inside `generationCapability`. Split authoring, generation, reads, and runtime into `deck-authoring.ts`, `deck-generation.ts`, `deck-reads.ts`, and `deck-runtime.ts` so `deck-store.ts` stays under 360 lines. Remove the `./brief` subpath from `packages/presentation/deck/package.json` and `scripts/build-workspace.mjs`, export `briefContractVersion` and `briefJsonSchema` from root, drop 11 pass-through re-exports, and update all callers (D2, D3, D5). |
 | Slice 2B exit gate | Tasks 15 to 19 passed `build`, `check:boundaries`, `lint`, `check:docs`, and Biome on touched paths. All 5 root tool test files (69 pass, 0 fail) and 18 non-live suites (333 pass, 0 fail) passed. `packages/presentation/deck/` reached 0 files over 400 lines, 0 functions over 80 lines, 0 type assertions, 0 non-null assertions, 0 `*Service` symbols, 31 root exports, and 1 subpath. |
 | Slice 2C diagnosis split | Split Slice 2C diagnosis into three read-only tasks inside the 1,500 to 3,500 line budget [[1]](#ref-1). Task 20 covers `apps/web/src/features/deck/` (8 files, 2,033 lines). Task 21 covers the other seven feature folders and `apps/web/src/` root (31 files, 3,258 lines). Task 22 covers `apps/web/src/integrations/` and `artifact-renderer.ts` browser reuse (22 files, 2,526 lines). |
+| Slice 2C conventions and deferrals | Slice 2C requires no convention update. Keep `apps/web/src/features/deck/failures.ts` (`FD8`) as an acyclic leaf error file. Keep `pinnedVersion` and `openToolBridge` in `opencode/index.ts` (`IN5`) until Phase 4 Testware alignment. Keep `toAttachmentHttpError` on `attachmentManagement.upload` (`FA6`) until `multipart.ts` forwards mapped errors. |
+| Slice 2C integrations and `ProviderRunSettings` | Move `ProviderRunSettings` into `apps/web/src/integrations/providers/provider-catalog.ts` and export it from `integrations/providers/index.ts` so `integrations/` drops all imports from `features/` (`IN6`). Split `opencode/runtime.ts`, `process.ts`, `mcp-bridge.ts`, `commons-images.ts`, and `public-image-reader.ts` under 80 lines per function (`IN2`, `IN3`, `IN7`). Remove unused `opencode/` and `credentials/` exports and replace all 4 `as` and 10 `!` assertions (`IN4`, `IN5`, `IN8`). |
+| Managed browser reuse in `artifact-renderer.ts` | Replace cold Chromium spawns with one managed browser process per renderer instance using incognito CDP contexts and flattened sessions (`IN1`). Wire explicit `close()` into `apps/web/src/index.ts`, add crash recycling, and add a `60_000` ms `unref()` idle recycle timer. Keep `openCode.timeoutMs: 120000` in `e2e/portable-generation-http.test.mjs`. |
+| Slice 2C `features/deck/` refactor | Remove `OutlineNotFoundReason` and `imagePageCredit` from `features/deck/index.ts` and test JSON-LD license rules through `WebImageResearch.prepare` (`FD1`). Split `image-research.ts`, `generation-workflow.ts`, and `deck-workflow.ts` into internal modules under 400 lines and 80 lines per function (`FD2`, `FD3`, `FD4`). Share `generation-execution.ts`, rename `BriefService` and `ConfirmationService` to `BriefCoordinator` and `ConfirmationCoordinator`, and replace all 3 `as` and 9 `!` assertions (`FD5`, `FD6`, `FD7`). |
+| Slice 2C non-deck features and web root | Fold the four small root asset files into `ui-assets.ts` (`FA1`), the four single-caller `failures.ts` files into their sibling modules (`FA2`), and `chats/contracts.ts` and `workspaces/contracts.ts` into their `index.ts` files (`FA3`). Remove five unused feature barrel exports (`FA4`). Rename `AttachmentService` and `ResearchService` to `AttachmentCoordinator` and `ResearchCoordinator` (`FA9`). Split `source-tools.ts`, `index.ts`, `local-transport.ts`, and `cli.ts` under 80 lines per function, move `SESSION_NOT_FOUND` guards into `local-transport.ts`, and replace all 3 `as` and 7 `!` assertions (`FA5`, `FA6`, `FA7`, `FA8`, `FA10`). |
 
 ## Global Constraints
 
@@ -95,6 +100,13 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 23. `apps/web/src/features/deck/` diagnosis audits `deck-workflow.ts` (812 lines), `image-research.ts` (483 lines), `generation-workflow.ts` (384 lines), 2 `*Service` symbols, 3 type assertions, 9 non-null assertions, and `failures.ts` (12 lines). Check: [Task 20](task-20-diagnose-deck-feature-workflows.md).
 24. Non-deck features and `apps/web/src/` root diagnosis audits `index.ts` (403 lines), `local-transport.ts` (301 lines), and 10 small non-barrel files. It also audits 2 `*Service` symbols, 3 type assertions, and 7 non-null assertions. Check: [Task 21](task-21-diagnose-app-features-and-web-root.md).
 25. `apps/web/src/integrations/` diagnosis audits `opencode/runtime.ts` (469 lines), 10 functions over 80 lines, 4 type assertions, 10 non-null assertions, and browser reuse in `rendering/artifact-renderer.ts` (272 lines). Check: [Task 22](task-22-diagnose-integrations-and-renderer-reuse.md).
+26. `apps/web/src/integrations/` drops all imports from `features/`, removes unused exports, splits `runtime.ts`, `process.ts`, `mcp-bridge.ts`, `commons-images.ts`, and `public-image-reader.ts` under 80 lines per function, and eliminates all 4 `as` and 10 `!` assertions. Test: [Task 23](task-23-refactor-integrations-opencode-images-credentials.md).
+27. `artifact-renderer.ts` reuses one managed browser profile across renders, enforces `1280x720` incognito isolation and blocked URLs, and removes its temp profile on `app.close()`. Test: [Task 24](task-24-refactor-artifact-renderer-managed-browser-reuse.md).
+28. `features/deck/` drops `imagePageCredit` and `OutlineNotFoundReason` from its barrel, tests JSON-LD rules through `WebImageResearch.prepare`, splits `image-research.ts` and `generation-workflow.ts`, and removes all 3 `as` and 4 `!` assertions in those files. Test: [Task 25](task-25-refactor-deck-image-research-and-generation-workflow.md).
+29. `features/deck/` splits `deck-workflow.ts` under 400 lines, shares `generation-execution.ts`, renames `BriefService` and `ConfirmationService` to coordinators, and removes all remaining `!` assertions in `features/deck/`. Test: [Task 26](task-26-refactor-deck-workflow-and-coordinators.md).
+30. Non-deck `apps/web/src/features/` folds 6 small files, narrows 5 unused exports, splits `source-tools.ts`, renames `AttachmentService` and `ResearchService` to coordinators, and eliminates all remaining feature assertions. Test: [Task 27](task-27-refactor-non-deck-features.md).
+31. `apps/web/src/` root folds 4 small asset files into `ui-assets.ts`, splits `index.ts`, `local-transport.ts`, and `cli.ts` under 80 lines per function, removes `HttpError` from `index.ts`, and eliminates all 4 root `!` assertions. Test: [Task 28](task-28-refactor-web-root-and-local-transport.md).
+32. All 18 non-live suites, all 5 root tool tests, boundary checks, lint, docs, Biome, and Slice 2C scan targets pass with 0 failures. Test: [Task 29](task-29-verify-slice-2c-exit.md).
 
 ## Tasks
 
@@ -122,11 +134,17 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 20 | Done | [Diagnose features/deck workflows and image research](task-20-diagnose-deck-feature-workflows.md) ([report](../reports/task-20-diagnose-deck-feature-workflows.md)) |
 | 21 | Done | [Diagnose non-deck features and apps/web/src root](task-21-diagnose-app-features-and-web-root.md) ([report](../reports/task-21-diagnose-app-features-and-web-root.md)) |
 | 22 | Done | [Diagnose apps/web/src/integrations and renderer browser reuse](task-22-diagnose-integrations-and-renderer-reuse.md) ([report](../reports/task-22-diagnose-integrations-and-renderer-reuse.md)) |
+| 23 | Pending | [Refactor integrations OpenCode, images, and credentials](task-23-refactor-integrations-opencode-images-credentials.md) |
+| 24 | Pending | [Refactor artifact-renderer for managed browser reuse](task-24-refactor-artifact-renderer-managed-browser-reuse.md) |
+| 25 | Pending | [Refactor deck image research and generation workflow](task-25-refactor-deck-image-research-and-generation-workflow.md) |
+| 26 | Pending | [Refactor deck workflow, BriefCoordinator, and ConfirmationCoordinator](task-26-refactor-deck-workflow-and-coordinators.md) |
+| 27 | Pending | [Refactor non-deck application features](task-27-refactor-non-deck-features.md) |
+| 28 | Pending | [Refactor web root composition, local transport, CLI, and web-state](task-28-refactor-web-root-and-local-transport.md) |
+| 29 | Pending | [Check Slice 2C exit gate and rescan metrics](task-29-verify-slice-2c-exit.md) |
 
 ## Next revision
 
-- Revision 4b waits for owner approval of the Task 20, Task 21, and Task 22 finding tables. It runs Slice 2C convention updates, refactors, and the Slice 2C exit gate.
-- Revision 5 waits for the Slice 2C exit gate. It starts Slice 2D (`apps/web/src/browser/`) with read-only diagnosis tasks and a STOP gate.
+- Revision 5 waits for the Slice 2C exit gate (Task 29). It starts Slice 2D (`apps/web/src/browser/`) with read-only diagnosis tasks and a STOP gate.
 
 ## References
 
