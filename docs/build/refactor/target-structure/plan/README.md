@@ -88,7 +88,7 @@ Revision 2 adds these failure modes:
 | 9 | Done | [Inventory the HTTP routes](task-09-inventory-http-routes.md) ([report](../reports/task-09-inventory-http-routes.md)) |
 | 10 | Done | [Diagnose the shared HTTP behavior and the error maps](task-10-diagnose-shared-http-behavior.md) ([report](../reports/task-10-diagnose-shared-http-behavior.md)) |
 | 11 | Done | [Diagnose the Host application package](task-11-diagnose-host-application-package.md) ([report](../reports/task-11-diagnose-host-application-package.md)) |
-| 12 | Pending | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) |
+| 12 | Done | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) ([report](../reports/task-12-record-http-test-baseline.md)) |
 
 ## Next revision
 

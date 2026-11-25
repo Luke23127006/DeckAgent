@@ -79,31 +79,31 @@ Run the commands in this order. Each command runs from the repository root.
 | The command does not stop after 600 seconds | Stop the command. Write `TIMEOUT` in `Result`. Do the next command. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short && git log -1 --format=%h`
 
 Expected: PASS. The output has no line before the commit hash. FAIL: the output lists a file. A person must commit the reports of Tasks 9 to 11 before this task starts. Write the commit hash in the report.
 
-- [ ] **Step 2: Check the Node version**
+- [x] **Step 2: Check the Node version**
 
 Run: `node --version`
 
 Expected: PASS. The output starts with `v22.` or with a major version of 24 or higher. Write the version in the report.
 
-- [ ] **Step 3: Run each suite**
+- [x] **Step 3: Run each suite**
 
 Run each command in the [Suite list](#suite-list) in order. For each command, write one row in the report table. Take `Pass` and `Fail` from the `# pass` and `# fail` lines. Write `-` when the output has no such line. Use the [Failure decision table](#failure-decision-table) for `Result`.
 
 Expected: PASS. Each command has a row in the table.
 
-- [ ] **Step 4: Check that no tracked file changed**
+- [x] **Step 4: Check that no tracked file changed**
 
 Run: `git status --short`
 
 Expected: PASS. The output has one line, for `docs/build/refactor/target-structure/plan/task-12-record-http-test-baseline.md`. FAIL: another file changed. Write each changed file in the report.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 12 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-12-record-http-test-baseline.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-12-record-http-test-baseline.md` with:
