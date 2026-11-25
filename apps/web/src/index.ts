@@ -43,8 +43,8 @@ import { ResearchService } from './features/research/index.ts'
 import { TavilyClient } from './integrations/research/index.ts'
 import { researchStyle } from './research-style.ts'
 import {
-  BriefService,
-  ConfirmationService,
+  BriefCoordinator,
+  ConfirmationCoordinator,
   DeckWorkflow,
   GenerationWorkflow,
   WebImageResearch,
@@ -272,11 +272,11 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     }
     const workspaceOps = createWorkspaceOperations(workspaces, store)
     const chatOps = createChatOperations(store, workspaces, state, presentation, drafts)
-    const briefs = new BriefService(presentation, store)
+    const briefs = new BriefCoordinator(presentation, store)
     const host = await startHost({
       mapApplicationFailure,
       failureMessage: deckFailureMessage,
-      confirmations: new ConfirmationService(
+      confirmations: new ConfirmationCoordinator(
         presentation,
         store,
         briefs,

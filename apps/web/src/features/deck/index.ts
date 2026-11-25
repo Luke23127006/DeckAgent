@@ -1,6 +1,6 @@
 export { DeckWorkflowFailure } from './failures.ts'
-export { BriefService } from './brief-service.ts'
-export { ConfirmationService } from './confirmation-service.ts'
+export { BriefCoordinator } from './brief-coordinator.ts'
+export { ConfirmationCoordinator } from './confirmation-coordinator.ts'
 export { DeckWorkflow } from './deck-workflow.ts'
 export { GenerationWorkflow } from './generation-workflow.ts'
 export { generationReport } from './generation-report.ts'

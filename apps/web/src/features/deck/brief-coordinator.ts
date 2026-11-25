@@ -4,10 +4,11 @@ import { DesignError } from '@deckagent/design'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefManagement } from '@deckagent/host-api'
 import type { BriefView } from '@deckagent/host-contracts'
+import { emptyBriefDraft } from './deck-prompts.ts'
 import { DeckWorkflowFailure } from './failures.ts'
 
 /** Composition verifies source ownership, without reading external files or granting research access. */
-export class BriefService implements BriefManagement {
+export class BriefCoordinator implements BriefManagement {
   constructor(
     private readonly decks: DeckStore,
     private readonly sessions: SqliteSessionStore,
@@ -33,14 +34,14 @@ export class BriefService implements BriefManagement {
     const images = this.sessions.attachments.sent(id)
     for (const attachmentId of draft.images.attachmentIds) {
       const item = images.find(item => item.attachmentId === attachmentId)
+      const source = item?.source
       if (
         !item ||
         item.state !== 'ready' ||
         !item.detectedType?.startsWith('image/') ||
-        !item.source ||
+        !source ||
         !draft.sources.refs.some(
-          ref =>
-            ref.sourceId === item.source!.sourceId && ref.version === item.source!.version && ref.kind === 'attachment',
+          ref => ref.sourceId === source.sourceId && ref.version === source.version && ref.kind === 'attachment',
         )
       )
         throw new DeckWorkflowFailure('SOURCE_NOT_FOUND')
@@ -49,13 +50,7 @@ export class BriefService implements BriefManagement {
 
   async interview(id: string) {
     const brief = await this.get(id)
-    const draft = brief.current?.draft ?? {
-      requirements: [],
-      answers: [],
-      assumptions: [],
-      sources: { material: false, modelKnowledge: false, publicResearch: false, refs: [] },
-      images: { mode: 'none' as const, attachmentIds: [], unmetRequirements: [] },
-    }
+    const draft = brief.current?.draft ?? emptyBriefDraft()
     const state = interviewState(
       draft,
       brief.sourceStates.some(s => s.status === 'unavailable'),

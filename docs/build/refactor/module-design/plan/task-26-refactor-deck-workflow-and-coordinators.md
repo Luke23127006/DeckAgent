@@ -57,7 +57,7 @@ Read this file to split `deck-workflow.ts`, extract shared generation execution,
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Create `generation-execution.ts` and `deck-prompts.ts` (`FD2`, `FD5`)**
+- [x] **Step 1: Create `generation-execution.ts` and `deck-prompts.ts` (`FD2`, `FD5`)**
 
 1. Create `apps/web/src/features/deck/generation-execution.ts`:
    - Export `executeGenerationRun(decks: DeckStore, prepared: PreparedRequest, sessionId: string, intentId: string, requestId: string, run: RequestRun): Promise<RuntimeOutcome>`.
@@ -72,7 +72,7 @@ Read this file to split `deck-workflow.ts`, extract shared generation execution,
    - Export `buildRecoveryInstructions(instructions: string, recoveryJson: string): string` (line 692).
    - Keep every function in `deck-prompts.ts` under 70 lines.
 
-- [ ] **Step 2: Create `brief-coordinator.ts` and `confirmation-coordinator.ts`, and remove `*-service.ts` (`FD5`, `FD7`)**
+- [x] **Step 2: Create `brief-coordinator.ts` and `confirmation-coordinator.ts`, and remove `*-service.ts` (`FD5`, `FD7`)**
 
 1. Create `apps/web/src/features/deck/brief-coordinator.ts`:
    - Rename `BriefService` to `BriefCoordinator` (implements `BriefManagement`).
@@ -89,7 +89,7 @@ Read this file to split `deck-workflow.ts`, extract shared generation execution,
    - Keep every method under 65 lines.
 3. Remove `apps/web/src/features/deck/brief-service.ts` and `apps/web/src/features/deck/confirmation-service.ts`.
 
-- [ ] **Step 3: Create `apps/web/src/features/deck/deck-tool-session.ts` (`FD2`, `FD7`)**
+- [x] **Step 3: Create `apps/web/src/features/deck/deck-tool-session.ts` (`FD2`, `FD7`)**
 
 Move the mutable staging state, tool dispatch, error formatting, and recovery check out of `deck-workflow.ts` lines 225-653 into `apps/web/src/features/deck/deck-tool-session.ts`:
 1. Export `createDeckToolSession(options)` returning `{ tools, state, runImageRecovery }`.
@@ -103,7 +103,7 @@ Move the mutable staging state, tool dispatch, error formatting, and recovery ch
 3. Bind `const baseTools = run.tools` before constructing `tools`, and call `baseTools.call(name, args)` with zero `!` assertions (replacing `run.tools!.call` at line 343).
 4. Keep `deck-tool-session.ts` under 360 lines and every function under 75 lines.
 
-- [ ] **Step 4: Simplify `apps/web/src/features/deck/deck-workflow.ts` (`FD2`, `FD5`, `FD7`)**
+- [x] **Step 4: Simplify `apps/web/src/features/deck/deck-workflow.ts` (`FD2`, `FD5`, `FD7`)**
 
 Update `apps/web/src/features/deck/deck-workflow.ts`:
 1. Import `type BriefCoordinator` from `./brief-coordinator.ts`, `executeGenerationRun` from `./generation-execution.ts`, `emptyBriefDraft` and `buildDeckInstructions` from `./deck-prompts.ts`, and `createDeckToolSession` from `./deck-tool-session.ts`.
@@ -115,12 +115,12 @@ Update `apps/web/src/features/deck/deck-workflow.ts`:
    - `commitProposal(request, command, staged, outline, restored, imageReview, run)` (lines 734-809). Bind `const restoreId = restored ? command.restoreOutlineId : undefined` before calling `prepareOutlineImages`, and use `restoreId` inside the resolver callback with zero `!` assertions (replacing line 768).
 5. Keep `deck-workflow.ts` under 260 lines and every function under 75 lines.
 
-- [ ] **Step 5: Update `features/deck/index.ts` and `apps/web/src/index.ts` (`FD5`)**
+- [x] **Step 5: Update `features/deck/index.ts` and `apps/web/src/index.ts` (`FD5`)**
 
 1. In `apps/web/src/features/deck/index.ts`, export `BriefCoordinator` from `./brief-coordinator.ts` and `ConfirmationCoordinator` from `./confirmation-coordinator.ts` instead of `BriefService` and `ConfirmationService`.
 2. In `apps/web/src/index.ts`, update lines 46-47 (`BriefCoordinator`, `ConfirmationCoordinator`), line 274 (`new BriefCoordinator(...)`), and line 278 (`new ConfirmationCoordinator(...)`).
 
-- [ ] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run all deck suites**
+- [x] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run all deck suites**
 
 Run:
 
@@ -152,7 +152,7 @@ corepack pnpm@11.28.5 test:brief-foundation && corepack pnpm@11.28.5 test:outlin
 
 Expected: PASS. All five suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 26 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-26-refactor-deck-workflow-and-coordinators.md`.
 2. Create `docs/build/refactor/module-design/reports/task-26-refactor-deck-workflow-and-coordinators.md` with:
@@ -170,3 +170,4 @@ Expected: PASS. All five suites exit with code `0`, `# fail 0`, and `# skipped 0
 ## References
 
 1. <a id="ref-1"></a>[Module Design Refactor Implementation Plan](README.md)
+

@@ -137,7 +137,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 23 | Done | [Refactor integrations OpenCode, images, and credentials](task-23-refactor-integrations-opencode-images-credentials.md) ([report](../reports/task-23-refactor-integrations-opencode-images-credentials.md)) |
 | 24 | Done | [Refactor artifact-renderer for managed browser reuse](task-24-refactor-artifact-renderer-managed-browser-reuse.md) ([report](../reports/task-24-refactor-artifact-renderer-managed-browser-reuse.md)) |
 | 25 | Done | [Refactor deck image research and generation workflow](task-25-refactor-deck-image-research-and-generation-workflow.md) ([report](../reports/task-25-refactor-deck-image-research-and-generation-workflow.md)) |
-| 26 | Pending | [Refactor deck workflow, BriefCoordinator, and ConfirmationCoordinator](task-26-refactor-deck-workflow-and-coordinators.md) |
+| 26 | Done | [Refactor deck workflow, BriefCoordinator, and ConfirmationCoordinator](task-26-refactor-deck-workflow-and-coordinators.md) ([report](../reports/task-26-refactor-deck-workflow-and-coordinators.md)) |
 | 27 | Pending | [Refactor non-deck application features](task-27-refactor-non-deck-features.md) |
 | 28 | Pending | [Refactor web root composition, local transport, CLI, and web-state](task-28-refactor-web-root-and-local-transport.md) |
 | 29 | Pending | [Check Slice 2C exit gate and rescan metrics](task-29-verify-slice-2c-exit.md) |
