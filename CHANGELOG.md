@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add the Task 20 workspaces diagnosis report (`docs/build/refactor/target-structure/reports/task-20-diagnose-workspaces-module.md`). It records the module files, the callers, the write sites, the Browser reads, the deck notice path, the two schema files and the tests of the `workspaces` module. Task 20 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add Revision 3 (Task 20) to `docs/build/refactor/target-structure/plan/`: a read-only diagnosis of the `workspaces` module before its move to `apps/host/src/modules/workspaces/`. The plan README records the decisions about the schema upgrade of `workspaces.sqlite` and the `ChangeFeed`, and a task now starts only on a clean working tree.
 - Record the Phase 2 exit: the two checks of Task 19 that read a commit pass on `4d42e0f`, so Task 19 is `Done` and Phase 2 of the Target Structure Refactor is complete.
 - Add folder-level `no-restricted-imports` rules for `apps/host/src/http/` and add `@deckagent/host` to the Browser override, with four negative fixtures in `tests/oxlint-boundaries.test.mjs`. The HTTP edge cannot import module services, stores or storage packages. Task 18 is `Done` in `docs/build/refactor/target-structure/plan/`.
