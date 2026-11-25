@@ -5,7 +5,16 @@ import type { CredentialStore } from '../../integrations/credentials/index.ts'
 import { TavilyError } from '../../integrations/research/index.ts'
 import type { TavilyClient } from '../../integrations/research/index.ts'
 import { record } from '../../web-state.ts'
-import { ResearchFailure } from './failures.ts'
+
+export class ResearchFailure extends Error {
+  constructor(
+    readonly code: string,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
+    super(code)
+    this.name = 'ResearchFailure'
+  }
+}
 
 interface Configuration {
   readonly revision: string
@@ -15,7 +24,7 @@ interface Configuration {
 }
 
 /** Web configuration owns references only; immutable request capabilities retain the admitted key. */
-export class ResearchService {
+export class ResearchCoordinator {
   private queue: Promise<void> = Promise.resolve()
   private settingsQueue: Promise<void> = Promise.resolve()
 

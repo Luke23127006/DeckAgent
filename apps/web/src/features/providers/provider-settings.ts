@@ -1,13 +1,26 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { ModelSelection, ProviderProtocol, ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
 import { builtInProviders } from './built-in-providers.ts'
-import { ProviderFailure } from './failures.ts'
 import { CredentialError, ProtectedFileCredentialStore } from '../../integrations/credentials/index.ts'
 import type { CredentialStore } from '../../integrations/credentials/index.ts'
 import { ProviderCheckError, validBaseUrl } from '../../integrations/providers/index.ts'
 import type { ProviderEndpoint, ProviderRunSettings } from '../../integrations/providers/index.ts'
 
 export const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
+
+export class ProviderFailure extends Error {
+  constructor(
+    readonly code: string,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
+    super(code)
+    this.name = 'ProviderFailure'
+  }
+}
+
+function isProviderProtocol(value: unknown): value is ProviderProtocol {
+  return protocols.some(item => item === value)
+}
 
 /** A connection given at startup (CLI flags); its key stays in the environment and is never saved. */
 export interface ProviderConnection {
@@ -68,7 +81,7 @@ function parse(id: string, value: unknown): ProviderInput {
     typeof value.displayName !== 'string' ||
     !value.displayName.trim() ||
     value.displayName.length > 100 ||
-    !protocols.includes(value.protocol as ProviderProtocol) ||
+    !isProviderProtocol(value.protocol) ||
     typeof value.baseUrl !== 'string' ||
     !Array.isArray(value.models) ||
     value.models.length > 100 ||
@@ -79,7 +92,7 @@ function parse(id: string, value: unknown): ProviderInput {
   )
     throw new ProviderFailure('INVALID_PROVIDER')
   if (!validBaseUrl(value.baseUrl)) throw new ProviderFailure('INVALID_PROVIDER', { field: 'baseUrl' })
-  const protocol = value.protocol as ProviderProtocol
+  const protocol = value.protocol
   const models = value.models.map(model => String(model))
   if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
     throw new ProviderFailure('INVALID_PROVIDER', { field: 'models' })

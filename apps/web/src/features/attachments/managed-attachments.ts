@@ -327,11 +327,8 @@ export class ManagedAttachments {
     const retained = new Set(this.log.retainedIds())
     for (const name of await readdir(this.root)) {
       const match = /^(att-[a-f0-9-]{36})\.(part|bin|parsed|parsed-part)$/.exec(name)
-      if (
-        match &&
-        fileId.test(match[1]!) &&
-        (!retained.has(match[1]!) || match[2] === 'part' || match[2] === 'parsed-part')
-      ) {
+      const id = match?.[1]
+      if (match && id && fileId.test(id) && (!retained.has(id) || match[2] === 'part' || match[2] === 'parsed-part')) {
         await this.checkRoot()
         await unlink(join(this.root, name))
       }

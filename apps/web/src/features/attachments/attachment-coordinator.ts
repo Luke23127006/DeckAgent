@@ -4,10 +4,19 @@ import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
 import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentRecord, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { MemoryDraftStore } from '../../draft-store.ts'
-import { AttachmentFailure } from './failures.ts'
 import type { ManagedAttachments } from './managed-attachments.ts'
 
-export function attachmentView(item: AttachmentRecord): AttachmentView {
+export class AttachmentFailure extends Error {
+  constructor(
+    readonly code: string,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
+    super(code)
+    this.name = 'AttachmentFailure'
+  }
+}
+
+function attachmentView(item: AttachmentRecord): AttachmentView {
   return {
     attachmentId: item.attachmentId,
     name: item.name,
@@ -53,7 +62,7 @@ function safeError(error: unknown): never {
 }
 
 /** The existing storage owners remain private; every public operation binds the owning Chat. */
-export class AttachmentService implements AttachmentManagement {
+export class AttachmentCoordinator implements AttachmentManagement {
   readonly maxBytes = attachmentLimits.bytes
   readonly maxFiles = attachmentLimits.files
   private readonly parser = new AttachmentParser()

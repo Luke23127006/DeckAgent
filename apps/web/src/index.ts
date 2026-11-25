@@ -36,10 +36,10 @@ import type { OpenCodeOptions } from './integrations/opencode/index.ts'
 import { sampleAssets } from './sample-slides.ts'
 import { outlineStyle } from './outline-style.ts'
 import { StorageError, prepareStorage, resolveStorageRoot } from './storage-root.ts'
-import { ManagedAttachments, AttachmentService } from './features/attachments/index.ts'
+import { ManagedAttachments, AttachmentCoordinator } from './features/attachments/index.ts'
 import { prepareSourceTools } from './features/sources/index.ts'
 import { attachmentStyle } from './attachment-style.ts'
-import { ResearchService } from './features/research/index.ts'
+import { ResearchCoordinator } from './features/research/index.ts'
 import { TavilyClient } from './integrations/research/index.ts'
 import { researchStyle } from './research-style.ts'
 import {
@@ -97,7 +97,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   let decks: DeckStore | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
-  let preparation: AttachmentService | undefined
+  let preparation: AttachmentCoordinator | undefined
   let artifactAttachments: ManagedAttachments | undefined
   let imageResearch: WebImageResearch | undefined
   try {
@@ -219,7 +219,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       runtime: openCode.availability(),
     })
     const drafts = new MemoryDraftStore()
-    const research = new ResearchService(
+    const research = new ResearchCoordinator(
       state.db,
       options.credentials ?? defaultCredentialStore(layout.root),
       store,
@@ -235,7 +235,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     // Reconcile managed staging before the Host accepts requests. No upload endpoint is enabled yet.
     const attachments = await ManagedAttachments.open(layout.files, store.attachments, drafts)
     artifactAttachments = attachments
-    const inputs = new AttachmentService(store, drafts, attachments)
+    const inputs = new AttachmentCoordinator(store, drafts, attachments)
     preparation = inputs
     const requestStore = inputs.requestStore()
     const assets: Record<string, { contentType: string; body: string }> = {

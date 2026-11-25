@@ -86,7 +86,7 @@ Read this file to fold small `failures.ts` and `contracts.ts` files, remove unus
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Refactor `features/attachments/` (`FA2`, `FA4`, `FA9`, `FA10`)**
+- [x] **Step 1: Refactor `features/attachments/` (`FA2`, `FA4`, `FA9`, `FA10`)**
 
 1. Create `apps/web/src/features/attachments/attachment-coordinator.ts` from `attachment-service.ts`:
    - Move `export class AttachmentFailure` verbatim from `features/attachments/failures.ts` into `attachment-coordinator.ts`.
@@ -105,7 +105,7 @@ if (match && id && fileId.test(id) && (!retained.has(id) || match[2] === 'part' 
 }
 ```
 
-- [ ] **Step 2: Refactor `features/providers/` and `features/research/` (`FA2`, `FA9`, `FA10`)**
+- [x] **Step 2: Refactor `features/providers/` and `features/research/` (`FA2`, `FA9`, `FA10`)**
 
 1. In `apps/web/src/features/providers/provider-settings.ts`:
    - Move `export class ProviderFailure` verbatim from `features/providers/failures.ts` into `provider-settings.ts` and remove `features/providers/failures.ts`.
@@ -125,7 +125,7 @@ function isProviderProtocol(value: unknown): value is ProviderProtocol {
 3. Remove `apps/web/src/features/research/research-service.ts` and `apps/web/src/features/research/failures.ts`.
 4. Update `apps/web/src/features/research/index.ts` to export `ResearchFailure` and `ResearchCoordinator` from `./research-coordinator.ts`.
 
-- [ ] **Step 3: Refactor `features/sources/source-tools.ts` (`FA2`, `FA7`, `FA9`, `FA10`)**
+- [x] **Step 3: Refactor `features/sources/source-tools.ts` (`FA2`, `FA7`, `FA9`, `FA10`)**
 
 1. Move `export class SourceToolFailure` verbatim from `features/sources/failures.ts` into `source-tools.ts` and remove `features/sources/failures.ts`.
 2. Update `apps/web/src/features/sources/index.ts` to export `SourceToolFailure` and `prepareSourceTools` from `./source-tools.ts`.
@@ -141,7 +141,7 @@ function isProviderProtocol(value: unknown): value is ProviderProtocol {
    - `readFileSource(name, pathValue, access, store, context)` (lines 320-342)
 6. Keep `prepareSourceTools`, `execute`, and every helper under 75 lines, with zero `as` and zero `!`.
 
-- [ ] **Step 4: Fold `chats/contracts.ts` and `workspaces/contracts.ts`, and narrow `requests/index.ts` (`FA3`, `FA4`)**
+- [x] **Step 4: Fold `chats/contracts.ts` and `workspaces/contracts.ts`, and narrow `requests/index.ts` (`FA3`, `FA4`)**
 
 1. Fold `apps/web/src/features/chats/contracts.ts` into `apps/web/src/features/chats/index.ts`:
    - Keep `export type ChatWorkflowErrorCode`, `export class ChatWorkflowError`, `export interface ChatOperations`, and `export function createChatOperations`.
@@ -153,12 +153,12 @@ function isProviderProtocol(value: unknown): value is ProviderProtocol {
    - Remove `apps/web/src/features/workspaces/contracts.ts`.
 3. In `apps/web/src/features/requests/index.ts`, remove `RequestPreparationFailureDetail` and `RuntimePreparationDependencies` from the `export type` block.
 
-- [ ] **Step 5: Update callers of `AttachmentCoordinator` and `ResearchCoordinator` (`FA9`)**
+- [x] **Step 5: Update callers of `AttachmentCoordinator` and `ResearchCoordinator` (`FA9`)**
 
 1. In `apps/web/src/features/deck/image-research.ts`, update `type ResearchService` to `type ResearchCoordinator`.
 2. In `apps/web/src/index.ts`, update imports and instantiations of `AttachmentService` to `AttachmentCoordinator` and `ResearchService` to `ResearchCoordinator`.
 
-- [ ] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run feature suites**
+- [x] **Step 6: Build, check boundaries, lint, format, check AST metrics, and run feature suites**
 
 Run:
 
@@ -190,7 +190,7 @@ corepack pnpm@11.28.5 test:local-foundation && corepack pnpm@11.28.5 test:local-
 
 Expected: PASS. All six suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Update the Task 27 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-27-refactor-non-deck-features.md`.
 2. Create `docs/build/refactor/module-design/reports/task-27-refactor-non-deck-features.md` with:

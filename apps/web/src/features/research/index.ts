@@ -1,2 +1,1 @@
-export { ResearchFailure } from './failures.ts'
-export { ResearchService } from './research-service.ts'
+export { ResearchFailure, ResearchCoordinator } from './research-coordinator.ts'

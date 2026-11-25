@@ -4,11 +4,26 @@ import type { ChatSummary, ModelSelection, SqliteSessionStore } from '@deckagent
 import type { MemoryDraftStore } from '../../draft-store.ts'
 import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
 import type { WebState } from '../../web-state.ts'
-import { ChatWorkflowError } from './contracts.ts'
-import type { ChatOperations } from './contracts.ts'
 
-export { ChatWorkflowError } from './contracts.ts'
-export type { ChatOperations, ChatWorkflowErrorCode, ChatWorkflowErrorDetail } from './contracts.ts'
+export type ChatWorkflowErrorCode = 'SESSION_NOT_FOUND' | 'MODEL_NOT_SELECTABLE' | 'CHAT_UNREADABLE' | 'DRAFT_TOO_LARGE'
+
+type ChatWorkflowErrorDetail = Readonly<Record<string, string | boolean>>
+
+export class ChatWorkflowError extends Error {
+  constructor(
+    readonly code: ChatWorkflowErrorCode,
+    readonly detail?: ChatWorkflowErrorDetail,
+  ) {
+    super(code)
+  }
+}
+
+export interface ChatOperations {
+  create(selection?: ModelSelection): Promise<WebSession>
+  selectModel(id: string, selection: ModelSelection): Promise<WebSession>
+  list(): Promise<readonly WebSession[]>
+  search(words: string): Promise<readonly WebSession[]>
+}
 
 /** Coordinates chat creation, model selection, listing, search, and Browser projection. */
 export function createChatOperations(
