@@ -167,7 +167,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 36 | Done | [Refactor browser/features/providers settings-panel and model-picker](task-36-refactor-browser-providers-feature.md) ([report](../reports/task-36-refactor-browser-providers-feature.md)) |
 | 37 | Done | [Refactor browser chats, requests, attachments, workspaces, and research](task-37-refactor-browser-remaining-features.md) ([report](../reports/task-37-refactor-browser-remaining-features.md)) |
 | 38 | Done | [Remove layout.ts and split browser boot.ts into shell modules](task-38-refactor-browser-boot-and-shell.md) ([report](../reports/task-38-refactor-browser-boot-and-shell.md)) |
-| 39 | Pending | [Check Slice 2D and Phase 2 exit gate and rescan metrics](task-39-verify-slice-2d-exit.md) |
+| 39 | Done | [Check Slice 2D and Phase 2 exit gate and rescan metrics](task-39-verify-slice-2d-exit.md) ([report](../reports/task-39-verify-slice-2d-exit.md)) |
 
 ## Next revision
 

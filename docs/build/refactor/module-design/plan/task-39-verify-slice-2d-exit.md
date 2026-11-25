@@ -35,7 +35,7 @@ Read this file to run quality checks, root tool tests, all 18 non-live suites, a
 - Run live suites (`test:research-live`, `test:opencode-live`).
 - Commit or push before Step 5 checks pass.
 
-- [ ] **Step 1: Run all five static quality checks**
+- [x] **Step 1: Run all five static quality checks**
 
 Run:
 
@@ -53,7 +53,7 @@ npx biome format apps/web/src/browser/ apps/web/tests/fixtures/browser-driver.mj
 
 Expected: PASS. Exit code `0` with `0` formatting diffs.
 
-- [ ] **Step 2: Run all five root tool test files**
+- [x] **Step 2: Run all five root tool test files**
 
 Run:
 
@@ -63,7 +63,7 @@ node --test tests/check-boundaries.test.mjs tests/check-docs.test.mjs tests/oxli
 
 Expected: PASS. Exit code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 3: Run all 18 non-live package test suites**
+- [x] **Step 3: Run all 18 non-live package test suites**
 
 Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Chromium sandbox restrictions block it):
 
@@ -88,7 +88,7 @@ Run each suite (outside the sandbox on Windows only when `EPERM`, `EBUSY`, or Ch
 
 Expected: PASS. All 18 suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 4: Measure Slice 2D and Phase 2 Tier 1 metrics**
+- [x] **Step 4: Measure Slice 2D and Phase 2 Tier 1 metrics**
 
 Run:
 
@@ -102,7 +102,7 @@ Compare `apps/web/src/browser/` against the Slice 2D pre-refactor baseline:
 - Target: `0` over 400, `0` fn over 80, `1` small non-barrel (`apps/web/src/browser/dom.ts`, approved `BB10`), `0` `as`, `0` `!`, `0` `*Service`, `9` `transport/index.ts` exports, and `6` `browser/features/deck/index.ts` exports (`4` runtime values and `2` types).
 - All eight Tier 1 areas across Phase 2 (`Slices 2A` to `2D`) must report `0` files over 400 lines, `0` functions over 80 lines, `0` `as`, `0` `!`, and `0` `*Service`.
 
-- [ ] **Step 5: Mark task done, write the Slice 2D and Phase 2 exit report, and commit and push**
+- [x] **Step 5: Mark task done, write the Slice 2D and Phase 2 exit report, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 39 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-39-verify-slice-2d-exit.md`.
 2. Create `docs/build/refactor/module-design/reports/task-39-verify-slice-2d-exit.md` with:
