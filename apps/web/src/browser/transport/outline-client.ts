@@ -1,9 +1,7 @@
 import { decodeBoundProposal } from '@deckagent/host-contracts'
 import type { OutlineProposal, OutlineSnapshot } from '@deckagent/host-contracts'
+import { fetchAuthorized, isRecord } from './http.ts'
 
-function object(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value)
-}
 function id(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(value)
 }
@@ -15,9 +13,9 @@ function text(value: unknown, max: number): value is string {
 }
 
 function proposal(value: unknown, sessionId: string): OutlineProposal {
-  if (object(value) && value.brief !== undefined) return decodeBoundProposal(value, sessionId)
+  if (isRecord(value) && value.brief !== undefined) return decodeBoundProposal(value, sessionId)
   if (
-    !object(value) ||
+    !isRecord(value) ||
     !id(value.outlineId) ||
     !id(value.requestId) ||
     !integer(value.version) ||
@@ -34,7 +32,7 @@ function proposal(value: unknown, sessionId: string): OutlineProposal {
   )
     throw new Error('INVALID_RESPONSE')
   const slides = value.slides.map((slide: unknown) => {
-    if (!object(slide) || !id(slide.slideId) || !text(slide.title, 300) || !text(slide.content, 8000))
+    if (!isRecord(slide) || !id(slide.slideId) || !text(slide.title, 300) || !text(slide.content, 8000))
       throw new Error('INVALID_RESPONSE')
     return { slideId: slide.slideId, title: slide.title, content: slide.content }
   })
@@ -58,16 +56,16 @@ export class OutlineClient {
   ) {}
 
   async snapshot(sessionId: string, signal?: AbortSignal): Promise<OutlineSnapshot> {
-    const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/outline`, {
-      headers: { authorization: `Bearer ${this.token}` },
-      credentials: 'omit',
-      redirect: 'error',
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
-    })
+    const response = await fetchAuthorized(
+      this.origin,
+      this.token,
+      `/api/sessions/${encodeURIComponent(sessionId)}/outline`,
+      { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) },
+    )
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'OUTLINE_UNAVAILABLE')
     const value: unknown = await response.json()
     if (
-      !object(value) ||
+      !isRecord(value) ||
       value.sessionId !== sessionId ||
       typeof value.active !== 'boolean' ||
       !integer(value.version) ||
@@ -81,13 +79,15 @@ export class OutlineClient {
     if (
       new Set(proposals.map(p => p.outlineId)).size !== proposals.length ||
       new Set(proposals.map(p => p.requestId)).size !== proposals.length ||
-      proposals.some(
-        (p, index) =>
+      proposals.some((p, index) => {
+        const previous = index > 0 ? proposals[index - 1] : undefined
+        return (
           p.version > version ||
-          (index > 0 && p.version <= proposals[index - 1]!.version) ||
+          (previous !== undefined && p.version <= previous.version) ||
           (p.status === 'current' && p.outlineId !== value.currentId) ||
-          (p.status === 'confirmed' && p.outlineId !== value.confirmedId),
-      ) ||
+          (p.status === 'confirmed' && p.outlineId !== value.confirmedId)
+        )
+      }) ||
       (value.currentId !== null &&
         !proposals.some(p => p.outlineId === value.currentId && ['current', 'confirmed'].includes(p.status))) ||
       (value.confirmedId !== null &&

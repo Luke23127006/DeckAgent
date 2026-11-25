@@ -162,7 +162,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 31 | Done | [Diagnose browser/features/deck UI modules](task-31-diagnose-browser-deck-feature.md) ([report](../reports/task-31-diagnose-browser-deck-feature.md)) |
 | 32 | Done | [Diagnose non-deck browser UI features](task-32-diagnose-browser-non-deck-features.md) ([report](../reports/task-32-diagnose-browser-non-deck-features.md)) |
 | 33 | Done | [Update Project Structure conventions for Slice 2D](task-33-update-slice-2d-conventions.md) ([report](../reports/task-33-update-slice-2d-conventions.md)) |
-| 34 | Pending | [Refactor browser transport clients, HTTP helpers, and assertions](task-34-refactor-browser-transport.md) |
+| 34 | Done | [Refactor browser transport clients, HTTP helpers, and assertions](task-34-refactor-browser-transport.md) ([report](../reports/task-34-refactor-browser-transport.md)) |
 | 35 | Pending | [Refactor browser/features/deck and move imageFailure from transport](task-35-refactor-browser-deck-feature.md) |
 | 36 | Pending | [Refactor browser/features/providers settings-panel and model-picker](task-36-refactor-browser-providers-feature.md) |
 | 37 | Pending | [Refactor browser chats, requests, attachments, workspaces, and research](task-37-refactor-browser-remaining-features.md) |

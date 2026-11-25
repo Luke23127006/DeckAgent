@@ -1,7 +1,6 @@
 import type { ConfirmationReceipt, ConfirmationResult, ConfirmationTarget } from '@deckagent/host-contracts'
-export { decodeGeneration } from '@deckagent/host-contracts'
+import { fetchAuthorized, isRecord } from './http.ts'
 
-const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const id = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
 const positive = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0
 const invalid = (): never => {
@@ -9,7 +8,7 @@ const invalid = (): never => {
 }
 function receipt(v: unknown, sessionId: string): ConfirmationReceipt {
   if (
-    !object(v) ||
+    !isRecord(v) ||
     v.sessionId !== sessionId ||
     v.deckId !== sessionId ||
     !id(v.confirmationId) ||
@@ -46,14 +45,17 @@ export class ConfirmationClient {
     private readonly token: string,
   ) {}
   async confirm(sessionId: string, target: ConfirmationTarget): Promise<ConfirmationResult> {
-    const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/deck/confirm`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${this.token}`, 'content-type': 'application/json' },
-      body: JSON.stringify(target),
-      credentials: 'omit',
-      redirect: 'error',
-      signal: AbortSignal.timeout(15000),
-    })
+    const response = await fetchAuthorized(
+      this.origin,
+      this.token,
+      `/api/sessions/${encodeURIComponent(sessionId)}/deck/confirm`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(target),
+        signal: AbortSignal.timeout(15000),
+      },
+    )
     const v: unknown = await response.json()
     if (!response.ok) {
       const codes = [
@@ -77,12 +79,12 @@ export class ConfirmationClient {
       throw new Error(
         response.status === 401
           ? 'AUTH_REQUIRED'
-          : object(v) && object(v.error) && typeof v.error.code === 'string' && codes.includes(v.error.code)
+          : isRecord(v) && isRecord(v.error) && typeof v.error.code === 'string' && codes.includes(v.error.code)
             ? v.error.code
             : 'CONFIRMATION_UNAVAILABLE',
       )
     }
-    if (!object(v) || !object(v.request)) return invalid()
+    if (!isRecord(v) || !isRecord(v.request)) return invalid()
     const r = receipt(v.receipt, sessionId),
       q = v.request
     const status = (['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted'] as const).find(

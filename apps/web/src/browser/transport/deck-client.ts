@@ -1,6 +1,7 @@
 import type { ImageCredit, DeckChange, DeckSnapshot, SlideContent } from '@deckagent/host-contracts'
 import { decodeGeneration } from '@deckagent/host-contracts'
 import { decodeArtifactDescriptor, decodeContentOrigins, decodeSlideDocument } from '@deckagent/presentation-document'
+import { fetchAuthorized, readSseFrames } from './http.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -13,6 +14,45 @@ function integer(value: unknown): value is number {
 }
 function invalid(): never {
   throw new Error('INVALID_DECK_RESPONSE')
+}
+
+const IMAGE_LICENSES = ['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'] as const
+
+function decodeImageCredits(value: unknown): readonly ImageCredit[] {
+  if (!Array.isArray(value) || value.length > 100) invalid()
+  return value.map(item => {
+    if (
+      !object(item) ||
+      typeof item.url !== 'string' ||
+      !item.url.startsWith('https://') ||
+      typeof item.author !== 'string' ||
+      typeof item.licenseUrl !== 'string' ||
+      (item.evidence !== undefined && item.evidence !== 'image-metadata' && item.evidence !== 'pexels-cdn') ||
+      (item.downloadUrl !== undefined &&
+        (typeof item.downloadUrl !== 'string' || !item.downloadUrl.startsWith('https://'))) ||
+      typeof item.retrievedAt !== 'string' ||
+      typeof item.unknownLicense !== 'boolean'
+    )
+      invalid()
+    const license = IMAGE_LICENSES.find(known => known === item.license)
+    if (!license) invalid()
+    if (item.unknownLicense !== (license === 'unknown')) invalid()
+    return {
+      url: item.url,
+      author: item.author,
+      licenseUrl: item.licenseUrl,
+      license,
+      ...(item.evidence === 'image-metadata' || item.evidence === 'pexels-cdn' ? { evidence: item.evidence } : {}),
+      ...(typeof item.downloadUrl === 'string' ? { downloadUrl: item.downloadUrl } : {}),
+      unknownLicense: item.unknownLicense,
+      retrievedAt: item.retrievedAt,
+    }
+  })
+}
+
+function decodeStringArray(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) invalid()
+  return value.map(item => (typeof item === 'string' ? item : invalid()))
 }
 
 function change(value: unknown, sessionId: string): DeckChange {
@@ -30,12 +70,12 @@ export class DeckClient {
 
   private async request(sessionId: string, suffix: string, signal?: AbortSignal): Promise<Response> {
     if (!id(sessionId)) invalid()
-    const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/deck${suffix}`, {
-      signal: signal ?? AbortSignal.timeout(15000),
-      redirect: 'error',
-      credentials: 'omit',
-      headers: { authorization: `Bearer ${this.token}` },
-    })
+    const response = await fetchAuthorized(
+      this.origin,
+      this.token,
+      `/api/sessions/${encodeURIComponent(sessionId)}/deck${suffix}`,
+      { signal: signal ?? AbortSignal.timeout(15000) },
+    )
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'DECK_REQUEST_FAILED')
     return response
   }
@@ -95,31 +135,8 @@ export class DeckClient {
       (value.notes !== undefined && (typeof value.notes !== 'string' || value.notes.length > 16000))
     )
       invalid()
-    if (
-      value.imageCredits !== undefined &&
-      (!Array.isArray(value.imageCredits) ||
-        value.imageCredits.length > 100 ||
-        value.imageCredits.some(
-          c =>
-            !object(c) ||
-            typeof c.url !== 'string' ||
-            !c.url.startsWith('https://') ||
-            typeof c.author !== 'string' ||
-            typeof c.licenseUrl !== 'string' ||
-            !['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'].includes(String(c.license)) ||
-            (c.evidence !== undefined && c.evidence !== 'image-metadata' && c.evidence !== 'pexels-cdn') ||
-            (c.downloadUrl !== undefined &&
-              (typeof c.downloadUrl !== 'string' || !c.downloadUrl.startsWith('https://'))) ||
-            c.unknownLicense !== (c.license === 'unknown') ||
-            typeof c.retrievedAt !== 'string',
-        ))
-    )
-      invalid()
-    if (
-      value.imageOmissions !== undefined &&
-      (!Array.isArray(value.imageOmissions) || value.imageOmissions.some(q => typeof q !== 'string'))
-    )
-      invalid()
+    const imageCredits = value.imageCredits === undefined ? undefined : decodeImageCredits(value.imageCredits)
+    const imageOmissions = value.imageOmissions === undefined ? undefined : decodeStringArray(value.imageOmissions)
     const document = value.document === undefined ? undefined : decodeSlideDocument(value.document)
     const artifact = value.artifact === undefined ? undefined : decodeArtifactDescriptor(value.artifact)
     if (
@@ -137,10 +154,8 @@ export class DeckClient {
       html: value.html,
       ...(document ? { document } : {}),
       ...(artifact ? { artifact } : {}),
-      ...(Array.isArray(value.imageCredits)
-        ? { imageCredits: value.imageCredits as unknown as readonly ImageCredit[] }
-        : {}),
-      ...(Array.isArray(value.imageOmissions) ? { imageOmissions: value.imageOmissions as string[] } : {}),
+      ...(imageCredits === undefined ? {} : { imageCredits }),
+      ...(imageOmissions === undefined ? {} : { imageOmissions }),
       ...(typeof value.notes === 'string' ? { notes: value.notes } : {}),
       ...(Array.isArray(value.provenance) ? { provenance: decodeContentOrigins(value.provenance) } : {}),
     }
@@ -149,35 +164,13 @@ export class DeckClient {
   /** A connection always starts with a current-version notice, including an empty deck. */
   async *watch(sessionId: string, signal: AbortSignal): AsyncGenerator<DeckChange> {
     const response = await this.request(sessionId, '/events', signal)
-    if (!response.body || !response.headers.get('content-type')?.startsWith('text/event-stream')) invalid()
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    try {
-      while (true) {
-        const part = await reader.read()
-        if (part.done) throw new Error('DECK_CONNECTION_LOST')
-        buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
-        if (buffer.length > 65536) invalid()
-        let boundary = buffer.indexOf('\n\n')
-        while (boundary >= 0) {
-          const frame = buffer.slice(0, boundary)
-          buffer = buffer.slice(boundary + 2)
-          if (frame.startsWith('event: deck-changed\n')) {
-            const data = frame
-              .split('\n')
-              .filter(line => line.startsWith('data: '))
-              .map(line => line.slice(6))
-              .join('\n')
-            yield change(JSON.parse(data), sessionId)
-          }
-          boundary = buffer.indexOf('\n\n')
-        }
-      }
-    } finally {
-      // Cancelling a read-only subscription cannot change a committed publication.
-      await reader.cancel().catch(() => {})
-      reader.releaseLock()
-    }
+    const frames = readSseFrames(response, {
+      maxBufferBytes: 65536,
+      lostError: 'DECK_CONNECTION_LOST',
+      invalidError: 'INVALID_DECK_RESPONSE',
+      eventName: 'deck-changed',
+      matchMode: 'prefix',
+    })
+    for await (const data of frames) yield change(JSON.parse(data), sessionId)
   }
 }

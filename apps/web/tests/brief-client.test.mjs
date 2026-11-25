@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
-import { BriefClient, decodeBriefView } from './fixtures/browser-driver.mjs'
+import { BriefClient } from './fixtures/browser-driver.mjs'
+import { decodeBriefView } from '@deckagent/host-contracts'
 import { resolveDesign } from '@deckagent/design'
 import { brief } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
 

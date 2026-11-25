@@ -62,7 +62,7 @@ Read this file to remove pass-through decoder wrappers, extract internal HTTP/SS
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 6 checks pass.
 
-- [ ] **Step 1: Create internal `apps/web/src/browser/transport/http.ts` (`BB5`, `BB12`)**
+- [x] **Step 1: Create internal `apps/web/src/browser/transport/http.ts` (`BB5`, `BB12`)**
 
 Create `apps/web/src/browser/transport/http.ts` with four internal exports, keeping every function under 55 lines and the file under 120 lines:
 
@@ -71,7 +71,7 @@ Create `apps/web/src/browser/transport/http.ts` with four internal exports, keep
 3. `export async function readJsonError(response: Response, allowedCodes: readonly string[], fallbackCode: string, options?: { readonly includeDetail?: boolean; readonly fallback401?: boolean }): Promise<{ readonly code: string; readonly detail: Readonly<Record<string, string | boolean>> }>`. Parse JSON safely with `.catch(() => undefined)` and match `error.code` against `allowedCodes`. Copy only `string | boolean` entries from `error.detail` when `options?.includeDetail` is true and a known code matched. Return `AUTH_REQUIRED` on status `401` only when `options?.fallback401` is true and no allowed code matched.
 4. `export async function* readSseFrames(response: Response, options: { readonly maxBufferBytes: number; readonly lostError: string; readonly invalidError: string; readonly eventName: string; readonly matchMode: 'line' | 'prefix' }): AsyncGenerator<string>`. Check `response.body` and `content-type` starting with `text/event-stream`, normalize `\r\n`, and throw `options.invalidError` when buffer exceeds `options.maxBufferBytes`. Throw `options.lostError` when `part.done` ends the stream. Yield joined `data: ` lines for frames matching `event: ${options.eventName}` (`'line'` equality or `'prefix'` match), and cancel and release the reader in `finally`.
 
-- [ ] **Step 2: Create `apps/web/src/browser/transport/management-decoders.ts` and shrink `management-client.ts` (`BB5`, `BB8`)**
+- [x] **Step 2: Create `apps/web/src/browser/transport/management-decoders.ts` and shrink `management-client.ts` (`BB5`, `BB8`)**
 
 1. Create `apps/web/src/browser/transport/management-decoders.ts` (under 280 lines, every function under 60 lines) holding all response decoders moved from `management-client.ts`:
    - `decodeSettings`, `decodeSession`, `decodeWorkspaceList`, `decodeResearchSources`, `decodeTheme`, `decodeActivities`, `decodeRequests`, `decodeDraft`, `decodeCatalog`, and `decodePreviewText`.
@@ -81,7 +81,7 @@ Create `apps/web/src/browser/transport/http.ts` with four internal exports, keep
    - Delegate `request` and `attachmentRequest` to `fetchAuthorized` and `readJsonError` from `./http.ts`. Pass `includeDetail: true` and `fallback401: false` for `request`, and pass `includeDetail: false` and `fallback401: false` for `attachmentRequest`.
    - Delegate every response check to `./management-decoders.ts`.
 
-- [ ] **Step 3: Remove assertions and pass-throughs across the five sibling clients (`BB2`, `BB6`, `BB8`)**
+- [x] **Step 3: Remove assertions and pass-throughs across the five sibling clients (`BB2`, `BB6`, `BB8`)**
 
 1. Remove `apps/web/src/browser/transport/bound-outline-decoder.ts`.
 2. In `apps/web/src/browser/transport/deck-client.ts`:
@@ -101,7 +101,7 @@ Create `apps/web/src/browser/transport/http.ts` with four internal exports, keep
    - Remove line 2 (`export { decodeGeneration } from '@deckagent/host-contracts'`).
    - Use `fetchAuthorized` and `isRecord` from `./http.ts`, keeping `AbortSignal.timeout(15000)`, `response.json()` behavior, and `401 -> AUTH_REQUIRED` unchanged.
 
-- [ ] **Step 4: Narrow `transport/index.ts` and update test callers (`BB2`, `BB6`)**
+- [x] **Step 4: Narrow `transport/index.ts` and update test callers (`BB2`, `BB6`)**
 
 1. Update `apps/web/src/browser/transport/index.ts` to export exactly ten symbols:
 
@@ -118,7 +118,7 @@ export { imageFailure } from './image-review-client.ts'
 2. Update `apps/web/tests/fixtures/browser-driver.mjs` to remove `decodeBriefView` (line 10) and `requestEvent` (line 12).
 3. Update `apps/web/tests/brief-client.test.mjs` line 4 to import only `BriefClient` from `./fixtures/browser-driver.mjs` and add `import { decodeBriefView } from '@deckagent/host-contracts'`.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, measure AST metrics, and run transport suites**
+- [x] **Step 5: Build, check boundaries, lint, format, measure AST metrics, and run transport suites**
 
 Run:
 
@@ -150,7 +150,7 @@ corepack pnpm@11.28.5 test:tools-browser && corepack pnpm@11.28.5 test:local-web
 
 Expected: PASS. All five suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 6: Mark task done, write the report file, and commit and push**
+- [x] **Step 6: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 34 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-34-refactor-browser-transport.md`.
 2. Create `docs/build/refactor/module-design/reports/task-34-refactor-browser-transport.md` with:

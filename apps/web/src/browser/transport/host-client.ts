@@ -7,7 +7,7 @@ import type {
   RequestSnapshot,
   RequestStatus,
 } from '@deckagent/host-contracts'
-export { decodeAttachment, requestEvent } from '@deckagent/host-contracts'
+import { fetchAuthorized, readJsonError, readSseFrames } from './http.ts'
 
 function approvalView(value: unknown): ApprovalView {
   if (
@@ -169,21 +169,13 @@ export class HostClient {
   ) {}
 
   private async request(path: string, init: RequestInit = {}) {
-    const response = await fetch(`${this.origin}${path}`, {
-      ...init,
-      redirect: 'error',
-      credentials: 'omit',
-      headers: { ...init.headers, authorization: `Bearer ${this.token}` },
-    })
+    const response = await fetchAuthorized(this.origin, this.token, path, init)
     if (!response.ok) {
-      const data: unknown = await response.json().catch(() => undefined)
-      const error = object(data) && object(data.error) ? data.error : undefined
-      const known = error && typeof error.code === 'string' && allowed.includes(error.code) ? error.code : undefined
-      const detail: Record<string, string | boolean> = {}
-      if (known && error && object(error.detail))
-        for (const [key, item] of Object.entries(error.detail))
-          if (typeof item === 'string' || typeof item === 'boolean') detail[key] = item
-      throw new HostRequestError(known ?? (response.status === 401 ? 'AUTH_REQUIRED' : 'HOST_REQUEST_FAILED'), detail)
+      const { code, detail } = await readJsonError(response, allowed, 'HOST_REQUEST_FAILED', {
+        includeDetail: true,
+        fallback401: true,
+      })
+      throw new HostRequestError(code, detail)
     }
     return response
   }
@@ -264,46 +256,22 @@ export class HostClient {
       headers: after ? { 'last-event-id': String(after) } : {},
       ...(signal ? { signal } : {}),
     })
-    if (!response.body || !response.headers.get('content-type')?.startsWith('text/event-stream'))
-      throw new Error('INVALID_RESPONSE')
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
+    const frames = readSseFrames(response, {
+      maxBufferBytes: 4 * 1024 * 1024,
+      lostError: 'CONNECTION_LOST',
+      invalidError: 'INVALID_RESPONSE',
+      eventName: 'request',
+      matchMode: 'line',
+    })
     let last = after
-    try {
-      while (true) {
-        const part = await reader.read()
-        if (part.done) {
-          // The Host ends the stream after a terminal status or under back-pressure; only the first is an end.
-          throw new Error('CONNECTION_LOST')
-        }
-        buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
-        if (buffer.length > 4 * 1024 * 1024) throw new Error('INVALID_RESPONSE')
-        let boundary = buffer.indexOf('\n\n')
-        while (boundary >= 0) {
-          const frame = buffer.slice(0, boundary)
-          buffer = buffer.slice(boundary + 2)
-          if (frame.split('\n').includes('event: request')) {
-            const data = frame
-              .split('\n')
-              .filter(line => line.startsWith('data: '))
-              .map(line => line.slice(6))
-              .join('\n')
-            const event = requestEvent(JSON.parse(data))
-            if (event.requestId !== id) throw new Error('INVALID_RESPONSE')
-            if (event.sequence > last) {
-              last = event.sequence
-              yield event
-              if (event.kind === 'status' && !isActive(event.status)) return
-            }
-          }
-          boundary = buffer.indexOf('\n\n')
-        }
+    for await (const data of frames) {
+      const event = requestEvent(JSON.parse(data))
+      if (event.requestId !== id) throw new Error('INVALID_RESPONSE')
+      if (event.sequence > last) {
+        last = event.sequence
+        yield event
+        if (event.kind === 'status' && !isActive(event.status)) return
       }
-    } finally {
-      // Stream cancellation cannot change the Host-owned request's outcome.
-      await reader.cancel().catch(() => {})
-      reader.releaseLock()
     }
   }
 }

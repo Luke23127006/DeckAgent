@@ -1,8 +1,7 @@
 import { decodeBriefView } from '@deckagent/host-contracts'
 import type { BriefDraft, BriefView, InterviewState } from '@deckagent/host-contracts'
-export { decodeBriefView } from '@deckagent/host-contracts'
+import { fetchAuthorized, isRecord } from './http.ts'
 
-const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(text)
 
@@ -17,13 +16,13 @@ export class BriefClient {
     version?: number,
     input?: { expectedVersion: number; draft: BriefDraft },
   ): Promise<BriefView> {
-    const response = await fetch(
-      `${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/brief${version === undefined ? '' : `/versions/${version}`}`,
+    const response = await fetchAuthorized(
+      this.origin,
+      this.token,
+      `/api/sessions/${encodeURIComponent(sessionId)}/brief${version === undefined ? '' : `/versions/${version}`}`,
       {
         method: input ? 'PUT' : 'GET',
-        headers: { authorization: `Bearer ${this.token}`, ...(input ? { 'content-type': 'application/json' } : {}) },
-        credentials: 'omit',
-        redirect: 'error',
+        headers: input ? { 'content-type': 'application/json' } : {},
         signal: AbortSignal.timeout(15000),
         ...(input ? { body: JSON.stringify(input) } : {}),
       },
@@ -46,7 +45,10 @@ export class BriefClient {
         'DESIGN_FONT_UNAVAILABLE',
       ]
       throw new Error(
-        object(value) && object(value.error) && typeof value.error.code === 'string' && codes.includes(value.error.code)
+        isRecord(value) &&
+          isRecord(value.error) &&
+          typeof value.error.code === 'string' &&
+          codes.includes(value.error.code)
           ? value.error.code
           : 'BRIEF_UNAVAILABLE',
       )
@@ -64,15 +66,15 @@ export class BriefClient {
   }
 
   async interview(sessionId: string): Promise<{ brief: BriefView; state: InterviewState }> {
-    const response = await fetch(`${this.origin}/api/sessions/${encodeURIComponent(sessionId)}/interview`, {
-      headers: { authorization: `Bearer ${this.token}` },
-      credentials: 'omit',
-      redirect: 'error',
-      signal: AbortSignal.timeout(15000),
-    })
+    const response = await fetchAuthorized(
+      this.origin,
+      this.token,
+      `/api/sessions/${encodeURIComponent(sessionId)}/interview`,
+      { signal: AbortSignal.timeout(15000) },
+    )
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'BRIEF_UNAVAILABLE')
     const value: unknown = await response.json()
-    if (!object(value) || !object(value.state)) throw new Error('INVALID_RESPONSE')
+    if (!isRecord(value) || !isRecord(value.state)) throw new Error('INVALID_RESPONSE')
     const s = value.state
     if (
       !Array.isArray(s.questions) ||
@@ -83,7 +85,7 @@ export class BriefClient {
     )
       throw new Error('INVALID_RESPONSE')
     const questions = s.questions.map((q: unknown) => {
-      if (!object(q) || !text(q.prompt) || !strings(q.suggestions) || typeof q.required !== 'boolean')
+      if (!isRecord(q) || !text(q.prompt) || !strings(q.suggestions) || typeof q.required !== 'boolean')
         throw new Error('INVALID_RESPONSE')
       const topic = (
         [
@@ -103,7 +105,7 @@ export class BriefClient {
       return { topic, prompt: q.prompt, suggestions: q.suggestions, required: q.required }
     })
     const blockers = s.blockers.map((b: unknown) => {
-      if (!object(b) || !text(b.code) || !text(b.message)) throw new Error('INVALID_RESPONSE')
+      if (!isRecord(b) || !text(b.code) || !text(b.message)) throw new Error('INVALID_RESPONSE')
       return { code: b.code, message: b.message }
     })
     if (
