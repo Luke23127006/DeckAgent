@@ -72,7 +72,7 @@ Revision 1b adds these failure modes:
 | 4 | Done | [Diagnose the AgentRuntime port](task-04-diagnose-agent-runtime-port.md) ([report](../reports/task-04-diagnose-agent-runtime-port.md)) |
 | 5 | Done | [Diagnose run preparation](task-05-diagnose-run-preparation.md) ([report](../reports/task-05-diagnose-run-preparation.md)) |
 | 6 | Done | [Diagnose the change notice and version](task-06-diagnose-change-notice.md) ([report](../reports/task-06-diagnose-change-notice.md)) |
-| 7 | Pending | [Write the agent core contracts](task-07-write-agent-core-contracts.md) |
+| 7 | Done | [Write the agent core contracts](task-07-write-agent-core-contracts.md) ([report](../reports/task-07-write-agent-core-contracts.md)) |
 | 8 | Pending | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) |
 
 ## Next revision

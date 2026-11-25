@@ -42,13 +42,13 @@ Read this file to learn the steps of Task 7, which writes the agent core ADRs, t
 - Change the words of the texts in Steps 2 to 4. Only fix a link or an anchor that `check:docs` reports, and write each fix in the report.
 - Add an ADR, a contract or an open question that the texts do not contain.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `ls docs/architecture && wc -l docs/architecture/README.md`
 
 Expected: PASS. The output is two lines: `README.md` and `3 docs/architecture/README.md`. FAIL: any other output.
 
-- [ ] **Step 2: Create `docs/architecture/30-decisions.md`**
+- [x] **Step 2: Create `docs/architecture/30-decisions.md`**
 
 Write the text below as the complete file. The file starts with the line `# Quyết định kiến trúc`. Do not copy the outer fence.
 
@@ -256,7 +256,7 @@ Phương án A tổng quát hoá pattern đã chạy đúng cho deck, và giữ 
 10. <a id="ref-10"></a>[Deck](../UCs/deck.md)
 ````
 
-- [ ] **Step 3: Create `docs/architecture/10-agent-core.md`**
+- [x] **Step 3: Create `docs/architecture/10-agent-core.md`**
 
 Write the text below as the complete file. The file starts with the line `# Agent core`. Do not copy the outer fence.
 
@@ -653,7 +653,7 @@ Các phần sau là việc riêng của OpenCode và không đi qua `runs/prepar
 10. <a id="ref-10"></a>[Task 5: Diagnose run preparation report](../build/refactor/target-structure/reports/task-05-diagnose-run-preparation.md)
 ````
 
-- [ ] **Step 4: Replace the whole content of `docs/architecture/README.md`**
+- [x] **Step 4: Replace the whole content of `docs/architecture/README.md`**
 
 Write the text below as the complete file. The file starts with the line `# Architecture`. Do not copy the outer fence.
 
@@ -682,19 +682,19 @@ Write the text below as the complete file. The file starts with the line `# Arch
 | [Quality attributes](../UCs/quality-attributes.md) | Chưa có file |
 ````
 
-- [ ] **Step 5: Check the headings and the contract names**
+- [x] **Step 5: Check the headings and the contract names**
 
 Run: `grep -c "^## ADR-00[1-4]: " docs/architecture/30-decisions.md && grep -c "^\*\*Status:\*\* Proposed$" docs/architecture/30-decisions.md && grep -c "^export interface \(RunOwner\|RunContribution\|AgentRuntime\|ChangeNotice\) {$" docs/architecture/10-agent-core.md && grep -c "sessionId:" docs/architecture/10-agent-core.md && grep -c "^## Aggregate và change notice$" docs/architecture/10-agent-core.md && grep -c "^## File$\|^## Ma trận Driver và File$" docs/architecture/README.md`
 
 Expected: PASS. The output is six lines: `4`, `4`, `4`, `0`, `1` and `2`. FAIL: any other number. The fourth line proves that no contract type has a `sessionId` field. `grep -c` exits with code 1 when the count is `0`, so the chain stops after the fourth line. In that case, run the fifth and sixth commands alone.
 
-- [ ] **Step 6: Run the docs check**
+- [x] **Step 6: Run the docs check**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`. FAIL: the output contains `error(s)` with a number above 0. An error can name a link or an anchor in a file of Steps 2 to 4. Then fix only that link and run the command again. Write the fix in the report.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 7 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-07-write-agent-core-contracts.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-07-write-agent-core-contracts.md` with:
