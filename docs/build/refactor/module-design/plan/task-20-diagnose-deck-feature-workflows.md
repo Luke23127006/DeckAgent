@@ -69,7 +69,7 @@ Apply this table in top-to-bottom order to every finding in `apps/web/src/featur
 | A file, type, or seam protects a real invariant or workflow boundary, and moving it raises caller complexity | Propose `no action` with file-and-line rationale |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Measure live file metrics, assertions, and external importers**
+- [x] **Step 1: Measure live file metrics, assertions, and external importers**
 
 Run:
 
@@ -79,7 +79,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. The command exits with code 0 and prints `"fileCount": 8`, `"totalLines": 2033`, `"longFnTotal": 9`, `"assertionTotal": 3`, `"nonNullTotal": 9`, and `"serviceTotal": 2`.
 
-- [ ] **Step 2: Audit all 9 barrel exports and inspect every file in `apps/web/src/features/deck/`**
+- [x] **Step 2: Audit all 9 barrel exports and inspect every file in `apps/web/src/features/deck/`**
 
 Run:
 
@@ -97,7 +97,7 @@ Record exact file-and-line observations for:
 4. `apps/web/src/features/deck/brief-service.ts` (135 lines) and `confirmation-service.ts` (141 lines): inspect `BriefService` (line 10, 2 non-null assertions at line 43) and `ConfirmationService` (line 11, `confirm` lines 20-140, 121 lines). Propose concrete non-`*Service` names and check whether either class wraps `DeckStore` thinly or owns real cross-store orchestration.
 5. `apps/web/src/features/deck/failures.ts` (12 lines) and `generation-report.ts` (58 lines): test `failures.ts` under the deletion test by comparing folding `DeckWorkflowFailure` and `OutlineNotFoundReason` against keeping a separate file. Inspect `generationReport` coupling to `DeckStore`.
 
-- [ ] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
+- [x] **Step 3: Answer the four deep-module diagnosis questions and classify every finding**
 
 Produce structured answers backed by exact file paths and line numbers:
 1. **Interface width:** State the count of barrel exports (`9`), public classes/functions across the 8 files, and concepts `apps/web/src/index.ts` and `local-transport.ts` must know to wire `features/deck/`. Name every test-only or zero-production-usage export.
@@ -107,12 +107,12 @@ Produce structured answers backed by exact file paths and line numbers:
    - **Scenario B:** Add one new image-credit field returned by web image research and saved during slide generation provenance.
 4. **Action classification and convention fit:** Apply the [Finding classification decision table](#finding-classification-decision-table) to every finding. Tag each involved dependency using the four categories in `.agents/skills/codebase-design/DEEPENING.md` (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`). Name any hard-fit rule in `docs/conventions/project-structure.md` or `docs/conventions/code.md` with its exact heading.
 
-- [ ] **Step 4: Check that no code or convention file changed**
+- [x] **Step 4: Check that no code or convention file changed**
 
 Run: `git status --short`
 Expected: PASS. No file under `packages/`, `apps/`, `e2e/`, `tests/`, `docs/conventions/`, or `docs/build/refactor/module-design/README.md` appears in the output.
 
-- [ ] **Step 5: Mark task done, write the report file, and commit and push**
+- [x] **Step 5: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Update the Task 20 row in `docs/build/refactor/module-design/plan/README.md` from `Pending` to `Done` and link `../reports/task-20-diagnose-deck-feature-workflows.md`.
 2. Create `docs/build/refactor/module-design/reports/task-20-diagnose-deck-feature-workflows.md` with:

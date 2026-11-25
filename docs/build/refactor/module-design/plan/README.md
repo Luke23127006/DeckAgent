@@ -119,7 +119,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 17 | Done | [Split deck artifact storage, extract image store, and guard assertions](task-17-refactor-deck-artifacts-and-image-store.md) ([report](../reports/task-17-refactor-deck-artifacts-and-image-store.md)) |
 | 18 | Done | [Rename DeckService to DeckStore, narrow exports, and check contract parity](task-18-rename-deck-store-narrow-exports-and-contract-sync.md) ([report](../reports/task-18-rename-deck-store-narrow-exports-and-contract-sync.md)) |
 | 19 | Done | [Check Slice 2B exit gate and rescan metrics](task-19-verify-slice-2b-exit.md) ([report](../reports/task-19-verify-slice-2b-exit.md)) |
-| 20 | Pending | [Diagnose features/deck workflows and image research](task-20-diagnose-deck-feature-workflows.md) |
+| 20 | Done | [Diagnose features/deck workflows and image research](task-20-diagnose-deck-feature-workflows.md) ([report](../reports/task-20-diagnose-deck-feature-workflows.md)) |
 | 21 | Pending | [Diagnose non-deck features and apps/web/src root](task-21-diagnose-app-features-and-web-root.md) |
 | 22 | Pending | [Diagnose apps/web/src/integrations and renderer browser reuse](task-22-diagnose-integrations-and-renderer-reuse.md) |
 
