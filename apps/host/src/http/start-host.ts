@@ -2,11 +2,22 @@ import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import { createHostRoutes, type HostOptions } from '@deckagent/host-api'
 import { createHttpApp } from './app.ts'
+import { createChangeRoutes, type ChangeFeed, type HostChangeTopic } from './change-feed.ts'
+
+export interface StartHostOptions extends HostOptions {
+  readonly changes?: {
+    readonly feed: ChangeFeed
+    readonly hostTopics: readonly HostChangeTopic[]
+  }
+}
 
 /** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a request. */
-export async function startHost(options: HostOptions) {
+export async function startHost(options: StartHostOptions) {
   const token = randomBytes(32).toString('hex')
   const routes = createHostRoutes(options)
+  if (options.changes) {
+    routes.router.use(createChangeRoutes(options.changes.feed, options.changes.hostTopics, routes.streams))
+  }
   let origin = ''
   let closing: Promise<void> | undefined
   const app = createHttpApp({

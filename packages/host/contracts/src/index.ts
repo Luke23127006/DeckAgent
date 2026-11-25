@@ -55,3 +55,11 @@ export {
 export { decodeBriefView } from './brief-validation.ts'
 export { decodeBoundProposal } from './outline-validation.ts'
 export { decodeGeneration } from './generation-validation.ts'
+export { decodeChangeNotice, type ChangeNotice, type ChangeTopic, type PublishChange } from './changes.ts'
+export {
+  decodeWorkspaceAddBody,
+  decodeWorkspaceRelinkBody,
+  decodeWorkspaceRemoveBody,
+  decodeWorkspaceRenameBody,
+  decodeWorkspaceSelectBody,
+} from './workspace-validation.ts'

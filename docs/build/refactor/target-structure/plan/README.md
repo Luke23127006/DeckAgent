@@ -157,7 +157,7 @@ Revision 3c adds these failure modes:
 | 20 | Done | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) ([report](../reports/task-20-diagnose-workspaces-module.md)) |
 | 21 | Done | [Move the workspaces module into apps/host/src/modules](task-21-move-workspaces-module.md) ([report](../reports/task-21-move-workspaces-module.md)) |
 | 22 | Done | [Add the folder-level rules for apps/host/src/modules](task-22-add-module-folder-rules.md) ([report](../reports/task-22-add-module-folder-rules.md)) |
-| 23 | Pending | [Add the change notice contracts, workspace body schemas and Host ChangeFeed](task-23-add-change-contracts-and-feed.md) |
+| 23 | Done | [Add the change notice contracts, workspace body schemas and Host ChangeFeed](task-23-add-change-contracts-and-feed.md) ([report](../reports/task-23-add-change-contracts-and-feed.md)) |
 | 24 | Pending | [Add version, schema 2 upgrade, expectedVersion and ChangeFeed wiring to the workspaces module](task-24-add-workspaces-version-and-notices.md) |
 | 25 | Pending | [Connect the Browser to /api/changes and handle WORKSPACES_STALE](task-25-connect-browser-to-changes-and-stale-workspaces.md) |
 

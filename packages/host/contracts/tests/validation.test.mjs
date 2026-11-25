@@ -12,7 +12,13 @@ import {
   decodeAttachment,
   decodeBoundProposal,
   decodeBriefView,
+  decodeChangeNotice,
   decodeGeneration,
+  decodeWorkspaceAddBody,
+  decodeWorkspaceRelinkBody,
+  decodeWorkspaceRemoveBody,
+  decodeWorkspaceRenameBody,
+  decodeWorkspaceSelectBody,
   requestEvent,
   RequestValidationError,
 } from '../lib/index.js'
@@ -280,4 +286,58 @@ test('decodeBriefView, decodeBoundProposal, and decodeGeneration enforce domain 
   )
   assert.equal(generation.state, 'generated')
   assert.throws(() => decodeGeneration({ format: 'html' }, sessionId), { message: 'INVALID_GENERATION_RESPONSE' })
+})
+
+test('decodeChangeNotice accepts valid notices and rejects malformed shapes with INVALID_RESPONSE', () => {
+  assert.deepEqual(decodeChangeNotice({ topic: 'workspaces', key: 'host', version: 0 }), {
+    topic: 'workspaces',
+    key: 'host',
+    version: 0,
+  })
+  for (const bad of [
+    null,
+    { topic: 'unknown', key: 'host', version: 0 },
+    { topic: 'workspaces', key: '', version: 0 },
+    { topic: 'workspaces', key: 'host', version: -1 },
+    { topic: 'workspaces', key: 'host', version: 1.5 },
+    { topic: 'workspaces', key: 'host', version: 0, extra: true },
+  ]) {
+    assert.throws(() => decodeChangeNotice(bad), { message: 'INVALID_RESPONSE' })
+  }
+})
+
+test('workspace body decoders enforce expectedVersion and strict keys while keeping domain fields unchecked', () => {
+  assert.deepEqual(decodeWorkspaceAddBody({ folder: '/project', expectedVersion: 0 }), {
+    folder: '/project',
+    expectedVersion: 0,
+  })
+  assert.deepEqual(decodeWorkspaceAddBody({ expectedVersion: 1 }), { folder: undefined, expectedVersion: 1 })
+  assert.deepEqual(decodeWorkspaceAddBody({ folder: 42, expectedVersion: 2 }), { folder: 42, expectedVersion: 2 })
+  assert.deepEqual(decodeWorkspaceSelectBody({ id: 'default', expectedVersion: 0 }), {
+    id: 'default',
+    expectedVersion: 0,
+  })
+  assert.deepEqual(decodeWorkspaceRenameBody({ name: 'x'.repeat(101), expectedVersion: 3 }), {
+    name: 'x'.repeat(101),
+    expectedVersion: 3,
+  })
+  assert.deepEqual(decodeWorkspaceRelinkBody({ folder: '/other', expectedVersion: 4 }), {
+    folder: '/other',
+    expectedVersion: 4,
+  })
+  assert.deepEqual(decodeWorkspaceRemoveBody({ expectedVersion: 5 }), { expectedVersion: 5 })
+
+  for (const call of [
+    () => decodeWorkspaceAddBody({ folder: '/project' }),
+    () => decodeWorkspaceAddBody({ folder: '/project', expectedVersion: -1 }),
+    () => decodeWorkspaceAddBody({ folder: '/project', expectedVersion: 0, extra: 1 }),
+    () => decodeWorkspaceSelectBody({ id: 1, expectedVersion: 0 }),
+    () => decodeWorkspaceSelectBody({ id: 'default' }),
+    () => decodeWorkspaceRenameBody({ name: 'ok', expectedVersion: 1.2 }),
+    () => decodeWorkspaceRelinkBody({ folder: '/a', expectedVersion: 0, extra: true }),
+    () => decodeWorkspaceRemoveBody({}),
+    () => decodeWorkspaceRemoveBody({ expectedVersion: 0, extra: true }),
+  ]) {
+    assert.throws(call, error => error instanceof RequestValidationError && error.code === 'INVALID_REQUEST')
+  }
 })

@@ -55,7 +55,7 @@ Revision 3c adds `version` and change notices to the `workspaces` module. Before
 - Change the code of Step 2. When `build` or `lint` reports an error in it, STOP.
 - Commit when a STOP condition occurred. Push with `--force`, or skip a hook with `--no-verify`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -73,7 +73,7 @@ Run: `corepack pnpm@11.28.5 test:tools-browser`
 
 Expected: PASS. The output contains `# pass 14` and `# fail 0`.
 
-- [ ] **Step 2: Write the new source and test files**
+- [x] **Step 2: Write the new source and test files**
 
 Write each file below with the exact content.
 
@@ -416,7 +416,7 @@ test('GET /api/changes shares the 64-stream limit and rejects the 65th stream wi
 })
 ```
 
-- [ ] **Step 3: Run the edit script**
+- [x] **Step 3: Run the edit script**
 
 Save the script below as `deckagent-task23-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository.
 
@@ -557,7 +557,7 @@ Run from the repository root: `node <temporary folder>/deckagent-task23-edits.mj
 
 Expected: PASS. The output is `task23-edits: 5 files changed, 0 failures`.
 
-- [ ] **Step 4: Build and run the checks**
+- [x] **Step 4: Build and run the checks**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -587,7 +587,7 @@ Run: `corepack pnpm@11.28.5 test:http-edge`
 
 Expected: PASS. The output contains `# pass 12` and `# fail 0`.
 
-- [ ] **Step 5: Check the changed paths**
+- [x] **Step 5: Check the changed paths**
 
 Run: `git status --short`
 
@@ -605,7 +605,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
  M packages/host/contracts/tests/validation.test.mjs
 ```
 
-- [ ] **Step 6: Write the report file**
+- [x] **Step 6: Write the report file**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 23 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-23-add-change-contracts-and-feed.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-23-add-change-contracts-and-feed.md` with:
@@ -617,7 +617,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
 4. Run the STE linter from Global Constraints on the report file. Expected: the output contains `0 violations`.
 5. Mark Step 6 as `- [x]`.
 
-- [ ] **Step 7: Commit and push**
+- [x] **Step 7: Commit and push**
 
 Do this step only when Steps 1 to 6 passed and no STOP condition occurred.
 

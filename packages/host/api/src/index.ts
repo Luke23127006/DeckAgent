@@ -29,6 +29,7 @@ export type {
 export { HttpError } from './transport/http-error.ts'
 export { json, readJson } from './transport/http-io.ts'
 export { param, params, route } from './transport/route-params.ts'
+export { openSseStream } from './transport/sse.ts'
 export type { HttpErrorDetail } from './transport/http-error.ts'
 
 const contractSync: ContractSyncVerified = true
