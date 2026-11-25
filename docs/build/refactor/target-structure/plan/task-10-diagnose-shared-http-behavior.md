@@ -91,13 +91,13 @@ Apply the rows from top to bottom to each error map. Use the first row that matc
 | The map gives a status for the codes of more than one error class | Owner `mixed`. Write each error class. |
 | No row matches | Owner `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `wc -l packages/host/api/src/index.ts packages/host/api/src/transport/http-io.ts packages/host/api/src/transport/error-response.ts packages/host/api/src/transport/sse.ts packages/host/api/src/transport/multipart.ts apps/web/src/local-transport.ts`
 
 Expected: PASS. The line counts are `147`, `45`, `48`, `16`, `118` and `304`. FAIL: any other number.
 
-- [ ] **Step 2: List and classify each shared behavior**
+- [x] **Step 2: List and classify each shared behavior**
 
 Read `packages/host/api/src/index.ts`, `http-io.ts`, `error-response.ts`, `http-error.ts`, `sse.ts` and `multipart.ts` in full. Write one row for each behavior in the report table `ID | Behavior | Location (file:line) | Observable effect | Class | Express | Tests`.
 
@@ -116,7 +116,7 @@ Include at least these behaviors, each in its own row:
 - The stream limit, the heartbeat and the `x-accel-buffering` header of `openSseStream`.
 - Each limit in `multipart.ts`.
 
-- [ ] **Step 3: Find the tests of each behavior**
+- [x] **Step 3: Find the tests of each behavior**
 
 For each row from Step 2, take the error code or the header name, for example `ORIGIN_DENIED`, `TOO_MANY_STREAMS` or `x-content-type-options`. Run this command with the value:
 
@@ -126,7 +126,7 @@ Expected: PASS. The command exits with code 0 or 1. Code 1 means that no file co
 
 Write the file names in the `Tests` column. Write `Not found` when the command finds no file. For a row without an error code or a header name, write `No search value`.
 
-- [ ] **Step 4: List and classify each error map**
+- [x] **Step 4: List and classify each error map**
 
 Run: `grep -n "Record<.*number>\|=> number\|status:" packages/host/api/src/transport/error-response.ts apps/web/src/local-transport.ts`
 
@@ -141,13 +141,13 @@ Also write these facts in the report, with file and line:
 3. Each error code that has a status in more than one map. Write `None` when no code has two statuses.
 4. Each `HttpError` that a route file throws with a literal status. Run `grep -n "new HttpError(" packages/host/api/src/transport/*.ts packages/host/api/src/index.ts`.
 
-- [ ] **Step 5: Check that no code changed**
+- [x] **Step 5: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 10 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-10-diagnose-shared-http-behavior.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-10-diagnose-shared-http-behavior.md` with:

@@ -86,7 +86,7 @@ Revision 2 adds these failure modes:
 | 7 | Done | [Write the agent core contracts](task-07-write-agent-core-contracts.md) ([report](../reports/task-07-write-agent-core-contracts.md)) |
 | 8 | Done | [Check the Phase 1 exit condition](task-08-check-phase-1-exit.md) ([report](../reports/task-08-check-phase-1-exit.md)) |
 | 9 | Done | [Inventory the HTTP routes](task-09-inventory-http-routes.md) ([report](../reports/task-09-inventory-http-routes.md)) |
-| 10 | Pending | [Diagnose the shared HTTP behavior and the error maps](task-10-diagnose-shared-http-behavior.md) |
+| 10 | Done | [Diagnose the shared HTTP behavior and the error maps](task-10-diagnose-shared-http-behavior.md) ([report](../reports/task-10-diagnose-shared-http-behavior.md)) |
 | 11 | Pending | [Diagnose the Host application package](task-11-diagnose-host-application-package.md) |
 | 12 | Pending | [Record the test baseline before Phase 2](task-12-record-http-test-baseline.md) |
 
