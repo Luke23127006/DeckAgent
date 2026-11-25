@@ -56,6 +56,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move the `workspaces` module into `apps/host/src/modules/workspaces/` (store, service, routes and error map) and delete the package `@deckagent/workspace-registry`. The HTTP contract does not change. Task 21 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Serve every Local Host route through Express 5.2.1 (`@types/express` 5.0.6). `apps/host/src/http/` holds the Express app, the shared checks, the error handler and `startHost`. `@deckagent/host-api` exports `createHostRoutes` in place of `startHost`, and its four route files are Express route registrars. The HTTP contract and the expected values of the HTTP tests stay the same. Tasks 17 and 19 have reports in `docs/build/refactor/target-structure/reports/`.
 - Move all Node code of `apps/web/src/` into `apps/host/src/` and keep the file and folder names. `apps/web/` now holds the Browser code and `index.ts`, the former `ui-assets.ts`, which reads the Browser files from the folder next to its own file. `@deckagent/host` calls `loadWebAssets(getTheme)` from `@deckagent/local-web`, and the scripts `web` and `start:local` start `node apps/host/lib/cli.js`.
 - Write the `## Tech Stack` section of `AGENTS.md` with the current tools and their versions from `package.json` and the OpenCode config, and with the chosen target libraries without versions.

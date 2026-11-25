@@ -16,7 +16,6 @@
     { "path": "../../packages/host/api" },
     { "path": "../../packages/host/contracts" },
     { "path": "../../packages/session/persistence" },
-    { "path": "../../packages/workspace/registry" },
     { "path": "../web" }
   ]
 }

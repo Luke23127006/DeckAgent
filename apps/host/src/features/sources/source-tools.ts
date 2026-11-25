@@ -5,7 +5,7 @@ import type { ParsedAttachment, SourceAccess } from '@deckagent/file-tools'
 import type { PreparedTools, ToolContext, ToolSchema, ToolResult } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentRecord, ResearchSource, SqliteSessionStore } from '@deckagent/session-persistence'
-import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
+import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'
 import { record } from '../../web-state.ts'
 import type { ManagedAttachments } from '../attachments/index.ts'
 import { ResearchFailure } from '../research/index.ts'
@@ -36,7 +36,7 @@ const schema = (name: string, description: string, property: string, required: b
 export interface SourceToolOptions {
   readonly sessionId: string
   readonly store: SqliteSessionStore
-  readonly registry: WorkspaceRegistry
+  readonly registry: WorkspaceLookup
   readonly dataRoot: string
   readonly home: string
   readonly attachments: ManagedAttachments

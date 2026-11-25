@@ -12,9 +12,9 @@ import type {
   WebPreferences,
   WebSession,
   WebSettings,
-  WorkspaceList,
 } from '@deckagent/host-contracts'
 import type { RequestStore } from '@deckagent/session-persistence'
+import type { Router } from 'express'
 import type { RequestAdmission, RequestRuntime } from '../lifecycle/contracts.ts'
 import type { PreparedTools } from '../lifecycle/tool-contracts.ts'
 import type { HttpErrorDetail } from './http-error.ts'
@@ -62,6 +62,7 @@ export interface HostOptions {
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
   readonly management?: WebManagement
+  readonly routes?: readonly Router[]
   readonly attachments?: AttachmentManagement
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
@@ -119,26 +120,10 @@ export interface WebManagement {
   selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
-  /** Optional: an application without workspaces has no `/api/workspaces` routes. */
-  readonly workspaces?: WorkspaceManagement
   /** Earlier chats whose name or conversation holds the words. Body: `{ words }`. */
   searchSessions?(value: unknown): Promise<readonly WebSession[]>
   readonly drafts?: {
     get(sessionId: string): Promise<ChatDraft>
     save(sessionId: string, value: unknown): Promise<ChatDraft>
   }
-}
-
-/** Workspace operations. Every input is untrusted JSON; the application validates it. */
-export interface WorkspaceManagement {
-  list(): Promise<WorkspaceList>
-  /** Body: `{ folder }`. Sets up a workspace, or finds the one of that folder, and makes it the workspace in use. */
-  add(value: unknown): Promise<WorkspaceList>
-  /** Body: `{ id }`. */
-  select(value: unknown): Promise<WorkspaceList>
-  /** Body: `{ name }`. */
-  rename(id: string, value: unknown): Promise<WorkspaceList>
-  /** Body: `{ folder }`. */
-  relink(id: string, value: unknown): Promise<WorkspaceList>
-  remove(id: string): Promise<WorkspaceList>
 }

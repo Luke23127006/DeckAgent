@@ -3,12 +3,9 @@ import { mkdir, mkdtemp, readdir, realpath, rename, rm, stat, symlink, writeFile
 import { tmpdir } from 'node:os'
 import { join, parse, sep } from 'node:path'
 import test from 'node:test'
-import {
-  FolderPolicy,
-  nameFromFolder,
-  nameFromUser,
-  WorkspaceRegistry,
-} from '../lib/index.js'
+import { FolderPolicy } from '../lib/types/modules/workspaces/folder-policy.js'
+import { nameFromFolder, nameFromUser } from '../lib/types/modules/workspaces/workspace-name.js'
+import { WorkspaceRegistry } from '../lib/types/modules/workspaces/workspaces.store.js'
 
 async function tree(folder) {
   const entries = []

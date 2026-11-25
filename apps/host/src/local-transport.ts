@@ -1,14 +1,7 @@
 import { DeckError } from '@deckagent/deck'
 import { HttpError } from '@deckagent/host-api'
-import type {
-  AttachmentManagement,
-  HttpErrorDetail,
-  HttpFailureResponse,
-  WebManagement,
-  WorkspaceManagement,
-} from '@deckagent/host-api'
+import type { AttachmentManagement, HttpErrorDetail, HttpFailureResponse, WebManagement } from '@deckagent/host-api'
 import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
-import { WorkspaceError } from '@deckagent/workspace-registry'
 import { DraftError } from './draft-store.ts'
 import { AttachmentFailure } from './features/attachments/index.ts'
 import { ChatWorkflowError } from './features/chats/index.ts'
@@ -19,23 +12,7 @@ import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { ResearchFailure, type ResearchCoordinator } from './features/research/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
-import { WorkspaceWorkflowError } from './features/workspaces/index.ts'
-import type { WorkspaceOperations } from './features/workspaces/index.ts'
 import { WebStateError, record, selection } from './web-state.ts'
-
-const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
-  WORKSPACE_NOT_FOUND: 404,
-  WORKSPACE_DEFAULT: 409,
-  WORKSPACE_FOLDER_REQUIRED: 400,
-  WORKSPACE_FOLDER_INVALID: 400,
-  WORKSPACE_FOLDER_UNREADABLE: 422,
-  WORKSPACE_FOLDER_REFUSED: 422,
-  WORKSPACE_FOLDER_IN_USE: 409,
-  WORKSPACE_NAME_EMPTY: 400,
-  WORKSPACE_NAME_TOO_LONG: 400,
-  WORKSPACE_STORAGE: 500,
-  WORKSPACE_SCHEMA: 500,
-}
 
 const chatStatus: Readonly<Record<ChatWorkflowErrorCode, number>> = {
   SESSION_NOT_FOUND: 404,
@@ -145,17 +122,6 @@ function mapFailureEntry(code: string, detail: HttpErrorDetail | undefined, stat
   return { status, code, ...(detail ? { detail } : {}) }
 }
 
-/** Safe details only: a workspace name or a refusal reason, never a path. */
-function mapWorkspaceError(error: WorkspaceError): HttpFailureResponse {
-  const { workspaceName, reason, allowInside } = error.detail
-  const detail: HttpErrorDetail = {
-    ...(workspaceName === undefined ? {} : { workspaceName }),
-    ...(reason === undefined ? {} : { reason }),
-    ...(allowInside === undefined ? {} : { allowInside }),
-  }
-  return mapFailureEntry(error.code, Object.keys(detail).length > 0 ? detail : undefined, workspaceStatus[error.code])
-}
-
 function featureFailure<E extends { readonly code: string; readonly detail?: HttpErrorDetail | undefined }>(
   errorType: new (...args: never[]) => E,
   statusOf: (error: E) => number,
@@ -177,8 +143,6 @@ const featureFailures = [
 
 /** Maps application workflow and domain failures to HTTP responses without exposing internal details. */
 export function mapApplicationFailure(error: unknown): HttpFailureResponse | undefined {
-  if (error instanceof WorkspaceWorkflowError) return { status: 409, code: error.code }
-  if (error instanceof WorkspaceError) return mapWorkspaceError(error)
   for (const failure of featureFailures) {
     const response = failure(error)
     if (response) return response
@@ -209,21 +173,6 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     return mapFailureEntry(error.code, undefined, status)
   }
   return undefined
-}
-
-export function workspaceManagement(operations: WorkspaceOperations): WorkspaceManagement {
-  return {
-    list: () => operations.list(),
-    add: value => operations.add(body(value, 'folder')),
-    select: value => {
-      const id = body(value, 'id')
-      if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-      return operations.select(id)
-    },
-    rename: (id, value) => operations.rename(id, body(value, 'name')),
-    relink: (id, value) => operations.relink(id, body(value, 'folder')),
-    remove: id => operations.remove(id),
-  }
 }
 
 export function chatManagement(

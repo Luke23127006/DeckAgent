@@ -5,7 +5,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
-    "test:local-foundation": "node --test packages/workspace/registry/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
+    "test:local-foundation": "node --test apps/host/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
     "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/host/tests/opencode-adapter.test.mjs e2e/model-requests.test.mjs packages/host/api/tests/request-failure.test.mjs apps/host/tests/wait-for.test.mjs",
     "test:source-permissions": "node --test packages/tools/filesystem/tests/source-access.test.mjs apps/host/tests/mcp-bridge.test.mjs e2e/step-approval.test.mjs e2e/source-requests.test.mjs",
     "test:attachments": "node --test packages/tools/filesystem/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
@@ -57,7 +57,6 @@
     "@deckagent/pptx-format": "workspace:*",
     "@deckagent/presentation-document": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
-    "@deckagent/workspace-registry": "workspace:*",
     "@types/css-tree": "2.3.11",
     "@types/node": "^22.20.1",
     "oxlint": "1.94.0",

@@ -2,7 +2,7 @@ import type { DeckStore } from '@deckagent/deck'
 import type { WebSession } from '@deckagent/host-contracts'
 import type { ChatSummary, ModelSelection, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { MemoryDraftStore } from '../../draft-store.ts'
-import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
+import type { WorkspaceChats, WorkspaceLookup } from '../../modules/workspaces/index.ts'
 import type { WebState } from '../../web-state.ts'
 
 export type ChatWorkflowErrorCode = 'SESSION_NOT_FOUND' | 'MODEL_NOT_SELECTABLE' | 'CHAT_UNREADABLE' | 'DRAFT_TOO_LARGE'
@@ -25,10 +25,20 @@ export interface ChatOperations {
   search(words: string): Promise<readonly WebSession[]>
 }
 
+export function createWorkspaceChats(sessions: SqliteSessionStore): WorkspaceChats {
+  return {
+    hasActiveRequest: async workspaceId =>
+      (await sessions.list())
+        .filter(chat => chat.workspaceId === workspaceId)
+        .some(chat => sessions.requests.activeFor(chat.sessionId)),
+    ungroup: workspaceId => sessions.ungroup(workspaceId),
+  }
+}
+
 /** Coordinates chat creation, model selection, listing, search, and Browser projection. */
 export function createChatOperations(
   sessions: SqliteSessionStore,
-  registry: WorkspaceRegistry,
+  registry: WorkspaceLookup,
   web: WebState,
   decks: DeckStore,
   drafts: MemoryDraftStore,

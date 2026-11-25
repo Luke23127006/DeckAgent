@@ -185,7 +185,6 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | `apps/host/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
 | `apps/host/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
 | `packages/session/persistence/` | Store của `modules/chats/`, `modules/attachments/` và `runs/`, cùng với `apps/host/src/db/` |
-| `packages/workspace/registry/` | `apps/host/src/modules/workspaces/` |
 | `packages/tools/filesystem/` | `apps/host/src/tools/` |
 | `packages/host/contracts/` | `packages/contracts/` |
 | `apps/web/src/browser/transport/` | `apps/web/src/api/` |

@@ -25,9 +25,10 @@ export type {
   HostOptions,
   HttpFailureResponse,
   WebManagement,
-  WorkspaceManagement,
 } from './transport/contracts.ts'
 export { HttpError } from './transport/http-error.ts'
+export { json, readJson } from './transport/http-io.ts'
+export { param, params, route } from './transport/route-params.ts'
 export type { HttpErrorDetail } from './transport/http-error.ts'
 
 const contractSync: ContractSyncVerified = true
@@ -58,6 +59,7 @@ export function createHostRoutes(options: HostOptions): HostRoutes {
   const router = Router({ caseSensitive: true, strict: true })
   registerSessionRoutes(router, options, controller, streams)
   if (options.management) registerManagementRoutes(router, options.management, withActive)
+  for (const routes of options.routes ?? []) router.use(routes)
   registerRequestRoutes(router, controller, options.attachments?.maxFiles ?? 0, streams)
   return {
     router,

@@ -6,19 +6,22 @@ import { startHost } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
 import { SessionError, SqliteSessionStore, type ModelSelection } from '@deckagent/session-persistence'
 import { MemoryDraftStore } from './draft-store.ts'
-import { WorkspaceRegistry } from '@deckagent/workspace-registry'
+import {
+  WorkspaceRegistry,
+  createWorkspaceOperations,
+  createWorkspaceRoutes,
+  mapWorkspaceFailure,
+} from './modules/workspaces/index.ts'
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import { loadWebAssets } from '@deckagent/local-web'
 import { WebState } from './web-state.ts'
-import { createChatOperations } from './features/chats/index.ts'
-import { createWorkspaceOperations } from './features/workspaces/index.ts'
+import { createChatOperations, createWorkspaceChats } from './features/chats/index.ts'
 import {
   attachmentManagement,
   chatManagement,
   mapApplicationFailure,
   sessionReadManagement,
-  workspaceManagement,
 } from './local-transport.ts'
 import { ProviderStore, type ProviderConnection, type ProviderStoreOptions } from './features/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'
@@ -300,7 +303,7 @@ function createHostOptions(
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
   return {
-    mapApplicationFailure,
+    mapApplicationFailure: error => mapWorkspaceFailure(error) ?? mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
     briefs,
@@ -326,6 +329,7 @@ function createHostOptions(
     attachments: attachmentManagement(runtime.inputs),
     ...(options.port === undefined ? {} : { port: options.port }),
     readHistory: id => sessions.read(id),
+    routes: [createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions)))],
     management: {
       ...sessionReadManagement(sessions, runtime.research),
       preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },
@@ -334,7 +338,6 @@ function createHostOptions(
       deleteProvider: id => runtime.providers.remove(id),
       catalog: id => runtime.providers.catalog(id),
       ...chatManagement(createChatOperations(sessions, registry, web, decks, drafts)),
-      workspaces: workspaceManagement(createWorkspaceOperations(registry, sessions)),
       drafts: { get: id => runtime.inputs.draft(id), save: (id, value) => runtime.inputs.save(id, value) },
     },
   }

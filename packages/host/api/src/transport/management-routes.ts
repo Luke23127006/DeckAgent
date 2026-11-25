@@ -1,53 +1,10 @@
 import type { WebSession } from '@deckagent/host-contracts'
 import type { Router } from 'express'
-import type { WebManagement, WorkspaceManagement } from './contracts.ts'
+import type { WebManagement } from './contracts.ts'
 import { json, readJson } from './http-io.ts'
 import { param, params, route, WORD_ID } from './route-params.ts'
 
 const PROVIDER_ID = params({ providerId: /^[\w.-]{1,100}$/ })
-
-function registerWorkspaceRoutes(router: Router, workspaces: WorkspaceManagement): void {
-  router.get(
-    '/api/workspaces',
-    route(async (_req, res) => {
-      json(res, 200, await workspaces.list())
-    }),
-  )
-  router.post(
-    '/api/workspaces',
-    route(async (req, res) => {
-      json(res, 200, await workspaces.add(await readJson(req)))
-    }),
-  )
-  router.put(
-    '/api/workspaces/selected',
-    route(async (req, res) => {
-      json(res, 200, await workspaces.select(await readJson(req)))
-    }),
-  )
-  const notSelected = params({ workspaceId: /^(?!selected$)[\w-]{1,100}$/ })
-  router.put(
-    '/api/workspaces/:workspaceId',
-    notSelected,
-    route(async (req, res) => {
-      json(res, 200, await workspaces.rename(param(req, 'workspaceId'), await readJson(req)))
-    }),
-  )
-  router.delete(
-    '/api/workspaces/:workspaceId',
-    notSelected,
-    route(async (req, res) => {
-      json(res, 200, await workspaces.remove(param(req, 'workspaceId')))
-    }),
-  )
-  router.put(
-    '/api/workspaces/:workspaceId/folder',
-    notSelected,
-    route(async (req, res) => {
-      json(res, 200, await workspaces.relink(param(req, 'workspaceId'), await readJson(req)))
-    }),
-  )
-}
 
 function registerSettingsAndProviderRoutes(router: Router, management: WebManagement): void {
   router.get(
@@ -189,5 +146,4 @@ export function registerManagementRoutes(
       }),
     )
   }
-  if (management.workspaces) registerWorkspaceRoutes(router, management.workspaces)
 }

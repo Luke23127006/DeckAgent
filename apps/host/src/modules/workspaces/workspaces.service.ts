@@ -1,6 +1,5 @@
 import type { WorkspaceList } from '@deckagent/host-contracts'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { WorkspaceRegistry } from '@deckagent/workspace-registry'
+import type { WorkspaceRegistry } from './workspaces.store.ts'
 
 type WorkspaceWorkflowErrorCode = 'WORKSPACE_REQUEST_ACTIVE'
 
@@ -8,6 +7,11 @@ export class WorkspaceWorkflowError extends Error {
   constructor(readonly code: WorkspaceWorkflowErrorCode) {
     super(code)
   }
+}
+
+export interface WorkspaceChats {
+  hasActiveRequest(workspaceId: string): Promise<boolean>
+  ungroup(workspaceId: string): Promise<void>
 }
 
 export interface WorkspaceOperations {
@@ -20,10 +24,7 @@ export interface WorkspaceOperations {
 }
 
 /** Coordinates workspace registry changes with active-request checks and chat ungrouping. */
-export function createWorkspaceOperations(
-  registry: WorkspaceRegistry,
-  sessions: SqliteSessionStore,
-): WorkspaceOperations {
+export function createWorkspaceOperations(registry: WorkspaceRegistry, chats: WorkspaceChats): WorkspaceOperations {
   const listWorkspaces = async (): Promise<WorkspaceList> => ({
     workspaces: await registry.list(),
     selectedId: registry.selectedId(),
@@ -31,9 +32,7 @@ export function createWorkspaceOperations(
 
   // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
   const requireNoActiveRequest = async (workspaceId: string): Promise<void> => {
-    const chats = (await sessions.list()).filter(chat => chat.workspaceId === workspaceId)
-    if (chats.some(chat => sessions.requests.activeFor(chat.sessionId)))
-      throw new WorkspaceWorkflowError('WORKSPACE_REQUEST_ACTIVE')
+    if (await chats.hasActiveRequest(workspaceId)) throw new WorkspaceWorkflowError('WORKSPACE_REQUEST_ACTIVE')
   }
 
   return {
@@ -58,7 +57,7 @@ export function createWorkspaceOperations(
     remove: async id => {
       await requireNoActiveRequest(id)
       registry.remove(id)
-      await sessions.ungroup(id)
+      await chats.ungroup(id)
       return listWorkspaces()
     },
   }

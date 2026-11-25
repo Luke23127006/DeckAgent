@@ -77,7 +77,7 @@ The code of Step 4 and the edit script of Step 5 follow these rules. Use them to
 | `chats` and `sources` receive the type `WorkspaceRegistry` | They receive `WorkspaceLookup`, which has only the three methods that they call. |
 | Tests import `../lib/index.js` of the registry package | `apps/host/tests/workspace-registry.test.mjs` imports the compiled files in `apps/host/lib/types/modules/workspaces/`. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -91,7 +91,7 @@ Run: `git grep -n "workspace-registry\|workspace/registry\|features/workspaces/"
 
 Expected: PASS. Fourteen lines: `apps/host/package.json:24`, `apps/host/src/features/chats/index.ts:5`, `apps/host/src/features/sources/source-tools.ts:8`, `apps/host/src/features/workspaces/index.ts:3`, `apps/host/src/local-transport.ts:11`, `apps/host/src/local-transport.ts:22`, `apps/host/src/local-transport.ts:23`, `apps/host/src/server.ts:9`, `apps/host/src/server.ts:15`, `apps/host/tsconfig.json:19`, `package.json:8`, `package.json:60`, `packages/workspace/registry/package.json:2` and `tsconfig.json:14`.
 
-- [ ] **Step 2: Build and record the suite before the move**
+- [x] **Step 2: Build and record the suite before the move**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -101,7 +101,7 @@ Run: `corepack pnpm@11.28.5 test:local-foundation`
 
 Expected: PASS. The output contains `# pass 43` and `# fail 0`.
 
-- [ ] **Step 3: Move and delete the files**
+- [x] **Step 3: Move and delete the files**
 
 Run these commands in order, from the repository root:
 
@@ -124,7 +124,7 @@ Run: `git status --short`
 
 Expected: PASS. Ten lines: seven lines that start with `R ` (one for each `git mv`) and three lines that start with `D ` (one for each file of `git rm`).
 
-- [ ] **Step 4: Write the new code**
+- [x] **Step 4: Write the new code**
 
 Write each file below with the exact content. `workspaces.service.ts` replaces the content that `git mv` moved.
 
@@ -318,7 +318,7 @@ export { mapWorkspaceFailure } from './workspaces.errors.ts'
 export type WorkspaceLookup = Pick<WorkspaceRegistry, 'selectedId' | 'get' | 'folders'>
 ```
 
-- [ ] **Step 5: Run the edit script and update the lockfile**
+- [x] **Step 5: Run the edit script and update the lockfile**
 
 Save the script below as `deckagent-workspace-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository. The script reads each file with LF line endings and checks the number of matches of each text. Then it replaces the text and writes the file with its original line endings. A pair with `{ start, end }` deletes the text from `start` up to `end`, and keeps `end`.
 
@@ -518,7 +518,7 @@ Run: `git diff --stat pnpm-lock.yaml`
 
 Expected: PASS. The output contains `8 deletions(-)` and no `insertion`.
 
-- [ ] **Step 6: Build and run the checks**
+- [x] **Step 6: Build and run the checks**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -552,7 +552,7 @@ Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`.
 
-- [ ] **Step 7: Run the non-live suites**
+- [x] **Step 7: Run the non-live suites**
 
 Run each command below in order. For each command, write the exit code and the `# pass` and `# fail` lines in the report. When a command fails, run it one more time. When it fails two times, STOP.
 
@@ -578,7 +578,7 @@ Run each command below in order. For each command, write the exit code and the `
 | test:browser-smoke | `corepack pnpm@11.28.5 test:browser-smoke` | `# pass 13`, `# fail 0` |
 | test:env-startup | `corepack pnpm@11.28.5 test:env-startup` | `# pass 2`, `# fail 0` |
 
-- [ ] **Step 8: Check the changed paths**
+- [x] **Step 8: Check the changed paths**
 
 Run: `git status --short`
 
@@ -615,7 +615,7 @@ D  packages/workspace/registry/tsconfig.json
 
 Git can show ` M` in place of `M `, `RM` in place of `R `, and `A ` or `??` for a new file. Only the path matters.
 
-- [ ] **Step 9: Write the report file**
+- [x] **Step 9: Write the report file**
 
 1. Mark Steps 1 to 8 as `- [x]` in this file. Change the Task 21 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-21-move-workspaces-module.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-21-move-workspaces-module.md` with:
@@ -628,7 +628,7 @@ Git can show ` M` in place of `M `, `RM` in place of `R `, and `A ` or `??` for 
 4. Run the STE linter from Global Constraints on the report file. Expected: the output contains `0 violations`.
 5. Mark Step 9 as `- [x]`.
 
-- [ ] **Step 10: Commit and push**
+- [x] **Step 10: Commit and push**
 
 Do this step only when Steps 1 to 9 passed and no STOP condition occurred.
 
