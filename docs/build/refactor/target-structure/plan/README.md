@@ -146,7 +146,7 @@ Revision 3b adds these failure modes:
 | 19 | Done | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) ([report](../reports/task-19-check-phase-2-exit.md)) |
 | 20 | Done | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) ([report](../reports/task-20-diagnose-workspaces-module.md)) |
 | 21 | Done | [Move the workspaces module into apps/host/src/modules](task-21-move-workspaces-module.md) ([report](../reports/task-21-move-workspaces-module.md)) |
-| 22 | Pending | [Add the folder-level rules for apps/host/src/modules](task-22-add-module-folder-rules.md) |
+| 22 | Done | [Add the folder-level rules for apps/host/src/modules](task-22-add-module-folder-rules.md) ([report](../reports/task-22-add-module-folder-rules.md)) |
 
 ## Next revision
 

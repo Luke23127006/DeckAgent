@@ -253,3 +253,91 @@ test('accepts the Host API, Express and Node HTTP imports inside apps/host/src/h
   assert.equal(result.status, 0)
   assert.equal(result.diagnostics.length, 0)
 })
+
+test('rejects a store, the SQL driver and another module store inside a module routes file', () => {
+  const result = lintFixture(
+    'apps/host/src/modules/workspaces/workspaces.routes.ts',
+    [
+      "import { WorkspaceRegistry } from './workspaces.store.ts'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      "import { ChatStore } from '../chats/chats.store.ts'",
+      'console.log(WorkspaceRegistry, DatabaseSync, ChatStore)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 3)
+  const help = result.diagnostics.map(diagnostic => diagnostic.help).toSorted()
+  assert.match(help[0], /A module must not import the store of another module, a storage package or the HTTP edge\./)
+  assert.match(help[1], /A module route must not import a store or the SQL driver\./)
+  assert.match(help[2], /A module route must not import a store or the SQL driver\./)
+})
+
+test('rejects Express and the SQL driver inside a module service file', () => {
+  const result = lintFixture(
+    'apps/host/src/modules/workspaces/workspaces.service.ts',
+    ["import { Router } from 'express'", "import { DatabaseSync } from 'node:sqlite'", 'console.log(Router, DatabaseSync)', ''].join(
+      '\n',
+    ),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 2)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.match(diagnostic.help, /A module service must not import Express or the SQL driver\./)
+  }
+})
+
+test('rejects another module store, a storage package and the HTTP edge inside a module', () => {
+  const result = lintFixture(
+    'apps/host/src/modules/workspaces/index.ts',
+    [
+      "import { ChatStore } from '../chats/chats.store.ts'",
+      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { createHttpApp } from '../../http/app.ts'",
+      'console.log(ChatStore, SqliteSessionStore, createHttpApp)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 3)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.match(
+      diagnostic.help,
+      /A module must not import the store of another module, a storage package or the HTTP edge\./,
+    )
+  }
+})
+
+test('rejects a module import inside apps/host/src/http', () => {
+  const result = lintFixture(
+    'apps/host/src/http/app.ts',
+    "import { createWorkspaceRoutes } from '../modules/workspaces/index.ts'\nconsole.log(createWorkspaceRoutes)\n",
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 1)
+  assert.match(result.diagnostics[0].help, /The HTTP edge must not import module services, stores or storage\./)
+})
+
+test('accepts the service, the Host API and Express inside a module routes file, and SQL inside a store file', () => {
+  const routes = lintFixture(
+    'apps/host/src/modules/workspaces/workspaces.routes.ts',
+    [
+      "import type { WorkspaceOperations } from './workspaces.service.ts'",
+      "import { json } from '@deckagent/host-api'",
+      "import { Router } from 'express'",
+      'export const value: WorkspaceOperations | undefined = undefined',
+      'console.log(json, Router)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(routes.status, 0)
+  assert.equal(routes.diagnostics.length, 0)
+  const store = lintFixture(
+    'apps/host/src/modules/workspaces/workspaces.store.ts',
+    "import { DatabaseSync } from 'node:sqlite'\nimport { initialize } from './schema.ts'\nconsole.log(DatabaseSync, initialize)\n",
+  )
+  assert.equal(store.status, 0)
+  assert.equal(store.diagnostics.length, 0)
+})

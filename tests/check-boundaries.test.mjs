@@ -321,3 +321,50 @@ test('formatReport formats per-violation lines and summarizes by rule', () => {
     ].join('\n'),
   )
 })
+
+test('checkBoundaries rejects private import into a module from a feature and from another module', () => {
+  const files = [
+    {
+      path: 'apps/host/src/features/chats/index.ts',
+      content: "import { WorkspaceRegistry } from '../../modules/workspaces/workspaces.store.ts'\n",
+    },
+    {
+      path: 'apps/host/src/modules/sources/sources.service.ts',
+      content: "import { FolderPolicy } from '../workspaces/folder-policy.ts'\n",
+    },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class WorkspaceRegistry {}\n' },
+    { path: 'apps/host/src/modules/workspaces/folder-policy.ts', content: 'export class FolderPolicy {}\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/host/src/features/chats/index.ts', line: 1, rule: 'module-private-import' },
+    { path: 'apps/host/src/modules/sources/sources.service.ts', line: 1, rule: 'module-private-import' },
+  ])
+})
+
+test('checkBoundaries accepts a module index import and an import inside the same module', () => {
+  const files = [
+    {
+      path: 'apps/host/src/features/chats/index.ts',
+      content: "import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'\n",
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/index.ts',
+      content: "export { WorkspaceRegistry } from './workspaces.store.ts'\n",
+    },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class WorkspaceRegistry {}\n' },
+  ]
+  assert.deepEqual(findings(files), [])
+})
+
+test('checkBoundaries detects a module cycle separately from feature cycles', () => {
+  const files = [
+    { path: 'apps/host/src/modules/a/index.ts', content: "import { b } from '../b/index.ts'\n" },
+    { path: 'apps/host/src/modules/b/index.ts', content: "import { a } from '../a/index.ts'\n" },
+  ]
+  const result = checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths: {} })
+  assert.deepEqual(
+    result.map(({ path, line, rule }) => ({ path, line, rule })),
+    [{ path: 'apps/host/src/modules/a', line: 1, rule: 'module-cycle' }],
+  )
+  assert.match(result[0].message, /a -> b -> a/)
+})

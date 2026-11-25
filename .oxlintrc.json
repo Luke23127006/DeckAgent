@@ -68,7 +68,6 @@
                   "@deckagent/host",
                   "@deckagent/host-api",
                   "@deckagent/session-persistence",
-                  "@deckagent/workspace-registry",
                   "@deckagent/file-tools",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
@@ -103,18 +102,131 @@
               {
                 "group": [
                   "../features/**",
+                  "../modules/**",
                   "../integrations/**",
                   "../*-store.ts",
                   "../*-state.ts",
                   "../local-transport.ts",
                   "node:sqlite",
                   "@deckagent/session-persistence",
-                  "@deckagent/workspace-registry",
                   "@deckagent/file-tools",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
                 "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/apps/host/src/modules/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "@deckagent/session-persistence",
+                  "@deckagent/file-tools",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/apps/host/src/modules/*/*.routes.ts"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "@deckagent/session-persistence",
+                  "@deckagent/file-tools",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": ["./*.store.ts", "./schema.ts", "node:sqlite"],
+                "message": "A module route must not import a store or the SQL driver. Call the service of the module."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/apps/host/src/modules/*/*.service.ts"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "@deckagent/session-persistence",
+                  "@deckagent/file-tools",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": ["express", "express/*", "node:sqlite"],
+                "message": "A module service must not import Express or the SQL driver. The routes file owns HTTP, and the store file owns SQL."
               }
             ]
           }
@@ -146,7 +258,6 @@
                   "@deckagent/host-api",
                   "@deckagent/browser-runtime",
                   "@deckagent/session-persistence",
-                  "@deckagent/workspace-registry",
                   "@deckagent/file-tools",
                   "@deckagent/deck",
                   "@deckagent/deck/*",

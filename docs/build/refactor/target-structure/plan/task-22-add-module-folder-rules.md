@@ -63,7 +63,7 @@ The edit script of Step 3 adds these rules. Use the table to review the script. 
 | The modules in `apps/host/src/modules/` | A dependency cycle between two or more modules (`module-cycle`) | The module graph has no cycle |
 | `apps/host/src/http/` | `../modules/**` | `http/` does not import module services or stores |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -81,13 +81,13 @@ Run: `git grep -c "workspace-registry\|workspace/registry" -- .oxlintrc.json scr
 
 Expected: PASS. Two lines: `.oxlintrc.json:3` and `scripts/check-boundaries.mjs:1`.
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `corepack pnpm@11.28.5 build`
 
 Expected: PASS. The command exits with code 0.
 
-- [ ] **Step 3: Run the edit script**
+- [x] **Step 3: Run the edit script**
 
 Save the script below as `deckagent-module-rules-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository. The script checks the number of matches of each text before it replaces the text. It adds the new tests at the end of the two test files.
 
@@ -390,7 +390,7 @@ Run from the repository root: `node <temporary folder>/deckagent-module-rules-ed
 
 Expected: PASS. The output is `module-rules-edits: 5 files changed, 0 failures`.
 
-- [ ] **Step 4: Run the checks**
+- [x] **Step 4: Run the checks**
 
 Run: `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`
 
@@ -412,7 +412,7 @@ Run: `corepack pnpm@11.28.5 check:docs`
 
 Expected: PASS. The output contains `0 error(s)`.
 
-- [ ] **Step 5: Prove that the rules reject wrong imports**
+- [x] **Step 5: Prove that the rules reject wrong imports**
 
 Save the script below as `deckagent-module-rules-mutant.mjs` in the temporary folder of the system. With the argument `break`, the script copies `.oxlintrc.json` and `scripts/check-boundaries.mjs` to the temporary folder, and then changes each `apps/host/src/modules/` path of the new rules to `apps/host/src/nomodules/` and deletes `"../modules/**",`. With the argument `restore`, it copies the two files back.
 
@@ -459,7 +459,7 @@ Run: `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.m
 
 Expected: PASS. The output contains `# pass 47` and `# fail 0`.
 
-- [ ] **Step 6: Check the changed paths**
+- [x] **Step 6: Check the changed paths**
 
 Run: `git status --short`
 
@@ -473,7 +473,7 @@ Expected: PASS. The output has these lines in any order, and other lines only fo
  M tests/oxlint-boundaries.test.mjs
 ```
 
-- [ ] **Step 7: Write the report file**
+- [x] **Step 7: Write the report file**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 22 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-22-add-module-folder-rules.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-22-add-module-folder-rules.md` with:
@@ -486,7 +486,7 @@ Expected: PASS. The output has these lines in any order, and other lines only fo
 4. Run the STE linter from Global Constraints on the report file. Expected: the output contains `0 violations`.
 5. Mark Step 7 as `- [x]`.
 
-- [ ] **Step 8: Commit and push**
+- [x] **Step 8: Commit and push**
 
 Do this step only when Steps 1 to 7 passed and no STOP condition occurred.
 

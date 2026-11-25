@@ -35,7 +35,6 @@ const BROWSER_DIRECTORIES = ['apps/web/src/browser', 'packages/client/runtime/sr
 const DOMAIN_DIRECTORIES = [
   'packages/presentation',
   'packages/session/persistence',
-  'packages/workspace/registry',
   'packages/tools/filesystem',
 ]
 
@@ -84,6 +83,11 @@ const featureOfPath = value => {
 
 const browserFeatureOfPath = value => {
   const match = /^apps\/web\/src\/browser\/features\/([^/]+)\//.exec(value)
+  return match === null ? null : match[1]
+}
+
+const moduleOfPath = value => {
+  const match = /^apps\/host\/src\/modules\/([^/]+)\//.exec(value)
   return match === null ? null : match[1]
 }
 
@@ -183,6 +187,7 @@ export const checkBoundaries = snapshot => {
   const packageEdges = []
   const featureEdges = []
   const browserFeatureEdges = []
+  const moduleEdges = []
 
   for (const file of files) {
     const owner = ownerOf(file.path)
@@ -191,6 +196,7 @@ export const checkBoundaries = snapshot => {
     const sourceFeature = productionSource ? featureOfPath(file.path) : null
     const sourceBrowserFeature = productionSource ? browserFeatureOfPath(file.path) : null
     const sourceIntegration = productionSource ? integrationOfPath(file.path) : null
+    const sourceModule = productionSource ? moduleOfPath(file.path) : null
     for (const entry of extractImports(file.path, file.content)) {
       const { line, specifier } = entry
       const packageSpecifier = parsePackageSpecifier(specifier)
@@ -403,6 +409,20 @@ export const checkBoundaries = snapshot => {
         }
       }
 
+      const targetModule = resolved === null ? null : moduleOfPath(resolved)
+      if (targetModule !== null && sourceModule !== targetModule) {
+        const publicEntry = `apps/host/src/modules/${targetModule}/index`
+        if (stripExtension(resolved) !== publicEntry) {
+          add(
+            file.path,
+            line,
+            'module-private-import',
+            `Code outside module "${targetModule}" must not import "${resolved}". Import the public index of module "${targetModule}".`,
+          )
+        }
+        if (sourceModule !== null) moduleEdges.push([sourceModule, targetModule])
+      }
+
       if (targetWorkspace !== undefined) {
         packageEdges.push([owner.name, targetWorkspace.name])
       }
@@ -486,6 +506,16 @@ export const checkBoundaries = snapshot => {
       1,
       'browser-feature-cycle',
       `Browser feature dependency cycle: ${describeCycle(cycle)}. Change ownership to break the cycle.`,
+    )
+  }
+
+  const modules = [...new Set(files.map(file => moduleOfPath(file.path)).filter(name => name !== null))]
+  for (const cycle of findCycles(modules, moduleEdges)) {
+    add(
+      `apps/host/src/modules/${cycle[0]}`,
+      1,
+      'module-cycle',
+      `Module dependency cycle: ${describeCycle(cycle)}. Break the cycle by changing ownership.`,
     )
   }
 
