@@ -62,12 +62,13 @@ export class DeckModel {
   }
 
   select(slideId: string): void {
-    if (!this.sessionId || !this.current.snapshot?.slides.some(s => s.slideId === slideId)) return
-    this.selections.set(this.sessionId, slideId)
+    const sessionId = this.sessionId
+    const signal = this.control?.signal
+    if (!sessionId || !signal || signal.aborted || !this.current.snapshot?.slides.some(s => s.slideId === slideId))
+      return
+    this.selections.set(sessionId, slideId)
     const { snapshot, connection } = this.current
     this.set({ ...(snapshot ? { snapshot } : {}), selectedId: slideId, connection })
-    const sessionId = this.sessionId,
-      signal = this.control!.signal
     this.readSelected(sessionId, signal).catch(() => {
       if (!signal.aborted) this.set({ ...this.current, connection: 'error' })
     })

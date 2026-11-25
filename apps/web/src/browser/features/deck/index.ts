@@ -1,4 +1,4 @@
-export { DeckModel } from './deck-model.ts'
+export type { DeckModel } from './deck-model.ts'
 export { DeckWorkflowView } from './deck-workflow-view.ts'
 export { mountDeckCanvas } from './deck-canvas.ts'
 export { mountDeckTab } from './deck-tab.ts'

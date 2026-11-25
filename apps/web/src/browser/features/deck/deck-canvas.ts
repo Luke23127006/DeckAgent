@@ -1,48 +1,81 @@
+import type { DeckSnapshot } from '@deckagent/host-contracts'
 import type { DeckClient } from '../../transport/index.ts'
-import { DeckModel } from './deck-model.ts'
 import { button, element } from '../../dom.ts'
+import { DeckModel } from './deck-model.ts'
+import type { DeckViewState } from './deck-model.ts'
 import { mountDeckResizer } from './deck-resizer.ts'
+import { createPreviewQueue, SLIDE_CSP } from './deck-preview-queue.ts'
+import type { PreviewQueue } from './deck-preview-queue.ts'
+import { attachPresentationControls } from './deck-presentation.ts'
 
 /** Published HTML lays out at this viewport; every viewer scales the same canvas without reflow. */
 const PREVIEW_WIDTH = 1280
-const PREVIEW_CONCURRENCY = 3
-const IDLE_MS = 2500
-// Published content never joins the application DOM. Empty sandbox => opaque origin.
-// srcdoc inherits Host CSP; its leading CSP further disallows every network source.
-const SLIDE_CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">`
 
-/** Canvas layout: a filmstrip of real slide previews beside a letterboxed stage, with a presentation mode
- * that fills the screen. Only the stage reads from DeckModel; previews use the same public client.
- */
-export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reveal: () => void): DeckModel {
-  const panel = element('section', undefined, 'deck-panel')
-  panel.setAttribute('aria-label', 'Bộ slide')
-  panel.tabIndex = -1
-  panel.dataset.presenting = 'false'
-  panel.dataset.idle = 'false'
-  const title = element('h2', 'Bộ slide')
-  const progress = element('small', '0/0 slide đã lưu', 'deck-progress')
-  progress.setAttribute('aria-live', 'polite')
-  const headingText = element('div', undefined, 'deck-heading')
-  headingText.append(title, progress)
-  const heading = element('header')
-  const present = button('Trình chiếu', () => togglePresentation())
-  present.classList.add('deck-present')
-  present.disabled = true
-  const actions = element('div', undefined, 'deck-actions')
-  actions.append(
-    present,
-    button('Đóng', () => {
-      container.hidden = true
-    }),
-  )
-  heading.append(headingText, actions)
-  const state = element('p', '', 'deck-connection')
-  state.hidden = true
-  state.setAttribute('role', 'status')
-  const slides = element('nav', undefined, 'deck-slide-list')
-  slides.setAttribute('aria-label', 'Danh sách slide')
-  const slideButtons = new Map<string, HTMLButtonElement>()
+const connectionLabels: Readonly<Record<DeckViewState['connection'], string>> = {
+  connecting: 'Đang kết nối',
+  live: 'Đã kết nối',
+  reconnecting: 'Đang kết nối lại — hiển thị bản đã lưu gần nhất',
+  error: 'Không tải được deck. Hãy kết nối lại.',
+}
+
+const generationLabels = {
+  pending: ' · Đã xác nhận, chưa xếp lịch',
+  admitted: ' · Đang tạo',
+  generating: ' · Đang tạo',
+  generated: ' · Hoàn tất',
+  incomplete: ' · Chưa hoàn tất, không tự chạy tiếp',
+} as const
+
+interface SlideButtonRefs {
+  readonly button: HTMLButtonElement
+  readonly label: HTMLElement
+  readonly index: HTMLElement
+  readonly thumbnail: HTMLElement
+}
+
+interface CanvasState {
+  rendered: string
+  lastSession: string
+  lastSelected: string
+  appeared: boolean
+}
+
+function canvasButton(text: string): HTMLButtonElement {
+  const control = element('button', text)
+  control.type = 'button'
+  return control
+}
+
+function createCanvasControls() {
+  const caption = element('p', 'Chat này chưa có deck đã xác nhận', 'slide-caption')
+  caption.setAttribute('aria-live', 'polite')
+  const counter = element('span', '0 / 0', 'deck-counter')
+  counter.setAttribute('aria-hidden', 'true')
+  const previous = canvasButton('Trước')
+  previous.classList.add('deck-prev')
+  previous.disabled = true
+  const next = canvasButton('Sau')
+  next.classList.add('deck-next')
+  next.disabled = true
+  const restart = canvasButton('Về đầu')
+  restart.classList.add('deck-restart')
+  restart.title = 'Về slide đầu tiên (R)'
+  const restartKey = element('kbd', 'R')
+  restartKey.setAttribute('aria-hidden', 'true')
+  restart.append(restartKey)
+  restart.disabled = true
+  const exit = canvasButton('Thoát')
+  exit.classList.add('deck-exit')
+  exit.hidden = true
+  const divider = element('span', undefined, 'deck-divider')
+  divider.setAttribute('aria-hidden', 'true')
+  const controls = element('nav', undefined, 'deck-controls')
+  controls.setAttribute('aria-label', 'Điều hướng slide')
+  controls.append(previous, counter, next, divider, restart, exit, caption)
+  return { controls, caption, counter, previous, next, restart, exit }
+}
+
+function createCanvasStage() {
   const frame = element('iframe')
   frame.title = 'Slide đã lưu'
   frame.setAttribute('sandbox', '')
@@ -57,251 +90,223 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     if (scale > 0) stage.style.setProperty('--slide-scale', String(scale))
   }
   if (typeof ResizeObserver === 'function') new ResizeObserver(fitStage).observe(stage)
-  const caption = element('p', 'Chat này chưa có deck đã xác nhận', 'slide-caption')
-  caption.setAttribute('aria-live', 'polite')
-  const counter = element('span', '0 / 0', 'deck-counter')
-  counter.setAttribute('aria-hidden', 'true')
-  const previous = button('Trước', () => navigate(-1))
-  const next = button('Sau', () => navigate(1))
-  const restart = button('Về đầu', () => go(0))
-  const restartKey = element('kbd', 'R')
-  restartKey.setAttribute('aria-hidden', 'true')
-  restart.append(restartKey)
-  restart.classList.add('deck-restart')
-  restart.title = 'Về slide đầu tiên (R)'
-  const exit = button('Thoát', () => {
-    document.exitFullscreen().catch(() => {})
-  })
-  exit.classList.add('deck-exit')
-  exit.hidden = true
-  previous.classList.add('deck-prev')
-  next.classList.add('deck-next')
-  previous.disabled = true
-  next.disabled = true
-  restart.disabled = true
+  return { stage, frame, placeholder, fitStage }
+}
 
-  // Previews: one request per visible published slide, a few at a time, cached by revision.
-  let previewControl = new AbortController()
-  const previews = new Map<string, string>()
-  const loading = new Set<string>()
-  const waiting: Array<() => void> = []
-  let active = 0
-  const pump = () => {
-    while (active < PREVIEW_CONCURRENCY && waiting.length) {
-      active++
-      waiting.shift()?.()
-    }
-  }
-  const fetchPreview = (sessionId: string, slideId: string, revision: number) =>
-    new Promise<string>((resolve, reject) => {
-      const signal = previewControl.signal
-      waiting.push(() => {
-        client
-          .content(sessionId, slideId, revision, signal)
-          .then(content => resolve(content.html), reject)
-          .finally(() => {
-            active--
-            pump()
-          })
-      })
-      pump()
-    })
-  const visible = new WeakSet<HTMLElement>()
-  const paintPreview = (item: HTMLElement, key: string, html: string) => {
-    const thumbnail = item.querySelector('.thumbnail')
-    if (!thumbnail) return
-    let preview = thumbnail.querySelector('iframe')
-    if (!preview) {
-      preview = element('iframe')
-      preview.setAttribute('sandbox', '')
-      preview.setAttribute('aria-hidden', 'true')
-      preview.tabIndex = -1
-      preview.referrerPolicy = 'no-referrer'
-      thumbnail.append(preview)
-    }
-    preview.srcdoc = `${SLIDE_CSP}${html}`
-    item.dataset.preview = key
-    thumbnail.classList.add('has-preview')
-  }
-  const ensurePreview = (item: HTMLElement) => {
-    const snapshot = model.state.snapshot
-    const slide = snapshot?.slides.find(entry => entry.slideId === item.dataset.slideId)
-    if (!snapshot || !slide || slide.status !== 'published' || !visible.has(item)) return
-    const key = `${snapshot.sessionId}/${slide.slideId}/${slide.revision}`
-    if (item.dataset.preview === key) return
-    const cached = previews.get(key)
-    if (cached !== undefined) {
-      paintPreview(item, key, cached)
-      return
-    }
-    if (loading.has(key)) return
-    loading.add(key)
-    fetchPreview(snapshot.sessionId, slide.slideId, slide.revision).then(
-      html => {
-        loading.delete(key)
-        previews.set(key, html)
-        ensurePreview(item)
-      },
-      // A preview is decorative: the slide number and title stay usable without it.
-      () => loading.delete(key),
-    )
-  }
-  const observer =
-    typeof IntersectionObserver === 'function'
-      ? new IntersectionObserver(
-          entries => {
-            for (const entry of entries) {
-              const item = entry.target as HTMLElement
-              if (entry.isIntersecting) {
-                visible.add(item)
-                ensurePreview(item)
-              } else visible.delete(item)
-            }
-          },
-          { root: slides, rootMargin: '160px' },
-        )
-      : undefined
+function createCanvasDom(container: HTMLElement) {
+  const panel = element('section', undefined, 'deck-panel')
+  panel.setAttribute('aria-label', 'Bộ slide')
+  panel.tabIndex = -1
+  panel.dataset.presenting = 'false'
+  panel.dataset.idle = 'false'
+  const title = element('h2', 'Bộ slide')
+  const progress = element('small', '0/0 slide đã lưu', 'deck-progress')
+  progress.setAttribute('aria-live', 'polite')
+  const headingText = element('div', undefined, 'deck-heading')
+  headingText.append(title, progress)
+  const present = canvasButton('Trình chiếu')
+  present.classList.add('deck-present')
+  present.disabled = true
+  const actions = element('div', undefined, 'deck-actions')
+  actions.append(
+    present,
+    button('Đóng', () => {
+      container.hidden = true
+    }),
+  )
+  const heading = element('header')
+  heading.append(headingText, actions)
+  const state = element('p', '', 'deck-connection')
+  state.hidden = true
+  state.setAttribute('role', 'status')
+  const slides = element('nav', undefined, 'deck-slide-list')
+  slides.setAttribute('aria-label', 'Danh sách slide')
+  const { stage, frame, placeholder, fitStage } = createCanvasStage()
+  const { controls, caption, counter, previous, next, restart, exit } = createCanvasControls()
+  const viewer = element('div', undefined, 'deck-viewer')
+  viewer.append(stage, controls)
+  const workspace = element('div', undefined, 'deck-workspace')
+  workspace.append(viewer, slides)
+  panel.append(heading, state, workspace)
+  container.append(panel)
   const rescale = () => {
     // offsetWidth ignores the entrance transform that motion.ts puts on new tiles.
     const width = slides.querySelector<HTMLElement>('.thumbnail')?.offsetWidth
     if (width) slides.style.setProperty('--preview-scale', String(width / PREVIEW_WIDTH))
   }
   if (typeof ResizeObserver === 'function') new ResizeObserver(rescale).observe(slides)
+  return {
+    container,
+    panel,
+    title,
+    progress,
+    present,
+    state,
+    slides,
+    stage,
+    frame,
+    placeholder,
+    caption,
+    counter,
+    previous,
+    next,
+    restart,
+    exit,
+    fitStage,
+    rescale,
+    slideButtons: new Map<string, SlideButtonRefs>(),
+  }
+}
 
-  let rendered = '',
-    lastSession = '',
-    lastSelected = '',
-    appeared = false
-  const model = new DeckModel(client, value => {
-    if (!value.snapshot) {
-      rendered = ''
-      frame.removeAttribute('srcdoc')
-      frame.hidden = true
-      slides.replaceChildren()
-      slideButtons.clear()
-      caption.textContent = 'Đang tải deck'
-      counter.textContent = '0 / 0'
-      previous.disabled = true
-      next.disabled = true
-      restart.disabled = true
-      present.disabled = true
-      container.hidden = true
-      appeared = false
-      return
+type CanvasDom = ReturnType<typeof createCanvasDom>
+
+function reconcileSlideButtons(dom: CanvasDom, snapshot: DeckSnapshot, model: DeckModel, queue: PreviewQueue): void {
+  for (const [id, refs] of dom.slideButtons)
+    if (!snapshot.slides.some(slide => slide.slideId === id)) {
+      queue.unobserve(refs.button)
+      refs.button.remove()
+      dom.slideButtons.delete(id)
     }
-    const snapshot = value.snapshot
-    if (lastSession !== snapshot.sessionId) {
-      lastSession = snapshot.sessionId
-      appeared = false
-      previewControl.abort()
-      previewControl = new AbortController()
-      previews.clear()
-      loading.clear()
-      waiting.length = 0
-      slides.scrollTop = 0
-      slides.scrollLeft = 0
-      lastSelected = ''
+  for (const [index, slide] of snapshot.slides.entries()) {
+    let refs = dom.slideButtons.get(slide.slideId)
+    if (!refs) {
+      const control = button('', () => model.select(slide.slideId))
+      control.dataset.slideId = slide.slideId
+      const thumbnail = element('span', undefined, 'thumbnail')
+      thumbnail.setAttribute('aria-hidden', 'true')
+      thumbnail.append(element('i'), element('i'))
+      const number = element('span', '', 'thumbnail-index')
+      number.setAttribute('aria-hidden', 'true')
+      const label = element('span', '', 'thumbnail-label')
+      control.append(number, thumbnail, label)
+      queue.observe(control)
+      refs = { button: control, label, index: number, thumbnail }
+      dom.slideButtons.set(slide.slideId, refs)
     }
-    if (snapshot.outlineId && !appeared) {
-      appeared = true
-      reveal()
-      container.hidden = false
-    }
-    state.textContent =
-      value.connection === 'live'
-        ? 'Đã kết nối'
-        : value.connection === 'error'
-          ? 'Không tải được deck. Hãy kết nối lại.'
-          : value.connection === 'reconnecting'
-            ? 'Đang kết nối lại — hiển thị bản đã lưu gần nhất'
-            : 'Đang kết nối'
-    // A healthy connection needs no line; show the state only when the user must know about it.
-    state.hidden = value.connection === 'live'
-    title.textContent = 'Bộ slide'
-    const published = snapshot.slides.filter(slide => slide.status === 'published').length
-    progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu`
-    if (snapshot.generation) {
-      const phase = snapshot.generation.state
-      progress.textContent +=
-        phase === 'generated'
-          ? ' · Hoàn tất'
-          : phase === 'incomplete'
-            ? ' · Chưa hoàn tất, không tự chạy tiếp'
-            : phase === 'pending'
-              ? ' · Đã xác nhận, chưa xếp lịch'
-              : ' · Đang tạo'
-      progress.title = `HTML · ${snapshot.generation.design.template.id} · ${snapshot.generation.design.designSystem.id}${snapshot.generation.formatLocked ? ' · Đã khóa' : ''}`
-    } else {
-      progress.title = ''
-    }
-    for (const [id, item] of slideButtons)
-      if (!snapshot.slides.some(slide => slide.slideId === id)) {
-        observer?.unobserve(item)
-        item.remove()
-        slideButtons.delete(id)
-      }
-    for (const [index, slide] of snapshot.slides.entries()) {
-      let item = slideButtons.get(slide.slideId)
-      if (!item) {
-        item = button('', () => model.select(slide.slideId))
-        item.dataset.slideId = slide.slideId
-        const thumbnail = element('span', undefined, 'thumbnail')
-        thumbnail.setAttribute('aria-hidden', 'true')
-        thumbnail.append(element('i'), element('i'))
-        const number = element('span', '', 'thumbnail-index')
-        number.setAttribute('aria-hidden', 'true')
-        item.append(number, thumbnail, element('span', '', 'thumbnail-label'))
-        slideButtons.set(slide.slideId, item)
-        if (observer) observer.observe(item)
-        else visible.add(item)
-      }
-      const text = `${slide.order + 1}. ${slide.title} · ${slide.status === 'pending' ? 'Chưa tạo xong' : `Bản ${slide.revision}`}`
-      const label = item.querySelector('.thumbnail-label')!
-      const short = `${slide.order + 1} · ${slide.status === 'pending' ? 'chưa tới' : 'xong'}`
-      if (label.textContent !== short) label.textContent = short
-      const number = item.querySelector('.thumbnail-index')!
-      if (number.textContent !== String(slide.order + 1)) number.textContent = String(slide.order + 1)
-      item.title = text
-      item.setAttribute('aria-label', text)
-      item.dataset.status = slide.status
-      item.setAttribute('aria-current', String(slide.slideId === value.selectedId))
-      if (slides.children[index] !== item) slides.insertBefore(item, slides.children[index] ?? null)
-      ensurePreview(item)
-    }
-    rescale()
-    const selected = snapshot.slides.find(s => s.slideId === value.selectedId)
-    const selectedIndex = snapshot.slides.findIndex(slide => slide.slideId === value.selectedId)
-    if (selected && selected.slideId !== lastSelected) {
-      lastSelected = selected.slideId
-      slideButtons.get(selected.slideId)?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
-        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      })
-    }
-    previous.disabled = selectedIndex <= 0
-    next.disabled = selectedIndex < 0 || selectedIndex >= snapshot.slides.length - 1
-    restart.disabled = selectedIndex <= 0
-    present.disabled = !snapshot.slides.length
-    const position = `${selectedIndex + 1} / ${snapshot.slides.length}`
-    if (counter.textContent !== position) counter.textContent = position
-    caption.textContent = selected
-      ? `Slide ${selected.order + 1}/${snapshot.slides.length} · ${selected.status === 'pending' ? 'Chưa tạo xong' : `Bản ${selected.revision}`}`
-      : 'Chat này chưa có deck đã xác nhận'
-    placeholder.hidden = value.html !== undefined
-    placeholder.textContent =
-      selected?.status === 'pending'
-        ? 'Slide này chưa được tạo xong. Nội dung hoàn tất sẽ hiện ở đây sau khi được lưu.'
-        : value.connection === 'error'
-          ? 'Không tải được bản slide đã lưu. Hãy kết nối lại.'
-          : 'Đang tải bản slide đã lưu…'
-    const key = value.html === undefined ? '' : `${snapshot.sessionId}/${selected?.slideId}/${selected?.revision}`
-    if (key !== rendered) {
-      rendered = key
-      frame.hidden = !key
-      if (key) frame.srcdoc = `${SLIDE_CSP}${value.html}`
-      else frame.removeAttribute('srcdoc')
-    }
+    const text = `${slide.order + 1}. ${slide.title} · ${slide.status === 'pending' ? 'Chưa tạo xong' : `Bản ${slide.revision}`}`
+    refs.button.title = text
+    refs.button.setAttribute('aria-label', text)
+    refs.button.dataset.status = slide.status
+    refs.button.setAttribute('aria-current', String(slide.slideId === model.state.selectedId))
+    const short = `${slide.order + 1} · ${slide.status === 'pending' ? 'chưa tới' : 'xong'}`
+    if (refs.label.textContent !== short) refs.label.textContent = short
+    if (refs.index.textContent !== String(slide.order + 1)) refs.index.textContent = String(slide.order + 1)
+    if (dom.slides.children[index] !== refs.button)
+      dom.slides.insertBefore(refs.button, dom.slides.children[index] ?? null)
+    queue.ensurePreview(refs.button)
+  }
+}
+
+function applySelection(dom: CanvasDom, value: DeckViewState, snapshot: DeckSnapshot, state: CanvasState): void {
+  const selected = snapshot.slides.find(s => s.slideId === value.selectedId)
+  const selectedIndex = snapshot.slides.findIndex(slide => slide.slideId === value.selectedId)
+  if (selected && selected.slideId !== state.lastSelected) {
+    state.lastSelected = selected.slideId
+    dom.slideButtons.get(selected.slideId)?.button.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
+  }
+  dom.previous.disabled = selectedIndex <= 0
+  dom.next.disabled = selectedIndex < 0 || selectedIndex >= snapshot.slides.length - 1
+  dom.restart.disabled = selectedIndex <= 0
+  dom.present.disabled = !snapshot.slides.length
+  const position = `${selectedIndex + 1} / ${snapshot.slides.length}`
+  if (dom.counter.textContent !== position) dom.counter.textContent = position
+  dom.caption.textContent = selected
+    ? `Slide ${selected.order + 1}/${snapshot.slides.length} · ${selected.status === 'pending' ? 'Chưa tạo xong' : `Bản ${selected.revision}`}`
+    : 'Chat này chưa có deck đã xác nhận'
+  dom.placeholder.hidden = value.html !== undefined
+  dom.placeholder.textContent =
+    selected?.status === 'pending'
+      ? 'Slide này chưa được tạo xong. Nội dung hoàn tất sẽ hiện ở đây sau khi được lưu.'
+      : value.connection === 'error'
+        ? 'Không tải được bản slide đã lưu. Hãy kết nối lại.'
+        : 'Đang tải bản slide đã lưu…'
+  const key = value.html === undefined ? '' : `${snapshot.sessionId}/${selected?.slideId}/${selected?.revision}`
+  if (key !== state.rendered) {
+    state.rendered = key
+    dom.frame.hidden = !key
+    if (key) dom.frame.srcdoc = `${SLIDE_CSP}${value.html}`
+    else dom.frame.removeAttribute('srcdoc')
+  }
+}
+
+function applyDeckState(
+  value: DeckViewState,
+  dom: CanvasDom,
+  model: DeckModel,
+  queue: PreviewQueue,
+  state: CanvasState,
+  reveal: () => void,
+): void {
+  const snapshot = value.snapshot
+  if (!snapshot) {
+    state.rendered = ''
+    dom.frame.removeAttribute('srcdoc')
+    dom.frame.hidden = true
+    dom.slides.replaceChildren()
+    dom.slideButtons.clear()
+    dom.caption.textContent = 'Đang tải deck'
+    dom.counter.textContent = '0 / 0'
+    dom.previous.disabled = true
+    dom.next.disabled = true
+    dom.restart.disabled = true
+    dom.present.disabled = true
+    dom.container.hidden = true
+    state.appeared = false
+    return
+  }
+  if (state.lastSession !== snapshot.sessionId) {
+    state.lastSession = snapshot.sessionId
+    state.appeared = false
+    queue.reset()
+    dom.slides.scrollTop = 0
+    dom.slides.scrollLeft = 0
+    state.lastSelected = ''
+  }
+  if (snapshot.outlineId && !state.appeared) {
+    state.appeared = true
+    reveal()
+    dom.container.hidden = false
+  }
+  dom.state.textContent = connectionLabels[value.connection]
+  dom.state.hidden = value.connection === 'live'
+  dom.title.textContent = 'Bộ slide'
+  const published = snapshot.slides.filter(slide => slide.status === 'published').length
+  const generation = snapshot.generation
+  dom.progress.textContent = `${published}/${snapshot.slides.length} slide đã lưu${generation ? generationLabels[generation.state] : ''}`
+  dom.progress.title = generation
+    ? `HTML · ${generation.design.template.id} · ${generation.design.designSystem.id}${generation.formatLocked ? ' · Đã khóa' : ''}`
+    : ''
+  reconcileSlideButtons(dom, snapshot, model, queue)
+  dom.rescale()
+  applySelection(dom, value, snapshot, state)
+}
+
+function restoreCanvasWidth(): number {
+  try {
+    const saved = localStorage.getItem('deckagent-canvas-width')
+    if (saved && Number(saved) >= 320 && Number(saved) <= 1000) return Number(saved)
+  } catch {
+    /* Optional layout only. */
+  }
+  return 400
+}
+
+/** Canvas layout: a filmstrip of real slide previews beside a letterboxed stage, with a presentation mode
+ * that fills the screen. Only the stage reads from DeckModel; previews use the same public client.
+ */
+export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reveal: () => void): DeckModel {
+  const dom = createCanvasDom(container)
+  const canvas: CanvasState = { rendered: '', lastSession: '', lastSelected: '', appeared: false }
+  let model: DeckModel
+  const queue = createPreviewQueue({
+    root: dom.slides,
+    snapshot: () => model.state.snapshot,
+    load: (sessionId, slideId, revision, signal) =>
+      client.content(sessionId, slideId, revision, signal).then(content => content.html),
   })
   const go = (index: number) => {
     const slide = model.state.snapshot?.slides[index]
@@ -312,103 +317,31 @@ export function mountDeckCanvas(container: HTMLElement, client: DeckClient, reve
     if (!snapshot?.slides.length) return
     go(snapshot.slides.findIndex(s => s.slideId === model.state.selectedId) + offset)
   }
-
-  // Presentation mode: the panel itself goes fullscreen (CSS keys on :fullscreen); JS only fades the chrome.
-  const presenting = () => document.fullscreenElement === panel
-  let idle: ReturnType<typeof setTimeout> | undefined
-  const wake = () => {
-    clearTimeout(idle)
-    panel.dataset.idle = 'false'
-    if (presenting()) idle = setTimeout(() => (panel.dataset.idle = 'true'), IDLE_MS)
-  }
-  function togglePresentation() {
-    const work = presenting() ? document.exitFullscreen() : panel.requestFullscreen()
-    work.catch(() => {
-      state.textContent = 'Trình duyệt không hỗ trợ trình chiếu toàn màn hình'
-      state.hidden = false
-    })
-  }
-  document.addEventListener('fullscreenchange', () => {
-    const on = presenting()
-    panel.dataset.presenting = String(on)
-    exit.hidden = !on
-    fitStage()
-    if (on) panel.focus({ preventScroll: true })
-    wake()
+  model = new DeckModel(client, value => applyDeckState(value, dom, model, queue, canvas, reveal))
+  dom.previous.addEventListener('click', () => navigate(-1))
+  dom.next.addEventListener('click', () => navigate(1))
+  dom.restart.addEventListener('click', () => go(0))
+  dom.exit.addEventListener('click', () => {
+    document.exitFullscreen().catch(() => {})
   })
-  for (const type of ['pointermove', 'pointerdown', 'touchstart']) panel.addEventListener(type, wake, { passive: true })
-  // The handler lives on the panel, not the window: the composer keeps its own keys.
-  panel.addEventListener('keydown', event => {
-    if (event.altKey || event.ctrlKey || event.metaKey || event.target instanceof HTMLTextAreaElement) return
-    const snapshot = model.state.snapshot
-    if (!snapshot?.slides.length) return
-    const index = snapshot.slides.findIndex(s => s.slideId === model.state.selectedId)
-    let target: number
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-      case 'PageDown':
-        target = index + 1
-        break
-      case 'ArrowLeft':
-      case 'ArrowUp':
-      case 'PageUp':
-        target = index - 1
-        break
-      case ' ':
-        // Space on a focused button keeps its own meaning.
-        if (event.target instanceof HTMLButtonElement) return
-        target = index + 1
-        break
-      case 'Home':
-      case 'r':
-      case 'R':
-        target = 0
-        break
-      case 'End':
-        target = snapshot.slides.length - 1
-        break
-      default:
-        return
-    }
-    event.preventDefault()
-    go(Math.max(0, Math.min(snapshot.slides.length - 1, target)))
-    wake()
+  attachPresentationControls({
+    panel: dom.panel,
+    stage: dom.stage,
+    present: dom.present,
+    exit: dom.exit,
+    state: dom.state,
+    fitStage: dom.fitStage,
+    snapshot: () => model.state.snapshot,
+    selectedId: () => model.state.selectedId,
+    go,
+    navigate,
   })
-  // The slide iframe is inert while presenting (CSS), so clicks land on the stage: left third back, rest forward.
-  stage.addEventListener('click', event => {
-    if (!presenting()) return
-    const box = stage.getBoundingClientRect()
-    navigate(event.clientX - box.left < box.width * 0.3 ? -1 : 1)
-  })
-
-  const controls = element('nav', undefined, 'deck-controls')
-  controls.setAttribute('aria-label', 'Điều hướng slide')
-  const divider = () => {
-    const mark = element('span', undefined, 'deck-divider')
-    mark.setAttribute('aria-hidden', 'true')
-    return mark
-  }
-  controls.append(previous, counter, next, divider(), restart, exit, caption)
-  const viewer = element('div', undefined, 'deck-viewer')
-  viewer.append(stage, controls)
-  const workspace = element('div', undefined, 'deck-workspace')
-  workspace.append(viewer, slides)
-  let width = 400
-  try {
-    const saved = localStorage.getItem('deckagent-canvas-width')
-    if (saved && Number(saved) >= 320 && Number(saved) <= 1000) width = Number(saved)
-  } catch {
-    /* Optional layout only. */
-  }
-  mountDeckResizer(container, width, value => {
+  mountDeckResizer(container, restoreCanvasWidth(), value => {
     try {
       localStorage.setItem('deckagent-canvas-width', String(value))
     } catch {
       /* Layout remains usable. */
     }
   })
-  panel.append(heading, state, workspace)
-  container.append(panel)
   return model
 }

@@ -63,7 +63,7 @@ Read this file to move `imageFailure` into `browser/features/deck/`, split long 
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Move `imageFailure` into `outline-image-review.ts` and split `outline-view.ts` (`BB3`, `BD1`, `BD3`, `BD6`)**
+- [x] **Step 1: Move `imageFailure` into `outline-image-review.ts` and split `outline-view.ts` (`BB3`, `BD1`, `BD3`, `BD6`)**
 
 1. Create `apps/web/src/browser/features/deck/outline-image-review.ts` (under 140 lines, every function under 65 lines):
    - Move the `imageFailure` Vietnamese copy map verbatim from `apps/web/src/browser/transport/image-review-client.ts` as a file-local helper.
@@ -75,7 +75,7 @@ Read this file to move `imageFailure` into `browser/features/deck/`, split long 
    - Extract file-local helpers `renderSlideBlocks`, `renderPlannedSlide`, `renderProposalChanges`, `buildProposalCard`, and `updateCardState` so `OutlineView.render` drops under 20 lines.
    - Keep `OutlineView` and `OutlineAction` signatures unchanged.
 
-- [ ] **Step 2: Split `deck-canvas.ts` into preview queue, presentation controls, and canvas helpers (`BD2`, `BD6`)**
+- [x] **Step 2: Split `deck-canvas.ts` into preview queue, presentation controls, and canvas helpers (`BD2`, `BD6`)**
 
 1. Create `apps/web/src/browser/features/deck/deck-preview-queue.ts` (under 125 lines, every function under 55 lines):
    - Export `SLIDE_CSP` verbatim from `deck-canvas.ts:12`.
@@ -87,18 +87,18 @@ Read this file to move `imageFailure` into `browser/features/deck/`, split long 
    - Replace `Map<string, HTMLButtonElement>` with `Map<string, SlideButtonRefs>` where `SlideButtonRefs` holds `{ button: HTMLButtonElement; label: HTMLElement; index: HTMLElement; thumbnail: HTMLElement }`. Update `refs.label.textContent` and `refs.index.textContent` directly, removing the two `!` assertions at lines 259 and 262.
    - Extract file-local `createCanvasDom`, `reconcileSlideButtons`, and `applyDeckState` so `mountDeckCanvas` stays under 65 lines and keeps its exact signature `(container: HTMLElement, client: DeckClient, reveal: () => void): DeckModel`.
 
-- [ ] **Step 3: Remove `!` in `deck-model.ts` and split `deck-resizer.ts` and `deck-tab.ts` (`BD4`, `BD6`)**
+- [x] **Step 3: Remove `!` in `deck-model.ts` and split `deck-resizer.ts` and `deck-tab.ts` (`BD4`, `BD6`)**
 
 1. In `apps/web/src/browser/features/deck/deck-model.ts` lines 64-74 (`select`), bind `const sessionId = this.sessionId` and `const signal = this.control?.signal` at the top, and return early when `!sessionId || !signal || signal.aborted || !this.current.snapshot?.slides.some(s => s.slideId === slideId)`. Remove `this.control!.signal`.
 2. In `apps/web/src/browser/features/deck/deck-resizer.ts`, extract file-local `computeBounds`, `createResizerState`, `attachPointerResize`, and `attachKeyboardResize` so every function is under 55 lines and `mountDeckResizer` is under 30 lines.
 3. In `apps/web/src/browser/features/deck/deck-tab.ts`, extract file-local `loadSampleLayout` and `saveSampleLayout` so every function is under 55 lines and `mountDeckTab` is under 60 lines.
 
-- [ ] **Step 4: Narrow `DeckModel` on `features/deck/index.ts` and update `deck-model.test.mjs` (`BD5`)**
+- [x] **Step 4: Narrow `DeckModel` on `features/deck/index.ts` and update `deck-model.test.mjs` (`BD5`)**
 
 1. In `apps/web/src/browser/features/deck/index.ts` line 1, change `export { DeckModel } from './deck-model.ts'` to `export type { DeckModel } from './deck-model.ts'`.
 2. In `apps/web/tests/deck-model.test.mjs` line 4, change `import { DeckModel } from '../lib/browser-types/features/deck/index.js'` to `import { DeckModel } from '../lib/browser-types/features/deck/deck-model.js'`.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, and measure AST metrics**
+- [x] **Step 5: Build, check boundaries, lint, format, and measure AST metrics**
 
 Run:
 
@@ -122,7 +122,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. Every file has `over400: false`, `longFn: 0`, `smallNonBarrel: false`, `as: 0`, and `nn: 0`. `transport/index.ts` has `exports: 9`, and `image-review-client.ts` is absent.
 
-- [ ] **Step 6: Run deck and browser client suites**
+- [x] **Step 6: Run deck and browser client suites**
 
 Run:
 
@@ -132,7 +132,7 @@ corepack pnpm@11.28.5 test:slide-pipeline && corepack pnpm@11.28.5 test:deck-rev
 
 Expected: PASS. All four suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 7: Mark task done, write the report file, and commit and push**
+- [x] **Step 7: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 35 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-35-refactor-browser-deck-feature.md`.
 2. Create `docs/build/refactor/module-design/reports/task-35-refactor-browser-deck-feature.md` with:
