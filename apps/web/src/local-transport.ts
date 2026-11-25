@@ -7,7 +7,7 @@ import type {
   WebManagement,
   WorkspaceManagement,
 } from '@deckagent/host-api'
-import { SessionError } from '@deckagent/session-persistence'
+import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
 import { WorkspaceError } from '@deckagent/workspace-registry'
 import { DraftError } from './draft-store.ts'
 import { AttachmentFailure } from './features/attachments/index.ts'
@@ -17,7 +17,7 @@ import { DeckWorkflowFailure } from './features/deck/index.ts'
 import { ProviderFailure } from './features/providers/index.ts'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
-import { ResearchFailure } from './features/research/index.ts'
+import { ResearchFailure, type ResearchCoordinator } from './features/research/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
 import { WorkspaceWorkflowError } from './features/workspaces/index.ts'
 import type { WorkspaceOperations } from './features/workspaces/index.ts'
@@ -141,31 +141,47 @@ function body(value: unknown, key: string): unknown {
   return value[key]
 }
 
+function mapFailureEntry(code: string, detail: HttpErrorDetail | undefined, status: number): HttpFailureResponse {
+  return { status, code, ...(detail ? { detail } : {}) }
+}
+
+/** Safe details only: a workspace name or a refusal reason, never a path. */
+function mapWorkspaceError(error: WorkspaceError): HttpFailureResponse {
+  const { workspaceName, reason, allowInside } = error.detail
+  const detail: HttpErrorDetail = {
+    ...(workspaceName === undefined ? {} : { workspaceName }),
+    ...(reason === undefined ? {} : { reason }),
+    ...(allowInside === undefined ? {} : { allowInside }),
+  }
+  return mapFailureEntry(error.code, Object.keys(detail).length > 0 ? detail : undefined, workspaceStatus[error.code])
+}
+
+function featureFailure<E extends { readonly code: string; readonly detail?: HttpErrorDetail | undefined }>(
+  errorType: new (...args: never[]) => E,
+  statusOf: (error: E) => number,
+): (error: unknown) => HttpFailureResponse | undefined {
+  return error => {
+    if (!(error instanceof errorType)) return undefined
+    return mapFailureEntry(error.code, error.detail, statusOf(error))
+  }
+}
+
+const featureFailures = [
+  featureFailure(ChatWorkflowError, error => chatStatus[error.code]),
+  featureFailure(ProviderFailure, error => providerStatus[error.code] ?? 500),
+  featureFailure(RequestPreparationFailure, error => requestPreparationStatus[error.code]),
+  featureFailure(ResearchFailure, error => researchStatus[error.code] ?? 500),
+  featureFailure(AttachmentFailure, error => attachmentStatus[error.code] ?? 500),
+  featureFailure(SourceToolFailure, error => sourceToolStatus[error.code] ?? 500),
+]
+
 /** Maps application workflow and domain failures to HTTP responses without exposing internal details. */
 export function mapApplicationFailure(error: unknown): HttpFailureResponse | undefined {
-  if (error instanceof WorkspaceWorkflowError) {
-    return { status: 409, code: error.code }
-  }
-  if (error instanceof WorkspaceError) {
-    // Safe details only: a workspace name or a refusal reason, never a path.
-    const { workspaceName, reason, allowInside } = error.detail
-    const detail: HttpErrorDetail = {
-      ...(workspaceName === undefined ? {} : { workspaceName }),
-      ...(reason === undefined ? {} : { reason }),
-      ...(allowInside === undefined ? {} : { allowInside }),
-    }
-    return {
-      status: workspaceStatus[error.code],
-      code: error.code,
-      ...(Object.keys(detail).length > 0 ? { detail } : {}),
-    }
-  }
-  if (error instanceof ChatWorkflowError) {
-    return {
-      status: chatStatus[error.code],
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
+  if (error instanceof WorkspaceWorkflowError) return { status: 409, code: error.code }
+  if (error instanceof WorkspaceError) return mapWorkspaceError(error)
+  for (const failure of featureFailures) {
+    const response = failure(error)
+    if (response) return response
   }
   if (error instanceof SessionError) {
     if (error.code === 'SESSION_NOT_FOUND') return { status: 404, code: 'SESSION_NOT_FOUND' }
@@ -173,68 +189,24 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     if (error.code === 'DRAFT_TOO_LARGE') return { status: 413, code: 'DRAFT_TOO_LARGE' }
     return undefined
   }
-  if (error instanceof ProviderFailure) {
-    return {
-      status: providerStatus[error.code] ?? 500,
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
-  if (error instanceof RequestPreparationFailure) {
-    return {
-      status: requestPreparationStatus[error.code],
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
-  if (error instanceof ResearchFailure) {
-    return {
-      status: researchStatus[error.code] ?? 500,
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
-  if (error instanceof AttachmentFailure) {
-    return {
-      status: attachmentStatus[error.code] ?? 500,
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
-  if (error instanceof SourceToolFailure) {
-    return {
-      status: sourceToolStatus[error.code] ?? 500,
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
   if (error instanceof DeckError) {
     if (
       error.code === 'OUTLINE_STALE' ||
       error.code === 'OUTLINE_ALREADY_CONFIRMED' ||
       error.code === 'OUTLINE_READ_ONLY' ||
       error.code === 'OUTLINE_LIMIT'
-    ) {
+    )
       return { status: 409, code: error.code }
-    }
-    if (error.code === 'DECK_CONTENT_NOT_FOUND') {
-      return { status: 404, code: error.code }
-    }
+    if (error.code === 'DECK_CONTENT_NOT_FOUND') return { status: 404, code: error.code }
   }
-  if (error instanceof DeckWorkflowFailure) {
-    return {
-      status: deckWorkflowStatus(error),
-      code: error.code,
-      ...(error.detail ? { detail: error.detail } : {}),
-    }
-  }
+  if (error instanceof DeckWorkflowFailure) return mapFailureEntry(error.code, error.detail, deckWorkflowStatus(error))
   if (error instanceof DraftError) {
     const status = error.code === 'DRAFT_TOO_LARGE' ? 413 : error.code === 'DRAFT_CONFLICT' ? 409 : 400
-    return { status, code: error.code }
+    return mapFailureEntry(error.code, undefined, status)
   }
   if (error instanceof WebStateError) {
     const status = error.code === 'INVALID_SELECTION' || error.code === 'INVALID_REQUEST' ? 400 : 500
-    return { status, code: error.code }
+    return mapFailureEntry(error.code, undefined, status)
   }
   return undefined
 }
@@ -284,6 +256,10 @@ async function toAttachmentHttpError<T>(work: Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Upload stays wrapped: `packages/host/api` catches non-`HttpError` exceptions from the byte stream,
+ * so the mapped error must be thrown there instead of delegated.
+ */
 export function attachmentManagement(service: AttachmentManagement): AttachmentManagement {
   return {
     get maxBytes() {
@@ -293,9 +269,36 @@ export function attachmentManagement(service: AttachmentManagement): AttachmentM
       return service.maxFiles
     },
     upload: input => toAttachmentHttpError(service.upload(input)),
-    get: (id, attachmentId) => toAttachmentHttpError(service.get(id, attachmentId)),
-    remove: (id, attachmentId, expectedRevision) =>
-      toAttachmentHttpError(service.remove(id, attachmentId, expectedRevision)),
-    preview: (id, attachmentId, signal) => toAttachmentHttpError(service.preview(id, attachmentId, signal)),
+    get: (id, attachmentId) => service.get(id, attachmentId),
+    remove: (id, attachmentId, expectedRevision) => service.remove(id, attachmentId, expectedRevision),
+    preview: (id, attachmentId, signal) => service.preview(id, attachmentId, signal),
+  }
+}
+
+export type SessionReadManagement = Required<Pick<WebManagement, 'research' | 'activities' | 'requests'>>
+
+async function requireSession(store: SqliteSessionStore, id: string): Promise<void> {
+  if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+}
+
+/** Read endpoints that need an existing chat. Each one rejects an unknown chat before it reads. */
+export function sessionReadManagement(store: SqliteSessionStore, research: ResearchCoordinator): SessionReadManagement {
+  return {
+    research: {
+      save: value => research.save(value),
+      remove: () => research.remove(),
+      sources: async id => {
+        await requireSession(store, id)
+        return store.requests.researchSources(id)
+      },
+    },
+    activities: async id => {
+      await requireSession(store, id)
+      return store.requests.activities(id)
+    },
+    requests: async id => {
+      await requireSession(store, id)
+      return store.requests.list(id)
+    },
   }
 }

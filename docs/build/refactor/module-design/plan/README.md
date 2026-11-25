@@ -139,7 +139,7 @@ Read this file to learn the goal, decisions, global constraints, and task order 
 | 25 | Done | [Refactor deck image research and generation workflow](task-25-refactor-deck-image-research-and-generation-workflow.md) ([report](../reports/task-25-refactor-deck-image-research-and-generation-workflow.md)) |
 | 26 | Done | [Refactor deck workflow, BriefCoordinator, and ConfirmationCoordinator](task-26-refactor-deck-workflow-and-coordinators.md) ([report](../reports/task-26-refactor-deck-workflow-and-coordinators.md)) |
 | 27 | Done | [Refactor non-deck application features](task-27-refactor-non-deck-features.md) ([report](../reports/task-27-refactor-non-deck-features.md)) |
-| 28 | Pending | [Refactor web root composition, local transport, CLI, and web-state](task-28-refactor-web-root-and-local-transport.md) |
+| 28 | Done | [Refactor web root composition, local transport, CLI, and web-state](task-28-refactor-web-root-and-local-transport.md) ([report](../reports/task-28-refactor-web-root-and-local-transport.md)) |
 | 29 | Pending | [Check Slice 2C exit gate and rescan metrics](task-29-verify-slice-2c-exit.md) |
 
 ## Next revision

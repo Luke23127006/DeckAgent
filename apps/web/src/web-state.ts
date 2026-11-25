@@ -42,8 +42,11 @@ export class WebState {
   ) {
     this.db = new DatabaseSync(path)
     try {
-      const owner = Number(this.db.prepare('PRAGMA application_id').get()!.application_id)
-      const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version)
+      const ownerRow = this.db.prepare('PRAGMA application_id').get()
+      const versionRow = this.db.prepare('PRAGMA user_version').get()
+      if (!ownerRow || !versionRow) throw new WebStateError('SETTINGS_SCHEMA')
+      const owner = Number(ownerRow.application_id)
+      const version = Number(versionRow.user_version)
       const fresh =
         owner === 0 &&
         version === 0 &&
@@ -58,8 +61,7 @@ export class WebState {
       // Added after schema version 1 shipped: created on demand so existing data files keep working.
       this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
       this.db.prepare('SELECT id, payload FROM providers LIMIT 0').all()
-      if (this.db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok')
-        throw new WebStateError('SETTINGS_STORAGE')
+      if (this.db.prepare('PRAGMA quick_check').get()?.quick_check !== 'ok') throw new WebStateError('SETTINGS_STORAGE')
       this.db.exec('COMMIT')
     } catch (error) {
       this.db.close()

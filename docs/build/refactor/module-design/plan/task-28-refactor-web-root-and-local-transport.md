@@ -59,14 +59,14 @@ Read this file to fold four root asset files into `ui-assets.ts`, split root fun
 - Remove, skip, or weaken any test or check.
 - Commit or push before Step 7 checks pass.
 
-- [ ] **Step 1: Fold the four small asset files into `apps/web/src/ui-assets.ts` (`FA1`)**
+- [x] **Step 1: Fold the four small asset files into `apps/web/src/ui-assets.ts` (`FA1`)**
 
 1. Move `attachmentStyle`, `outlineStyle`, `researchStyle`, and `sampleAssets` verbatim from `attachment-style.ts`, `outline-style.ts`, `research-style.ts`, and `sample-slides.ts` into `apps/web/src/ui-assets.ts`.
 2. In `apps/web/src/ui-assets.ts`, export `loadWebAssets(clientDir: string, getTheme: () => WebPreferences['theme'])` (combining `sampleAssets`, `'/'`, `'/theme.js'` getter, `'/style.css'` concatenation in the exact original order `style + outlineStyle + deckResizeStyle + composerStyle + presentationStyle + activityStyle + motionStyle + attachmentStyle + researchStyle`, plus the `/client/*.js` directory read from `index.ts` lines 240-271).
 3. Remove `apps/web/src/attachment-style.ts`, `apps/web/src/outline-style.ts`, `apps/web/src/research-style.ts`, and `apps/web/src/sample-slides.ts`.
 4. Keep `ui-assets.ts` under 310 lines and `loadWebAssets` under 45 lines.
 
-- [ ] **Step 2: Simplify `apps/web/src/local-transport.ts` (`FA5`, `FA6`)**
+- [x] **Step 2: Simplify `apps/web/src/local-transport.ts` (`FA5`, `FA6`)**
 
 1. Extract private helper `mapWorkspaceError(error: WorkspaceError): HttpFailureResponse` and `mapFailureEntry(code: string, detail: HttpErrorDetail | undefined, status: number): HttpFailureResponse`.
 2. Table-drive the `{ code, detail }` feature error checks inside `mapApplicationFailure` so `mapApplicationFailure` drops under 65 lines while keeping every status code and detail payload identical.
@@ -80,7 +80,7 @@ Read this file to fold four root asset files into `ui-assets.ts`, split root fun
    where `requireSession` checks `if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')`.
 5. Keep every function in `local-transport.ts` under 70 lines.
 
-- [ ] **Step 3: Decompose `apps/web/src/index.ts` under 400 lines and `startLocalWeb` under 80 lines (`FA5`)**
+- [x] **Step 3: Decompose `apps/web/src/index.ts` under 400 lines and `startLocalWeb` under 80 lines (`FA5`)**
 
 1. Remove the `HttpError` import from `apps/web/src/index.ts`.
 2. Extract private helpers in `apps/web/src/index.ts`, each under 70 lines:
@@ -95,7 +95,7 @@ Read this file to fold four root asset files into `ui-assets.ts`, split root fun
    - Call `await closeResources(closers.toReversed())` in both `close()` and the startup `catch` block.
 4. Keep `apps/web/src/index.ts` under 300 lines and every function under 75 lines.
 
-- [ ] **Step 4: Split `apps/web/src/cli.ts` and remove `!` assertions in `cli.ts` and `web-state.ts` (`FA8`, `FA10`)**
+- [x] **Step 4: Split `apps/web/src/cli.ts` and remove `!` assertions in `cli.ts` and `web-state.ts` (`FA8`, `FA10`)**
 
 1. In `apps/web/src/cli.ts`:
    - In `connection` (lines 15-52), bind `const protocol = protocols.find(item => item === value.protocol)` after `if (!object(value))` and check `!protocol` in the guard, returning `protocol` with zero `!` assertions.
@@ -115,7 +115,7 @@ const version = Number(versionRow.user_version)
    - Replace line 61 with `if (this.db.prepare('PRAGMA quick_check').get()?.quick_check !== 'ok') throw new WebStateError('SETTINGS_STORAGE')`.
    - Check that `web-state.ts` has zero `!` assertions.
 
-- [ ] **Step 5: Build, check boundaries, lint, format, check AST metrics, and run root and web suites**
+- [x] **Step 5: Build, check boundaries, lint, format, check AST metrics, and run root and web suites**
 
 Run:
 
@@ -147,7 +147,7 @@ corepack pnpm@11.28.5 test:tools-browser && corepack pnpm@11.28.5 test:local-web
 
 Expected: PASS. All six suites exit with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 6: Mark task done, write the report file, and commit and push**
+- [x] **Step 6: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Update the Task 28 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-28-refactor-web-root-and-local-transport.md`.
 2. Create `docs/build/refactor/module-design/reports/task-28-refactor-web-root-and-local-transport.md` with:

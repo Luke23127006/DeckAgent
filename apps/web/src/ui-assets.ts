@@ -1,3 +1,7 @@
+import { readFile, readdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import type { WebPreferences } from '@deckagent/host-contracts'
+
 export const page = `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>DeckAgent</title><script src="/theme.js"></script><link rel="stylesheet" href="/style.css"></head>
@@ -107,7 +111,6 @@ details:not(.request-record):not(.chat-more-actions):not(.activity-detail)>summa
 @media(max-height:520px) and (max-width:1000px){.conversation-header{height:44px}.composer{min-height:0;padding:8px 12px}.composer textarea{min-height:28px}.composer-actions{gap:6px}.composer-dock{padding-bottom:8px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 `
-
 export const composerStyle = `
 .composer-dock{flex:none;padding:0 max(20px,calc((100% - 760px)/2)) 18px;display:flex;flex-direction:column;gap:8px;position:relative;max-height:65%;overflow:visible}
 .composer{flex:none;border:1px solid var(--edge);border-radius:var(--r-lg);padding:12px 14px 10px;background:var(--card);box-shadow:0 0 0 .5px var(--line),var(--lift);display:flex;flex-direction:column;gap:6px;min-height:96px;transition:border-color .12s ease-out,box-shadow .12s ease-out}.composer:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
@@ -126,7 +129,6 @@ export const composerStyle = `
 .settings-footer button[type=submit]:disabled,.outline-actions button:nth-of-type(1):disabled{background-color:var(--fill);color:var(--disabled-fg)}.chat-navigation :disabled{opacity:.5}
 @media(max-width:720px){.composer-dock{padding:0 12px max(12px,env(safe-area-inset-bottom))}.composer-actions{flex-wrap:wrap}.model-picker>button{max-width:200px}.outline-dock{max-height:180px}}
 `
-
 export const presentationStyle = `
 .deck-sidebar.published-deck-sidebar{padding:16px}.published-deck-sidebar .deck-panel{height:100%;display:flex;flex-direction:column;overflow:auto;min-height:0;gap:12px;outline:none}.published-deck-sidebar .deck-panel>header{flex:none;min-height:30px;margin:0}
 .deck-heading{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.deck-actions{display:flex;align-items:center;gap:8px}.deck-progress{color:var(--mut);font-size:var(--t-xs);overflow-wrap:anywhere}
@@ -157,7 +159,6 @@ export const presentationStyle = `
 .published-deck-sidebar .deck-panel[data-presenting=true][data-idle=true]{cursor:none}.published-deck-sidebar .deck-panel[data-presenting=true][data-idle=true] .deck-stage{cursor:none}.published-deck-sidebar .deck-panel[data-presenting=true][data-idle=true] .deck-controls{opacity:0;pointer-events:none}
 @media(prefers-reduced-motion:reduce){.published-deck-sidebar .deck-panel:fullscreen .deck-controls{transition:none}}
 `
-
 export const activityStyle = `
 .request-record{--mark:var(--mut);flex:none;max-width:100%;border:0;border-radius:var(--r);background:var(--fill);color:var(--ink);position:relative;font-size:var(--t-sm)}
 .request-record>summary{display:grid;grid-template-columns:20px auto 1fr auto;column-gap:8px;align-items:center;min-height:34px;padding:0 12px;cursor:pointer;list-style:none;white-space:normal;overflow:hidden;border-radius:var(--r)}.request-record>summary::-webkit-details-marker{display:none}
@@ -187,12 +188,10 @@ export const activityStyle = `
 @container (max-width:520px){.request-rev::before{content:'#'}}
 @keyframes mark-turn{to{transform:rotate(360deg)}}
 `
-
 export const deckResizeStyle = `
 body.deck-resizing{cursor:col-resize;user-select:none}body.deck-resizing iframe{pointer-events:none}
 .deck-sidebar{position:relative}.deck-resizer{position:absolute;inset:0 auto 0 0;width:9px;cursor:col-resize;touch-action:none;z-index:2;background:transparent}.deck-resizer::after{content:'';position:absolute;left:3px;top:50%;width:3px;height:32px;margin-top:-16px;border-radius:2px;background:var(--line-strong);opacity:0}.deck-resizer:hover::after,.deck-resizer:focus-visible::after{opacity:1}.deck-resizer:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.deck-resize-overlay{position:fixed;inset:0;z-index:10000;cursor:col-resize;touch-action:none;user-select:none}@media(max-width:720px){.deck-resizer{display:none}}
 `
-
 export const motionStyle = `
 :root{--ease-out:cubic-bezier(.23,1,.32,1);--ease-in-out:cubic-bezier(.77,0,.175,1)}
 button{transition:transform .14s var(--ease-out)}button:active:not(:disabled):not([aria-disabled=true]){transform:scale(.97)}
@@ -211,3 +210,100 @@ button{transition:transform .14s var(--ease-out)}button:active:not(:disabled):no
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}::view-transition-old(root){z-index:1}::view-transition-new(root){z-index:2}
 @media(prefers-reduced-motion:reduce){.message,.request-record,.request-slides,.welcome,.account-menu,.model-popover,.published-deck-sidebar{transition:opacity .15s ease!important}button{transition:none!important}button:active:not(:disabled){transform:none!important}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 `
+export const attachmentStyle = `
+.attachment-draft{display:grid;gap:8px;max-height:220px;overflow:auto;padding:8px 0}
+.attachment-draft[hidden]{display:none}.attachment-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:8px}
+.attachment-name{font-weight:600;overflow-wrap:anywhere}.attachment-row small{color:var(--mut)}.attachment-row[data-state=rejected]{border-color:#b45309}
+.attachment-preview{max-width:min(850px,90vw);max-height:85vh;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--ink);overflow:auto}
+.attachment-preview img{max-width:100%;height:auto}.attachment-preview pre{white-space:pre-wrap;overflow-wrap:anywhere}.message-attachments{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+`
+export const outlineStyle = `
+.outline-image-review{margin:8px 0}.outline-image-review img{display:block;max-width:100%;width:240px;height:140px;object-fit:contain}.outline-image-review figcaption{font-size:var(--t-sm);color:var(--ink)}
+.deck-workflow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--line);max-height:35dvh;overflow:auto;overflow-wrap:anywhere}.deck-workflow>[hidden]{display:none}.deck-workflow label{display:flex;align-items:center;gap:6px;font-size:var(--t-sm)}.deck-workflow select,.deck-workflow button{padding:5px 10px;max-width:100%}.deck-workflow>div,.deck-workflow>details{flex-basis:100%}.deck-workflow p{white-space:pre-wrap;margin:6px 0}.deck-workflow summary{cursor:pointer}
+.outline-proposal{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.outline-proposal h3{margin:0 0 6px;font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.outline-status{color:var(--ink)!important;font-weight:600;margin-bottom:8px!important}
+.outline-overview{margin-bottom:12px!important}
+.outline-viewing{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.outline-proposal button{padding:4px 12px}
+.outline-actions[hidden]{display:none}
+.planned-slide{padding:5px 0;border-top:1px solid var(--line)}
+.planned-slide summary{cursor:pointer;font-weight:500}
+.planned-slide p{white-space:pre-wrap;margin-top:10px!important}
+.outline-proposal[data-status=superseded],.outline-proposal[data-status=cancelled]{color:var(--mut);border-top-style:dashed}
+.clarification-question{max-height:min(35dvh,240px);overflow:auto;overflow-wrap:anywhere;padding:12px 14px;border:1px solid var(--edge);border-radius:var(--r-lg);margin-bottom:8px;background:var(--card);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:0 0 0 .5px var(--line),var(--lift)}.clarification-question[hidden]{display:none}.clarification-question small{display:block;color:var(--mut);font-size:var(--t-xs);margin-top:8px}.clarification-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.clarification-options button{padding:5px 12px}
+`
+export const researchStyle = `
+.research-dialog{width:min(780px,90vw);max-height:85vh;overflow:auto;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--canvas);color:var(--ink)}
+.research-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere}.research-dialog section{margin-block:16px}.research-dialog label{display:grid;gap:8px;margin-block:12px}.research-dialog input{width:100%;box-sizing:border-box}
+.research-dialog button{margin:4px}
+.composer-controls{flex-wrap:wrap}.research-control{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;max-width:100%}
+.composer-controls .research-choice-label{display:inline-flex;flex-direction:row;align-items:center;gap:6px;min-height:30px;font-size:var(--t-xs);white-space:nowrap;cursor:pointer}.research-choice-label>span{font-size:inherit;font-weight:400}
+.public-research-choice{width:14px;height:14px;min-width:14px;margin:0;padding:0;flex:none}.composer-controls .research-info{min-width:24px;padding:2px 6px;font-size:var(--t-xs);color:var(--mut)}
+`
+const slides = [
+  [
+    '01 / A clear starting point',
+    'Ideas become<br>presentations.',
+    'Three sample slides to explore the canvas. Your generated decks will arrive in a later milestone.',
+  ],
+  [
+    '02 / Make room for the story',
+    'One thought.<br>One slide.',
+    'Move between slides, adjust the canvas width, or go fullscreen to focus on the presentation.',
+  ],
+  [
+    '03 / Ready for what comes next',
+    'A place for<br>your next idea.',
+    'This is sample content. It is independent of your chats and does not publish or save a generated deck.',
+  ],
+]
+
+export const sampleAssets = Object.fromEntries(
+  slides.map(([eyebrow, title, description], index) => [
+    `/samples/${index + 1}.html`,
+    {
+      contentType: 'text/html; charset=utf-8',
+      sandboxed: true,
+      body: `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sample slide ${index + 1}</title><style>
+body{margin:0;background:#132e2a;color:#f7f2e8;font-family:system-ui,sans-serif;height:100vh;display:grid;align-content:center;box-sizing:border-box;padding:5vw}small{font-size:1.8vw;color:#c2dc80;letter-spacing:.1em}h1{font-size:8vw;line-height:1.05;font-weight:500;letter-spacing:-.05em;margin:3.5vw 0}p{font-size:2.4vw;line-height:1.5;max-width:80%;color:#becbc5;margin:0}</style><small>${eyebrow}</small><h1>${title}</h1><p>${description}</p></html>`,
+    },
+  ]),
+)
+export async function loadWebAssets(
+  clientDir: string,
+  getTheme: () => WebPreferences['theme'],
+): Promise<Record<string, { contentType: string; body: string; sandboxed?: boolean }>> {
+  const assets: Record<string, { contentType: string; body: string; sandboxed?: boolean }> = {
+    ...sampleAssets,
+    '/': { contentType: 'text/html; charset=utf-8', body: page },
+    // Read per request so the saved choice is applied before first paint, whatever the origin.
+    '/theme.js': {
+      contentType: 'text/javascript; charset=utf-8',
+      get body() {
+        return themeBootstrap(getTheme())
+      },
+    },
+    '/style.css': {
+      contentType: 'text/css; charset=utf-8',
+      body:
+        style +
+        outlineStyle +
+        deckResizeStyle +
+        composerStyle +
+        presentationStyle +
+        activityStyle +
+        motionStyle +
+        attachmentStyle +
+        researchStyle,
+    },
+  }
+  for (const name of await readdir(clientDir)) {
+    if (/^[\w-]+\.js$/.test(name))
+      assets[`/client/${name}`] = {
+        contentType: 'text/javascript; charset=utf-8',
+        body: await readFile(join(clientDir, name), 'utf8'),
+      }
+  }
+  return assets
+}
