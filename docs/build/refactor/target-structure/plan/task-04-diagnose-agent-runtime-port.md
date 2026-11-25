@@ -64,7 +64,7 @@ Apply the rows from top to bottom to each code literal. Use the first row that m
 | The literal is in one of the four files, but it is not a failure code or a notice code | Origin `other`. Group: write what the literal is. |
 | No row matches | Origin `unclassified`. Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: List the code literals**
+- [x] **Step 1: List the code literals**
 
 Run: `grep -rhoE "'[A-Z][A-Z_]{3,}'" apps/web/src/integrations/opencode/runtime.ts apps/web/src/integrations/opencode/stream-tracker.ts apps/web/src/integrations/opencode/events.ts packages/host/api/src/lifecycle/request-controller.ts | sort -u | wc -l`
 
@@ -74,13 +74,13 @@ Run: `grep -rnoE "'[A-Z][A-Z_]{3,}'" apps/web/src/integrations/opencode/runtime.
 
 Expected: PASS. The command exits with code 0. Each line has the form `<path>:<line>:'<CODE>'`.
 
-- [ ] **Step 2: Classify each code literal**
+- [x] **Step 2: Classify each code literal**
 
 For each of the 40 literals, read the lines from the second command of Step 1 and apply the [Code decision table](#code-decision-table). Write one row in the report table `ID | Code | Location (file:line) | Origin | Group`. When a literal is in more than one file, write all locations in one row.
 
 Then write, for each row with origin `provider-event` or `adapter`, which of these OQ-063 categories it can match: `key rejected`, `quota`, `rate limit`, `network`, `timeout`, `content blocked`, `none`. Use `none` when the code condition does not show the category. Do not guess from the code name.
 
-- [ ] **Step 3: Record the event and usage facts**
+- [x] **Step 3: Record the event and usage facts**
 
 Run: `grep -n "tokens" apps/web/tests/fixtures/fake-opencode.mjs && grep -n "case '" apps/web/src/integrations/opencode/events.ts && grep -n "timeoutMs" apps/web/src/integrations/opencode/runtime.ts apps/web/src/integrations/opencode/stream-tracker.ts`
 
@@ -94,13 +94,13 @@ Record these facts in the report, with file and line:
 4. The default timeout value in `runtime.ts`, the option that changes it, and the code that a timeout returns.
 5. The place where `RequestController` turns a `RuntimeOutcome` into a terminal status event.
 
-- [ ] **Step 4: Check that no code changed**
+- [x] **Step 4: Check that no code changed**
 
 Run: `git status --short`
 
 Expected: PASS. No path under `apps/`, `packages/`, `e2e/`, `tests/`, `scripts/` or `docs/conventions/` is in the output.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 1. Mark Steps 1 to 4 as `- [x]` in this file. Change the Task 4 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-04-diagnose-agent-runtime-port.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-04-diagnose-agent-runtime-port.md` with:
