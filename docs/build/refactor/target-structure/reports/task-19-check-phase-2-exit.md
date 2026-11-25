@@ -68,6 +68,18 @@ No suite failed, so no suite ran a second time. The total is 369 passing tests.
 - The rules of Part 4 cover `apps/host/src/http/` and `apps/web/src/browser/` only. The rules for `apps/host/src/modules/` come with Phase 3.
 - `git grep` and `git diff` read a commit. They do not prove the state of the working tree. A file with no commit is invisible to them.
 
+## Run after the commit
+
+A person made the commit `4d42e0f` with the work of Tasks 17 and 18. Then the two failed checks ran again on that commit, in Git Bash from `C:/Users/Duy/Desktop/DeckAgent`.
+
+| Part | Command | Exit code | Key output |
+| --- | --- | --- | --- |
+| 1 | `git grep -n "createServer(|express()" -- apps/host/src/http packages/host/api/src` | 0 | Two lines: `apps/host/src/http/app.ts:49` has `const app = express()`. `apps/host/src/http/start-host.ts:19` has `const server = createServer(app)`. |
+| 3 | `node <temporary folder>/deckagent-exit-diff.mjs 34c8218` | 0 | `added test files: 2`, the lines `A apps/host/tests/fixtures/http-host.mjs` and `A e2e/http-edge.test.mjs`, and `changed lines that are not import or path lines: 0`. |
+| 3 | `node <temporary folder>/deckagent-exit-diff.mjs 533ef55` | 0 | `changed lines that are not import or path lines: 0`. |
+
+Phase 2 exit after the commit: PASS. All four parts pass.
+
 ## Result for the plan
 
-Step 6.1 asks for the status `Done` in the Task 19 row. The plan gate says that a task is `Done` only when all its checks pass. Part 1 and Part 3 fail, so the row stays `Pending` and this report carries the result. The link to this report is in the row.
+Step 6.1 asks for the status `Done` in the Task 19 row. The plan gate says that a task is `Done` only when all its checks pass. Part 1 and Part 3 fail, so the row stayed `Pending` until the run after the commit. That run passes, so the Task 19 row is `Done`.

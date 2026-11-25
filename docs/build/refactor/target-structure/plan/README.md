@@ -4,9 +4,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5.
+**Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5. Phase 3: each domain module lives in `apps/host/src/modules/<name>/`, and each store has a `version` and a change notice.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition. Revision 3 (Task 20) starts Phase 3 with a diagnosis of the `workspaces` module that does not change code.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -42,6 +42,9 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Express versions (Revision 2c) | `express` 5.2.1 and `@types/express` 5.0.6 in `@deckagent/host-api` and `@deckagent/host`. Task 16 measured 5.2.1. |
 | Path parameter classes (Revision 2c) | The middleware `params()` checks each class and calls `next('route')` on a mismatch, because Express 5.2.1 rejects a regular expression in a route path. A `%` in an `/api/` path gets `404 NOT_FOUND` before the router. |
 | Folder-level rules (Revision 2c) | One `no-restricted-imports` override for `apps/host/src/http/`, and `@deckagent/host` in the Browser override. Each has negative fixtures in `tests/oxlint-boundaries.test.mjs`. |
+| Workspaces schema upgrade (Revision 3) | The move of `workspaces` upgrades an existing `workspaces.sqlite` from schema 1 to schema 2 in place, in one transaction at startup, as `packages/session/persistence/src/schema.ts` does. Existing workspaces, names and the selection stay. |
+| Change feed (Revision 3) | The revision that moves `workspaces` also builds the `ChangeFeed` of ADR-004 in `apps/host/src/http/` and its SSE route for the topic `workspaces`. Later modules add a topic only. |
+| Revision 3 scope | Task 20 reads code, runs `git grep` and writes a report only. It changes no code, no test, no `package.json` and no file in `docs/architecture/`. |
 | Commit | Executors do not commit or push. A person commits after approving the report. |
 
 ## Global Constraints
@@ -57,6 +60,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 - Do not change `docs/build/refactor/target-structure/README.md` or the research files next to it.
 - Do not add a comment, a lint-disable directive or `@ts-expect-error`.
 - Do not commit or push.
+- Start a task only when `git status --short` prints no line. A person commits the work of each task before the next task starts. A check that reads a commit, for example `git grep` or `git diff <commit>`, does not see a file with no commit.
 - Write reports in English with `asd-ste100` strict mode. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py <report-file>` on each report. When `python` is not available, run the same script with `python3` or `python3.12`.
 
 ## Review Focus
@@ -97,6 +101,11 @@ Revision 2c adds these failure modes:
 20. A new lint rule passes on every input, so it cannot catch a wrong import. Owner: [Task 18](task-18-add-folder-import-rules.md), Step 4 breaks each rule and expects three failed tests.
 21. The exit check counts a changed expected value as a path change. Owner: [Task 19](task-19-check-phase-2-exit.md), Step 4. No check covers this case, so the reviewer reads the import and path lines of the diff.
 
+Revision 3 adds these failure modes:
+
+22. The diagnosis misses a caller of the registry outside `apps/host/src/features/workspaces/`, so the move breaks a caller in another module. Owner: [Task 20](task-20-diagnose-workspaces-module.md), Step 3.
+23. A write to `workspaces` or `registry_state` runs outside `this.transaction`, so a later `version` increase is not in the same transaction as the write. Owner: [Task 20](task-20-diagnose-workspaces-module.md), the column `Inside this.transaction` of Step 5.
+
 ## Tasks
 
 | Task | Status | File |
@@ -117,15 +126,19 @@ Revision 2c adds these failure modes:
 | 14 | Done | [Add the HTTP edge characterization tests](task-14-add-http-edge-characterization-tests.md) ([report](../reports/task-14-add-http-edge-characterization-tests.md)) |
 | 15 | Done | [Move the Node code of the web app into apps/host](task-15-move-node-code-to-apps-host.md) ([report](../reports/task-15-move-node-code-to-apps-host.md)) |
 | 16 | Done | [Measure the Express 5 defaults](task-16-measure-express-5-defaults.md) ([report](../reports/task-16-measure-express-5-defaults.md)) |
-| 17 | Pending | [Serve every route through Express](task-17-serve-routes-through-express.md) |
-| 18 | Pending | [Add the folder-level import rules for the HTTP edge and the Browser](task-18-add-folder-import-rules.md) |
-| 19 | Pending | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) |
+| 17 | Done | [Serve every route through Express](task-17-serve-routes-through-express.md) ([report](../reports/task-17-serve-routes-through-express.md)) |
+| 18 | Done | [Add the folder-level import rules for the HTTP edge and the Browser](task-18-add-folder-import-rules.md) ([report](../reports/task-18-add-folder-import-rules.md)) |
+| 19 | Done | [Check the Phase 2 exit condition](task-19-check-phase-2-exit.md) ([report](../reports/task-19-check-phase-2-exit.md)) |
+| 20 | Pending | [Diagnose the workspaces module](task-20-diagnose-workspaces-module.md) |
 
 ## Next revision
 
-Revision 3 starts Phase 3 (domain modules) after a person approves the report of Task 19. It starts with a diagnosis of the `workspaces` module, the first module in the Phase 3 order. The diagnosis lists the routes, the service code, the store code and the error map rows of `workspaces`, and the callers of each. These items wait for the diagnosis:
+Revision 3b moves the `workspaces` module after a person approves the report of Task 20. These items wait for the report:
 
-- The move of the `workspaces` routes from `packages/host/api/src/transport/management-routes.ts` to `apps/host/src/modules/workspaces/workspaces.routes.ts`.
+- The files of `apps/host/src/modules/workspaces/` (`workspaces.routes.ts`, `workspaces.service.ts`, `workspaces.store.ts`) and the public interface that `chats`, `sources` and `server.ts` use.
+- The schema 2 of `workspaces.sqlite` with the table `change_versions`, the upgrade from schema 1, and the test of the upgrade.
+- The `ChangeFeed` in `apps/host/src/http/`, the path of its SSE route, and the Browser code that reads the list again after a notice.
+- The `expectedVersion` check on the write routes of `workspaces` and the code `WORKSPACES_STALE`.
 - The place of the shared route helpers `params`, `param` and `route` when the first registrar leaves `packages/host/api/`.
 - The folder-level rules for `apps/host/src/modules/`, each with a negative fixture.
 - The decision about `helmet`, with the header tests of Task 14 as evidence.

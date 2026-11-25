@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add Revision 3 (Task 20) to `docs/build/refactor/target-structure/plan/`: a read-only diagnosis of the `workspaces` module before its move to `apps/host/src/modules/workspaces/`. The plan README records the decisions about the schema upgrade of `workspaces.sqlite` and the `ChangeFeed`, and a task now starts only on a clean working tree.
+- Record the Phase 2 exit: the two checks of Task 19 that read a commit pass on `4d42e0f`, so Task 19 is `Done` and Phase 2 of the Target Structure Refactor is complete.
 - Add folder-level `no-restricted-imports` rules for `apps/host/src/http/` and add `@deckagent/host` to the Browser override, with four negative fixtures in `tests/oxlint-boundaries.test.mjs`. The HTTP edge cannot import module services, stores or storage packages. Task 18 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the workspace package `@deckagent/host` (`apps/host/`) with the entry `lib/server.js` and the extra bundle entry `lib/cli.js`. It owns the composition root `src/server.ts`, the command line `src/cli.ts` and the folders `src/features/` and `src/integrations/`.
 - Add the Task 15 move report (`docs/build/refactor/target-structure/reports/task-15-move-node-code-to-apps-host.md`) with the 74 moved files, the changed callers and the result of each check after the move. Task 15 is `Done` in `docs/build/refactor/target-structure/plan/`.
