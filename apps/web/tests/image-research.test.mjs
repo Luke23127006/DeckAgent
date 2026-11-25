@@ -3,7 +3,7 @@ import test from 'node:test'
 import { TavilyClient } from '../lib/types/integrations/research/index.js'
 import { PublicImageReader } from '../lib/types/integrations/images/index.js'
 import { WebImageResearch, imagePageCredit } from '../lib/types/features/deck/index.js'
-import { DeckService, outlineImageNeeds } from '@deckagent/deck'
+import { DeckStore, outlineImageNeeds } from '@deckagent/deck'
 import { DatabaseSync } from 'node:sqlite'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
@@ -445,14 +445,14 @@ test('private addresses, mixed DNS answers and redirects into private networks a
 
 test('image attempts persist through restart and cannot be borrowed by another chat', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'image-budget-'))
-  let decks = new DeckService(join(dir, 'deck.sqlite'))
+  let decks = new DeckStore(join(dir, 'deck.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
   })
   for (let i = 0; i < 5; i++) decks.reserveImageSearch('chat', 'request')
   decks.close()
-  decks = new DeckService(join(dir, 'deck.sqlite'))
+  decks = new DeckStore(join(dir, 'deck.sqlite'))
   assert.throws(() => decks.reserveImageSearch('chat', 'request'), { code: 'RESEARCH_IMAGE_BUDGET' })
   assert.throws(() => decks.reserveImageSearch('other-chat', 'request'), { code: 'RESEARCH_IMAGE_BUDGET' })
 })
@@ -564,7 +564,7 @@ test('Stop after an image download starts prevents a completed selection from be
 test('schema 8 migration preserves the exact legacy prepared-image payload', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'image-migration-')),
     path = join(dir, 'deck.sqlite')
-  let decks = new DeckService(path)
+  let decks = new DeckStore(path)
   decks.close()
   const old = new DatabaseSync(path)
   old.exec(
@@ -575,7 +575,7 @@ test('schema 8 migration preserves the exact legacy prepared-image payload', asy
   // The migration verifies foreign keys, so also provide a valid historical Outline parent.
   old.prepare('INSERT INTO outline_proposals VALUES(?,?,?,?,?,?,?)').run('chat', 'outline', 1, 'request', 1, '{}', 0)
   old.close()
-  decks = new DeckService(path)
+  decks = new DeckStore(path)
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

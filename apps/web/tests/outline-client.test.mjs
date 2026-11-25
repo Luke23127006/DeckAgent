@@ -4,14 +4,14 @@ import test from 'node:test'
 import { OutlineClient } from './fixtures/browser-driver.mjs'
 import { resolveDesign } from '@deckagent/design'
 import { brief } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 test('saved web-image Outlines remain readable and malformed image blocks are rejected', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'web-outline-decoder-'))
-  const decks = new DeckService(join(dir, 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'decks.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

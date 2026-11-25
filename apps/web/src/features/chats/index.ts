@@ -1,4 +1,4 @@
-import type { DeckService } from '@deckagent/deck'
+import type { DeckStore } from '@deckagent/deck'
 import type { WebSession } from '@deckagent/host-contracts'
 import type { ChatSummary, ModelSelection, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { MemoryDraftStore } from '../../draft-store.ts'
@@ -15,7 +15,7 @@ export function createChatOperations(
   sessions: SqliteSessionStore,
   registry: WorkspaceRegistry,
   web: WebState,
-  decks: DeckService,
+  decks: DeckStore,
   drafts: MemoryDraftStore,
 ): ChatOperations {
   const project = (chat: ChatSummary): WebSession => ({

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 import { startLocalWeb } from '@deckagent/local-web'
 import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
@@ -62,7 +62,7 @@ test('CLI imports the explicit confirmed-deck fixture without a model or cloud r
   assert.doesNotMatch(output, /token=/)
   child.kill()
   await closed
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   try {
     assert.deepEqual(
       decks.snapshot('task-005-demo').slides.map(s => [s.slideId, s.status]),
@@ -86,7 +86,7 @@ test('A saved deck reads through Host snapshot, content and events; the chat say
   await seededChats.open('pipeline')
   await seededChats.append('pipeline', [{ role: 'user', content: 'Two slides please' }])
   seededChats.close()
-  const seeded = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  const seeded = new DeckStore(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   seeded.confirm('pipeline', confirmed)
   seeded.publish('pipeline', {
     outlineId: 'outline-1',

@@ -4,13 +4,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { DeckService } from '../lib/index.js'
+import { DeckStore } from '../lib/index.js'
 import { proposal } from './generation-confirmation.test.mjs'
 
 test('a new request continues an interrupted confirmed deck after restart without changing its confirmation or theme', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deck-continuation-'))
   let active = 'first'
-  let decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
+  let decks = new DeckStore(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -27,7 +27,7 @@ test('a new request continues an interrupted confirmed deck after restart withou
   const legacy = new DatabaseSync(join(dir, 'deck.sqlite'))
   legacy.exec('DROP TABLE prepared_images; DROP TABLE image_search_attempts; PRAGMA user_version=6')
   legacy.close()
-  decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
+  decks = new DeckStore(join(dir, 'deck.sqlite'), { activeRequest: (_chat, id) => id === active })
   const upgraded = new DatabaseSync(join(dir, 'deck.sqlite'))
   assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 10)
   upgraded.close()

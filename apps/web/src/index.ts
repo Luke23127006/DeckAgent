@@ -8,7 +8,7 @@ import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence
 import type { ModelSelection } from '@deckagent/session-persistence'
 import { MemoryDraftStore } from './draft-store.ts'
 import { WorkspaceRegistry } from '@deckagent/workspace-registry'
-import { DeckService, deckFailureMessage } from '@deckagent/deck'
+import { DeckStore, deckFailureMessage } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import type { ConfirmedDeckPlan } from '@deckagent/deck'
 import {
@@ -93,7 +93,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const commonsImages = new CommonsImages(options.imageAccess?.fetch)
   let registry: WorkspaceRegistry | undefined
   let sessions: SqliteSessionStore | undefined
-  let decks: DeckService | undefined
+  let decks: DeckStore | undefined
   let web: WebState | undefined
   let providers: ProviderStore | undefined
   let preparation: AttachmentService | undefined
@@ -114,7 +114,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     try {
       sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'))
       const sessionStore = sessions
-      decks = new DeckService(join(layout.databases, 'decks.sqlite'), {
+      decks = new DeckStore(join(layout.databases, 'decks.sqlite'), {
         formats: [new HtmlFormatAdapter()],
         legacyHtmlPolicy: validateLegacySlideHtml,
         researchImage: (_id, query, signal) => commonsImages.find(query, signal),

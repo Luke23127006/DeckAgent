@@ -87,7 +87,7 @@ test('rejects @deckagent/host-api import in apps/web/src/browser', () => {
 test('rejects @deckagent/deck import in apps/web/src/browser', () => {
   const result = lintFixture(
     'apps/web/src/browser/transport/client.ts',
-    "import { DeckService } from '@deckagent/deck'\nconsole.log(DeckService)\n",
+    "import { DeckStore } from '@deckagent/deck'\nconsole.log(DeckStore)\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)

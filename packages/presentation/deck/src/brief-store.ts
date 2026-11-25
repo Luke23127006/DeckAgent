@@ -56,7 +56,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
   return draft
 }
 
-/** Internal implementation; DeckService owns all transactions. */
+/** Internal implementation; DeckStore owns all transactions. */
 export class BriefStorage {
   constructor(private readonly db: DatabaseSync) {}
 

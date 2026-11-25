@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import {
+  briefContractVersion,
+  briefJsonSchema,
   DeckError,
   interviewState,
   skipInterview,
@@ -7,8 +9,7 @@ import {
   validateBoundOutline,
   outlineImageNeeds,
 } from '@deckagent/deck'
-import type { DeckService, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
-import { briefContractVersion, briefJsonSchema } from '@deckagent/deck/brief'
+import type { DeckStore, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
 import { listDesignSystems, listTemplates, reviewLayouts } from '@deckagent/design'
 import type { PreparedRequest, RequestRuntime, RequestRun, ToolResult, ToolSchema } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
@@ -83,7 +84,7 @@ const decode = (args: unknown): unknown => {
 export class DeckWorkflow implements RequestRuntime {
   constructor(
     private readonly runtime: RequestRuntime,
-    private readonly decks: DeckService,
+    private readonly decks: DeckStore,
     private readonly sessions: SqliteSessionStore,
     private readonly briefs: BriefService,
     private readonly generationRuntime?: RequestRuntime,

@@ -28,7 +28,7 @@ function stagedState(stage: Stage): string {
   return sha256Hex(JSON.stringify([stage.digest, stage.assets, stage.document, stage.provenance, stage.notes]))
 }
 
-/** Managed immutable files only. DeckService owns metadata transactions and active-grant checks. */
+/** Managed immutable files only. DeckStore owns metadata transactions and active-grant checks. */
 export class ArtifactStorage {
   private readonly imageAttempts = new WeakMap<GenerationGrant, number>()
   private readonly researchImages = new WeakMap<GenerationGrant, Map<string, Promise<PreparedResearchImage>>>()

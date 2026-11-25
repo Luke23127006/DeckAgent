@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '../lib/index.js'
+import { DeckStore } from '../lib/index.js'
 import { brief } from './fixtures/brief.mjs'
 
 export function proposal(decks, sessionId = 'chat') {
@@ -43,7 +43,7 @@ export function proposal(decks, sessionId = 'chat') {
 test('confirmation creates one pending Deck and durable intent; start locks its exact snapshot even with zero slides published', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'generation-confirm-'))
   let active = true
-  let decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: () => active })
+  let decks = new DeckStore(join(dir, 'deck.sqlite'), { activeRequest: () => active })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -68,7 +68,7 @@ test('confirmation creates one pending Deck and durable intent; start locks its 
   assert.equal(saved.formatLocked, true)
   assert.equal(decks.snapshot('chat').slides[0].status, 'pending')
   decks.close()
-  decks = new DeckService(join(dir, 'deck.sqlite'), { activeRequest: () => active })
+  decks = new DeckStore(join(dir, 'deck.sqlite'), { activeRequest: () => active })
   assert.deepEqual(decks.generation('chat'), saved)
   assert.throws(() => decks.startGeneration('chat', receipt.intentId, receipt.requestId), {
     code: 'GENERATION_REQUEST_INACTIVE',
@@ -77,7 +77,7 @@ test('confirmation creates one pending Deck and durable intent; start locks its 
 
 test('unknown and stale targets never partially confirm a proposal or lock a Deck', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'confirmation-stale-'))
-  const decks = new DeckService(join(dir, 'deck.sqlite'))
+  const decks = new DeckStore(join(dir, 'deck.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

@@ -3,11 +3,10 @@ import test from 'node:test'
 import { mkdtemp, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService, validateBriefDraft } from '../lib/index.js'
+import { DeckStore, validateBriefDraft, briefJsonSchema } from '../lib/index.js'
 import { DatabaseSync } from 'node:sqlite'
 
 import { brief } from './fixtures/brief.mjs'
-import { decodeBriefDraft, briefJsonSchema } from '../lib/brief.js'
 
 test('Brief validation reports every independent field error without guessing omitted answers', () => {
   const input = {
@@ -58,7 +57,7 @@ test('the public browser-safe Brief contract reports nested fields and never ech
     true,
   )
   assert.throws(
-    () => decodeBriefDraft(input),
+    () => validateBriefDraft(input),
     error => {
       const paths = error.issues.map(i => i.path)
       for (const path of [
@@ -103,7 +102,7 @@ test('Brief diagnostics collect independent catalog and theme failures alongside
 
 test('Brief versions preserve explicit source choices and isolate immutable history by Chat across restart', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-brief-'))
-  let deck = new DeckService(join(dir, 'decks.sqlite'))
+  let deck = new DeckStore(join(dir, 'decks.sqlite'))
   t.after(async () => {
     deck.close()
     await rm(dir, { recursive: true, force: true })
@@ -119,7 +118,7 @@ test('Brief versions preserve explicit source choices and isolate immutable hist
   assert.equal(next.briefId, first.briefId)
   assert.equal(next.version, 2)
   deck.close()
-  deck = new DeckService(join(dir, 'decks.sqlite'))
+  deck = new DeckStore(join(dir, 'decks.sqlite'))
   assert.equal(deck.briefSnapshot('a').current.draft.sources.publicResearch, true)
   assert.equal(deck.briefVersion('a', first.briefId, 1).draft.sources.publicResearch, false)
   assert.throws(() => deck.briefVersion('b', first.briefId, 1), { code: 'BRIEF_NOT_FOUND' })
@@ -129,7 +128,7 @@ test('Brief versions preserve explicit source choices and isolate immutable hist
 
 test('invalid Brief updates roll back, partial collecting state remains partial, and unsupported format is preserved', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'brief-validate-'))
-  const deck = new DeckService(join(dir, 'decks.sqlite'))
+  const deck = new DeckStore(join(dir, 'decks.sqlite'))
   t.after(async () => {
     deck.close()
     await rm(dir, { recursive: true, force: true })
@@ -186,7 +185,7 @@ test('v2 migration preserves published Deck and Outline without inventing a Brie
     JSON.stringify(outline),
   )
   db.close()
-  const deck = new DeckService(path)
+  const deck = new DeckStore(path)
   t.after(async () => {
     deck.close()
     await rm(dir, { recursive: true, force: true })
@@ -203,13 +202,13 @@ test('v2 migration preserves published Deck and Outline without inventing a Brie
 test('persisted theme corruption is reported without repairing historical content', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'brief-corrupt-'))
   const path = join(dir, 'decks.sqlite')
-  let deck = new DeckService(path)
+  let deck = new DeckStore(path)
   deck.saveBrief('chat', { expectedVersion: 0, draft: brief() })
   deck.close()
   const db = new DatabaseSync(path)
   db.exec(`UPDATE brief_versions SET design=json_set(design,'$.theme."type.body"',99)`)
   db.close()
-  deck = new DeckService(path)
+  deck = new DeckStore(path)
   t.after(async () => {
     deck.close()
     await rm(dir, { recursive: true, force: true })

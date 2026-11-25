@@ -1,5 +1,5 @@
 import { DeckError, validateConfirmation } from '@deckagent/deck'
-import type { DeckService, ConfirmationReceipt } from '@deckagent/deck'
+import type { DeckStore, ConfirmationReceipt } from '@deckagent/deck'
 import { RequestFailure } from '@deckagent/host-api'
 import type { RequestAdmission, RequestRuntime } from '@deckagent/host-api'
 import type { AgentRequest, ConfirmationResult, RequestSnapshot } from '@deckagent/host-contracts'
@@ -11,7 +11,7 @@ import { DeckWorkflowFailure } from './failures.ts'
 export class ConfirmationService {
   private readonly queues = new Map<string, Promise<void>>()
   constructor(
-    private readonly decks: DeckService,
+    private readonly decks: DeckStore,
     private readonly sessions: SqliteSessionStore,
     private readonly briefs: BriefService,
     private readonly runtime?: RequestRuntime,

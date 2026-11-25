@@ -19,7 +19,7 @@ const baseWorkspaces = [
   {
     dir: 'packages/presentation/deck',
     name: '@deckagent/deck',
-    exports: { '.': './lib/index.js', './brief': './lib/brief.js' },
+    exports: { '.': './lib/index.js' },
   },
   { dir: 'packages/presentation/design', name: '@deckagent/design', exports: { '.': './lib/index.js' } },
   { dir: 'packages/presentation/document', name: '@deckagent/presentation-document', exports: { '.': './lib/index.js' } },
@@ -43,12 +43,12 @@ test('extractImports ignores imports inside comments and strings', () => {
     "const text = \"import y from 'node:fs'\"",
     "import { ok } from '@deckagent/design'",
     "export { ok } from '@deckagent/presentation-document'",
-    "const lazy = () => import('@deckagent/deck/brief')",
+    "const lazy = () => import('@deckagent/host-contracts')",
   ].join('\n')
   assert.deepEqual(extractImports('apps/web/src/index.ts', source), [
     { line: 3, specifier: '@deckagent/design' },
     { line: 4, specifier: '@deckagent/presentation-document' },
-    { line: 5, specifier: '@deckagent/deck/brief' },
+    { line: 5, specifier: '@deckagent/host-contracts' },
   ])
 })
 
@@ -67,7 +67,7 @@ test('checkBoundaries accepts valid production and owner-local test imports', ()
     },
     {
       path: 'packages/presentation/html/tests/html-template-v3.test.mjs',
-      content: "import { DeckService } from '@deckagent/deck'\n",
+      content: "import { DeckStore } from '@deckagent/deck'\n",
     },
   ]
   const tsconfigPaths = { '@deckagent/deck': ['./packages/presentation/deck/src/index.ts'] }
@@ -78,7 +78,7 @@ test('checkBoundaries still rejects private package imports inside owner tests',
   const files = [
     {
       path: 'packages/presentation/html/tests/html-template-v3.test.mjs',
-      content: "import { DeckService } from '@deckagent/deck/src/internal'\n",
+      content: "import { DeckStore } from '@deckagent/deck/src/internal'\n",
     },
   ]
   assert.deepEqual(findings(files), [
@@ -168,7 +168,7 @@ test('checkBoundaries rejects deck importing concrete format adapter', () => {
 
 test('checkBoundaries rejects format adapter importing outside design and document', () => {
   const files = [
-    { path: 'packages/presentation/html/src/index.ts', content: "import { DeckService } from '@deckagent/deck'\n" },
+    { path: 'packages/presentation/html/src/index.ts', content: "import { DeckStore } from '@deckagent/deck'\n" },
   ]
   assert.deepEqual(findings(files), [
     { path: 'packages/presentation/html/src/index.ts', line: 1, rule: 'format-adapter-dependency' },

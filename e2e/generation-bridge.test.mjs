@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { startApp, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -45,7 +45,7 @@ test('confirmed production runtime publishes a full deck through the request MCP
   const sessions = new SqliteSessionStore(join(dir, 'data', 'db', 'sessions.sqlite'))
   const selectedSource = sessions.requests.sourceCatalogue(id)[0]
   sessions.close()
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = { ...brief(), proposedSlideCount: 3, purpose: 'Explain' }
   draft.sources = {
     material: true,

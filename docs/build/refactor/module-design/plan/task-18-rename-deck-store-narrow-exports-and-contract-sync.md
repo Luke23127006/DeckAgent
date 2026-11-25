@@ -88,7 +88,7 @@ Read this file to extract `deck-publication.ts` and `deck-store.ts`, narrow `@de
 - Add `any`, type assertions (`as Type`), non-null assertions (`!`), comments beyond the five allowed reasons, lint-disable directives, or `@ts-expect-error`.
 - Commit or push before Step 8 checks pass.
 
-- [ ] **Step 1: Create `deck-publication.ts` and `deck-store.ts`, remove `DeckPublisher`, and remove all remaining `!` assertions**
+- [x] **Step 1: Create `deck-publication.ts` and `deck-store.ts`, remove `DeckPublisher`, and remove all remaining `!` assertions**
 
 1. Remove `DeckPublisher` from `packages/presentation/deck/src/deck-contracts.ts`.
 2. Create `packages/presentation/deck/src/deck-publication.ts` (under 300 lines, every function under 75 lines, zero `!`, zero `as`):
@@ -104,7 +104,7 @@ Read this file to extract `deck-publication.ts` and `deck-store.ts`, narrow `@de
    - In `snapshot`: bind `const generation = this.generations.get(sessionId)` once and spread `...(generation ? { generation } : {})` (removes `index.ts:806` `!`).
    - In `slideMetadata` and `content`: bind `const notes = this.readback.notes(...)` once and spread `...(notes ? { notes } : {})` (removes `index.ts:944` and `971` `!` and duplicate parses).
 
-- [ ] **Step 2: Reduce `packages/presentation/deck/src/index.ts` to 31 root exports and remove `./brief` subpath**
+- [x] **Step 2: Reduce `packages/presentation/deck/src/index.ts` to 31 root exports and remove `./brief` subpath**
 
 1. Replace `packages/presentation/deck/src/index.ts` with a pure barrel exporting exactly these 31 symbols:
    - Values (`12`):
@@ -124,7 +124,7 @@ Read this file to extract `deck-publication.ts` and `deck-store.ts`, narrow `@de
 2. In `packages/presentation/deck/package.json`, remove the `"./brief"` entry from `"exports"` so `"exports"` contains only `"."`.
 3. In `scripts/build-workspace.mjs` line 35, remove `'@deckagent/deck': ['lib/types/brief.js'],` from `extraEntries`.
 
-- [ ] **Step 3: Add 16 `AssertEqual` checks in `packages/host/api/src/contract-sync.ts`**
+- [x] **Step 3: Add 16 `AssertEqual` checks in `packages/host/api/src/contract-sync.ts`**
 
 Extend `packages/host/api/src/contract-sync.ts` (type-only imports only, keeping `host/api` free of runtime `@deckagent/deck` imports):
 1. Import from `@deckagent/host-contracts`: `BriefDraft as HostBriefDraft`, `BriefRecord as HostBriefRecord`, `BriefSnapshot as HostBriefSnapshot`, `BriefSourceRef as HostBriefSourceRef`, `ConfirmationReceipt as HostConfirmationReceipt`, `ConfirmationTarget as HostConfirmationTarget`, `DeckChange as HostDeckChange`, `DeckSnapshot as HostDeckSnapshot`, `ImageCredit as HostImageCredit`, `InterviewState as HostInterviewState`, `OutlineProposal as HostOutlineProposal`, `OutlineSnapshot as HostOutlineSnapshot`, `SlideContent as HostSlideContent`.
@@ -145,7 +145,7 @@ Extend `packages/host/api/src/contract-sync.ts` (type-only imports only, keeping
    - `type DeckLayoutIssue = NonNullable<DeckOutlineProposal['layoutIssues']>[number]`
 4. Intersect all 16 `AssertEqual<Host*, Deck*>` checks into `AllSynced` (9 existing persistence pairs + 16 deck and design pairs = 25 total pairs).
 
-- [ ] **Step 4: Update `apps/web/src/` callers (`D2`, `D3`, `D5`)**
+- [x] **Step 4: Update `apps/web/src/` callers (`D2`, `D3`, `D5`)**
 
 1. `apps/web/src/features/deck/generation-workflow.ts` line 3: import `DeckError` from `@deckagent/deck` and import `FormatError, decodeSlideDocument` from `@deckagent/presentation-document`.
 2. `apps/web/src/features/deck/deck-workflow.ts` lines 2-11: move `briefContractVersion` and `briefJsonSchema` into the `@deckagent/deck` root import, remove line 11 (`@deckagent/deck/brief`), and rename `DeckService` to `DeckStore` (lines 10 and 86).
@@ -156,7 +156,7 @@ Extend `packages/host/api/src/contract-sync.ts` (type-only imports only, keeping
    - `apps/web/src/features/deck/confirmation-service.ts` (lines 2, 14)
    - `apps/web/src/features/deck/generation-report.ts` (lines 1, 6)
 
-- [ ] **Step 5: Update test files for `DeckStore` and removed `./brief` subpath**
+- [x] **Step 5: Update test files for `DeckStore` and removed `./brief` subpath**
 
 1. In `packages/presentation/deck/tests/deck-brief.test.mjs`:
    - Line 6: import `{ DeckStore, validateBriefDraft, briefJsonSchema }` from `'../lib/index.js'`.
@@ -187,7 +187,7 @@ Extend `packages/host/api/src/contract-sync.ts` (type-only imports only, keeping
    - `tests/check-boundaries.test.mjs`: change line 22 to `exports: { '.': './lib/index.js' }`, change lines 46 and 51 from `'@deckagent/deck/brief'` to `'@deckagent/host-contracts'`, and rename `DeckService` to `DeckStore` on lines 70, 81, 171.
    - `tests/oxlint-boundaries.test.mjs`: rename `DeckService` to `DeckStore` on line 90.
 
-- [ ] **Step 6: Build, lint, check boundaries, format, and check AST targets**
+- [x] **Step 6: Build, lint, check boundaries, format, and check AST targets**
 
 Run:
 
@@ -211,7 +211,7 @@ node -e "const fs=require('node:fs'); const ts=require('typescript'); const {exe
 
 Expected: PASS. `area.filesOver400 === 0`, `area.functionsOver80 === 0`, `area.smallNonBarrelFiles === 0`, `area.typeAssertions === 0`, `area.serviceSymbols === 0`, `nonNullTotal === 0`, `rootExports === 31`, and `leftovers` is `[]`.
 
-- [ ] **Step 7: Run root tool tests and Deck test suites**
+- [x] **Step 7: Run root tool tests and Deck test suites**
 
 Run:
 
@@ -229,7 +229,7 @@ corepack pnpm@11.28.5 test:brief-foundation && corepack pnpm@11.28.5 test:outlin
 
 Expected: PASS. Every suite exits with code `0`, `# fail 0`, and `# skipped 0`.
 
-- [ ] **Step 8: Mark task done, write the report file, and commit and push**
+- [x] **Step 8: Mark task done, write the report file, and commit and push**
 
 1. Mark Steps 1 to 7 as `- [x]` in this file. Update the Task 18 row in `docs/build/refactor/module-design/plan/README.md` to `Done` and link `../reports/task-18-rename-deck-store-narrow-exports-and-contract-sync.md`.
 2. Create `docs/build/refactor/module-design/reports/task-18-rename-deck-store-narrow-exports-and-contract-sync.md` with:

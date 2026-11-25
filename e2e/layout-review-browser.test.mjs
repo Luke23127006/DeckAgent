@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { startLocalWeb } from '@deckagent/local-web'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 import { browserSession } from '../scripts/lib/browser-session.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -108,7 +108,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
       },
     ],
   }
-  const decks = new DeckService(join(dataDir, 'db', 'decks.sqlite'), options)
+  const decks = new DeckStore(join(dataDir, 'db', 'decks.sqlite'), options)
   const input = {
     requestId: 'saved-before-layout-check',
     responseIndex: 1,
@@ -159,7 +159,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
     'Reload lost layout blocker',
   )
   assert.equal(await browser.evaluate(`document.querySelector('.outline-dock .outline-actions button').disabled`), true)
-  const updated = new DeckService(join(dataDir, 'db', 'decks.sqlite'), options)
+  const updated = new DeckStore(join(dataDir, 'db', 'decks.sqlite'), options)
   const history = new SqliteSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
   await history.append(id, [
     { role: 'user', content: 'Sửa nội dung cho vừa bố cục' },

@@ -1,5 +1,5 @@
 import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
-import type { DeckService, BriefDraft } from '@deckagent/deck'
+import type { DeckStore, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { BriefManagement } from '@deckagent/host-api'
@@ -9,7 +9,7 @@ import { DeckWorkflowFailure } from './failures.ts'
 /** Composition verifies source ownership, without reading external files or granting research access. */
 export class BriefService implements BriefManagement {
   constructor(
-    private readonly decks: DeckService,
+    private readonly decks: DeckStore,
     private readonly sessions: SqliteSessionStore,
   ) {}
 

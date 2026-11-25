@@ -42,7 +42,7 @@ export interface Stage {
   published: boolean
 }
 
-/** Owns open slide stages and their source chunks. DeckService owns grant checks and transactions. */
+/** Owns open slide stages and their source chunks. DeckStore owns grant checks and transactions. */
 export class ArtifactStaging {
   private readonly stageAttempts = new WeakMap<GenerationGrant, Map<string, number>>()
   private readonly stages = new Map<string, Stage>()

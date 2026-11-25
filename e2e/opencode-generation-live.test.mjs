@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startLocalWeb } from '@deckagent/local-web'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { HostClient, ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { MemoryCredentials, finished, filesContaining } from '../apps/web/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -147,7 +147,7 @@ for (const portable of [false, true])
       new: true,
     })
     const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'local-model' } })
-    const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+    const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
     try {
       const draft = {
         ...brief(),

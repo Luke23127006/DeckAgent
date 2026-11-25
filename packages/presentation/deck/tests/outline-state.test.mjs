@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
-import { DeckService } from '../lib/index.js'
+import { DeckStore } from '../lib/index.js'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 
 const draft = {
@@ -21,7 +21,7 @@ test('migration preserves a TASK-005 v1 published deck and enables independent o
   const legacy = new DatabaseSync(path)
   legacy.exec(await readFile(new URL('./fixtures/deck-v1.sql', import.meta.url), 'utf8'))
   legacy.close()
-  const decks = new DeckService(path)
+  const decks = new DeckStore(path)
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -40,7 +40,7 @@ test('migration preserves a TASK-005 v1 published deck and enables independent o
 
 test('only the current outline can be confirmed; publication follows its stable identities and survives restart', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-outline-'))
-  let decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  let decks = new DeckStore(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -81,7 +81,7 @@ test('only the current outline can be confirmed; publication follows its stable 
   })
   assert.throws(() => decks.confirmOutline('chat', second), { code: 'OUTLINE_ALREADY_CONFIRMED' })
   decks.close()
-  decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  decks = new DeckStore(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   assert.deepEqual(decks.outlineSnapshot('chat'), state)
   assert.equal(
     decks.publish('chat', {
@@ -97,7 +97,7 @@ test('only the current outline can be confirmed; publication follows its stable 
 
 test('cancel keeps the proposal, invalid content changes nothing, and a new request creates a new current outline', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-outline-cancel-'))
-  const decks = new DeckService(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  const decks = new DeckStore(join(dir, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

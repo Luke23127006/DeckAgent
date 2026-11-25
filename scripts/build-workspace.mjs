@@ -32,7 +32,6 @@ function discoverWorkspacePackages() {
 // points. Additional public subpaths and application/worker entry points are
 // listed explicitly: workspace discovery enumerates packages, not bundler entries.
 const extraEntries = {
-  '@deckagent/deck': ['lib/types/brief.js'],
   '@deckagent/file-tools': ['lib/types/parser-worker.js'],
   '@deckagent/local-web': ['lib/types/cli.js'],
 }

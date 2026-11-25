@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFile, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { brief } from '../../deck/tests/fixtures/brief.mjs'
 import { HtmlFormatAdapter } from '../lib/index.js'
 import { resolveDesign, findCompatibleLayouts } from '@deckagent/design'
@@ -105,7 +105,7 @@ test('explicit optional image omissions use a bounded text variant without addin
 
 test('an over-capacity v3 Outline cannot create a generation intent or lock the reviewed proposal', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'v3-layout-capacity-'))
-  const decks = new DeckService(join(dir, 'deck.sqlite'))
+  const decks = new DeckStore(join(dir, 'deck.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })

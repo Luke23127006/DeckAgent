@@ -6,10 +6,6 @@
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
-    "./brief": {
-      "types": "./lib/types/brief.d.ts",
-      "default": "./lib/brief.js"
-    },
     ".": {
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"

@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '../lib/index.js'
+import { DeckStore } from '../lib/index.js'
 import { brief } from './fixtures/brief.mjs'
 
 const plan = () => ({
@@ -27,7 +27,7 @@ const plan = () => ({
 
 test('Brief/Outline request receipts are atomic and idempotent; invalid, foreign or stale content leaves no partial result', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'bound-atomic-'))
-  const decks = new DeckService(join(dir, 'deck.sqlite'))
+  const decks = new DeckStore(join(dir, 'deck.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -96,7 +96,7 @@ test('Brief/Outline request receipts are atomic and idempotent; invalid, foreign
 
 test('bound Outline revisions preserve slide identity and exact Brief history across reorder and restart', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'bound-outline-'))
-  let decks = new DeckService(join(dir, 'deck.sqlite'))
+  let decks = new DeckStore(join(dir, 'deck.sqlite'))
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -147,7 +147,7 @@ test('bound Outline revisions preserve slide identity and exact Brief history ac
     { code: 'OUTLINE_STALE' },
   )
   decks.close()
-  decks = new DeckService(join(dir, 'deck.sqlite'))
+  decks = new DeckStore(join(dir, 'deck.sqlite'))
   const saved = decks.outlineSnapshot('chat')
   assert.deepEqual(
     saved.proposals.map(p => p.status),

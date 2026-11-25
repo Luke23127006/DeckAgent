@@ -63,8 +63,3 @@ export interface DeckReader {
   content(sessionId: string, slideId: string, revision: number): SlideContent
   subscribe(sessionId: string, listener: (change: DeckChange) => void): () => void
 }
-
-export interface DeckPublisher {
-  snapshot(sessionId: string): DeckSnapshot
-  publish(sessionId: string, input: PublishSlide, signal?: AbortSignal): PublishedSlide
-}

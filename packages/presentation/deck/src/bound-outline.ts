@@ -129,7 +129,7 @@ export function outlineChanges(
   }
 }
 
-/** Runs inside DeckService's transaction; no Session storage or model transport dependency. */
+/** Runs inside DeckStore's transaction; no Session storage or model transport dependency. */
 export function saveBoundOutline(
   db: DatabaseSync,
   sessionId: string,

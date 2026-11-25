@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { DeckClient } from './fixtures/browser-driver.mjs'
 import { startApp, MemoryCredentials, finished, runs } from './fixtures/b02-helpers.mjs'
 import { brief } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -66,7 +66,7 @@ test('web-image generation saves attribution and separate presenter notes, then 
     new: true,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const b = decks.saveBrief(id, {
     expectedVersion: 0,
     draft: {

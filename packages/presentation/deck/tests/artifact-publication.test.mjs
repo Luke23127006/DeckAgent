@@ -4,7 +4,7 @@ import { mkdtemp, rm, readdir, writeFile, readFile, mkdir, symlink } from 'node:
 import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService, DeckError, outlineImageNeeds } from '../lib/index.js'
+import { DeckStore, DeckError, outlineImageNeeds } from '../lib/index.js'
 import { HtmlFormatAdapter } from '@deckagent/html-format'
 import { createHash } from 'node:crypto'
 import { brief } from './fixtures/brief.mjs'
@@ -13,7 +13,7 @@ async function fixture(t, options = {}, image) {
   const dir = await mkdtemp(join(tmpdir(), 'artifact-publication-'))
   let active = true
   const closeAfter = []
-  const decks = new DeckService(join(dir, 'deck.sqlite'), {
+  const decks = new DeckStore(join(dir, 'deck.sqlite'), {
     formats: [new HtmlFormatAdapter()],
     activeRequest: () => active,
     artifactRoot: join(dir, 'artifacts'),
@@ -69,10 +69,12 @@ async function fixture(t, options = {}, image) {
   )
   decks.admitGeneration('chat', receipt.intentId, receipt.requestId)
   const grant = decks.startGeneration('chat', receipt.intentId, receipt.requestId)
+  const cap = decks.generationCapability(grant, new AbortController().signal)
   return {
     dir,
     decks,
     grant,
+    cap,
     p,
     closeAfter,
     stop() {
@@ -127,7 +129,7 @@ test('public image bytes and attribution survive reopen; missing essential image
     text: `<h1>Purpose</h1><ul><li>Explain the purpose</li></ul><img src="asset:${asset.assetId}" alt="Solar">`,
   })
   await cap.publish({ stageId: stage.stageId, slideId, expectedRevision: 0, publicationId: 'web-publish' })
-  const reopened = new DeckService(join(f.dir, 'deck.sqlite'), {
+  const reopened = new DeckStore(join(f.dir, 'deck.sqlite'), {
     formats: [new HtmlFormatAdapter()],
     artifactRoot: join(f.dir, 'artifacts'),
     renderCheck: async () => {},
@@ -285,28 +287,28 @@ test('published provenance keeps real locations and rejects facts attributed onl
 test('chunk retries are exact, only finalized validated artifacts publish, and late writes preserve the last-good revision', async t => {
   const f = await fixture(t)
   const slideId = f.p.slides[0].slideId
-  const stage = f.decks.beginStage(f.grant, slideId, 'title-body')
+  const stage = f.cap.begin(slideId, 'title-body')
   const html = '<h1>Purpose</h1><ul><li>Explain the purpose</li></ul>'
   const chunk = { sequence: 0, text: html, final: true }
-  const final = f.decks.appendStage(f.grant, stage.stageId, chunk)
-  assert.deepEqual(f.decks.appendStage(f.grant, stage.stageId, chunk), final)
-  assert.throws(() => f.decks.appendStage(f.grant, stage.stageId, { ...chunk, text: '<h1>Other</h1>' }), {
+  const final = f.cap.append(stage.stageId, chunk)
+  assert.deepEqual(f.cap.append(stage.stageId, chunk), final)
+  assert.throws(() => f.cap.append(stage.stageId, { ...chunk, text: '<h1>Other</h1>' }), {
     code: 'STAGE_CHUNK_CONFLICT',
   })
   const publication = { stageId: stage.stageId, slideId, publicationId: 'pub-1', expectedRevision: 0 }
   const both = await Promise.all([
-    f.decks.publishArtifact(f.grant, publication),
-    f.decks.publishArtifact(f.grant, publication),
+    f.cap.publish(publication),
+    f.cap.publish(publication),
   ])
   const first = both[0]
   assert.deepEqual(both[1], first)
-  assert.deepEqual(f.decks.appendStage(f.grant, stage.stageId, chunk), final)
-  assert.deepEqual(await f.decks.publishArtifact(f.grant, publication), first)
+  assert.deepEqual(f.cap.append(stage.stageId, chunk), final)
+  assert.deepEqual(await f.cap.publish(publication), first)
   assert.match(f.decks.content('chat', slideId, 1).html, /--color-accent/)
   assert.ok((await readdir(join(f.dir, 'artifacts'))).some(n => n.endsWith('.html')))
   f.stop()
   await assert.rejects(
-    f.decks.publishArtifact(f.grant, { ...publication, publicationId: 'late', expectedRevision: 1 }),
+    f.cap.publish({ ...publication, publicationId: 'late', expectedRevision: 1 }),
     { code: 'GENERATION_REQUEST_INACTIVE' },
   )
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 1)
@@ -320,37 +322,37 @@ test('foreign grants, partial chunks, bounds, revision conflicts and interrupted
     },
   })
   const slideId = f.p.slides[0].slideId
-  assert.throws(() => f.decks.beginStage({ ...f.grant }, slideId, 'title-body'), { code: 'GENERATION_GRANT_INVALID' })
-  assert.throws(() => f.decks.beginStage(f.grant, 'foreign', 'title-body'), { code: 'DECK_SLIDE_NOT_FOUND' })
-  assert.throws(() => f.decks.beginStage(f.grant, slideId, 'custom'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
-  const a = f.decks.beginStage(f.grant, slideId, 'title-body')
-  const b = f.decks.beginStage(f.grant, slideId, 'title-body')
-  assert.throws(() => f.decks.beginStage(f.grant, slideId, 'title-body'), { code: 'STAGE_LIMIT' })
-  assert.throws(() => f.decks.appendStage(f.grant, a.stageId, { sequence: 0, text: 'x'.repeat(8193), final: true }), {
+  assert.throws(() => f.decks.generationCapability({ ...f.grant }, new AbortController().signal), { code: 'GENERATION_GRANT_INVALID' })
+  assert.throws(() => f.cap.begin('foreign', 'title-body'), { code: 'DECK_SLIDE_NOT_FOUND' })
+  assert.throws(() => f.cap.begin(slideId, 'custom'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
+  const a = f.cap.begin(slideId, 'title-body')
+  const b = f.cap.begin(slideId, 'title-body')
+  assert.throws(() => f.cap.begin(slideId, 'title-body'), { code: 'STAGE_LIMIT' })
+  assert.throws(() => f.cap.append(a.stageId, { sequence: 0, text: 'x'.repeat(8193), final: true }), {
     code: 'STAGE_CHUNK_INVALID',
   })
-  assert.throws(() => f.decks.appendStage(f.grant, a.stageId, { sequence: 1, text: 'x', final: true }), {
+  assert.throws(() => f.cap.append(a.stageId, { sequence: 1, text: 'x', final: true }), {
     code: 'STAGE_SEQUENCE_CONFLICT',
   })
-  f.decks.appendStage(f.grant, a.stageId, { sequence: 0, text: '<h1>Purpose</h1>', final: false })
+  f.cap.append(a.stageId, { sequence: 0, text: '<h1>Purpose</h1>', final: false })
   await assert.rejects(
-    f.decks.publishArtifact(f.grant, { stageId: a.stageId, slideId, publicationId: 'partial', expectedRevision: 0 }),
+    f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'partial', expectedRevision: 0 }),
     { code: 'STAGE_INCOMPLETE' },
   )
-  f.decks.appendStage(f.grant, a.stageId, { sequence: 1, text: '<p>Explain the purpose</p>', final: true })
+  f.cap.append(a.stageId, { sequence: 1, text: '<p>Explain the purpose</p>', final: true })
   await assert.rejects(
-    f.decks.publishArtifact(f.grant, { stageId: a.stageId, slideId, publicationId: 'stale', expectedRevision: 1 }),
+    f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'stale', expectedRevision: 1 }),
     { code: 'DECK_CONFLICT' },
   )
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 0)
-  f.decks.appendStage(f.grant, b.stageId, {
+  f.cap.append(b.stageId, {
     sequence: 0,
     text: '<h1>Purpose</h1><p>Explain the purpose</p>',
     final: true,
   })
   stop = () => f.stop()
   await assert.rejects(
-    f.decks.publishArtifact(f.grant, { stageId: b.stageId, slideId, publicationId: 'stopped', expectedRevision: 0 }),
+    f.cap.publish({ stageId: b.stageId, slideId, publicationId: 'stopped', expectedRevision: 0 }),
     { code: 'GENERATION_REQUEST_INACTIVE' },
   )
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 0)
@@ -360,8 +362,8 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
   const f = await fixture(t)
   const slideId = f.p.slides[0].slideId
   const make = () => {
-    const s = f.decks.beginStage(f.grant, slideId, 'title-body')
-    f.decks.appendStage(f.grant, s.stageId, {
+    const s = f.cap.begin(slideId, 'title-body')
+    f.cap.append(s.stageId, {
       sequence: 0,
       text: '<h1>Purpose</h1><p>Explain the purpose</p>',
       final: true,
@@ -369,7 +371,7 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
     return s
   }
   const first = make()
-  await f.decks.publishArtifact(f.grant, {
+  await f.cap.publish({
     stageId: first.stageId,
     slideId,
     publicationId: 'first',
@@ -380,7 +382,7 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
   db.exec("CREATE TRIGGER fail_artifact BEFORE INSERT ON artifact_revisions BEGIN SELECT RAISE(ABORT,'fault'); END")
   const second = make()
   await assert.rejects(
-    f.decks.publishArtifact(f.grant, {
+    f.cap.publish({
       stageId: second.stageId,
       slideId,
       publicationId: 'second',
@@ -393,7 +395,7 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
   db.close()
   f.decks.close()
   await writeFile(join(f.dir, 'artifacts', 'keep-user-file.txt'), 'keep')
-  const reopened = new DeckService(join(f.dir, 'deck.sqlite'), {
+  const reopened = new DeckStore(join(f.dir, 'deck.sqlite'), {
     formats: [new HtmlFormatAdapter()],
     artifactRoot: join(f.dir, 'artifacts'),
   })
@@ -429,32 +431,20 @@ test('managed PNG assets retain provenance, materialize only published bytes and
     { attachmentId, source },
   )
   const slideId = f.p.slides[0].slideId
-  const stage = f.decks.beginStage(f.grant, slideId, 'image-text')
+  const stage = f.cap.begin(slideId, 'image-text')
   await assert.rejects(
-    f.decks.attachStageImage(
-      f.grant,
-      stage.stageId,
-      slideId,
-      'att-00000000-0000-0000-0000-000000000002',
-      new AbortController().signal,
-    ),
+    f.cap.image(stage.stageId, slideId, 'att-00000000-0000-0000-0000-000000000002'),
     { code: 'ARTIFACT_ASSET_UNAVAILABLE' },
   )
-  const asset = await f.decks.attachStageImage(
-    f.grant,
-    stage.stageId,
-    slideId,
-    attachmentId,
-    new AbortController().signal,
-  )
+  const asset = await f.cap.image(stage.stageId, slideId, attachmentId)
   assert.deepEqual(asset.source, source)
   assert.equal(asset.originalDigest, 'a'.repeat(64))
-  f.decks.appendStage(f.grant, stage.stageId, {
+  f.cap.append(stage.stageId, {
     sequence: 0,
     text: `<h1>Purpose</h1><p>Explain the purpose</p><img src="asset:${asset.assetId}" alt="Attached image">`,
     final: true,
   })
-  await f.decks.publishArtifact(f.grant, {
+  await f.cap.publish({
     stageId: stage.stageId,
     slideId,
     publicationId: 'image',
@@ -472,7 +462,7 @@ test('artifact storage refuses a redirected managed parent before creating files
   await mkdir(project)
   await writeFile(join(project, 'notes.txt'), 'unchanged source')
   await symlink(project, redirect, process.platform === 'win32' ? 'junction' : 'dir')
-  assert.throws(() => new DeckService(join(f.dir, 'deck.sqlite'), { artifactRoot: join(redirect, 'decks') }), {
+  assert.throws(() => new DeckStore(join(f.dir, 'deck.sqlite'), { artifactRoot: join(redirect, 'decks') }), {
     code: 'ARTIFACT_STORAGE_UNAVAILABLE',
   })
   assert.deepEqual(await readdir(project), ['notes.txt'])

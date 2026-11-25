@@ -1,9 +1,9 @@
-import type { DeckService } from '@deckagent/deck'
+import type { DeckStore } from '@deckagent/deck'
 import type { TerminalStatus } from '@deckagent/host-contracts'
 
 /** Counts and origins come from published revisions, never a model's success claim. */
 export function generationReport(
-  decks: DeckService,
+  decks: DeckStore,
   sessionId: string,
   requestId: string,
   status: TerminalStatus,

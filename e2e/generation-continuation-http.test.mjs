@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { startApp, MemoryCredentials, finished, waitFor } from '../apps/web/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -31,7 +31,7 @@ test('Stop at two of five, restart and explicitly continue publishes only missin
     new: true,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = {
     ...brief(),
     proposedSlideCount: 5,

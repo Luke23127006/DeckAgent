@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { HtmlFormatAdapter } from '@deckagent/html-format'
 import { PptxFormatAdapter, inspectPptx } from '@deckagent/pptx-format'
 import { resolveDesign } from '@deckagent/design'
@@ -39,7 +39,7 @@ async function fixture(t, options = {}) {
     },
     ...options,
   }
-  let decks = new DeckService(join(dir, 'deck.sqlite'), config)
+  let decks = new DeckStore(join(dir, 'deck.sqlite'), config)
   t.after(async () => {
     decks.close()
     await rm(dir, { recursive: true, force: true })
@@ -83,7 +83,7 @@ async function fixture(t, options = {}) {
     calls: () => calls,
     reopen() {
       decks.close()
-      decks = new DeckService(join(dir, 'deck.sqlite'), config)
+      decks = new DeckStore(join(dir, 'deck.sqlite'), config)
     },
   }
 }

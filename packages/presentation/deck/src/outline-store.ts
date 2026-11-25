@@ -46,7 +46,7 @@ export function validateOutlineDraft(value: unknown): OutlineDraft {
   return result
 }
 
-/** Internal storage; DeckService owns transactions so confirmation and Deck creation are atomic. */
+/** Internal storage; DeckStore owns transactions so confirmation and Deck creation are atomic. */
 export class OutlineStorage {
   constructor(
     private readonly db: DatabaseSync,

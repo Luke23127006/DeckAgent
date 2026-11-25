@@ -3,7 +3,7 @@ import test from 'node:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 import { startApp, waitFor, finished } from '../apps/web/tests/fixtures/b02-helpers.mjs'
@@ -30,7 +30,7 @@ test('authenticated concurrent confirmation schedules one request, denies mixed 
     await rm(dir, { recursive: true, force: true })
   })
   const id = (await f.call('sessions', 'POST', {})).data.sessionId
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = brief()
   draft.sources.material = false
   draft.sources.modelKnowledge = true
@@ -79,7 +79,7 @@ test('authenticated concurrent confirmation schedules one request, denies mixed 
 
 async function seed(f, dir) {
   const id = (await f.call('sessions', 'POST', {})).data.sessionId
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = brief()
   draft.sources.material = false
   draft.sources.modelKnowledge = true

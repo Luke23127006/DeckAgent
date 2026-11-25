@@ -4,7 +4,7 @@ import { mkdtemp, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient, ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 import { startApp, finished, waitFor, MemoryCredentials } from '../apps/web/tests/fixtures/b02-helpers.mjs'
@@ -57,7 +57,7 @@ test('real local renderer blocks malicious, out-of-theme, missing and overflowin
     await rm(dir, { recursive: true, force: true })
   })
   const id = (await f.call('sessions', 'POST', {})).data.sessionId
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = brief()
   draft.sources.material = false
   draft.sources.modelKnowledge = true
@@ -160,7 +160,7 @@ test('a prepared PNG and its result survive a Session terminal-write failure and
   await finished(f.client, admitted.requestId)
   const ref = (await f.client.history(id))[0].attachments[0].source
   const source = { sourceId: ref.sourceId, version: ref.version, kind: 'attachment' }
-  const decks = new DeckService(join(dir, 'data', 'db', 'decks.sqlite'))
+  const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))
   const draft = brief()
   draft.sources.modelKnowledge = true
   draft.sources.refs = [source]

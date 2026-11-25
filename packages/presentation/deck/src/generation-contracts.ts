@@ -30,7 +30,7 @@ export interface GenerationSnapshot {
   readonly design: DesignSnapshot
   readonly selection: { readonly provider: string; readonly model: string }
 }
-/** An object identity issued by DeckService, never a model-supplied grant or a persisted credential. */
+/** An object identity issued by DeckStore, never a model-supplied grant or a persisted credential. */
 export interface GenerationGrant {
   readonly intentId: string
   readonly requestId: string

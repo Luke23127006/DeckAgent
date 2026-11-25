@@ -9,7 +9,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { startLocalWeb } from '@deckagent/local-web'
-import { DeckService } from '@deckagent/deck'
+import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
@@ -403,7 +403,7 @@ test('Outline review names its exact target, hides resolved interview questions 
     },
   ])
   chats.close()
-  const decks = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  const decks = new DeckStore(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   const b = decks.saveBrief('review-controls', {
     expectedVersion: 0,
     draft: {
@@ -1375,7 +1375,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     ])
   }
   chats.close()
-  const decks = new DeckService(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
+  const decks = new DeckStore(join(database, 'decks.sqlite'), { legacyHtmlPolicy: validateLegacySlideHtml })
   decks.confirm('browser-deck', {
     outlineId: 'confirmed',
     slides: [
