@@ -194,7 +194,7 @@ Revision 3f adds these failure modes:
 | 27 | Done | [Move the chats module into apps/host/src/modules](task-27-move-chats-module.md) ([report](../reports/task-27-move-chats-module.md)) |
 | 28 | Done | [Add the chats version and change notices](task-28-add-chats-version-and-notices.md) ([report](../reports/task-28-add-chats-version-and-notices.md)) |
 | 29 | Done | [Refresh the Browser chat list from chats notices](task-29-refresh-browser-chat-list-from-notices.md) ([report](../reports/task-29-refresh-browser-chat-list-from-notices.md)) |
-| 30 | Pending | [Diagnose the providers module](task-30-diagnose-providers-module.md) |
+| 30 | Done | [Diagnose the providers module](task-30-diagnose-providers-module.md) ([report](../reports/task-30-diagnose-providers-module.md)) |
 
 ## Next revision
 

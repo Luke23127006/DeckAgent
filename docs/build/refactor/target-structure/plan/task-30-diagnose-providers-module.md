@@ -49,7 +49,7 @@ ADR-004 gives the topic `providers` the key `'host'`, a row in `change_versions`
 - Commit or push.
 - Propose a type, a file name, an SQL statement, a route or an owner for the move. This task records facts only.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -63,7 +63,7 @@ Run: `git grep -n "^| 29 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Record the module files**
+- [x] **Step 2: Record the module files**
 
 Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').readFileSync(f, 'utf8').split(/\r?\n/).length - 1, f)" apps/host/src/features/providers/provider-settings.ts apps/host/src/features/providers/built-in-providers.ts apps/host/src/features/providers/index.ts apps/host/src/integrations/providers/provider-catalog.ts apps/host/src/integrations/providers/index.ts apps/host/src/integrations/credentials/credential-store.ts apps/host/src/integrations/credentials/index.ts apps/host/src/web-state.ts`
 
@@ -82,7 +82,7 @@ Read each of the eight files in full. Read these ranges also:
 
 Write the table `Module files` with the columns `File | Lines | Responsibility`. Add one row for each of the eight files and one row for each of the eight ranges. A range line with two or more ranges gives one row. In `Responsibility`, write one sentence about what the code does, from the code that you read. Do not write where the code goes after the move.
 
-- [ ] **Step 3: Record the store members**
+- [x] **Step 3: Record the store members**
 
 Read the class `ProviderStore` in `apps/host/src/features/providers/provider-settings.ts`, lines 128 to 378.
 
@@ -93,7 +93,7 @@ Write the table `Store members` with the columns `Member | Tables read | Tables 
 - `Inside this.serialize` is `yes` when the body of the member is the function that `this.serialize(` receives. Otherwise it is `no`.
 - `Calls outside the store` is the list of calls on `this.credentials`, `this.options.check`, `this.options.catalog` and `this.options.modelsRemoved` that the member makes, in the order of the code. Write `none` when the member makes no such call.
 
-- [ ] **Step 4: Record the callers and the importers**
+- [x] **Step 4: Record the callers and the importers**
 
 Run: `git grep -n -E "providers\.(load|save|remove|catalog|selectable|runSettings|providerSettings|persistentKeys|builtIns|close)\b" -- apps/host/src packages/host/api/src ':!apps/host/src/features/providers'`
 
@@ -165,7 +165,7 @@ Write the table `Importers` with the columns `File | Line | Imported names | Imp
 
 Use the rows of the decision table in order. The first row that matches gives the value.
 
-- [ ] **Step 5: Record the write sites and the contents of web.sqlite**
+- [x] **Step 5: Record the write sites and the contents of web.sqlite**
 
 Run: `git grep -n -E "\.run\(|exec\(" -- apps/host/src/features/providers apps/host/src/features/research apps/host/src/web-state.ts`
 
@@ -211,7 +211,7 @@ Write the table `web.sqlite contents` with the columns `Table | Key or row | Wri
 
 `Written by` and `Read by` are the class and the method, for example `ProviderStore.save` or `WebState.preferences`.
 
-- [ ] **Step 6: Record the fields of the settings reply**
+- [x] **Step 6: Record the fields of the settings reply**
 
 Read `apps/host/src/server.ts`, lines 290 to 296 (the function `settings` of `createRuntimeLayer`), and the method `providerSettings` of `ProviderStore`.
 
@@ -223,7 +223,7 @@ Write the table `Settings fields` with the columns `Field | Set by | Source | Me
 
 Then read `apps/host/src/server.ts`, lines 160 to 215, and `apps/host/src/web-state.ts`, lines 101 to 115. Add one line below the table: which field of the chat list (`GET /api/sessions`) reads `ProviderStore.selectable`, and through which functions.
 
-- [ ] **Step 7: Record the Browser reads**
+- [x] **Step 7: Record the Browser reads**
 
 Run: `git grep -n -E "(client|management)\.(settings|save|remove|catalog)\(" -- apps/web/src/browser`
 
@@ -239,7 +239,7 @@ Read 30 lines before each line of the output and 10 lines after each line of the
 
 Write the table `Browser reads` with the columns `File | Line | Client method | HTTP route | Function that makes the call | Event that runs the function | What the Browser does with the reply`. `Event` is the user action, the timer or the change notice that you see in the code, for example a click handler, `focus` or a `chats` notice. When the code that you read does not show the event, write `not in the lines read`.
 
-- [ ] **Step 8: Record the error map and the web.sqlite schema path**
+- [x] **Step 8: Record the error map and the web.sqlite schema path**
 
 Run: `git grep -n "new ProviderFailure(" -- apps/host/src/features/providers`
 
@@ -261,7 +261,7 @@ Read `apps/host/src/web-state.ts`, lines 39 to 70.
 
 Write the table `web.sqlite schema path` with the columns `Condition on user_version, application_id and tables | Action | Line`. Write one row for each branch of the constructor: the fresh file, a file with `application_id` `0x44415742` and `user_version` 1, and any other file. Add one row for the statement on line 62 and one row for the check on line 64.
 
-- [ ] **Step 9: Record the tests**
+- [x] **Step 9: Record the tests**
 
 Run: `git grep -l -E "api/providers|api/settings['\`]" -- e2e apps/host/tests apps/web/tests packages/host/api/tests tests`
 
@@ -280,7 +280,7 @@ Then read the tests of `apps/host/tests/web-management.test.mjs` that call `api/
 - A delete writes the deletion marker, and a later start with a CLI flag for the same provider does not bring it back.
 - A failed write of the table `providers` deletes the new credential.
 
-- [ ] **Step 10: Write the report file and stop**
+- [x] **Step 10: Write the report file and stop**
 
 1. Mark Steps 1 to 9 as `- [x]` in this file. Change the Task 30 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and link `../reports/task-30-diagnose-providers-module.md`.
 2. Create `docs/build/refactor/target-structure/reports/task-30-diagnose-providers-module.md` with:
