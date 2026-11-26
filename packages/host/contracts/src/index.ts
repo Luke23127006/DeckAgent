@@ -52,6 +52,11 @@ export {
   RequestValidationError,
   type RequestValidationCode,
 } from './request-validation.ts'
+export {
+  decodeAttachmentRemoveBody,
+  decodeDraftSaveBody,
+  type DraftSaveBody,
+} from './attachment-validation.ts'
 export { decodeBriefView } from './brief-validation.ts'
 export { decodeBoundProposal } from './outline-validation.ts'
 export { decodeGeneration } from './generation-validation.ts'

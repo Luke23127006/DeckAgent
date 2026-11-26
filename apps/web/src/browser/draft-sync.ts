@@ -1,5 +1,6 @@
 import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
 import { button, element } from './dom.ts'
+import { ManagementError } from './transport/index.ts'
 import type { ManagementClient } from './transport/index.ts'
 
 export interface DraftSyncOptions {
@@ -90,7 +91,9 @@ export class DraftSync {
     try {
       const text = this.drafts.get(id) ?? ''
       await this.enqueueDraft(id, async () => {
-        const draft = await this.options.management.saveDraftState(id, text, this.draftStates.get(id)?.revision)
+        const revision = this.draftStates.get(id)?.revision
+        if (revision === undefined) throw new ManagementError('DRAFT_CONFLICT')
+        const draft = await this.options.management.saveDraftState(id, text, revision)
         this.receiveDraft(draft, true)
       })
       return true

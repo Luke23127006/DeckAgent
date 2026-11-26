@@ -358,3 +358,15 @@ test('draft writes and attachment preparation send draft notices on /api/session
   assert.equal(removed.status, 200)
   assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 4 })
 })
+
+test('draft save and attachment removal require a non-negative integer expectedRevision', async t => {
+  const { api, id } = await fixture(t)
+  for (const body of [{ text: 'no revision' }, { text: 'neg', expectedRevision: -1 }, { text: 'str', expectedRevision: '0' }]) {
+    const res = await api(`sessions/${id}/draft`, 'PUT', body)
+    assert.deepEqual([res.status, res.data.error.code], [400, 'INVALID_REQUEST'])
+  }
+  const tooLong = await api(`sessions/${id}/draft`, 'PUT', { text: 'x'.repeat(16001), expectedRevision: 0 })
+  assert.deepEqual([tooLong.status, tooLong.data.error.code], [413, 'DRAFT_TOO_LARGE'])
+  const badRemove = await api(`sessions/${id}/attachments/att-11111111-1111-4111-8111-111111111111`, 'DELETE', {})
+  assert.deepEqual([badRemove.status, badRemove.data.error.code], [400, 'INVALID_REQUEST'])
+})

@@ -1,4 +1,4 @@
-import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
+import type { AttachmentView, ChatDraft, DraftSaveBody } from '@deckagent/host-contracts'
 import type { MemoryDraftStore } from './draft.store.ts'
 import type { AttachmentRecordView, ManagedAttachments, ParsedAttachmentData } from './attachments.store.ts'
 
@@ -70,7 +70,7 @@ export interface AttachmentOperations {
   readonly maxBytes: number
   readonly maxFiles: number
   draft(id: string): Promise<ChatDraft>
-  save(id: string, input: unknown): Promise<ChatDraft>
+  save(id: string, input: DraftSaveBody): Promise<ChatDraft>
   upload(input: AttachmentUploadInput): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }>
   get(id: string, attachmentId: string): Promise<AttachmentView>
   remove(id: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft>
@@ -162,27 +162,14 @@ export class AttachmentCoordinator implements AttachmentOperations {
     }
   }
 
-  async save(id: string, input: unknown): Promise<ChatDraft> {
+  async save(id: string, input: DraftSaveBody): Promise<ChatDraft> {
     await this.chat(id)
-    if (
-      !input ||
-      typeof input !== 'object' ||
-      !('text' in input) ||
-      typeof input.text !== 'string' ||
-      !input.text.isWellFormed() ||
-      Object.keys(input).some(key => !['text', 'attachmentIds', 'expectedRevision'].includes(key))
-    )
-      throw new AttachmentFailure('INVALID_REQUEST')
     const current = this.drafts.snapshot(id)
-    const expected = 'expectedRevision' in input ? input.expectedRevision : current.revision
-    if (expected !== current.revision) throw new AttachmentFailure('DRAFT_CONFLICT')
-    const ids: unknown = 'attachmentIds' in input ? input.attachmentIds : current.attachmentIds
-    if (!Array.isArray(ids) || ids.some(item => typeof item !== 'string') || new Set(ids).size !== ids.length)
-      throw new AttachmentFailure('INVALID_REQUEST')
+    if (input.expectedRevision !== current.revision) throw new AttachmentFailure('DRAFT_CONFLICT')
+    const ids = input.attachmentIds ?? current.attachmentIds
     const selected: string[] = []
     for (const item of ids) {
-      if (typeof item !== 'string' || !current.attachmentIds.includes(item))
-        throw new AttachmentFailure('ATTACHMENT_NOT_FOUND')
+      if (!current.attachmentIds.includes(item)) throw new AttachmentFailure('ATTACHMENT_NOT_FOUND')
       selected.push(item)
     }
     const removed = current.attachmentIds.filter(item => !selected.includes(item))

@@ -1,8 +1,18 @@
 import { HttpError, json, param, params, readJson, receiveAttachment, route } from '@deckagent/host-api'
+import { RequestValidationError, decodeAttachmentRemoveBody, decodeDraftSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { AttachmentOperations } from './attachments.service.ts'
 
 const WORD_ID = /^[\w-]{1,100}$/
+
+function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
+  try {
+    return decode(value)
+  } catch (error) {
+    if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
+    throw error
+  }
+}
 
 export function createAttachmentRoutes(attachments: AttachmentOperations): Router {
   const router = Router({ caseSensitive: true, strict: true })
@@ -19,7 +29,11 @@ export function createAttachmentRoutes(attachments: AttachmentOperations): Route
     '/api/sessions/:sessionId/draft',
     session,
     route(async (req, res) => {
-      json(res, 200, await attachments.save(param(req, 'sessionId'), await readJson(req)))
+      json(
+        res,
+        200,
+        await attachments.save(param(req, 'sessionId'), parseBody(decodeDraftSaveBody, await readJson(req))),
+      )
     }),
   )
   router.post(
@@ -40,20 +54,11 @@ export function createAttachmentRoutes(attachments: AttachmentOperations): Route
     '/api/sessions/:sessionId/attachments/:attachmentId',
     ids,
     route(async (req, res) => {
-      const value = await readJson(req)
-      if (
-        !value ||
-        typeof value !== 'object' ||
-        !('expectedRevision' in value) ||
-        !Number.isSafeInteger(value.expectedRevision) ||
-        Number(value.expectedRevision) < 0 ||
-        Object.keys(value).some(key => key !== 'expectedRevision')
-      )
-        throw new HttpError(400, 'INVALID_REQUEST')
+      const body = parseBody(decodeAttachmentRemoveBody, await readJson(req))
       json(
         res,
         200,
-        await attachments.remove(param(req, 'sessionId'), param(req, 'attachmentId'), Number(value.expectedRevision)),
+        await attachments.remove(param(req, 'sessionId'), param(req, 'attachmentId'), body.expectedRevision),
       )
     }),
   )

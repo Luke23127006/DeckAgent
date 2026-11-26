@@ -57,7 +57,7 @@ After this task, `PUT /api/sessions/:sessionId/draft` and `DELETE /api/sessions/
 | `e2e/model-requests.test.mjs` | Update the `PUT` to `/draft` on the bare chat to send `expectedRevision: 0`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -67,7 +67,7 @@ Run: `git grep -n "^| 36 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add this test at the end of `packages/host/contracts/tests/validation.test.mjs` (import `decodeAttachmentRemoveBody` and `decodeDraftSaveBody` from `../lib/index.js`):
 
@@ -121,7 +121,7 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test packages/host/contracts/te
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code and update test writes**
+- [x] **Step 3: Write the code and update test writes**
 
 Do the changes of the section `Interfaces` and the table `Test write rules`.
 
@@ -133,19 +133,19 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test packages/host/contracts/te
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 In `packages/host/contracts/src/attachment-validation.ts`, make `expectedRevision` optional on `draftSaveBodySchema`. Build and run `node --test packages/host/contracts/tests/validation.test.mjs e2e/attachment-admission.test.mjs`. Expected: FAIL. `# fail 2`. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

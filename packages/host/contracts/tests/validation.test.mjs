@@ -10,9 +10,11 @@ import test from 'node:test'
 import {
   decodeAgentRequest,
   decodeAttachment,
+  decodeAttachmentRemoveBody,
   decodeBoundProposal,
   decodeBriefView,
   decodeChangeNotice,
+  decodeDraftSaveBody,
   decodeGeneration,
   decodeProviderRemoveBody,
   decodeProviderSaveBody,
@@ -364,4 +366,32 @@ test('provider write bodies require a non-negative expectedVersion and keep the 
     assert.throws(() => decodeProviderSaveBody(value), invalid)
   for (const value of [undefined, {}, { expectedVersion: -1 }, { expectedVersion: 0, extra: true }])
     assert.throws(() => decodeProviderRemoveBody(value), invalid)
+})
+
+test('draft save and attachment remove decoders require expectedRevision and keep draft length checks for the store', () => {
+  assert.deepEqual(decodeDraftSaveBody({ text: 'x'.repeat(16001), expectedRevision: 0 }), {
+    text: 'x'.repeat(16001),
+    expectedRevision: 0,
+  })
+  assert.deepEqual(decodeDraftSaveBody({ text: 'ok', expectedRevision: 2, attachmentIds: [attachmentOne] }), {
+    text: 'ok',
+    expectedRevision: 2,
+    attachmentIds: [attachmentOne],
+  })
+  assert.deepEqual(decodeAttachmentRemoveBody({ expectedRevision: 1 }), { expectedRevision: 1 })
+  const invalid = error => error instanceof RequestValidationError && error.code === 'INVALID_REQUEST'
+  for (const value of [
+    undefined,
+    null,
+    { text: 'ok' },
+    { text: 'ok', expectedRevision: -1 },
+    { text: 'ok', expectedRevision: 1.5 },
+    { text: 'ok', expectedRevision: '0' },
+    { text: 'ok', expectedRevision: 0, extra: true },
+    { text: 'ok', expectedRevision: 0, attachmentIds: ['a', 'a'] },
+    { text: '\uD800', expectedRevision: 0 },
+  ])
+    assert.throws(() => decodeDraftSaveBody(value), invalid)
+  for (const value of [undefined, {}, { expectedRevision: -1 }, { expectedRevision: 0, extra: true }])
+    assert.throws(() => decodeAttachmentRemoveBody(value), invalid)
 })

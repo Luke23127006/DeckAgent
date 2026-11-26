@@ -153,12 +153,9 @@ export class ManagementClient {
   async draftState(id: string): Promise<ChatDraft> {
     return decodeDraft(await this.request(`sessions/${encodeURIComponent(id)}/draft`), id)
   }
-  async saveDraftState(id: string, text: string, expectedRevision?: number): Promise<ChatDraft> {
+  async saveDraftState(id: string, text: string, expectedRevision: number): Promise<ChatDraft> {
     return decodeDraft(
-      await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', {
-        text,
-        ...(expectedRevision === undefined ? {} : { expectedRevision }),
-      }),
+      await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', { text, expectedRevision }),
       id,
     )
   }

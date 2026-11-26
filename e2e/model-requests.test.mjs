@@ -205,7 +205,7 @@ test('generic requests through the OpenCode CLI: admission, events, native resum
 
   // FR-046: no model, no request; the draft stays.
   const bare = (await call('sessions', 'POST', {})).data
-  await call(`sessions/${bare.sessionId}/draft`, 'PUT', { text: 'kept draft' })
+  await call(`sessions/${bare.sessionId}/draft`, 'PUT', { text: 'kept draft', expectedRevision: 0 })
   const refused = await call('requests', 'POST', { sessionId: bare.sessionId, input: 'hello' })
   assert.equal(refused.status, 409)
   assert.deepEqual(refused.data.error.detail, { reason: 'no-provider' })

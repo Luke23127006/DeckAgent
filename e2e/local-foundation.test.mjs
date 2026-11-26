@@ -182,7 +182,7 @@ test('the same folder twice gives one workspace; relink keeps ID and chats; remo
   assert.equal(twice.selectedId, id, 'The folder that already has a workspace makes it the workspace in use')
   assert.equal(twice.workspaces.length, 2)
   const chat = (await call('sessions', 'POST', {})).data
-  await call(`sessions/${chat.sessionId}/draft`, 'PUT', { text: 'kept' })
+  await call(`sessions/${chat.sessionId}/draft`, 'PUT', { text: 'kept', expectedRevision: 0 })
   const relinked = (await call(`workspaces/${id}/folder`, 'PUT', { folder: other, expectedVersion: twice.version })).data
   assert.equal(relinked.workspaces.find(item => item.id === id).folder.endsWith('other'), true)
   assert.equal(
@@ -223,14 +223,17 @@ test('drafts: each chat keeps its own while DeckAgent runs, and none is kept aft
   let call = api(app)
   const a = (await call('sessions', 'POST', {})).data.sessionId
   const b = (await call('sessions', 'POST', {})).data.sessionId
-  await call(`sessions/${a}/draft`, 'PUT', { text: 'Draft A' })
-  await call(`sessions/${b}/draft`, 'PUT', { text: 'Draft B' })
+  await call(`sessions/${a}/draft`, 'PUT', { text: 'Draft A', expectedRevision: 0 })
+  await call(`sessions/${b}/draft`, 'PUT', { text: 'Draft B', expectedRevision: 0 })
   assert.equal((await call(`sessions/${a}/draft`)).data.text, 'Draft A')
   assert.equal((await call(`sessions/${b}/draft`)).data.text, 'Draft B')
   assert.equal((await call('sessions')).data.find(item => item.sessionId === a).hasDraft, true)
   assert.equal((await call(`sessions/missing/draft`)).status, 404)
-  assert.equal((await call(`sessions/${a}/draft`, 'PUT', { text: 'x'.repeat(16001) })).status, 413)
-  assert.equal((await call(`sessions/${a}/draft`, 'PUT', { text: 'x', extra: 1 })).status, 400)
+  assert.equal(
+    (await call(`sessions/${a}/draft`, 'PUT', { text: 'x'.repeat(16001), expectedRevision: 1 })).status,
+    413,
+  )
+  assert.equal((await call(`sessions/${a}/draft`, 'PUT', { text: 'x', extra: 1, expectedRevision: 1 })).status, 400)
   assert.equal((await call(`sessions/${a}/draft`)).data.text, 'Draft A', 'A refused draft changes nothing')
   await app.close()
   app = await start()
