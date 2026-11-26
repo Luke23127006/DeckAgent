@@ -1,11 +1,9 @@
 import type { ServerResponse } from 'node:http'
 import type { Router } from 'express'
 import type { RequestController } from '../lifecycle/request-controller.ts'
-import type { AttachmentManagement, HostMessage, HostOptions } from './contracts.ts'
+import type { HostMessage, HostOptions } from './contracts.ts'
 import { registerDeckRoutes } from './deck-routes.ts'
-import { HttpError } from './http-error.ts'
 import { json, readJson } from './http-io.ts'
-import { receiveAttachment } from './multipart.ts'
 import { param, params, route, WORD_ID } from './route-params.ts'
 
 function projectHistoryMessage(message: HostMessage) {
@@ -42,57 +40,6 @@ function projectHistoryMessage(message: HostMessage) {
   }
 }
 
-function registerAttachmentRoutes(router: Router, attachments: AttachmentManagement): void {
-  const ids = params({ sessionId: WORD_ID, attachmentId: WORD_ID })
-  router.post(
-    '/api/sessions/:sessionId/attachments',
-    params({ sessionId: WORD_ID }),
-    route(async (req, res) => {
-      json(res, 202, await receiveAttachment(req, param(req, 'sessionId'), attachments))
-    }),
-  )
-  router.get(
-    '/api/sessions/:sessionId/attachments/:attachmentId',
-    ids,
-    route(async (req, res) => {
-      json(res, 200, await attachments.get(param(req, 'sessionId'), param(req, 'attachmentId')))
-    }),
-  )
-  router.delete(
-    '/api/sessions/:sessionId/attachments/:attachmentId',
-    ids,
-    route(async (req, res) => {
-      const value = await readJson(req)
-      if (
-        !value ||
-        typeof value !== 'object' ||
-        !('expectedRevision' in value) ||
-        !Number.isSafeInteger(value.expectedRevision) ||
-        Number(value.expectedRevision) < 0 ||
-        Object.keys(value).some(key => key !== 'expectedRevision')
-      )
-        throw new HttpError(400, 'INVALID_REQUEST')
-      json(
-        res,
-        200,
-        await attachments.remove(param(req, 'sessionId'), param(req, 'attachmentId'), Number(value.expectedRevision)),
-      )
-    }),
-  )
-  router.get(
-    '/api/sessions/:sessionId/attachments/:attachmentId/preview',
-    ids,
-    route(async (req, res) => {
-      const abort = new AbortController()
-      res.once('close', () => abort.abort())
-      const result = await attachments.preview(param(req, 'sessionId'), param(req, 'attachmentId'), abort.signal)
-      res.setHeader('content-security-policy', "sandbox; default-src 'none'; frame-ancestors 'none'")
-      res.writeHead(200, { 'content-type': result.contentType, 'content-length': result.body.length })
-      res.end(result.body)
-    }),
-  )
-}
-
 export function registerSessionRoutes(
   router: Router,
   options: HostOptions,
@@ -100,7 +47,7 @@ export function registerSessionRoutes(
   streams: Set<ServerResponse>,
 ): void {
   const session = params({ sessionId: WORD_ID })
-  const { confirmations, briefs, decks, outlines, attachments } = options
+  const { confirmations, briefs, decks, outlines } = options
   if (confirmations && controller) {
     router.post(
       '/api/sessions/:sessionId/deck/confirm',
@@ -175,7 +122,6 @@ export function registerSessionRoutes(
       }),
     )
   }
-  if (attachments) registerAttachmentRoutes(router, attachments)
   router.get(
     '/api/sessions/:sessionId/history',
     session,

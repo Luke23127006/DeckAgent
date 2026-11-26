@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startLocalWeb } from '@deckagent/host'
-import { startApp, finished, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
+import { startApp, finished, waitFor, createAttachmentRoutes } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { HttpError } from '@deckagent/host-api'
 import { startHost } from '../apps/host/tests/fixtures/http-host.mjs'
@@ -36,20 +36,25 @@ test('multipart closes promptly when its storage consumer rejects a file before 
   }
   const host = await startHost({
     readHistory: async () => [],
-    attachments: {
-      maxBytes: 8,
-      maxFiles: 10,
-      async upload(input) {
-        for await (const chunk of input.bytes) {
-          assert.ok(chunk.length)
-          throw new HttpError(413, 'ATTACHMENT_TOO_LARGE')
-        }
-        throw new Error('Expected file bytes')
-      },
-      get: unavailable,
-      remove: unavailable,
-      preview: unavailable,
-    },
+    maxAttachments: 10,
+    routes: [
+      createAttachmentRoutes({
+        maxBytes: 8,
+        maxFiles: 10,
+        draft: unavailable,
+        save: unavailable,
+        async upload(input) {
+          for await (const chunk of input.bytes) {
+            assert.ok(chunk.length)
+            throw new HttpError(413, 'ATTACHMENT_TOO_LARGE')
+          }
+          throw new Error('Expected file bytes')
+        },
+        get: unavailable,
+        remove: unavailable,
+        preview: unavailable,
+      }),
+    ],
   })
   t.after(() => host.close())
   const body = new FormData()

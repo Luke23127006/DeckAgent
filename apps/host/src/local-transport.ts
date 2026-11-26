@@ -1,9 +1,7 @@
 import { DeckError } from '@deckagent/deck'
 import { HttpError } from '@deckagent/host-api'
-import type { AttachmentManagement, HttpErrorDetail, HttpFailureResponse, WebManagement } from '@deckagent/host-api'
+import type { HttpErrorDetail, HttpFailureResponse, WebManagement } from '@deckagent/host-api'
 import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
-import { DraftError } from './draft-store.ts'
-import { AttachmentFailure } from './features/attachments/index.ts'
 import { DeckWorkflowFailure } from './features/deck/index.ts'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
@@ -30,26 +28,6 @@ const researchStatus: Readonly<Record<string, number>> = {
   RESEARCH_RESPONSE_TOO_LARGE: 503,
   RESEARCH_UNAVAILABLE: 503,
   RESEARCH_NOT_SAVED: 500,
-}
-
-const attachmentStatus: Readonly<Record<string, number>> = {
-  INVALID_REQUEST: 400,
-  SESSION_NOT_FOUND: 404,
-  ATTACHMENT_NOT_FOUND: 404,
-  DRAFT_CONFLICT: 409,
-  ATTACHMENT_CONFLICT: 409,
-  ATTACHMENT_NOT_READY: 409,
-  ATTACHMENT_REJECTED: 409,
-  UPLOAD_CANCELLED: 409,
-  DRAFT_TOO_LARGE: 413,
-  ATTACHMENT_TOO_LARGE: 413,
-  ATTACHMENT_COUNT_EXCEEDED: 413,
-  PARSING_LIMIT_EXCEEDED: 413,
-  ATTACHMENT_TYPE_UNSUPPORTED: 415,
-  ATTACHMENT_UNREADABLE: 422,
-  HOST_BUSY: 429,
-  HOST_CLOSED: 503,
-  ATTACHMENT_NOT_SAVED: 500,
 }
 
 const sourceToolStatus: Readonly<Record<string, number>> = {
@@ -100,7 +78,6 @@ function featureFailure<E extends { readonly code: string; readonly detail?: Htt
 const featureFailures = [
   featureFailure(RequestPreparationFailure, error => requestPreparationStatus[error.code]),
   featureFailure(ResearchFailure, error => researchStatus[error.code] ?? 500),
-  featureFailure(AttachmentFailure, error => attachmentStatus[error.code] ?? 500),
   featureFailure(SourceToolFailure, error => sourceToolStatus[error.code] ?? 500),
 ]
 
@@ -127,44 +104,11 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     if (error.code === 'DECK_CONTENT_NOT_FOUND') return { status: 404, code: error.code }
   }
   if (error instanceof DeckWorkflowFailure) return mapFailureEntry(error.code, error.detail, deckWorkflowStatus(error))
-  if (error instanceof DraftError) {
-    const status = error.code === 'DRAFT_TOO_LARGE' ? 413 : error.code === 'DRAFT_CONFLICT' ? 409 : 400
-    return mapFailureEntry(error.code, undefined, status)
-  }
   if (error instanceof WebStateError) {
     const status = error.code === 'INVALID_SELECTION' || error.code === 'INVALID_REQUEST' ? 400 : 500
     return mapFailureEntry(error.code, undefined, status)
   }
   return undefined
-}
-
-async function toAttachmentHttpError<T>(work: Promise<T>): Promise<T> {
-  try {
-    return await work
-  } catch (error) {
-    if (error instanceof AttachmentFailure)
-      throw new HttpError(attachmentStatus[error.code] ?? 500, error.code, error.detail)
-    throw error
-  }
-}
-
-/**
- * Upload stays wrapped: `packages/host/api` catches non-`HttpError` exceptions from the byte stream,
- * so the mapped error must be thrown there instead of delegated.
- */
-export function attachmentManagement(service: AttachmentManagement): AttachmentManagement {
-  return {
-    get maxBytes() {
-      return service.maxBytes
-    },
-    get maxFiles() {
-      return service.maxFiles
-    },
-    upload: input => toAttachmentHttpError(service.upload(input)),
-    get: (id, attachmentId) => service.get(id, attachmentId),
-    remove: (id, attachmentId, expectedRevision) => service.remove(id, attachmentId, expectedRevision),
-    preview: (id, attachmentId, signal) => service.preview(id, attachmentId, signal),
-  }
 }
 
 export type SessionReadManagement = Required<Pick<WebManagement, 'research' | 'activities' | 'requests'>>

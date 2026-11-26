@@ -7,7 +7,7 @@ import { SessionError } from '@deckagent/session-persistence'
 import type { AttachmentRecord, ResearchSource, SqliteSessionStore } from '@deckagent/session-persistence'
 import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'
 import { record } from '../../web-state.ts'
-import type { ManagedAttachments } from '../attachments/index.ts'
+import type { ManagedAttachments } from '../../modules/attachments/index.ts'
 import { ResearchFailure } from '../research/index.ts'
 import type { ResearchCoordinator } from '../research/index.ts'
 

@@ -1,10 +1,6 @@
-import { AttachmentParser, SourceError, attachmentLimits } from '@deckagent/file-tools'
-import type { AttachmentManagement } from '@deckagent/host-api'
 import type { AttachmentView, ChatDraft } from '@deckagent/host-contracts'
-import { SessionError } from '@deckagent/session-persistence'
-import type { AttachmentRecord, RequestStore, SqliteSessionStore } from '@deckagent/session-persistence'
-import type { MemoryDraftStore } from '../../draft-store.ts'
-import type { ManagedAttachments } from './managed-attachments.ts'
+import type { MemoryDraftStore } from './draft.store.ts'
+import type { AttachmentRecordView, ManagedAttachments, ParsedAttachmentData } from './attachments.store.ts'
 
 export class AttachmentFailure extends Error {
   constructor(
@@ -16,7 +12,72 @@ export class AttachmentFailure extends Error {
   }
 }
 
-function attachmentView(item: AttachmentRecord): AttachmentView {
+/** The chat rows that the attachment operations read. `SqliteSessionStore` implements it. */
+export interface AttachmentSessionStore {
+  getInfo(id: string): Promise<unknown>
+  readonly attachments: {
+    get(sessionId: string, attachmentId: string): AttachmentRecordView
+    ready(
+      sessionId: string,
+      attachmentId: string,
+      detectedType: string,
+      prepared?: NonNullable<AttachmentRecordView['preparation']> & { readonly parsedFingerprint: string },
+    ): AttachmentRecordView
+    reject(sessionId: string, attachmentId: string, code: string): AttachmentRecordView
+  }
+}
+
+/** The attachment parser. `AttachmentParser` implements it. */
+export interface AttachmentParserPort {
+  parse(input: {
+    readonly name: string
+    readonly bytes: Uint8Array
+    readonly signal: AbortSignal
+  }): Promise<ParsedAttachmentData>
+  close(): Promise<void>
+}
+
+/** Product limits of one draft. `attachmentLimits` supplies them. */
+export interface AttachmentLimits {
+  readonly files: number
+  readonly bytes: number
+}
+
+export interface AttachmentUploadInput {
+  readonly sessionId: string
+  readonly name: string
+  readonly expectedRevision: number
+  readonly bytes: AsyncIterable<Uint8Array>
+  readonly signal: AbortSignal
+  readonly complete?: Promise<void>
+}
+
+export interface AttachmentPreview {
+  readonly body: Uint8Array
+  readonly contentType: string
+}
+
+/** What request admission reads from a draft before it saves a user message. */
+export interface DraftAdmitInput {
+  readonly sessionId: string
+  readonly input: string
+  readonly attachmentIds?: readonly string[]
+  readonly draftRevision?: number
+}
+
+/** Attachment and draft operations that the routes call. */
+export interface AttachmentOperations {
+  readonly maxBytes: number
+  readonly maxFiles: number
+  draft(id: string): Promise<ChatDraft>
+  save(id: string, input: unknown): Promise<ChatDraft>
+  upload(input: AttachmentUploadInput): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }>
+  get(id: string, attachmentId: string): Promise<AttachmentView>
+  remove(id: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft>
+  preview(id: string, attachmentId: string, signal: AbortSignal): Promise<AttachmentPreview>
+}
+
+function attachmentView(item: AttachmentRecordView): AttachmentView {
   return {
     attachmentId: item.attachmentId,
     name: item.name,
@@ -47,33 +108,35 @@ const knownAttachmentCodes = new Set([
   'INVALID_REQUEST',
 ])
 
+function knownCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object' || !('code' in error) || typeof error.code !== 'string') return undefined
+  return knownAttachmentCodes.has(error.code) ? error.code : undefined
+}
+
 function safeError(error: unknown): never {
   if (error instanceof AttachmentFailure) throw error
-  const code =
-    error instanceof SessionError || error instanceof SourceError
-      ? error.code
-      : error instanceof Error && 'code' in error && typeof error.code === 'string'
-        ? error.code
-        : undefined
-  if (code !== undefined) {
-    throw new AttachmentFailure(knownAttachmentCodes.has(code) ? code : 'ATTACHMENT_NOT_SAVED')
-  }
+  const code = knownCode(error)
+  if (code !== undefined) throw new AttachmentFailure(code)
   throw new AttachmentFailure('ATTACHMENT_NOT_SAVED')
 }
 
 /** The existing storage owners remain private; every public operation binds the owning Chat. */
-export class AttachmentCoordinator implements AttachmentManagement {
-  readonly maxBytes = attachmentLimits.bytes
-  readonly maxFiles = attachmentLimits.files
-  private readonly parser = new AttachmentParser()
+export class AttachmentCoordinator implements AttachmentOperations {
+  readonly maxBytes: number
+  readonly maxFiles: number
   private readonly preparing = new Map<string, { readonly abort: AbortController; readonly work: Promise<void> }>()
   private closed = false
 
   constructor(
-    private readonly store: SqliteSessionStore,
+    private readonly store: AttachmentSessionStore,
     private readonly drafts: MemoryDraftStore,
     private readonly files: ManagedAttachments,
-  ) {}
+    private readonly parser: AttachmentParserPort,
+    private readonly limits: AttachmentLimits,
+  ) {
+    this.maxBytes = limits.bytes
+    this.maxFiles = limits.files
+  }
 
   private async chat(id: string): Promise<void> {
     if (!(await this.store.getInfo(id))) throw new AttachmentFailure('SESSION_NOT_FOUND')
@@ -128,11 +191,13 @@ export class AttachmentCoordinator implements AttachmentManagement {
     }
   }
 
-  async upload(input: Parameters<AttachmentManagement['upload']>[0]) {
+  async upload(
+    input: AttachmentUploadInput,
+  ): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }> {
     await this.chat(input.sessionId)
-    if (this.drafts.snapshot(input.sessionId).attachmentIds.length >= attachmentLimits.files)
+    if (this.drafts.snapshot(input.sessionId).attachmentIds.length >= this.limits.files)
       throw new AttachmentFailure('ATTACHMENT_COUNT_EXCEEDED')
-    let received: AttachmentRecord | undefined
+    let received: AttachmentRecordView | undefined
     try {
       const item = await this.files.receive({ ...input, maxBytes: this.maxBytes })
       received = item
@@ -173,11 +238,7 @@ export class AttachmentCoordinator implements AttachmentManagement {
         parsedFingerprint,
       })
     } catch (error) {
-      const code = signal.aborted
-        ? 'UPLOAD_CANCELLED'
-        : error instanceof SessionError || error instanceof SourceError
-          ? error.code
-          : 'ATTACHMENT_UNREADABLE'
+      const code = signal.aborted ? 'UPLOAD_CANCELLED' : (knownCode(error) ?? 'ATTACHMENT_UNREADABLE')
       try {
         if (this.store.attachments.get(id, attachmentId).state === 'preparing')
           this.store.attachments.reject(id, attachmentId, code)
@@ -217,7 +278,7 @@ export class AttachmentCoordinator implements AttachmentManagement {
     }
   }
 
-  async preview(id: string, attachmentId: string, signal: AbortSignal) {
+  async preview(id: string, attachmentId: string, signal: AbortSignal): Promise<AttachmentPreview> {
     await this.chat(id)
     try {
       const parsed = await this.files.prepared(id, attachmentId, signal)
@@ -240,39 +301,25 @@ export class AttachmentCoordinator implements AttachmentManagement {
     }
   }
 
-  requestStore(): RequestStore {
-    const log = this.store.requests
-    return {
-      approvals: log.approvals,
-      admit: input => {
-        const draft = this.drafts.snapshot(input.sessionId)
-        if (input.draftRevision !== undefined && (input.draftRevision !== draft.revision || input.input !== draft.text))
-          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
-        if (draft.attachmentIds.length > attachmentLimits.files)
-          throw new SessionError('ATTACHMENT_COUNT_EXCEEDED', 'ATTACHMENT_COUNT_EXCEEDED')
-        for (const id of draft.attachmentIds) {
-          const item = this.store.attachments.get(input.sessionId, id)
-          if (item.state !== 'ready') {
-            const code = item.state === 'rejected' ? 'ATTACHMENT_REJECTED' : 'ATTACHMENT_NOT_READY'
-            throw new SessionError(code, code)
-          }
-        }
-        const ids = input.attachmentIds ?? []
-        if (ids.length !== draft.attachmentIds.length || ids.some(id => !draft.attachmentIds.includes(id)))
-          throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
-        if (ids.length && input.draftRevision === undefined) throw new SessionError('DRAFT_CONFLICT', 'DRAFT_CONFLICT')
-        if (!input.input.trim() && !ids.length) throw new SessionError('REQUEST_EMPTY', 'REQUEST_EMPTY')
-        const admitted = log.admit(input)
-        if (input.draftRevision !== undefined) this.drafts.clear(input.sessionId, input.draftRevision)
-        return admitted
-      },
-      append: (id, event) => log.append(id, event),
-      finish: (id, status, code) => log.finish(id, status, code),
-      get: id => log.get(id),
-      events: (id, after) => log.events(id, after),
-      text: id => log.text(id),
-      activeFor: id => log.activeFor(id),
+  /** Runs the draft checks of one admission, saves through `admit`, then clears the exact submitted draft. */
+  admitDraft<TInput extends DraftAdmitInput, TResult>(input: TInput, admit: (input: TInput) => TResult): TResult {
+    const draft = this.drafts.snapshot(input.sessionId)
+    if (input.draftRevision !== undefined && (input.draftRevision !== draft.revision || input.input !== draft.text))
+      throw new AttachmentFailure('DRAFT_CONFLICT')
+    if (draft.attachmentIds.length > this.limits.files) throw new AttachmentFailure('ATTACHMENT_COUNT_EXCEEDED')
+    for (const id of draft.attachmentIds) {
+      const item = this.store.attachments.get(input.sessionId, id)
+      if (item.state !== 'ready')
+        throw new AttachmentFailure(item.state === 'rejected' ? 'ATTACHMENT_REJECTED' : 'ATTACHMENT_NOT_READY')
     }
+    const ids = input.attachmentIds ?? []
+    if (ids.length !== draft.attachmentIds.length || ids.some(id => !draft.attachmentIds.includes(id)))
+      throw new AttachmentFailure('DRAFT_CONFLICT')
+    if (ids.length && input.draftRevision === undefined) throw new AttachmentFailure('DRAFT_CONFLICT')
+    if (!input.input.trim() && !ids.length) throw new AttachmentFailure('REQUEST_EMPTY')
+    const admitted = admit(input)
+    if (input.draftRevision !== undefined) this.drafts.clear(input.sessionId, input.draftRevision)
+    return admitted
   }
 
   async close(): Promise<void> {

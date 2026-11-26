@@ -1,12 +1,31 @@
 import busboy from 'busboy'
 import type { IncomingMessage } from 'node:http'
-import type { AttachmentManagement } from './contracts.ts'
 import { HttpError } from './http-error.ts'
 
+/** The Host operation that receives one streamed file. `AttachmentCoordinator` implements it. */
+export interface AttachmentUploadTarget {
+  readonly maxBytes: number
+  upload(input: {
+    readonly sessionId: string
+    readonly name: string
+    readonly expectedRevision: number
+    readonly bytes: AsyncIterable<Uint8Array>
+    readonly signal: AbortSignal
+    readonly complete?: Promise<void>
+  }): Promise<unknown>
+}
+
 /** Revision precedes the streamed file; no unbounded whole-body buffering. */
-export async function receiveAttachment(req: IncomingMessage, sessionId: string, attachments: AttachmentManagement) {
+export async function receiveAttachment<T>(
+  req: IncomingMessage,
+  sessionId: string,
+  attachments: AttachmentUploadTarget & {
+    upload(input: Parameters<AttachmentUploadTarget['upload']>[0]): Promise<T>
+  },
+): Promise<T> {
   const abort = new AbortController()
-  let work: ReturnType<AttachmentManagement['upload']> | undefined
+  let work: Promise<T> | undefined
+  let uploadError: unknown
   const onAbort = () => abort.abort()
   req.once('aborted', onAbort)
   try {
@@ -65,8 +84,9 @@ export async function receiveAttachment(req: IncomingMessage, sessionId: string,
         bytes,
         signal: abort.signal,
         complete,
-      })
+      }) as Promise<T>
       void work.catch(error => {
+        uploadError = error
         invalid(error)
         file.resume()
       })
@@ -110,7 +130,7 @@ export async function receiveAttachment(req: IncomingMessage, sessionId: string,
   } catch (error) {
     abort.abort()
     await work?.catch(() => {})
-    if (error instanceof HttpError) throw error
+    if (error instanceof HttpError || (uploadError !== undefined && error === uploadError)) throw error
     throw new HttpError(400, 'INVALID_REQUEST')
   } finally {
     req.removeListener('aborted', onAbort)

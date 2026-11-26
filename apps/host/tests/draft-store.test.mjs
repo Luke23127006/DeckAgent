@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { MemoryDraftStore } from '../lib/types/draft-store.js'
+import { MemoryDraftStore } from '../lib/types/modules/attachments/index.js'
 
 test('drafts belong to one chat each, are capped, and live only in memory', () => {
   const drafts = new MemoryDraftStore()

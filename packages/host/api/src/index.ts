@@ -18,7 +18,6 @@ export type {
 } from './lifecycle/contracts.ts'
 export type { PreparedTools, RequestTools, ToolContext, ToolResult, ToolSchema } from './lifecycle/tool-contracts.ts'
 export type {
-  AttachmentManagement,
   BriefManagement,
   HostMessage,
   HostOptions,
@@ -27,6 +26,8 @@ export type {
 } from './transport/contracts.ts'
 export { HttpError } from './transport/http-error.ts'
 export { json, readJson } from './transport/http-io.ts'
+export { receiveAttachment } from './transport/multipart.ts'
+export type { AttachmentUploadTarget } from './transport/multipart.ts'
 export { param, params, route } from './transport/route-params.ts'
 export { openSseStream } from './transport/sse.ts'
 export type { HttpErrorDetail } from './transport/http-error.ts'
@@ -55,7 +56,7 @@ export function createHostRoutes(options: HostOptions): HostRoutes {
   registerSessionRoutes(router, options, controller, streams)
   if (options.management) registerManagementRoutes(router, options.management)
   for (const routes of options.routes ?? []) router.use(routes)
-  registerRequestRoutes(router, controller, options.attachments?.maxFiles ?? 0, streams)
+  registerRequestRoutes(router, controller, options.maxAttachments ?? 0, streams)
   return {
     router,
     streams,

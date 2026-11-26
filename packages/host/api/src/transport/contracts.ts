@@ -3,7 +3,6 @@ import type {
   AgentRequest,
   AttachmentView,
   BriefView,
-  ChatDraft,
   ConfirmationResult,
   RequestSnapshot,
   StoredActivity,
@@ -62,7 +61,8 @@ export interface HostOptions {
   readonly port?: number
   readonly management?: WebManagement
   readonly routes?: readonly Router[]
-  readonly attachments?: AttachmentManagement
+  /** Files that one request may carry. Feeds request admission and the attachment routes. */
+  readonly maxAttachments?: number
   readonly decks?: DeckReader
   readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
@@ -75,26 +75,6 @@ export interface BriefManagement {
   interview?(sessionId: string): Promise<{ readonly brief: BriefView; readonly state: InterviewState }>
   get(sessionId: string, version?: number): Promise<BriefView>
   save(sessionId: string, value: unknown): Promise<BriefView>
-}
-
-export interface AttachmentManagement {
-  readonly maxBytes: number
-  readonly maxFiles: number
-  upload(input: {
-    readonly sessionId: string
-    readonly name: string
-    readonly expectedRevision: number
-    readonly bytes: AsyncIterable<Uint8Array>
-    readonly signal: AbortSignal
-    readonly complete?: Promise<void>
-  }): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }>
-  get(sessionId: string, attachmentId: string): Promise<AttachmentView>
-  remove(sessionId: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft>
-  preview(
-    sessionId: string,
-    attachmentId: string,
-    signal: AbortSignal,
-  ): Promise<{ readonly body: Uint8Array; readonly contentType: string }>
 }
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
@@ -112,8 +92,4 @@ export interface WebManagement {
   settings(): Promise<WebSettings>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
-  readonly drafts?: {
-    get(sessionId: string): Promise<ChatDraft>
-    save(sessionId: string, value: unknown): Promise<ChatDraft>
-  }
 }

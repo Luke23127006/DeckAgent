@@ -2,11 +2,87 @@ import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import { link, lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
-import { SessionError } from '@deckagent/session-persistence'
-import type { AttachmentLog, AttachmentRecord } from '@deckagent/session-persistence'
-import type { MemoryDraftStore } from '../../draft-store.ts'
-import { attachmentLimits, isParsedAttachment } from '@deckagent/file-tools'
-import type { ParsedAttachment } from '@deckagent/file-tools'
+import type { MemoryDraftStore } from './draft.store.ts'
+
+export class AttachmentStorageError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'AttachmentStorageError'
+  }
+}
+
+/** One saved attachment as the attachment log returns it. */
+export interface AttachmentRecordView {
+  readonly attachmentId: string
+  readonly name: string
+  readonly state: 'preparing' | 'ready' | 'rejected'
+  readonly byteSize: number
+  readonly detectedType?: string
+  readonly rejectionCode?: string
+  readonly fingerprint?: string
+  readonly parsedFingerprint?: string
+  readonly source?: {
+    readonly sourceId: string
+    readonly version: number
+    readonly kind: 'attachment'
+    readonly label: string
+  }
+  readonly preparation?: {
+    readonly parserVersion: string
+    readonly capabilities: readonly string[]
+    readonly completeness: 'complete' | 'partial'
+    readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+  }
+}
+
+/** The attachment rows of the session database. `AttachmentLog` implements it. */
+export interface AttachmentLogPort {
+  create(sessionId: string, name: string): AttachmentRecordView
+  get(sessionId: string, attachmentId: string): AttachmentRecordView
+  received(
+    sessionId: string,
+    attachmentId: string,
+    value: { readonly byteSize: number; readonly fingerprint: string },
+  ): void
+  reject(sessionId: string, attachmentId: string, code: string): AttachmentRecordView
+  removeUnsent(sessionId: string, attachmentId: string): void
+  unsent(): readonly { readonly sessionId: string; readonly attachmentId: string }[]
+  retainedIds(): readonly string[]
+}
+
+export interface AttachmentLocationData {
+  readonly kind: 'lines' | 'page' | 'slide' | 'image'
+  readonly start?: number
+  readonly end?: number
+  readonly page?: number
+  readonly slide?: number
+  readonly part?: string
+  readonly entry?: string
+}
+
+export type AttachmentPartData =
+  | { readonly type: 'text'; readonly text: string; readonly location: AttachmentLocationData }
+  | {
+      readonly type: 'image'
+      readonly data: string
+      readonly mimeType: 'image/png'
+      readonly location: AttachmentLocationData
+      readonly width: number
+      readonly height: number
+    }
+
+/** Prepared attachment content as the attachment parser returns it. */
+export interface ParsedAttachmentData {
+  readonly mediaType: string
+  readonly parserVersion: string
+  readonly capabilities: readonly string[]
+  readonly completeness: 'complete' | 'partial'
+  readonly parts: readonly AttachmentPartData[]
+  readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+}
 
 export interface AttachmentUpload {
   readonly sessionId: string
@@ -20,7 +96,72 @@ export interface AttachmentUpload {
 
 const fileId = /^att-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/
 type Extension = 'part' | 'bin' | 'parsed' | 'parsed-part'
+const maxStoredBytes = 20 * 1024 * 1024
 const parsedByteLimit = 96 * 1024 * 1024
+
+/** The rejection codes that a failed upload may show; a Node `fs` code never becomes one. */
+const storageDomainCodes = new Set([
+  'INVALID_REQUEST',
+  'SESSION_NOT_FOUND',
+  'ATTACHMENT_NOT_FOUND',
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_CONFLICT',
+  'ATTACHMENT_NOT_READY',
+  'UPLOAD_CANCELLED',
+  'DRAFT_TOO_LARGE',
+  'ATTACHMENT_TOO_LARGE',
+  'PARSING_LIMIT_EXCEEDED',
+  'ATTACHMENT_UNREADABLE',
+  'ATTACHMENT_NOT_SAVED',
+])
+
+export function isParsedAttachmentData(value: unknown): value is ParsedAttachmentData {
+  if (!value || typeof value !== 'object') return false
+  if (
+    !('mediaType' in value) ||
+    typeof value.mediaType !== 'string' ||
+    !('parserVersion' in value) ||
+    typeof value.parserVersion !== 'string'
+  )
+    return false
+  if (
+    !('capabilities' in value) ||
+    !Array.isArray(value.capabilities) ||
+    !value.capabilities.every(item => typeof item === 'string')
+  )
+    return false
+  if (!('completeness' in value) || !['complete', 'partial'].includes(String(value.completeness))) return false
+  if (
+    !('omitted' in value) ||
+    !Array.isArray(value.omitted) ||
+    !value.omitted.every(item => item && typeof item === 'object' && typeof item.code === 'string')
+  )
+    return false
+  if (!('parts' in value) || !Array.isArray(value.parts)) return false
+  return value.parts.every((part: unknown) => {
+    if (
+      !part ||
+      typeof part !== 'object' ||
+      !('location' in part) ||
+      !part.location ||
+      typeof part.location !== 'object' ||
+      !('kind' in part.location)
+    )
+      return false
+    if (!['lines', 'page', 'slide', 'image'].includes(String(part.location.kind)) || !('type' in part)) return false
+    return part.type === 'text'
+      ? 'text' in part && typeof part.text === 'string'
+      : part.type === 'image' &&
+          'data' in part &&
+          typeof part.data === 'string' &&
+          'mimeType' in part &&
+          part.mimeType === 'image/png' &&
+          'width' in part &&
+          typeof part.width === 'number' &&
+          'height' in part &&
+          typeof part.height === 'number'
+  })
+}
 
 function nextChunk(iterator: AsyncIterator<Uint8Array>, signal: AbortSignal): Promise<IteratorResult<Uint8Array>> {
   return new Promise((resolve, reject) => {
@@ -38,43 +179,50 @@ function nextChunk(iterator: AsyncIterator<Uint8Array>, signal: AbortSignal): Pr
   })
 }
 
+function rejectionCode(error: unknown): string | undefined {
+  if (error instanceof AttachmentStorageError) return error.code
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string')
+    return storageDomainCodes.has(error.code) ? error.code : undefined
+  return undefined
+}
+
 /** Managed bytes only. File preparation and HTTP admission belong to their later owners. */
 export class ManagedAttachments {
   private readonly uploads = new Map<string, { readonly abort: AbortController; readonly done: Promise<void> }>()
   private constructor(
     private readonly root: string,
-    private readonly log: AttachmentLog,
+    private readonly log: AttachmentLogPort,
     private readonly drafts: MemoryDraftStore,
   ) {}
 
   /** Call once at Host startup, before any request or upload. Unsent drafts do not survive Host restart. */
-  static async open(filesRoot: string, log: AttachmentLog, drafts: MemoryDraftStore): Promise<ManagedAttachments> {
+  static async open(filesRoot: string, log: AttachmentLogPort, drafts: MemoryDraftStore): Promise<ManagedAttachments> {
     try {
       await mkdir(filesRoot, { recursive: true })
       const parent = await realpath(filesRoot)
       const root = join(parent, 'attachments')
       await mkdir(root, { recursive: true })
       if ((await lstat(root)).isSymbolicLink() || (await realpath(root)) !== root)
-        throw new SessionError('ATTACHMENT_NOT_SAVED', 'Managed attachment storage is unavailable')
+        throw new AttachmentStorageError('ATTACHMENT_NOT_SAVED', 'Managed attachment storage is unavailable')
       const files = new ManagedAttachments(root, log, drafts)
       await files.recover()
       return files
     } catch (error) {
-      if (error instanceof SessionError) throw error
-      throw new SessionError(
+      if (error instanceof AttachmentStorageError) throw error
+      throw new AttachmentStorageError(
         'ATTACHMENT_NOT_SAVED',
         'Cannot open attachment storage. Check the data folder permissions',
       )
     }
   }
 
-  async receive(input: AttachmentUpload): Promise<AttachmentRecord> {
+  async receive(input: AttachmentUpload): Promise<AttachmentRecordView> {
     input.signal.throwIfAborted()
     if (!Number.isSafeInteger(input.maxBytes) || input.maxBytes < 0)
-      throw new SessionError('INVALID_REQUEST', 'A finite attachment byte limit is required')
+      throw new AttachmentStorageError('INVALID_REQUEST', 'A finite attachment byte limit is required')
     const draft = this.drafts.snapshot(input.sessionId)
     if (draft.revision !== input.expectedRevision)
-      throw new SessionError('DRAFT_CONFLICT', 'Reload the draft before adding a file')
+      throw new AttachmentStorageError('DRAFT_CONFLICT', 'Reload the draft before adding a file')
     const item = this.log.create(input.sessionId, input.name)
     try {
       this.drafts.save(
@@ -106,10 +254,11 @@ export class ManagedAttachments {
           if (chunk.done) break
           const bytes = chunk.value
           signal.throwIfAborted()
-          if (!(bytes instanceof Uint8Array)) throw new SessionError('INVALID_REQUEST', 'Upload must contain bytes')
+          if (!(bytes instanceof Uint8Array))
+            throw new AttachmentStorageError('INVALID_REQUEST', 'Upload must contain bytes')
           byteSize += bytes.byteLength
           if (!Number.isSafeInteger(byteSize) || byteSize > input.maxBytes)
-            throw new SessionError('ATTACHMENT_TOO_LARGE', 'The file exceeds the configured byte limit')
+            throw new AttachmentStorageError('ATTACHMENT_TOO_LARGE', 'The file exceeds the configured byte limit')
           await file.writeFile(bytes, { signal })
           hash.update(bytes)
         }
@@ -132,13 +281,9 @@ export class ManagedAttachments {
     } catch (error) {
       // Keep a visible rejection in the current draft. Recovery retries any failed file cleanup.
       await this.erase(item.attachmentId).catch(() => {})
-      const code = signal.aborted
-        ? 'UPLOAD_CANCELLED'
-        : error instanceof SessionError
-          ? error.code
-          : 'ATTACHMENT_NOT_SAVED'
+      const code = signal.aborted ? 'UPLOAD_CANCELLED' : (rejectionCode(error) ?? 'ATTACHMENT_NOT_SAVED')
       this.log.reject(input.sessionId, item.attachmentId, code)
-      throw new SessionError(code, 'The attachment was not saved. Remove it from the draft and try again')
+      throw new AttachmentStorageError(code, 'The attachment was not saved. Remove it from the draft and try again')
     } finally {
       this.uploads.delete(item.attachmentId)
       settle()
@@ -149,23 +294,23 @@ export class ManagedAttachments {
     signal.throwIfAborted()
     const item = this.log.get(sessionId, attachmentId)
     if (!item.fingerprint || item.state === 'rejected')
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'Attachment bytes are unavailable')
-    return this.readStored(attachmentId, 'bin', item.fingerprint, attachmentLimits.bytes, signal, item.byteSize)
+      throw new AttachmentStorageError('ATTACHMENT_UNREADABLE', 'Attachment bytes are unavailable')
+    return this.readStored(attachmentId, 'bin', item.fingerprint, maxStoredBytes, signal, item.byteSize)
   }
 
   async savePrepared(
     sessionId: string,
     attachmentId: string,
-    value: ParsedAttachment,
+    value: ParsedAttachmentData,
     signal: AbortSignal,
   ): Promise<string> {
     const item = this.log.get(sessionId, attachmentId)
-    if (item.state !== 'preparing' || !item.fingerprint || !isParsedAttachment(value))
-      throw new SessionError('ATTACHMENT_NOT_READY', 'Preparation is no longer pending')
+    if (item.state !== 'preparing' || !item.fingerprint || !isParsedAttachmentData(value))
+      throw new AttachmentStorageError('ATTACHMENT_NOT_READY', 'Preparation is no longer pending')
     await this.read(sessionId, attachmentId, signal)
     const bytes = Buffer.from(JSON.stringify(value))
     if (bytes.length > parsedByteLimit)
-      throw new SessionError('PARSING_LIMIT_EXCEEDED', 'Prepared content exceeds its storage budget')
+      throw new AttachmentStorageError('PARSING_LIMIT_EXCEEDED', 'Prepared content exceeds its storage budget')
     await this.checkRoot()
     signal.throwIfAborted()
     const stage = this.path(attachmentId, 'parsed-part')
@@ -184,24 +329,24 @@ export class ManagedAttachments {
     return createHash('sha256').update(bytes).digest('hex')
   }
 
-  async prepared(sessionId: string, attachmentId: string, signal: AbortSignal): Promise<ParsedAttachment> {
+  async prepared(sessionId: string, attachmentId: string, signal: AbortSignal): Promise<ParsedAttachmentData> {
     const item = this.log.get(sessionId, attachmentId)
     if (item.state !== 'ready' || !item.parsedFingerprint || !item.preparation)
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'No saved preparation is available')
+      throw new AttachmentStorageError('ATTACHMENT_UNREADABLE', 'No saved preparation is available')
     await this.read(sessionId, attachmentId, signal)
     const bytes = await this.readStored(attachmentId, 'parsed', item.parsedFingerprint, parsedByteLimit, signal)
     let value: unknown
     try {
       value = JSON.parse(bytes.toString('utf8'))
     } catch {
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'Saved preparation cannot be read')
+      throw new AttachmentStorageError('ATTACHMENT_UNREADABLE', 'Saved preparation cannot be read')
     }
     if (
-      !isParsedAttachment(value) ||
+      !isParsedAttachmentData(value) ||
       value.parserVersion !== item.preparation.parserVersion ||
       value.mediaType !== item.detectedType
     )
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'Saved preparation does not match its receipt')
+      throw new AttachmentStorageError('ATTACHMENT_UNREADABLE', 'Saved preparation does not match its receipt')
     return value
   }
 
@@ -255,8 +400,8 @@ export class ManagedAttachments {
       }
     } catch (error) {
       if (signal.aborted) signal.throwIfAborted()
-      if (error instanceof SessionError) throw error
-      throw new SessionError(
+      if (error instanceof AttachmentStorageError) throw error
+      throw new AttachmentStorageError(
         'ATTACHMENT_UNREADABLE',
         'The saved attachment is missing or changed. Keep the data and provide the file again',
       )
@@ -266,7 +411,7 @@ export class ManagedAttachments {
   async remove(sessionId: string, attachmentId: string, expectedRevision: number): Promise<void> {
     this.log.get(sessionId, attachmentId)
     if (this.drafts.snapshot(sessionId).revision !== expectedRevision)
-      throw new SessionError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
+      throw new AttachmentStorageError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
     const upload = this.uploads.get(attachmentId)
     if (upload) {
       upload.abort.abort()
@@ -274,9 +419,9 @@ export class ManagedAttachments {
     }
     const draft = this.drafts.snapshot(sessionId)
     if (draft.revision !== expectedRevision)
-      throw new SessionError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
+      throw new AttachmentStorageError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
     if (!draft.attachmentIds.includes(attachmentId))
-      throw new SessionError('ATTACHMENT_CONFLICT', 'The file is not in this draft')
+      throw new AttachmentStorageError('ATTACHMENT_CONFLICT', 'The file is not in this draft')
     // Remove the database reference first. A failed unlink leaves only a recoverable orphan.
     this.log.removeUnsent(sessionId, attachmentId)
     this.drafts.save(
@@ -290,20 +435,20 @@ export class ManagedAttachments {
   /** A conditional draft save already removed membership; historical objects still refuse deletion. */
   async discardUnsent(sessionId: string, attachmentId: string): Promise<void> {
     if (this.drafts.snapshot(sessionId).attachmentIds.includes(attachmentId))
-      throw new SessionError('ATTACHMENT_CONFLICT', 'Remove draft membership first')
+      throw new AttachmentStorageError('ATTACHMENT_CONFLICT', 'Remove draft membership first')
     this.log.removeUnsent(sessionId, attachmentId)
     await this.erase(attachmentId)
   }
 
   private path(id: string, extension: Extension): string {
-    if (!fileId.test(id)) throw new SessionError('ATTACHMENT_NOT_FOUND', 'Attachment is unavailable')
+    if (!fileId.test(id)) throw new AttachmentStorageError('ATTACHMENT_NOT_FOUND', 'Attachment is unavailable')
     return join(this.root, `${id}.${extension}`)
   }
 
   private async checkRoot(): Promise<void> {
     const stat = await lstat(this.root)
     if (!stat.isDirectory() || stat.isSymbolicLink() || (await realpath(this.root)) !== this.root)
-      throw new SessionError(
+      throw new AttachmentStorageError(
         'ATTACHMENT_NOT_SAVED',
         'Managed attachment storage changed. Restart with a safe data folder',
       )

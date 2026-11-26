@@ -71,21 +71,4 @@ export function registerManagementRoutes(router: Router, management: WebManageme
       json(res, 200, await management.requests(param(req, 'sessionId')))
     }),
   )
-  const drafts = management.drafts
-  if (drafts) {
-    router.get(
-      '/api/sessions/:sessionId/draft',
-      session,
-      route(async (req, res) => {
-        json(res, 200, await drafts.get(param(req, 'sessionId')))
-      }),
-    )
-    router.put(
-      '/api/sessions/:sessionId/draft',
-      session,
-      route(async (req, res) => {
-        json(res, 200, await drafts.save(param(req, 'sessionId'), await readJson(req)))
-      }),
-    )
-  }
 }

@@ -7,8 +7,11 @@ import { fileURLToPath } from 'node:url'
 import { startLocalWeb } from '../../lib/server.js'
 import { HostClient } from '../../../web/tests/fixtures/browser-driver.mjs'
 
-export { ManagedAttachments } from '../../lib/types/features/attachments/index.js'
-export { MemoryDraftStore } from '../../lib/types/draft-store.js'
+export {
+  ManagedAttachments,
+  MemoryDraftStore,
+  createAttachmentRoutes,
+} from '../../lib/types/modules/attachments/index.js'
 export { defaultCredentialStore } from '../../lib/types/integrations/credentials/index.js'
 export { pinnedVersion } from '../../lib/types/integrations/opencode/index.js'
 

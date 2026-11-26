@@ -1,12 +1,13 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { AttachmentParser, attachmentLimits } from '@deckagent/file-tools'
 import type { HostOptions, RequestRuntime } from '@deckagent/host-api'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
 import { SessionError, SqliteSessionStore, type ModelSelection } from '@deckagent/session-persistence'
-import { MemoryDraftStore } from './draft-store.ts'
+import { MemoryDraftStore } from './modules/attachments/index.ts'
 import {
   WorkspaceRegistry,
   createWorkspaceOperations,
@@ -24,7 +25,7 @@ import {
   mapChatFailure,
   type ChatMarks,
 } from './modules/chats/index.ts'
-import { attachmentManagement, mapApplicationFailure, sessionReadManagement } from './local-transport.ts'
+import { mapApplicationFailure, sessionReadManagement } from './local-transport.ts'
 import {
   ProviderConfigurations,
   SqliteProviderStore,
@@ -38,7 +39,12 @@ import { createRequestRuntime } from './features/requests/index.ts'
 import { defaultCredentialStore, type CredentialStore } from './integrations/credentials/index.ts'
 import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './integrations/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
-import { AttachmentCoordinator, ManagedAttachments } from './features/attachments/index.ts'
+import {
+  AttachmentCoordinator,
+  ManagedAttachments,
+  createAttachmentRoutes,
+  mapAttachmentFailure,
+} from './modules/attachments/index.ts'
 import { prepareSourceTools } from './features/sources/index.ts'
 import { ResearchCoordinator } from './features/research/index.ts'
 import { TavilyClient } from './integrations/research/index.ts'
@@ -294,7 +300,7 @@ async function createRuntimeLayer(
     runtime,
     research,
     images,
-    inputs: new AttachmentCoordinator(sessions, drafts, attachments),
+    inputs: new AttachmentCoordinator(sessions, drafts, attachments, new AttachmentParser(), attachmentLimits),
     generationRuntime: options.generationRuntime ?? new GenerationWorkflow(runtime, sessions),
     settings: () => ({
       research: research.settings(),
@@ -328,7 +334,11 @@ function createHostOptions(
   const briefs = new BriefCoordinator(decks, sessions)
   return {
     mapApplicationFailure: error =>
-      mapWorkspaceFailure(error) ?? mapChatFailure(error) ?? mapProviderFailure(error) ?? mapApplicationFailure(error),
+      mapWorkspaceFailure(error) ??
+      mapChatFailure(error) ??
+      mapProviderFailure(error) ??
+      mapAttachmentFailure(error) ??
+      mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
     briefs,
@@ -337,7 +347,16 @@ function createHostOptions(
     assets,
     requests: {
       closingText: (sessionId, requestId, status) => generationReport(decks, sessionId, requestId, status),
-      store: runtime.inputs.requestStore(),
+      store: {
+        approvals: sessions.requests.approvals,
+        admit: input => runtime.inputs.admitDraft(input, admitted => sessions.requests.admit(admitted)),
+        append: (id, event) => sessions.requests.append(id, event),
+        finish: (id, status, code) => sessions.requests.finish(id, status, code),
+        get: id => sessions.requests.get(id),
+        events: (id, after) => sessions.requests.events(id, after),
+        text: id => sessions.requests.text(id),
+        activeFor: id => sessions.requests.activeFor(id),
+      },
       runtime: new DeckWorkflow(runtime.runtime, decks, sessions, briefs, runtime.generationRuntime, runtime.images),
       prepareTools: async (sessionId, attachmentIds, publicResearch) =>
         prepareSourceTools({
@@ -351,13 +370,14 @@ function createHostOptions(
           ...(attachmentIds === undefined ? {} : { attachmentIds }),
         }),
     },
-    attachments: attachmentManagement(runtime.inputs),
+    maxAttachments: runtime.inputs.maxFiles,
     ...(options.port === undefined ? {} : { port: options.port }),
     readHistory: id => sessions.read(id),
     routes: [
       createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
       createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
       createProviderRoutes(runtime.providers),
+      createAttachmentRoutes(runtime.inputs),
     ],
     changes: {
       feed: changeFeed,
@@ -371,7 +391,6 @@ function createHostOptions(
       ...sessionReadManagement(sessions, runtime.research),
       preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },
       settings: async () => runtime.settings(),
-      drafts: { get: id => runtime.inputs.draft(id), save: (id, value) => runtime.inputs.save(id, value) },
     },
   }
 }
