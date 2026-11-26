@@ -6,7 +6,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 **Goal:** Complete Phase 1 of the Target Structure Refactor, and collect the facts that the design of Phase 2 needs. Phase 1: the conventions describe the target layout, AGENTS.md lists the tech stack, and the four agent core contracts have a written shape. Phase 2: the Local Host serves every current route through Express 5. Phase 3: each domain module lives in `apps/host/src/modules/<name>/`, and each store has a `version` and a change notice.
 
-**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition. Revision 3 (Task 20) starts Phase 3 with a diagnosis of the `workspaces` module that does not change code. Revision 3b (Tasks 21 and 22) moves the `workspaces` module into `apps/host/src/modules/workspaces/` with no change of behavior, and adds the folder-level rules for `apps/host/src/modules/`. Revision 3c (Tasks 23 to 25) adds the change notice contracts and Host `ChangeFeed`, upgrades `workspaces.sqlite` to schema 2 with `version` and `expectedVersion`, and connects the Browser to `GET /api/changes` and `WORKSPACES_STALE`. Revision 3d (Task 26) starts the move of the `chats` module with a diagnosis that does not change code. Revision 3e (Tasks 27 to 29) moves the `chats` module into `apps/host/src/modules/chats/` with no change of behavior. It also gives the chat list one `version` with `chats` notices, and makes the Browser read the chat list again after a newer notice. Revision 3f (Task 30) starts the move of the `providers` module with a diagnosis that does not change code.
+**Approach:** Revision 1 (Tasks 1 to 6) has two parts. Tasks 1 and 2 change Project Structure [[1]](#ref-1) and the Tech Stack section of AGENTS.md [[2]](#ref-2). Executors follow these files, so the files must not send new code to the old layout. Tasks 3 to 6 are diagnosis tasks that do not change code. Each task covers one agent core contract and ends with STOP. Revision 1b (Tasks 7 and 8) writes the contract shapes from the approved diagnosis reports and checks the Phase 1 exit condition. Revision 2 (Tasks 9 to 12) starts Phase 2 with four diagnosis tasks that do not change code. They cover the routes, the shared HTTP behavior and the error maps, the Host application package and the test baseline. Revision 2b (Tasks 13 to 16) writes the Phase 2 structure decisions into Project Structure and adds tests for the shared HTTP behavior. It also moves the Node code of `apps/web/` into `apps/host/` and measures the Express 5 defaults. Revision 2c (Tasks 17 to 19) serves every route through Express 5.2.1 and adds the folder-level import rules for the HTTP edge and the Browser. Its last task checks the Phase 2 exit condition. Revision 3 (Task 20) starts Phase 3 with a diagnosis of the `workspaces` module that does not change code. Revision 3b (Tasks 21 and 22) moves the `workspaces` module into `apps/host/src/modules/workspaces/` with no change of behavior, and adds the folder-level rules for `apps/host/src/modules/`. Revision 3c (Tasks 23 to 25) adds the change notice contracts and Host `ChangeFeed`, upgrades `workspaces.sqlite` to schema 2 with `version` and `expectedVersion`, and connects the Browser to `GET /api/changes` and `WORKSPACES_STALE`. Revision 3d (Task 26) starts the move of the `chats` module with a diagnosis that does not change code. Revision 3e (Tasks 27 to 29) moves the `chats` module into `apps/host/src/modules/chats/` with no change of behavior. It also gives the chat list one `version` with `chats` notices, and makes the Browser read the chat list again after a newer notice. Revision 3f (Task 30) starts the move of the `providers` module with a diagnosis that does not change code. Revision 3g (Tasks 31 to 34) moves the `providers` module into `apps/host/src/modules/providers/` and keeps the SQL apart from the rules. It also upgrades `web.sqlite` to schema 2 with the providers `version` and the `providers` notices. Provider writes send `expectedVersion`, and the Browser reads the settings again after a newer notice.
 
 **Tech stack:** Windows, Git Bash, Node.js 22.19.0, pnpm 11.28.5 (`corepack pnpm@11.28.5`), TypeScript 6.0.3, oxlint 1.94.0, Biome 2.5.15, Zod 4.6.7, `node:sqlite`, `node:test`, OpenCode 1.19.5.
 
@@ -63,6 +63,16 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 | Fields outside the chats version (Revision 3e) | `hasDraft`, `activeRequestId`, `hasSlides` and `selectable` come from other stores and do not increase the chats version. The Browser keeps its current reads for them. |
 | Revision 3f scope | Task 30 reads code, runs `git grep` and writes a report only. It changes no code, no test, no `package.json` and no file in `docs/architecture/`. The design of the `providers` move waits for the approved report. |
 | Providers and web.sqlite (Revision 3f) | The table `providers` shares `web.sqlite` with the table `preferences`, which `WebState` and `ResearchCoordinator` write. Task 30 records which class reads and writes which table and key. It does not split the database. |
+| Revision 3g scope | Task 31 moves the code and keeps the HTTP contract. Task 32 adds schema 2 of `web.sqlite`, the providers `version`, the `providers` notices and the field `providersVersion`. Task 33 adds `expectedVersion` and `PROVIDERS_STALE` to the provider writes, and the Browser client sends the version. Task 34 makes the Browser react to `providers` notices and to `PROVIDERS_STALE`. |
+| Providers module files (Revision 3g) | `apps/host/src/modules/providers/` has `providers.store.ts` (class `SqliteProviderStore`, the SQL of the table `providers`), `providers.service.ts` (class `ProviderConfigurations`, the former `ProviderStore` without SQL), `providers.routes.ts`, `providers.errors.ts`, `provider-catalog.ts`, `built-in-providers.ts` and `index.ts`. Task 31 removes `apps/host/src/features/providers/` and `apps/host/src/integrations/providers/`. |
+| Credential store place (Revision 3g) | `apps/host/src/integrations/credentials/` does not move, because `providers` and `research` both use it. The revision that moves `research` decides its place. |
+| ProviderRunSettings (Revision 3g) | `apps/host/src/modules/providers/index.ts` exports the type `ProviderRunSettings`. The OpenCode files import it from there until Phase 4 moves the type to `runs/ports.ts`. |
+| Settings route (Revision 3g) | `GET /api/settings` stays in `packages/host/api/src/transport/management-routes.ts`, because its reply also carries `research` and `runtime`. The revision that moves `research` moves it. The three routes `/api/providers/...` move to `providers.routes.ts`. |
+| web.sqlite schema 2 (Revision 3g) | `WebState` keeps the file and its schema. Schema 2 adds `change_versions` with the row `('providers', 'host', 0)`. A schema 1 file upgrades in place, in the transaction of the constructor, and keeps each row of `providers` and `preferences`. A later revision adds the `preferences` row. |
+| Providers version (Revision 3g) | A `save` or a `remove` that writes the table increases the version once, in the SQL transaction of the row write. `load` does not increase it: the rewrite of an older row and a CLI bootstrap provider do not change the settings reply after a start. A failed write keeps the version. |
+| Order of the providers notice (Revision 3g) | The service publishes the `providers` notice after the commit and after the in-memory maps change, before the first `await` after the write. So the notice goes out before `modelsRemoved`, and the `chats` notice of `clearSelections` comes after it. |
+| Providers stale check (Revision 3g) | `PUT /api/providers/:providerId` and `DELETE /api/providers/:providerId` require `expectedVersion` (a non-negative safe integer) in the JSON body, as the workspace writes do. A missing or bad value gives `400 INVALID_REQUEST`. An old value gives `409 PROVIDERS_STALE`. The service checks the version first, before the input check and before the provider check. The catalog read takes no version. |
+| Browser and providers notices (Revision 3g) | On a newer `providers` notice, the Browser reads the settings and the chat list again through `navigation.refresh()`. This also updates `selectable` in the chat list. An open settings dialog does not fill its form again. On `PROVIDERS_STALE`, the dialog reads the settings again, fills the form from the saved values and shows a message. It does not send the write again. |
 | Chats and the session database (Revision 3d) | `packages/session/persistence/` holds the stores of `modules/chats/`, `modules/attachments/` and `runs/` in one database. Task 26 records which member of `SqliteSessionStore` reads and writes which table. It does not split the package. |
 
 ## Global Constraints
@@ -80,6 +90,76 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 - Commit and push only in the last step of a task, with the exact commands of that step, and only when no STOP condition occurred. Do not use `--force`. Do not skip a hook with `--no-verify`. Do not add a `Co-Authored-By` line or another AI attribution to the commit message. Tasks 1 to 20 have no commit step.
 - Start a task only when `git status --short` prints no line. A check that reads a commit, for example `git grep` or `git diff <commit>`, does not see a file with no commit.
 - Write reports in English with `asd-ste100` strict mode. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py <report-file>` on each report. When `python` is not available, run the same script with `python3` or `python3.12`.
+- `core.autocrlf` is `true` on this machine, so a file on disk can have CRLF line ends. When you compare or replace text in a file, accept `\r\n` and `\n`.
+
+### Task protocol
+
+Tasks 31 and later obey this protocol. A task file adds only its special conditions and actions.
+
+**STOP when:**
+
+- The output of a command does not match `Expected`.
+- A file is different from the description in the task.
+- The task needs a decision that the task does not contain.
+- The same step failed two times.
+
+**Forbidden:**
+
+- Change a file that is not in the `Files` block of the task.
+- Remove, skip or weaken a test or a check.
+- Change an expected value of a test, unless the task gives the change.
+- Add a comment, a lint-disable directive or `@ts-expect-error`.
+- Commit or push before the step `Write the report file and stop`.
+
+**Files of each task:** in addition to the `Files` block, each task changes `plan/README.md`, its own task file, `../reports/README.md` and `CHANGELOG.md`, and it creates `../reports/task-NN-<slug>.md`.
+
+**Step `Format, build and check`:**
+
+1. Run `corepack pnpm@11.28.5 exec biome format --write <each code and test file that the task changed>`. Then run the same command without `--write`. Expected: PASS. The second output contains `No fixes applied`.
+2. Run `corepack pnpm@11.28.5 build`, `corepack pnpm@11.28.5 lint`, `corepack pnpm@11.28.5 check:boundaries` and `corepack pnpm@11.28.5 check:docs`. Expected: PASS. Each command exits with code 0. The output of `check:boundaries` contains `0 violation(s)`, and the output of `check:docs` contains `0 error(s)`.
+
+**Step `Run every suite`:** run each command below. Expected: PASS. Each output contains `# fail 0`. Record the `# pass` count of each suite in the report. `test:browser-smoke` has two known timing flakes: `Create deck UI collects missing answers, revises, confirms once, previews and reopens published slides` and `interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat`. When one of these two tests is the only failed test, run the suite one more time. When the second run also fails, STOP.
+
+```bash
+corepack pnpm@11.28.5 test:http-edge
+corepack pnpm@11.28.5 test:tools-browser
+corepack pnpm@11.28.5 test:local-web
+corepack pnpm@11.28.5 test:local-foundation
+corepack pnpm@11.28.5 test:model-requests
+corepack pnpm@11.28.5 test:source-permissions
+corepack pnpm@11.28.5 test:attachments
+corepack pnpm@11.28.5 test:research
+corepack pnpm@11.28.5 test:images
+corepack pnpm@11.28.5 test:outline-workflow
+corepack pnpm@11.28.5 test:brief-foundation
+corepack pnpm@11.28.5 test:deck-review
+corepack pnpm@11.28.5 test:generation-publication
+corepack pnpm@11.28.5 test:slide-pipeline
+corepack pnpm@11.28.5 test:session-persistence
+corepack pnpm@11.28.5 test:opencode-resources
+corepack pnpm@11.28.5 test:layouts
+corepack pnpm@11.28.5 test:browser-smoke
+corepack pnpm@11.28.5 test:env-startup
+```
+
+**Step `Write the report file and stop`:**
+
+1. Mark the other steps as `- [x]` in the task file. Change the row of the task in this file to `Done` and add `([report](../reports/task-NN-<slug>.md))` after the task link.
+2. Create `../reports/task-NN-<slug>.md` with:
+   - The H1 `# Task NN: <task title> report` and one purpose line (`Read this file to ...`).
+   - Files changed.
+   - Commands run, with the exit code and the key output of each command.
+   - The tables that the task asks for.
+   - Items that a decision table sent to the report.
+   - Each STOP and each retry, with the step and the cause. Write `none` when no STOP or retry occurred.
+   - What the commands do not prove, with the items that the task names.
+3. Add a row for the task in `../reports/README.md`. Run `corepack pnpm@11.28.5 check:docs` and the `ste-lint.py` command of Global Constraints on the report. Expected: PASS. `0 error(s)` and `0 violations`.
+4. When a STOP condition occurred, stop here and send the report summary. Do not commit.
+5. Add the `CHANGELOG.md` line of the task under `## [Unreleased]` and `### Added`, as the first line of the list.
+6. Mark this step as `- [x]`. Run `git add -A`, then `git commit -m "<commit message of the task>"`. Expected: PASS. Exit code 0. When a hook fails, STOP. Do not use `--no-verify`.
+7. Run `git push`. Expected: PASS. The output contains `refactor -> refactor`. When Git rejects the push, STOP. Do not use `--force`.
+8. Run `git status --short`. Expected: PASS. No line.
+9. Stop, and send the report summary with the commit hash. Do not start the next task until a person approves the report.
 
 ## Review Focus
 
@@ -161,6 +241,14 @@ Revision 3f adds these failure modes:
 44. The diagnosis does not record that a save or a removal of a provider changes the chat list through `modelsRemoved` and `selectable`. Then the move sends only a `providers` notice and no `chats` notice, or two notices in the wrong order. Owner: [Task 30](task-30-diagnose-providers-module.md), the lines below the tables of Steps 5 and 6.
 45. The diagnosis misses an importer of `integrations/providers/` or `integrations/credentials/` outside the providers feature, for example `ProviderRunSettings` in OpenCode or `CredentialStore` in research. Then the move breaks a caller in another area. Owner: [Task 30](task-30-diagnose-providers-module.md), the table `Importers` of Step 4.
 
+Revision 3g adds these failure modes:
+
+46. A provider write and its version increase are not in one SQL transaction, or each start increases the version. Then each Browser reads the settings again with no change. Owner: [Task 32](task-32-add-providers-version-and-notices.md), the restart part of the test `provider writes increase the providers version and send the providers notice before the chats notice`.
+47. The `providers` notice goes out after `modelsRemoved`, so a failure of `clearSelections` drops the notice, or the `chats` notice comes first. Owner: [Task 32](task-32-add-providers-version-and-notices.md), the order assertions of the same test.
+48. The schema 1 upgrade of `web.sqlite` loses a provider row, the marker `{ deleted: true }` or a preference. Owner: [Task 32](task-32-add-providers-version-and-notices.md), the test `web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and preferences`.
+49. The stale check runs after the provider check, so a stale save still sends the key to the endpoint. Owner: [Task 33](task-33-add-providers-stale-check.md), the `checks` counter of the test `a provider write with an old expectedVersion gets PROVIDERS_STALE and changes nothing`.
+50. A `providers` notice fills the open settings form again and the edits of the user are lost, or the Browser sends a stale write again. Owner: [Task 34](task-34-refresh-browser-from-providers-notices.md), `e2e/browser-smoke.test.mjs`.
+
 ## Tasks
 
 | Task | Status | File |
@@ -195,10 +283,14 @@ Revision 3f adds these failure modes:
 | 28 | Done | [Add the chats version and change notices](task-28-add-chats-version-and-notices.md) ([report](../reports/task-28-add-chats-version-and-notices.md)) |
 | 29 | Done | [Refresh the Browser chat list from chats notices](task-29-refresh-browser-chat-list-from-notices.md) ([report](../reports/task-29-refresh-browser-chat-list-from-notices.md)) |
 | 30 | Done | [Diagnose the providers module](task-30-diagnose-providers-module.md) ([report](../reports/task-30-diagnose-providers-module.md)) |
+| 31 | Pending | [Move the providers module into apps/host/src/modules](task-31-move-providers-module.md) |
+| 32 | Pending | [Add the providers version and change notices](task-32-add-providers-version-and-notices.md) |
+| 33 | Pending | [Add the providers stale check](task-33-add-providers-stale-check.md) |
+| 34 | Pending | [Refresh the Browser from providers notices](task-34-refresh-browser-from-providers-notices.md) |
 
 ## Next revision
 
-After a person approves the report of Task 30, the next revision designs the move of the `providers` module, its `version` and its `providers` notices from the report.
+After a person approves the report of Task 34, the next revision starts the move of the `attachments` module. It starts with a diagnosis that does not change code. The `attachments` move also decides `multer`.
 
 A later revision decides `helmet`, with the header tests of Task 14 as evidence.
 
