@@ -49,7 +49,7 @@ The package `packages/session/persistence/` also holds the store of requests and
 - Commit or push.
 - Propose a type, a file name, an SQL statement, a route or an owner for the move. This task records facts only.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -63,7 +63,7 @@ Run: `git grep -n "^| 25 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Record the module files**
+- [x] **Step 2: Record the module files**
 
 Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').readFileSync(f, 'utf8').split(/\r?\n/).length - 1, f)" apps/host/src/features/chats/index.ts packages/session/persistence/src/index.ts packages/session/persistence/src/schema.ts packages/session/persistence/src/message.ts packages/session/persistence/src/contracts.ts apps/host/src/web-state.ts`
 
@@ -81,7 +81,7 @@ Read each of the six files in full. Read these ranges also:
 
 Write the table `Module files` with the columns `File | Lines | Responsibility`. Add one row for each of the six files and one row for each of the seven ranges. In `Responsibility`, write one sentence about what the code does, from the code that you read. Do not write where the code goes after the move.
 
-- [ ] **Step 3: Record the store members**
+- [x] **Step 3: Record the store members**
 
 Read the class `SqliteSessionStore` in `packages/session/persistence/src/index.ts`, lines 35 to 357.
 
@@ -93,7 +93,7 @@ Write the table `Store members` with the columns `Member | Public | Tables read 
 
 Then read `packages/session/persistence/src/requests.ts`, lines 73 to 125 and 240 to 290. Add one row for `RequestLog.admit` and one row for the private method `RequestLog.settle`. In `Tables written`, include `messages` and `sessions` when the method calls `this.access.appendMessages`.
 
-- [ ] **Step 4: Record the callers of the chat members**
+- [x] **Step 4: Record the callers of the chat members**
 
 Run: `git grep -n -E "(sessions|store)\.(open|create|bind|getInfo|select|list|chats|search|ungroup|ungroupExcept|read|append|clearSelections)\(" -- apps/host/src packages/host/api/src ':!apps/host/src/features/chats'`
 
@@ -142,7 +142,7 @@ Use the rows of the decision table in order. The first row that matches gives th
 
 Some files of the second command have no row in the table `Callers`. For each of these files, add its path to the list `Store holders without a chat member call` of the report.
 
-- [ ] **Step 5: Record the calls into other stores**
+- [x] **Step 5: Record the calls into other stores**
 
 Run: `git grep -n -E "\b(sessions|registry|web|decks|drafts)\.[a-zA-Z.]+\(" -- apps/host/src/features/chats`
 
@@ -162,7 +162,7 @@ Write the table `Calls into other stores` with the columns `Line | Call | Store 
 
 `Function that makes the call` is `createWorkspaceChats`, `project`, `chat`, or the member of `ChatOperations` (`create`, `selectModel`, `list` or `search`) that contains the line.
 
-- [ ] **Step 6: Record the write sites**
+- [x] **Step 6: Record the write sites**
 
 Run: `git grep -n -E "\.run\(|exec\('(BEGIN|COMMIT|ROLLBACK)" -- packages/session/persistence/src/index.ts`
 
@@ -193,7 +193,7 @@ Write the table `Write sites` with the columns `Line | Public method | Table | C
 | `append`, `RequestLog.admit` or `RequestLog.settle` | The request lifecycle. Write the callers that Step 4 found, or `not found by Step 4` |
 | No row matches | Write `none` and add the line to the list `Open items` of the report. |
 
-- [ ] **Step 7: Record the fields of the chat list**
+- [x] **Step 7: Record the fields of the chat list**
 
 Read `apps/host/src/web-state.ts`, the method `project`, `apps/host/src/features/chats/index.ts`, the function `project`, and `packages/host/api/src/index.ts`, the function `withActive`.
 
@@ -203,7 +203,7 @@ Write the table `List fields` with the columns `Field | Set by | Source store an
 - `Source store and column` is the store and the SQL column or the in-memory value that gives the field, for example `SqliteSessionStore, sessions.updated_at` or `MemoryDraftStore, draft text`.
 - `Write sites that change it` is the list of lines of the table `Write sites` that change the source. When the source is not in `SqliteSessionStore`, write the store method that changes it, from the code that you read, or `not in the lines read`.
 
-- [ ] **Step 8: Record the Browser reads**
+- [x] **Step 8: Record the Browser reads**
 
 Run: `git grep -n -E "management\.(sessions|create|select|search)\(|client\.history\(" -- apps/web/src/browser`
 
@@ -213,7 +213,7 @@ Read 30 lines before each line of the output and 10 lines after each line of the
 
 Write the table `Browser reads` with the columns `File | Line | Client method | HTTP route | Function that makes the call | Event that runs the function`. `Event` is the user action or the timer that you see in the code, for example a click handler, `focus` or `setInterval`. When the code that you read does not show the event, write `not in the lines read`.
 
-- [ ] **Step 9: Record the error map and the schema upgrade path**
+- [x] **Step 9: Record the error map and the schema upgrade path**
 
 Write the table `Error map` with the columns `Error class | Code | HTTP status | File and line`. Add one row for each code of `chatStatus` in `apps/host/src/local-transport.ts`, lines 17 to 22, and one row for each `SessionError` code that `mapApplicationFailure` maps in lines 150 to 155. Add one row for each `HttpError` that `chatManagement` throws in lines 178 to 196.
 
@@ -221,7 +221,7 @@ Read `packages/session/persistence/src/schema.ts`, lines 81 to 160, and `package
 
 Write the table `Schema upgrade path` with the columns `Condition on user_version and application_id | Action | File and line`. Write one row for each branch of the `if` and `else if` chain in `schema.ts`, and one row for each `if (version` line inside the upgrade branch. Add one row for the test in `chat-persistence.test.mjs` that opens a database with an old `user_version`. Its `Action` is the value that the test asserts.
 
-- [ ] **Step 10: Record the tests**
+- [x] **Step 10: Record the tests**
 
 Run: `git grep -l -E "api/sessions(['\`]|/search|/[^/]+/selection|.*/history)" -- e2e apps/host/tests apps/web/tests packages/host/api/tests`
 
@@ -233,7 +233,7 @@ Expected: PASS. 13 lines: six lines in `chat-persistence.test.mjs` and seven lin
 
 Write the table `Tests` with the columns `File | Suite in package.json | Chat routes or store members that the file calls`. Add one row for each of the seven files of the first command. Add one row for each of the two files of the second command. To find the suite, run `git grep -n "<file path>" -- package.json` for each file. When the output has no line, write `no suite`.
 
-- [ ] **Step 11: Write the report file and stop**
+- [x] **Step 11: Write the report file and stop**
 
 1. Mark Steps 1 to 10 as `- [x]` in this file. Change the Task 26 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and link `../reports/task-26-diagnose-chats-module.md`.
 2. Create `docs/build/refactor/target-structure/reports/task-26-diagnose-chats-module.md` with:
