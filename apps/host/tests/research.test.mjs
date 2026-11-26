@@ -157,6 +157,7 @@ test('research is opt-in through Host, retains exact sources across restart and 
         key: 'model-fixture',
         models: ['model-a'],
         new: true,
+        expectedVersion: (await f.call('settings')).data.providersVersion,
       })
     ).status,
     200,
@@ -255,6 +256,7 @@ test('Stop aborts research network work and prevents late sources from being com
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const accepted = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true })

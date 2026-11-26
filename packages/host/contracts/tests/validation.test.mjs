@@ -14,6 +14,8 @@ import {
   decodeBriefView,
   decodeChangeNotice,
   decodeGeneration,
+  decodeProviderRemoveBody,
+  decodeProviderSaveBody,
   decodeWorkspaceAddBody,
   decodeWorkspaceRelinkBody,
   decodeWorkspaceRemoveBody,
@@ -340,4 +342,26 @@ test('workspace body decoders enforce expectedVersion and strict keys while keep
   ]) {
     assert.throws(call, error => error instanceof RequestValidationError && error.code === 'INVALID_REQUEST')
   }
+})
+
+test('provider write bodies require a non-negative expectedVersion and keep the other fields', () => {
+  assert.deepEqual(decodeProviderSaveBody({ displayName: 'A', models: [], expectedVersion: 3 }), {
+    provider: { displayName: 'A', models: [] },
+    expectedVersion: 3,
+  })
+  assert.deepEqual(decodeProviderRemoveBody({ expectedVersion: 0 }), { expectedVersion: 0 })
+  const invalid = error => error instanceof RequestValidationError && error.code === 'INVALID_REQUEST'
+  for (const value of [
+    undefined,
+    null,
+    [],
+    'x',
+    { displayName: 'A' },
+    { expectedVersion: -1 },
+    { expectedVersion: 1.5 },
+    { expectedVersion: '1' },
+  ])
+    assert.throws(() => decodeProviderSaveBody(value), invalid)
+  for (const value of [undefined, {}, { expectedVersion: -1 }, { expectedVersion: 0, extra: true }])
+    assert.throws(() => decodeProviderRemoveBody(value), invalid)
 })

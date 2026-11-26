@@ -29,6 +29,7 @@ test('confirmed production runtime publishes a full deck through the request MCP
         key: 'fixture',
         models: ['model-a'],
         new: true,
+        expectedVersion: (await f.call('settings')).data.providersVersion,
       })
     ).status,
     200,

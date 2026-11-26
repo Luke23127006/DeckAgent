@@ -38,6 +38,7 @@ async function configured(call, baseUrl, extra = {}) {
     key,
     new: true,
     ...extra,
+    expectedVersion: (await call('settings')).data.providersVersion,
   })
   assert.equal(saved.status, 200, JSON.stringify(saved.data))
   const chat = (await call('sessions', 'POST', {})).data
@@ -66,7 +67,11 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
     new: true,
   }
 
-  const refused = await call('providers/fixture', 'PUT', { ...base, key: 'sk-wrong-key' })
+  const refused = await call('providers/fixture', 'PUT', {
+    ...base,
+    key: 'sk-wrong-key',
+    expectedVersion: (await call('settings')).data.providersVersion,
+  })
   assert.equal(refused.status, 422)
   assert.equal(refused.data.error.code, 'PROVIDER_KEY_REFUSED')
   assert.equal(
@@ -74,12 +79,21 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
     false,
     'The provider refusal text is never passed on',
   )
-  const silent = await call('providers/fixture', 'PUT', { ...base, baseUrl: 'http://127.0.0.1:1/v1', key })
+  const silent = await call('providers/fixture', 'PUT', {
+    ...base,
+    baseUrl: 'http://127.0.0.1:1/v1',
+    key,
+    expectedVersion: (await call('settings')).data.providersVersion,
+  })
   assert.equal(silent.data.error.code, 'PROVIDER_NO_ANSWER')
   assert.deepEqual((await call('settings')).data.providers, [], 'A failed check saves nothing')
   assert.equal(credentials.values.size, 0)
 
-  const taken = await call('providers/openai', 'PUT', { ...base, key })
+  const taken = await call('providers/openai', 'PUT', {
+    ...base,
+    key,
+    expectedVersion: (await call('settings')).data.providersVersion,
+  })
   assert.equal(taken.status, 409)
   assert.deepEqual(taken.data.error, {
     code: 'PROVIDER_ID_TAKEN',
@@ -92,11 +106,21 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     models: [],
     new: true,
+    expectedVersion: (await call('settings')).data.providersVersion,
   })
   assert.equal(missing.data.error.code, 'PROVIDER_KEY_REQUIRED')
   assert.equal(missing.data.error.detail.missing, 'key')
 
-  assert.equal((await call('providers/fixture', 'PUT', { ...base, key })).status, 200)
+  assert.equal(
+    (
+      await call('providers/fixture', 'PUT', {
+        ...base,
+        key,
+        expectedVersion: (await call('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
   const settings = (await call('settings')).data
   assert.deepEqual(
     settings.providers.map(item => [item.id, item.hasKey, item.keyAvailable, item.builtIn]),
@@ -108,21 +132,42 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
     ['openai', 'anthropic', 'google', 'deepseek'],
   )
   assert.equal(
-    (await call('providers/fixture', 'PUT', { ...base, displayName: 'Again', key })).data.error.code,
+    (
+      await call('providers/fixture', 'PUT', {
+        ...base,
+        displayName: 'Again',
+        key,
+        expectedVersion: (await call('settings')).data.providersVersion,
+      })
+    ).data.error.code,
     'PROVIDER_ID_TAKEN',
   )
 
   // A refused new key keeps the saved one (UC-005 A1/A6).
   const firstRef = [...credentials.values.keys()][0]
   assert.equal(
-    (await call('providers/fixture', 'PUT', { ...base, new: false, key: 'sk-rotated-wrong' })).data.error.code,
+    (
+      await call('providers/fixture', 'PUT', {
+        ...base,
+        new: false,
+        key: 'sk-rotated-wrong',
+        expectedVersion: (await call('settings')).data.providersVersion,
+      })
+    ).data.error.code,
     'PROVIDER_KEY_REFUSED',
   )
   assert.deepEqual([...credentials.values.entries()], [[firstRef, key]])
   // Catalog, then a model by hand that the catalog does not hold; adding models runs no check and no model.
   assert.deepEqual((await call('providers/fixture/catalog')).data, ['model-a', 'model-b', 'model-c'])
   assert.equal(
-    (await call('providers/fixture', 'PUT', { ...base, new: false, models: ['model-a', 'hand-typed-model'] })).status,
+    (
+      await call('providers/fixture', 'PUT', {
+        ...base,
+        new: false,
+        models: ['model-a', 'hand-typed-model'],
+        expectedVersion: (await call('settings')).data.providersVersion,
+      })
+    ).status,
     200,
   )
   await provider.close()
@@ -135,6 +180,7 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
         ...base,
         new: false,
         models: ['model-a', 'hand-typed-model', 'another'],
+        expectedVersion: (await call('settings')).data.providersVersion,
       })
     ).status,
     200,
@@ -143,7 +189,7 @@ test('provider setup: checked before saving, failed checks save nothing, keys ne
   assert.deepEqual((await call('settings')).data.providers[0].models, ['model-a', 'hand-typed-model', 'another'])
 
   // Delete: configuration, models and key leave DeckAgent.
-  assert.equal((await call('providers/fixture', 'DELETE')).status, 200)
+  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: (await call('settings')).data.providersVersion })).status, 200)
   assert.deepEqual((await call('settings')).data.providers, [])
   assert.equal(credentials.values.size, 0)
 })
@@ -507,6 +553,7 @@ test('workspace with an active request is not removed or moved; provider changes
         protocol: 'chat-completions',
         baseUrl: provider.baseUrl,
         models: ['model-b'],
+        expectedVersion: (await call('settings')).data.providersVersion,
       })
     ).status,
     200,
@@ -590,7 +637,7 @@ test('Windows credential store: keys are kept protected under Application Storag
     [[true, true]],
   )
   assert.equal(settings.persistentKeys, true)
-  assert.equal((await call('providers/fixture', 'DELETE')).status, 200)
+  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: (await call('settings')).data.providersVersion })).status, 200)
   assert.deepEqual(await listTree(join(data, 'credentials')), [], 'Deleting the configuration deletes its key')
 })
 
@@ -608,6 +655,7 @@ test('without a protected store a key is refused, never saved in plain text', as
     models: ['m'],
     key,
     new: true,
+    expectedVersion: (await call('settings')).data.providersVersion,
   })
   assert.equal(refused.data.error.code, 'CREDENTIAL_STORE_UNAVAILABLE')
   // A local model service without a key still works.
@@ -619,6 +667,7 @@ test('without a protected store a key is refused, never saved in plain text', as
         baseUrl: provider.baseUrl,
         models: ['m'],
         new: true,
+        expectedVersion: (await call('settings')).data.providersVersion,
       })
     ).status,
     200,

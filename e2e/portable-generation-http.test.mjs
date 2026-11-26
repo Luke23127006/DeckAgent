@@ -87,6 +87,7 @@ for (const templateVersion of [2, 3])
       key: 'fixture',
       models: ['model-a'],
       new: true,
+      expectedVersion: (await f.call('settings')).data.providersVersion,
     })
     const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
     const draft = {

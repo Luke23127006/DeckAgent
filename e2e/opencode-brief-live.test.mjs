@@ -158,6 +158,7 @@ test('real CLI receives the canonical Brief schema and repairs field errors befo
     key: 'brief-local-fixture-only',
     models: ['local-model'],
     new: true,
+    expectedVersion: (await api('settings')).providersVersion,
   })
   const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'local-model' } })
   const request = await api('requests', 'POST', {

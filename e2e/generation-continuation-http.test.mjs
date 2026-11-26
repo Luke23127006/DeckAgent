@@ -29,6 +29,7 @@ test('Stop at two of five, restart and explicitly continue publishes only missin
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))

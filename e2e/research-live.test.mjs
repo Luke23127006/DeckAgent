@@ -78,6 +78,7 @@ test('real CLI calls the Host research tool using real free Tavily and retains a
     key: 'local-dummy',
     models: ['research-model'],
     new: true,
+    expectedVersion: (await api('settings')).providersVersion,
   })
   const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'research-model' } })
   const client = new HostClient(app.origin, app.token)

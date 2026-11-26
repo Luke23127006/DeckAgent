@@ -23,6 +23,7 @@ test('Create deck collects known answers, persists one request at a time and ski
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const known = brief()
@@ -80,6 +81,7 @@ async function fixture(t) {
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const full = brief()

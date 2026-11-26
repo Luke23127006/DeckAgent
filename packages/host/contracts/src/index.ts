@@ -57,6 +57,10 @@ export { decodeBoundProposal } from './outline-validation.ts'
 export { decodeGeneration } from './generation-validation.ts'
 export { decodeChangeNotice, type ChangeNotice, type ChangeTopic, type PublishChange } from './changes.ts'
 export {
+  decodeProviderRemoveBody,
+  decodeProviderSaveBody,
+} from './provider-validation.ts'
+export {
   decodeWorkspaceAddBody,
   decodeWorkspaceRelinkBody,
   decodeWorkspaceRemoveBody,

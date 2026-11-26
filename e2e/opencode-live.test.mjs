@@ -131,6 +131,7 @@ test(`real OpenCode CLI ${pinnedVersion}: isolated run, key by reference, events
         models: ['local-model'],
         key,
         new: true,
+        expectedVersion: (await call('settings')).data.providersVersion,
       })
     ).status,
     200,
@@ -231,6 +232,7 @@ test('real provider request through the real OpenCode CLI', {
       models: [live.model],
       key: live.key,
       new: true,
+      expectedVersion: 0,
     }),
   })
   assert.equal(saved.status, 200, 'The provider accepted the key at setup')

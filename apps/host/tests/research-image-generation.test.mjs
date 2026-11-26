@@ -13,7 +13,9 @@ test('web-image generation saves attribution and separate presenter notes, then 
 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'web-image-generation-'))
   const credentials = new MemoryCredentials()
-  const png = await readFile(new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const png = await readFile(
+    new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   let offline = false
   let imageCalls = 0
   const options = {
@@ -64,6 +66,7 @@ test('web-image generation saves attribution and separate presenter notes, then 
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))

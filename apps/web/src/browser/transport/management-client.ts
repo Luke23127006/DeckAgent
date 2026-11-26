@@ -71,6 +71,7 @@ const allowedCodes = [
   'WORKSPACE_REQUEST_ACTIVE',
   'MODEL_NOT_SELECTABLE',
   'PROVIDER_NAME_EXISTS',
+  'PROVIDERS_STALE',
   'PROTOCOL_IMMUTABLE',
   'NEW_ENDPOINT_REQUIRES_KEY',
   'PROVIDER_BUSY',
@@ -241,12 +242,13 @@ export class ManagementClient {
       key?: string
       new?: boolean
     },
+    expectedVersion: number,
   ): Promise<void> {
     if (!/^[\w.-]{1,100}$/.test(id)) throw new ManagementError('INVALID_PROVIDER', { field: 'providerId' })
-    await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', value)
+    await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', { ...value, expectedVersion })
   }
-  async remove(id: string): Promise<void> {
-    await this.request(`providers/${encodeURIComponent(id)}`, 'DELETE')
+  async remove(id: string, expectedVersion: number): Promise<void> {
+    await this.request(`providers/${encodeURIComponent(id)}`, 'DELETE', { expectedVersion })
   }
   async catalog(id: string): Promise<readonly string[]> {
     return decodeCatalog(await this.request(`providers/${encodeURIComponent(id)}/catalog`))

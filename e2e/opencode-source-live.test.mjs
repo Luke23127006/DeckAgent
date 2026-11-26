@@ -89,6 +89,7 @@ test('real CLI carries a normalized attachment image through MCP to the selected
     key: 'local-fixture',
     models: ['image-model'],
     new: true,
+    expectedVersion: (await api('settings')).providersVersion,
   })
   const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'image-model' } })
   const form = new FormData()
@@ -240,6 +241,7 @@ test('real CLI source boundary: allowed MCP read, outside approval, permanent de
     key: 'local-dummy-key',
     models: ['local-model'],
     new: true,
+    expectedVersion: (await api('settings')).providersVersion,
   })
   await api('workspaces', 'POST', { folder: project, expectedVersion: 0 })
   const client = new HostClient(app.origin, app.token)

@@ -1,6 +1,16 @@
-import { json, param, params, readJson, route } from '@deckagent/host-api'
+import { HttpError, json, param, params, readJson, route } from '@deckagent/host-api'
+import { RequestValidationError, decodeProviderRemoveBody, decodeProviderSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { ProviderOperations } from './providers.service.ts'
+
+function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
+  try {
+    return decode(value)
+  } catch (error) {
+    if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
+    throw error
+  }
+}
 
 export function createProviderRoutes(providers: ProviderOperations): Router {
   const router = Router({ caseSensitive: true, strict: true })
@@ -9,7 +19,8 @@ export function createProviderRoutes(providers: ProviderOperations): Router {
     '/api/providers/:providerId',
     providerId,
     route(async (req, res) => {
-      await providers.save(param(req, 'providerId'), await readJson(req))
+      const body = parseBody(decodeProviderSaveBody, await readJson(req))
+      await providers.save(param(req, 'providerId'), body.provider, body.expectedVersion)
       json(res, 200, { saved: true })
     }),
   )
@@ -17,7 +28,8 @@ export function createProviderRoutes(providers: ProviderOperations): Router {
     '/api/providers/:providerId',
     providerId,
     route(async (req, res) => {
-      await providers.remove(param(req, 'providerId'))
+      const body = parseBody(decodeProviderRemoveBody, await readJson(req))
+      await providers.remove(param(req, 'providerId'), body.expectedVersion)
       json(res, 200, { saved: true })
     }),
   )

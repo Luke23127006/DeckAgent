@@ -27,6 +27,7 @@ async function fixture(t, extra = {}) {
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await state.call('settings')).data.providersVersion,
   })
   assert.equal(saved.status, 200)
   return { ...state, dir, source, outside }

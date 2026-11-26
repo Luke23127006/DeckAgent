@@ -76,6 +76,7 @@ test('Brief accepts only sent attachment images and refuses writes during active
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const management = new ManagementClient(f.app.origin, f.app.token)
@@ -129,6 +130,7 @@ test('Brief source receipts require owning Chat and expose superseded versions w
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   await f.call('workspaces', 'POST', { folder: project, expectedVersion: 0 })
   const selection = { provider: 'test', model: 'model-a' }

@@ -168,6 +168,7 @@ test('Host counts rejected draft members toward the ten-file limit and enforces 
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const accepted = await f.client.send({ sessionId: chat.sessionId, input: '😀'.repeat(16000) })
@@ -211,6 +212,7 @@ test('admission binds newly uploaded sources, accepts attachment-only input and 
     key: 'fixture',
     models: ['model-a'],
     new: true,
+    expectedVersion: (await f.call('settings')).data.providersVersion,
   })
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const foreign = (await f.call('sessions', 'POST', {})).data

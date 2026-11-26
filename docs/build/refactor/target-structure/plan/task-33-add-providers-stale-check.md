@@ -56,7 +56,7 @@ Values for `e2e/local-foundation.test.mjs`:
 - Test `provider writes increase the providers version and send the providers notice before the chats notice`: the first `PUT` gets `expectedVersion: 0`, the second `PUT` gets `1`, the `PUT` that expects `INVALID_PROVIDER` gets `2`, and the `DELETE` gets `{ expectedVersion: 2 }`.
 - Test `web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and preferences`: `providers/kept` gets `0`, `providers/gone` gets `1`, and the `DELETE` gets `{ expectedVersion: 2 }`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -66,7 +66,7 @@ Run: `git grep -n "^| 32 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add this test to `packages/host/contracts/tests/validation.test.mjs`. Add `decodeProviderRemoveBody`, `decodeProviderSaveBody` and `RequestValidationError` to its import list when they are not in it.
 
@@ -124,13 +124,13 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test packages/host/contracts/te
 
 Expected: FAIL. The output contains `# fail 2`: the import of the two decoders fails, and the new test gets `200` for the stale save.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the section `Interfaces`. Run the commands of Step 2.
 
 Expected: FAIL. The output contains `# fail 2`. The failed tests are the two tests that Task 32 added, and each gets `400 INVALID_REQUEST`.
 
-- [ ] **Step 4: Add expectedVersion to the test writes**
+- [x] **Step 4: Add expectedVersion to the test writes**
 
 Run: `git grep -n -E "providers/.*(PUT|DELETE)" -- e2e apps/host/tests`
 
@@ -138,19 +138,19 @@ Run: `git grep -n -E "fetch\(.*api/providers/" -- e2e apps/host/tests`
 
 Expected: PASS. Exit code 0 for each command. Change each line that writes a provider with the table `Test write rules`. Then run the commands of Step 2. Expected: PASS. `# fail 0`.
 
-- [ ] **Step 5: Break the code and make sure that the test fails**
+- [x] **Step 5: Break the code and make sure that the test fails**
 
 In `providers.service.ts`, move the version check of `save` to after the call of `this.options.check`. Build and run `node --test e2e/local-foundation.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 
-- [ ] **Step 6: Format, build and check**
+- [x] **Step 6: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 7: Run every suite**
+- [x] **Step 7: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 8: Write the report file and stop**
+- [x] **Step 8: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Test writes` with the columns `File | Line | Rule row`.
 

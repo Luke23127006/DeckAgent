@@ -145,6 +145,7 @@ for (const portable of [false, true])
       key,
       models: ['local-model'],
       new: true,
+      expectedVersion: (await api('settings')).providersVersion,
     })
     const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'local-model' } })
     const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))

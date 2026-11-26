@@ -316,7 +316,7 @@ test('a new chat gets the most recent model choice of any chat while it is selec
     { provider: 'fixture', model: 'first' },
     'The choice survives a restart',
   )
-  assert.equal((await call('providers/fixture', 'DELETE')).status, 200)
+  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: (await call('settings')).data.providersVersion })).status, 200)
   assert.equal(
     (await call('sessions', 'POST', {})).data.selection,
     undefined,
@@ -500,24 +500,24 @@ test('provider writes increase the providers version and send the providers noti
   assert.deepEqual(await nextNotice('providers'), { topic: 'providers', key: 'host', version: 0 })
   assert.equal((await call('settings')).data.providersVersion, 0)
 
-  assert.equal((await call('providers/fixture', 'PUT', { ...fixtureProvider(['a', 'b']), new: true })).status, 200)
+  assert.equal((await call('providers/fixture', 'PUT', { ...fixtureProvider(['a', 'b']), new: true, expectedVersion: 0 })).status, 200)
   assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 1 })
   const first = await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'b' } })
   assert.equal(first.status, 201)
   assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 1 })
 
-  assert.equal((await call('providers/fixture', 'PUT', fixtureProvider(['a']))).status, 200)
+  assert.equal((await call('providers/fixture', 'PUT', { ...fixtureProvider(['a']), expectedVersion: 1 })).status, 200)
   assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 2 })
   assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 2 })
 
-  const invalid = await call('providers/fixture', 'PUT', fixtureProvider('a'))
+  const invalid = await call('providers/fixture', 'PUT', { ...fixtureProvider('a'), expectedVersion: 2 })
   assert.deepEqual([invalid.status, invalid.data.error.code], [400, 'INVALID_PROVIDER'])
   assert.equal((await call('settings')).data.providersVersion, 2, 'A refused write keeps the version')
 
   const second = await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'a' } })
   assert.equal(second.status, 201)
   assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 3 })
-  assert.equal((await call('providers/fixture', 'DELETE')).status, 200)
+  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: 2 })).status, 200)
   assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 3 })
   assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 4 })
 
@@ -532,10 +532,10 @@ test('web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and 
   const { start, options } = await area(t)
   const first = await start({ providerAccess })
   const call = api(first)
-  assert.equal((await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true })).status, 200)
+  assert.equal((await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })).status, 200)
   const gone = { ...fixtureProvider(['b']), displayName: 'Gone', new: true }
-  assert.equal((await call('providers/gone', 'PUT', gone)).status, 200)
-  assert.equal((await call('providers/gone', 'DELETE')).status, 200)
+  assert.equal((await call('providers/gone', 'PUT', { ...gone, expectedVersion: 1 })).status, 200)
+  assert.equal((await call('providers/gone', 'DELETE', { expectedVersion: 2 })).status, 200)
   assert.equal((await call('preferences', 'PUT', { theme: 'dark' })).status, 200)
   await first.close()
   const path = join(options.dataDir, 'db', 'web.sqlite')
@@ -567,4 +567,35 @@ test('web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and 
   future.exec('PRAGMA user_version=3')
   future.close()
   await assert.rejects(start({ providerAccess }), error => error instanceof StorageError && error.code === 'STORAGE_CORRUPT')
+})
+
+test('a provider write with an old expectedVersion gets PROVIDERS_STALE and changes nothing', {
+  timeout: 30000,
+}, async t => {
+  const { start } = await area(t)
+  let checks = 0
+  const app = await start({ providerAccess: { check: async () => { checks += 1 }, catalog: async () => [] } })
+  const call = api(app)
+  const saved = await call('providers/fixture', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })
+  assert.equal(saved.status, 200)
+  assert.equal(checks, 1)
+  const moved = { ...fixtureProvider(['a']), baseUrl: 'http://127.0.0.1:2', expectedVersion: 0 }
+  const staleSave = await call('providers/fixture', 'PUT', moved)
+  assert.deepEqual([staleSave.status, staleSave.data.error.code], [409, 'PROVIDERS_STALE'])
+  assert.equal(checks, 1, 'A stale save must not call the provider')
+  const staleRemove = await call('providers/fixture', 'DELETE', { expectedVersion: 0 })
+  assert.deepEqual([staleRemove.status, staleRemove.data.error.code], [409, 'PROVIDERS_STALE'])
+  const settings = (await call('settings')).data
+  assert.deepEqual(
+    [settings.providersVersion, settings.providers.map(provider => provider.baseUrl)],
+    [1, ['http://127.0.0.1:1']],
+  )
+  for (const body of [fixtureProvider(['a']), { ...fixtureProvider(['a']), expectedVersion: -1 }]) {
+    const invalid = await call('providers/fixture', 'PUT', body)
+    assert.deepEqual([invalid.status, invalid.data.error.code], [400, 'INVALID_REQUEST'])
+  }
+  const noBody = await call('providers/fixture', 'DELETE')
+  assert.deepEqual([noBody.status, noBody.data.error.code], [400, 'INVALID_REQUEST'])
+  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: 1 })).status, 200)
+  assert.equal((await call('settings')).data.providersVersion, 2)
 })

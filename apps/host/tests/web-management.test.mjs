@@ -115,7 +115,16 @@ test('deleting an environment-bootstrapped provider persists across restart with
   })
   const headers = { authorization: `Bearer ${app.token}` }
   assert.equal((await (await fetch(`${app.origin}/api/settings`, { headers })).json()).providers.length, 1)
-  assert.equal((await fetch(`${app.origin}/api/providers/seeded`, { method: 'DELETE', headers })).status, 200)
+  assert.equal(
+    (
+      await fetch(`${app.origin}/api/providers/seeded`, {
+        method: 'DELETE',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedVersion: 0 }),
+      })
+    ).status,
+    200,
+  )
   await app.close()
   app = await startLocalWeb(options)
   const settings = await (
@@ -164,19 +173,54 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
     models: ['a', 'b'],
     key: 'fixture-key-one',
   }
-  assert.equal((await api('providers/fixture', 'PUT', provider)).status, 200)
   assert.equal(
-    (await api('providers/other', 'PUT', { ...provider, displayName: 'Other', key: 'wrong' })).data.error.code,
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
+  assert.equal(
+    (
+      await api('providers/other', 'PUT', {
+        ...provider,
+        displayName: 'Other',
+        key: 'wrong',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
     'PROVIDER_KEY_REFUSED',
   )
   assert.equal(
-    (await api('providers/fixture', 'PUT', { ...provider, key: undefined, baseUrl: 'http://127.0.0.1:1' })).data.error
-      .code,
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        key: undefined,
+        baseUrl: 'http://127.0.0.1:1',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
     'NEW_ENDPOINT_REQUIRES_KEY',
   )
-  assert.equal((await api('providers/other', 'PUT', provider)).data.error.code, 'PROVIDER_NAME_EXISTS')
   assert.equal(
-    (await api('providers/fixture', 'PUT', { ...provider, protocol: 'gemini' })).data.error.code,
+    (
+      await api('providers/other', 'PUT', {
+        ...provider,
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
+    'PROVIDER_NAME_EXISTS',
+  )
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        protocol: 'gemini',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
     'PROTOCOL_IMMUTABLE',
   )
   const session = (await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'a' } })).data
@@ -184,7 +228,16 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
     (await api(`sessions/${session.sessionId}/selection`, 'PUT', { provider: 'fixture', model: 'b' })).status,
     200,
   )
-  assert.equal((await api('providers/fixture', 'PUT', { ...provider, key: 'fixture-key-two' })).status, 200)
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        key: 'fixture-key-two',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
   await app.close()
   const storedBytes = await readFile(join(dir, 'data', 'db', 'web.sqlite'))
   assert.equal(storedBytes.includes(Buffer.from('fixture-key-one')), false)
@@ -206,14 +259,28 @@ test('settings persist encrypted keys, keep the chat selection across restart, a
   const unavailable = (await api('settings')).data.providers[0]
   assert.equal(unavailable.hasKey, true)
   assert.equal(unavailable.keyAvailable, false)
-  assert.equal((await api('providers/fixture', 'PUT', { ...provider, models: [], key: 'fixture-key-two' })).status, 200)
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        models: [],
+        key: 'fixture-key-two',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
   assert.equal((await api('settings')).data.providers[0].keyAvailable, true)
   assert.equal(
     (await api('sessions')).data[0].selectable,
     false,
     'A removed model leaves the chat with no selectable model',
   )
-  assert.equal((await api('providers/fixture', 'DELETE')).status, 200)
+  assert.equal(
+    (await api('providers/fixture', 'DELETE', { expectedVersion: (await api('settings')).data.providersVersion }))
+      .status,
+    200,
+  )
   assert.equal((await api('sessions')).data[0].selectable, false)
 })
 

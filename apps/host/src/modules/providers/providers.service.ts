@@ -255,8 +255,9 @@ export class ProviderConfigurations {
     }
   }
 
-  save(id: string, value: unknown): Promise<void> {
+  save(id: string, value: unknown, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
+      if (expectedVersion !== this.store.version()) throw new ProviderFailure('PROVIDERS_STALE')
       const input = parse(id, value)
       const previous = this.providers.get(id)
       const template = builtInProviders.find(provider => provider.id === id)
@@ -322,8 +323,9 @@ export class ProviderConfigurations {
   }
 
   /** Deletes the configuration, its added models and its key from DeckAgent only (FR-063). */
-  remove(id: string): Promise<void> {
+  remove(id: string, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
+      if (expectedVersion !== this.store.version()) throw new ProviderFailure('PROVIDERS_STALE')
       const previous = this.providers.get(id)
       if (!previous) throw new ProviderFailure('PROVIDER_NOT_FOUND')
       // A tombstone keeps a startup flag from bringing a deleted configuration back.

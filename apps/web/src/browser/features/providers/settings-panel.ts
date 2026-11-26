@@ -16,6 +16,7 @@ interface PanelState {
   dom: SettingsDom
   draft: ModelDraftController
   providers: readonly ProviderSettings[]
+  providersVersion: number
   builtIns: readonly ProviderTemplate[]
   busy: boolean
   opening: boolean
@@ -60,6 +61,7 @@ export function settingsPanel(
       () => showUnexpected(panel),
     ),
     providers: [],
+    providersVersion: 0,
     builtIns: [],
     busy: false,
     opening: false,
@@ -153,6 +155,7 @@ async function refresh(panel: PanelState, selectedId = '') {
   const { dom, client } = panel
   const settings = await client.settings()
   panel.providers = settings.providers
+  panel.providersVersion = settings.providersVersion
   panel.builtIns = settings.builtIns
   dom.kind.replaceChildren(
     ...panel.builtIns.map(template => {
@@ -249,7 +252,7 @@ async function removeProvider(panel: PanelState) {
   if (!dom.chooser.value || !confirm('Xóa cấu hình provider này? Chat vẫn giữ lịch sử và sẽ cần chọn model khác.'))
     return
   await perform(panel, async () => {
-    await client.remove(dom.chooser.value)
+    await client.remove(dom.chooser.value, panel.providersVersion)
     await refresh(panel)
     await panel.changed()
   }).catch(() => showUnexpected(panel))
@@ -271,7 +274,7 @@ function submitProvider(panel: PanelState, event: SubmitEvent) {
     ...(panel.providers.some(provider => provider.id === dom.id.value) ? {} : { new: true }),
   }
   perform(panel, async () => {
-    await client.save(dom.id.value, value)
+    await client.save(dom.id.value, value, panel.providersVersion)
     panel.baseline = snapshot(panel)
     try {
       await refresh(panel, dom.id.value)
