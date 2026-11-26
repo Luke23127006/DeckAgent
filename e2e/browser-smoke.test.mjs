@@ -2473,3 +2473,53 @@ test('Browser updates workspaces from /api/changes and handles WORKSPACES_STALE 
     'Tên mới bên ngoài',
   )
 })
+
+test('Browser shows a chat that another client creates, from the chats notice of /api/changes', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-chat-changes-'))
+  let app, session
+  t.after(async () => {
+    try {
+      await closeBrowser(session)
+      if (app) await app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home'), ...fixtureProvider('chats') })
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
+    'Browser boot failed',
+  )
+  await evaluate(`{
+    const original = window.fetch;
+    window.__chatListReads = 0;
+    window.fetch = async (url, init) => {
+      if (String(url).endsWith('/api/sessions') && (!init?.method || init.method === 'GET')) window.__chatListReads += 1;
+      return original(url, init);
+    };
+  } true`)
+
+  const response = await fetch(`${app.origin}/api/sessions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ selection: { provider: 'fixture', model: 'chats' } }),
+  })
+  assert.equal(response.status, 201)
+  const created = await response.json()
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation nav button[data-session-id="${created.sessionId}"]')`),
+    'Browser did not show the chat of another client after the chats notice',
+  )
+  assert.ok((await evaluate('window.__chatListReads')) >= 1, 'Browser must read the chat list again')
+  assert.equal(
+    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId === '${created.sessionId}'`),
+    false,
+    'A chats notice must not open the new chat',
+  )
+})

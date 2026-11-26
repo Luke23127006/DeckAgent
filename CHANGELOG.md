@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Read the chat list again in the Browser when `GET /api/changes` sends a newer `chats` notice, without opening a chat. Task 29 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Upgrade `sessions.sqlite` to schema 8 with `change_versions`, increase the chats version in the transaction of each write that changes the chat list, and publish `{ topic: 'chats', key: 'host' }` notices on `GET /api/changes` after commit. Chat writes take no `expectedVersion`. Task 28 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move the chats feature, the four chat routes, the chat projection and the chat error map into `apps/host/src/modules/chats/` with no change of the HTTP contract. `SqliteSessionStore` stays in `packages/session/persistence/`. Task 27 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the Task 26 chats diagnosis report (`docs/build/refactor/target-structure/reports/task-26-diagnose-chats-module.md`). It records the module files, the store members and their transactions, the callers, the calls into other stores, the write sites, the 13 fields of the chat list, the Browser reads, the error map, the schema 1 to 7 upgrade path and the tests of the `chats` module. Task 26 is `Done` in `docs/build/refactor/target-structure/plan/`.

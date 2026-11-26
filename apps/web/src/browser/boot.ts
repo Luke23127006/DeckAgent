@@ -129,10 +129,20 @@ const draftSync = createDraftSync({
   changed: () => controls(),
   refresh: () => navigation.refresh(),
 })
+// The chat list has no version in its reply, so the last chats notice that this tab handled is kept here.
+let chatsVersion = -1
 const changeWatcher = new ChangeWatcher({
   client: changeClient,
   onNotice: async notice => {
-    if (notice.topic !== 'workspaces' || notice.key !== 'host') return
+    if (notice.key !== 'host') return
+    if (notice.topic === 'chats') {
+      if (notice.version <= chatsVersion) return
+      await navigation.refresh()
+      chatsVersion = notice.version
+      controls()
+      return
+    }
+    if (notice.topic !== 'workspaces') return
     if (notice.version <= navigation.workspaces.version) return
     const next = await management.workspaces()
     if (next.version < navigation.workspaces.version) return
