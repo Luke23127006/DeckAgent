@@ -3,8 +3,6 @@ import type { WebManagement } from './contracts.ts'
 import { json, readJson } from './http-io.ts'
 import { param, params, route, WORD_ID } from './route-params.ts'
 
-const PROVIDER_ID = params({ providerId: /^[\w.-]{1,100}$/ })
-
 function registerSettingsAndProviderRoutes(router: Router, management: WebManagement): void {
   router.get(
     '/api/settings',
@@ -44,29 +42,6 @@ function registerSettingsAndProviderRoutes(router: Router, management: WebManage
       }),
     )
   }
-  router.put(
-    '/api/providers/:providerId',
-    PROVIDER_ID,
-    route(async (req, res) => {
-      await management.saveProvider(param(req, 'providerId'), await readJson(req))
-      json(res, 200, { saved: true })
-    }),
-  )
-  router.delete(
-    '/api/providers/:providerId',
-    PROVIDER_ID,
-    route(async (req, res) => {
-      await management.deleteProvider(param(req, 'providerId'))
-      json(res, 200, { saved: true })
-    }),
-  )
-  router.get(
-    '/api/providers/:providerId/catalog',
-    PROVIDER_ID,
-    route(async (req, res) => {
-      json(res, 200, await management.catalog(param(req, 'providerId')))
-    }),
-  )
 }
 
 export function registerManagementRoutes(router: Router, management: WebManagement): void {

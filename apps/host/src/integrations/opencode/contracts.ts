@@ -1,7 +1,7 @@
 import type { RequestRun, RuntimeOutcome } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
 import type { Message, RequestRecord, RuntimeBinding } from '@deckagent/session-persistence'
-import type { ProviderRunSettings } from '../providers/index.ts'
+import type { ProviderRunSettings } from '../../modules/providers/index.ts'
 
 export type OpenCodeErrorCode = 'RUNTIME_UNAVAILABLE' | 'RUNTIME_VERSION_UNSUPPORTED'
 

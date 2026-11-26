@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Move the providers module into `apps/host/src/modules/providers/`: `SqliteProviderStore` runs the SQL of `providers`, `ProviderConfigurations` keeps the rules, and the provider routes and error map leave `@deckagent/host-api` and `local-transport.ts`. Task 31 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Read the chat list again in the Browser when `GET /api/changes` sends a newer `chats` notice, without opening a chat. Task 29 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Upgrade `sessions.sqlite` to schema 8 with `change_versions`, increase the chats version in the transaction of each write that changes the chat list, and publish `{ topic: 'chats', key: 'host' }` notices on `GET /api/changes` after commit. Chat writes take no `expectedVersion`. Task 28 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move the chats feature, the four chat routes, the chat projection and the chat error map into `apps/host/src/modules/chats/` with no change of the HTTP contract. `SqliteSessionStore` stays in `packages/session/persistence/`. Task 27 is `Done` in `docs/build/refactor/target-structure/plan/`.

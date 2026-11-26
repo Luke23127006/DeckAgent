@@ -74,7 +74,7 @@ After this task, the provider code is in `apps/host/src/modules/providers/`. The
 | Another comment | Keep it. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -84,11 +84,11 @@ Run: `git grep -n "^| 30 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move the code**
+- [x] **Step 2: Move the code**
 
 Do the changes of the tables `Mapping` and `Move rules`. Use `git mv` for `built-in-providers.ts` and `provider-catalog.ts`. Then delete the folders `apps/host/src/features/providers/` and `apps/host/src/integrations/providers/`.
 
-- [ ] **Step 3: Check that no old path or name stays**
+- [x] **Step 3: Check that no old path or name stays**
 
 Run: `git grep --untracked -n -E "features/providers|integrations/providers|saveProvider|deleteProvider" -- apps/host packages e2e tests scripts`
 
@@ -110,21 +110,21 @@ Run: `git grep --untracked -l "modules/providers/index.ts" -- apps/host/src/inte
 
 Expected: PASS. Four lines: `config.ts`, `contracts.ts`, `provider.ts` and `runtime.ts` in `apps/host/src/integrations/opencode/`.
 
-- [ ] **Step 4: Format, build and check**
+- [x] **Step 4: Format, build and check**
 
 Run `rm -rf apps/host/lib` first, so that an old build output does not hide a broken import. Then do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 5: Run every suite**
+- [x] **Step 5: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 6: Check the changed paths**
+- [x] **Step 6: Check the changed paths**
 
 Run: `git status --short`
 
 Expected: PASS. Each path starts with `apps/host/src/`, `packages/host/api/src/`, `docs/build/refactor/target-structure/` or `CHANGELOG.md`.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path | Symbols`.
 

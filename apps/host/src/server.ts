@@ -25,9 +25,16 @@ import {
   type ChatMarks,
 } from './modules/chats/index.ts'
 import { attachmentManagement, mapApplicationFailure, sessionReadManagement } from './local-transport.ts'
-import { ProviderStore, type ProviderConnection, type ProviderStoreOptions } from './features/providers/index.ts'
+import {
+  ProviderConfigurations,
+  SqliteProviderStore,
+  createProviderRoutes,
+  listModels,
+  mapProviderFailure,
+  type ProviderConfigurationsOptions,
+  type ProviderConnection,
+} from './modules/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'
-import { listModels } from './integrations/providers/index.ts'
 import { defaultCredentialStore, type CredentialStore } from './integrations/credentials/index.ts'
 import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './integrations/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
@@ -47,7 +54,7 @@ import { CommonsImages, PublicImageReader, type ImageLookup } from './integratio
 import { artifactRenderer, type ArtifactRenderer } from './integrations/rendering/index.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
-export type { ProviderConnection } from './features/providers/index.ts'
+export type { ProviderConnection } from './modules/providers/index.ts'
 
 export interface LocalWebOptions {
   /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
@@ -69,7 +76,7 @@ export interface LocalWebOptions {
   /** Defaults to the protected store of this OS. Tests may give their own. */
   readonly credentials?: CredentialStore
   /** Tests replace the provider check and catalog lookup; production calls the provider. */
-  readonly providerAccess?: Pick<ProviderStoreOptions, 'check' | 'catalog'>
+  readonly providerAccess?: Pick<ProviderConfigurationsOptions, 'check' | 'catalog'>
   /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
@@ -83,7 +90,7 @@ interface StorageLayer {
 }
 
 interface RuntimeLayer {
-  readonly providers: ProviderStore
+  readonly providers: ProviderConfigurations
   readonly runtime: RequestRuntime
   readonly research: ResearchCoordinator
   readonly images: WebImageResearch
@@ -234,7 +241,7 @@ async function createRuntimeLayer(
 ): Promise<RuntimeLayer> {
   const { sessions, web } = storage
   const initial = options.selection ? { ...options.selection } : undefined
-  const providers = new ProviderStore(web.db, credentials, {
+  const providers = new ProviderConfigurations(new SqliteProviderStore(web.db), credentials, {
     check:
       options.providerAccess?.check ??
       (async (endpoint, key) => {
@@ -317,7 +324,8 @@ function createHostOptions(
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
   return {
-    mapApplicationFailure: error => mapWorkspaceFailure(error) ?? mapChatFailure(error) ?? mapApplicationFailure(error),
+    mapApplicationFailure: error =>
+      mapWorkspaceFailure(error) ?? mapChatFailure(error) ?? mapProviderFailure(error) ?? mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
     briefs,
@@ -346,6 +354,7 @@ function createHostOptions(
     routes: [
       createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
       createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
+      createProviderRoutes(runtime.providers),
     ],
     changes: {
       feed: changeFeed,
@@ -358,9 +367,6 @@ function createHostOptions(
       ...sessionReadManagement(sessions, runtime.research),
       preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },
       settings: async () => runtime.settings(),
-      saveProvider: (id, value) => runtime.providers.save(id, value),
-      deleteProvider: id => runtime.providers.remove(id),
-      catalog: id => runtime.providers.catalog(id),
       drafts: { get: id => runtime.inputs.draft(id), save: (id, value) => runtime.inputs.save(id, value) },
     },
   }

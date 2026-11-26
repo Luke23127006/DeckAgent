@@ -5,32 +5,11 @@ import { SessionError, type SqliteSessionStore } from '@deckagent/session-persis
 import { DraftError } from './draft-store.ts'
 import { AttachmentFailure } from './features/attachments/index.ts'
 import { DeckWorkflowFailure } from './features/deck/index.ts'
-import { ProviderFailure } from './features/providers/index.ts'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { ResearchFailure, type ResearchCoordinator } from './features/research/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
 import { WebStateError } from './web-state.ts'
-
-const providerStatus: Readonly<Record<string, number>> = {
-  INVALID_PROVIDER: 400,
-  PROVIDER_KEY_REQUIRED: 400,
-  PROVIDER_NOT_FOUND: 404,
-  MODEL_NOT_SELECTABLE: 409,
-  PROVIDER_KEY_UNAVAILABLE: 409,
-  PROVIDER_ID_TAKEN: 409,
-  PROVIDER_NAME_EXISTS: 409,
-  PROTOCOL_IMMUTABLE: 409,
-  NEW_ENDPOINT_REQUIRES_KEY: 409,
-  PROVIDER_KEY_REFUSED: 422,
-  PROVIDER_CHECK_FAILED: 422,
-  CREDENTIAL_STORE_UNAVAILABLE: 422,
-  CATALOG_UNAVAILABLE: 502,
-  PROVIDER_NO_ANSWER: 504,
-  SETTINGS_STORAGE: 500,
-  CREDENTIAL_NOT_SAVED: 500,
-  CREDENTIAL_UNAVAILABLE: 500,
-}
 
 const requestPreparationStatus: Readonly<Record<RequestPreparationFailureCode, number>> = {
   SESSION_NOT_FOUND: 404,
@@ -119,7 +98,6 @@ function featureFailure<E extends { readonly code: string; readonly detail?: Htt
 }
 
 const featureFailures = [
-  featureFailure(ProviderFailure, error => providerStatus[error.code] ?? 500),
   featureFailure(RequestPreparationFailure, error => requestPreparationStatus[error.code]),
   featureFailure(ResearchFailure, error => researchStatus[error.code] ?? 500),
   featureFailure(AttachmentFailure, error => attachmentStatus[error.code] ?? 500),

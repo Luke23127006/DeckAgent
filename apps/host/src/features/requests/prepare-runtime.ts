@@ -2,7 +2,7 @@ import type { PreparedRequest, RequestRuntime } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
 import { SessionError } from '@deckagent/session-persistence'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import type { ProviderStore } from '../providers/index.ts'
+import type { ProviderConfigurations } from '../../modules/providers/index.ts'
 import { OpenCodeError } from '../../integrations/opencode/index.ts'
 import type { OpenCodeExecutor } from '../../integrations/opencode/index.ts'
 
@@ -28,7 +28,7 @@ export class RequestPreparationFailure extends Error {
 
 export interface RuntimePreparationDependencies {
   readonly sessions: SqliteSessionStore
-  readonly providers: Pick<ProviderStore, 'providerSettings' | 'selectable' | 'runSettings'>
+  readonly providers: Pick<ProviderConfigurations, 'providerSettings' | 'selectable' | 'runSettings'>
   readonly runtime: OpenCodeExecutor
 }
 

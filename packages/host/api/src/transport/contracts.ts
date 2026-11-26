@@ -110,9 +110,6 @@ export interface WebManagement {
     save(value: unknown): Promise<WebPreferences>
   }
   settings(): Promise<WebSettings>
-  saveProvider(id: string, value: unknown): Promise<void>
-  deleteProvider(id: string): Promise<void>
-  catalog(id: string): Promise<readonly string[]>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
   readonly drafts?: {

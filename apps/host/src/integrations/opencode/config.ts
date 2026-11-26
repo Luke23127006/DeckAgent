@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { randomBytes } from 'node:crypto'
-import type { ProviderRunSettings } from '../providers/index.ts'
+import type { ProviderRunSettings } from '../../modules/providers/index.ts'
 import { keyPlaceholder, keyVariable, providerConfiguration, selector } from './provider.ts'
 
 /** The OpenCode CLI version DeckAgent is built and tested against. Another version is refused, not guessed at. */
