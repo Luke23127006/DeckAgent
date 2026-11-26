@@ -16,7 +16,7 @@ After this task, `web.sqlite` has schema 2, and each provider `save` or `remove`
 - `apps/host/src/modules/workspaces/schema.ts` (the statement `CREATE TABLE change_versions`)
 - `apps/host/src/server.ts` (the function `createRuntimeLayer` and the object `changes`)
 - `e2e/local-foundation.test.mjs` (the functions `changeNotices`, `area` and `api`)
-- `docs/architecture/10-agent-core.md` (the section `Aggregate và change notice`)
+- `docs/architecture/10-agent-core.md` (the section `Aggregate vÃ  change notice`)
 
 **Files:**
 
@@ -55,9 +55,9 @@ After this task, `web.sqlite` has schema 2, and each provider `save` or `remove`
 - `save`: call `this.options.onProvidersChanged?.(version)` after `this.keys.set` or `this.keys.delete`, before `await this.credentials.remove(previous.credentialRef)`.
 - `remove`: call it after `this.keys.delete(id)`, before `await this.credentials.remove(previous.credentialRef)`.
 - `server.ts`: `onProvidersChanged: version => changeFeed.publish({ topic: 'providers', key: 'host', version })`. Add `{ topic: 'providers', version: () => runtime.providers.version() }` after the `chats` entry of `hostTopics`. Add `providersVersion: providers.version()` to the function `settings` of `createRuntimeLayer`. Give `changeFeed` to `createRuntimeLayer` as a new last parameter.
-- `docs/architecture/10-agent-core.md`: in the row `providers`, change the cell `Không có \`version\`` to `Có \`version\` trong \`change_versions\` của \`web.sqlite\` (schema 2), notice \`providers\` sau commit`.
+- `docs/architecture/10-agent-core.md`: in the row `providers`, change the cell `KhÃ´ng cÃ³ \`version\`` to `CÃ³ \`version\` trong \`change_versions\` cá»§a \`web.sqlite\` (schema 2), notice \`providers\` sau commit`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -67,7 +67,7 @@ Run: `git grep -n "^| 31 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 In `e2e/local-foundation.test.mjs`, change the function that `changeNotices` returns: `if (topic === undefined || notice.topic === topic) return notice`. Change its comment to `Opens GET /api/changes. The returned function gives the next notice of one topic, or of any topic when no topic is given.` Then add these two tests after the last test that uses `changeNotices`:
 
@@ -164,7 +164,7 @@ Run: `corepack pnpm@11.28.5 build` and then `node --test e2e/local-foundation.te
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the sections `Interfaces`, `Schema rules` and `Notice rules`.
 
@@ -172,20 +172,20 @@ Run: `corepack pnpm@11.28.5 build` and then `node --test e2e/local-foundation.te
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 1. In `providers.service.ts`, move the call of `onProvidersChanged` in `save` to after `await this.options.modelsRemoved?.(id, removed)`. Build and run `node --test e2e/local-foundation.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 2. In `providers.store.ts`, remove the `UPDATE change_versions` statement from `put`. Build and run the same command. Expected: FAIL. `# fail 1`. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

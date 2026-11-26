@@ -10,7 +10,7 @@ import { SqliteSessionStore } from '@deckagent/session-persistence'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-/** Opens GET /api/changes. The returned function gives the next notice of one topic and skips the other topics. */
+/** Opens GET /api/changes. The returned function gives the next notice of one topic, or of any topic when no topic is given. */
 async function changeNotices(app, t) {
   const streamControl = new AbortController()
   t.after(() => streamControl.abort())
@@ -30,7 +30,7 @@ async function changeNotices(app, t) {
         buffer = buffer.slice(boundary + 2)
         if (!frame.startsWith('event: change\ndata: ')) continue
         const notice = JSON.parse(frame.slice('event: change\ndata: '.length))
-        if (notice.topic === topic) return notice
+        if (topic === undefined || notice.topic === topic) return notice
         continue
       }
       const part = await reader.read()
@@ -480,4 +480,91 @@ test('chat writes publish a chats notice after the commit, and each connection s
 
   const later = await changeNotices(app, t)
   assert.deepEqual(await later('chats'), { topic: 'chats', key: 'host', version: 1 })
+})
+
+const providerAccess = { check: async () => {}, catalog: async () => [] }
+const fixtureProvider = models => ({
+  displayName: 'Fixture',
+  protocol: 'chat-completions',
+  baseUrl: 'http://127.0.0.1:1',
+  models,
+})
+
+test('provider writes increase the providers version and send the providers notice before the chats notice', {
+  timeout: 30000,
+}, async t => {
+  const { start } = await area(t)
+  const app = await start({ providerAccess })
+  const call = api(app)
+  const nextNotice = await changeNotices(app, t)
+  assert.deepEqual(await nextNotice('providers'), { topic: 'providers', key: 'host', version: 0 })
+  assert.equal((await call('settings')).data.providersVersion, 0)
+
+  assert.equal((await call('providers/fixture', 'PUT', { ...fixtureProvider(['a', 'b']), new: true })).status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 1 })
+  const first = await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'b' } })
+  assert.equal(first.status, 201)
+  assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 1 })
+
+  assert.equal((await call('providers/fixture', 'PUT', fixtureProvider(['a']))).status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 2 })
+  assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 2 })
+
+  const invalid = await call('providers/fixture', 'PUT', fixtureProvider('a'))
+  assert.deepEqual([invalid.status, invalid.data.error.code], [400, 'INVALID_PROVIDER'])
+  assert.equal((await call('settings')).data.providersVersion, 2, 'A refused write keeps the version')
+
+  const second = await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'a' } })
+  assert.equal(second.status, 201)
+  assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 3 })
+  assert.equal((await call('providers/fixture', 'DELETE')).status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 3 })
+  assert.deepEqual(await nextNotice(), { topic: 'chats', key: 'host', version: 4 })
+
+  await app.close()
+  const restarted = await start({ providerAccess })
+  assert.equal((await api(restarted)('settings')).data.providersVersion, 3, 'A start keeps the version')
+})
+
+test('web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and preferences', {
+  timeout: 30000,
+}, async t => {
+  const { start, options } = await area(t)
+  const first = await start({ providerAccess })
+  const call = api(first)
+  assert.equal((await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true })).status, 200)
+  const gone = { ...fixtureProvider(['b']), displayName: 'Gone', new: true }
+  assert.equal((await call('providers/gone', 'PUT', gone)).status, 200)
+  assert.equal((await call('providers/gone', 'DELETE')).status, 200)
+  assert.equal((await call('preferences', 'PUT', { theme: 'dark' })).status, 200)
+  await first.close()
+  const path = join(options.dataDir, 'db', 'web.sqlite')
+  const old = new DatabaseSync(path)
+  old.exec('DROP TABLE change_versions; PRAGMA user_version=1')
+  old.close()
+
+  const second = await start({ providerAccess })
+  const settings = (await api(second)('settings')).data
+  assert.deepEqual(
+    settings.providers.map(provider => provider.id),
+    ['kept'],
+  )
+  assert.equal(settings.providersVersion, 0)
+  assert.deepEqual((await api(second)('preferences')).data, { theme: 'dark' })
+  const check = new DatabaseSync(path, { readOnly: true })
+  assert.equal(check.prepare('PRAGMA user_version').get().user_version, 2)
+  assert.deepEqual(
+    check
+      .prepare('SELECT topic, key, version FROM change_versions')
+      .all()
+      .map(row => ({ ...row })),
+    [{ topic: 'providers', key: 'host', version: 0 }],
+  )
+  check.close()
+  await second.close()
+
+  const future = new DatabaseSync(path)
+  future.exec('PRAGMA user_version=3')
+  future.close()
+  await assert.rejects(start({ providerAccess }), error => error instanceof StorageError && error.code === 'STORAGE_CORRUPT')
 })

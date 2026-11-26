@@ -4,7 +4,7 @@ import { CredentialError, ProtectedFileCredentialStore } from '../../integration
 import type { CredentialStore } from '../../integrations/credentials/index.ts'
 import { ProviderCheckError, validBaseUrl } from './provider-catalog.ts'
 import type { ProviderEndpoint, ProviderRunSettings } from './provider-catalog.ts'
-import type { SqliteProviderStore } from './providers.store.ts'
+import type { ProviderRow, SqliteProviderStore } from './providers.store.ts'
 
 export const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
 
@@ -63,6 +63,8 @@ export interface ProviderConfigurationsOptions {
   ) => Promise<readonly string[]>
   /** Chats that selected a removed model lose the selection (FR-065). `undefined` means every model of the provider. */
   readonly modelsRemoved?: (provider: string, models: readonly string[] | undefined) => Promise<void>
+  /** Runs after each committed write of the provider table, before `modelsRemoved`. */
+  readonly onProvidersChanged?: (version: number) => void
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -169,7 +171,7 @@ export class ProviderConfigurations {
         models: parsed.models,
         ...(credentialRef ? { credentialRef } : {}),
       }
-      if (typeof data.encryptedKey === 'string' || record(data.connection)) this.write(saved)
+      if (typeof data.encryptedKey === 'string' || record(data.connection)) this.store.upgrade(this.row(saved))
       this.providers.set(id, saved)
       const reference = credentialRef
       if (reference)
@@ -219,6 +221,11 @@ export class ProviderConfigurations {
       keyAvailable: this.keys.has(value.id),
       builtIn: builtInProviders.some(template => template.id === value.id),
     }))
+  }
+
+  /** The current version of the provider configurations; `load` and a refused write keep it. */
+  version(): number {
+    return this.store.version()
   }
 
   get persistentKeys(): boolean {
@@ -295,8 +302,9 @@ export class ProviderConfigurations {
         models: input.models,
         ...(credentialRef ? { credentialRef } : {}),
       }
+      let version: number
       try {
-        this.write(saved)
+        version = this.store.put(this.row(saved))
       } catch {
         if (created) await this.credentials.remove(created).catch(() => {})
         throw new ProviderFailure('SETTINGS_STORAGE')
@@ -305,6 +313,7 @@ export class ProviderConfigurations {
       this.deleted.delete(id)
       if (input.key) this.keys.set(id, input.key)
       else if (input.key === '') this.keys.delete(id)
+      this.options.onProvidersChanged?.(version)
       if (previous?.credentialRef && previous.credentialRef !== credentialRef)
         await this.credentials.remove(previous.credentialRef).catch(() => {})
       const removed = previous?.models.filter(model => !input.models.includes(model)) ?? []
@@ -318,10 +327,11 @@ export class ProviderConfigurations {
       const previous = this.providers.get(id)
       if (!previous) throw new ProviderFailure('PROVIDER_NOT_FOUND')
       // A tombstone keeps a startup flag from bringing a deleted configuration back.
-      this.store.put({ id, payload: JSON.stringify({ deleted: true }) })
+      const version = this.store.put({ id, payload: JSON.stringify({ deleted: true }) })
       this.providers.delete(id)
       this.deleted.add(id)
       this.keys.delete(id)
+      this.options.onProvidersChanged?.(version)
       if (previous.credentialRef) await this.credentials.remove(previous.credentialRef).catch(() => {})
       await this.options.modelsRemoved?.(id, undefined)
     })
@@ -355,10 +365,9 @@ export class ProviderConfigurations {
     this.keys.clear()
   }
 
-  private write(saved: SavedProvider): void {
-    if (saved.bootstrap) return
+  private row(saved: SavedProvider): ProviderRow {
     const { id, bootstrap: _bootstrap, ...payload } = saved
-    this.store.put({ id, payload: JSON.stringify(payload) })
+    return { id, payload: JSON.stringify(payload) }
   }
 
   private serialize(operation: () => Promise<void>): Promise<void> {

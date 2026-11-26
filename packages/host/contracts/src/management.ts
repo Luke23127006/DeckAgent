@@ -24,6 +24,8 @@ export interface WebSettings {
     readonly freeOnly: true
   }
   readonly providers: readonly ProviderSettings[]
+  /** The version of the provider configurations; a provider write increases it once. */
+  readonly providersVersion: number
   /** The credential store of this computer can keep keys. */
   readonly persistentKeys: boolean
   readonly builtIns: readonly ProviderTemplate[]

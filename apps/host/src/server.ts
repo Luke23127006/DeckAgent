@@ -238,6 +238,7 @@ async function createRuntimeLayer(
   attachments: ManagedAttachments,
   drafts: MemoryDraftStore,
   credentials: CredentialStore,
+  changeFeed: ChangeFeed,
 ): Promise<RuntimeLayer> {
   const { sessions, web } = storage
   const initial = options.selection ? { ...options.selection } : undefined
@@ -253,6 +254,7 @@ async function createRuntimeLayer(
     modelsRemoved: async (provider, models) => {
       await sessions.clearSelections(provider, models)
     },
+    onProvidersChanged: version => changeFeed.publish({ topic: 'providers', key: 'host', version }),
   })
   storage.bindSelectability(value => providers.selectable(value))
   await providers.load(options.connections, initial)
@@ -297,6 +299,7 @@ async function createRuntimeLayer(
     settings: () => ({
       research: research.settings(),
       providers: providers.providerSettings(),
+      providersVersion: providers.version(),
       persistentKeys: providers.persistentKeys,
       builtIns: providers.builtIns,
       runtime: openCode.availability(),
@@ -361,6 +364,7 @@ function createHostOptions(
       hostTopics: [
         { topic: 'workspaces', version: () => registry.version() },
         { topic: 'chats', version: () => sessions.chatsVersion() },
+        { topic: 'providers', version: () => runtime.providers.version() },
       ],
     },
     management: {
@@ -404,7 +408,16 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     const storage = opened
     const credentials = options.credentials ?? defaultCredentialStore(layout.root)
     attachments = await ManagedAttachments.open(layout.files, storage.sessions.attachments, drafts)
-    runtime = await createRuntimeLayer(layout, options, storage, commonsImages, attachments, drafts, credentials)
+    runtime = await createRuntimeLayer(
+      layout,
+      options,
+      storage,
+      commonsImages,
+      attachments,
+      drafts,
+      credentials,
+      changeFeed,
+    )
     const assets = await loadWebAssets(() => storage.web.preferences().theme)
     host = await startHost(
       createHostOptions(layout, options, storage, runtime, attachments, drafts, assets, changeFeed),

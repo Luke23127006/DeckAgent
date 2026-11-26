@@ -66,6 +66,9 @@ export function decodeSettings(value: unknown): WebSettings {
     !Array.isArray(value.providers) ||
     !Array.isArray(value.builtIns) ||
     typeof value.persistentKeys !== 'boolean' ||
+    typeof value.providersVersion !== 'number' ||
+    !Number.isSafeInteger(value.providersVersion) ||
+    value.providersVersion < 0 ||
     !isRecord(value.runtime) ||
     typeof value.runtime.available !== 'boolean' ||
     (value.runtime.reason !== undefined && typeof value.runtime.reason !== 'string')
@@ -91,6 +94,7 @@ export function decodeSettings(value: unknown): WebSettings {
   })
   return {
     providers: value.providers.map(provider),
+    providersVersion: value.providersVersion,
     ...(value.research === undefined ? {} : { research: decodeResearchSettings(value.research) }),
     persistentKeys: value.persistentKeys,
     builtIns,

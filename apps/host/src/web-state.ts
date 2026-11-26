@@ -4,6 +4,19 @@ import type { ModelSelection } from '@deckagent/session-persistence'
 
 export type WebStateErrorCode = 'INVALID_SELECTION' | 'INVALID_REQUEST' | 'SETTINGS_SCHEMA' | 'SETTINGS_STORAGE'
 
+const applicationId = 1145132866
+const schemaVersion = 2
+
+const changeVersionsTable = `
+  CREATE TABLE change_versions (
+    topic TEXT NOT NULL,
+    key TEXT NOT NULL,
+    version INTEGER NOT NULL CHECK (version >= 0),
+    PRIMARY KEY (topic, key)
+  ) STRICT;
+  INSERT INTO change_versions (topic, key, version) VALUES ('providers', 'host', 0);
+`
+
 export class WebStateError extends Error {
   constructor(readonly code: WebStateErrorCode) {
     super(code)
@@ -51,16 +64,24 @@ export class WebState {
         owner === 0 &&
         version === 0 &&
         !this.db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
-      if (!fresh && (owner !== 0x44415742 || version !== 1)) throw new WebStateError('SETTINGS_SCHEMA')
+      if (!fresh && (owner !== applicationId || (version !== 1 && version !== schemaVersion)))
+        throw new WebStateError('SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
       // Requests and activities moved to Session persistence (B02); older files keep their unused tables unchanged.
       if (fresh)
         this.db.exec(`
         CREATE TABLE providers (id TEXT PRIMARY KEY, payload TEXT NOT NULL) STRICT;
-        PRAGMA application_id=1145132866; PRAGMA user_version=1;`)
+        ${changeVersionsTable}
+        PRAGMA application_id=${applicationId}; PRAGMA user_version=${schemaVersion};`)
+      // Schema 2 adds the version of each aggregate's change notice; a schema 1 file keeps every row.
+      else if (version === 1)
+        this.db.exec(`
+        ${changeVersionsTable}
+        PRAGMA user_version=${schemaVersion};`)
       // Added after schema version 1 shipped: created on demand so existing data files keep working.
       this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
       this.db.prepare('SELECT id, payload FROM providers LIMIT 0').all()
+      this.db.prepare('SELECT topic, key, version FROM change_versions LIMIT 0').all()
       if (this.db.prepare('PRAGMA quick_check').get()?.quick_check !== 'ok') throw new WebStateError('SETTINGS_STORAGE')
       this.db.exec('COMMIT')
     } catch (error) {
