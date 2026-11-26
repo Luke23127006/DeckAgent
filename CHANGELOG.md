@@ -6,8 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
-**Host modules and change notices** (Tasks 1 to 33 of `docs/build/refactor/target-structure/plan/`, each `Done` with a report under `reports/`)
+**Host modules and change notices** (Tasks 1 to 34 of `docs/build/refactor/target-structure/plan/`, each `Done` with a report under `reports/`)
 
+- Read the settings and the chat list again in the Browser after a newer `providers` notice, and on `PROVIDERS_STALE` read the settings again, show the saved values and a message, and do not send the write again. Task 34 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Require `expectedVersion` on `PUT` and `DELETE /api/providers/:providerId`, refuse an old version with `409 PROVIDERS_STALE` before the provider check, and send the version from the Browser client. Task 33 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the change notice chain: `ChangeTopic`, `ChangeNotice`, `PublishChange`, `decodeChangeNotice` and the workspace body decoders in `@deckagent/host-contracts`; `ChangeFeed` and `GET /api/changes` in `apps/host/src/http/`; and `change_versions` in `workspaces.sqlite` schema 2, `sessions.sqlite` schema 8 and `web.sqlite` schema 2, with the version bump inside each writing transaction and the notice published after commit.
 - Check `expectedVersion` and answer `409 WORKSPACES_STALE` inside the workspace transactions, replace `field` in `workspaces.routes.ts` with Zod body decoders, and publish `workspaces` notices after commit and chat ungrouping. Chat writes take no `expectedVersion`.

@@ -2523,3 +2523,108 @@ test('Browser shows a chat that another client creates, from the chats notice of
     'A chats notice must not open the new chat',
   )
 })
+
+async function openProviderChanges(t, name) {
+  const dir = await mkdtemp(join(tmpdir(), `deckagent-${name}-`))
+  const state = {}
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  const providerAccess = { check: async () => {}, catalog: async () => [] }
+  const options = { dataDir: join(dir, 'data'), home: join(dir, 'home'), ...fixtureProvider('providers'), providerAccess }
+  state.app = await startLocalWeb(options)
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
+    'Browser boot failed',
+  )
+  await delay(500)
+  const saveOther = async () => {
+    const response = await fetch(`${state.app.origin}/api/providers/other`, {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        displayName: 'Other',
+        protocol: 'chat-completions',
+        baseUrl: 'http://127.0.0.1:1',
+        models: ['other-model'],
+        new: true,
+        expectedVersion: 0,
+      }),
+    })
+    assert.equal(response.status, 200)
+  }
+  const pickerShowsOther = () =>
+    eventually(
+      () =>
+        evaluate(
+          `[...document.querySelector('.composer select').options].some(option => option.value === ${JSON.stringify(JSON.stringify({ provider: 'other', model: 'other-model' }))})`,
+        ),
+      'Browser did not show the provider of another client after the providers notice',
+    )
+  return { evaluate, saveOther, pickerShowsOther }
+}
+
+test('Browser shows a provider that another client saves, from the providers notice of /api/changes', {
+  timeout: 60000,
+}, async t => {
+  const { saveOther, pickerShowsOther } = await openProviderChanges(t, 'provider-changes')
+  await saveOther()
+  await pickerShowsOther()
+})
+
+test('A settings save after a change in another client gets PROVIDERS_STALE, reads the settings again and does not send again', {
+  timeout: 60000,
+}, async t => {
+  const { evaluate, saveOther, pickerShowsOther } = await openProviderChanges(t, 'provider-stale')
+  await evaluate(
+    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`,
+  )
+  await eventually(() => evaluate(`document.querySelector('.settings-dialog').open`), 'Settings missing')
+  await evaluate(`document.querySelector('.settings-dialog [data-provider="fixture"]').click();true`)
+  await eventually(
+    () => evaluate(`document.querySelector('[aria-label="Display name"]').value === 'fixture'`),
+    'Settings did not show the saved provider',
+  )
+  await evaluate(
+    `{const name=document.querySelector('[aria-label="Display name"]');name.value='Renamed';name.dispatchEvent(new Event('input',{bubbles:true}))} true`,
+  )
+  await saveOther()
+  await pickerShowsOther()
+  assert.equal(
+    await evaluate(`document.querySelector('[aria-label="Display name"]').value`),
+    'Renamed',
+    'A providers notice must not fill the open form again',
+  )
+  await evaluate(`{
+    const original = window.fetch;
+    window.__providerWrites = 0;
+    window.fetch = async (url, init) => {
+      if (String(url).endsWith('/api/providers/fixture') && init?.method === 'PUT') window.__providerWrites += 1;
+      return original(url, init);
+    };
+  } true`)
+  await evaluate(`document.querySelector('.settings-dialog form').requestSubmit();true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.settings-body [role=status]').textContent.includes('vừa thay đổi ở nơi khác')`,
+      ),
+    'Browser did not show the PROVIDERS_STALE message',
+  )
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Display name"]').value`), 'fixture')
+  assert.equal(
+    await evaluate(`!!document.querySelector('.settings-dialog [data-provider="other"]')`),
+    true,
+    'The dialog must read the settings again',
+  )
+  assert.equal(await evaluate('window.__providerWrites'), 1, 'The Browser must not send the stale write again')
+})

@@ -286,7 +286,7 @@ Revision 3g adds these failure modes:
 | 31 | Done | [Move the providers module into apps/host/src/modules](task-31-move-providers-module.md) ([report](../reports/task-31-move-providers-module.md)) |
 | 32 | Done | [Add the providers version and change notices](task-32-add-providers-version-and-notices.md) ([report](../reports/task-32-add-providers-version-and-notices.md)) |
 | 33 | Done | [Add the providers stale check](task-33-add-providers-stale-check.md) ([report](../reports/task-33-add-providers-stale-check.md)) |
-| 34 | Pending | [Refresh the Browser from providers notices](task-34-refresh-browser-from-providers-notices.md) |
+| 34 | Done | [Refresh the Browser from providers notices](task-34-refresh-browser-from-providers-notices.md) ([report](../reports/task-34-refresh-browser-from-providers-notices.md)) |
 
 ## Next revision
 

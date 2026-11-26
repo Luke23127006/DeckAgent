@@ -27,6 +27,8 @@ export function saveFailure(error: unknown): string {
     return 'Thông tin chưa hợp lệ. Base URL phải là HTTPS, hoặc HTTP tới chính máy này. Chưa lưu gì.'
   if (code === 'AUTH_REQUIRED')
     return 'Phiên kết nối Host không còn hợp lệ (AUTH_REQUIRED). Mở lại liên kết do Host hiện tại cung cấp rồi thử lại.'
+  if (code === 'PROVIDERS_STALE')
+    return 'Cấu hình provider vừa thay đổi ở nơi khác. Cài đặt đã được làm mới, hãy kiểm tra rồi thử lại. Chưa lưu gì.'
   if (code === 'SETTINGS_REQUEST_FAILED')
     return 'Host không xử lý được yêu cầu lưu (SETTINGS_REQUEST_FAILED). Kiểm tra kết nối và mở lại cài đặt trước khi thử lại.'
   if (code === 'CATALOG_UNAVAILABLE')

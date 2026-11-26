@@ -142,6 +142,12 @@ const changeWatcher = new ChangeWatcher({
       controls()
       return
     }
+    if (notice.topic === 'providers') {
+      if (notice.version <= navigation.settings.providersVersion) return
+      await navigation.refresh()
+      controls()
+      return
+    }
     if (notice.topic !== 'workspaces') return
     if (notice.version <= navigation.workspaces.version) return
     const next = await management.workspaces()

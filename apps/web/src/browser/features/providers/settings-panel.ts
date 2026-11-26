@@ -237,6 +237,8 @@ async function perform(panel: PanelState, action: () => Promise<void>) {
   try {
     await action()
   } catch (error) {
+    if (error instanceof ManagementError && error.message === 'PROVIDERS_STALE')
+      await refresh(panel, panel.dom.chooser.value).catch(() => {})
     panel.dom.message.textContent = saveFailure(error)
   } finally {
     panel.busy = false
