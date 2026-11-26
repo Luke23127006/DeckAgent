@@ -16,14 +16,15 @@ import {
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import { loadWebAssets } from '@deckagent/local-web'
-import { WebState } from './web-state.ts'
-import { createChatOperations, createWorkspaceChats } from './features/chats/index.ts'
+import { WebState, selection } from './web-state.ts'
 import {
-  attachmentManagement,
-  chatManagement,
-  mapApplicationFailure,
-  sessionReadManagement,
-} from './local-transport.ts'
+  createChatOperations,
+  createChatRoutes,
+  createWorkspaceChats,
+  mapChatFailure,
+  type ChatMarks,
+} from './modules/chats/index.ts'
+import { attachmentManagement, mapApplicationFailure, sessionReadManagement } from './local-transport.ts'
 import { ProviderStore, type ProviderConnection, type ProviderStoreOptions } from './features/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'
 import { listModels } from './integrations/providers/index.ts'
@@ -294,6 +295,13 @@ async function createRuntimeLayer(
   }
 }
 
+function chatMarks(decks: DeckStore, drafts: MemoryDraftStore): ChatMarks {
+  return {
+    hasSlides: id => decks.snapshot(id).slides.some(slide => slide.revision > 0),
+    hasDraft: id => drafts.get(id).trim() !== '' || drafts.snapshot(id).attachmentIds.length > 0,
+  }
+}
+
 function createHostOptions(
   layout: StorageLayout,
   options: LocalWebOptions,
@@ -307,7 +315,7 @@ function createHostOptions(
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
   return {
-    mapApplicationFailure: error => mapWorkspaceFailure(error) ?? mapApplicationFailure(error),
+    mapApplicationFailure: error => mapWorkspaceFailure(error) ?? mapChatFailure(error) ?? mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
     briefs,
@@ -333,7 +341,10 @@ function createHostOptions(
     attachments: attachmentManagement(runtime.inputs),
     ...(options.port === undefined ? {} : { port: options.port }),
     readHistory: id => sessions.read(id),
-    routes: [createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions)))],
+    routes: [
+      createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
+      createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
+    ],
     changes: { feed: changeFeed, hostTopics: [{ topic: 'workspaces', version: () => registry.version() }] },
     management: {
       ...sessionReadManagement(sessions, runtime.research),
@@ -342,7 +353,6 @@ function createHostOptions(
       saveProvider: (id, value) => runtime.providers.save(id, value),
       deleteProvider: id => runtime.providers.remove(id),
       catalog: id => runtime.providers.catalog(id),
-      ...chatManagement(createChatOperations(sessions, registry, web, decks, drafts)),
       drafts: { get: id => runtime.inputs.draft(id), save: (id, value) => runtime.inputs.save(id, value) },
     },
   }

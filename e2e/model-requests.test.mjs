@@ -440,6 +440,8 @@ test('Host restart: an active request is shown as not finished and never started
   const chat = await configured(call, provider.baseUrl)
   const hung = await client.send({ sessionId: chat.sessionId, input: 'long [hang]' })
   await waitFor(async () => (await client.snapshot(hung.requestId)).text)
+  const listed = (await call('sessions')).data.find(item => item.sessionId === chat.sessionId)
+  assert.equal(listed.activeRequestId, hung.requestId)
   await app.close()
   const count = runs(log).length
   ;({ app, call, client } = await startApp(dir, { credentials }))

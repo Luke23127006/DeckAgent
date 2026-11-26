@@ -1,4 +1,3 @@
-import type { WebSession } from '@deckagent/host-contracts'
 import type { Router } from 'express'
 import type { WebManagement } from './contracts.ts'
 import { json, readJson } from './http-io.ts'
@@ -70,11 +69,7 @@ function registerSettingsAndProviderRoutes(router: Router, management: WebManage
   )
 }
 
-export function registerManagementRoutes(
-  router: Router,
-  management: WebManagement,
-  withActive: (sessions: readonly WebSession[]) => Promise<readonly WebSession[]>,
-): void {
+export function registerManagementRoutes(router: Router, management: WebManagement): void {
   const session = params({ sessionId: WORD_ID })
   registerSettingsAndProviderRoutes(router, management)
   const research = management.research
@@ -87,25 +82,6 @@ export function registerManagementRoutes(
       }),
     )
   }
-  router.get(
-    '/api/sessions',
-    route(async (_req, res) => {
-      json(res, 200, await withActive(await management.sessions()))
-    }),
-  )
-  router.post(
-    '/api/sessions',
-    route(async (req, res) => {
-      json(res, 201, await management.createSession(await readJson(req)))
-    }),
-  )
-  router.put(
-    '/api/sessions/:sessionId/selection',
-    session,
-    route(async (req, res) => {
-      json(res, 200, await management.selectModel(param(req, 'sessionId'), await readJson(req)))
-    }),
-  )
   router.get(
     '/api/sessions/:sessionId/activities',
     session,
@@ -120,15 +96,6 @@ export function registerManagementRoutes(
       json(res, 200, await management.requests(param(req, 'sessionId')))
     }),
   )
-  const searchSessions = management.searchSessions?.bind(management)
-  if (searchSessions) {
-    router.post(
-      '/api/sessions/search',
-      route(async (req, res) => {
-        json(res, 200, await withActive(await searchSessions(await readJson(req))))
-      }),
-    )
-  }
   const drafts = management.drafts
   if (drafts) {
     router.get(

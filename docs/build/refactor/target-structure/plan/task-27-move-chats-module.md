@@ -78,7 +78,7 @@ The code of Step 4 and the edit script of Step 5 follow these rules. Use them to
 | `WebState.project` builds the chat projection | The private function `projectChat` in `chats.service.ts` builds the same fields in the same order. `chatMarks` in `server.ts` gives `hasSlides` and `hasDraft` from the deck store and the draft store. |
 | The chats feature imports `SqliteSessionStore`, `DeckStore`, `MemoryDraftStore` and `WebState` | A module does not import a storage package. The service declares the ports `ChatStore`, `ChatModels` and `ChatMarks`. `SqliteSessionStore` and `WebState` match them by shape. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -92,7 +92,7 @@ Run: `git grep -n "features/chats" -- apps/host/src`
 
 Expected: PASS. Three lines: `apps/host/src/local-transport.ts:7`, `apps/host/src/local-transport.ts:8` and `apps/host/src/server.ts:20`.
 
-- [ ] **Step 2: Build and record the suite before the move**
+- [x] **Step 2: Build and record the suite before the move**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -102,7 +102,7 @@ Run: `corepack pnpm@11.28.5 test:local-foundation`
 
 Expected: PASS. The output contains `# pass 47` and `# fail 0`.
 
-- [ ] **Step 3: Move the file**
+- [x] **Step 3: Move the file**
 
 Run these commands in order:
 
@@ -116,7 +116,7 @@ Run: `git status --short`
 
 Expected: PASS. One line: `R  apps/host/src/features/chats/index.ts -> apps/host/src/modules/chats/chats.service.ts`.
 
-- [ ] **Step 4: Write the new code**
+- [x] **Step 4: Write the new code**
 
 Write each file below with the exact content. `chats.service.ts` replaces the content that `git mv` moved.
 
@@ -344,7 +344,7 @@ export { createChatRoutes } from './chats.routes.ts'
 export { mapChatFailure } from './chats.errors.ts'
 ```
 
-- [ ] **Step 5: Run the edit script**
+- [x] **Step 5: Run the edit script**
 
 Write the script below to `C:/Users/Duy/AppData/Local/Temp/deckagent-task27-edits.mjs`. The script is outside the repository, so it is not part of the commit.
 
@@ -480,7 +480,7 @@ Run: `node C:/Users/Duy/AppData/Local/Temp/deckagent-task27-edits.mjs`
 
 Expected: PASS. The output is `task27-edits: 7 files changed, 0 failures`, and no line contains `expected 1 match`.
 
-- [ ] **Step 6: Build and check**
+- [x] **Step 6: Build and check**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -506,7 +506,7 @@ Run: `git grep -n "features/chats\|chatManagement\|searchSessions\|management, w
 
 Expected: PASS. No line, and the command exits with code 1.
 
-- [ ] **Step 7: Run every suite**
+- [x] **Step 7: Run every suite**
 
 Run each command of the table. `test:browser-smoke` has two host timing flakes that earlier reports record: the test `Create deck UI collects missing answers, revises, confirms once, previews and reopens published slides` and the test `interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat`. When one of these two tests is the only failed test, run the suite one more time. When the second run also fails, STOP.
 
@@ -532,7 +532,7 @@ Run each command of the table. `test:browser-smoke` has two host timing flakes t
 | test:browser-smoke | `corepack pnpm@11.28.5 test:browser-smoke` | `# pass 14`, `# fail 0` |
 | test:env-startup | `corepack pnpm@11.28.5 test:env-startup` | `# pass 2`, `# fail 0` |
 
-- [ ] **Step 8: Check the changed paths**
+- [x] **Step 8: Check the changed paths**
 
 Run: `git status --short`
 
@@ -552,7 +552,7 @@ RM apps/host/src/features/chats/index.ts -> apps/host/src/modules/chats/chats.se
 ?? apps/host/src/modules/chats/index.ts
 ```
 
-- [ ] **Step 9: Write the report file**
+- [x] **Step 9: Write the report file**
 
 1. Mark Steps 1 to 8 as `- [x]` in this file. Change the Task 27 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-27-move-chats-module.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-27-move-chats-module.md` with:
@@ -566,7 +566,7 @@ RM apps/host/src/features/chats/index.ts -> apps/host/src/modules/chats/chats.se
 5. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py docs/build/refactor/target-structure/reports/task-27-move-chats-module.md`. When `python` is not available, run the same script with `python3` or `python3.12`. Expected: PASS. The output contains `0 violations`.
 6. Mark Step 9 as `- [x]`.
 
-- [ ] **Step 10: Commit and push**
+- [x] **Step 10: Commit and push**
 
 Do this step only when Steps 1 to 9 passed and no STOP condition occurred.
 

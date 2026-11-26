@@ -1,5 +1,4 @@
 import type { ServerResponse } from 'node:http'
-import type { WebSession } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { ContractSyncVerified } from './contract-sync.ts'
 import { RequestController } from './lifecycle/request-controller.ts'
@@ -52,14 +51,9 @@ export function createHostRoutes(options: HostOptions): HostRoutes {
       )
     : undefined
   const streams = new Set<ServerResponse>()
-  const withActive = async (sessions: readonly WebSession[]): Promise<readonly WebSession[]> =>
-    sessions.map(session => {
-      const activeRequestId = controller?.active(session.sessionId)
-      return { ...session, ...(activeRequestId ? { activeRequestId } : {}) }
-    })
   const router = Router({ caseSensitive: true, strict: true })
   registerSessionRoutes(router, options, controller, streams)
-  if (options.management) registerManagementRoutes(router, options.management, withActive)
+  if (options.management) registerManagementRoutes(router, options.management)
   for (const routes of options.routes ?? []) router.use(routes)
   registerRequestRoutes(router, controller, options.attachments?.maxFiles ?? 0, streams)
   return {

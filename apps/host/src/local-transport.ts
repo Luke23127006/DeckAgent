@@ -4,22 +4,13 @@ import type { AttachmentManagement, HttpErrorDetail, HttpFailureResponse, WebMan
 import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
 import { DraftError } from './draft-store.ts'
 import { AttachmentFailure } from './features/attachments/index.ts'
-import { ChatWorkflowError } from './features/chats/index.ts'
-import type { ChatOperations, ChatWorkflowErrorCode } from './features/chats/index.ts'
 import { DeckWorkflowFailure } from './features/deck/index.ts'
 import { ProviderFailure } from './features/providers/index.ts'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { ResearchFailure, type ResearchCoordinator } from './features/research/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
-import { WebStateError, record, selection } from './web-state.ts'
-
-const chatStatus: Readonly<Record<ChatWorkflowErrorCode, number>> = {
-  SESSION_NOT_FOUND: 404,
-  MODEL_NOT_SELECTABLE: 409,
-  CHAT_UNREADABLE: 409,
-  DRAFT_TOO_LARGE: 413,
-}
+import { WebStateError } from './web-state.ts'
 
 const providerStatus: Readonly<Record<string, number>> = {
   INVALID_PROVIDER: 400,
@@ -113,11 +104,6 @@ const deckWorkflowStatus = (error: DeckWorkflowFailure): number => {
   return 500
 }
 
-function body(value: unknown, key: string): unknown {
-  if (!record(value) || Object.keys(value).some(name => name !== key)) throw new HttpError(400, 'INVALID_REQUEST')
-  return value[key]
-}
-
 function mapFailureEntry(code: string, detail: HttpErrorDetail | undefined, status: number): HttpFailureResponse {
   return { status, code, ...(detail ? { detail } : {}) }
 }
@@ -133,7 +119,6 @@ function featureFailure<E extends { readonly code: string; readonly detail?: Htt
 }
 
 const featureFailures = [
-  featureFailure(ChatWorkflowError, error => chatStatus[error.code]),
   featureFailure(ProviderFailure, error => providerStatus[error.code] ?? 500),
   featureFailure(RequestPreparationFailure, error => requestPreparationStatus[error.code]),
   featureFailure(ResearchFailure, error => researchStatus[error.code] ?? 500),
@@ -173,26 +158,6 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     return mapFailureEntry(error.code, undefined, status)
   }
   return undefined
-}
-
-export function chatManagement(
-  operations: ChatOperations,
-): Pick<WebManagement, 'sessions' | 'createSession' | 'selectModel' | 'searchSessions'> {
-  return {
-    sessions: () => operations.list(),
-    createSession: value => {
-      if (!record(value) || Object.keys(value).some(key => key !== 'selection'))
-        throw new HttpError(400, 'INVALID_SESSION')
-      const chosen = value.selection === undefined ? undefined : selection(value.selection)
-      return operations.create(chosen)
-    },
-    selectModel: (id, value) => operations.selectModel(id, selection(value)),
-    searchSessions: value => {
-      const words = body(value, 'words')
-      if (typeof words !== 'string' || words.length > 500) throw new HttpError(400, 'INVALID_REQUEST')
-      return operations.search(words)
-    },
-  }
 }
 
 async function toAttachmentHttpError<T>(work: Promise<T>): Promise<T> {

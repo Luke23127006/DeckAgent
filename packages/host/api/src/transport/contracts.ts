@@ -10,7 +10,6 @@ import type {
   StoredRequest,
   TerminalStatus,
   WebPreferences,
-  WebSession,
   WebSettings,
 } from '@deckagent/host-contracts'
 import type { RequestStore } from '@deckagent/session-persistence'
@@ -114,14 +113,8 @@ export interface WebManagement {
   saveProvider(id: string, value: unknown): Promise<void>
   deleteProvider(id: string): Promise<void>
   catalog(id: string): Promise<readonly string[]>
-  sessions(): Promise<readonly WebSession[]>
-  /** Creates the chat in the workspace in use. */
-  createSession(value: unknown): Promise<WebSession>
-  selectModel(id: string, value: unknown): Promise<WebSession>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
-  /** Earlier chats whose name or conversation holds the words. Body: `{ words }`. */
-  searchSessions?(value: unknown): Promise<readonly WebSession[]>
   readonly drafts?: {
     get(sessionId: string): Promise<ChatDraft>
     save(sessionId: string, value: unknown): Promise<ChatDraft>

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Move the chats feature, the four chat routes, the chat projection and the chat error map into `apps/host/src/modules/chats/` with no change of the HTTP contract. `SqliteSessionStore` stays in `packages/session/persistence/`. Task 27 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the Task 26 chats diagnosis report (`docs/build/refactor/target-structure/reports/task-26-diagnose-chats-module.md`). It records the module files, the store members and their transactions, the callers, the calls into other stores, the write sites, the 13 fields of the chat list, the Browser reads, the error map, the schema 1 to 7 upgrade path and the tests of the `chats` module. Task 26 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Connect the Browser to `GET /api/changes` through one `ChangeWatcher`, refresh the workspace list on a newer `workspaces` version, and handle `WORKSPACES_STALE` by refreshing the list and showing a message without retrying the write. Task 25 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Upgrade `workspaces.sqlite` to schema 2 with `change_versions`, check `expectedVersion` (`409 WORKSPACES_STALE`) inside transactions, replace `field` in `workspaces.routes.ts` with Zod body decoders, and publish `workspaces` notices on `GET /api/changes` after commit and chat ungrouping. Task 24 is `Done` in `docs/build/refactor/target-structure/plan/`.

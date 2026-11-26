@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite'
-import type { WebPreferences, WebSession } from '@deckagent/host-contracts'
-import type { ChatSummary, ModelSelection } from '@deckagent/session-persistence'
+import type { WebPreferences } from '@deckagent/host-contracts'
+import type { ModelSelection } from '@deckagent/session-persistence'
 
 export type WebStateErrorCode = 'INVALID_SELECTION' | 'INVALID_REQUEST' | 'SETTINGS_SCHEMA' | 'SETTINGS_STORAGE'
 
@@ -112,23 +112,6 @@ export class WebState {
 
   selectable(value: ModelSelection | undefined): boolean {
     return !!value && this.isSelectable(value)
-  }
-
-  /** Browser projection of a chat. A chat with no user message yet is shown as a new chat. */
-  project(chat: ChatSummary, hasSlides: boolean): WebSession {
-    return {
-      sessionId: chat.sessionId,
-      createdAt: chat.createdAt,
-      updatedAt: chat.updatedAt,
-      messageCount: chat.messageCount,
-      workspaceId: chat.workspaceId,
-      readable: chat.readable,
-      title: chat.title || 'New chat',
-      hasSlides,
-      selectable: this.selectable(chat.selection),
-      ...(chat.selection ? { selection: chat.selection } : {}),
-      ...(chat.removedSelection ? { removedSelection: chat.removedSelection } : {}),
-    }
   }
 
   close(): void {
