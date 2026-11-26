@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Connect the Browser to `GET /api/changes` through one `ChangeWatcher`, refresh the workspace list on a newer `workspaces` version, and handle `WORKSPACES_STALE` by refreshing the list and showing a message without retrying the write. Task 25 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Upgrade `workspaces.sqlite` to schema 2 with `change_versions`, check `expectedVersion` (`409 WORKSPACES_STALE`) inside transactions, replace `field` in `workspaces.routes.ts` with Zod body decoders, and publish `workspaces` notices on `GET /api/changes` after commit and chat ungrouping. Task 24 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add `ChangeTopic`, `ChangeNotice`, `PublishChange`, `decodeChangeNotice` and workspace body Zod decoders to `@deckagent/host-contracts`, plus `ChangeFeed` and `GET /api/changes` in `apps/host/src/http/`. Task 23 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add the folder-level import rules for `apps/host/src/modules/`: three `no-restricted-imports` overrides for module files, routes files and service files, and the `check:boundaries` rules `module-private-import` and `module-cycle`, each with a negative fixture. Task 22 is `Done` in `docs/build/refactor/target-structure/plan/`.

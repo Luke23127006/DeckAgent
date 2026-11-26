@@ -159,7 +159,7 @@ Revision 3c adds these failure modes:
 | 22 | Done | [Add the folder-level rules for apps/host/src/modules](task-22-add-module-folder-rules.md) ([report](../reports/task-22-add-module-folder-rules.md)) |
 | 23 | Done | [Add the change notice contracts, workspace body schemas and Host ChangeFeed](task-23-add-change-contracts-and-feed.md) ([report](../reports/task-23-add-change-contracts-and-feed.md)) |
 | 24 | Done | [Add version, schema 2 upgrade, expectedVersion and ChangeFeed wiring to the workspaces module](task-24-add-workspaces-version-and-notices.md) ([report](../reports/task-24-add-workspaces-version-and-notices.md)) |
-| 25 | Pending | [Connect the Browser to /api/changes and handle WORKSPACES_STALE](task-25-connect-browser-to-changes-and-stale-workspaces.md) |
+| 25 | Done | [Connect the Browser to /api/changes and handle WORKSPACES_STALE](task-25-connect-browser-to-changes-and-stale-workspaces.md) ([report](../reports/task-25-connect-browser-to-changes-and-stale-workspaces.md)) |
 
 ## Next revision
 

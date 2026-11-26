@@ -2377,3 +2377,99 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   for (const id of ['recycling', 'budget', firstChat, projectChat])
     assert.equal(await requestCount(app, id), 0, 'No step sent a request')
 })
+
+test('Browser updates workspaces from /api/changes and handles WORKSPACES_STALE without retrying', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-workspace-changes-'))
+  let app, session
+  t.after(async () => {
+    try {
+      await closeBrowser(session)
+      if (app) await app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  const project = join(dir, 'Dự án từ tab khác')
+  await mkdir(project, { recursive: true })
+  session = await openBrowser(dir)
+  const { protocol, evaluate } = session
+  app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
+  await eventually(
+    () =>
+      evaluate(
+        `!!document.querySelector('.workspace-controls select option') && !!document.querySelector('.chat-navigation nav button[aria-current=true]')`,
+      ),
+    'Browser boot failed',
+  )
+
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
+    return { status: response.status, data: await response.json() }
+  }
+
+  const added = await api('workspaces', 'POST', { folder: project, expectedVersion: 0 })
+  assert.equal(added.status, 200)
+  const addedId = added.data.selectedId
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Dự án từ tab khác'`,
+      ),
+    'Browser did not refresh workspace list after /api/changes notice',
+  )
+
+  const renamed = await api(`workspaces/${addedId}`, 'PUT', { name: 'Tên mới bên ngoài', expectedVersion: 1 })
+  assert.equal(renamed.status, 200)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent === 'Tên mới bên ngoài'`,
+      ),
+    'Browser did not show renamed workspace after second /api/changes notice',
+  )
+
+  await evaluate(`{
+    const original = window.fetch;
+    window.__workspaceWrites = 0;
+    window.__workspaceReads = 0;
+    window.fetch = async (url, init) => {
+      const target = String(url);
+      if (target.endsWith('/api/workspaces') && (!init?.method || init.method === 'GET')) {
+        window.__workspaceReads += 1;
+      }
+      if (target.endsWith('/api/workspaces/${addedId}') && init?.method === 'PUT') {
+        window.__workspaceWrites += 1;
+        const parsed = JSON.parse(String(init.body));
+        return original(url, { ...init, body: JSON.stringify({ ...parsed, expectedVersion: 0 }) });
+      }
+      return original(url, init);
+    };
+  } true`)
+
+  await evaluate(`document.querySelector('[data-action=rename-workspace]').click(); true`)
+  await eventually(() => evaluate(`document.querySelector('.workspace-dialog').open`), 'Rename dialog did not open')
+  await evaluate(
+    `document.querySelector('.workspace-dialog input').value = 'Tên bị cũ'; document.querySelector('.workspace-dialog form').requestSubmit(); true`,
+  )
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('Danh sách workspace vừa thay đổi ở nơi khác') && window.__workspaceReads >= 1`,
+      ),
+    'WORKSPACES_STALE message or list refresh did not appear',
+  )
+  assert.equal(await evaluate(`window.__workspaceWrites`), 1, 'Browser must not resend the stale write')
+  assert.equal(await evaluate(`document.querySelector('.workspace-dialog').open`), true)
+  assert.equal(
+    await evaluate(`document.querySelector('.workspace-controls select').selectedOptions[0]?.textContent`),
+    'Tên mới bên ngoài',
+  )
+})

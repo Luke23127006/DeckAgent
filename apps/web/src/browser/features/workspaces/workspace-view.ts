@@ -40,6 +40,8 @@ function workspaceFailure(reason: unknown): string {
       return 'Tên workspace dài tối đa 100 ký tự. Tên cũ được giữ nguyên.'
     case 'WORKSPACE_NOT_FOUND':
       return 'Workspace này không còn được thiết lập. Danh sách đã được làm mới.'
+    case 'WORKSPACES_STALE':
+      return 'Danh sách workspace vừa thay đổi ở nơi khác. Danh sách đã được làm mới, hãy kiểm tra rồi thử lại.'
     default:
       return 'Không thay đổi được workspace. Kiểm tra kết nối với DeckAgent rồi thử lại.'
   }
@@ -227,11 +229,15 @@ function runWorkspaceChange(
     .catch(reason => {
       target.hidden = false
       target.textContent = workspaceFailure(reason)
-      if (reason instanceof Error && reason.message === 'WORKSPACE_NOT_FOUND')
+      if (
+        reason instanceof Error &&
+        (reason.message === 'WORKSPACE_NOT_FOUND' || reason.message === 'WORKSPACES_STALE')
+      )
         management.workspaces().then(
-          next => {
+          async next => {
             state.list = next
             renderWorkspaceList(dom, state)
+            await changed(next, false)
           },
           () => {},
         )

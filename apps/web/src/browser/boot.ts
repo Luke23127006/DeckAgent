@@ -1,6 +1,7 @@
 import type { WebSession } from '@deckagent/host-contracts'
 import {
   BriefClient,
+  ChangeClient,
   ConfirmationClient,
   DeckClient,
   HostClient,
@@ -21,6 +22,7 @@ import { createShellDom } from './shell-dom.ts'
 import { createDraftSync } from './draft-sync.ts'
 import { createChatNavigation } from './chat-navigation.ts'
 import { createRequestRunner, sendBlocked } from './request-runner.ts'
+import { ChangeWatcher } from './change-watcher.ts'
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 const client = new HostClient(location.origin, token)
 const management = new ManagementClient(location.origin, token)
@@ -28,6 +30,7 @@ const outlines = new OutlineClient(location.origin, token)
 const briefs = new BriefClient(location.origin, token)
 const confirmations = new ConfirmationClient(location.origin, token)
 const deckClient = new DeckClient(location.origin, token)
+const changeClient = new ChangeClient(location.origin, token)
 const shell = createShellDom(() => controls())
 const sending = new Set<string>()
 const selecting = new Set<string>()
@@ -125,6 +128,19 @@ const draftSync = createDraftSync({
   currentSessionId: () => navigation.current?.sessionId,
   changed: () => controls(),
   refresh: () => navigation.refresh(),
+})
+const changeWatcher = new ChangeWatcher({
+  client: changeClient,
+  onNotice: async notice => {
+    if (notice.topic !== 'workspaces' || notice.key !== 'host') return
+    if (notice.version <= navigation.workspaces.version) return
+    const next = await management.workspaces()
+    if (next.version < navigation.workspaces.version) return
+    navigation.workspaces = next
+    workspaceUI.update(next)
+    navigation.renderChats()
+    controls()
+  },
 })
 const navigation = createChatNavigation({
   shell,
@@ -384,10 +400,15 @@ window.addEventListener(
     draftSync.dispose()
     navigation.dispose()
     deckModel.close()
+    changeWatcher.close()
   },
   { once: true },
 )
 window.addEventListener('pageshow', event => {
   if (event.persisted) location.reload()
 })
-run(navigation.start())
+run(
+  navigation.start().then(() => {
+    changeWatcher.start()
+  }),
+)

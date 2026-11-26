@@ -52,7 +52,7 @@ After Task 24, the Local Host serves `GET /api/changes` for the `workspaces` top
 - Change a file in `apps/host/` or `packages/`.
 - Commit when a STOP condition occurred. Push with `--force`, or skip a hook with `--no-verify`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -62,7 +62,7 @@ Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').
 
 Expected: PASS. Four lines, in this order: `6`, `367`, `393`, `11`.
 
-- [ ] **Step 2: Write the new Browser files and unit test**
+- [x] **Step 2: Write the new Browser files and unit test**
 
 Write each file below with the exact content.
 
@@ -266,7 +266,7 @@ test('ChangeWatcher stops reconnecting after AUTH_REQUIRED', async t => {
 })
 ```
 
-- [ ] **Step 3: Run the edit script**
+- [x] **Step 3: Run the edit script**
 
 Save the script below as `deckagent-task25-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository.
 
@@ -474,7 +474,7 @@ Run from the repository root: `node <temporary folder>/deckagent-task25-edits.mj
 
 Expected: PASS. The output is `task25-edits: 5 files changed, 0 failures`.
 
-- [ ] **Step 4: Build and run the checks**
+- [x] **Step 4: Build and run the checks**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -516,7 +516,7 @@ Run: `corepack pnpm@11.28.5 test:browser-smoke`
 
 Expected: PASS. The output contains `# pass 14` and `# fail 0`. When this suite fails one time, run it one more time. When it fails two times, STOP.
 
-- [ ] **Step 5: Check the changed paths**
+- [x] **Step 5: Check the changed paths**
 
 Run: `git status --short`
 
@@ -534,7 +534,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
  M package.json
 ```
 
-- [ ] **Step 6: Write the report file**
+- [x] **Step 6: Write the report file**
 
 1. Mark Steps 1 to 5 as `- [x]` in this file. Change the Task 25 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-25-connect-browser-to-changes-and-stale-workspaces.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-25-connect-browser-to-changes-and-stale-workspaces.md` with:
@@ -546,7 +546,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
 4. Run the STE linter from Global Constraints on the report file. Expected: the output contains `0 violations`.
 5. Mark Step 6 as `- [x]`.
 
-- [ ] **Step 7: Commit and push**
+- [x] **Step 7: Commit and push**
 
 Do this step only when Steps 1 to 6 passed and no STOP condition occurred.
 

@@ -1,5 +1,6 @@
 export {
   BriefClient,
+  ChangeClient,
   ConfirmationClient,
   DeckClient,
   HostClient,
