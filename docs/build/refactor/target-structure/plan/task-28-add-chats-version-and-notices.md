@@ -76,7 +76,7 @@ The three tests `apps/host/tests/research.test.mjs`, `e2e/attachment-storage.tes
 - Change the edit script of Step 2. When `build` or `lint` reports an error in the result, STOP.
 - Add `expectedVersion` or `CHATS_STALE` to a chat route.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -90,7 +90,7 @@ Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').
 
 Expected: PASS. Ten lines, in this order: `412`, `357`, `160`, `460`, `178`, `263`, `499`, `157`, `201`, `390`.
 
-- [ ] **Step 2: Run the edit script**
+- [x] **Step 2: Run the edit script**
 
 Write the script below to `C:/Users/Duy/AppData/Local/Temp/deckagent-task28-edits.mjs`.
 
@@ -378,7 +378,7 @@ Run: `node C:/Users/Duy/AppData/Local/Temp/deckagent-task28-edits.mjs`
 
 Expected: PASS. The output is `task28-edits: 10 files changed, 0 failures`, and no line contains `expected 1 match`.
 
-- [ ] **Step 3: Format the code**
+- [x] **Step 3: Format the code**
 
 Run: `corepack pnpm@11.28.5 exec biome format --write packages/session/persistence apps/host/src/server.ts apps/host/tests/research.test.mjs`
 
@@ -388,7 +388,7 @@ Run: `corepack pnpm@11.28.5 exec biome format packages/session/persistence apps/
 
 Expected: PASS. The output contains `No fixes applied`.
 
-- [ ] **Step 4: Build and check**
+- [x] **Step 4: Build and check**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -410,7 +410,7 @@ Run: `node --test packages/session/persistence/tests/chat-persistence.test.mjs`
 
 Expected: PASS. The output contains `# pass 9` and `# fail 0`.
 
-- [ ] **Step 5: Break the code and make sure that the tests fail**
+- [x] **Step 5: Break the code and make sure that the tests fail**
 
 Write the script below to `C:/Users/Duy/AppData/Local/Temp/deckagent-task28-break.mjs`. It changes `packages/session/persistence/src/index.ts` for one test run, and then puts the file back.
 
@@ -467,7 +467,7 @@ Run these commands in order. Each `Expected` is for the command just before it.
 
 When the restore command fails, STOP. Do not repair `index.ts` by hand.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Run each command of the table. `test:browser-smoke` has two host timing flakes that earlier reports record: the test `Create deck UI collects missing answers, revises, confirms once, previews and reopens published slides` and the test `interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat`. When one of these two tests is the only failed test, run the suite one more time. When the second run also fails, STOP.
 
@@ -493,7 +493,7 @@ Run each command of the table. `test:browser-smoke` has two host timing flakes t
 | test:browser-smoke | `corepack pnpm@11.28.5 test:browser-smoke` | `# pass 14`, `# fail 0` |
 | test:env-startup | `corepack pnpm@11.28.5 test:env-startup` | `# pass 2`, `# fail 0` |
 
-- [ ] **Step 7: Check the changed paths**
+- [x] **Step 7: Check the changed paths**
 
 Run: `git status --short`
 
@@ -512,7 +512,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
  M packages/session/persistence/tests/chat-persistence.test.mjs
 ```
 
-- [ ] **Step 8: Write the report file**
+- [x] **Step 8: Write the report file**
 
 1. Mark Steps 1 to 7 as `- [x]` in this file. Change the Task 28 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-28-add-chats-version-and-notices.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-28-add-chats-version-and-notices.md` with:
@@ -526,7 +526,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
 5. Run `python -I .agents/skills/asd-ste100/scripts/ste-lint.py docs/build/refactor/target-structure/reports/task-28-add-chats-version-and-notices.md`. When `python` is not available, run the same script with `python3` or `python3.12`. Expected: PASS. The output contains `0 violations`.
 6. Mark Step 8 as `- [x]`.
 
-- [ ] **Step 9: Commit and push**
+- [x] **Step 9: Commit and push**
 
 Do this step only when Steps 1 to 8 passed and no STOP condition occurred.
 

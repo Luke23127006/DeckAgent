@@ -164,10 +164,11 @@ Mọi đối tượng người dùng thấy phải dùng chung một cơ chế b
 ### Quyết định
 
 - Change notice có kiểu `ChangeNotice = { topic: ChangeTopic; key: string; version: number }` trong `packages/contracts`. Notice là tín hiệu đọc lại, không mang state.
-- Aggregate, topic và khoá là: `deck`, `brief`, `outline` và `draft` theo chat; `chats` theo workspace; `workspaces`, `providers` và `preferences` cho cả Host. Bảng thuộc mỗi aggregate nằm trong [Agent core](10-agent-core.md#aggregate-và-change-notice).
+- Aggregate, topic và khoá là: `deck`, `brief`, `outline` và `draft` theo chat. `chats`, `workspaces`, `providers` và `preferences` cho cả Host. Bảng thuộc mỗi aggregate nằm trong [Agent core](10-agent-core.md#aggregate-và-change-notice).
 - Store tăng `version` trong cùng transaction với lệnh ghi. Store phát notice sau commit, với `version` đã lưu, không dùng hằng số.
 - Aggregate có hàng gốc mang cột `version` dùng cột đó. Aggregate không có hàng gốc dùng một bảng `change_versions(topic, key, version)` trong database của module sở hữu.
 - Lệnh ghi qua HTTP route gửi `expectedVersion`. Store từ chối lệnh ghi khi `version` đã đổi. Code hiện có giữ nguyên: `BRIEF_STALE`, `OUTLINE_STALE`, `DRAFT_CONFLICT`. Aggregate mới dùng code `<TOPIC>_STALE`, ví dụ `WORKSPACES_STALE`.
+- Topic `chats` là ngoại lệ. Lệnh ghi chat không gửi `expectedVersion`, và không có code `CHATS_STALE`. Mỗi tin nhắn trong một chat cũng tăng `version` của danh sách chat. Nếu store kiểm `version`, lệnh tạo chat và lệnh đổi model bị từ chối khi không có xung đột thật. Lệnh tạo chat chỉ thêm một chat, và lệnh đổi model chỉ đổi một chat.
 - Store nhận hàm `publish` qua constructor tại `server.ts`. `ChangeFeed` trong `apps/host/src/http/` chuyển notice tới Browser qua SSE. Listener nào throw thì bị xoá, như `DeckRuntime.notify` hiện tại.
 - Route SSE của deck giữ nguyên path và tên event `deck-changed`. Route cho các topic khác là `Open` và được quyết khi module đầu tiên của Phase 3 cần notice.
 - Request, event, approval và các bảng mà run ghi dùng event log với cursor `sequence`, không dùng change notice.
@@ -179,6 +180,7 @@ Phương án A tổng quát hoá pattern đã chạy đúng cho deck, và giữ 
 ### Rủi ro chấp nhận
 
 - Màn hình đọc lại cả aggregate sau mỗi thay đổi. Chấp nhận cho đến khi có số đo cho thấy chậm.
+- Các field `hasDraft`, `activeRequestId`, `hasSlides` và `selectable` của danh sách chat lấy từ store khác. Chúng không tăng `version` của `chats`. Browser giữ cách đọc lại hiện tại cho các field này.
 - Lệnh ghi của agent qua tool chưa gửi `expectedVersion`. Module deck quyết cách kiểm cho tool khi canvas có code.
 
 ### Hệ quả

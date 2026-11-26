@@ -138,7 +138,7 @@ test('v4 attachment associations survive the approval migration and existing wor
   // Reconstruct the shipped v4 schema, excluding both approval and preparation additions.
   const v4 = new DatabaseSync(join(dir, 'sessions.sqlite'))
   v4.exec(
-    'DROP TABLE research_sources; DROP TABLE request_research; DROP TABLE request_approvals; DROP TABLE source_reads; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 4;',
+    'DROP TABLE change_versions; DROP TABLE research_sources; DROP TABLE request_research; DROP TABLE request_approvals; DROP TABLE source_reads; ALTER TABLE attachments DROP COLUMN preparation; ALTER TABLE attachments DROP COLUMN parsed_fingerprint; PRAGMA user_version = 4;',
   )
   v4.close()
   const upgraded = open()

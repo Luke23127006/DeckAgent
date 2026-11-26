@@ -10,6 +10,36 @@ import { SqliteSessionStore } from '@deckagent/session-persistence'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
+/** Opens GET /api/changes. The returned function gives the next notice of one topic and skips the other topics. */
+async function changeNotices(app, t) {
+  const streamControl = new AbortController()
+  t.after(() => streamControl.abort())
+  const streamResponse = await fetch(`${app.origin}/api/changes`, {
+    headers: { authorization: `Bearer ${app.token}` },
+    signal: streamControl.signal,
+  })
+  assert.equal(streamResponse.status, 200)
+  const reader = streamResponse.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  return async topic => {
+    while (true) {
+      const boundary = buffer.indexOf('\n\n')
+      if (boundary >= 0) {
+        const frame = buffer.slice(0, boundary)
+        buffer = buffer.slice(boundary + 2)
+        if (!frame.startsWith('event: change\ndata: ')) continue
+        const notice = JSON.parse(frame.slice('event: change\ndata: '.length))
+        if (notice.topic === topic) return notice
+        continue
+      }
+      const part = await reader.read()
+      if (part.done) throw new Error('Stream ended')
+      buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
+    }
+  }
+}
+
 async function tree(folder) {
   const entries = []
   for (const name of (await readdir(folder)).toSorted()) {
@@ -412,37 +442,14 @@ test('workspace routes check expectedVersion, return 409 WORKSPACES_STALE and pu
   const missingVersion = await call('workspaces', 'POST', { folder })
   assert.deepEqual([missingVersion.status, missingVersion.data.error.code], [400, 'INVALID_REQUEST'])
 
-  const streamControl = new AbortController()
-  t.after(() => streamControl.abort())
-  const streamResponse = await fetch(`${app.origin}/api/changes`, {
-    headers: { authorization: `Bearer ${app.token}` },
-    signal: streamControl.signal,
-  })
-  assert.equal(streamResponse.status, 200)
-  const reader = streamResponse.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  const nextNotice = async () => {
-    while (true) {
-      const boundary = buffer.indexOf('\n\n')
-      if (boundary >= 0) {
-        const frame = buffer.slice(0, boundary)
-        buffer = buffer.slice(boundary + 2)
-        if (frame.startsWith('event: change\ndata: ')) return JSON.parse(frame.slice('event: change\ndata: '.length))
-        continue
-      }
-      const part = await reader.read()
-      if (part.done) throw new Error('Stream ended')
-      buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
-    }
-  }
+  const nextNotice = await changeNotices(app, t)
 
-  assert.deepEqual(await nextNotice(), { topic: 'workspaces', key: 'host', version: 0 })
+  assert.deepEqual(await nextNotice('workspaces'), { topic: 'workspaces', key: 'host', version: 0 })
 
   const added = await call('workspaces', 'POST', { folder, expectedVersion: 0 })
   assert.equal(added.status, 200)
   assert.equal(added.data.version, 1)
-  assert.deepEqual(await nextNotice(), { topic: 'workspaces', key: 'host', version: 1 })
+  assert.deepEqual(await nextNotice('workspaces'), { topic: 'workspaces', key: 'host', version: 1 })
 
   const stale = await call(`workspaces/${added.data.selectedId}`, 'PUT', { name: 'Old', expectedVersion: 0 })
   assert.deepEqual([stale.status, stale.data.error.code], [409, 'WORKSPACES_STALE'])
@@ -450,11 +457,27 @@ test('workspace routes check expectedVersion, return 409 WORKSPACES_STALE and pu
   const chat = (await call('sessions', 'POST', {})).data
   assert.equal(chat.workspaceId, added.data.selectedId)
 
-  const noticeAfterRemove = nextNotice()
+  const noticeAfterRemove = nextNotice('workspaces')
   const removed = await call(`workspaces/${added.data.selectedId}`, 'DELETE', { expectedVersion: 1 })
   assert.equal(removed.status, 200)
   assert.equal(removed.data.version, 2)
   assert.deepEqual(await noticeAfterRemove, { topic: 'workspaces', key: 'host', version: 2 })
   const sessionsAfterNotice = (await call('sessions')).data
   assert.equal(sessionsAfterNotice.find(item => item.sessionId === chat.sessionId).workspaceId, null)
+})
+
+test('chat writes publish a chats notice after the commit, and each connection starts with the current version', async t => {
+  const { start } = await area(t)
+  const app = await start()
+  const call = api(app)
+  const nextNotice = await changeNotices(app, t)
+  assert.deepEqual(await nextNotice('chats'), { topic: 'chats', key: 'host', version: 0 })
+
+  const created = await call('sessions', 'POST', {})
+  assert.equal(created.status, 201)
+  assert.deepEqual(await nextNotice('chats'), { topic: 'chats', key: 'host', version: 1 })
+  assert.ok((await call('sessions')).data.some(item => item.sessionId === created.data.sessionId))
+
+  const later = await changeNotices(app, t)
+  assert.deepEqual(await later('chats'), { topic: 'chats', key: 'host', version: 1 })
 })

@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 7
+const schemaVersion = 8
 const researchTables = `
   CREATE TABLE request_research (
     request_id TEXT PRIMARY KEY REFERENCES requests(id), selected INTEGER NOT NULL CHECK(selected IN (0,1)),
@@ -13,6 +13,13 @@ const researchTables = `
     session_id TEXT NOT NULL REFERENCES sessions(id), payload TEXT NOT NULL
   ) STRICT;
   CREATE INDEX research_sources_chat ON research_sources(session_id);
+`
+/** One version for the chat list of the Host (ADR-004). It starts at 0 on a new file and on an upgrade. */
+const changeVersionsTable = `
+  CREATE TABLE change_versions (
+    topic TEXT NOT NULL, key TEXT NOT NULL, version INTEGER NOT NULL CHECK (version >= 0), PRIMARY KEY (topic, key)
+  ) STRICT;
+  INSERT INTO change_versions (topic, key, version) VALUES ('chats', 'host', 0);
 `
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
@@ -104,10 +111,11 @@ export function initialize(db: DatabaseSync): void {
         ${approvalTables}
         ${preparationColumns}
         ${researchTables}
+        ${changeVersionsTable}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if (version >= 1 && version <= 6 && owner === applicationId) {
+    } else if (version >= 1 && version <= 7 && owner === applicationId) {
       // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
       if (version === 1)
         db.exec(`
@@ -119,7 +127,8 @@ export function initialize(db: DatabaseSync): void {
       if (version < 4) db.exec(attachmentTables)
       if (version < 5) db.exec(approvalTables)
       if (version < 6) db.exec(preparationColumns)
-      db.exec(`${researchTables} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 7) db.exec(researchTables)
+      db.exec(`${changeVersionsTable} PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError(
         'SESSION_SCHEMA',
@@ -151,6 +160,9 @@ export function initialize(db: DatabaseSync): void {
     db.prepare(
       'SELECT source_id, version, session_id, origin, label, fingerprint, line_count, kind, request_id FROM source_reads LIMIT 0',
     ).all()
+    db.prepare('SELECT topic, key, version FROM change_versions LIMIT 0').all()
+    if (!db.prepare("SELECT version FROM change_versions WHERE topic = 'chats' AND key = 'host'").get())
+      throw new SessionError('SESSION_CORRUPT', 'Session database has no chats version row')
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

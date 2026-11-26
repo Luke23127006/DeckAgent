@@ -31,15 +31,24 @@ export { SessionError } from './contracts.ts'
 export { summarizedNotice } from './requests.ts'
 export type { ApprovalStep, RequestStore } from './request-store.ts'
 
+/** Options of the session store. */
+export interface SessionStoreOptions {
+  /** Called after a committed write that changed the chat list, with the new chats version. */
+  readonly onChatsChanged?: (version: number) => void
+}
+
 /** Local durable storage of chats and their conversations. The application owns close(). */
 export class SqliteSessionStore {
   private readonly db: DatabaseSync
+  private readonly onChatsChanged: ((version: number) => void) | undefined
+  private chatsChange: number | undefined
   private closed = false
   /** Requests, events and native session bindings of these chats (same database, one owner). */
   readonly requests: RequestLog
   readonly attachments: AttachmentLog
 
-  constructor(path: string) {
+  constructor(path: string, options: SessionStoreOptions = {}) {
+    this.onChatsChanged = options.onChatsChanged
     let db: DatabaseSync | undefined
     try {
       if (!path.trim() || path === ':memory:')
@@ -77,7 +86,16 @@ export class SqliteSessionStore {
 
   /** Create an empty chat if absent; otherwise open its existing history. New chats join the default workspace. */
   async open(sessionId: string): Promise<void> {
-    this.access(() => this.ensure(sessionId, defaultWorkspaceId))
+    this.access(() =>
+      this.transaction(() => {
+        if (this.ensure(sessionId, defaultWorkspaceId)) this.changedChats()
+      }),
+    )
+  }
+
+  /** The version of the chat list. Each committed write that changes the list increases it by one. */
+  chatsVersion(): number {
+    return this.access(() => this.readChatsVersion())
   }
 
   /** A new chat: its own ID, no conversation, in the given workspace. Takes nothing from another chat. */
@@ -92,6 +110,7 @@ export class SqliteSessionStore {
           this.db
             .prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?')
             .run(selection.provider, selection.model, sessionId)
+        this.changedChats()
         return this.info(sessionId)!
       }),
     )
@@ -116,6 +135,7 @@ export class SqliteSessionStore {
         this.db
           .prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?')
           .run(selection.provider, selection.model, sessionId)
+        this.changedChats()
         return this.info(sessionId)!
       }),
     )
@@ -139,6 +159,7 @@ export class SqliteSessionStore {
             'UPDATE sessions SET provider = ?, model = ?, removed_provider = NULL, removed_model = NULL WHERE id = ?',
           )
           .run(selection.provider, selection.model, sessionId)
+        this.changedChats()
         return this.info(sessionId)!
       }),
     )
@@ -195,9 +216,14 @@ export class SqliteSessionStore {
 
   /** Chats of a removed workspace become ungrouped, with their conversations and selected models. */
   async ungroup(workspaceId: string): Promise<void> {
-    this.access(() => {
-      this.db.prepare('UPDATE sessions SET workspace_id = NULL WHERE workspace_id = ?').run(workspaceId)
-    })
+    this.access(() =>
+      this.transaction(() => {
+        const result = this.db
+          .prepare('UPDATE sessions SET workspace_id = NULL WHERE workspace_id = ?')
+          .run(workspaceId)
+        if (Number(result.changes) > 0) this.changedChats()
+      }),
+    )
   }
 
   /** Startup reconciliation: a chat of a workspace that is no longer set up becomes ungrouped. */
@@ -209,7 +235,8 @@ export class SqliteSessionStore {
         for (const row of this.db
           .prepare('SELECT DISTINCT workspace_id FROM sessions WHERE workspace_id IS NOT NULL')
           .all()) {
-          if (!keep.has(String(row.workspace_id))) update.run(String(row.workspace_id))
+          if (!keep.has(String(row.workspace_id)) && Number(update.run(String(row.workspace_id)).changes) > 0)
+            this.changedChats()
         }
       }),
     )
@@ -249,6 +276,7 @@ export class SqliteSessionStore {
           'UPDATE sessions SET provider = NULL, model = NULL, removed_provider = ?, removed_model = ? WHERE id = ?',
         )
         for (const row of rows) update.run(provider, String(row.model), String(row.id))
+        if (rows.length > 0) this.changedChats()
         return rows.map(row => String(row.id))
       }),
     )
@@ -264,8 +292,10 @@ export class SqliteSessionStore {
       validateMessage(message)
       insert.run(sessionId, ++sequence, JSON.stringify(message))
     }
-    if (messages.length)
+    if (messages.length) {
       this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId)
+      this.changedChats()
+    }
   }
 
   close(): void {
@@ -284,16 +314,36 @@ export class SqliteSessionStore {
     }
   }
 
+  /** Runs `operation` in one transaction. A chats notice goes out after the commit only. */
   private transaction<T>(operation: () => T): T {
+    this.chatsChange = undefined
     this.db.exec('BEGIN IMMEDIATE')
+    let result: T
     try {
-      const result = operation()
+      result = operation()
       this.db.exec('COMMIT')
-      return result
     } catch (error) {
+      this.chatsChange = undefined
       this.db.exec('ROLLBACK')
       throw error
     }
+    const version = this.chatsChange
+    this.chatsChange = undefined
+    if (version !== undefined) this.onChatsChanged?.(version)
+    return result
+  }
+
+  /** Increases the chats version once in the current transaction. */
+  private changedChats(): void {
+    if (this.chatsChange !== undefined) return
+    this.db.prepare("UPDATE change_versions SET version = version + 1 WHERE topic = 'chats' AND key = 'host'").run()
+    this.chatsChange = this.readChatsVersion()
+  }
+
+  private readChatsVersion(): number {
+    const row = this.db.prepare("SELECT version FROM change_versions WHERE topic = 'chats' AND key = 'host'").get()
+    if (!row) throw new SessionError('SESSION_CORRUPT', 'Session database has no chats version row')
+    return Number(row.version)
   }
 
   private messages(sessionId: string): readonly Message[] {
@@ -321,14 +371,16 @@ export class SqliteSessionStore {
       throw new SessionError('SESSION_CONFIG', 'Session ID must not be empty')
   }
 
-  private ensure(sessionId: string, workspaceId: string): void {
+  /** Inserts the chat when it is absent. Returns true when it inserted a row. */
+  private ensure(sessionId: string, workspaceId: string): boolean {
     this.validateId(sessionId)
     const now = new Date().toISOString()
-    this.db
+    const result = this.db
       .prepare(
         'INSERT INTO sessions (id, created_at, updated_at, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING',
       )
       .run(sessionId, now, now, workspaceId)
+    return Number(result.changes) > 0
   }
 
   private requireSession(sessionId: string): void {

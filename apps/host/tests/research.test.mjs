@@ -84,7 +84,9 @@ test('research choice and attempt budget are durable, isolated and revoked at te
   await store.open('b')
   store.close()
   const old = new DatabaseSync(path)
-  old.exec('DROP TABLE research_sources; DROP TABLE request_research; PRAGMA user_version=6;')
+  old.exec(
+    'DROP TABLE change_versions; DROP TABLE research_sources; DROP TABLE request_research; PRAGMA user_version=6;',
+  )
   old.close()
   store = new SqliteSessionStore(path)
   store.requests.admit({ requestId: 'off', sessionId: 'b', input: 'off', selection: { provider: 'p', model: 'm' } })

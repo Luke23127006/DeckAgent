@@ -180,7 +180,9 @@ async function openStorageLayer(
     // Checked before any other database is created: app data never goes into a registered project folder.
     if (registry.overlapsFolder(layout.root)) throw new StorageError('STORAGE_INSIDE_WORKSPACE')
     try {
-      sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'))
+      sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'), {
+        onChatsChanged: version => changeFeed.publish({ topic: 'chats', key: 'host', version }),
+      })
       decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments)
       web = new WebState(join(layout.databases, 'web.sqlite'), value => isSelectable(value))
     } catch {
@@ -345,7 +347,13 @@ function createHostOptions(
       createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
       createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
     ],
-    changes: { feed: changeFeed, hostTopics: [{ topic: 'workspaces', version: () => registry.version() }] },
+    changes: {
+      feed: changeFeed,
+      hostTopics: [
+        { topic: 'workspaces', version: () => registry.version() },
+        { topic: 'chats', version: () => sessions.chatsVersion() },
+      ],
+    },
     management: {
       ...sessionReadManagement(sessions, runtime.research),
       preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },

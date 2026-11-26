@@ -50,7 +50,7 @@ test('a v1 Session database migrates in place: chats join the default workspace 
   store.close()
   const check = new DatabaseSync(path)
   // The attachment migration follows workspace and request migrations without changing existing messages.
-  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 7)
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 8)
   check.close()
 })
 
@@ -175,4 +175,88 @@ test('corrupt research_sources rows throw SESSION_CORRUPT', async t => {
     name: 'SessionError',
     code: 'SESSION_CORRUPT',
   })
+})
+
+test('a v7 Session database upgrades to schema 8 in place, keeps its chats and starts the chats version at 0', async t => {
+  const dir = await directory(t)
+  const path = join(dir, 'sessions.sqlite')
+  const first = storeIn(t, dir)
+  const chat = await first.create('workspace-a')
+  first.close()
+  const v7 = new DatabaseSync(path)
+  v7.exec('DROP TABLE change_versions; PRAGMA user_version = 7;')
+  v7.close()
+  const store = storeIn(t, dir)
+  assert.equal(store.chatsVersion(), 0)
+  assert.equal((await store.getInfo(chat.sessionId)).workspaceId, 'workspace-a')
+  store.close()
+  const check = new DatabaseSync(path)
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 8)
+  check.close()
+})
+
+test('each chat write increases the chats version once and sends the notice after the commit', async t => {
+  const dir = await directory(t)
+  const path = join(dir, 'sessions.sqlite')
+  const seen = []
+  const store = new SqliteSessionStore(path, {
+    onChatsChanged: version => {
+      const reader = new DatabaseSync(path)
+      const row = reader.prepare("SELECT version FROM change_versions WHERE topic = 'chats' AND key = 'host'").get()
+      reader.close()
+      seen.push([version, Number(row.version)])
+    },
+  })
+  stores.get(t).push(store)
+  assert.equal(store.chatsVersion(), 0)
+  const chat = await store.create('workspace-a')
+  await store.select(chat.sessionId, { provider: 'p', model: 'm' })
+  await store.append(chat.sessionId, [
+    { role: 'user', content: 'Một' },
+    { role: 'assistant', content: 'Hai' },
+  ])
+  store.requests.admit({
+    requestId: 'request-1',
+    sessionId: chat.sessionId,
+    input: 'Ba',
+    selection: { provider: 'p', model: 'm' },
+  })
+  await store.clearSelections('p')
+  await store.ungroup('workspace-a')
+  await store.open('chat-opened')
+  assert.deepEqual(seen, [
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [4, 4],
+    [5, 5],
+    [6, 6],
+    [7, 7],
+  ])
+  assert.equal(store.chatsVersion(), 7)
+})
+
+test('a write that changes no chat, or that fails, keeps the chats version and sends no notice', async t => {
+  const dir = await directory(t)
+  const seen = []
+  const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'), { onChatsChanged: version => seen.push(version) })
+  stores.get(t).push(store)
+  await store.open('chat-a')
+  await store.open('chat-a')
+  await store.ungroup('workspace-none')
+  await store.ungroupExcept(['default'])
+  await store.clearSelections('provider-none')
+  await assert.rejects(store.select('chat-missing', { provider: 'p', model: 'm' }), { code: 'SESSION_NOT_FOUND' })
+  await assert.rejects(
+    store.append('chat-a', [
+      { role: 'user', content: 'Một' },
+      { role: 'nobody', content: 'Hai' },
+    ]),
+    {
+      name: 'SessionError',
+    },
+  )
+  assert.deepEqual(seen, [1])
+  assert.equal(store.chatsVersion(), 1)
+  assert.deepEqual(await store.read('chat-a'), [])
 })

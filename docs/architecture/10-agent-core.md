@@ -323,7 +323,7 @@ Bảng và trạng thái hiện tại lấy từ chẩn đoán change notice [[9
 | `brief` | Chat ID | `brief_heads.version` | `brief_heads`, `brief_versions`, `brief_request_receipts` | Không có notice | `BRIEF_STALE` |
 | `outline` | Chat ID | `outline_heads.version` | `outline_heads`, `outline_proposals`, `outline_details`, `prepared_images` | Không có notice | `OUTLINE_STALE` |
 | `draft` | Chat ID | `revision` của draft | Draft trong bộ nhớ (`MemoryDraftStore`), `attachments` | Không có notice. Browser kiểm lại attachment mỗi 500 ms và khi cửa sổ nhận focus | `DRAFT_CONFLICT` |
-| `chats` | Workspace ID | `change_versions` | `sessions` | Không có `version` | `CHATS_STALE` |
+| `chats` | `'host'` | `change_versions` trong `sessions.sqlite` | `sessions`, `messages` | Không có `version` | Không có. Lệnh ghi chat không gửi `expectedVersion` |
 | `workspaces` | `'host'` | `change_versions` | `workspaces`, `registry_state` | Không có `version` | `WORKSPACES_STALE` |
 | `providers` | `'host'` | `change_versions` | `providers` | Không có `version` | `PROVIDERS_STALE` |
 | `preferences` | `'host'` | `change_versions` | `preferences` | Không có `version`. Giá trị `research` có `revision` ngẫu nhiên | `PREFERENCES_STALE` |
