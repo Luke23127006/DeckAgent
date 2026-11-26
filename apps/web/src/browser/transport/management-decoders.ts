@@ -6,6 +6,7 @@ import type {
   StoredActivity,
   StoredRequest,
   WebSession,
+  WebPreferences,
   WebSettings,
   WorkspaceList,
 } from '@deckagent/host-contracts'
@@ -69,6 +70,9 @@ export function decodeSettings(value: unknown): WebSettings {
     typeof value.providersVersion !== 'number' ||
     !Number.isSafeInteger(value.providersVersion) ||
     value.providersVersion < 0 ||
+    typeof value.preferencesVersion !== 'number' ||
+    !Number.isSafeInteger(value.preferencesVersion) ||
+    value.preferencesVersion < 0 ||
     !isRecord(value.runtime) ||
     typeof value.runtime.available !== 'boolean' ||
     (value.runtime.reason !== undefined && typeof value.runtime.reason !== 'string')
@@ -95,6 +99,7 @@ export function decodeSettings(value: unknown): WebSettings {
   return {
     providers: value.providers.map(provider),
     providersVersion: value.providersVersion,
+    preferencesVersion: value.preferencesVersion,
     ...(value.research === undefined ? {} : { research: decodeResearchSettings(value.research) }),
     persistentKeys: value.persistentKeys,
     builtIns,
@@ -199,9 +204,19 @@ export function decodeResearchSources(
     }
   })
 }
+export function decodePreferences(value: unknown): WebPreferences {
+  if (
+    !isRecord(value) ||
+    (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system') ||
+    typeof value.version !== 'number' ||
+    !Number.isSafeInteger(value.version) ||
+    value.version < 0
+  )
+    invalid()
+  return { theme: value.theme, version: value.version }
+}
 export function decodeTheme(value: unknown): 'light' | 'dark' | 'system' {
-  if (!isRecord(value) || (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system')) invalid()
-  return value.theme
+  return decodePreferences(value).theme
 }
 export function decodeActivities(value: unknown): readonly StoredActivity[] {
   if (!Array.isArray(value)) invalid()

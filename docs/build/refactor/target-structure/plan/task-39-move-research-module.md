@@ -72,7 +72,7 @@ After this task, the research module lives in `apps/host/src/modules/research/`.
 | Callers and tests | Point `providers.service.ts` to `../../credential-store.ts`, `b02-helpers.mjs` to `../../lib/types/credential-store.js`, `source-tools.ts`, `image-research.ts`, `image-review-run.ts` and `image-source.ts` to `../../modules/research/index.ts`, and `research.test.mjs` and `image-research.test.mjs` to `../lib/types/modules/research/index.js`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -82,11 +82,11 @@ Run: `git grep -n "^| 38 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move the code**
+- [x] **Step 2: Move the code**
 
 Do the changes of the tables `Mapping` and `Move rules`. Use `git mv` for `credential-store.ts`, `tavily.ts` and `research-coordinator.ts`. Then remove `apps/host/src/features/research/`, `apps/host/src/integrations/research/` and `apps/host/src/integrations/credentials/`.
 
-- [ ] **Step 3: Check that no old path or name stays**
+- [x] **Step 3: Check that no old path or name stays**
 
 Run: `git grep --untracked -n -E "features/research|integrations/research|integrations/credentials" -- apps/host packages e2e scripts`
 
@@ -100,21 +100,21 @@ Run: `git grep -n -E "ResearchFailure|researchStatus|ResearchCoordinator" -- app
 
 Expected: PASS. No line.
 
-- [ ] **Step 4: Format, build and check**
+- [x] **Step 4: Format, build and check**
 
 Run `rm -rf apps/host/lib packages/host/api/lib` first, so that an old build output does not hide a broken import. Then do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 5: Run every suite**
+- [x] **Step 5: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 6: Check the changed paths**
+- [x] **Step 6: Check the changed paths**
 
 Run: `git status --short`
 
 Expected: PASS. Each path starts with `apps/host/`, `packages/host/api/src/`, `docs/build/refactor/target-structure/` or `CHANGELOG.md`.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path | Symbols`.
 

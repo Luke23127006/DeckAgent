@@ -19,7 +19,7 @@ import {
   decodeResearchSources,
   decodeSession,
   decodeSettings,
-  decodeTheme,
+  decodePreferences,
   decodeWorkspaceList,
 } from './management-decoders.ts'
 
@@ -72,6 +72,7 @@ const allowedCodes = [
   'MODEL_NOT_SELECTABLE',
   'PROVIDER_NAME_EXISTS',
   'PROVIDERS_STALE',
+  'PREFERENCES_STALE',
   'PROTOCOL_IMMUTABLE',
   'NEW_ENDPOINT_REQUIRES_KEY',
   'PROVIDER_BUSY',
@@ -117,20 +118,25 @@ export class ManagementClient {
   async settings(): Promise<WebSettings> {
     return decodeSettings(await this.request('settings'))
   }
-  /** Saves the interface theme on the Host, so it survives a change of local port. */
-  async saveResearch(value: { readonly key: string } | { readonly useEnvironment: true }): Promise<void> {
-    await this.request('research', 'PUT', value)
+  async saveResearch(
+    value: { readonly key: string } | { readonly useEnvironment: true },
+    expectedVersion: number,
+  ): Promise<void> {
+    await this.request('research', 'PUT', { ...value, expectedVersion })
   }
-  async removeResearch(): Promise<void> {
-    await this.request('research', 'DELETE')
+  async removeResearch(expectedVersion: number): Promise<void> {
+    await this.request('research', 'DELETE', { expectedVersion })
   }
   async researchSources(
     id: string,
   ): Promise<readonly { title: string; url: string; content: string; sourceId: string; retrievedAt: string }[]> {
     return decodeResearchSources(await this.request(`sessions/${encodeURIComponent(id)}/research-sources`))
   }
-  async saveTheme(theme: WebPreferences['theme']): Promise<WebPreferences['theme']> {
-    return decodeTheme(await this.request('preferences', 'PUT', { theme }))
+  async preferences(): Promise<WebPreferences> {
+    return decodePreferences(await this.request('preferences'))
+  }
+  async saveTheme(theme: WebPreferences['theme'], expectedVersion: number): Promise<WebPreferences> {
+    return decodePreferences(await this.request('preferences', 'PUT', { theme, expectedVersion }))
   }
 
   async sessions(): Promise<readonly WebSession[]> {

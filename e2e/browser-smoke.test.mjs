@@ -243,7 +243,10 @@ async function requestCount(app, sessionId) {
 // B02: requests run through the OpenCode CLI; the fake CLI fixture stands in for it (never live-model evidence).
 const fakeOpenCode = dir => ({
   executable: process.execPath,
-  launcherArgs: [fileURLToPath(new URL('../apps/host/tests/fixtures/fake-opencode.mjs', import.meta.url)), join(dir, 'opencode.log')],
+  launcherArgs: [
+    fileURLToPath(new URL('../apps/host/tests/fixtures/fake-opencode.mjs', import.meta.url)),
+    join(dir, 'opencode.log'),
+  ],
   version: 'fake-1.0.0',
 })
 
@@ -817,7 +820,9 @@ test('web-image Outline completion clears request controls and history reopens a
   }
   await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
   let unknownLicence = false
-  const png = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const png = await readFile(
+    new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   app = await startLocalWeb({
     dataDir: join(dir, 'data'),
     ...fixtureProvider('workflow'),
@@ -1948,7 +1953,9 @@ test('attachments survive reload and Chat switching, preview safely, reject inva
   })
   await protocol.call('DOM.setFileInputFiles', {
     nodeId: pickerNode.nodeId,
-    files: [fileURLToPath(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))],
+    files: [
+      fileURLToPath(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url)),
+    ],
   })
   await eventually(
     () =>
@@ -2518,7 +2525,9 @@ test('Browser shows a chat that another client creates, from the chats notice of
   )
   assert.ok((await evaluate('window.__chatListReads')) >= 1, 'Browser must read the chat list again')
   assert.equal(
-    await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId === '${created.sessionId}'`),
+    await evaluate(
+      `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId === '${created.sessionId}'`,
+    ),
     false,
     'A chats notice must not open the new chat',
   )
@@ -2537,7 +2546,12 @@ async function openProviderChanges(t, name) {
   })
   state.session = await openBrowser(dir)
   const providerAccess = { check: async () => {}, catalog: async () => [] }
-  const options = { dataDir: join(dir, 'data'), home: join(dir, 'home'), ...fixtureProvider('providers'), providerAccess }
+  const options = {
+    dataDir: join(dir, 'data'),
+    home: join(dir, 'home'),
+    ...fixtureProvider('providers'),
+    providerAccess,
+  }
   state.app = await startLocalWeb(options)
   const { protocol, evaluate } = state.session
   await protocol.call('Page.enable')
@@ -2651,7 +2665,9 @@ test('Browser updates the open draft from the draft notice of /api/sessions/:ses
     () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
     'Browser boot failed',
   )
-  const sessionId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  const sessionId = await evaluate(
+    `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`,
+  )
   await delay(300)
   const saved = await fetch(`${state.app.origin}/api/sessions/${sessionId}/draft`, {
     method: 'PUT',
@@ -2700,7 +2716,9 @@ test('A draft save after a change in another client gets DRAFT_CONFLICT, keeps t
     () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
     'Browser boot failed',
   )
-  const sessionId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  const sessionId = await evaluate(
+    `document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`,
+  )
   await delay(300)
   await evaluate(`{
     const original = window.fetch;
@@ -2734,4 +2752,145 @@ test('A draft save after a change in another client gets DRAFT_CONFLICT, keeps t
     'DRAFT_CONFLICT must keep the user text',
   )
   assert.equal(await evaluate('window.__draftPuts'), 1, 'The Browser must not send a stale draft write again')
+})
+
+const freeResearchUsage = {
+  key: { usage: 0, limit: null },
+  account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+}
+
+test('Browser updates research controls and theme from a preferences notice on /api/changes', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-preferences-changes-'))
+  const state = {}
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  state.app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: join(dir, 'home'),
+    researchAccess: { key: 'notice-research-key', fetch: async () => Response.json(freeResearchUsage) },
+  })
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.public-research-choice:not(:disabled)')`),
+    'Browser did not enable research from startup env key',
+  )
+  await delay(300)
+  const headers = { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' }
+  const removed = await fetch(`${state.app.origin}/api/research`, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify({ expectedVersion: 0 }),
+  })
+  assert.equal(removed.status, 200)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.public-research-choice').disabled && document.querySelector('.research-info').textContent === 'Chưa cấu hình'`,
+      ),
+    'Browser did not disable research after preferences notice',
+  )
+  const themed = await fetch(`${state.app.origin}/api/preferences`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ theme: 'dark', expectedVersion: 1 }),
+  })
+  assert.equal(themed.status, 200)
+  await eventually(
+    () => evaluate(`document.documentElement.dataset.theme === 'dark'`),
+    'Browser did not apply dark theme after preferences notice',
+  )
+})
+
+test('A research save after a change in another client gets PREFERENCES_STALE, refreshes settings and does not send again', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-preferences-stale-'))
+  const state = {}
+  let tavilyCalls = 0
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  state.app = await startLocalWeb({
+    dataDir: join(dir, 'data'),
+    home: join(dir, 'home'),
+    researchAccess: {
+      key: 'stale-research-key',
+      fetch: async () => {
+        tavilyCalls += 1
+        return Response.json(freeResearchUsage)
+      },
+    },
+  })
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.public-research-choice:not(:disabled)')`),
+    'Browser boot failed',
+  )
+  await delay(300)
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.research-dialog').open`), 'Research dialog missing')
+  await evaluate(
+    `{const input=document.querySelector('.research-dialog input[type=password]');input.value='typed-in-dialog'} true`,
+  )
+  const headers = { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' }
+  const remote = await fetch(`${state.app.origin}/api/research`, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify({ expectedVersion: 0 }),
+  })
+  assert.equal(remote.status, 200)
+  await eventually(
+    () => evaluate(`document.querySelector('.research-info').textContent === 'Chưa cấu hình'`),
+    'Browser did not receive the preferences notice',
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('.research-dialog input[type=password]').value`),
+    'typed-in-dialog',
+    'A preferences notice must not clear the open research input',
+  )
+  await evaluate(`{
+    const original = window.fetch;
+    window.__researchWrites = 0;
+    window.__settingsReadsAfterSubmit = 0;
+    window.fetch = async (url, init) => {
+      if (String(url).endsWith('/api/research') && init?.method === 'PUT') window.__researchWrites += 1;
+      if (String(url).endsWith('/api/settings') && (!init?.method || init.method === 'GET') && window.__researchWrites > 0) window.__settingsReadsAfterSubmit += 1;
+      return original(url, init);
+    };
+    [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra và lưu key').click();
+  } true`)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.research-dialog [role=status]').textContent.includes('vừa thay đổi ở nơi khác')`,
+      ),
+    'Browser did not show the PREFERENCES_STALE message',
+  )
+  await delay(300)
+  assert.equal(
+    await evaluate('window.__settingsReadsAfterSubmit'),
+    1,
+    'Browser must read settings after the stale submission',
+  )
+  assert.equal(await evaluate('window.__researchWrites'), 1, 'Browser must not send the stale research write again')
+  assert.equal(tavilyCalls, 0, 'A stale research save must not call Tavily')
 })

@@ -70,7 +70,7 @@ test('real CLI calls the Host research tool using real free Tavily and retains a
     assert.equal(response.ok, true, `Host status ${response.status}`)
     return response.json()
   }
-  await api('research', 'PUT', { useEnvironment: true })
+  await api('research', 'PUT', { useEnvironment: true, expectedVersion: (await api('settings')).preferencesVersion })
   await api('providers/local', 'PUT', {
     displayName: 'Local research fixture',
     protocol: 'chat-completions',

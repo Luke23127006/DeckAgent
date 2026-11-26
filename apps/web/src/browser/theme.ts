@@ -1,5 +1,5 @@
 import { button, element } from './dom.ts'
-import type { ManagementClient } from './transport/index.ts'
+import { ManagementError, type ManagementClient } from './transport/index.ts'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -45,7 +45,11 @@ function pressPoint(event: MouseEvent, target: HTMLElement): { x: number; y: num
  * Light, dark or follow-the-system switch. The Host keeps the choice and `/theme.js` applies it
  * before first paint, so the page starts in `data-theme` already; nothing is read from browser storage.
  */
-export function themeControl(management: ManagementClient): HTMLElement {
+export function themeControl(
+  management: ManagementClient,
+  getPreferencesVersion: () => number,
+  onPreferencesVersion: (version: number) => void,
+): { readonly node: HTMLElement; update(theme: Theme): void } {
   const group = element('div', undefined, 'theme-control')
   group.setAttribute('role', 'group')
   group.setAttribute('aria-label', 'Giao diện')
@@ -58,13 +62,25 @@ export function themeControl(management: ManagementClient): HTMLElement {
       apply(value, pressPoint(event, choice))
       sync()
       group.removeAttribute('title')
-      management.saveTheme(value).catch(() => {
-        // Keep what the user sees equal to what the Host has saved.
-        current = previous
-        apply(previous)
-        sync()
-        group.title = 'Không lưu được lựa chọn giao diện. Hãy thử lại.'
-      })
+      management
+        .saveTheme(value, getPreferencesVersion())
+        .then(saved => onPreferencesVersion(saved.version))
+        .catch(async error => {
+          if (error instanceof ManagementError && error.message === 'PREFERENCES_STALE') {
+            const saved = await management.preferences().catch(() => undefined)
+            current = saved?.theme ?? previous
+            apply(current)
+            sync()
+            if (saved) onPreferencesVersion(saved.version)
+            group.title = 'Giao diện vừa thay đổi ở nơi khác. Đã cập nhật theo cài đặt mới nhất.'
+            return
+          }
+          // Keep what the user sees equal to what the Host has saved.
+          current = previous
+          apply(previous)
+          sync()
+          group.title = 'Không lưu được lựa chọn giao diện. Hãy thử lại.'
+        })
     })
     return [value, choice] as const
   })
@@ -73,5 +89,12 @@ export function themeControl(management: ManagementClient): HTMLElement {
   }
   sync()
   group.append(...buttons.map(([, choice]) => choice))
-  return group
+  return {
+    node: group,
+    update(theme) {
+      current = theme
+      apply(theme)
+      sync()
+    },
+  }
 }

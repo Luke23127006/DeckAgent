@@ -8,8 +8,6 @@ import type {
   StoredActivity,
   StoredRequest,
   TerminalStatus,
-  WebPreferences,
-  WebSettings,
 } from '@deckagent/host-contracts'
 import type { RequestStore } from '@deckagent/session-persistence'
 import type { Router } from 'express'
@@ -79,17 +77,6 @@ export interface BriefManagement {
 
 /** Management inputs are untrusted JSON; application validates before mutating storage. */
 export interface WebManagement {
-  readonly research?: {
-    save(value: unknown): Promise<void>
-    remove(): Promise<void>
-    sources(sessionId: string): Promise<unknown>
-  }
-  /** Optional: an older application without it simply has no `/api/preferences`. */
-  readonly preferences?: {
-    get(): Promise<WebPreferences>
-    save(value: unknown): Promise<WebPreferences>
-  }
-  settings(): Promise<WebSettings>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
 }

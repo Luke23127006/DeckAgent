@@ -1,4 +1,4 @@
-import { DeckError, ImagePreparationError } from '@deckagent/deck'
+﻿import { DeckError, ImagePreparationError } from '@deckagent/deck'
 import type {
   ImageAttempt,
   ImageCredit,
@@ -9,8 +9,8 @@ import type {
 } from '@deckagent/deck'
 import { ImageReadError, ImageSourceError, imageSource } from '../../integrations/images/index.ts'
 import type { CommonsCandidate } from '../../integrations/images/index.ts'
-import type { ImageSearchCandidate } from '../../integrations/research/index.ts'
-import { ResearchFailure } from '../research/index.ts'
+import type { ImageSearchCandidate } from '../../modules/research/index.ts'
+import { ResearchFailure } from '../../modules/research/index.ts'
 import type { WebImageResearch } from './image-research.ts'
 
 const code = (error: unknown) =>

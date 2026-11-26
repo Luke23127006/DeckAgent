@@ -8,8 +8,8 @@ import type {
   OutlineImageReview,
   ImageSourceCheck,
 } from '@deckagent/deck'
-import { ResearchFailure } from '../research/index.ts'
-import type { ResearchCoordinator } from '../research/index.ts'
+import { ResearchFailure } from '../../modules/research/index.ts'
+import type { ResearchCoordinator } from '../../modules/research/index.ts'
 import type { CommonsImages, CommonsCandidate } from '../../integrations/images/index.ts'
 import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from '../../integrations/images/index.ts'
 import { imagePageCredit } from './image-credit.ts'

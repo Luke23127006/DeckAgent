@@ -6,6 +6,9 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
+- Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
+
 - Connect the Browser to `GET /api/sessions/:sessionId/changes` for `draft` notices, remove the 500 ms attachment poll and window focus sync from `DraftSync`, and keep unsaved text with a clear message on `DRAFT_CONFLICT` without resending. Task 38 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add Zod decoders `decodeDraftSaveBody` and `decodeAttachmentRemoveBody` in `@deckagent/host-contracts` and require `expectedRevision` on `PUT /api/sessions/:sessionId/draft`. Task 37 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add `GET /api/sessions/:sessionId/changes` to the Host `ChangeFeed`, track a per-chat draft notice version in `MemoryDraftStore` apart from `draft.revision`, and publish `draft` notices after each draft write and attachment settlement. Task 36 is `Done` in `docs/build/refactor/target-structure/plan/`.

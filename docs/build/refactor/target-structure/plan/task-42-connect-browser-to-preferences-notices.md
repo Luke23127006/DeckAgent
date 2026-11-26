@@ -43,7 +43,7 @@ After this task, a newer `preferences` notice on `GET /api/changes` makes the Br
 
 **Forbidden:** send a second write after `PREFERENCES_STALE`. Clear the key input of an open `.research-dialog` when a `preferences` notice arrives.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -53,7 +53,7 @@ Run: `git grep -n "^| 41 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add this constant and these two tests at the end of `e2e/browser-smoke.test.mjs`:
 
@@ -199,26 +199,26 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="prefe
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the section `Interfaces`. Run `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="preferences notice|PREFERENCES_STALE" e2e/browser-smoke.test.mjs`.
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 1. In `apps/web/src/browser/boot.ts`, remove the `notice.topic === 'preferences'` branch. Build and run `node --test --test-name-pattern="preferences notice" e2e/browser-smoke.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 2. In `apps/web/src/browser/features/research/research-view.ts`, remove the `PREFERENCES_STALE` entry from `messages`. Build and run `node --test --test-name-pattern="PREFERENCES_STALE" e2e/browser-smoke.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

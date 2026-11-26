@@ -141,7 +141,8 @@ test('first boot -> default workspace -> create chat -> restart -> reopen with t
   const inDefault = (await call('sessions', 'POST', {})).data
   assert.equal(inDefault.workspaceId, 'default')
   assert.equal(first.version, 0)
-  const added = (await call('workspaces', 'POST', { folder: await project('Dự án'), expectedVersion: first.version })).data
+  const added = (await call('workspaces', 'POST', { folder: await project('Dự án'), expectedVersion: first.version }))
+    .data
   const workspaceId = added.selectedId
   assert.notEqual(workspaceId, 'default')
   assert.equal(added.workspaces.find(item => item.id === workspaceId).name, 'Dự án')
@@ -177,13 +178,17 @@ test('the same folder twice gives one workspace; relink keeps ID and chats; remo
   ]
   const firstAdd = (await call('workspaces', 'POST', { folder, expectedVersion: 0 })).data
   const id = firstAdd.selectedId
-  const selectedDefault = (await call('workspaces/selected', 'PUT', { id: 'default', expectedVersion: firstAdd.version })).data
-  const twice = (await call('workspaces', 'POST', { folder: `${folder}\\.`, expectedVersion: selectedDefault.version })).data
+  const selectedDefault = (
+    await call('workspaces/selected', 'PUT', { id: 'default', expectedVersion: firstAdd.version })
+  ).data
+  const twice = (await call('workspaces', 'POST', { folder: `${folder}\\.`, expectedVersion: selectedDefault.version }))
+    .data
   assert.equal(twice.selectedId, id, 'The folder that already has a workspace makes it the workspace in use')
   assert.equal(twice.workspaces.length, 2)
   const chat = (await call('sessions', 'POST', {})).data
   await call(`sessions/${chat.sessionId}/draft`, 'PUT', { text: 'kept', expectedRevision: 0 })
-  const relinked = (await call(`workspaces/${id}/folder`, 'PUT', { folder: other, expectedVersion: twice.version })).data
+  const relinked = (await call(`workspaces/${id}/folder`, 'PUT', { folder: other, expectedVersion: twice.version }))
+    .data
   assert.equal(relinked.workspaces.find(item => item.id === id).folder.endsWith('other'), true)
   assert.equal(
     (await call('sessions')).data.find(item => item.sessionId === chat.sessionId).workspaceId,
@@ -194,7 +199,10 @@ test('the same folder twice gives one workspace; relink keeps ID and chats; remo
   assert.deepEqual([inUse.status, inUse.data.error.code], [409, 'WORKSPACE_DEFAULT'])
   const secondAdd = (await call('workspaces', 'POST', { folder, expectedVersion: relinked.version })).data
   const second = secondAdd.selectedId
-  const conflict = await call(`workspaces/${second}/folder`, 'PUT', { folder: other, expectedVersion: secondAdd.version })
+  const conflict = await call(`workspaces/${second}/folder`, 'PUT', {
+    folder: other,
+    expectedVersion: secondAdd.version,
+  })
   assert.deepEqual(
     [conflict.status, conflict.data.error.code, conflict.data.error.detail.workspaceName],
     [409, 'WORKSPACE_FOLDER_IN_USE', 'project'],
@@ -229,10 +237,7 @@ test('drafts: each chat keeps its own while DeckAgent runs, and none is kept aft
   assert.equal((await call(`sessions/${b}/draft`)).data.text, 'Draft B')
   assert.equal((await call('sessions')).data.find(item => item.sessionId === a).hasDraft, true)
   assert.equal((await call(`sessions/missing/draft`)).status, 404)
-  assert.equal(
-    (await call(`sessions/${a}/draft`, 'PUT', { text: 'x'.repeat(16001), expectedRevision: 1 })).status,
-    413,
-  )
+  assert.equal((await call(`sessions/${a}/draft`, 'PUT', { text: 'x'.repeat(16001), expectedRevision: 1 })).status, 413)
   assert.equal((await call(`sessions/${a}/draft`, 'PUT', { text: 'x', extra: 1, expectedRevision: 1 })).status, 400)
   assert.equal((await call(`sessions/${a}/draft`)).data.text, 'Draft A', 'A refused draft changes nothing')
   await app.close()
@@ -319,7 +324,11 @@ test('a new chat gets the most recent model choice of any chat while it is selec
     { provider: 'fixture', model: 'first' },
     'The choice survives a restart',
   )
-  assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: (await call('settings')).data.providersVersion })).status, 200)
+  assert.equal(
+    (await call('providers/fixture', 'DELETE', { expectedVersion: (await call('settings')).data.providersVersion }))
+      .status,
+    200,
+  )
   assert.equal(
     (await call('sessions', 'POST', {})).data.selection,
     undefined,
@@ -501,9 +510,13 @@ test('provider writes increase the providers version and send the providers noti
   const call = api(app)
   const nextNotice = await changeNotices(app, t)
   assert.deepEqual(await nextNotice('providers'), { topic: 'providers', key: 'host', version: 0 })
+  assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 0 })
   assert.equal((await call('settings')).data.providersVersion, 0)
 
-  assert.equal((await call('providers/fixture', 'PUT', { ...fixtureProvider(['a', 'b']), new: true, expectedVersion: 0 })).status, 200)
+  assert.equal(
+    (await call('providers/fixture', 'PUT', { ...fixtureProvider(['a', 'b']), new: true, expectedVersion: 0 })).status,
+    200,
+  )
   assert.deepEqual(await nextNotice(), { topic: 'providers', key: 'host', version: 1 })
   const first = await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'b' } })
   assert.equal(first.status, 201)
@@ -529,17 +542,28 @@ test('provider writes increase the providers version and send the providers noti
   assert.equal((await api(restarted)('settings')).data.providersVersion, 3, 'A start keeps the version')
 })
 
-test('web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and preferences', {
+test('web.sqlite schema 1 upgrades to schema 3 in place and keeps providers and preferences', {
   timeout: 30000,
 }, async t => {
   const { start, options } = await area(t)
   const first = await start({ providerAccess })
   const call = api(first)
-  assert.equal((await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })).status, 200)
+  assert.equal(
+    (await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })).status,
+    200,
+  )
   const gone = { ...fixtureProvider(['b']), displayName: 'Gone', new: true }
   assert.equal((await call('providers/gone', 'PUT', { ...gone, expectedVersion: 1 })).status, 200)
   assert.equal((await call('providers/gone', 'DELETE', { expectedVersion: 2 })).status, 200)
-  assert.equal((await call('preferences', 'PUT', { theme: 'dark' })).status, 200)
+  assert.equal(
+    (
+      await call('preferences', 'PUT', {
+        theme: 'dark',
+        expectedVersion: (await call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    200,
+  )
   await first.close()
   const path = join(options.dataDir, 'db', 'web.sqlite')
   const old = new DatabaseSync(path)
@@ -553,23 +577,29 @@ test('web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and 
     ['kept'],
   )
   assert.equal(settings.providersVersion, 0)
-  assert.deepEqual((await api(second)('preferences')).data, { theme: 'dark' })
+  assert.deepEqual((await api(second)('preferences')).data, { theme: 'dark', version: 0 })
   const check = new DatabaseSync(path, { readOnly: true })
-  assert.equal(check.prepare('PRAGMA user_version').get().user_version, 2)
+  assert.equal(check.prepare('PRAGMA user_version').get().user_version, 3)
   assert.deepEqual(
     check
       .prepare('SELECT topic, key, version FROM change_versions')
       .all()
       .map(row => ({ ...row })),
-    [{ topic: 'providers', key: 'host', version: 0 }],
+    [
+      { topic: 'providers', key: 'host', version: 0 },
+      { topic: 'preferences', key: 'host', version: 0 },
+    ],
   )
   check.close()
   await second.close()
 
   const future = new DatabaseSync(path)
-  future.exec('PRAGMA user_version=3')
+  future.exec('PRAGMA user_version=4')
   future.close()
-  await assert.rejects(start({ providerAccess }), error => error instanceof StorageError && error.code === 'STORAGE_CORRUPT')
+  await assert.rejects(
+    start({ providerAccess }),
+    error => error instanceof StorageError && error.code === 'STORAGE_CORRUPT',
+  )
 })
 
 test('a provider write with an old expectedVersion gets PROVIDERS_STALE and changes nothing', {
@@ -577,7 +607,14 @@ test('a provider write with an old expectedVersion gets PROVIDERS_STALE and chan
 }, async t => {
   const { start } = await area(t)
   let checks = 0
-  const app = await start({ providerAccess: { check: async () => { checks += 1 }, catalog: async () => [] } })
+  const app = await start({
+    providerAccess: {
+      check: async () => {
+        checks += 1
+      },
+      catalog: async () => [],
+    },
+  })
   const call = api(app)
   const saved = await call('providers/fixture', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })
   assert.equal(saved.status, 200)
@@ -601,4 +638,174 @@ test('a provider write with an old expectedVersion gets PROVIDERS_STALE and chan
   assert.deepEqual([noBody.status, noBody.data.error.code], [400, 'INVALID_REQUEST'])
   assert.equal((await call('providers/fixture', 'DELETE', { expectedVersion: 1 })).status, 200)
   assert.equal((await call('settings')).data.providersVersion, 2)
+})
+
+test('preferences and research writes increase the preferences version, send notices and keep version on rememberSelection and reopen', {
+  timeout: 30000,
+}, async t => {
+  const { start } = await area(t)
+  const freeUsage = {
+    key: { usage: 0, limit: null },
+    account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+  }
+  const researchAccess = {
+    key: 'env-research-key',
+    fetch: async (_url, init) =>
+      init?.headers?.Authorization === 'Bearer bad-key'
+        ? new Response('denied', { status: 401 })
+        : Response.json(freeUsage),
+  }
+  const app = await start({ providerAccess, researchAccess })
+  const call = api(app)
+  const nextNotice = await changeNotices(app, t)
+  assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 0 })
+  assert.equal((await call('settings')).data.preferencesVersion, 0)
+  assert.deepEqual((await call('preferences')).data, { theme: 'system', version: 0 })
+
+  const dark = await call('preferences', 'PUT', {
+    theme: 'dark',
+    expectedVersion: (await call('settings')).data.preferencesVersion,
+  })
+  assert.equal(dark.status, 200)
+  assert.deepEqual(dark.data, { theme: 'dark', version: 1 })
+  assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 1 })
+
+  assert.equal(
+    (
+      await call('research', 'PUT', {
+        useEnvironment: true,
+        expectedVersion: (await call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    200,
+  )
+  assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 2 })
+  assert.equal((await call('settings')).data.preferencesVersion, 2)
+
+  assert.equal(
+    (
+      await call('research', 'PUT', {
+        key: 'bad-key',
+        expectedVersion: (await call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    503,
+  )
+  assert.equal((await call('settings')).data.preferencesVersion, 2, 'A refused write keeps the version')
+
+  assert.equal(
+    (await call('research', 'DELETE', { expectedVersion: (await call('settings')).data.preferencesVersion })).status,
+    200,
+  )
+  assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 3 })
+
+  assert.equal(
+    (await call('providers/fixture', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })).status,
+    200,
+  )
+  assert.equal((await call('sessions', 'POST', { selection: { provider: 'fixture', model: 'a' } })).status, 201)
+  assert.equal((await call('settings')).data.preferencesVersion, 3, 'rememberSelection keeps the preferences version')
+
+  await app.close()
+  const restarted = await start({ providerAccess, researchAccess })
+  assert.equal((await api(restarted)('settings')).data.preferencesVersion, 3, 'A start keeps the version')
+})
+
+test('web.sqlite schema 2 upgrades to schema 3 in place and keeps providers, providersVersion and preferences', {
+  timeout: 30000,
+}, async t => {
+  const { start, options } = await area(t)
+  const first = await start({ providerAccess })
+  const call = api(first)
+  assert.equal(
+    (await call('providers/kept', 'PUT', { ...fixtureProvider(['a']), new: true, expectedVersion: 0 })).status,
+    200,
+  )
+  assert.equal(
+    (
+      await call('preferences', 'PUT', {
+        theme: 'dark',
+        expectedVersion: (await call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    200,
+  )
+  await first.close()
+
+  const path = join(options.dataDir, 'db', 'web.sqlite')
+  const old = new DatabaseSync(path)
+  old.exec("DELETE FROM change_versions WHERE topic = 'preferences'; PRAGMA user_version=2")
+  old.close()
+
+  const second = await start({ providerAccess })
+  const settings = (await api(second)('settings')).data
+  assert.equal(settings.providersVersion, 1)
+  assert.deepEqual(
+    settings.providers.map(({ id, displayName, protocol, baseUrl, models }) => ({
+      id,
+      displayName,
+      protocol,
+      baseUrl,
+      models,
+    })),
+    [
+      {
+        id: 'kept',
+        displayName: 'Fixture',
+        protocol: 'chat-completions',
+        baseUrl: 'http://127.0.0.1:1',
+        models: ['a'],
+      },
+    ],
+  )
+  assert.equal(settings.preferencesVersion, 0)
+  assert.deepEqual((await api(second)('preferences')).data, { theme: 'dark', version: 0 })
+  const check = new DatabaseSync(path, { readOnly: true })
+  assert.equal(check.prepare('PRAGMA user_version').get().user_version, 3)
+  check.close()
+})
+
+test('research and preferences writes reject a stale expectedVersion with PREFERENCES_STALE before calling Tavily', {
+  timeout: 30000,
+}, async t => {
+  const { start } = await area(t)
+  let checks = 0
+  const freeUsage = {
+    key: { usage: 0, limit: null },
+    account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
+  }
+  const app = await start({
+    researchAccess: {
+      key: 'env-key',
+      fetch: async () => {
+        checks += 1
+        return Response.json(freeUsage)
+      },
+    },
+  })
+  const call = api(app)
+  assert.equal((await call('preferences', 'PUT', { theme: 'dark', expectedVersion: 0 })).status, 200)
+  const staleTheme = await call('preferences', 'PUT', { theme: 'light', expectedVersion: 0 })
+  assert.deepEqual([staleTheme.status, staleTheme.data.error.code], [409, 'PREFERENCES_STALE'])
+  assert.deepEqual((await call('preferences')).data, { theme: 'dark', version: 1 })
+
+  const staleSave = await call('research', 'PUT', { key: 'new-key', expectedVersion: 0 })
+  assert.deepEqual([staleSave.status, staleSave.data.error.code], [409, 'PREFERENCES_STALE'])
+  assert.equal(checks, 0, 'A stale research save must not call Tavily')
+
+  const staleRemove = await call('research', 'DELETE', { expectedVersion: 0 })
+  assert.deepEqual([staleRemove.status, staleRemove.data.error.code], [409, 'PREFERENCES_STALE'])
+
+  for (const [path, method, body] of [
+    ['preferences', 'PUT', { theme: 'light' }],
+    ['research', 'PUT', { useEnvironment: true }],
+    ['research', 'DELETE', undefined],
+  ]) {
+    const res = await call(path, method, body)
+    assert.deepEqual([res.status, res.data.error.code], [400, 'INVALID_REQUEST'], `${method} ${path}`)
+  }
+  assert.equal((await call('research', 'PUT', { useEnvironment: true, expectedVersion: 1 })).status, 200)
+  assert.equal(checks, 1)
+  assert.equal((await call('research', 'DELETE', { expectedVersion: 2 })).status, 200)
+  assert.equal((await call('settings')).data.preferencesVersion, 3)
 })

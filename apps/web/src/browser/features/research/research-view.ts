@@ -1,8 +1,10 @@
 import type { WebSettings } from '@deckagent/host-contracts'
 import { button, element, field } from '../../dom.ts'
-import type { ManagementClient } from '../../transport/index.ts'
+import { ManagementError, type ManagementClient } from '../../transport/index.ts'
 
 const messages: Readonly<Record<string, string>> = {
+  PREFERENCES_STALE:
+    'Cài đặt tìm kiếm vừa thay đổi ở nơi khác. Đã tải lại trạng thái mới nhất. Hãy kiểm tra rồi thử lại.',
   RESEARCH_FREE_ONLY: 'Chỉ nhận tài khoản Tavily Researcher miễn phí, không có PAYG. Kiểm tra gói tại Tavily.',
   RESEARCH_QUOTA_EXHAUSTED:
     'Đã hết quota miễn phí hoặc không xác minh được hạn mức. Chờ quota mới; không nâng cấp tự động.',
@@ -17,9 +19,12 @@ interface ResearchDialogContext {
   readonly client: ManagementClient
   readonly changed: () => Promise<void>
   readonly chat: () => string | undefined
+  readonly getPreferencesVersion: () => number
 }
 
 interface ResearchDialogState {
+  preferencesVersion: number
+  readonly getPreferencesVersion: () => number
   busy: boolean
   readonly dialog: HTMLDialogElement
   readonly status: HTMLElement
@@ -40,8 +45,13 @@ function performResearch(state: ResearchDialogState, work: () => Promise<void>):
       await work()
       state.key.value = ''
       await state.changed()
+      state.preferencesVersion = state.getPreferencesVersion()
     } catch (error) {
-      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
+      const code = error instanceof ManagementError ? error.message : ''
+      if (code === 'PREFERENCES_STALE') {
+        await state.changed().catch(() => {})
+        state.preferencesVersion = state.getPreferencesVersion()
+      }
       state.status.textContent =
         messages[code] ?? 'Không kết nối được Tavily. Kiểm tra mạng rồi thử lại; cấu hình cũ được giữ.'
     } finally {
@@ -94,19 +104,19 @@ function createResearchActions(
   const perform = (work: () => Promise<void>) => performResearch(state, work)
   const save = button('Kiểm tra và lưu key', () => {
     void perform(async () => {
-      await context.client.saveResearch({ key: state.key.value })
+      await context.client.saveResearch({ key: state.key.value }, state.preferencesVersion)
       state.status.textContent = 'Đã kiểm tra và lưu key cho tài khoản miễn phí.'
     })
   })
   const environment = button('Kiểm tra key từ .env', () => {
     void perform(async () => {
-      await context.client.saveResearch({ useEnvironment: true })
+      await context.client.saveResearch({ useEnvironment: true }, state.preferencesVersion)
       state.status.textContent = 'Key môi trường hợp lệ, tài khoản miễn phí; không sao chép key vào database.'
     })
   })
   const remove = button('Gỡ cấu hình research', () => {
     void perform(async () => {
-      await context.client.removeResearch()
+      await context.client.removeResearch(state.preferencesVersion)
       state.status.textContent = 'Đã tắt research. Request đã bắt đầu giữ cấu hình lúc gửi.'
     })
   })
@@ -135,7 +145,17 @@ function createResearchDialog(context: ResearchDialogContext) {
   key.maxLength = 4096
   const content = element('section')
   const actions = element('div')
-  const state: ResearchDialogState = { busy: false, dialog, status, key, content, actions, changed: context.changed }
+  const state: ResearchDialogState = {
+    preferencesVersion: 0,
+    getPreferencesVersion: context.getPreferencesVersion,
+    busy: false,
+    dialog,
+    status,
+    key,
+    content,
+    actions,
+    changed: context.changed,
+  }
   const { sources } = createResearchActions(context, state)
   dialog.append(
     element('h2', 'Nguồn công khai · Tavily'),
@@ -159,6 +179,7 @@ function createResearchDialog(context: ResearchDialogContext) {
     content.replaceChildren()
   })
   const openSettings = () => {
+    state.preferencesVersion = context.getPreferencesVersion()
     status.textContent = 'Key đã lưu không bao giờ được hiện lại. Để dùng .env, bấm kiểm tra key môi trường.'
     content.replaceChildren()
     dialog.showModal()
@@ -172,9 +193,10 @@ export function researchView(
   root: HTMLElement,
   changed: () => Promise<void>,
   chat: () => string | undefined,
+  getPreferencesVersion: () => number,
 ) {
   const selected = new Map<string, boolean>()
-  const dialog = createResearchDialog({ client, changed, chat })
+  const dialog = createResearchDialog({ client, changed, chat, getPreferencesVersion })
   const controls = createResearchControls(dialog.openSettings)
   controls.choice.addEventListener('change', () => {
     const id = chat()

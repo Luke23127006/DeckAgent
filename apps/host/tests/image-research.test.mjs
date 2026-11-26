@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { TavilyClient } from '../lib/types/integrations/research/index.js'
+import { TavilyClient } from '../lib/types/modules/research/index.js'
 import { PublicImageReader } from '../lib/types/integrations/images/index.js'
 import { WebImageResearch } from '../lib/types/features/deck/index.js'
 import { DeckStore, outlineImageNeeds } from '@deckagent/deck'

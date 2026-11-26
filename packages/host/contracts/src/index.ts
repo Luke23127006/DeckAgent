@@ -72,3 +72,10 @@ export {
   decodeWorkspaceRenameBody,
   decodeWorkspaceSelectBody,
 } from './workspace-validation.ts'
+export {
+  decodePreferencesSaveBody,
+  decodeResearchSaveBody,
+  decodeResearchRemoveBody,
+  type ResearchSaveBody,
+  type PreferencesSaveBody,
+} from './preferences-validation.ts'

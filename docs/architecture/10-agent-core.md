@@ -326,7 +326,7 @@ Bảng và trạng thái hiện tại lấy từ chẩn đoán change notice [[9
 | `chats` | `'host'` | `change_versions` trong `sessions.sqlite` | `sessions`, `messages` | Không có `version` | Không có. Lệnh ghi chat không gửi `expectedVersion` |
 | `workspaces` | `'host'` | `change_versions` | `workspaces`, `registry_state` | Không có `version` | `WORKSPACES_STALE` |
 | `providers` | `'host'` | `change_versions` | `providers` | Có `version` trong `change_versions` của `web.sqlite` (schema 2), notice `providers` sau commit | `PROVIDERS_STALE` |
-| `preferences` | `'host'` | `change_versions` | `preferences` | Không có `version`. Giá trị `research` có `revision` ngẫu nhiên | `PREFERENCES_STALE` |
+| `preferences` | `'host'` | `change_versions` | `preferences` | Có `version` trong `change_versions` của `web.sqlite` (schema 3), notice `preferences` sau commit cho `theme` và `research` (`lastSelection` không tăng `version`) | `PREFERENCES_STALE` |
 
 Các bảng sau không có change notice. `requests`, `request_events` và `request_approvals` dùng event log với cursor `sequence`. `messages`, `research_sources`, `request_research`, `source_reads`, `sources`, `runtime_bindings` và `image_search_attempts` do run ghi hoặc chỉ dùng nội bộ. Browser biết các bảng này đổi qua event của request.
 

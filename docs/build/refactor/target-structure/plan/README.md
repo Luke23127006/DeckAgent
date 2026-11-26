@@ -321,10 +321,10 @@ Revision 3i adds these failure modes:
 | 36 | Done | [Add session change route and draft change notices](task-36-add-session-changes-and-draft-notices.md) ([report](../reports/task-36-add-session-changes-and-draft-notices.md)) |
 | 37 | Done | [Require expectedRevision with Zod decoders on draft and attachment writes](task-37-require-draft-expected-revision.md) ([report](../reports/task-37-require-draft-expected-revision.md)) |
 | 38 | Done | [Connect the Browser to draft notices and handle DRAFT_CONFLICT](task-38-connect-browser-to-draft-notices.md) ([report](../reports/task-38-connect-browser-to-draft-notices.md)) |
-| 39 | Pending | [Move the research module, credentials and settings routes](task-39-move-research-module.md) |
-| 40 | Pending | [Upgrade web.sqlite to schema 3 and add preferences version and notices](task-40-add-preferences-version-and-notices.md) |
-| 41 | Pending | [Add Zod decoders and PREFERENCES_STALE check on research and preferences writes](task-41-add-preferences-stale-check.md) |
-| 42 | Pending | [Connect the Browser to preferences notices and handle PREFERENCES_STALE](task-42-connect-browser-to-preferences-notices.md) |
+| 39 | Done | [Move the research module, credentials and settings routes](task-39-move-research-module.md) ([report](../reports/task-39-move-research-module.md)) |
+| 40 | Done | [Upgrade web.sqlite to schema 3 and add preferences version and notices](task-40-add-preferences-version-and-notices.md) ([report](../reports/task-40-add-preferences-version-and-notices.md)) |
+| 41 | Done | [Add Zod decoders and PREFERENCES_STALE check on research and preferences writes](task-41-add-preferences-stale-check.md) ([report](../reports/task-41-add-preferences-stale-check.md)) |
+| 42 | Done | [Connect the Browser to preferences notices and handle PREFERENCES_STALE](task-42-connect-browser-to-preferences-notices.md) ([report](../reports/task-42-connect-browser-to-preferences-notices.md)) |
 
 ## Next revision
 

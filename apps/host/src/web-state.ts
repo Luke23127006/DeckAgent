@@ -2,10 +2,15 @@ import { DatabaseSync } from 'node:sqlite'
 import type { WebPreferences } from '@deckagent/host-contracts'
 import type { ModelSelection } from '@deckagent/session-persistence'
 
-export type WebStateErrorCode = 'INVALID_SELECTION' | 'INVALID_REQUEST' | 'SETTINGS_SCHEMA' | 'SETTINGS_STORAGE'
+export type WebStateErrorCode =
+  | 'INVALID_SELECTION'
+  | 'INVALID_REQUEST'
+  | 'SETTINGS_SCHEMA'
+  | 'SETTINGS_STORAGE'
+  | 'PREFERENCES_STALE'
 
 const applicationId = 1145132866
-const schemaVersion = 2
+const schemaVersion = 3
 
 const changeVersionsTable = `
   CREATE TABLE change_versions (
@@ -15,6 +20,7 @@ const changeVersionsTable = `
     PRIMARY KEY (topic, key)
   ) STRICT;
   INSERT INTO change_versions (topic, key, version) VALUES ('providers', 'host', 0);
+  INSERT INTO change_versions (topic, key, version) VALUES ('preferences', 'host', 0);
 `
 
 export class WebStateError extends Error {
@@ -52,6 +58,7 @@ export class WebState {
   constructor(
     path: string,
     private readonly isSelectable: (selection: ModelSelection) => boolean,
+    private readonly onPreferencesChanged?: (version: number) => void,
   ) {
     this.db = new DatabaseSync(path)
     try {
@@ -64,7 +71,7 @@ export class WebState {
         owner === 0 &&
         version === 0 &&
         !this.db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
-      if (!fresh && (owner !== applicationId || (version !== 1 && version !== schemaVersion)))
+      if (!fresh && (owner !== applicationId || (version !== 1 && version !== 2 && version !== schemaVersion)))
         throw new WebStateError('SETTINGS_SCHEMA')
       this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
       // Requests and activities moved to Session persistence (B02); older files keep their unused tables unchanged.
@@ -73,10 +80,13 @@ export class WebState {
         CREATE TABLE providers (id TEXT PRIMARY KEY, payload TEXT NOT NULL) STRICT;
         ${changeVersionsTable}
         PRAGMA application_id=${applicationId}; PRAGMA user_version=${schemaVersion};`)
-      // Schema 2 adds the version of each aggregate's change notice; a schema 1 file keeps every row.
       else if (version === 1)
         this.db.exec(`
         ${changeVersionsTable}
+        PRAGMA user_version=${schemaVersion};`)
+      else if (version === 2)
+        this.db.exec(`
+        INSERT OR IGNORE INTO change_versions (topic, key, version) VALUES ('preferences', 'host', 0);
         PRAGMA user_version=${schemaVersion};`)
       // Added after schema version 1 shipped: created on demand so existing data files keep working.
       this.db.exec('CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT')
@@ -90,24 +100,42 @@ export class WebState {
     }
   }
 
-  preferences(): WebPreferences {
-    const row = this.db.prepare("SELECT value FROM preferences WHERE key='theme'").get()
-    return { theme: row?.value === 'light' || row?.value === 'dark' ? row.value : 'system' }
+  preferencesVersion(): number {
+    const row = this.db
+      .prepare("SELECT version FROM change_versions WHERE topic = 'preferences' AND key = 'host'")
+      .get()
+    return row ? Number(row.version) : 0
   }
 
-  savePreferences(value: unknown): WebPreferences {
-    if (
-      !record(value) ||
-      Object.keys(value).some(key => key !== 'theme') ||
-      (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system')
-    )
-      throw new WebStateError('INVALID_REQUEST')
-    this.db
-      .prepare(
-        "INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-      )
-      .run(value.theme)
-    return this.preferences()
+  preferences(): WebPreferences {
+    const row = this.db.prepare("SELECT value FROM preferences WHERE key='theme'").get()
+    return {
+      theme: row?.value === 'light' || row?.value === 'dark' ? row.value : 'system',
+      version: this.preferencesVersion(),
+    }
+  }
+
+  savePreferences(theme: WebPreferences['theme'], expectedVersion: number): WebPreferences {
+    this.db.exec('BEGIN IMMEDIATE')
+    let version: number
+    try {
+      if (this.preferencesVersion() !== expectedVersion) throw new WebStateError('PREFERENCES_STALE')
+      this.db
+        .prepare(
+          "INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        )
+        .run(theme)
+      this.db
+        .prepare("UPDATE change_versions SET version = version + 1 WHERE topic = 'preferences' AND key = 'host'")
+        .run()
+      version = this.preferencesVersion()
+      this.db.exec('COMMIT')
+    } catch (error) {
+      this.db.exec('ROLLBACK')
+      throw error
+    }
+    this.onPreferencesChanged?.(version)
+    return { theme, version }
   }
 
   /** FR-053: the most recent choice of a model in any chat, kept across restarts. */

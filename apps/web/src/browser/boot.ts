@@ -115,6 +115,7 @@ const researchUI = researchView(
     controls()
   },
   () => navigation.current?.sessionId,
+  () => navigation.settings.preferencesVersion,
 )
 const picker = modelPicker(
   shell.model,
@@ -161,6 +162,13 @@ const changeWatcher = new ChangeWatcher({
     if (notice.topic === 'providers') {
       if (notice.version <= navigation.settings.providersVersion) return
       await navigation.refresh()
+      controls()
+      return
+    }
+    if (notice.topic === 'preferences') {
+      if (notice.version <= navigation.settings.preferencesVersion) return
+      const [, prefs] = await Promise.all([navigation.refresh(), management.preferences()])
+      themeUI.update(prefs.theme)
       controls()
       return
     }
@@ -227,7 +235,14 @@ const settingsButton = button('Cài đặt model', () => {
 settingsButton.className = 'settings-open'
 settingsButton.title = 'Cài đặt model'
 const themeSection = element('div', undefined, 'menu-section')
-themeSection.append(element('span', 'Giao diện'), themeControl(management))
+const themeUI = themeControl(
+  management,
+  () => navigation.settings.preferencesVersion,
+  version => {
+    navigation.settings = { ...navigation.settings, preferencesVersion: version }
+  },
+)
+themeSection.append(element('span', 'Giao diện'), themeUI.node)
 shell.accountMenu.append(
   element('p', 'Chạy trên máy của bạn', 'menu-note'),
   settingsButton,

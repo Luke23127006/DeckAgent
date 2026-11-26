@@ -29,7 +29,14 @@ export interface ChatNavigationOptions {
 }
 
 function emptySettings(): WebSettings {
-  return { providers: [], providersVersion: 0, persistentKeys: false, builtIns: [], runtime: { available: false } }
+  return {
+    providers: [],
+    providersVersion: 0,
+    preferencesVersion: 0,
+    persistentKeys: false,
+    builtIns: [],
+    runtime: { available: false },
+  }
 }
 
 export class ChatNavigation {

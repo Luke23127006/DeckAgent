@@ -8,8 +8,8 @@ import type { AttachmentRecord, ResearchSource, SqliteSessionStore } from '@deck
 import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'
 import { record } from '../../web-state.ts'
 import type { ManagedAttachments } from '../../modules/attachments/index.ts'
-import { ResearchFailure } from '../research/index.ts'
-import type { ResearchCoordinator } from '../research/index.ts'
+import { ResearchFailure } from '../../modules/research/index.ts'
+import type { ResearchCoordinator } from '../../modules/research/index.ts'
 
 export class SourceToolFailure extends Error {
   constructor(

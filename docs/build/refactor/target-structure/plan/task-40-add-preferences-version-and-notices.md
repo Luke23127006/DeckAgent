@@ -63,7 +63,7 @@ After this task, `web.sqlite` has schema version 3 and keeps the row `('preferen
   - In `e2e/local-foundation.test.mjs`, in `provider writes increase the providers version and send the providers notice before the chats notice`, drain `assert.deepEqual(await nextNotice('preferences'), { topic: 'preferences', key: 'host', version: 0 })` right after `await nextNotice('providers')`.
   - In `e2e/local-foundation.test.mjs`, in `web.sqlite schema 1 upgrades to schema 2 in place and keeps providers and preferences`, change the expected `user_version` to `3`, expect both `providers` and `preferences` rows in `change_versions`, expect `{ theme: 'dark', version: 0 }`, and test `PRAGMA user_version=4` for `STORAGE_CORRUPT`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -73,7 +73,7 @@ Run: `git grep -n "^| 39 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add these two tests at the end of `e2e/local-foundation.test.mjs`:
 
@@ -152,26 +152,26 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test e2e/local-foundation.test.
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the sections `Interfaces` and `Schema and wiring rules`. Run `corepack pnpm@11.28.5 build`, then `node --test apps/host/tests/web-management.test.mjs e2e/local-foundation.test.mjs`.
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 1. In `apps/host/src/modules/research/research.service.ts`, remove `this.onPreferencesChanged?.(version)` from `save`. Build and run `node --test --test-timeout=15000 e2e/local-foundation.test.mjs`. Expected: FAIL. Undo the change.
 2. In `apps/host/src/web-state.ts`, remove `this.onPreferencesChanged?.(version)` from `savePreferences`. Build and run `node --test --test-timeout=15000 e2e/local-foundation.test.mjs`. Expected: FAIL. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

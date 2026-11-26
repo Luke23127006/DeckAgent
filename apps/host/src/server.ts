@@ -36,7 +36,7 @@ import {
   type ProviderConnection,
 } from './modules/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'
-import { defaultCredentialStore, type CredentialStore } from './integrations/credentials/index.ts'
+import { defaultCredentialStore, type CredentialStore } from './credential-store.ts'
 import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './integrations/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
 import {
@@ -46,8 +46,14 @@ import {
   mapAttachmentFailure,
 } from './modules/attachments/index.ts'
 import { prepareSourceTools } from './features/sources/index.ts'
-import { ResearchCoordinator } from './features/research/index.ts'
-import { TavilyClient } from './integrations/research/index.ts'
+import {
+  ResearchCoordinator,
+  SqliteResearchStore,
+  TavilyClient,
+  createResearchRoutes,
+  mapResearchFailure,
+} from './modules/research/index.ts'
+import { createSettingsRoutes } from './settings-routes.ts'
 import {
   BriefCoordinator,
   ConfirmationCoordinator,
@@ -197,7 +203,11 @@ async function openStorageLayer(
         onChatsChanged: version => changeFeed.publish({ topic: 'chats', key: 'host', version }),
       })
       decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments)
-      web = new WebState(join(layout.databases, 'web.sqlite'), value => isSelectable(value))
+      web = new WebState(
+        join(layout.databases, 'web.sqlite'),
+        value => isSelectable(value),
+        version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
+      )
     } catch {
       // A damaged or foreign file is kept unchanged; nothing is reset or recreated in its place.
       throw new StorageError('STORAGE_CORRUPT')
@@ -284,11 +294,12 @@ async function createRuntimeLayer(
   await openCode.initialize()
   const runtime = createRequestRuntime({ sessions, providers, runtime: openCode })
   const research = new ResearchCoordinator(
-    web.db,
+    new SqliteResearchStore(web.db),
     credentials,
     sessions,
     options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
     new TavilyClient(options.researchAccess?.fetch),
+    version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
   )
   const images = new WebImageResearch(
     research,
@@ -306,6 +317,7 @@ async function createRuntimeLayer(
       research: research.settings(),
       providers: providers.providerSettings(),
       providersVersion: providers.version(),
+      preferencesVersion: web.preferencesVersion(),
       persistentKeys: providers.persistentKeys,
       builtIns: providers.builtIns,
       runtime: openCode.availability(),
@@ -338,6 +350,7 @@ function createHostOptions(
       mapChatFailure(error) ??
       mapProviderFailure(error) ??
       mapAttachmentFailure(error) ??
+      mapResearchFailure(error) ??
       mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
@@ -378,6 +391,14 @@ function createHostOptions(
       createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
       createProviderRoutes(runtime.providers),
       createAttachmentRoutes(runtime.inputs),
+      createResearchRoutes(runtime.research),
+      createSettingsRoutes({
+        settings: async () => runtime.settings(),
+        preferences: {
+          get: async () => web.preferences(),
+          save: async (theme, expectedVersion) => web.savePreferences(theme, expectedVersion),
+        },
+      }),
     ],
     changes: {
       feed: changeFeed,
@@ -385,15 +406,12 @@ function createHostOptions(
         { topic: 'workspaces', version: () => registry.version() },
         { topic: 'chats', version: () => sessions.chatsVersion() },
         { topic: 'providers', version: () => runtime.providers.version() },
+        { topic: 'preferences', version: () => web.preferencesVersion() },
       ],
       sessionExists: async id => !!(await sessions.getInfo(id)),
       sessionTopics: [{ topic: 'draft', version: id => runtime.inputs.draftVersion(id) }],
     },
-    management: {
-      ...sessionReadManagement(sessions, runtime.research),
-      preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },
-      settings: async () => runtime.settings(),
-    },
+    management: sessionReadManagement(sessions),
   }
 }
 

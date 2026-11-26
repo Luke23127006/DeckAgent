@@ -26,6 +26,7 @@ export interface WebSettings {
   readonly providers: readonly ProviderSettings[]
   /** The version of the provider configurations; a provider write increases it once. */
   readonly providersVersion: number
+  readonly preferencesVersion: number
   /** The credential store of this computer can keep keys. */
   readonly persistentKeys: boolean
   readonly builtIns: readonly ProviderTemplate[]
@@ -93,4 +94,5 @@ export interface ChatDraft {
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
 export interface WebPreferences {
   readonly theme: 'light' | 'dark' | 'system'
+  readonly version: number
 }

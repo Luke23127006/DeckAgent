@@ -295,7 +295,7 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
     })
   let app = await open()
   try {
-    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system' })
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system', version: 0 })
     assert.equal(
       await (await fetch(`${app.origin}/theme.js`)).text(),
       '',
@@ -305,7 +305,10 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
       const rejected = await call(app, '/api/preferences', { method: 'PUT', body })
       assert.equal(rejected.status, 400, body)
     }
-    assert.equal((await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"dark"}' })).status, 200)
+    assert.equal(
+      (await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"dark","expectedVersion":0}' })).status,
+      200,
+    )
     assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
     assert.equal(
       (await fetch(`${app.origin}/api/preferences`)).status,
@@ -317,9 +320,9 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
   }
   app = await open()
   try {
-    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark' })
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark', version: 1 })
     assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
-    await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system"}' })
+    await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system","expectedVersion":1}' })
     assert.equal(await (await fetch(`${app.origin}/theme.js`)).text(), '')
   } finally {
     await app.close()
@@ -337,7 +340,7 @@ test('An existing web.sqlite without the preferences table is upgraded in place'
   const app = await startLocalWeb(options)
   try {
     const response = await fetch(`${app.origin}/api/preferences`, { headers: { authorization: `Bearer ${app.token}` } })
-    assert.deepEqual(await response.json(), { theme: 'system' })
+    assert.deepEqual(await response.json(), { theme: 'system', version: 0 })
   } finally {
     await app.close()
   }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import * as app from '../lib/types/integrations/research/index.js'
+import * as app from '../lib/types/modules/research/index.js'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -141,10 +141,29 @@ test('research is opt-in through Host, retains exact sources across restart and 
     await f.app.close()
     await rm(dir, { recursive: true, force: true })
   })
-  assert.equal((await f.call('research', 'PUT', { useEnvironment: true })).status, 200)
-  assert.equal((await f.call('research', 'PUT', { key: secret })).status, 200)
+  assert.equal(
+    (
+      await f.call('research', 'PUT', {
+        useEnvironment: true,
+        expectedVersion: (await f.call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    200,
+  )
+  assert.equal(
+    (
+      await f.call('research', 'PUT', {
+        key: secret,
+        expectedVersion: (await f.call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    200,
+  )
   const savedReferences = [...credentials.values.keys()]
-  const rejected = await f.call('research', 'PUT', { key: 'invalid-key' })
+  const rejected = await f.call('research', 'PUT', {
+    key: 'invalid-key',
+    expectedVersion: (await f.call('settings')).data.preferencesVersion,
+  })
   assert.equal(rejected.status, 503)
   assert.equal(JSON.stringify(rejected.data).includes('invalid-key'), false)
   assert.deepEqual([...credentials.values.keys()], savedReferences)
@@ -203,13 +222,25 @@ test('research is opt-in through Host, retains exact sources across restart and 
   assert.equal(searches, 4, 'Only three more searches may leave the Host')
   assert.ok((await f.client.history(chat.sessionId)).at(-1).content.includes('RESEARCH_BUDGET_EXHAUSTED'))
   accountUsage = { ...freeUsage, account: { ...freeUsage.account, current_plan: 'Project' } }
-  assert.equal((await f.call('research', 'PUT', { key: 'replacement-must-not-be-saved' })).status, 503)
+  assert.equal(
+    (
+      await f.call('research', 'PUT', {
+        key: 'replacement-must-not-be-saved',
+        expectedVersion: (await f.call('settings')).data.preferencesVersion,
+      })
+    ).status,
+    503,
+  )
   assert.equal((await f.call('settings')).data.research.configured, true)
   const paid = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true })
   await finished(f.client, paid.requestId)
   assert.equal(searches, 4)
   assert.ok((await f.client.history(chat.sessionId)).at(-1).content.includes('RESEARCH_FREE_ONLY'))
-  assert.equal((await f.call('research', 'DELETE')).status, 200)
+  assert.equal(
+    (await f.call('research', 'DELETE', { expectedVersion: (await f.call('settings')).data.preferencesVersion }))
+      .status,
+    200,
+  )
   await assert.rejects(
     f.client.send({ sessionId: chat.sessionId, input: '[mcp-research]', publicResearch: true }),
     /RESEARCH_UNAVAILABLE/,

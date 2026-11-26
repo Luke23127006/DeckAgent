@@ -16,6 +16,9 @@ import {
   decodeChangeNotice,
   decodeDraftSaveBody,
   decodeGeneration,
+  decodePreferencesSaveBody,
+  decodeResearchSaveBody,
+  decodeResearchRemoveBody,
   decodeProviderRemoveBody,
   decodeProviderSaveBody,
   decodeWorkspaceAddBody,
@@ -394,4 +397,42 @@ test('draft save and attachment remove decoders require expectedRevision and kee
     assert.throws(() => decodeDraftSaveBody(value), invalid)
   for (const value of [undefined, {}, { expectedRevision: -1 }, { expectedRevision: 0, extra: true }])
     assert.throws(() => decodeAttachmentRemoveBody(value), invalid)
+})
+
+test('preferences and research decoders require expectedVersion and reject malformed bodies', () => {
+  assert.deepEqual(decodePreferencesSaveBody({ theme: 'dark', expectedVersion: 0 }), {
+    theme: 'dark',
+    expectedVersion: 0,
+  })
+  assert.deepEqual(decodeResearchSaveBody({ key: 'secret-key', expectedVersion: 1 }), {
+    key: 'secret-key',
+    expectedVersion: 1,
+  })
+  assert.deepEqual(decodeResearchSaveBody({ useEnvironment: true, expectedVersion: 2 }), {
+    useEnvironment: true,
+    expectedVersion: 2,
+  })
+  assert.deepEqual(decodeResearchRemoveBody({ expectedVersion: 3 }), { expectedVersion: 3 })
+  const invalid = error => error instanceof RequestValidationError && error.code === 'INVALID_REQUEST'
+  for (const value of [
+    undefined,
+    { theme: 'dark' },
+    { theme: 'neon', expectedVersion: 0 },
+    { theme: 'dark', expectedVersion: -1 },
+    { theme: 'dark', expectedVersion: 0, extra: 1 },
+  ])
+    assert.throws(() => decodePreferencesSaveBody(value), invalid)
+  for (const value of [
+    undefined,
+    { key: 'ok' },
+    { key: '   ', expectedVersion: 0 },
+    { key: 'x'.repeat(4097), expectedVersion: 0 },
+    { useEnvironment: true, key: 'ok', expectedVersion: 0 },
+    { useEnvironment: false, expectedVersion: 0 },
+    { useEnvironment: true, expectedVersion: -1 },
+    { useEnvironment: true, expectedVersion: 0, extra: 1 },
+  ])
+    assert.throws(() => decodeResearchSaveBody(value), invalid)
+  for (const value of [undefined, {}, { expectedVersion: -1 }, { expectedVersion: 0, extra: 1 }])
+    assert.throws(() => decodeResearchRemoveBody(value), invalid)
 })
