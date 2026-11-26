@@ -52,7 +52,7 @@ After this task, opening a chat opens one `ChangeWatcher` to `GET /api/sessions/
 
 **Forbidden:** re-add `setInterval` or `focus` polling in `draft-sync.ts`. Overwrite unsaved user text on `DRAFT_CONFLICT`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -62,7 +62,7 @@ Run: `git grep -n "^| 37 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add these two tests at the end of `e2e/browser-smoke.test.mjs`:
 
@@ -179,7 +179,7 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="draft
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the section `Interfaces`.
 
@@ -191,20 +191,20 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="draft
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 1. In `boot.ts`, remove the `if (notice.topic === 'draft')` call inside `openSessionChanges`. Build and run `node --test --test-name-pattern="draft notice" e2e/browser-smoke.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 2. In `draft-sync.ts`, remove the `DRAFT_CONFLICT` branch in `flushDraft` and disable `onDraftNotice` temporarily (return immediately). Build and run `node --test --test-name-pattern="DRAFT_CONFLICT" e2e/browser-smoke.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

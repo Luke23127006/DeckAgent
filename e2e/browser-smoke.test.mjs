@@ -2628,3 +2628,110 @@ test('A settings save after a change in another client gets PROVIDERS_STALE, rea
   )
   assert.equal(await evaluate('window.__providerWrites'), 1, 'The Browser must not send the stale write again')
 })
+
+test('Browser updates the open draft from the draft notice of /api/sessions/:sessionId/changes', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-changes-'))
+  const state = {}
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  state.app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
+    'Browser boot failed',
+  )
+  const sessionId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  await delay(300)
+  const saved = await fetch(`${state.app.origin}/api/sessions/${sessionId}/draft`, {
+    method: 'PUT',
+    headers: { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ text: 'Draft from another client', expectedRevision: 0 }),
+  })
+  assert.equal(saved.status, 200)
+  await eventually(
+    () => evaluate(`document.querySelector('.composer textarea').value === 'Draft from another client'`),
+    'Browser did not show the draft text from the draft notice',
+  )
+  const form = new FormData()
+  form.append('expectedRevision', '1')
+  form.append('file', new Blob(['remote evidence']), 'remote.txt')
+  const uploaded = await fetch(`${state.app.origin}/api/sessions/${sessionId}/attachments`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${state.app.token}` },
+    body: form,
+  })
+  assert.equal(uploaded.status, 202)
+  await eventually(
+    () => evaluate(`document.querySelector('.attachment-row')?.dataset.state === 'ready'`),
+    'Browser did not show the ready attachment from the draft notice',
+  )
+})
+
+test('A draft save after a change in another client gets DRAFT_CONFLICT, keeps the typed text and does not send again', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-draft-conflict-'))
+  const state = {}
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  state.app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('.chat-navigation nav button[aria-current=true]')`),
+    'Browser boot failed',
+  )
+  const sessionId = await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true]').dataset.sessionId`)
+  await delay(300)
+  await evaluate(`{
+    const original = window.fetch;
+    window.__draftPuts = 0;
+    window.fetch = async (url, init) => {
+      if (String(url).endsWith('/draft') && init?.method === 'PUT') window.__draftPuts += 1;
+      return original(url, init);
+    };
+    const input = document.querySelector('.composer textarea');
+    input.value = 'Local unsaved edit';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } true`)
+  const remote = await fetch(`${state.app.origin}/api/sessions/${sessionId}/draft`, {
+    method: 'PUT',
+    headers: { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ text: 'Remote edit', expectedRevision: 0 }),
+  })
+  assert.equal(remote.status, 200)
+  await eventually(() => evaluate('window.__draftPuts === 1'), 'Browser did not send the draft save')
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.request-status[role=status]')?.textContent.includes('Bản nháp đã đổi ở giao diện khác')`,
+      ),
+    'Browser did not show the DRAFT_CONFLICT message',
+  )
+  await delay(400)
+  assert.equal(
+    await evaluate(`document.querySelector('.composer textarea').value`),
+    'Local unsaved edit',
+    'DRAFT_CONFLICT must keep the user text',
+  )
+  assert.equal(await evaluate('window.__draftPuts'), 1, 'The Browser must not send a stale draft write again')
+})

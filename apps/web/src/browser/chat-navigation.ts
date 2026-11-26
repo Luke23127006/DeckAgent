@@ -24,6 +24,7 @@ export interface ChatNavigationOptions {
   readonly sending: ReadonlySet<string>
   readonly run: (work: Promise<void>) => void
   readonly changed: () => void
+  readonly onSessionOpen?: (sessionId: string) => void
   readonly follow: (id: string, sessionId: string, expected: number) => Promise<void>
 }
 
@@ -233,6 +234,7 @@ export class ChatNavigation {
     session = { ...rest, ...(activeRequestId ? { activeRequestId } : {}) }
     this.current = session
     this.options.deckModel.open(session.sessionId)
+    this.options.onSessionOpen?.(session.sessionId)
     try {
       sessionStorage.setItem('deckagent-session', session.sessionId)
     } catch {

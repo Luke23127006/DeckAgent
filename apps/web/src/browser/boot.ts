@@ -129,6 +129,22 @@ const draftSync = createDraftSync({
   changed: () => controls(),
   refresh: () => navigation.refresh(),
 })
+let sessionWatcher: ChangeWatcher | undefined
+let watchedSessionId: string | undefined
+
+function openSessionChanges(sessionId: string): void {
+  sessionWatcher?.close()
+  watchedSessionId = sessionId
+  const watcher = new ChangeWatcher({
+    client: { watch: signal => changeClient.watchSession(sessionId, signal) },
+    onNotice: notice => {
+      if (watchedSessionId !== sessionId || notice.key !== sessionId || notice.topic !== 'draft') return
+      return draftSync.onDraftNotice(sessionId, notice.version)
+    },
+  })
+  sessionWatcher = watcher
+  watcher.start()
+}
 // The chat list has no version in its reply, so the last chats notice that this tab handled is kept here.
 let chatsVersion = -1
 const changeWatcher = new ChangeWatcher({
@@ -173,6 +189,7 @@ const navigation = createChatNavigation({
   sending,
   run,
   changed: () => controls(),
+  onSessionOpen: openSessionChanges,
   follow: (id, sessionId, expected) => follow(id, sessionId, expected),
 })
 const runner = createRequestRunner({
@@ -417,6 +434,7 @@ window.addEventListener(
     navigation.dispose()
     deckModel.close()
     changeWatcher.close()
+    sessionWatcher?.close()
   },
   { once: true },
 )

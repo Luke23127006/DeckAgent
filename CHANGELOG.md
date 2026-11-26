@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Connect the Browser to `GET /api/sessions/:sessionId/changes` for `draft` notices, remove the 500 ms attachment poll and window focus sync from `DraftSync`, and keep unsaved text with a clear message on `DRAFT_CONFLICT` without resending. Task 38 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add Zod decoders `decodeDraftSaveBody` and `decodeAttachmentRemoveBody` in `@deckagent/host-contracts` and require `expectedRevision` on `PUT /api/sessions/:sessionId/draft`. Task 37 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add `GET /api/sessions/:sessionId/changes` to the Host `ChangeFeed`, track a per-chat draft notice version in `MemoryDraftStore` apart from `draft.revision`, and publish `draft` notices after each draft write and attachment settlement. Task 36 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move the attachments and draft module into `apps/host/src/modules/attachments/`, keep `busboy` 1.6.0 for multipart instead of `multer`, and remove the attachment and draft routes from `@deckagent/host-api` and `local-transport.ts`. Task 35 is `Done` in `docs/build/refactor/target-structure/plan/`.

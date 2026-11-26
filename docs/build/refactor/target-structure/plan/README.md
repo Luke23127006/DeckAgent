@@ -305,7 +305,7 @@ Revision 3h adds these failure modes:
 | 35 | Done | [Move the attachments module into apps/host/src/modules](task-35-move-attachments-module.md) ([report](../reports/task-35-move-attachments-module.md)) |
 | 36 | Done | [Add session change route and draft change notices](task-36-add-session-changes-and-draft-notices.md) ([report](../reports/task-36-add-session-changes-and-draft-notices.md)) |
 | 37 | Done | [Require expectedRevision with Zod decoders on draft and attachment writes](task-37-require-draft-expected-revision.md) ([report](../reports/task-37-require-draft-expected-revision.md)) |
-| 38 | Pending | [Connect the Browser to draft notices and handle DRAFT_CONFLICT](task-38-connect-browser-to-draft-notices.md) |
+| 38 | Done | [Connect the Browser to draft notices and handle DRAFT_CONFLICT](task-38-connect-browser-to-draft-notices.md) ([report](../reports/task-38-connect-browser-to-draft-notices.md)) |
 
 ## Next revision
 
