@@ -33,7 +33,7 @@ function emptySettings(): WebSettings {
 
 export class ChatNavigation {
   sessions: readonly WebSession[] = []
-  workspaces: WorkspaceList = { workspaces: [], selectedId: 'default' }
+  workspaces: WorkspaceList = { workspaces: [], selectedId: 'default', version: 0 }
   settings: WebSettings = emptySettings()
   current: WebSession | undefined
   outlineState: OutlineSnapshot | undefined

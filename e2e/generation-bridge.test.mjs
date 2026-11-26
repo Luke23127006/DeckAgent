@@ -37,7 +37,7 @@ test('confirmed production runtime publishes a full deck through the request MCP
   await mkdir(project)
   await writeFile(join(project, 'notes.txt'), 'project marker')
   await writeFile(join(project, 'secret.txt'), 'Unselected material')
-  assert.equal((await f.call('workspaces', 'POST', { folder: project })).status, 200)
+  assert.equal((await f.call('workspaces', 'POST', { folder: project, expectedVersion: 0 })).status, 200)
   const created = await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })
   const id = created.data.sessionId
   const read = await f.client.send({ sessionId: id, input: '[mcp-read]' })

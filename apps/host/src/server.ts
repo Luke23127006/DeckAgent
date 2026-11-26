@@ -2,7 +2,8 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { HostOptions, RequestRuntime } from '@deckagent/host-api'
-import { startHost } from './http/start-host.ts'
+import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
+import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
 import { SessionError, SqliteSessionStore, type ModelSelection } from '@deckagent/session-persistence'
 import { MemoryDraftStore } from './draft-store.ts'
@@ -156,6 +157,7 @@ async function openStorageLayer(
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
   getAttachments: () => ManagedAttachments | undefined,
+  changeFeed: ChangeFeed,
 ): Promise<StorageLayer> {
   const initial = options.selection ? { ...options.selection } : undefined
   let isSelectable: (value: ModelSelection) => boolean = () => false
@@ -169,6 +171,7 @@ async function openStorageLayer(
         path: join(layout.databases, 'workspaces.sqlite'),
         home: options.home ?? homedir(),
         dataRoot: layout.root,
+        publish: changeFeed.publish,
       })
     } catch {
       throw new StorageError('STORAGE_CORRUPT')
@@ -299,7 +302,8 @@ function createHostOptions(
   attachments: ManagedAttachments,
   drafts: MemoryDraftStore,
   assets: NonNullable<HostOptions['assets']>,
-): HostOptions {
+  changeFeed: ChangeFeed,
+): StartHostOptions {
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
   return {
@@ -330,6 +334,7 @@ function createHostOptions(
     ...(options.port === undefined ? {} : { port: options.port }),
     readHistory: id => sessions.read(id),
     routes: [createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions)))],
+    changes: { feed: changeFeed, hostTopics: [{ topic: 'workspaces', version: () => registry.version() }] },
     management: {
       ...sessionReadManagement(sessions, runtime.research),
       preferences: { get: async () => web.preferences(), save: async value => web.savePreferences(value) },
@@ -352,6 +357,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const commonsImages = new CommonsImages(options.imageAccess?.fetch)
   const renderer = artifactRenderer(join(layout.files, 'runtime', 'artifact-check'))
   const drafts = new MemoryDraftStore()
+  const changeFeed = createChangeFeed()
   let opened: StorageLayer | undefined
   let runtime: RuntimeLayer | undefined
   let attachments: ManagedAttachments | undefined
@@ -370,13 +376,15 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     () => host?.close(),
   ]
   try {
-    opened = await openStorageLayer(layout, options, renderer, commonsImages, () => attachments)
+    opened = await openStorageLayer(layout, options, renderer, commonsImages, () => attachments, changeFeed)
     const storage = opened
     const credentials = options.credentials ?? defaultCredentialStore(layout.root)
     attachments = await ManagedAttachments.open(layout.files, storage.sessions.attachments, drafts)
     runtime = await createRuntimeLayer(layout, options, storage, commonsImages, attachments, drafts, credentials)
     const assets = await loadWebAssets(() => storage.web.preferences().theme)
-    host = await startHost(createHostOptions(layout, options, storage, runtime, attachments, drafts, assets))
+    host = await startHost(
+      createHostOptions(layout, options, storage, runtime, attachments, drafts, assets, changeFeed),
+    )
     return {
       origin: host.origin,
       token: host.token,

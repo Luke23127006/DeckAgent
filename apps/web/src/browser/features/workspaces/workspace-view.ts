@@ -273,7 +273,7 @@ function removeSelectedWorkspace(management: ManagementClient, state: WorkspaceS
     )
   )
     return
-  change(() => management.removeWorkspace(selected.id), true)
+  change(() => management.removeWorkspace(selected.id, state.list.version), true)
 }
 
 function submitWorkspaceDialog(
@@ -294,10 +294,10 @@ function submitWorkspaceDialog(
   change(
     () =>
       target.kind === 'rename'
-        ? management.renameWorkspace(target.id, text)
+        ? management.renameWorkspace(target.id, text, state.list.version)
         : target.kind === 'relink'
-          ? management.relinkWorkspace(target.id, text.trim())
-          : management.addWorkspace(text.trim()),
+          ? management.relinkWorkspace(target.id, text.trim(), state.list.version)
+          : management.addWorkspace(text.trim(), state.list.version),
     false,
     () => dom.dialog.close(),
     dom.dialogError,
@@ -314,7 +314,7 @@ function mountWorkspaceActions(input: {
   dom.adopt.addEventListener('click', () => {
     const selected = currentWorkspace(state.list)
     const folder = selected?.folder
-    if (selected && folder) change(() => management.relinkWorkspace(selected.id, folder), false)
+    if (selected && folder) change(() => management.relinkWorkspace(selected.id, folder, state.list.version), false)
   })
   dom.add.addEventListener('click', () => openWorkspaceDialog(dom, state, { kind: 'add' }))
   dom.rename.addEventListener('click', () => {
@@ -329,7 +329,7 @@ function mountWorkspaceActions(input: {
   dom.select.addEventListener('change', () => {
     const id = dom.select.value
     dom.select.value = state.list.selectedId
-    if (id !== state.list.selectedId) change(() => management.selectWorkspace(id), false)
+    if (id !== state.list.selectedId) change(() => management.selectWorkspace(id, state.list.version), false)
   })
   dom.form.addEventListener('submit', event => submitWorkspaceDialog(event, management, dom, state, change))
 }
@@ -345,7 +345,7 @@ export function workspaceView(
 ): { readonly node: HTMLElement; setBusy(value: boolean): void; update(list: WorkspaceList): void } {
   const dom = createWorkspaceDom(root)
   const state: WorkspaceState = {
-    list: { workspaces: [], selectedId: 'default' },
+    list: { workspaces: [], selectedId: 'default', version: 0 },
     busy: false,
     outside: false,
     mode: { kind: 'add' },

@@ -139,9 +139,18 @@ export function decodeSession(value: unknown): WebSession {
 }
 const workspaceStatuses = ['none', 'available', 'unreadable', 'different-folder'] as const
 export function decodeWorkspaceList(value: unknown): WorkspaceList {
-  if (!isRecord(value) || typeof value.selectedId !== 'string' || !Array.isArray(value.workspaces)) invalid()
+  if (
+    !isRecord(value) ||
+    typeof value.selectedId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !Number.isSafeInteger(value.version) ||
+    value.version < 0 ||
+    !Array.isArray(value.workspaces)
+  )
+    invalid()
   return {
     selectedId: value.selectedId,
+    version: value.version,
     workspaces: value.workspaces.map((item: unknown) => {
       if (
         !isRecord(item) ||

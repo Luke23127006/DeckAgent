@@ -87,6 +87,7 @@ const allowedCodes = [
   'WORKSPACE_FOLDER_IN_USE',
   'WORKSPACE_NAME_EMPTY',
   'WORKSPACE_NAME_TOO_LONG',
+  'WORKSPACES_STALE',
 ]
 
 /** Validates management responses separately from request streaming. */
@@ -208,20 +209,26 @@ export class ManagementClient {
   async workspaces(): Promise<WorkspaceList> {
     return decodeWorkspaceList(await this.request('workspaces'))
   }
-  async addWorkspace(folder: string): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request('workspaces', 'POST', { folder }))
+  async addWorkspace(folder: string, expectedVersion: number): Promise<WorkspaceList> {
+    return decodeWorkspaceList(await this.request('workspaces', 'POST', { folder, expectedVersion }))
   }
-  async selectWorkspace(id: string): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request('workspaces/selected', 'PUT', { id }))
+  async selectWorkspace(id: string, expectedVersion: number): Promise<WorkspaceList> {
+    return decodeWorkspaceList(await this.request('workspaces/selected', 'PUT', { id, expectedVersion }))
   }
-  async renameWorkspace(id: string, name: string): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { name }))
+  async renameWorkspace(id: string, name: string, expectedVersion: number): Promise<WorkspaceList> {
+    return decodeWorkspaceList(
+      await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { name, expectedVersion }),
+    )
   }
-  async relinkWorkspace(id: string, folder: string): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request(`workspaces/${encodeURIComponent(id)}/folder`, 'PUT', { folder }))
+  async relinkWorkspace(id: string, folder: string, expectedVersion: number): Promise<WorkspaceList> {
+    return decodeWorkspaceList(
+      await this.request(`workspaces/${encodeURIComponent(id)}/folder`, 'PUT', { folder, expectedVersion }),
+    )
   }
-  async removeWorkspace(id: string): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request(`workspaces/${encodeURIComponent(id)}`, 'DELETE'))
+  async removeWorkspace(id: string, expectedVersion: number): Promise<WorkspaceList> {
+    return decodeWorkspaceList(
+      await this.request(`workspaces/${encodeURIComponent(id)}`, 'DELETE', { expectedVersion }),
+    )
   }
 
   async save(

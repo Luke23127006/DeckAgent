@@ -80,7 +80,9 @@ test('Brief accepts only sent attachment images and refuses writes during active
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const management = new ManagementClient(f.app.origin, f.app.token)
   const client = new BriefClient(f.app.origin, f.app.token)
-  const png = await readFile(new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const png = await readFile(
+    new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+  )
   const uploaded = await management.uploadAttachment(id, new File([png], 'image.png'), 0)
   const attachmentId = uploaded.attachment.attachmentId
   const prepared = await waitFor(async () => {
@@ -128,7 +130,7 @@ test('Brief source receipts require owning Chat and expose superseded versions w
     models: ['model-a'],
     new: true,
   })
-  await f.call('workspaces', 'POST', { folder: project })
+  await f.call('workspaces', 'POST', { folder: project, expectedVersion: 0 })
   const selection = { provider: 'test', model: 'model-a' }
   const id = (await f.call('sessions', 'POST', { selection })).data.sessionId
   const other = (await f.call('sessions', 'POST', { selection })).data.sessionId

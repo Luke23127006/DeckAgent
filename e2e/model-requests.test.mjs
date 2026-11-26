@@ -484,15 +484,15 @@ test('workspace with an active request is not removed or moved; provider changes
   const before = await listTree(project)
   const { app, log, call, client } = await startApp(dir)
   cleanup(() => app.close())
-  const added = (await call('workspaces', 'POST', { folder: project })).data
+  const added = (await call('workspaces', 'POST', { folder: project, expectedVersion: 0 })).data
   const workspaceId = added.selectedId
   const chat = await configured(call, provider.baseUrl)
   assert.equal((await call('sessions')).data.find(item => item.sessionId === chat.sessionId).workspaceId, workspaceId)
   const hung = await client.send({ sessionId: chat.sessionId, input: 'hold [hang]' })
   await waitFor(async () => (await client.snapshot(hung.requestId)).text)
-  assert.equal((await call(`workspaces/${workspaceId}`, 'DELETE')).data.error.code, 'WORKSPACE_REQUEST_ACTIVE')
+  assert.equal((await call(`workspaces/${workspaceId}`, 'DELETE', { expectedVersion: added.version })).data.error.code, 'WORKSPACE_REQUEST_ACTIVE')
   assert.equal(
-    (await call(`workspaces/${workspaceId}/folder`, 'PUT', { folder: moved })).data.error.code,
+    (await call(`workspaces/${workspaceId}/folder`, 'PUT', { folder: moved, expectedVersion: added.version })).data.error.code,
     'WORKSPACE_REQUEST_ACTIVE',
   )
   assert.equal((await client.snapshot(hung.requestId)).status, 'active', 'The refusal stops no request (UC-013 A5)')
@@ -520,7 +520,7 @@ test('workspace with an active request is not removed or moved; provider changes
     'model-removed',
   )
 
-  assert.equal((await call(`workspaces/${workspaceId}`, 'DELETE')).status, 200)
+  assert.equal((await call(`workspaces/${workspaceId}`, 'DELETE', { expectedVersion: added.version })).status, 200)
   assert.deepEqual(await listTree(project), before, 'Nothing was written into the project folder')
   assert.ok(runs(log).every(entry => !entry.cwd.startsWith(project)))
 })

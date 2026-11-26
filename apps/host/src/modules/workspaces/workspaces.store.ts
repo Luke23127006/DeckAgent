@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { basename, dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SQLOutputValue } from 'node:sqlite'
+import type { PublishChange } from '@deckagent/host-contracts'
 import { WorkspaceError, defaultWorkspaceId } from './contracts.ts'
 import type { FolderStatus, Workspace, WorkspaceState } from './contracts.ts'
 import { FolderPolicy } from './folder-policy.ts'
@@ -15,6 +16,8 @@ export interface WorkspaceRegistryOptions extends FolderPolicyOptions {
   readonly path: string
   /** Name the system gives the default workspace on first start (FR-072). */
   readonly defaultName?: string
+  /** Optional change notice publisher called after a committed write. */
+  readonly publish?: PublishChange
 }
 
 export interface AddResult {
@@ -32,10 +35,12 @@ type Row = Record<string, SQLOutputValue>
 export class WorkspaceRegistry {
   private readonly db: DatabaseSync
   private readonly policy: FolderPolicy
+  private readonly publish: PublishChange | undefined
   private closed = false
 
   constructor(options: WorkspaceRegistryOptions) {
     this.policy = new FolderPolicy(options)
+    this.publish = options.publish
     let db: DatabaseSync | undefined
     try {
       mkdirSync(dirname(options.path), { recursive: true })
@@ -50,6 +55,10 @@ export class WorkspaceRegistry {
         'Cannot open Workspace database. Check the data directory, file integrity and write permissions',
       )
     }
+  }
+
+  version(): number {
+    return this.access(() => this.currentVersion())
   }
 
   /** Every workspace that is set up: the default workspace first, then in the order they were set up. */
@@ -98,16 +107,21 @@ export class WorkspaceRegistry {
   }
 
   /** Switching asks for no folder and reads no file (UC-013 A7). */
-  select(id: string): Workspace {
-    return this.access(() => {
-      const row = this.row(id)
-      this.setSelected(id)
-      return this.workspace(row)
-    })
+  select(id: string, expectedVersion?: number): Workspace {
+    const { workspace, version } = this.access(() =>
+      this.transaction(() => {
+        const next = this.bumpVersion(expectedVersion)
+        const row = this.row(id)
+        this.setSelected(id)
+        return { workspace: this.workspace(row), version: next }
+      }),
+    )
+    this.publishVersion(version)
+    return workspace
   }
 
   /** Set up a workspace for a readable folder and make it the workspace in use (UC-013 S2, A1, FR-071). */
-  async add(folder: unknown): Promise<AddResult> {
+  async add(folder: unknown, expectedVersion?: number): Promise<AddResult> {
     const identity = await this.policy.inspect(folder)
     const key = this.policy.key(identity.path)
     // A folder is the same folder by identity, not by place: a different folder now at the place of a
@@ -120,96 +134,118 @@ export class WorkspaceRegistry {
     let moved: Row | undefined
     for (const row of same) {
       if (String(row.folder_key) === key || (await this.status(row)) === 'available') {
-        this.access(() => this.setSelected(String(row.id)))
+        const version = this.access(() =>
+          this.transaction(() => {
+            const next = this.bumpVersion(expectedVersion)
+            this.setSelected(String(row.id))
+            return next
+          }),
+        )
+        this.publishVersion(version)
         return { workspace: this.workspace(row), outcome: 'existing' }
       }
       moved ??= row
     }
     if (moved) {
-      const row = this.access(() =>
+      const { row, version } = this.access(() =>
         this.transaction(() => {
+          const next = this.bumpVersion(expectedVersion)
           this.db
             .prepare('UPDATE workspaces SET folder = ?, folder_key = ? WHERE id = ?')
             .run(identity.path, key, String(moved.id))
           this.setSelected(String(moved.id))
-          return this.row(String(moved.id))
+          return { row: this.row(String(moved.id)), version: next }
         }),
       )
+      this.publishVersion(version)
       return { workspace: this.workspace(row), outcome: 'moved' }
     }
     const id = `workspace-${randomUUID()}`
     const name = nameFromFolder(basename(identity.path), 'Workspace')
-    const row = this.access(() =>
+    const { row, version } = this.access(() =>
       this.transaction(() => {
+        const next = this.bumpVersion(expectedVersion)
         this.db
           .prepare(
             'INSERT INTO workspaces (id, name, folder, folder_key, dev, ino, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
           )
           .run(id, name, identity.path, key, identity.dev, identity.ino, new Date().toISOString())
         this.setSelected(id)
-        return this.row(id)
+        return { row: this.row(id), version: next }
       }),
     )
+    this.publishVersion(version)
     return { workspace: this.workspace(row), outcome: 'created' }
   }
 
   /** FR-141: the default workspace included; two workspaces may share a name. A refused name changes nothing. */
-  rename(id: string, name: unknown): Workspace {
+  rename(id: string, name: unknown, expectedVersion?: number): Workspace {
     const value = nameFromUser(name)
-    return this.access(() =>
-      this.transaction(
-        () => {
-          this.row(id)
-          this.db.prepare('UPDATE workspaces SET name = ? WHERE id = ?').run(value, id)
-          return this.row(id)
-        },
-        row => this.workspace(row),
-      ),
+    const { workspace, version } = this.access(() =>
+      this.transaction(() => {
+        const next = this.bumpVersion(expectedVersion)
+        this.row(id)
+        this.db.prepare('UPDATE workspaces SET name = ? WHERE id = ?').run(value, id)
+        return { workspace: this.workspace(this.row(id)), version: next }
+      }),
     )
+    this.publishVersion(version)
+    return workspace
   }
 
   /**
    * FR-083: choose another folder for a workspace other than the default. Keeps its ID, name and chats.
    * Choosing the folder now at the stored place takes it over (FR-142).
    */
-  async relink(id: string, folder: unknown): Promise<Workspace> {
-    this.access(() => this.mutable(id))
+  async relink(id: string, folder: unknown, expectedVersion?: number): Promise<Workspace> {
+    this.access(() => {
+      this.assertVersion(expectedVersion)
+      this.mutable(id)
+    })
     const identity = await this.policy.inspect(folder)
     const key = this.policy.key(identity.path)
-    return this.access(() =>
-      this.transaction(
-        () => {
-          this.mutable(id)
-          const other = this.db
-            .prepare('SELECT name FROM workspaces WHERE removed_at IS NULL AND dev = ? AND ino = ? AND id != ?')
-            .get(identity.dev, identity.ino, id)
-          if (other)
-            throw new WorkspaceError('WORKSPACE_FOLDER_IN_USE', 'Another workspace has this folder', {
-              workspaceName: String(other.name),
-            })
-          this.db
-            .prepare('UPDATE workspaces SET folder = ?, folder_key = ?, dev = ?, ino = ? WHERE id = ?')
-            .run(identity.path, key, identity.dev, identity.ino, id)
-          return this.row(id)
-        },
-        row => this.workspace(row),
-      ),
+    const { workspace, version } = this.access(() =>
+      this.transaction(() => {
+        const next = this.bumpVersion(expectedVersion)
+        this.mutable(id)
+        const other = this.db
+          .prepare('SELECT name FROM workspaces WHERE removed_at IS NULL AND dev = ? AND ino = ? AND id != ?')
+          .get(identity.dev, identity.ino, id)
+        if (other)
+          throw new WorkspaceError('WORKSPACE_FOLDER_IN_USE', 'Another workspace has this folder', {
+            workspaceName: String(other.name),
+          })
+        this.db
+          .prepare('UPDATE workspaces SET folder = ?, folder_key = ?, dev = ?, ino = ? WHERE id = ?')
+          .run(identity.path, key, identity.dev, identity.ino, id)
+        return { workspace: this.workspace(this.row(id)), version: next }
+      }),
     )
+    this.publishVersion(version)
+    return workspace
   }
 
   /**
    * FR-073: removes the workspace record only. Changes no folder or file. The caller makes its chats ungrouped.
    * When it was the workspace in use, the default workspace becomes the workspace in use.
    */
-  remove(id: string): void {
-    this.access(() =>
+  remove(id: string, expectedVersion?: number, options?: { readonly publish?: boolean }): number {
+    const version = this.access(() =>
       this.transaction(() => {
+        const next = this.bumpVersion(expectedVersion)
         this.mutable(id)
         this.db.prepare('UPDATE workspaces SET removed_at = ? WHERE id = ?').run(new Date().toISOString(), id)
         const selected = this.db.prepare("SELECT value FROM registry_state WHERE key = 'selected'").get()
         if (!selected || String(selected.value) === id) this.setSelected(defaultWorkspaceId)
+        return next
       }),
     )
+    if (options?.publish !== false) this.publishVersion(version)
+    return version
+  }
+
+  publishVersion(version: number): void {
+    this.publish?.({ topic: 'workspaces', key: 'host', version })
   }
 
   /** Whether `path` is inside, or holds, the project folder of a workspace that is set up. */
@@ -255,6 +291,26 @@ export class WorkspaceRegistry {
       throw new WorkspaceError('WORKSPACE_DEFAULT', 'The default workspace has no project folder and is never removed')
   }
 
+  private currentVersion(): number {
+    const row = this.db.prepare("SELECT version FROM change_versions WHERE topic = 'workspaces' AND key = 'host'").get()
+    if (!row) throw new WorkspaceError('WORKSPACE_STORAGE', 'Workspace version row is missing')
+    return Number(row.version)
+  }
+
+  private assertVersion(expectedVersion?: number): number {
+    const current = this.currentVersion()
+    if (expectedVersion !== undefined && current !== expectedVersion) {
+      throw new WorkspaceError('WORKSPACES_STALE', 'Workspace list changed. Refresh and try again')
+    }
+    return current
+  }
+
+  private bumpVersion(expectedVersion?: number): number {
+    const next = this.assertVersion(expectedVersion) + 1
+    this.db.prepare("UPDATE change_versions SET version = ? WHERE topic = 'workspaces' AND key = 'host'").run(next)
+    return next
+  }
+
   private setSelected(id: string): void {
     this.db
       .prepare(
@@ -273,14 +329,12 @@ export class WorkspaceRegistry {
     }
   }
 
-  private transaction<T>(operation: () => T): T
-  private transaction<T, R>(operation: () => T, map: (value: T) => R): R
-  private transaction<T, R>(operation: () => T, map?: (value: T) => R): T | R {
+  private transaction<T>(operation: () => T): T {
     this.db.exec('BEGIN IMMEDIATE')
     try {
       const result = operation()
       this.db.exec('COMMIT')
-      return map ? map(result) : result
+      return result
     } catch (error) {
       this.db.exec('ROLLBACK')
       throw error

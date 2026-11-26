@@ -241,7 +241,7 @@ test('real CLI source boundary: allowed MCP read, outside approval, permanent de
     models: ['local-model'],
     new: true,
   })
-  await api('workspaces', 'POST', { folder: project })
+  await api('workspaces', 'POST', { folder: project, expectedVersion: 0 })
   const client = new HostClient(app.origin, app.token)
   const chat = await api('sessions', 'POST', { selection: { provider: 'local', model: 'local-model' } })
   const send = input => client.send({ sessionId: chat.sessionId, input })

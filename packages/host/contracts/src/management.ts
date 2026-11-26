@@ -77,6 +77,7 @@ export interface WorkspaceList {
   readonly workspaces: readonly WorkspaceView[]
   /** The workspace in use. */
   readonly selectedId: string
+  readonly version: number
 }
 
 export interface ChatDraft {

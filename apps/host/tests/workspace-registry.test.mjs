@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, mkdtemp, readdir, realpath, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, parse, sep } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { FolderPolicy } from '../lib/types/modules/workspaces/folder-policy.js'
 import { nameFromFolder, nameFromUser } from '../lib/types/modules/workspaces/workspace-name.js'
@@ -343,4 +344,122 @@ test('a damaged or foreign Workspace database is refused without being reset', a
   await writeFile(path, 'not a database at all')
   assert.throws(() => new WorkspaceRegistry({ path, home: dataRoot, dataRoot }), { code: 'WORKSPACE_STORAGE' })
   assert.equal((await stat(path)).size, 'not a database at all'.length)
+})
+
+test('schema 1 workspaces.sqlite upgrades to schema 2 in place while keeping workspaces and selection', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const dbPath = join(dataRoot, 'db', 'workspaces.sqlite')
+  await mkdir(join(dataRoot, 'db'), { recursive: true })
+  const project = await folder(dir, 'legacy-project')
+  const v1 = new DatabaseSync(dbPath)
+  v1.exec(`
+    CREATE TABLE workspaces (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, folder TEXT, folder_key TEXT, dev TEXT, ino TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+      created_at TEXT NOT NULL, removed_at TEXT,
+      CHECK ((folder IS NULL) = (folder_key IS NULL) AND (folder IS NULL) = (dev IS NULL) AND (folder IS NULL) = (ino IS NULL)),
+      CHECK (is_default = 0 OR (folder IS NULL AND removed_at IS NULL))
+    ) STRICT;
+    CREATE INDEX workspace_identity ON workspaces(dev, ino) WHERE removed_at IS NULL;
+    CREATE TABLE registry_state (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT;
+    PRAGMA application_id = 1145132883;
+    PRAGMA user_version = 1;
+  `)
+  v1.prepare(
+    "INSERT INTO workspaces (id, name, is_default, created_at) VALUES ('default', 'Default', 1, '2026-01-01T00:00:00.000Z')",
+  ).run()
+  v1.prepare(
+    "INSERT INTO workspaces (id, name, folder, folder_key, dev, ino, is_default, created_at) VALUES ('ws-1', 'Legacy', ?, ?, '1', '2', 0, '2026-01-02T00:00:00.000Z')",
+  ).run(project, project)
+  v1.prepare("INSERT INTO registry_state (key, value) VALUES ('selected', 'ws-1')").run()
+  v1.close()
+
+  const registry = new WorkspaceRegistry({ path: dbPath, home, dataRoot })
+  t.after(() => registry.close())
+  assert.equal(registry.version(), 0)
+  assert.equal(registry.selectedId(), 'ws-1')
+  assert.deepEqual(
+    (await registry.list()).map(item => [item.id, item.name]),
+    [
+      ['default', 'Default'],
+      ['ws-1', 'Legacy'],
+    ],
+  )
+  registry.rename('ws-1', 'Upgraded', 0)
+  assert.equal(registry.version(), 1)
+  registry.close()
+
+  const check = new DatabaseSync(dbPath)
+  assert.equal(Number(check.prepare('PRAGMA user_version').get().user_version), 2)
+  check.close()
+})
+
+test('every workspace write increments version inside a transaction and publishes notices after commit', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const notices = []
+  const registry = new WorkspaceRegistry({
+    path: join(dataRoot, 'db', 'workspaces.sqlite'),
+    home,
+    dataRoot,
+    publish: notice => notices.push(notice),
+  })
+  t.after(() => registry.close())
+  assert.equal(registry.version(), 0)
+
+  const firstDir = await folder(dir, 'first')
+  const secondDir = await folder(dir, 'second')
+  const added = await registry.add(firstDir, 0)
+  assert.equal(registry.version(), 1)
+  registry.select('default', 1)
+  assert.equal(registry.version(), 2)
+  const existing = await registry.add(firstDir, 2)
+  assert.equal(existing.outcome, 'existing')
+  assert.equal(registry.version(), 3)
+  registry.rename(added.workspace.id, 'First Renamed', 3)
+  assert.equal(registry.version(), 4)
+  await registry.relink(added.workspace.id, secondDir, 4)
+  assert.equal(registry.version(), 5)
+  const movedDir = join(dir, 'second-moved')
+  await rename(secondDir, movedDir)
+  const moved = await registry.add(movedDir, 5)
+  assert.equal(moved.outcome, 'moved')
+  assert.equal(registry.version(), 6)
+
+  const removedVersion = registry.remove(added.workspace.id, 6, { publish: false })
+  assert.equal(removedVersion, 7)
+  assert.equal(registry.version(), 7)
+  assert.equal(notices.length, 6)
+  registry.publishVersion(removedVersion)
+  assert.deepEqual(
+    notices,
+    [1, 2, 3, 4, 5, 6, 7].map(version => ({ topic: 'workspaces', key: 'host', version })),
+  )
+  registry.close()
+})
+
+test('stale expectedVersion throws WORKSPACES_STALE, changes no row and publishes no notice', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const notices = []
+  const registry = new WorkspaceRegistry({
+    path: join(dataRoot, 'db', 'workspaces.sqlite'),
+    home,
+    dataRoot,
+    publish: notice => notices.push(notice),
+  })
+  t.after(() => registry.close())
+  const one = await folder(dir, 'one')
+  const two = await folder(dir, 'two')
+  const added = await registry.add(one, 0)
+  assert.equal(registry.version(), 1)
+  notices.length = 0
+
+  assert.throws(() => registry.select('default', 0), { code: 'WORKSPACES_STALE' })
+  await assert.rejects(registry.add(two, 0), { code: 'WORKSPACES_STALE' })
+  assert.throws(() => registry.rename(added.workspace.id, 'Nope', 0), { code: 'WORKSPACES_STALE' })
+  await assert.rejects(registry.relink(added.workspace.id, two, 0), { code: 'WORKSPACES_STALE' })
+  assert.throws(() => registry.remove(added.workspace.id, 0), { code: 'WORKSPACES_STALE' })
+  assert.equal(registry.version(), 1)
+  assert.equal(registry.selectedId(), added.workspace.id)
+  assert.deepEqual(notices, [])
+  registry.close()
 })

@@ -58,7 +58,7 @@ After Task 23, `@deckagent/host-contracts` exports the change notice types and w
 - Change a file in `docs/architecture/`.
 - Commit when a STOP condition occurred. Push with `--force`, or skip a hook with `--no-verify`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -68,7 +68,7 @@ Run: `node -e "for (const f of process.argv.slice(1)) console.log(require('fs').
 
 Expected: PASS. Seven lines, in this order: `56`, `60`, `289`, `64`, `59`, `38`, `394`.
 
-- [ ] **Step 2: Write the updated workspaces module files**
+- [x] **Step 2: Write the updated workspaces module files**
 
 Write each file below with the exact content.
 
@@ -758,7 +758,7 @@ export function mapWorkspaceFailure(error: unknown): HttpFailureResponse | undef
 }
 ```
 
-- [ ] **Step 3: Run the edit script**
+- [x] **Step 3: Run the edit script**
 
 Save the script below as `deckagent-task24-edits.mjs` in the temporary folder of the system (`$env:TEMP` in PowerShell, `$TEMP` in Git Bash), outside the repository.
 
@@ -1195,7 +1195,7 @@ Run from the repository root: `node <temporary folder>/deckagent-task24-edits.mj
 
 Expected: PASS. The output is `task24-edits: 14 files changed, 0 failures`.
 
-- [ ] **Step 4: Build and run the checks**
+- [x] **Step 4: Build and run the checks**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -1225,7 +1225,7 @@ Run: `git grep -n " as " -- apps/host/src/modules/workspaces/folder-policy.ts`
 
 Expected: PASS. The command prints no line and exits with code 1.
 
-- [ ] **Step 5: Run the non-live suites**
+- [x] **Step 5: Run the non-live suites**
 
 Run each command below in order. For each command, write the exit code and the `# pass` and `# fail` lines in the report. When a command fails, run it one more time. When it fails two times, STOP.
 
@@ -1251,7 +1251,7 @@ Run each command below in order. For each command, write the exit code and the `
 | test:browser-smoke | `corepack pnpm@11.28.5 test:browser-smoke` | `# pass 13`, `# fail 0` |
 | test:env-startup | `corepack pnpm@11.28.5 test:env-startup` | `# pass 2`, `# fail 0` |
 
-- [ ] **Step 6: Check the changed paths**
+- [x] **Step 6: Check the changed paths**
 
 Run: `git status --short`
 
@@ -1280,7 +1280,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
  M packages/host/contracts/src/management.ts
 ```
 
-- [ ] **Step 7: Write the report file**
+- [x] **Step 7: Write the report file**
 
 1. Mark Steps 1 to 6 as `- [x]` in this file. Change the Task 24 row in `docs/build/refactor/target-structure/plan/README.md` to `Done` and add `([report](../reports/task-24-add-workspaces-version-and-notices.md))` after the task link.
 2. Create `docs/build/refactor/target-structure/reports/task-24-add-workspaces-version-and-notices.md` with:
@@ -1293,7 +1293,7 @@ Expected: PASS. The output has these paths in any order, and other paths only in
 4. Run the STE linter from Global Constraints on the report file. Expected: the output contains `0 violations`.
 5. Mark Step 7 as `- [x]`.
 
-- [ ] **Step 8: Commit and push**
+- [x] **Step 8: Commit and push**
 
 Do this step only when Steps 1 to 7 passed and no STOP condition occurred.
 

@@ -1,14 +1,22 @@
 import { HttpError, json, param, params, readJson, route } from '@deckagent/host-api'
+import {
+  RequestValidationError,
+  decodeWorkspaceAddBody,
+  decodeWorkspaceRelinkBody,
+  decodeWorkspaceRemoveBody,
+  decodeWorkspaceRenameBody,
+  decodeWorkspaceSelectBody,
+} from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { WorkspaceOperations } from './workspaces.service.ts'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value)
-}
-
-function field(value: unknown, key: string): unknown {
-  if (!isRecord(value) || Object.keys(value).some(name => name !== key)) throw new HttpError(400, 'INVALID_REQUEST')
-  return value[key]
+function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
+  try {
+    return decode(value)
+  } catch (error) {
+    if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
+    throw error
+  }
 }
 
 export function createWorkspaceRoutes(workspaces: WorkspaceOperations): Router {
@@ -22,15 +30,15 @@ export function createWorkspaceRoutes(workspaces: WorkspaceOperations): Router {
   router.post(
     '/api/workspaces',
     route(async (req, res) => {
-      json(res, 200, await workspaces.add(field(await readJson(req), 'folder')))
+      const body = parseBody(decodeWorkspaceAddBody, await readJson(req))
+      json(res, 200, await workspaces.add(body.folder, body.expectedVersion))
     }),
   )
   router.put(
     '/api/workspaces/selected',
     route(async (req, res) => {
-      const id = field(await readJson(req), 'id')
-      if (typeof id !== 'string') throw new HttpError(400, 'INVALID_REQUEST')
-      json(res, 200, await workspaces.select(id))
+      const body = parseBody(decodeWorkspaceSelectBody, await readJson(req))
+      json(res, 200, await workspaces.select(body.id, body.expectedVersion))
     }),
   )
   const notSelected = params({ workspaceId: /^(?!selected$)[\w-]{1,100}$/ })
@@ -38,21 +46,24 @@ export function createWorkspaceRoutes(workspaces: WorkspaceOperations): Router {
     '/api/workspaces/:workspaceId',
     notSelected,
     route(async (req, res) => {
-      json(res, 200, await workspaces.rename(param(req, 'workspaceId'), field(await readJson(req), 'name')))
+      const body = parseBody(decodeWorkspaceRenameBody, await readJson(req))
+      json(res, 200, await workspaces.rename(param(req, 'workspaceId'), body.name, body.expectedVersion))
     }),
   )
   router.delete(
     '/api/workspaces/:workspaceId',
     notSelected,
     route(async (req, res) => {
-      json(res, 200, await workspaces.remove(param(req, 'workspaceId')))
+      const body = parseBody(decodeWorkspaceRemoveBody, await readJson(req))
+      json(res, 200, await workspaces.remove(param(req, 'workspaceId'), body.expectedVersion))
     }),
   )
   router.put(
     '/api/workspaces/:workspaceId/folder',
     notSelected,
     route(async (req, res) => {
-      json(res, 200, await workspaces.relink(param(req, 'workspaceId'), field(await readJson(req), 'folder')))
+      const body = parseBody(decodeWorkspaceRelinkBody, await readJson(req))
+      json(res, 200, await workspaces.relink(param(req, 'workspaceId'), body.folder, body.expectedVersion))
     }),
   )
   return router

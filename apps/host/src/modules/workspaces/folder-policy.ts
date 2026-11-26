@@ -52,7 +52,7 @@ export class FolderPolicy {
       // promises.realpath uses the native resolver too; Windows short names must expand identically.
       return realpathSync.native(folder)
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return folder
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') return folder
       throw error
     }
   }

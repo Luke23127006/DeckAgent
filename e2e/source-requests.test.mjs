@@ -36,7 +36,7 @@ test('Host-scoped MCP reads project sources, refuses native writes and leaves th
   timeout: 30000,
 }, async t => {
   const f = await fixture(t)
-  assert.equal((await f.call('workspaces', 'POST', { folder: f.source })).status, 200)
+  assert.equal((await f.call('workspaces', 'POST', { folder: f.source, expectedVersion: 0 })).status, 200)
   const chat = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data
   const accepted = await f.client.send({ sessionId: chat.sessionId, input: '[mcp-read]' })
   const events = await finished(f.client, accepted.requestId)

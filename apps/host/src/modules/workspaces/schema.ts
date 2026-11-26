@@ -2,7 +2,17 @@ import type { DatabaseSync } from 'node:sqlite'
 import { WorkspaceError, defaultWorkspaceId } from './contracts.ts'
 
 const applicationId = 0x44415753 // DAWS; distinguishes this file from another application's SQLite database.
-const schemaVersion = 1
+const schemaVersion = 2
+
+const changeVersionsTable = `
+  CREATE TABLE change_versions (
+    topic TEXT NOT NULL,
+    key TEXT NOT NULL,
+    version INTEGER NOT NULL CHECK (version >= 0),
+    PRIMARY KEY (topic, key)
+  ) STRICT;
+  INSERT INTO change_versions (topic, key, version) VALUES ('workspaces', 'host', 0);
+`
 
 export function initialize(db: DatabaseSync, defaultName: string): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
@@ -24,6 +34,7 @@ export function initialize(db: DatabaseSync, defaultName: string): void {
         ) STRICT;
         CREATE INDEX workspace_identity ON workspaces(dev, ino) WHERE removed_at IS NULL;
         CREATE TABLE registry_state (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT;
+        ${changeVersionsTable}
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
@@ -33,6 +44,11 @@ export function initialize(db: DatabaseSync, defaultName: string): void {
         new Date().toISOString(),
       )
       db.prepare("INSERT INTO registry_state (key, value) VALUES ('selected', ?)").run(defaultWorkspaceId)
+    } else if (version === 1 && owner === applicationId) {
+      db.exec(`
+        ${changeVersionsTable}
+        PRAGMA user_version = ${schemaVersion};
+      `)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new WorkspaceError(
         'WORKSPACE_SCHEMA',
@@ -45,12 +61,15 @@ export function initialize(db: DatabaseSync, defaultName: string): void {
       'SELECT id, name, folder, folder_key, dev, ino, is_default, created_at, removed_at FROM workspaces LIMIT 0',
     ).all()
     db.prepare('SELECT key, value FROM registry_state LIMIT 0').all()
+    db.prepare('SELECT topic, key, version FROM change_versions LIMIT 0').all()
     if (
       !db
         .prepare('SELECT id FROM workspaces WHERE id = ? AND is_default = 1 AND removed_at IS NULL')
         .get(defaultWorkspaceId)
     )
       throw new WorkspaceError('WORKSPACE_STORAGE', 'Workspace database has no default workspace')
+    if (!db.prepare("SELECT version FROM change_versions WHERE topic = 'workspaces' AND key = 'host'").get())
+      throw new WorkspaceError('WORKSPACE_STORAGE', 'Workspace database has no version row')
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

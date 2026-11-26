@@ -110,7 +110,8 @@ test('first boot -> default workspace -> create chat -> restart -> reopen with t
   assert.equal(first.selectedId, 'default')
   const inDefault = (await call('sessions', 'POST', {})).data
   assert.equal(inDefault.workspaceId, 'default')
-  const added = (await call('workspaces', 'POST', { folder: await project('Dự án') })).data
+  assert.equal(first.version, 0)
+  const added = (await call('workspaces', 'POST', { folder: await project('Dự án'), expectedVersion: first.version })).data
   const workspaceId = added.selectedId
   assert.notEqual(workspaceId, 'default')
   assert.equal(added.workspaces.find(item => item.id === workspaceId).name, 'Dự án')
@@ -144,30 +145,32 @@ test('the same folder twice gives one workspace; relink keeps ID and chats; remo
     [folder, await tree(folder)],
     [other, await tree(other)],
   ]
-  const id = (await call('workspaces', 'POST', { folder })).data.selectedId
-  await call('workspaces/selected', 'PUT', { id: 'default' })
-  const twice = (await call('workspaces', 'POST', { folder: `${folder}\\.` })).data
+  const firstAdd = (await call('workspaces', 'POST', { folder, expectedVersion: 0 })).data
+  const id = firstAdd.selectedId
+  const selectedDefault = (await call('workspaces/selected', 'PUT', { id: 'default', expectedVersion: firstAdd.version })).data
+  const twice = (await call('workspaces', 'POST', { folder: `${folder}\\.`, expectedVersion: selectedDefault.version })).data
   assert.equal(twice.selectedId, id, 'The folder that already has a workspace makes it the workspace in use')
   assert.equal(twice.workspaces.length, 2)
   const chat = (await call('sessions', 'POST', {})).data
   await call(`sessions/${chat.sessionId}/draft`, 'PUT', { text: 'kept' })
-  const relinked = (await call(`workspaces/${id}/folder`, 'PUT', { folder: other })).data
+  const relinked = (await call(`workspaces/${id}/folder`, 'PUT', { folder: other, expectedVersion: twice.version })).data
   assert.equal(relinked.workspaces.find(item => item.id === id).folder.endsWith('other'), true)
   assert.equal(
     (await call('sessions')).data.find(item => item.sessionId === chat.sessionId).workspaceId,
     id,
     'Relink keeps the chats',
   )
-  const inUse = await call(`workspaces/default/folder`, 'PUT', { folder })
+  const inUse = await call(`workspaces/default/folder`, 'PUT', { folder, expectedVersion: relinked.version })
   assert.deepEqual([inUse.status, inUse.data.error.code], [409, 'WORKSPACE_DEFAULT'])
-  const second = (await call('workspaces', 'POST', { folder })).data.selectedId
-  const conflict = await call(`workspaces/${second}/folder`, 'PUT', { folder: other })
+  const secondAdd = (await call('workspaces', 'POST', { folder, expectedVersion: relinked.version })).data
+  const second = secondAdd.selectedId
+  const conflict = await call(`workspaces/${second}/folder`, 'PUT', { folder: other, expectedVersion: secondAdd.version })
   assert.deepEqual(
     [conflict.status, conflict.data.error.code, conflict.data.error.detail.workspaceName],
     [409, 'WORKSPACE_FOLDER_IN_USE', 'project'],
   )
-  await call('workspaces/selected', 'PUT', { id })
-  const removed = (await call(`workspaces/${id}`, 'DELETE')).data
+  const reselected = (await call('workspaces/selected', 'PUT', { id, expectedVersion: secondAdd.version })).data
+  const removed = (await call(`workspaces/${id}`, 'DELETE', { expectedVersion: reselected.version })).data
   assert.equal(
     removed.selectedId,
     'default',
@@ -176,7 +179,10 @@ test('the same folder twice gives one workspace; relink keeps ID and chats; remo
   const ungrouped = (await call('sessions')).data.find(item => item.sessionId === chat.sessionId)
   assert.equal(ungrouped.workspaceId, null, 'Its chat becomes an ungrouped chat')
   assert.equal((await call(`sessions/${chat.sessionId}/draft`)).data.text, 'kept')
-  assert.deepEqual((await call(`workspaces/${id}`, 'DELETE')).data.error.code, 'WORKSPACE_NOT_FOUND')
+  assert.deepEqual(
+    (await call(`workspaces/${id}`, 'DELETE', { expectedVersion: removed.version })).data.error.code,
+    'WORKSPACE_NOT_FOUND',
+  )
   for (const [path, before] of snapshots)
     assert.deepEqual(await tree(path), before, `No file of ${path} was created, changed or deleted`)
 })
@@ -219,7 +225,7 @@ test('search, unreadable chats and folder status: a missing folder keeps its wor
   const folder = await project('moving')
   let app = await start()
   let call = api(app)
-  const id = (await call('workspaces', 'POST', { folder })).data.selectedId
+  const id = (await call('workspaces', 'POST', { folder, expectedVersion: 0 })).data.selectedId
   const chat = (await call('sessions', 'POST', {})).data.sessionId
   assert.deepEqual(
     (await call('sessions/search', 'POST', { words: 'nhựa' })).data.map(item => item.sessionId),
@@ -242,16 +248,16 @@ test('search, unreadable chats and folder status: a missing folder keeps its wor
     'The folder that cannot be read is reported, the workspace stays set up',
   )
   assert.equal((await call(`sessions/${chat}/history`)).status, 200, 'Every chat of it stays readable')
-  const refused = await call('workspaces', 'POST', { folder: join(dir, 'does-not-exist') })
+  const refused = await call('workspaces', 'POST', { folder: join(dir, 'does-not-exist'), expectedVersion: 1 })
   assert.deepEqual([refused.status, refused.data.error.code], [422, 'WORKSPACE_FOLDER_UNREADABLE'])
   assert.equal(refused.text.includes(dir), false, 'Error bodies name no path')
-  const reason = await call('workspaces', 'POST', { folder: options.dataDir })
+  const reason = await call('workspaces', 'POST', { folder: options.dataDir, expectedVersion: 1 })
   assert.deepEqual(
     [reason.status, reason.data.error.code, reason.data.error.detail.reason],
     [422, 'WORKSPACE_FOLDER_REFUSED', 'deckagent-data'],
   )
   assert.equal(reason.text.includes(dir), false)
-  const name = await call(`workspaces/${id}`, 'PUT', { name: 'y'.repeat(101) })
+  const name = await call(`workspaces/${id}`, 'PUT', { name: 'y'.repeat(101), expectedVersion: 1 })
   assert.deepEqual([name.status, name.data.error.code], [400, 'WORKSPACE_NAME_TOO_LONG'])
 })
 
@@ -318,7 +324,7 @@ test('bad Application Storage fails clearly and leaves every file unchanged', as
   // folder that holds the data root, so the case arises when the data root moves: copy a registry that knows `outer`.
   const outer = await project('outer')
   const app = await start()
-  assert.equal((await api(app)('workspaces', 'POST', { folder: outer })).status, 200)
+  assert.equal((await api(app)('workspaces', 'POST', { folder: outer, expectedVersion: 0 })).status, 200)
   await app.close()
   const nested = join(outer, 'nested-data')
   await mkdir(join(nested, 'db'), { recursive: true })
@@ -395,4 +401,60 @@ test('workspace manifests, TypeScript projects and lockfile exclude the legacy r
   const files = await import('@deckagent/file-tools')
   assert.equal('registerFileTools' in files, false)
   assert.equal('createWorkspaceReader' in files, false)
+})
+
+test('workspace routes check expectedVersion, return 409 WORKSPACES_STALE and publish change notices after ungroup', async t => {
+  const { start, project } = await area(t)
+  const app = await start()
+  const call = api(app)
+  const folder = await project('noticed')
+
+  const missingVersion = await call('workspaces', 'POST', { folder })
+  assert.deepEqual([missingVersion.status, missingVersion.data.error.code], [400, 'INVALID_REQUEST'])
+
+  const streamControl = new AbortController()
+  t.after(() => streamControl.abort())
+  const streamResponse = await fetch(`${app.origin}/api/changes`, {
+    headers: { authorization: `Bearer ${app.token}` },
+    signal: streamControl.signal,
+  })
+  assert.equal(streamResponse.status, 200)
+  const reader = streamResponse.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  const nextNotice = async () => {
+    while (true) {
+      const boundary = buffer.indexOf('\n\n')
+      if (boundary >= 0) {
+        const frame = buffer.slice(0, boundary)
+        buffer = buffer.slice(boundary + 2)
+        if (frame.startsWith('event: change\ndata: ')) return JSON.parse(frame.slice('event: change\ndata: '.length))
+        continue
+      }
+      const part = await reader.read()
+      if (part.done) throw new Error('Stream ended')
+      buffer += decoder.decode(part.value, { stream: true }).replace(/\r\n/g, '\n')
+    }
+  }
+
+  assert.deepEqual(await nextNotice(), { topic: 'workspaces', key: 'host', version: 0 })
+
+  const added = await call('workspaces', 'POST', { folder, expectedVersion: 0 })
+  assert.equal(added.status, 200)
+  assert.equal(added.data.version, 1)
+  assert.deepEqual(await nextNotice(), { topic: 'workspaces', key: 'host', version: 1 })
+
+  const stale = await call(`workspaces/${added.data.selectedId}`, 'PUT', { name: 'Old', expectedVersion: 0 })
+  assert.deepEqual([stale.status, stale.data.error.code], [409, 'WORKSPACES_STALE'])
+
+  const chat = (await call('sessions', 'POST', {})).data
+  assert.equal(chat.workspaceId, added.data.selectedId)
+
+  const noticeAfterRemove = nextNotice()
+  const removed = await call(`workspaces/${added.data.selectedId}`, 'DELETE', { expectedVersion: 1 })
+  assert.equal(removed.status, 200)
+  assert.equal(removed.data.version, 2)
+  assert.deepEqual(await noticeAfterRemove, { topic: 'workspaces', key: 'host', version: 2 })
+  const sessionsAfterNotice = (await call('sessions')).data
+  assert.equal(sessionsAfterNotice.find(item => item.sessionId === chat.sessionId).workspaceId, null)
 })

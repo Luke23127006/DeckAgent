@@ -12,6 +12,7 @@ const workspaceStatus: Readonly<Record<WorkspaceError['code'], number>> = {
   WORKSPACE_FOLDER_IN_USE: 409,
   WORKSPACE_NAME_EMPTY: 400,
   WORKSPACE_NAME_TOO_LONG: 400,
+  WORKSPACES_STALE: 409,
   WORKSPACE_STORAGE: 500,
   WORKSPACE_SCHEMA: 500,
 }

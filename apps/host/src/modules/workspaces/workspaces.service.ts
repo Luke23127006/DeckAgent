@@ -16,11 +16,11 @@ export interface WorkspaceChats {
 
 export interface WorkspaceOperations {
   list(): Promise<WorkspaceList>
-  add(folder: unknown): Promise<WorkspaceList>
-  select(id: string): Promise<WorkspaceList>
-  rename(id: string, name: unknown): Promise<WorkspaceList>
-  relink(id: string, folder: unknown): Promise<WorkspaceList>
-  remove(id: string): Promise<WorkspaceList>
+  add(folder: unknown, expectedVersion: number): Promise<WorkspaceList>
+  select(id: string, expectedVersion: number): Promise<WorkspaceList>
+  rename(id: string, name: unknown, expectedVersion: number): Promise<WorkspaceList>
+  relink(id: string, folder: unknown, expectedVersion: number): Promise<WorkspaceList>
+  remove(id: string, expectedVersion: number): Promise<WorkspaceList>
 }
 
 /** Coordinates workspace registry changes with active-request checks and chat ungrouping. */
@@ -28,6 +28,7 @@ export function createWorkspaceOperations(registry: WorkspaceRegistry, chats: Wo
   const listWorkspaces = async (): Promise<WorkspaceList> => ({
     workspaces: await registry.list(),
     selectedId: registry.selectedId(),
+    version: registry.version(),
   })
 
   // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
@@ -37,27 +38,28 @@ export function createWorkspaceOperations(registry: WorkspaceRegistry, chats: Wo
 
   return {
     list: () => listWorkspaces(),
-    add: async folder => {
-      await registry.add(folder)
+    add: async (folder, expectedVersion) => {
+      await registry.add(folder, expectedVersion)
       return listWorkspaces()
     },
-    select: async id => {
-      registry.select(id)
+    select: async (id, expectedVersion) => {
+      registry.select(id, expectedVersion)
       return listWorkspaces()
     },
-    rename: async (id, name) => {
-      registry.rename(id, name)
+    rename: async (id, name, expectedVersion) => {
+      registry.rename(id, name, expectedVersion)
       return listWorkspaces()
     },
-    relink: async (id, folder) => {
+    relink: async (id, folder, expectedVersion) => {
       await requireNoActiveRequest(id)
-      await registry.relink(id, folder)
+      await registry.relink(id, folder, expectedVersion)
       return listWorkspaces()
     },
-    remove: async id => {
+    remove: async (id, expectedVersion) => {
       await requireNoActiveRequest(id)
-      registry.remove(id)
+      const version = registry.remove(id, expectedVersion, { publish: false })
       await chats.ungroup(id)
+      registry.publishVersion(version)
       return listWorkspaces()
     },
   }
