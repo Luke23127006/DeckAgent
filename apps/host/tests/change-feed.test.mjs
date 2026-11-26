@@ -101,6 +101,38 @@ test('GET /api/changes requires auth, sends initial topic versions and streams p
   assert.equal(await nextPromise, 'event: change\ndata: {"topic":"workspaces","key":"host","version":4}')
 })
 
+test('GET /api/sessions/:sessionId/changes checks auth and existence, sends initial versions, isolates keys and shares the 64-stream limit', async t => {
+  const feed = createChangeFeed()
+  const versions = new Map([['chat-a', 2]])
+  const host = await startHost({
+    readHistory: async () => [],
+    changes: {
+      feed,
+      hostTopics: [{ topic: 'workspaces', version: () => 0 }],
+      sessionExists: async id => id === 'chat-a',
+      sessionTopics: [{ topic: 'draft', version: id => versions.get(id) ?? 0 }],
+    },
+  })
+  t.after(() => host.close())
+
+  assert.equal((await fetch(`${host.origin}/api/sessions/chat-a/changes`)).status, 401)
+  const missing = await fetch(`${host.origin}/api/sessions/missing/changes`, {
+    headers: { authorization: `Bearer ${host.token}` },
+  })
+  assert.equal(missing.status, 404)
+  assert.equal((await missing.json()).error.code, 'SESSION_NOT_FOUND')
+
+  const stream = await openStream(host, '/api/sessions/chat-a/changes')
+  t.after(() => stream.req.destroy())
+  assert.equal(stream.res.statusCode, 200)
+  assert.equal(await readNextEvent(stream.res), 'event: change\ndata: {"topic":"draft","key":"chat-a","version":2}')
+
+  const next = readNextEvent(stream.res)
+  feed.publish({ topic: 'draft', key: 'chat-b', version: 1 })
+  feed.publish({ topic: 'draft', key: 'chat-a', version: 3 })
+  assert.equal(await next, 'event: change\ndata: {"topic":"draft","key":"chat-a","version":3}')
+})
+
 test('GET /api/changes shares the 64-stream limit and rejects the 65th stream with 429 TOO_MANY_STREAMS', async t => {
   const feed = createChangeFeed()
   const host = await startHost({

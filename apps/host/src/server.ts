@@ -386,6 +386,8 @@ function createHostOptions(
         { topic: 'chats', version: () => sessions.chatsVersion() },
         { topic: 'providers', version: () => runtime.providers.version() },
       ],
+      sessionExists: async id => !!(await sessions.getInfo(id)),
+      sessionTopics: [{ topic: 'draft', version: id => runtime.inputs.draftVersion(id) }],
     },
     management: {
       ...sessionReadManagement(sessions, runtime.research),
@@ -403,8 +405,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const layout = await prepareStorage(options.dataDir ?? resolveStorageRoot())
   const commonsImages = new CommonsImages(options.imageAccess?.fetch)
   const renderer = artifactRenderer(join(layout.files, 'runtime', 'artifact-check'))
-  const drafts = new MemoryDraftStore()
   const changeFeed = createChangeFeed()
+  const drafts = new MemoryDraftStore((key, version) => changeFeed.publish({ topic: 'draft', key, version }))
   let opened: StorageLayer | undefined
   let runtime: RuntimeLayer | undefined
   let attachments: ManagedAttachments | undefined

@@ -148,6 +148,11 @@ export class AttachmentCoordinator implements AttachmentOperations {
     return this.snapshot(id)
   }
 
+  /** The draft change notice version of a chat. It changes on background settlement too. */
+  draftVersion(id: string): number {
+    return this.drafts.version(id)
+  }
+
   private snapshot(id: string): ChatDraft {
     const draft = this.drafts.snapshot(id)
     return {
@@ -213,8 +218,10 @@ export class AttachmentCoordinator implements AttachmentOperations {
     } catch (error) {
       if (received) {
         try {
-          if (this.store.attachments.get(input.sessionId, received.attachmentId).state === 'preparing')
+          if (this.store.attachments.get(input.sessionId, received.attachmentId).state === 'preparing') {
             this.store.attachments.reject(input.sessionId, received.attachmentId, 'UPLOAD_CANCELLED')
+            this.drafts.touch(input.sessionId)
+          }
         } catch {
           /* A concurrent explicit removal may already have deleted the unsent record. */
         }
@@ -237,11 +244,14 @@ export class AttachmentCoordinator implements AttachmentOperations {
         omitted: parsed.omitted,
         parsedFingerprint,
       })
+      this.drafts.touch(id)
     } catch (error) {
       const code = signal.aborted ? 'UPLOAD_CANCELLED' : (knownCode(error) ?? 'ATTACHMENT_UNREADABLE')
       try {
-        if (this.store.attachments.get(id, attachmentId).state === 'preparing')
+        if (this.store.attachments.get(id, attachmentId).state === 'preparing') {
           this.store.attachments.reject(id, attachmentId, code)
+          this.drafts.touch(id)
+        }
       } catch {
         /* Removal or shutdown may already have settled the item. */
       }

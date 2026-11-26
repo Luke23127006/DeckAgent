@@ -15,7 +15,7 @@ After this task, `GET /api/sessions/:sessionId/changes` streams chat-scoped chan
 - `apps/host/src/modules/attachments/draft.store.ts`, `attachments.store.ts` (the method `receive`) and `attachments.service.ts` (the methods `upload` and `prepare`)
 - `apps/host/src/server.ts` (the functions `createHostOptions` and `startLocalWeb`)
 - `apps/host/tests/change-feed.test.mjs` and `e2e/attachment-admission.test.mjs`
-- `docs/architecture/10-agent-core.md` (the section `Aggregate và change notice`)
+- `docs/architecture/10-agent-core.md` (the section `Aggregate vÃ  change notice`)
 
 **Files:**
 
@@ -54,9 +54,9 @@ After this task, `GET /api/sessions/:sessionId/changes` streams chat-scoped chan
 - `server.ts`:
   - `const drafts = new MemoryDraftStore((key, version) => changeFeed.publish({ topic: 'draft', key, version }))`
   - In `changes`: add `sessionExists: async id => !!(await sessions.getInfo(id))` and `sessionTopics: [{ topic: 'draft', version: id => runtime.inputs.draftVersion(id) }]`.
-- `docs/architecture/10-agent-core.md`: in the row `draft`, change the cell `Hiện tại` to `Có notice \`draft\` trên \`GET /api/sessions/:sessionId/changes\` (phiên bản notice riêng với \`revision\` của draft). Browser nhận notice thay cho poll 500 ms`.
+- `docs/architecture/10-agent-core.md`: in the row `draft`, change the cell `Hiá»‡n táº¡i` to `CÃ³ notice \`draft\` trÃªn \`GET /api/sessions/:sessionId/changes\` (phiÃªn báº£n notice riÃªng vá»›i \`revision\` cá»§a draft). Browser nháº­n notice thay cho poll 500 ms`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -66,7 +66,7 @@ Run: `git grep -n "^| 35 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add this test at the end of `apps/host/tests/change-feed.test.mjs`:
 
@@ -176,26 +176,26 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test apps/host/tests/change-fee
 
 Expected: FAIL. The output contains `# fail 2`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the sections `Interfaces` and `Notice rules`. Run the commands of Step 2.
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 1. In `attachments.service.ts`, remove `this.drafts.touch(id)` after `this.store.attachments.ready(...)`. Build and run `node --test e2e/attachment-admission.test.mjs` with a 15-second timeout or wait for the test timeout. Expected: FAIL (timeout or `# fail 1`). Undo the change.
 2. In `draft.store.ts`, remove `this.touch(chatId)` from `save`. Build and run `node --test e2e/attachment-admission.test.mjs`. Expected: FAIL. Undo the change.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

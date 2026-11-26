@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { request } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -292,4 +293,68 @@ test('admission binds newly uploaded sources, accepts attachment-only input and 
   assert.equal(bypass.status, 409)
   assert.equal(bypass.data.error.code, 'ATTACHMENT_REJECTED')
   assert.deepEqual((await f.call(`${path}/draft`)).data.attachmentIds, [bad])
+})
+
+test('draft writes and attachment preparation send draft notices on /api/sessions/:sessionId/changes without changing revision on ready', async t => {
+  const { api, app, id } = await fixture(t)
+  const { port, host } = new URL(app.origin)
+  const stream = await new Promise((resolve, reject) => {
+    const req = request(
+      {
+        host: '127.0.0.1',
+        port,
+        path: `/api/sessions/${id}/changes`,
+        headers: { host, authorization: `Bearer ${app.token}` },
+      },
+      res => resolve({ req, res }),
+    )
+    req.on('error', reject)
+    req.end()
+  })
+  t.after(() => stream.req.destroy())
+  assert.equal(stream.res.statusCode, 200)
+  let buffer = ''
+  const queued = []
+  const waiters = []
+  stream.res.on('data', chunk => {
+    buffer += chunk.toString('utf8')
+    let cut = buffer.indexOf('\n\n')
+    while (cut >= 0) {
+      const frame = buffer.slice(0, cut)
+      buffer = buffer.slice(cut + 2)
+      const data = frame.split('\n').find(line => line.startsWith('data: '))?.slice(6)
+      if (data) {
+        const notice = JSON.parse(data)
+        const waiter = waiters.shift()
+        if (waiter) waiter(notice)
+        else queued.push(notice)
+      }
+      cut = buffer.indexOf('\n\n')
+    }
+  })
+  const nextNotice = () =>
+    queued.length ? Promise.resolve(queued.shift()) : new Promise(resolve => waiters.push(resolve))
+
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 0 })
+  const saved = await api(`sessions/${id}/draft`, 'PUT', { text: 'Hello', expectedRevision: 0 })
+  assert.equal(saved.status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 1 })
+  assert.equal((await api(`sessions/${id}/draft`, 'PUT', { text: 'stale', expectedRevision: 0 })).status, 409)
+
+  const form = new FormData()
+  form.append('expectedRevision', String(saved.data.revision))
+  form.append('file', new Blob(['evidence']), 'notes.txt')
+  const uploaded = await api(`sessions/${id}/attachments`, 'POST', form)
+  assert.equal(uploaded.status, 202)
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 2 })
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 3 })
+  const afterReady = await api(`sessions/${id}/draft`)
+  assert.equal(afterReady.data.attachments[0].state, 'ready')
+  assert.equal(afterReady.data.revision, uploaded.data.draft.revision, 'Preparation keeps draft.revision')
+
+  const removed = await api(`sessions/${id}/attachments/${uploaded.data.attachment.attachmentId}`, 'DELETE', {
+    expectedRevision: uploaded.data.draft.revision,
+  })
+  assert.equal(removed.status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 4 })
 })

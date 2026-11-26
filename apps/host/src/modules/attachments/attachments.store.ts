@@ -283,6 +283,7 @@ export class ManagedAttachments {
       await this.erase(item.attachmentId).catch(() => {})
       const code = signal.aborted ? 'UPLOAD_CANCELLED' : (rejectionCode(error) ?? 'ATTACHMENT_NOT_SAVED')
       this.log.reject(input.sessionId, item.attachmentId, code)
+      this.drafts.touch(input.sessionId)
       throw new AttachmentStorageError(code, 'The attachment was not saved. Remove it from the draft and try again')
     } finally {
       this.uploads.delete(item.attachmentId)

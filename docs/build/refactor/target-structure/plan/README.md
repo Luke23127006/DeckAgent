@@ -303,7 +303,7 @@ Revision 3h adds these failure modes:
 | 33 | Done | [Add the providers stale check](task-33-add-providers-stale-check.md) ([report](../reports/task-33-add-providers-stale-check.md)) |
 | 34 | Done | [Refresh the Browser from providers notices](task-34-refresh-browser-from-providers-notices.md) ([report](../reports/task-34-refresh-browser-from-providers-notices.md)) |
 | 35 | Done | [Move the attachments module into apps/host/src/modules](task-35-move-attachments-module.md) ([report](../reports/task-35-move-attachments-module.md)) |
-| 36 | Pending | [Add session change route and draft change notices](task-36-add-session-changes-and-draft-notices.md) |
+| 36 | Done | [Add session change route and draft change notices](task-36-add-session-changes-and-draft-notices.md) ([report](../reports/task-36-add-session-changes-and-draft-notices.md)) |
 | 37 | Pending | [Require expectedRevision with Zod decoders on draft and attachment writes](task-37-require-draft-expected-revision.md) |
 | 38 | Pending | [Connect the Browser to draft notices and handle DRAFT_CONFLICT](task-38-connect-browser-to-draft-notices.md) |
 
