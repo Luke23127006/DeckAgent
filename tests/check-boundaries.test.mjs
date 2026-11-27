@@ -575,3 +575,35 @@ test('checkBoundaries applies role symbol checks to deck by default', () => {
   ]
   assert.deepEqual(findings(valid), [])
 })
+
+test('checkBoundaries applies role symbol checks to settings by default', () => {
+  const invalid = [
+    { path: 'apps/host/src/modules/settings/settings.service.ts', content: 'export function createSettings() {}\n' },
+    { path: 'apps/host/src/modules/settings/settings.store.ts', content: 'export class WebState {}\n' },
+    { path: 'apps/host/src/modules/settings/settings.routes.ts', content: 'export function settingsRouter() {}\n' },
+    {
+      path: 'apps/host/src/modules/settings/settings.errors.ts',
+      content: 'export class WebStateFailure extends Error {}\nexport function mapWebStateFailure() {}\n',
+    },
+  ]
+  assert.deepEqual(findings(invalid), [
+    { path: 'apps/host/src/modules/settings/settings.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/settings/settings.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/settings/settings.routes.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/settings/settings.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/settings/settings.store.ts', line: 1, rule: 'role-file-symbol' },
+  ])
+  const valid = [
+    { path: 'apps/host/src/modules/settings/settings.service.ts', content: 'export class SettingsService {}\n' },
+    { path: 'apps/host/src/modules/settings/settings.store.ts', content: 'export class SqliteSettingsStore {}\n' },
+    {
+      path: 'apps/host/src/modules/settings/settings.routes.ts',
+      content: 'export function createSettingsRoutes() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/settings/settings.errors.ts',
+      content: 'export class SettingsError extends Error {}\nexport function mapSettingsError() {}\n',
+    },
+  ]
+  assert.deepEqual(findings(valid), [])
+})

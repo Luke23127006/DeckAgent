@@ -1,4 +1,5 @@
 export { DeckService } from './deck.service.ts'
+export { createDeckStore } from './deck-store.ts'
 export { createDeckRoutes } from './deck.routes.ts'
 export { DeckWorkflowError, mapDeckError } from './deck.errors.ts'
 export type { DeckAttachments, DeckChats } from './ports.ts'

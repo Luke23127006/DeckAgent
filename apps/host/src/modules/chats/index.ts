@@ -1,4 +1,4 @@
-export { ChatService, toChatRequest } from './chats.service.ts'
+export { ChatService } from './chats.service.ts'
 export type { ChatMarks } from './chats.service.ts'
 export { ChatError, mapChatError } from './chats.errors.ts'
 export { ChatRequestService } from './chat-requests.service.ts'

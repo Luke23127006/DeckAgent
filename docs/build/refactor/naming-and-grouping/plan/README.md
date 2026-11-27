@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`. Phase 5 refactors the attachments module and runs its exit checks. Phase 6 refactors `apps/host/src/modules/deck/`, removes the `chatSessions` adapter and deck run planning from `server.ts`, and enables `role-file-symbol` for `deck`.
+**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`. Phase 5 refactors the attachments module and runs its exit checks. Phase 6 refactors `apps/host/src/modules/deck/`, removes the `chatSessions` adapter and deck run planning from `server.ts`, and enables `role-file-symbol` for `deck`. Phase 7 reduces `server.ts` to startup, shutdown, configuration and wiring, moves the root files of `apps/host/src/` to their owners, removes HTTP status from `db/` and narrows each barrel.
 
 **Approach:** One revision for each phase of the Naming and Grouping Refactor. The planner does the diagnosis of each phase, and the decision table records every answer. Each task is an execution task.
 
@@ -266,3 +266,40 @@ The user requested direct diagnosis and execution before task creation, followed
 ### Phase 6 exit
 
 Phase 6 is done. Task 17 is `Done`. `build`, `lint`, `check:boundaries` (`0 violation(s)` with `deck` in `ROLE_FILE_MODULES`), `check:docs`, Biome format on Phase 6 files, all 19 non-live `test:*` scripts and `test:web` Vitest (6 files, 23 tests) passed with zero failures. Independent review findings were fixed and re-verified. The report of Task 17 has the evidence.
+
+## Revision 7: Phase 7, composition root, `db/` and root files
+
+The user requested direct diagnosis and execution, followed by one Task 18 record and report for Phase 7.
+
+### Decisions (Revision 7)
+
+| Topic | Decision |
+| --- | --- |
+| Run failure statuses | Move `mapRunFailure` from `server.ts` to `http/error-handler.ts`. Use `runFailureStatuses` with one status for each known `RunFailure` code. An unknown `RunFailure` code maps to HTTP 500. `writeRouteError` takes `mapApplicationFailure` for the module error maps. Keep every status and JSON body |
+| Corrupt chat rows | Remove `mapSessionFailure` from `db/`. `ChatService`, `ChatRequestService`, `ResearchService` and `AttachmentService` translate `DatabaseError('SESSION_CORRUPT')` to their `CHAT_UNREADABLE` error at HTTP 409 |
+| Run admission allowlist | Move the list of admission error codes that pass through from `server.ts` to `admitPassthroughCodes` in `runs/lifecycle/run-controller.ts`. Other admission errors become `REQUEST_NOT_SAVED` |
+| Chat database | Rename `SessionDatabase` to `ChatDatabase` (`db/chat-database.ts`) and `SessionError` to `DatabaseError` (`db/records.ts`). Rename `db/contracts.ts` to `db/records.ts` and `db/sessions-schema.ts` to `db/chats.migrations.ts`. Keep `sessions.sqlite` on disk |
+| Store wiring | Keep `openChatStorage` in `server.ts`, not exported. It joins stores of two modules and `db/`, and `db/` must not import a module |
+| Settings | Replace `web-state.ts` and `settings-routes.ts` with `modules/settings/` (`SqliteSettingsStore`, `SettingsService`, `createSettingsRoutes`, `SettingsError` with `PREFERENCES_STALE` at HTTP 409, `mapSettingsError`). Put the `web.sqlite` connection in `db/settings-database.ts` with `db/settings.migrations.ts`. Add `settings` to `ROLE_FILE_MODULES` |
+| Storage layout and credentials | Move `storage-root.ts` and `credential-store.ts` to `storage/` with a barrel. `storage/` imports no module, HTTP, `runs/`, runtime, tool, `db/`, Express or `node:sqlite`. `http/` does not import `storage/` |
+| Deck store and prepared images | Move `createDeckStore` to `modules/deck/deck-store.ts`. Replace `createPreparedImageReader` with `AttachmentService.preparedImage` |
+| Type files | Rename `http/contracts.ts` to `http/http.types.ts`, `tools/policy/contracts.ts` to `tools/policy/policy.types.ts` and `tools/sources/attachment-contracts.ts` to `tools/sources/attachment.types.ts` |
+| Barrels | Each `index.ts` in `apps/host/src/` exports only symbols that a file outside its folder imports. Tests import internal files from `lib/` directly |
+| Root files | The root of `apps/host/src/` holds `cli.ts`, `contract-sync.ts` and `server.ts`. The Project Structure gives each one an owner |
+
+### Review Focus (Revision 7)
+
+- `writeRouteError` keeps each `RunFailure` status and detail field. Test: `writeRouteError maps RunFailure statuses, preserves detail, and defaults unknown RunFailure codes to 500` in `apps/host/tests/settings-and-error-handler.test.mjs`.
+- Corrupt chat rows give HTTP 409 `CHAT_UNREADABLE` on all read paths. Test: `ChatService, ChatRequestService, ResearchService and AttachmentService translate corrupt SQLite rows to HTTP 409 CHAT_UNREADABLE`.
+- Run admission passes only allowed codes. Test: `RunController passes through allowed admission codes and masks storage errors as REQUEST_NOT_SAVED`.
+- `storage/` and `http/` import rules. Tests: `tests/oxlint-boundaries.test.mjs`.
+
+### Tasks (Revision 7)
+
+| Task | Status | File |
+| --- | --- | --- |
+| 18 | Done | [Clean the composition root, db/ and root files and check Phase 7](task-18-clean-composition-root-and-check-phase-7.md) ([report](../reports/task-18-clean-composition-root-and-check-phase-7.md)) |
+
+### Phase 7 exit
+
+Phase 7 is done. Task 18 is `Done`. `build`, `lint`, `check:boundaries` (`0 violation(s)` with `settings` in `ROLE_FILE_MODULES`), `check:docs`, Biome format on Phase 7 files, 80 boundary tests, 10 mutation proofs, all 19 non-live `test:*` scripts and `test:web` Vitest (23 passed) passed with zero failures. Independent review findings were fixed and re-verified. The report of Task 18 has the evidence.

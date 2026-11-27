@@ -53,6 +53,8 @@ Khi hai component cần import lẫn nhau, xem lại ownership và chiều phụ
 ```text
 apps/host/src/
   server.ts            composition root
+  cli.ts               CLI entry point gọi server.ts
+  contract-sync.ts     kiểm tra tương đương kiểu lúc compile (tạm thời cho tới khi đổi packages/contracts/)
   http/                Express app, middleware, error handler, helper SSE, channel báo thay đổi
   modules/<name>/      <name>.routes.ts, <name>.service.ts, <name>.store.ts, <name>.errors.ts
   runs/
@@ -66,6 +68,7 @@ apps/host/src/
     sources/           nguồn tài liệu: filesystem, connector
   runtimes/<name>/     adapter cho port AgentRuntime
   db/                  connection, migration, persistence adapter cho port của runs/
+  storage/             thư mục Application Storage và kho credential được OS bảo vệ
 apps/host/tests/
 apps/web/
   components.json      cấu hình shadcn/ui
@@ -99,12 +102,15 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
 | `src/server.ts` | Local Host khởi động và tắt thế nào? | Startup, shutdown, configuration, tạo service, gắn middleware, đăng ký route và phần góp vào run | Business rule, SQL |
-| `src/http/` | Mọi HTTP request đi qua những bước chung nào? | Express app, bearer auth, kiểm tra origin, security header, giới hạn body, multipart, error handler, helper SSE, channel chuyển notice thay đổi tới Browser | Route của module, business rule |
-| `src/modules/<name>/` | Một domain làm gì và lưu gì? | Route, use case, business rule, SQL của các bảng module sở hữu, `version` và notice thay đổi, phần góp của module vào run | Store của module khác, vòng đời run |
+| `src/cli.ts` | Người dùng khởi chạy Local Host từ dòng lệnh thế nào? | Đọc tham số CLI, nạp file cấu hình startup, mở trình duyệt, xử lý tín hiệu tắt và gọi `server.ts` | Business rule, HTTP route, SQL |
+| `src/contract-sync.ts` | Kiểu dữ liệu của Host và contracts package có khớp lúc compile không? | Kiểm tra tương đương kiểu lúc compile (`tsc -b`) giữa `@deckagent/host-contracts`, `db/` và `@deckagent/deck` (tạm thời cho tới khi chuyển `packages/contracts/`) | Runtime logic, I/O |
+| `src/http/` | Mọi HTTP request đi qua những bước chung nào? | Express app, bearer auth, kiểm tra origin, security header, giới hạn body, multipart, error handler (`HttpError` và `RunFailure`), helper SSE, channel chuyển notice thay đổi tới Browser | Route của module, business rule |
+| `src/modules/<name>/` | Một domain làm gì và lưu gì? | Route, use case, business rule, SQL của các bảng module sở hữu (`chats`, `workspaces`, `providers`, `research`, `attachments`, `deck`, `settings`), `version` và notice thay đổi, phần góp của module vào run | Store của module khác, vòng đời run |
 | `src/runs/` | Một run chạy, dừng và kết thúc thế nào? | Vòng đời run, event log, approval, cancel, chuẩn bị run, ngân sách tài nguyên, port `AgentRuntime` và port `ToolExecutor` | Module, Express, SQL driver, adapter cụ thể, rule riêng của owner của run |
 | `src/tools/` | Agent truy cập tài liệu trong phạm vi được cấp thế nào? | Tool policy, tool executor, nguồn tài liệu | User approval, request admission |
 | `src/runtimes/<name>/` | Một agent runtime cụ thể chạy thế nào? | Process, protocol, MCP bridge, parse event, chuyển skill sang format của runtime | Terminal status của run, permission |
-| `src/db/` | Local Host mở database, migrate và lưu run thế nào? | Connection, migration, persistence adapter cho port của `runs/` (`SqliteRunStore` và các file query của nó) | SQL của module, HTTP status |
+| `src/db/` | Local Host mở database, migrate và lưu run thế nào? | Connection (`ChatDatabase`, `SettingsDatabase`), migration (`*.migrations.ts`), persistence adapter cho port của `runs/` (`SqliteRunStore` và các file query của nó) | SQL của module, HTTP status |
+| `src/storage/` | Local Host đặt dữ liệu ứng dụng và lưu khóa bí mật ở đâu? | Xác định và chuẩn bị thư mục Application Storage (`storage-root.ts`), kho credential được OS bảo vệ (`credential-store.ts`) | SQLite, business rule của module, HTTP |
 
 ### `apps/web/`
 
@@ -181,10 +187,11 @@ flowchart LR
 | `apps/web/src/hooks/` | `api/`, `contexts/`, TanStack Query | `pages/`, `components/`, `layouts/` |
 | `apps/web/src/api/` | `packages/contracts` | React, TanStack Query, `pages/`, `components/`, `layouts/`, `hooks/`, `contexts/` |
 | `apps/web/src/editor/` | `packages/contracts` | React, TanStack Query, `api/` và mọi folder UI |
-| `http/` | Route registrar của module | Service và store của module, business rule |
+| `http/` | Route registrar của module, `runs/ports.ts` (`RunFailure` trong `http/error-handler.ts`) | Service và store của module, `db/`, `storage/`, business rule |
 | Route của module | Service của cùng module, `packages/contracts` | Store, SQL driver |
-| Service của module | Store của cùng module, public operation của service module khác, public operation của `runs/` | Express, store của module khác |
+| Service của module | Store của cùng module, public operation của service module khác, public operation của `runs/`, `storage/` | Express, store của module khác |
 | Store của module | `db/`, `packages/contracts` | Express, service |
+| `storage/` | Node filesystem và OS credential API | Module, HTTP, `runs/`, runtime, tool, `db/`, Express, `node:sqlite` |
 | `runs/` | Port của `runs/`, `packages/contracts` | Module, Express, SQL driver, adapter trong `runtimes/` |
 | `runtimes/<name>/` | Port trong `runs/ports.ts`, `packages/contracts` | Module, Express |
 | `tools/executors/` | `tools/policy/`, `tools/sources/` | Module, tự cấp thêm capability |
@@ -201,7 +208,7 @@ flowchart LR
 - Package graph và module graph không có vòng. Khi có vòng, sửa ownership. Không tạo module `shared` hay `common` để cắt vòng *(review)*.
 - Không re-export toàn bộ private module thành public API *(review)*. Quy tắc về export chỉ để test dùng nằm trong [Testware](testware.md).
 
-Bảng ánh xạ lỗi sang HTTP status chia theo owner của lỗi. Error handler chung trong `http/` ánh xạ `HttpError`, `RequestFailure` của `runs/` và lỗi không có trong bảng nào (`500 HOST_ERROR`). Mỗi module sở hữu bảng ánh xạ cho error class của module đó. `server.ts` đăng ký bảng của từng module với error handler. `http/` không import error class của module. Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
+Bảng ánh xạ lỗi sang HTTP status chia theo owner của lỗi. Error handler chung trong `http/` ánh xạ `HttpError`, `RunFailure` của `runs/` và lỗi không có trong bảng nào (`500 HOST_ERROR`). Mỗi module sở hữu bảng ánh xạ cho error class của module đó. `server.ts` đăng ký bảng của từng module với error handler. `http/` không import error class của module. Lỗi thuộc component phát hiện ra nó. Cách biểu diễn và chuyển lỗi qua các boundary nằm trong [Coding Guidelines](code.md#error-handling).
 
 ## Trong lúc chuyển
 
@@ -239,7 +246,8 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
 | Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
 | `db/` không import module, HTTP, `runs/{lifecycle,preparation,budget}/`, runtime, tool hoặc Express | `oxlint` (`no-restricted-imports`) cho `apps/host/src/db/` | — |
-| `http/` không import feature, module, integration, runtime, `runs/`, store, `db/`, tool, `node:sqlite` hoặc `@deckagent/deck` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
+| `storage/` không import module, HTTP, `runs/`, runtime, tool, `db/`, Express hoặc `node:sqlite` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/storage/` | — |
+| `http/` không import feature, module, integration, runtime, `runs/` (trừ `runs/ports.ts` trong `http/error-handler.ts`), store, `db/`, `storage/`, tool, `node:sqlite` hoặc `@deckagent/deck` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` và `apps/host/src/http/error-handler.ts` | — |
 | Adapter runtime không import module, Express, `node:sqlite`, `db/`, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/`, `check:boundaries` (`runtime-private-import`) | — |
 | Route không import store, `schema.ts`, `db/` hoặc SQL driver. Service không import Express, `db/` hoặc SQL driver. Chỉ `*.store.ts` được import `db/`. Chỉ `*.routes.ts` và `*.errors.ts` được import `http/route-helpers.ts` (vẫn chặn `http/{app,start-host,error-handler,change-feed}*`). Module không import store của module khác, tool hoặc runtime | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.store.ts`, `*.routes.ts`, `*.service.ts` và `*.errors.ts` | — |
 | `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only của `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host` và domain package trong `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn Node-only module và mọi package khác `@deckagent/host-contracts` trong các folder mới của `apps/web/src/` | `check:boundaries` (`browser-node-import`) cho toàn bộ `apps/web/src/`, sau khi Phase 7 của Browser in React xoá `apps/web/src/index.ts` |

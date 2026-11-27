@@ -68,6 +68,8 @@ function knownCode(error: unknown) {
 
 function safeError(error: unknown): never {
   if (error instanceof AttachmentError) throw error
+  if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+    throw new AttachmentError('CHAT_UNREADABLE')
   const code = knownCode(error)
   if (code !== undefined) throw new AttachmentError(code)
   throw new AttachmentError('ATTACHMENT_NOT_SAVED')
@@ -99,7 +101,11 @@ export class AttachmentService implements DeckAttachments {
 
   async draft(id: string): Promise<ChatDraft> {
     await this.chat(id)
-    return this.snapshot(id)
+    try {
+      return this.snapshot(id)
+    } catch (error) {
+      safeError(error)
+    }
   }
 
   /** The draft change notice version of a chat. It changes on background settlement too. */
@@ -109,6 +115,29 @@ export class AttachmentService implements DeckAttachments {
 
   sent(id: string): readonly AttachmentRecordView[] {
     return this.attachments.sent(id)
+  }
+
+  /** Reads prepared PNG bytes and digests of a sent image attachment for deck slide staging. */
+  async preparedImage(sessionId: string, attachmentId: string, signal: AbortSignal) {
+    const item = this.attachments.get(sessionId, attachmentId)
+    if (
+      !item.source ||
+      !item.fingerprint ||
+      !item.parsedFingerprint ||
+      !item.detectedType?.startsWith('image/') ||
+      !this.attachments.sent(sessionId).some(a => a.attachmentId === attachmentId)
+    )
+      throw new AttachmentError('ATTACHMENT_UNREADABLE', 'The selected image is unavailable')
+    const parsed = await this.files.prepared(sessionId, attachmentId, signal)
+    const part = parsed.parts.find(p => p.type === 'image')
+    if (!part || part.type !== 'image')
+      throw new AttachmentError('ATTACHMENT_UNREADABLE', 'The selected image has no prepared pixels')
+    return {
+      bytes: Buffer.from(part.data, 'base64'),
+      source: item.source,
+      originalDigest: item.fingerprint,
+      parsedDigest: item.parsedFingerprint,
+    }
   }
 
   private snapshot(id: string): ChatDraft {

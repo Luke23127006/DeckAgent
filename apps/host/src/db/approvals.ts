@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
-import type { ApprovalView, RequestEvent, RequestEventBody } from './contracts.ts'
+import { DatabaseError } from './records.ts'
+import type { ApprovalView, RequestEvent, RequestEventBody } from './records.ts'
 
 interface Access {
   transaction<T>(operation: () => T): T
@@ -32,12 +32,13 @@ export class ApprovalLog {
         !step.reason.trim() ||
         step.reason.length > 500
       )
-        throw new SessionError('INVALID_REQUEST', 'Invalid approval step')
+        throw new DatabaseError('INVALID_REQUEST', 'Invalid approval step')
       const refused = this.db
         .prepare("SELECT id FROM request_approvals WHERE request_id = ? AND step_key = ? AND state = 'refused' LIMIT 1")
         .get(requestId, step.key)
       if (refused) return { approval: this.get(requestId, String(refused.id)), events: [] }
-      if (this.pending(requestId)) throw new SessionError('APPROVAL_CONFLICT', 'A step is already waiting for approval')
+      if (this.pending(requestId))
+        throw new DatabaseError('APPROVAL_CONFLICT', 'A step is already waiting for approval')
       const id = `approval-${randomUUID()}`
       this.db
         .prepare(
@@ -61,10 +62,10 @@ export class ApprovalLog {
       const approval = this.get(requestId, approvalId)
       this.access.assertActive(requestId)
       if (decision !== 'allow-once' && decision !== 'refuse')
-        throw new SessionError('INVALID_REQUEST', 'Invalid approval decision')
+        throw new DatabaseError('INVALID_REQUEST', 'Invalid approval decision')
       const state = decision === 'allow-once' ? 'allowed' : 'refused'
       if (approval.state === state) return { approval, events: [] }
-      if (approval.state !== 'pending') throw new SessionError('APPROVAL_CONFLICT', 'The step already has a decision')
+      if (approval.state !== 'pending') throw new DatabaseError('APPROVAL_CONFLICT', 'The step already has a decision')
       this.db.prepare('UPDATE request_approvals SET state = ? WHERE id = ?').run(state, approvalId)
       this.db.prepare("UPDATE requests SET status = 'active' WHERE id = ?").run(requestId)
       const saved = this.get(requestId, approvalId)
@@ -106,10 +107,10 @@ export class ApprovalLog {
     const row = this.db
       .prepare('SELECT * FROM request_approvals WHERE id = ? AND request_id = ?')
       .get(approvalId, requestId)
-    if (!row) throw new SessionError('APPROVAL_NOT_FOUND', 'Approval is unavailable in this request')
+    if (!row) throw new DatabaseError('APPROVAL_NOT_FOUND', 'Approval is unavailable in this request')
     const state = row.state
     if (state !== 'pending' && state !== 'allowed' && state !== 'refused' && state !== 'cancelled')
-      throw new SessionError('SESSION_CORRUPT', 'Approval state is unreadable')
+      throw new DatabaseError('SESSION_CORRUPT', 'Approval state is unreadable')
     return {
       approvalId,
       requestId,

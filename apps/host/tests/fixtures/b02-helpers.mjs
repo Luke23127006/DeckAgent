@@ -13,7 +13,7 @@ export {
   MemoryDraftStore,
   createAttachmentRoutes,
 } from '../../lib/types/modules/attachments/index.js'
-export { defaultCredentialStore } from '../../lib/types/credential-store.js'
+export { defaultCredentialStore } from '../../lib/types/storage/index.js'
 export { pinnedVersion } from '../../lib/types/runtimes/opencode/index.js'
 
 export const fakeCli = resolve(fileURLToPath(new URL('./fake-opencode.mjs', import.meta.url)))

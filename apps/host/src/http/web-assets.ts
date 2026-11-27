@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, relative } from 'node:path'
 import type { WebPreferences } from '@deckagent/host-contracts'
-import type { HostOptions } from './contracts.ts'
+import type { HostOptions } from './http.types.ts'
 
 type WebAsset = NonNullable<HostOptions['assets']>[string]
 

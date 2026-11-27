@@ -1,11 +1,11 @@
-import { SessionDatabase, SessionError, SqliteRunStore } from '../../lib/types/db/index.js'
+import { ChatDatabase, DatabaseError, SqliteRunStore } from '../../lib/types/db/index.js'
 import { SqliteChatStore } from '../../lib/types/modules/chats/index.js'
 import { SqliteAttachmentStore } from '../../lib/types/modules/attachments/index.js'
 
-export { SessionDatabase, SessionError, SqliteRunStore, SqliteChatStore, SqliteAttachmentStore }
+export { ChatDatabase, DatabaseError, SqliteRunStore, SqliteChatStore, SqliteAttachmentStore }
 
 export function openSessionStorage(path, options) {
-  const db = new SessionDatabase(path)
+  const db = new ChatDatabase(path)
   const chats = new SqliteChatStore(db, options)
   const attachments = new SqliteAttachmentStore(db)
   const runs = new SqliteRunStore(db, {

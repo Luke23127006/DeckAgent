@@ -10,11 +10,11 @@ import type {
   ToolSchema,
   ToolSet,
 } from '../../runs/ports.ts'
-import { SourceError } from '../policy/contracts.ts'
+import { SourceError } from '../policy/policy.types.ts'
 import { createSourceAccess } from '../policy/source-access.ts'
-import type { SourceAccess } from '../policy/contracts.ts'
-import { attachmentLimits } from '../sources/attachment-contracts.ts'
-import type { ParsedAttachment } from '../sources/attachment-contracts.ts'
+import type { SourceAccess } from '../policy/policy.types.ts'
+import { attachmentLimits } from '../sources/attachment.types.ts'
+import type { ParsedAttachment } from '../sources/attachment.types.ts'
 import type {
   ToolAttachmentReader,
   ToolAttachmentRecord,

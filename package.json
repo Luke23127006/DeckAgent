@@ -39,7 +39,7 @@
     "test:browser-smoke": "node --test --test-concurrency=1 e2e/browser-smoke.test.mjs e2e/layout-review-browser.test.mjs",
     "test:env-startup": "node --test e2e/env-startup.test.mjs",
     "test:http-edge": "node --test e2e/http-edge.test.mjs",
-    "test:local-web": "node --test apps/host/tests/web-session.test.mjs apps/host/tests/web-management.test.mjs apps/web/tests/change-watcher.test.mjs",
+    "test:local-web": "node --test apps/host/tests/settings-and-error-handler.test.mjs apps/host/tests/web-session.test.mjs apps/host/tests/web-management.test.mjs apps/web/tests/change-watcher.test.mjs",
     "test:web": "corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native",
     "test:layouts": "node --test packages/presentation/html/tests/html-template-v3.test.mjs packages/presentation/html/tests/layout-quality.test.mjs apps/web/tests/layout-review.test.mjs e2e/layout-review-http.test.mjs",
     "gallery:layouts": "node scripts/layout-gallery.mjs"

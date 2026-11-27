@@ -3,6 +3,7 @@ import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 export type AttachmentErrorCode =
   | 'INVALID_REQUEST'
   | 'SESSION_NOT_FOUND'
+  | 'CHAT_UNREADABLE'
   | 'ATTACHMENT_NOT_FOUND'
   | 'DRAFT_CONFLICT'
   | 'ATTACHMENT_CONFLICT'
@@ -38,6 +39,7 @@ export class AttachmentError extends Error {
 const attachmentStatus: Readonly<Record<AttachmentErrorCode, number>> = {
   INVALID_REQUEST: 400,
   SESSION_NOT_FOUND: 404,
+  CHAT_UNREADABLE: 409,
   ATTACHMENT_NOT_FOUND: 404,
   DRAFT_CONFLICT: 409,
   ATTACHMENT_CONFLICT: 409,

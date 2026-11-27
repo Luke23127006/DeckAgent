@@ -79,16 +79,16 @@ Phase 6 completed these renames and capability folders (see [Revision 6](plan/RE
 
 ## `server.ts`
 
-`server.ts` has 714 lines. These parts are not wiring and move to their owners:
+`server.ts` had 714 lines on 2026-11-27. These parts were not wiring and moved to their owners. After Phase 7, `server.ts` has 557 lines and holds only startup, shutdown, configuration and wiring:
 
 | Lines (2026-11-27) | Part | Target owner | Problems |
 | --- | --- | --- | --- |
-| 122–125 | `toStoredRequest` | The chats module, as one converter with `projectRequest` | NG-26 |
-| 128–147 | `openSessionStorage` (joins the chat store, the attachment store and the run store with admission hooks) | `db/`. Tests import it | NG-13 |
-| 182–235 | `createPreparedImageReader`, `createDeckStore` | The deck module | NG-13 |
+| 122–125 | `toStoredRequest` | Removed before Phase 7. `ChatService` reads `StoredRequest` records through `ChatRunRecord` | NG-26 |
+| 128–147 | `openSessionStorage` (joins the chat store, the attachment store and the run store with admission hooks) | Stays in `server.ts` as `openChatStorage`, not exported. It is wiring: it joins the stores of the chats module, the attachments module and `db/`, and `db/` must not import a module. Tests build their own fixture in `apps/host/tests/fixtures/session-store.mjs` | NG-13 |
+| 182–235 | `createPreparedImageReader`, `createDeckStore` | `createDeckStore` in `modules/deck/deck-store.ts`. The prepared image read is `AttachmentService.preparedImage` | NG-13 |
 | 403–427 | `mapRunFailure` (HTTP status of `RunFailure`) | The error handler in `http/`, because the project structure gives the mapping of `runs/` errors to `http/` [[1]](#ref-1) | NG-21 |
 | 441–465 | `chatSessions`: one object that gives deck, research, attachments and source tools the chat store, the attachment store and the run store | Removed. Each consumer gets its `<Consumer><Provider>` port from the service of the owner | NG-17 |
-| 467–499 | `runStore`: run admission through the draft, with a list of error codes that pass through | `Open`: `runs/` or `ChatRequestService` | NG-21 |
+| 467–499 | `runStore`: run admission through the draft, with a list of error codes that pass through | `RunController` in `runs/lifecycle/run-controller.ts` (`admitPassthroughCodes`). Other admission errors become `REQUEST_NOT_SAVED` | NG-21 |
 | 532–596 | Deck run planning and generation preparation | The deck module | NG-21 |
 
 ## `db/` and the root files
@@ -96,13 +96,13 @@ Phase 6 completed these renames and capability folders (see [Revision 6](plan/RE
 | Current | Target | Problems |
 | --- | --- | --- |
 | `db/run-store.ts`, `db/approvals.ts`, `db/request-queries.ts`, `db/request-sources.ts` | Stay in `db/`. The project structure gives `db/` the persistence adapters of the ports of `runs/` | NG-11 |
-| `mapSessionFailure` in `db/index.ts` | The error table of the chats module. `db/` does not know HTTP status | NG-22 |
+| `mapSessionFailure` in `db/index.ts` | Removed. `ChatService`, `ChatRequestService`, `ResearchService` and `AttachmentService` translate `DatabaseError('SESSION_CORRUPT')` to their `CHAT_UNREADABLE` error, which maps to HTTP 409. `db/` does not know HTTP status | NG-22 |
 | `db/contracts.ts` | `db/records.ts` | NG-23 |
 | `db/sessions-schema.ts` | `db/chats.migrations.ts`. The file name `sessions.sqlite` on disk stays, because it is user data | NG-19, NG-23 |
-| `SessionDatabase`, `SessionError` | `Open`: names for the database of chats, attachments and runs | NG-19 |
-| `web-state.ts` (`WebState`, preferences, `web.sqlite`) and `settings-routes.ts` | `modules/settings/` with `settings.routes.ts`, `settings.service.ts` and `settings.store.ts`. The connection to `web.sqlite` goes to `db/`, because `SqliteProviderStore` and `SqliteResearchStore` also use it | NG-12 |
-| `credential-store.ts` | `Open`: the providers module, or a folder of its own. Providers and research use it | NG-12 |
-| `storage-root.ts` | `Open`: `db/`, or a folder of its own for the storage layout | NG-12 |
+| `SessionDatabase`, `SessionError` | `ChatDatabase` in `db/chat-database.ts` and `DatabaseError` in `db/records.ts` | NG-19 |
+| `web-state.ts` (`WebState`, preferences, `web.sqlite`) and `settings-routes.ts` | `modules/settings/` with `settings.routes.ts`, `settings.service.ts`, `settings.store.ts` and `settings.errors.ts`. The connection to `web.sqlite` is `SettingsDatabase` in `db/settings-database.ts` with `db/settings.migrations.ts`, because `SqliteProviderStore` and `SqliteResearchStore` also use it | NG-12 |
+| `credential-store.ts` | `storage/credential-store.ts`. Providers and research use it, so it has no module owner | NG-12 |
+| `storage-root.ts` | `storage/storage-root.ts`. The storage layout is not SQLite, so it is not in `db/` | NG-12 |
 | `cli.ts` | No change. It is an entry point, as `server.ts` is | — |
 | `contract-sync.ts` | No change. It goes away when `packages/host/contracts/` becomes `packages/contracts/` | — |
 

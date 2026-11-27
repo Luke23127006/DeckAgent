@@ -260,6 +260,59 @@ test('accepts local route helpers, Express and Node HTTP imports inside apps/hos
   )
   assert.equal(result.status, 0)
   assert.equal(result.diagnostics.length, 0)
+
+  const errorHandlerAllowed = lintFixture(
+    'apps/host/src/http/error-handler.ts',
+    "import { RunFailure } from '../runs/ports.ts'\nconsole.log(RunFailure)\n",
+  )
+  assert.equal(errorHandlerAllowed.status, 0, errorHandlerAllowed.output)
+  assert.equal(errorHandlerAllowed.diagnostics.length, 0)
+
+  const errorHandlerDenied = lintFixture(
+    'apps/host/src/http/error-handler.ts',
+    [
+      "import { RunController } from '../runs/lifecycle/index.ts'",
+      "import { prepareStorage } from '../storage/index.ts'",
+      'console.log(RunController, prepareStorage)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(errorHandlerDenied.status, 1)
+  assert.equal(errorHandlerDenied.diagnostics.length, 2)
+  assert.equal(errorHandlerDenied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+  assert.equal(errorHandlerDenied.diagnostics[1].code, 'eslint(no-restricted-imports)')
+
+  const appStorageDenied = lintFixture(
+    'apps/host/src/http/app.ts',
+    "import { prepareStorage } from '../storage/index.ts'\nconsole.log(prepareStorage)\n",
+  )
+  assert.equal(appStorageDenied.status, 1)
+  assert.equal(appStorageDenied.diagnostics.length, 1)
+  assert.equal(appStorageDenied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+})
+
+test('storage/ rejects modules, HTTP, runs, runtimes, tools, db, Express and SQLite', () => {
+  const denied = lintFixture(
+    'apps/host/src/storage/storage-root.ts',
+    [
+      "import { ChatService } from '../modules/chats/index.ts'",
+      "import { createHttpApp } from '../http/app.ts'",
+      "import { RunController } from '../runs/index.ts'",
+      "import { OpenCodeAgentRuntime } from '../runtimes/opencode/index.ts'",
+      "import { AttachmentParser } from '../tools/index.ts'",
+      "import { ChatDatabase } from '../db/index.ts'",
+      "import express from 'express'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      'console.log(ChatService, createHttpApp, RunController, OpenCodeAgentRuntime, AttachmentParser, ChatDatabase, express, DatabaseSync)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(denied.status, 1)
+  assert.equal(denied.diagnostics.length, 8)
+  for (const diagnostic of denied.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.match(diagnostic.help, /Application storage layer storage\/ must not import/)
+  }
 })
 
 test('rejects Express, SQL, the HTTP edge and Host tools inside a runtime adapter', () => {
@@ -460,7 +513,7 @@ test('tool executors accept policy and source contracts', () => {
     'apps/host/src/tools/executors/source-tools.ts',
     [
       "import { createSourceAccess } from '../policy/source-access.ts'",
-      "import type { AttachmentPart } from '../sources/attachment-contracts.ts'",
+      "import type { AttachmentPart } from '../sources/attachment.types.ts'",
       'console.log(createSourceAccess)',
       'export type Part = AttachmentPart',
       '',

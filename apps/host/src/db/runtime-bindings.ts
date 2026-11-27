@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { runOwnerKey } from '../runs/ports.ts'
-import { SessionError } from './contracts.ts'
-import type { RuntimeBinding } from './contracts.ts'
+import { DatabaseError } from './records.ts'
+import type { RuntimeBinding } from './records.ts'
 import { requireRequest } from './request-queries.ts'
 
 export function readRuntimeBinding(db: DatabaseSync, ownerKey: string): RuntimeBinding | undefined {
@@ -19,9 +19,9 @@ export function readRuntimeBinding(db: DatabaseSync, ownerKey: string): RuntimeB
 export function saveRuntimeBinding(db: DatabaseSync, binding: RuntimeBinding): void {
   const request = requireRequest(db, binding.lastRequestId)
   if (runOwnerKey(request.owner) !== binding.ownerKey || request.status !== 'completed')
-    throw new SessionError('SESSION_CONFLICT', 'A native session binds only to a completed request of the same owner')
+    throw new DatabaseError('SESSION_CONFLICT', 'A native session binds only to a completed request of the same owner')
   if (!/^[\w.-]{1,200}$/.test(binding.nativeSessionId))
-    throw new SessionError('SESSION_CONFIG', 'Invalid native session ID')
+    throw new DatabaseError('SESSION_CONFIG', 'Invalid native session ID')
   db.prepare(`INSERT INTO runtime_bindings (owner_key, native_session_id, provider, model, context, last_request_id, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (owner_key) DO UPDATE SET native_session_id = excluded.native_session_id,
         provider = excluded.provider, model = excluded.model, context = excluded.context, last_request_id = excluded.last_request_id,

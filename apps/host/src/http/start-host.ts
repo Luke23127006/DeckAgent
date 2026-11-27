@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { randomBytes } from 'node:crypto'
 import { createServer, type ServerResponse } from 'node:http'
-import type { HostOptions, HostRouteRegistrar } from './contracts.ts'
+import type { HostOptions, HostRouteRegistrar } from './http.types.ts'
 import { createHttpApp } from './app.ts'
 import { createChangeRoutes, type ChangeFeed, type HostChangeTopic, type SessionChangeTopic } from './change-feed.ts'
 

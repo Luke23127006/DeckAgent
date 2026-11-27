@@ -1,8 +1,8 @@
 import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { attachmentLimits } from './attachment-contracts.ts'
-import type { AttachmentParseInput, ParsedAttachment } from './attachment-contracts.ts'
-import { SourceError } from '../policy/contracts.ts'
+import { attachmentLimits } from './attachment.types.ts'
+import type { AttachmentParseInput, ParsedAttachment } from './attachment.types.ts'
+import { SourceError } from '../policy/policy.types.ts'
 
 interface Waiter {
   readonly signal: AbortSignal

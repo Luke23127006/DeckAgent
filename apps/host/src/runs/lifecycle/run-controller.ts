@@ -41,6 +41,7 @@ interface Execution {
 
 export interface RunControllerOptions {
   readonly store: RunStore
+  readonly admit?: (input: Parameters<RunStore['admit']>[0], persist: RunStore['admit']) => RunRecord
   readonly runtime: AgentRuntime
   readonly providers: ProviderResolver
   readonly contributions?: readonly RunContribution[]
@@ -53,6 +54,15 @@ const releaseWait = 5000
 
 const maxBusyOwners = 16
 
+const admitPassthroughCodes = new Set([
+  'SESSION_NOT_FOUND',
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'ATTACHMENT_REJECTED',
+  'ATTACHMENT_NOT_READY',
+  'REQUEST_EMPTY',
+])
+
 function errorCodeOf(error: unknown): string | undefined {
   return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
     ? error.code
@@ -62,7 +72,7 @@ function errorCodeOf(error: unknown): string | undefined {
 function mapAdmitError(error: unknown): RunFailure {
   const code = errorCodeOf(error)
   if (code === 'REQUEST_ACTIVE' || code === 'RUN_OWNER_BUSY') return new RunFailure('RUN_OWNER_BUSY')
-  if (code) return new RunFailure(code)
+  if (code && admitPassthroughCodes.has(code)) return new RunFailure(code)
   return new RunFailure('REQUEST_NOT_SAVED')
 }
 
@@ -112,17 +122,20 @@ export class RunController {
         if (this.closed) throw new RunFailure('HOST_CLOSED')
       }
       const requestId = plan.requestId ?? `req-${randomUUID()}`
+      const admitInput = {
+        requestId,
+        owner: plan.owner,
+        input: plan.input,
+        selection: plan.selection,
+        ...(plan.grants.publicResearch ? { publicResearch: true } : {}),
+        ...(options?.attachmentIds === undefined ? {} : { attachmentIds: options.attachmentIds }),
+        ...(options?.draftRevision === undefined ? {} : { draftRevision: options.draftRevision }),
+      }
       let admitted: RunRecord
       try {
-        admitted = this.options.store.admit({
-          requestId,
-          owner: plan.owner,
-          input: plan.input,
-          selection: plan.selection,
-          ...(plan.grants.publicResearch ? { publicResearch: true } : {}),
-          ...(options?.attachmentIds === undefined ? {} : { attachmentIds: options.attachmentIds }),
-          ...(options?.draftRevision === undefined ? {} : { draftRevision: options.draftRevision }),
-        })
+        admitted = this.options.admit
+          ? this.options.admit(admitInput, input => this.options.store.admit(input))
+          : this.options.store.admit(admitInput)
       } catch (error) {
         throw mapAdmitError(error)
       }

@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
-import { SessionError, openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
+import { DatabaseError, openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import { HttpError } from '../apps/host/tests/fixtures/http-host.mjs'
 import { startRequestHost as startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
@@ -59,7 +59,7 @@ test('admission saves the user message and the active request together; a chat h
   )
   assert.throws(
     () => store.requests.admit({ requestId: 'req-2', owner: chatOwner, input: 'Again', selection }),
-    error => error instanceof SessionError && error.code === 'RUN_OWNER_BUSY',
+    error => error instanceof DatabaseError && error.code === 'RUN_OWNER_BUSY',
   )
   assert.deepEqual(
     await store.read(chat.sessionId),
@@ -77,7 +77,7 @@ test('admission saves the user message and the active request together; a chat h
         input: 'x',
         selection,
       }),
-    error => error instanceof SessionError && error.code === 'SESSION_NOT_FOUND',
+    error => error instanceof DatabaseError && error.code === 'SESSION_NOT_FOUND',
   )
 })
 
@@ -100,7 +100,7 @@ test('events are ordered; finish settles running activities, keeps the text once
   assert.throws(() => store.requests.append('req-1', { kind: 'status', status: 'completed' }))
   assert.throws(
     () => store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'x', extra: 1 }),
-    error => error instanceof SessionError && error.code === 'REQUEST_EVENT',
+    error => error instanceof DatabaseError && error.code === 'REQUEST_EVENT',
   )
   const written = store.requests.finish('req-1', 'stopped')
   assert.deepEqual(
@@ -110,7 +110,7 @@ test('events are ordered; finish settles running activities, keeps the text once
   assert.equal(store.requests.finish('req-1', 'completed'), undefined, 'A request ends once')
   assert.throws(
     () => store.requests.append('req-1', { kind: 'text', part: 'p2', text: 'late' }),
-    error => error instanceof SessionError && error.code === 'REQUEST_CLOSED',
+    error => error instanceof DatabaseError && error.code === 'REQUEST_CLOSED',
   )
   const sequences = store.requests.events('req-1').map(event => event.sequence)
   assert.deepEqual(

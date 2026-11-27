@@ -51,11 +51,21 @@ export interface ChatRuns {
   list(owner: RunOwner): readonly ChatRunRecord[]
 }
 
-/** The model choice rules of the Browser settings. `WebState` implements it. */
+/** The model choice rules of the Browser settings. `SettingsService` implements it. */
 export interface ChatModels {
   lastSelection(): ModelSelection | undefined
   selectable(value: ModelSelection | undefined): boolean
   rememberSelection(value: ModelSelection): void
+}
+
+function translateChatStoreError(error: unknown): never {
+  if (error instanceof ChatError) throw error
+  if (error instanceof Error && 'code' in error && typeof error.code === 'string') {
+    if (error.code === 'SESSION_NOT_FOUND') throw new ChatError('SESSION_NOT_FOUND')
+    if (error.code === 'SESSION_CORRUPT') throw new ChatError('CHAT_UNREADABLE')
+    if (error.code === 'DRAFT_TOO_LARGE') throw new ChatError('DRAFT_TOO_LARGE')
+  }
+  throw error
 }
 
 /** Marks that other stores own. */
@@ -89,47 +99,75 @@ export class ChatService implements WorkspaceChats, AttachmentChats, ResearchCha
   }
 
   async history(id: string): Promise<readonly ChatHistoryMessage[]> {
-    return (await this.store.read(id)).filter(message => message.role !== 'system').map(projectHistoryMessage)
+    try {
+      return (await this.store.read(id)).filter(message => message.role !== 'system').map(projectHistoryMessage)
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async activities(id: string): Promise<readonly StoredActivity[]> {
-    if (!(await this.store.getInfo(id))) throw new ChatError('SESSION_NOT_FOUND')
-    return this.runs.activities({ kind: 'chat', id })
+    try {
+      if (!(await this.store.getInfo(id))) throw new ChatError('SESSION_NOT_FOUND')
+      return this.runs.activities({ kind: 'chat', id })
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async requests(id: string): Promise<readonly StoredRequest[]> {
-    if (!(await this.store.getInfo(id))) throw new ChatError('SESSION_NOT_FOUND')
-    return this.runs.list({ kind: 'chat', id }).map(toChatRequest)
+    try {
+      if (!(await this.store.getInfo(id))) throw new ChatError('SESSION_NOT_FOUND')
+      return this.runs.list({ kind: 'chat', id }).map(toChatRequest)
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async create(chosen?: ModelSelection): Promise<WebSession> {
     // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
     const resolved = chosen === undefined ? this.models.lastSelection() : chosen
     if (resolved && !this.models.selectable(resolved)) throw new ChatError('MODEL_NOT_SELECTABLE')
-    const created = await this.store.create(this.registry.selectedId(), resolved)
-    return this.chat(created.sessionId)
+    try {
+      const created = await this.store.create(this.registry.selectedId(), resolved)
+      return await this.chat(created.sessionId)
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async selectModel(id: string, chosen: ModelSelection): Promise<WebSession> {
     if (!this.models.selectable(chosen)) throw new ChatError('MODEL_NOT_SELECTABLE')
-    await this.store.select(id, chosen)
-    this.models.rememberSelection(chosen)
-    return this.chat(id)
+    try {
+      await this.store.select(id, chosen)
+      this.models.rememberSelection(chosen)
+      return await this.chat(id)
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async list(): Promise<readonly WebSession[]> {
-    return (await this.store.chats()).map(chat => this.withActive(this.project(chat)))
+    try {
+      return (await this.store.chats()).map(chat => this.withActive(this.project(chat)))
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   async search(words: string): Promise<readonly WebSession[]> {
-    const chats = await this.store.chats()
-    const found = new Set(
-      await this.store.search(
-        words,
-        chats.map(item => item.sessionId),
-      ),
-    )
-    return chats.filter(item => found.has(item.sessionId)).map(chat => this.withActive(this.project(chat)))
+    try {
+      const chats = await this.store.chats()
+      const found = new Set(
+        await this.store.search(
+          words,
+          chats.map(item => item.sessionId),
+        ),
+      )
+      return chats.filter(item => found.has(item.sessionId)).map(chat => this.withActive(this.project(chat)))
+    } catch (error) {
+      translateChatStoreError(error)
+    }
   }
 
   /** Browser projection of a chat. A chat with no user message yet is shown as a new chat. */

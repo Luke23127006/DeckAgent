@@ -157,6 +157,90 @@
                   "../*-state.ts",
                   "node:sqlite",
                   "../db/**",
+                  "../storage/**",
+                  "../tools/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/storage/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../http/**",
+                  "../runs/**",
+                  "../runtimes/**",
+                  "../tools/**",
+                  "../db/**",
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
+                "message": "Application storage layer storage/ must not import modules, HTTP, runs, runtimes, tools, db, Express or SQLite."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/http/error-handler.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../features/**",
+                  "../modules/**",
+                  "../integrations/**",
+                  "../runtimes/**",
+                  "../runs/index*",
+                  "../runs/lifecycle/**",
+                  "../runs/preparation/**",
+                  "../runs/budget/**",
+                  "node:sqlite",
+                  "../db/**",
+                  "../storage/**",
                   "../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"

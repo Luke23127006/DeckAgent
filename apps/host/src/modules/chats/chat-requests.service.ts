@@ -104,7 +104,13 @@ export class ChatRequestService {
   }
 
   get(requestId: string): RequestSnapshot {
-    return toChatRequest(this.deps.runs.get(requestId))
+    try {
+      return toChatRequest(this.deps.runs.get(requestId))
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+        throw new ChatError('CHAT_UNREADABLE')
+      throw error
+    }
   }
 
   decide(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): ApprovalView {
@@ -112,11 +118,23 @@ export class ChatRequestService {
   }
 
   events(requestId: string, after: number): readonly RequestEvent[] {
-    return this.deps.runs.events(requestId, after)
+    try {
+      return this.deps.runs.events(requestId, after)
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+        throw new ChatError('CHAT_UNREADABLE')
+      throw error
+    }
   }
 
   stop(requestId: string): RequestSnapshot {
-    return toChatRequest(this.deps.runs.stop(requestId))
+    try {
+      return toChatRequest(this.deps.runs.stop(requestId))
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+        throw new ChatError('CHAT_UNREADABLE')
+      throw error
+    }
   }
 
   subscribe(listener: (event: RequestEvent) => void): () => void {

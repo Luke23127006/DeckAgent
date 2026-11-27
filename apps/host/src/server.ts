@@ -2,57 +2,55 @@ import type { ContractSyncVerified } from './contract-sync.ts'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { AttachmentParser, attachmentLimits } from './tools/index.ts'
-import type { HostOptions, HostRouteContext } from './http/contracts.ts'
-import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
-import { startHost, type StartHostOptions } from './http/start-host.ts'
-import type { WebSettings } from '@deckagent/host-contracts'
-import { SessionDatabase, SessionError, SqliteRunStore, mapSessionFailure, type ModelSelection } from './db/index.ts'
-import { MemoryDraftStore } from './modules/attachments/index.ts'
-import {
-  WorkspaceRegistry,
-  createWorkspaceOperations,
-  createWorkspaceRoutes,
-  mapWorkspaceError,
-} from './modules/workspaces/index.ts'
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
-import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
+import { ChatDatabase, SettingsDatabase, SqliteRunStore, type ModelSelection } from './db/index.ts'
+import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
+import type { HostOptions, HostRouteContext } from './http/http.types.ts'
+import { startHost, type StartHostOptions } from './http/start-host.ts'
 import { loadWebDistAssets } from './http/web-assets.ts'
-import { WebState, mapWebStateFailure } from './web-state.ts'
+import {
+  AttachmentError,
+  AttachmentFileStore,
+  AttachmentService,
+  MemoryDraftStore,
+  SqliteAttachmentStore,
+  createAttachmentRoutes,
+  mapAttachmentError,
+} from './modules/attachments/index.ts'
 import {
   ChatRequestService,
   ChatService,
   SqliteChatStore,
   createChatRequestRoutes,
-  createConversationContribution,
   createChatRoutes,
+  createConversationContribution,
   mapChatError,
   type ChatMarks,
   type ChatStoreOptions,
 } from './modules/chats/index.ts'
-import { RunController } from './runs/lifecycle/index.ts'
-import { RunFailure } from './runs/ports.ts'
-import type { RunStore } from './runs/ports.ts'
+import {
+  CommonsImages,
+  DeckService,
+  DeckWorkflowError,
+  PublicImageReader,
+  WebImageResearch,
+  artifactRenderer,
+  createDeckRoutes,
+  createDeckStore,
+  mapDeckError,
+  type ArtifactRenderer,
+  type GenerationRuntimeOverride,
+  type ImageLookup,
+} from './modules/deck/index.ts'
 import {
   ProviderService,
   SqliteProviderStore,
   createProviderRoutes,
   listModels,
   mapProviderError,
-  type ProviderServiceOptions,
   type ProviderConnection,
+  type ProviderServiceOptions,
 } from './modules/providers/index.ts'
-import { defaultCredentialStore, type CredentialStore } from './credential-store.ts'
-import { OpenCodeAgentRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
-import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
-import {
-  AttachmentService,
-  AttachmentFileStore,
-  SqliteAttachmentStore,
-  createAttachmentRoutes,
-  mapAttachmentError,
-} from './modules/attachments/index.ts'
-import { prepareSourceTools, createSourceToolsContribution, mapSourceToolFailure } from './tools/index.ts'
 import {
   ResearchService,
   SqliteResearchStore,
@@ -60,22 +58,37 @@ import {
   createResearchRoutes,
   mapResearchError,
 } from './modules/research/index.ts'
-import { createSettingsRoutes } from './settings-routes.ts'
 import {
-  DeckService,
-  DeckWorkflowError,
-  createDeckRoutes,
-  WebImageResearch,
-  CommonsImages,
-  PublicImageReader,
-  artifactRenderer,
-  mapDeckError,
-  type ImageLookup,
-  type ArtifactRenderer,
-  type GenerationRuntimeOverride,
-} from './modules/deck/index.ts'
+  SettingsService,
+  SqliteSettingsStore,
+  createSettingsRoutes,
+  mapSettingsError,
+} from './modules/settings/index.ts'
+import {
+  WorkspaceRegistry,
+  createWorkspaceOperations,
+  createWorkspaceRoutes,
+  mapWorkspaceError,
+} from './modules/workspaces/index.ts'
+import { RunController, type PreparationContext } from './runs/index.ts'
+import { OpenCodeAgentRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
+import {
+  StorageError,
+  defaultCredentialStore,
+  prepareStorage,
+  resolveStorageRoot,
+  type CredentialStore,
+  type StorageLayout,
+} from './storage/index.ts'
+import {
+  AttachmentParser,
+  attachmentLimits,
+  createSourceToolsContribution,
+  mapSourceToolFailure,
+  prepareSourceTools,
+} from './tools/index.ts'
 
-export { StorageError, resolveStorageRoot } from './storage-root.ts'
+export { StorageError, resolveStorageRoot } from './storage/index.ts'
 export type { ProviderConnection } from './modules/providers/index.ts'
 
 const contractSync: ContractSyncVerified = true
@@ -105,9 +118,9 @@ export interface LocalWebOptions {
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
 
-/** Composes the shared SessionDatabase, module stores and run store with atomic admission and settlement hooks. */
-export function openSessionStorage(path: string, options?: ChatStoreOptions) {
-  const db = new SessionDatabase(path)
+/** Wires the shared ChatDatabase with chat, attachment and run stores for atomic admission and settlement. */
+function openChatStorage(path: string, options?: ChatStoreOptions) {
+  const db = new ChatDatabase(path)
   const chats = new SqliteChatStore(db, options)
   const attachments = new SqliteAttachmentStore(db)
   const runs = new SqliteRunStore(db, {
@@ -127,14 +140,14 @@ export function openSessionStorage(path: string, options?: ChatStoreOptions) {
   return { db, chats, attachments, runs, close: () => db.close() }
 }
 
-type SessionStorage = ReturnType<typeof openSessionStorage>
+type ChatStorage = ReturnType<typeof openChatStorage>
 
 interface StorageLayer {
   readonly registry: WorkspaceRegistry
-  readonly sessions: SessionStorage
+  readonly sessions: ChatStorage
   readonly decks: DeckStore
-  readonly web: WebState
-  bindSelectability(isSelectable: (value: ModelSelection) => boolean): void
+  readonly settingsDb: SettingsDatabase
+  readonly settingsStore: SqliteSettingsStore
 }
 
 interface RuntimeLayer {
@@ -144,8 +157,8 @@ interface RuntimeLayer {
   readonly research: ResearchService
   readonly images: WebImageResearch
   readonly inputs: AttachmentService
+  readonly settings: SettingsService
   readonly generationRuntime?: GenerationRuntimeOverride
-  readonly settings: () => Promise<WebSettings>
 }
 
 /** Closes every resource even after a failure, then reports the first failure. */
@@ -161,75 +174,19 @@ async function closeResources(closers: readonly (() => Promise<void> | void)[]):
   if (failures.length > 0) throw failures[0]
 }
 
-function createPreparedImageReader(sessions: SessionStorage, getAttachments: () => AttachmentFileStore | undefined) {
-  return async (id: string, attachmentId: string, signal: AbortSignal) => {
-    const item = sessions.attachments.get(id, attachmentId)
-    const files = getAttachments()
-    if (
-      !files ||
-      !item.source ||
-      !item.fingerprint ||
-      !item.parsedFingerprint ||
-      !item.detectedType?.startsWith('image/') ||
-      !sessions.attachments.sent(id).some(a => a.attachmentId === attachmentId)
-    )
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'The selected image is unavailable')
-    const parsed = await files.prepared(id, attachmentId, signal)
-    const part = parsed.parts.find(p => p.type === 'image')
-    if (!part || part.type !== 'image')
-      throw new SessionError('ATTACHMENT_UNREADABLE', 'The selected image has no prepared pixels')
-    return {
-      bytes: Buffer.from(part.data, 'base64'),
-      source: item.source,
-      originalDigest: item.fingerprint,
-      parsedDigest: item.parsedFingerprint,
-    }
-  }
-}
-
-function createDeckStore(
-  layout: StorageLayout,
-  sessions: SessionStorage,
-  renderer: ArtifactRenderer,
-  commonsImages: CommonsImages,
-  getAttachments: () => AttachmentFileStore | undefined,
-  changeFeed: ChangeFeed,
-): DeckStore {
-  return new DeckStore(join(layout.databases, 'decks.sqlite'), {
-    formats: [new HtmlFormatAdapter()],
-    onDeckChanged: (key, version) => changeFeed.publish({ topic: 'deck', key, version }),
-    onBriefChanged: (key, version) => changeFeed.publish({ topic: 'brief', key, version }),
-    onOutlineChanged: (key, version) => changeFeed.publish({ topic: 'outline', key, version }),
-    legacyHtmlPolicy: validateLegacySlideHtml,
-    researchImage: (_id, query, signal) => commonsImages.find(query, signal),
-    artifactRoot: join(layout.files, 'decks'),
-    renderCheck: (html, requiredText, signal) => renderer.render(html, requiredText, signal),
-    preparedImage: createPreparedImageReader(sessions, getAttachments),
-    activeRequest: (id, requestId) => {
-      const request = sessions.runs.get(requestId)
-      return (
-        request?.owner.kind === 'chat' &&
-        request.owner.id === id &&
-        ['active', 'waiting_approval'].includes(request.status)
-      )
-    },
-  })
-}
-
 async function openStorageLayer(
   layout: StorageLayout,
   options: LocalWebOptions,
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
-  getAttachments: () => AttachmentFileStore | undefined,
+  getAttachments: () => AttachmentService | undefined,
   changeFeed: ChangeFeed,
 ): Promise<StorageLayer> {
   const initial = options.selection ? { ...options.selection } : undefined
-  let isSelectable: (value: ModelSelection) => boolean = () => false
   let registry: WorkspaceRegistry | undefined
-  let sessions: SessionStorage | undefined
+  let sessions: ChatStorage | undefined
   let decks: DeckStore | undefined
-  let web: WebState | undefined
+  let settingsDb: SettingsDatabase | undefined
   try {
     try {
       registry = new WorkspaceRegistry({
@@ -243,15 +200,35 @@ async function openStorageLayer(
     }
     // Checked before any other database is created: app data never goes into a registered project folder.
     if (registry.overlapsFolder(layout.root)) throw new StorageError('STORAGE_INSIDE_WORKSPACE')
+    let settingsStore: SqliteSettingsStore
     try {
-      sessions = openSessionStorage(join(layout.databases, 'sessions.sqlite'), {
+      sessions = openChatStorage(join(layout.databases, 'sessions.sqlite'), {
         onChatsChanged: version => changeFeed.publish({ topic: 'chats', key: 'host', version }),
       })
-      decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments, changeFeed)
-      web = new WebState(
-        join(layout.databases, 'web.sqlite'),
-        value => isSelectable(value),
-        version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
+      const openedSessions = sessions
+      decks = createDeckStore({
+        databasePath: join(layout.databases, 'decks.sqlite'),
+        artifactRoot: join(layout.files, 'decks'),
+        renderer,
+        commonsImages,
+        publishChange: changeFeed.publish,
+        preparedImage: (id, attachmentId, signal) => {
+          const service = getAttachments()
+          if (!service) throw new AttachmentError('ATTACHMENT_UNREADABLE', 'The selected image is unavailable')
+          return service.preparedImage(id, attachmentId, signal)
+        },
+        activeRequest: (id, requestId) => {
+          const request = openedSessions.runs.get(requestId)
+          return (
+            request?.owner.kind === 'chat' &&
+            request.owner.id === id &&
+            ['active', 'waiting_approval'].includes(request.status)
+          )
+        },
+      })
+      settingsDb = new SettingsDatabase(join(layout.databases, 'web.sqlite'))
+      settingsStore = new SqliteSettingsStore(settingsDb.db, version =>
+        changeFeed.publish({ topic: 'preferences', key: 'host', version }),
       )
     } catch {
       // A damaged or foreign file is kept unchanged; nothing is reset or recreated in its place.
@@ -259,7 +236,6 @@ async function openStorageLayer(
     }
     const store = sessions
     const presentation = decks
-    const state = web
     // A request that was active when DeckAgent stopped did not finish; it is shown so and never started again (FR-019).
     store.runs.interruptActive()
     presentation.reconcileGenerations((id, requestId) => {
@@ -279,14 +255,17 @@ async function openStorageLayer(
       registry,
       sessions: store,
       decks: presentation,
-      web: state,
-      bindSelectability(value) {
-        isSelectable = value
-      },
+      settingsDb,
+      settingsStore,
     }
   } catch (error) {
     try {
-      await closeResources([() => web?.close(), () => decks?.close(), () => sessions?.close(), () => registry?.close()])
+      await closeResources([
+        () => settingsDb?.close(),
+        () => decks?.close(),
+        () => sessions?.close(),
+        () => registry?.close(),
+      ])
     } catch {
       // The startup failure stays the caller's error; a cleanup failure must not replace it.
     }
@@ -304,10 +283,9 @@ async function createRuntimeLayer(
   credentials: CredentialStore,
   changeFeed: ChangeFeed,
 ): Promise<RuntimeLayer> {
-  const { sessions, web, decks, registry } = storage
-  const chats = new ChatService(sessions.chats, sessions.runs, registry, web, chatMarks(decks, drafts))
+  const { sessions, settingsDb, settingsStore, decks, registry } = storage
   const initial = options.selection ? { ...options.selection } : undefined
-  const providers = new ProviderService(new SqliteProviderStore(web.db), credentials, {
+  const providers = new ProviderService(new SqliteProviderStore(settingsDb.db), credentials, {
     check:
       options.providerAccess?.check ??
       (async (endpoint, key) => {
@@ -321,7 +299,6 @@ async function createRuntimeLayer(
     },
     onProvidersChanged: version => changeFeed.publish({ topic: 'providers', key: 'host', version }),
   })
-  storage.bindSelectability(value => providers.selectable(value))
   await providers.load(options.connections, initial)
   const openCode = new OpenCodeAgentRuntime(
     await findExecutable(
@@ -334,8 +311,18 @@ async function createRuntimeLayer(
     options.openCode,
   )
   await openCode.availability()
-  const research = new ResearchService(
-    new SqliteResearchStore(web.db),
+  let research: ResearchService | undefined
+  const settings = new SettingsService(settingsStore, {
+    providers,
+    readResearch: () => {
+      if (!research) throw new Error('Research service not initialized')
+      return research.settings()
+    },
+    runtimeAvailability: () => openCode.availability(),
+  })
+  const chats = new ChatService(sessions.chats, sessions.runs, registry, settings, chatMarks(decks, drafts))
+  research = new ResearchService(
+    new SqliteResearchStore(settingsDb.db),
     credentials,
     chats,
     sessions.runs,
@@ -363,19 +350,8 @@ async function createRuntimeLayer(
       new AttachmentParser(),
       attachmentLimits,
     ),
+    settings,
     ...(options.generationRuntime ? { generationRuntime: options.generationRuntime } : {}),
-    settings: async () => {
-      const availability = await openCode.availability()
-      return {
-        research: research.settings(),
-        providers: providers.providerSettings(),
-        providersVersion: providers.version(),
-        preferencesVersion: web.preferencesVersion(),
-        persistentKeys: providers.persistentKeys,
-        builtIns: providers.builtIns,
-        runtime: availability.available ? { available: true } : { available: false, reason: availability.code },
-      }
-    },
   }
 }
 
@@ -384,32 +360,6 @@ function chatMarks(decks: DeckStore, drafts: MemoryDraftStore): ChatMarks {
     hasSlides: id => decks.snapshot(id).slides.some(slide => slide.revision > 0),
     hasDraft: id => drafts.get(id).trim() !== '' || drafts.snapshot(id).attachmentIds.length > 0,
   }
-}
-
-function mapRunFailure(error: unknown) {
-  if (!(error instanceof RunFailure)) return undefined
-  const statuses: Readonly<Record<string, number>> = {
-    HOST_CLOSED: 503,
-    HOST_BUSY: 429,
-    RUNTIME_UNAVAILABLE: 503,
-    RUNTIME_VERSION_UNSUPPORTED: 503,
-    REQUEST_NOT_FOUND: 404,
-    APPROVAL_NOT_FOUND: 404,
-    SESSION_NOT_FOUND: 404,
-    RUN_OWNER_BUSY: 409,
-    SESSION_BUSY: 409,
-    GENERATION_LINK_CONFLICT: 409,
-    APPROVAL_CONFLICT: 409,
-    REQUEST_CLOSED: 409,
-    DRAFT_CONFLICT: 409,
-    ATTACHMENT_REJECTED: 409,
-    ATTACHMENT_NOT_READY: 409,
-    ATTACHMENT_COUNT_EXCEEDED: 413,
-    REQUEST_EMPTY: 400,
-    REQUEST_NOT_SAVED: 500,
-    GENERATION_LINK_FAILED: 500,
-  }
-  return { status: statuses[error.code] ?? 500, code: error.code, ...(error.detail ? { detail: error.detail } : {}) }
 }
 
 function createHostOptions(
@@ -422,41 +372,8 @@ function createHostOptions(
   changeFeed: ChangeFeed,
 ): StartHostOptions {
   if (!contractSync) throw new Error('Contract sync failed')
-  const { sessions, web, decks, registry } = storage
+  const { sessions, decks, registry } = storage
   const chats = runtime.chats
-  const runStore: RunStore = {
-    approvals: sessions.runs.approvals,
-    admit: input => {
-      try {
-        return runtime.inputs.admitDraft({ ...input, sessionId: input.owner.id }, admitted =>
-          sessions.runs.admit({ ...input, ...admitted }),
-        )
-      } catch (error) {
-        const code = error instanceof Error && 'code' in error ? error.code : undefined
-        if (
-          typeof code === 'string' &&
-          [
-            'RUN_OWNER_BUSY',
-            'REQUEST_ACTIVE',
-            'SESSION_NOT_FOUND',
-            'DRAFT_CONFLICT',
-            'ATTACHMENT_COUNT_EXCEEDED',
-            'ATTACHMENT_REJECTED',
-            'ATTACHMENT_NOT_READY',
-            'REQUEST_EMPTY',
-          ].includes(code)
-        )
-          throw error
-        throw new RunFailure('REQUEST_NOT_SAVED')
-      }
-    },
-    append: (id, event) => sessions.runs.append(id, event),
-    finish: (id, status, code) => sessions.runs.finish(id, status, code),
-    get: id => sessions.runs.get(id),
-    events: (id, after) => sessions.runs.events(id, after),
-    text: id => sessions.runs.text(id),
-    activeFor: owner => sessions.runs.activeFor(owner),
-  }
   const sourceOptions = {
     chats,
     attachmentRecords: sessions.attachments,
@@ -468,14 +385,15 @@ function createHostOptions(
   }
   const sourceToolsContribution = {
     name: 'source-tools',
-    async contribute(context: import('./runs/ports.ts').PreparationContext) {
+    async contribute(context: PreparationContext) {
       const research = await runtime.research.prepare(context.grants.publicResearch)
       return createSourceToolsContribution({ ...sourceOptions, research }).contribute(context)
     },
   }
   const overrideSelections = new Set<string>()
   const runs = new RunController({
-    store: runStore,
+    store: sessions.runs,
+    admit: (input, persist) => runtime.inputs.admitDraft({ ...input, sessionId: input.owner.id }, persist),
     runtime: runtime.runtime,
     providers: {
       resolve: async selected => {
@@ -533,7 +451,6 @@ function createHostOptions(
 
   return {
     mapApplicationFailure: error =>
-      mapRunFailure(error) ??
       mapWorkspaceError(error) ??
       mapChatError(error) ??
       mapProviderError(error) ??
@@ -541,8 +458,7 @@ function createHostOptions(
       mapResearchError(error) ??
       mapDeckError(error) ??
       mapSourceToolFailure(error) ??
-      mapWebStateFailure(error) ??
-      mapSessionFailure(error),
+      mapSettingsError(error),
     failureMessage: deckFailureMessage,
     assets,
     spaFallback: true,
@@ -554,13 +470,7 @@ function createHostOptions(
       createProviderRoutes(runtime.providers),
       createAttachmentRoutes(runtime.inputs),
       createResearchRoutes(runtime.research),
-      createSettingsRoutes({
-        settings: async () => runtime.settings(),
-        preferences: {
-          get: async () => web.preferences(),
-          save: async (theme, expectedVersion) => web.savePreferences(theme, expectedVersion),
-        },
-      }),
+      createSettingsRoutes(runtime.settings),
       (context: HostRouteContext) => createDeckRoutes(deck, context),
       (context: HostRouteContext) => createChatRequestRoutes(requests, runtime.inputs.maxFiles, context.streams),
     ],
@@ -570,7 +480,7 @@ function createHostOptions(
         { topic: 'workspaces', version: () => registry.version() },
         { topic: 'chats', version: () => sessions.chats.chatsVersion() },
         { topic: 'providers', version: () => runtime.providers.version() },
-        { topic: 'preferences', version: () => web.preferencesVersion() },
+        { topic: 'preferences', version: () => runtime.settings.preferencesVersion() },
       ],
       sessionExists: async id => !!(await sessions.chats.getInfo(id)),
       sessionTopics: [
@@ -601,7 +511,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const closers: (() => Promise<void> | void)[] = [
     () => opened?.registry.close(),
     () => opened?.sessions.close(),
-    () => opened?.web.close(),
+    () => opened?.settingsDb.close(),
     () => opened?.decks.close(),
     () => runtime?.providers.close(),
     () => runtime?.inputs.close(),
@@ -611,7 +521,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     () => host?.close(),
   ]
   try {
-    opened = await openStorageLayer(layout, options, renderer, commonsImages, () => attachments, changeFeed)
+    opened = await openStorageLayer(layout, options, renderer, commonsImages, () => runtime?.inputs, changeFeed)
     const storage = opened
     const credentials = options.credentials ?? defaultCredentialStore(layout.root)
     attachments = await AttachmentFileStore.open(layout.files, storage.sessions.attachments, drafts)
@@ -627,7 +537,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     )
     const assets = await loadWebDistAssets(
       fileURLToPath(new URL('../../web/dist', import.meta.url)),
-      () => storage.web.preferences().theme,
+      () => storage.settingsStore.preferences().theme,
     )
     host = await startHost(createHostOptions(layout, options, storage, runtime, attachments, assets, changeFeed))
     return {

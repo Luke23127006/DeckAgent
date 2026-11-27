@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { SessionError, defaultWorkspaceId } from '../../db/index.ts'
-import type { AttachmentRecord, ChatSummary, ModelSelection, SessionDatabase, SessionInfo } from '../../db/index.ts'
+import { DatabaseError, defaultWorkspaceId } from '../../db/index.ts'
+import type { AttachmentRecord, ChatSummary, ModelSelection, ChatDatabase, SessionInfo } from '../../db/index.ts'
 import { chatMatches, chatTitle, searchWords } from './chat-text.ts'
 import { decodeMessage, type Message } from './message-validation.ts'
 
@@ -14,7 +14,7 @@ function validateMessage(value: unknown): Message {
   try {
     return decodeMessage(value)
   } catch {
-    throw new SessionError('SESSION_MESSAGE', 'Message does not match the supported Session format')
+    throw new DatabaseError('SESSION_MESSAGE', 'Message does not match the supported Session format')
   }
 }
 
@@ -24,7 +24,7 @@ export class SqliteChatStore {
   private readonly onChatsChanged: ((version: number) => void) | undefined
 
   constructor(
-    private readonly sessionDb: SessionDatabase,
+    private readonly sessionDb: ChatDatabase,
     options: ChatStoreOptions = {},
   ) {
     this.db = sessionDb.db
@@ -46,7 +46,7 @@ export class SqliteChatStore {
   /** A new chat: its own ID, no conversation, in the given workspace. Takes nothing from another chat. */
   async create(workspaceId: string, selection?: ModelSelection): Promise<SessionInfo> {
     return this.sessionDb.transaction(() => {
-      if (!workspaceId.trim()) throw new SessionError('SESSION_CONFIG', 'Workspace ID must not be empty')
+      if (!workspaceId.trim()) throw new DatabaseError('SESSION_CONFIG', 'Workspace ID must not be empty')
       if (selection) this.validateSelection(selection)
       const sessionId = `chat-${randomUUID()}`
       this.ensure(sessionId, workspaceId)
@@ -69,7 +69,7 @@ export class SqliteChatStore {
         current.selection &&
         (current.selection.provider !== selection.provider || current.selection.model !== selection.model)
       ) {
-        throw new SessionError(
+        throw new DatabaseError(
           'SESSION_CONFLICT',
           'Session uses a different provider or model. Choose another session ID',
         )
@@ -124,7 +124,7 @@ export class SqliteChatStore {
           try {
             return { ...info, title: chatTitle(this.messages(info.sessionId)), readable: true }
           } catch (error) {
-            if (error instanceof SessionError && error.code === 'SESSION_CORRUPT')
+            if (error instanceof DatabaseError && error.code === 'SESSION_CORRUPT')
               return { ...info, title: '', readable: false }
             throw error
           }
@@ -146,7 +146,7 @@ export class SqliteChatStore {
           const history = this.messages(id)
           return chatMatches(chatTitle(history), history, terms)
         } catch (error) {
-          if (error instanceof SessionError && error.code === 'SESSION_CORRUPT') return false
+          if (error instanceof DatabaseError && error.code === 'SESSION_CORRUPT') return false
           throw error
         }
       })
@@ -188,7 +188,7 @@ export class SqliteChatStore {
     this.sessionDb.transaction(() => {
       this.requireSession(sessionId)
       if (messages.some(message => message.role === 'user' && message.attachments !== undefined))
-        throw new SessionError('INVALID_REQUEST', 'Send attachments through request admission')
+        throw new DatabaseError('INVALID_REQUEST', 'Send attachments through request admission')
       this.insertMessages(sessionId, messages)
     })
   }
@@ -268,7 +268,7 @@ export class SqliteChatStore {
 
   private readChatsVersion(): number {
     const row = this.db.prepare("SELECT version FROM change_versions WHERE topic = 'chats' AND key = 'host'").get()
-    if (!row) throw new SessionError('SESSION_CORRUPT', 'Session database has no chats version row')
+    if (!row) throw new DatabaseError('SESSION_CORRUPT', 'Session database has no chats version row')
     return Number(row.version)
   }
 
@@ -280,19 +280,19 @@ export class SqliteChatStore {
         try {
           return decodeMessage(JSON.parse(String(row.payload)))
         } catch {
-          throw new SessionError('SESSION_CORRUPT', 'Stored message does not match the supported Session format')
+          throw new DatabaseError('SESSION_CORRUPT', 'Stored message does not match the supported Session format')
         }
       })
   }
 
   private validateSelection(selection: ModelSelection): void {
     if (!selection.provider.trim() || !selection.model.trim())
-      throw new SessionError('SESSION_CONFIG', 'Provider and model are required')
+      throw new DatabaseError('SESSION_CONFIG', 'Provider and model are required')
   }
 
   private validateId(sessionId: string): void {
     if (typeof sessionId !== 'string' || !sessionId.trim())
-      throw new SessionError('SESSION_CONFIG', 'Session ID must not be empty')
+      throw new DatabaseError('SESSION_CONFIG', 'Session ID must not be empty')
   }
 
   /** Inserts the chat when it is absent. Returns true when it inserted a row. */
@@ -309,7 +309,7 @@ export class SqliteChatStore {
 
   private requireSession(sessionId: string): void {
     this.validateId(sessionId)
-    if (!this.info(sessionId)) throw new SessionError('SESSION_NOT_FOUND', 'Session does not exist')
+    if (!this.info(sessionId)) throw new DatabaseError('SESSION_NOT_FOUND', 'Session does not exist')
   }
 
   private info(sessionId: string): SessionInfo | undefined {

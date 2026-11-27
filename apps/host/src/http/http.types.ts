@@ -1,18 +1,6 @@
 import type { ServerResponse } from 'node:http'
-import type { AttachmentView } from '@deckagent/host-contracts'
 import type { Router } from 'express'
 import type { HttpErrorDetail } from './http-error.ts'
-
-/** Saved conversation message as the Host reads it. */
-export interface HostMessage {
-  readonly role: 'system' | 'user' | 'assistant' | 'tool'
-  readonly content: string
-  readonly interrupted?: boolean
-  readonly toolCallId?: string
-  readonly name?: string
-  readonly isError?: boolean
-  readonly attachments?: readonly AttachmentView[]
-}
 
 export interface HttpFailureResponse {
   readonly status: number

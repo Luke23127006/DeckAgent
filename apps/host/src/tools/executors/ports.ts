@@ -1,4 +1,4 @@
-import type { ParsedAttachment } from '../sources/attachment-contracts.ts'
+import type { ParsedAttachment } from '../sources/attachment.types.ts'
 
 /** Chat metadata the executors read; the composition supplies the real chat store. */
 export interface ToolSessionInfo {

@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { RunOwner } from '../runs/ports.ts'
-import { SessionError } from './contracts.ts'
-import type { ActivityRecord, RequestEvent, RequestRecord } from './contracts.ts'
+import { DatabaseError } from './records.ts'
+import type { ActivityRecord, RequestEvent, RequestRecord } from './records.ts'
 import { isRequestStatus, validateEvent } from './request-validation.ts'
 
 export const activeRequestFilter = "status IN ('active','waiting_approval')"
@@ -10,7 +10,7 @@ export const activeRequestFilter = "status IN ('active','waiting_approval')"
 export const summarizedNotice = 'CONVERSATION_SUMMARIZED'
 
 function readOwner(row: Record<string, unknown>): RunOwner {
-  if (row.owner_kind !== 'chat') throw new SessionError('SESSION_CORRUPT', 'Stored request has an unknown owner kind')
+  if (row.owner_kind !== 'chat') throw new DatabaseError('SESSION_CORRUPT', 'Stored request has an unknown owner kind')
   return { kind: 'chat', id: String(row.owner_id) }
 }
 
@@ -22,7 +22,7 @@ export function readRequest(db: DatabaseSync, requestId: string): RequestRecord 
       FROM requests r WHERE id = ?`)
     .get(requestId)
   if (!row) return undefined
-  if (!isRequestStatus(row.status)) throw new SessionError('SESSION_CORRUPT', 'Stored request has an unknown status')
+  if (!isRequestStatus(row.status)) throw new DatabaseError('SESSION_CORRUPT', 'Stored request has an unknown status')
   return {
     requestId: String(row.id),
     publicResearch:
@@ -41,7 +41,7 @@ export function readRequest(db: DatabaseSync, requestId: string): RequestRecord 
 
 export function requireRequest(db: DatabaseSync, requestId: string): RequestRecord {
   const request = readRequest(db, requestId)
-  if (!request) throw new SessionError('REQUEST_NOT_FOUND', 'Request does not exist')
+  if (!request) throw new DatabaseError('REQUEST_NOT_FOUND', 'Request does not exist')
   return request
 }
 
@@ -69,7 +69,7 @@ export function readRequestEvent(requestId: string, row: Record<string, unknown>
     body = JSON.parse(String(row.payload))
     validateEvent(body)
   } catch {
-    throw new SessionError('SESSION_CORRUPT', 'Stored request event does not match the supported format')
+    throw new DatabaseError('SESSION_CORRUPT', 'Stored request event does not match the supported format')
   }
   return { ...body, requestId, sequence: Number(row.sequence), timestamp: String(row.created_at) }
 }

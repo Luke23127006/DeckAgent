@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { RunController } from '../lib/types/runs/lifecycle/index.js'
-import { RunFailure } from '../lib/types/runs/index.js'
+import { RunFailure } from '../lib/types/runs/ports.js'
 import { SourceToolFailure, createSourceToolsContribution, mapSourceToolFailure } from '../lib/types/tools/index.js'
 import { waitFor } from './fixtures/wait-for.mjs'
 

@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { SessionDatabase } from '../../db/index.ts'
-import { SessionError, isAttachmentPreparation } from '../../db/index.ts'
+import { ChatDatabase } from '../../db/index.ts'
+import { DatabaseError, isAttachmentPreparation } from '../../db/index.ts'
 import type { AttachmentRecord, AttachmentPreparation } from '../../db/index.ts'
 
 /** Chat-owned metadata; callers make bytes durable before recording their fingerprint. */
 export class SqliteAttachmentStore {
   private readonly db
-  private readonly access: SessionDatabase
-  constructor(sessionDb: SessionDatabase) {
+  private readonly access: ChatDatabase
+  constructor(sessionDb: ChatDatabase) {
     this.db = sessionDb.db
     this.access = sessionDb
   }
@@ -20,9 +20,9 @@ export class SqliteAttachmentStore {
         /[\\/]/.test(name) ||
         [...name].some(character => character.charCodeAt(0) < 32)
       )
-        throw new SessionError('INVALID_REQUEST', 'Use a file name without a path')
+        throw new DatabaseError('INVALID_REQUEST', 'Use a file name without a path')
       if (!this.db.prepare('SELECT 1 FROM sessions WHERE id = ?').get(sessionId))
-        throw new SessionError('SESSION_NOT_FOUND', 'Chat does not exist')
+        throw new DatabaseError('SESSION_NOT_FOUND', 'Chat does not exist')
       const id = `att-${randomUUID()}`
       this.db
         .prepare("INSERT INTO attachments (id, session_id, name, state) VALUES (?, ?, ?, 'preparing')")
@@ -36,21 +36,21 @@ export class SqliteAttachmentStore {
       const row = this.db
         .prepare('SELECT * FROM attachments WHERE id = ? AND session_id = ?')
         .get(attachmentId, sessionId)
-      if (!row) throw new SessionError('ATTACHMENT_NOT_FOUND', 'Attachment is not available in this chat')
+      if (!row) throw new DatabaseError('ATTACHMENT_NOT_FOUND', 'Attachment is not available in this chat')
       const source = this.db
         .prepare('SELECT * FROM sources WHERE attachment_id = ? AND session_id = ?')
         .get(attachmentId, sessionId)
       const state = row.state
       if (state !== 'preparing' && state !== 'ready' && state !== 'rejected')
-        throw new SessionError('SESSION_CORRUPT', 'Attachment state is unreadable')
+        throw new DatabaseError('SESSION_CORRUPT', 'Attachment state is unreadable')
       let prepared: unknown
       try {
         prepared = row.preparation === null ? undefined : JSON.parse(String(row.preparation))
       } catch {
-        throw new SessionError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
+        throw new DatabaseError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
       }
       if (prepared !== undefined && !isAttachmentPreparation(prepared))
-        throw new SessionError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
+        throw new DatabaseError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
       return {
         attachmentId,
         name: String(row.name),
@@ -83,9 +83,9 @@ export class SqliteAttachmentStore {
     this.access.transaction(() => {
       const item = this.get(sessionId, attachmentId)
       if (item.state !== 'preparing' || item.fingerprint)
-        throw new SessionError('ATTACHMENT_CONFLICT', 'Attachment bytes are already settled')
+        throw new DatabaseError('ATTACHMENT_CONFLICT', 'Attachment bytes are already settled')
       if (!Number.isSafeInteger(value.byteSize) || value.byteSize < 0 || !/^[a-f0-9]{64}$/.test(value.fingerprint))
-        throw new SessionError('INVALID_REQUEST', 'Invalid attachment receipt')
+        throw new DatabaseError('INVALID_REQUEST', 'Invalid attachment receipt')
       this.db
         .prepare('UPDATE attachments SET byte_size = ?, fingerprint = ? WHERE id = ?')
         .run(value.byteSize, value.fingerprint, attachmentId)
@@ -102,11 +102,11 @@ export class SqliteAttachmentStore {
     return this.access.transaction(() => {
       const item = this.get(sessionId, attachmentId)
       if (item.state !== 'preparing' || !item.fingerprint)
-        throw new SessionError('ATTACHMENT_NOT_READY', 'Attachment bytes must be saved before admission')
+        throw new DatabaseError('ATTACHMENT_NOT_READY', 'Attachment bytes must be saved before admission')
       if (typeof detectedType !== 'string' || !/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(detectedType))
-        throw new SessionError('INVALID_REQUEST', 'A detected media type is required')
+        throw new DatabaseError('INVALID_REQUEST', 'A detected media type is required')
       if (prepared && (!isAttachmentPreparation(prepared) || !/^[a-f0-9]{64}$/.test(prepared.parsedFingerprint)))
-        throw new SessionError('INVALID_REQUEST', 'Invalid preparation receipt')
+        throw new DatabaseError('INVALID_REQUEST', 'Invalid preparation receipt')
       this.db
         .prepare("UPDATE attachments SET state = 'ready', detected_type = ? WHERE id = ?")
         .run(detectedType, attachmentId)
@@ -128,8 +128,8 @@ export class SqliteAttachmentStore {
   reject(sessionId: string, attachmentId: string, code: string): AttachmentRecord {
     return this.access.transaction(() => {
       const item = this.get(sessionId, attachmentId)
-      if (item.state !== 'preparing') throw new SessionError('ATTACHMENT_CONFLICT', 'Attachment is already settled')
-      if (!/^[A-Z][A-Z0-9_]{0,63}$/.test(code)) throw new SessionError('INVALID_REQUEST', 'Invalid rejection code')
+      if (item.state !== 'preparing') throw new DatabaseError('ATTACHMENT_CONFLICT', 'Attachment is already settled')
+      if (!/^[A-Z][A-Z0-9_]{0,63}$/.test(code)) throw new DatabaseError('INVALID_REQUEST', 'Invalid rejection code')
       this.db
         .prepare("UPDATE attachments SET state = 'rejected', rejection_code = ? WHERE id = ?")
         .run(code, attachmentId)
@@ -170,22 +170,22 @@ export class SqliteAttachmentStore {
       this.get(sessionId, attachmentId)
       const row = this.db.prepare('SELECT request_id FROM attachments WHERE id = ?').get(attachmentId)!
       if (row.request_id !== null)
-        throw new SessionError('ATTACHMENT_CONFLICT', 'Sent attachments cannot be removed from a draft')
+        throw new DatabaseError('ATTACHMENT_CONFLICT', 'Sent attachments cannot be removed from a draft')
       this.db.prepare('DELETE FROM sources WHERE attachment_id = ?').run(attachmentId)
       this.db.prepare('DELETE FROM attachments WHERE id = ?').run(attachmentId)
     })
   }
   validateReadyInTx(sessionId: string, attachmentIds: readonly string[]): readonly AttachmentRecord[] {
     if (new Set(attachmentIds).size !== attachmentIds.length)
-      throw new SessionError('INVALID_REQUEST', 'Attachment IDs must be unique')
+      throw new DatabaseError('INVALID_REQUEST', 'Attachment IDs must be unique')
     return attachmentIds.map(id => {
       const item = this.get(sessionId, id)
       if (item.state === 'rejected')
-        throw new SessionError('ATTACHMENT_REJECTED', 'Remove the rejected attachment before sending')
-      if (item.state !== 'ready') throw new SessionError('ATTACHMENT_NOT_READY', 'Wait for attachment preparation')
+        throw new DatabaseError('ATTACHMENT_REJECTED', 'Remove the rejected attachment before sending')
+      if (item.state !== 'ready') throw new DatabaseError('ATTACHMENT_NOT_READY', 'Wait for attachment preparation')
       const row = this.db.prepare('SELECT request_id FROM attachments WHERE id = ?').get(id)
       if (!row || row.request_id !== null)
-        throw new SessionError('ATTACHMENT_CONFLICT', 'Attachment already belongs to a sent request')
+        throw new DatabaseError('ATTACHMENT_CONFLICT', 'Attachment already belongs to a sent request')
       return item
     })
   }

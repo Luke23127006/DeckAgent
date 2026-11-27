@@ -1,6 +1,6 @@
 import type { RunOwner } from '../runs/ports.ts'
 
-/** Chat contracts owned by DeckAgent persistence. No runtime or transport types cross this seam. */
+/** Persistence records shared by `db/`, `modules/chats/`, and `modules/attachments/`. */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 export interface SourceRef {
@@ -176,13 +176,13 @@ export interface ChatSummary extends SessionInfo {
   readonly readable: boolean
 }
 
-export class SessionError extends Error {
+export class DatabaseError extends Error {
   constructor(
     public readonly code: string,
     message: string,
   ) {
     super(message)
-    this.name = 'SessionError'
+    this.name = 'DatabaseError'
   }
 }
 

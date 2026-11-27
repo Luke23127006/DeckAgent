@@ -11,7 +11,9 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { RunFailure, createRunBudget, prepareRunInput, runOwnerKey } from '../lib/types/runs/index.js'
+import { createRunBudget } from '../lib/types/runs/budget/index.js'
+import { RunFailure, runOwnerKey } from '../lib/types/runs/ports.js'
+import { prepareRunInput } from '../lib/types/runs/preparation/index.js'
 
 const owner = { kind: 'chat', id: 'chat-1' }
 const grants = { publicResearch: false, sourceKinds: ['workspace-files'] }

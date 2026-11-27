@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import {
-  SessionDatabase,
-  SessionError,
+  ChatDatabase,
+  DatabaseError,
   SqliteChatStore,
   SqliteRunStore,
   openSessionStore,
@@ -171,7 +171,7 @@ test('corrupt research_sources rows throw SESSION_CORRUPT', async t => {
     .run('src-bad-json', 'req-research-corrupt', session.sessionId, '{not json')
   raw.close()
   assert.throws(() => store.requests.researchSources(session.sessionId), {
-    name: 'SessionError',
+    name: 'DatabaseError',
     code: 'SESSION_CORRUPT',
   })
 
@@ -179,7 +179,7 @@ test('corrupt research_sources rows throw SESSION_CORRUPT', async t => {
   rawMissing.prepare('UPDATE research_sources SET payload = ? WHERE id = ?').run('{"sourceId":"bad"}', 'src-bad-json')
   rawMissing.close()
   assert.throws(() => store.requests.researchSources(session.sessionId), {
-    name: 'SessionError',
+    name: 'DatabaseError',
     code: 'SESSION_CORRUPT',
   })
 })
@@ -372,7 +372,7 @@ test('an admission failure rolls back user messages, requests and change notices
   const dir = await directory(t)
   const path = join(dir, 'sessions.sqlite')
   const notices = []
-  const db = new SessionDatabase(path)
+  const db = new ChatDatabase(path)
   stores.get(t).push(db)
   const chats = new SqliteChatStore(db, { onChatsChanged: version => notices.push(version) })
   const chat = await chats.create('default')
@@ -380,7 +380,7 @@ test('an admission failure rolls back user messages, requests and change notices
   const runs = new SqliteRunStore(db, {
     beforeAdmit: input => chats.admitUserMessageInTx(input.owner.id, input.input, []),
     afterAdmit: () => {
-      throw new SessionError('ATTACHMENT_CONFLICT', 'Simulated failure after message and request insert')
+      throw new DatabaseError('ATTACHMENT_CONFLICT', 'Simulated failure after message and request insert')
     },
   })
   assert.throws(
@@ -391,7 +391,7 @@ test('an admission failure rolls back user messages, requests and change notices
         input: 'Must roll back',
         selection: { provider: 'p', model: 'm' },
       }),
-    error => error instanceof SessionError && error.code === 'ATTACHMENT_CONFLICT',
+    error => error instanceof DatabaseError && error.code === 'ATTACHMENT_CONFLICT',
   )
   assert.equal(runs.get('req-rollback'), undefined)
   assert.deepEqual(await chats.read(chat.sessionId), [])
@@ -457,7 +457,7 @@ test('a write that changes no chat, or that fails, keeps the chats version and s
       { role: 'nobody', content: 'Hai' },
     ]),
     {
-      name: 'SessionError',
+      name: 'DatabaseError',
     },
   )
   assert.deepEqual(seen, [1])
@@ -489,7 +489,7 @@ test('ChatRequestService maps run busy errors and unreadable chat errors to Chat
   const corrupt = makeService({
     getInfo: async () => ({ selection }),
     read: async () => {
-      throw new SessionError('SESSION_CORRUPT', 'corrupt')
+      throw new DatabaseError('SESSION_CORRUPT', 'corrupt')
     },
     start: async () => ({}),
   })

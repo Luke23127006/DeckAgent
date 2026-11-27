@@ -1,5 +1,5 @@
-import { SessionError } from './contracts.ts'
-import type { ActivityStatus, RequestEventBody, RequestStatus, ResearchSource } from './contracts.ts'
+import { DatabaseError } from './records.ts'
+import type { ActivityStatus, RequestEventBody, RequestStatus, ResearchSource } from './records.ts'
 
 const requestStatuses: readonly RequestStatus[] = [
   'active',
@@ -85,7 +85,7 @@ export function validateEvent(value: unknown): asserts value is RequestEventBody
       valid = isApprovalBody(value)
     }
   }
-  if (!valid) throw new SessionError('REQUEST_EVENT', 'Request event does not match the supported format')
+  if (!valid) throw new DatabaseError('REQUEST_EVENT', 'Request event does not match the supported format')
 }
 
 const researchSourceKeys = [
@@ -109,7 +109,7 @@ export function parseResearchSource(raw: string): ResearchSource {
   try {
     parsed = JSON.parse(raw)
   } catch {
-    throw new SessionError('SESSION_CORRUPT', 'Stored research source does not match the supported format')
+    throw new DatabaseError('SESSION_CORRUPT', 'Stored research source does not match the supported format')
   }
   if (
     !isRecord(parsed) ||
@@ -134,7 +134,7 @@ export function parseResearchSource(raw: string): ResearchSource {
     !Number.isSafeInteger(parsed.location.end) ||
     parsed.location.end < 0
   ) {
-    throw new SessionError('SESSION_CORRUPT', 'Stored research source does not match the supported format')
+    throw new DatabaseError('SESSION_CORRUPT', 'Stored research source does not match the supported format')
   }
   return {
     sourceId: parsed.sourceId,

@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { RunOwner, RunStore } from '../runs/ports.ts'
 import { ApprovalLog } from './approvals.ts'
-import { SessionError } from './contracts.ts'
+import { DatabaseError } from './records.ts'
 import type {
   ActivityRecord,
   ActivityStatus,
@@ -12,7 +12,7 @@ import type {
   ResearchSource,
   RuntimeBinding,
   TerminalStatus,
-} from './contracts.ts'
+} from './records.ts'
 import {
   activeRequestFilter,
   activeRequestFor,
@@ -32,7 +32,7 @@ import {
 } from './request-sources.ts'
 import { requestCodePattern, requestIdPattern, validateEvent } from './request-validation.ts'
 import { deleteRuntimeBinding, readRuntimeBinding, saveRuntimeBinding } from './runtime-bindings.ts'
-import type { SessionDatabase } from './session-database.ts'
+import type { ChatDatabase } from './chat-database.ts'
 
 export { summarizedNotice } from './request-queries.ts'
 
@@ -59,7 +59,7 @@ function parseOwnerKey(ownerKey: string): { readonly kind: string; readonly id: 
 }
 
 /**
- * Durable run store backed by `SessionDatabase` (schema v9). Owns `requests`, `request_events`,
+ * Durable run store backed by `ChatDatabase` (schema v9). Owns `requests`, `request_events`,
  * `request_approvals`, `runtime_bindings`, `source_reads`, `request_research` and `research_sources`.
  */
 export class SqliteRunStore implements RunStore {
@@ -67,7 +67,7 @@ export class SqliteRunStore implements RunStore {
   readonly approvals: ApprovalLog
 
   constructor(
-    private readonly sessionDb: SessionDatabase,
+    private readonly sessionDb: ChatDatabase,
     private readonly hooks: RunStoreHooks = {},
   ) {
     this.db = sessionDb.db
@@ -77,7 +77,7 @@ export class SqliteRunStore implements RunStore {
       assertActive: requestId => {
         const request = requireRequest(this.db, requestId)
         if (request.status !== 'active' && request.status !== 'waiting_approval')
-          throw new SessionError('REQUEST_CLOSED', 'The request has ended')
+          throw new DatabaseError('REQUEST_CLOSED', 'The request has ended')
       },
       insert: (requestId, event) => this.insert(requestId, event, new Date().toISOString()),
     })
@@ -85,17 +85,17 @@ export class SqliteRunStore implements RunStore {
 
   /**
    * Admission: runs `beforeAdmit`, inserts the active run, runs `afterAdmit`, and saves the initial status event
-   * inside one `SessionDatabase` transaction. One active run is allowed per `(owner_kind, owner_id)`.
+   * inside one `ChatDatabase` transaction. One active run is allowed per `(owner_kind, owner_id)`.
    */
   admit(input: RunAdmitInput): RequestRecord {
     return this.sessionDb.transaction(() => {
-      if (!requestIdPattern.test(input.requestId)) throw new SessionError('SESSION_CONFIG', 'Invalid request ID')
+      if (!requestIdPattern.test(input.requestId)) throw new DatabaseError('SESSION_CONFIG', 'Invalid request ID')
       if (
         this.db
           .prepare(`SELECT 1 FROM requests WHERE owner_kind = ? AND owner_id = ? AND ${activeRequestFilter}`)
           .get(input.owner.kind, input.owner.id)
       )
-        throw new SessionError('RUN_OWNER_BUSY', 'The run owner already has an active request')
+        throw new DatabaseError('RUN_OWNER_BUSY', 'The run owner already has an active request')
       const prepared = this.hooks.beforeAdmit?.(input) ?? { historyStart: 0 }
       const now = new Date().toISOString()
       this.db
@@ -126,9 +126,9 @@ export class SqliteRunStore implements RunStore {
     return this.sessionDb.transaction(() => {
       const request = requireRequest(this.db, requestId)
       if (request.status !== 'active' && request.status !== 'waiting_approval')
-        throw new SessionError('REQUEST_CLOSED', 'The request has ended')
+        throw new DatabaseError('REQUEST_CLOSED', 'The request has ended')
       if (event.kind === 'status' || event.kind === 'approval')
-        throw new SessionError('REQUEST_EVENT', 'Status and approvals are owned by Host operations')
+        throw new DatabaseError('REQUEST_EVENT', 'Status and approvals are owned by Host operations')
       return this.insert(requestId, event, new Date().toISOString())
     })
   }
@@ -136,7 +136,7 @@ export class SqliteRunStore implements RunStore {
   /** End an active request once, settling activities, assistant text and terminal status in one transaction. */
   finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined {
     if (errorCode !== undefined && !requestCodePattern.test(errorCode))
-      throw new SessionError('REQUEST_EVENT', 'Invalid error code')
+      throw new DatabaseError('REQUEST_EVENT', 'Invalid error code')
     return this.sessionDb.transaction(() => this.settle(requestId, status, errorCode))
   }
 
@@ -285,7 +285,7 @@ export class SqliteRunStore implements RunStore {
     const row = this.db
       .prepare('SELECT COALESCE(MAX(sequence), 0) AS last FROM request_events WHERE request_id = ?')
       .get(requestId)
-    if (!row) throw new SessionError('SESSION_STORAGE', 'Cannot read request event sequence')
+    if (!row) throw new DatabaseError('SESSION_STORAGE', 'Cannot read request event sequence')
     const sequence = Number(row.last) + 1
     this.db
       .prepare('INSERT INTO request_events (request_id, sequence, created_at, payload) VALUES (?, ?, ?, ?)')

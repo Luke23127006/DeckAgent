@@ -19,3 +19,4 @@ Read this file to find the execution report of each task of the Naming and Group
 | 15 | [Enable role-file-symbol for providers and research and check Phase 4](task-15-enable-providers-research-role-check-and-verify-phase-4.md) |
 | 16 | [Refactor attachments and check Phase 5](task-16-refactor-attachments-and-check-phase-5.md) |
 | 17 | [Refactor deck module and check Phase 6](task-17-refactor-deck-and-check-phase-6.md) |
+| 18 | [Clean the composition root, db/ and root files and check Phase 7](task-18-clean-composition-root-and-check-phase-7.md) |

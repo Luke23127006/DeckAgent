@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import { lstat, open, opendir, realpath } from 'node:fs/promises'
 import { basename, isAbsolute, join, parse, relative, resolve, sep, win32 } from 'node:path'
-import { SourceError } from './contracts.ts'
-import type { SourceAccess, SourceAccessOptions, SourceReadPlan } from './contracts.ts'
+import { SourceError } from './policy.types.ts'
+import type { SourceAccess, SourceAccessOptions, SourceReadPlan } from './policy.types.ts'
 
 // Technical read/list budgets, not attachment admission values or product limits.
 const readBudget = 256 * 1024

@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
+import { DatabaseError } from './records.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
 const schemaVersion = 9
@@ -140,7 +140,7 @@ const preparationColumns = `
   ALTER TABLE attachments ADD COLUMN parsed_fingerprint TEXT;
 `
 
-export function initialize(db: DatabaseSync): void {
+export function migrateChatsDatabase(db: DatabaseSync): void {
   db.exec('PRAGMA foreign_keys = OFF; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
     const version = Number(db.prepare('PRAGMA user_version').get()!.user_version)
@@ -187,14 +187,14 @@ export function initialize(db: DatabaseSync): void {
       if (hasColumn(db, 'runtime_bindings', 'session_id')) db.exec(migrateRuntimeBindingsV8ToV9)
       db.exec(`PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
-      throw new SessionError(
+      throw new DatabaseError(
         'SESSION_SCHEMA',
-        'Unsupported Session database format. Keep the file and use a compatible version or another data directory',
+        'Unsupported chat database format. Keep the file and use a compatible version or another data directory',
       )
     }
     // Catch damaged files or incomplete schemas before accepting requests. Never reset them.
     if (db.prepare('PRAGMA quick_check').get()!.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get()) {
-      throw new SessionError('SESSION_CORRUPT', 'Session database failed its integrity check')
+      throw new DatabaseError('SESSION_CORRUPT', 'Chat database failed its integrity check')
     }
     db.prepare(
       'SELECT id, created_at, updated_at, provider, model, workspace_id, removed_provider, removed_model FROM sessions LIMIT 0',
@@ -219,7 +219,7 @@ export function initialize(db: DatabaseSync): void {
     ).all()
     db.prepare('SELECT topic, key, version FROM change_versions LIMIT 0').all()
     if (!db.prepare("SELECT version FROM change_versions WHERE topic = 'chats' AND key = 'host'").get())
-      throw new SessionError('SESSION_CORRUPT', 'Session database has no chats version row')
+      throw new DatabaseError('SESSION_CORRUPT', 'Chat database has no chats version row')
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
-import type { ResearchSource } from './contracts.ts'
+import { DatabaseError } from './records.ts'
+import type { ResearchSource } from './records.ts'
 import { requireRequest } from './request-queries.ts'
 import { parseResearchSource } from './request-validation.ts'
 
@@ -31,7 +31,7 @@ export function saveSourceRead(
   },
 ) {
   const request = requireRequest(db, requestId)
-  if (request.status !== 'active') throw new SessionError('REQUEST_CLOSED', 'The request is not executing')
+  if (request.status !== 'active') throw new DatabaseError('REQUEST_CLOSED', 'The request is not executing')
   if (
     !value.origin ||
     value.origin.length > 4096 ||
@@ -42,7 +42,7 @@ export function saveSourceRead(
     value.lineCount < 1 ||
     (value.kind !== 'project-file' && value.kind !== 'approved-file')
   )
-    throw new SessionError('INVALID_REQUEST', 'Invalid source receipt')
+    throw new DatabaseError('INVALID_REQUEST', 'Invalid source receipt')
   const previous = db
     .prepare('SELECT * FROM source_reads WHERE session_id = ? AND origin = ? ORDER BY version DESC LIMIT 1')
     .get(request.owner.id, value.origin)
@@ -76,10 +76,10 @@ export function saveSourceRead(
 export function reserveResearchAttempt(db: DatabaseSync, requestId: string, sessionId: string): void {
   const request = requireRequest(db, requestId)
   if (request.owner.kind !== 'chat' || request.owner.id !== sessionId || request.status !== 'active')
-    throw new SessionError('REQUEST_CLOSED', 'Request is not active')
+    throw new DatabaseError('REQUEST_CLOSED', 'Request is not active')
   const row = db.prepare('SELECT selected, attempts FROM request_research WHERE request_id = ?').get(requestId)
-  if (!row || row.selected !== 1) throw new SessionError('RESEARCH_NOT_SELECTED', 'Public research was not selected')
-  if (Number(row.attempts) >= 3) throw new SessionError('RESEARCH_BUDGET_EXHAUSTED', 'Search budget reached')
+  if (!row || row.selected !== 1) throw new DatabaseError('RESEARCH_NOT_SELECTED', 'Public research was not selected')
+  if (Number(row.attempts) >= 3) throw new DatabaseError('RESEARCH_BUDGET_EXHAUSTED', 'Search budget reached')
   db.prepare('UPDATE request_research SET attempts = attempts + 1 WHERE request_id = ?').run(requestId)
 }
 
@@ -102,14 +102,14 @@ export function saveResearchResults(
     row?.selected !== 1 ||
     Number(row.attempts) < 1
   )
-    throw new SessionError('REQUEST_CLOSED', 'Research is not authorized')
+    throw new DatabaseError('REQUEST_CLOSED', 'Research is not authorized')
   if (
     !query.trim() ||
     query.length > 1000 ||
     result.results.length > 5 ||
     result.results.some(item => item.title.length > 300 || item.url.length > 2048 || item.content.length > 6000)
   )
-    throw new SessionError('INVALID_REQUEST', 'Invalid research result')
+    throw new DatabaseError('INVALID_REQUEST', 'Invalid research result')
   return result.results.map(item => {
     const source: ResearchSource = {
       ...item,

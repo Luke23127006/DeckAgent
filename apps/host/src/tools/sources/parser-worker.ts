@@ -1,6 +1,6 @@
-import { attachmentLimits } from './attachment-contracts.ts'
+import { attachmentLimits } from './attachment.types.ts'
 import { extractAttachment } from './attachment-extraction.ts'
-import { SourceError } from '../policy/contracts.ts'
+import { SourceError } from '../policy/policy.types.ts'
 
 process.once('message', async (message: unknown) => {
   try {

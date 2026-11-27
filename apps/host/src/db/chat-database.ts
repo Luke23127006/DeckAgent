@@ -1,11 +1,11 @@
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
-import { initialize } from './sessions-schema.ts'
+import { migrateChatsDatabase } from './chats.migrations.ts'
+import { DatabaseError } from './records.ts'
 
-/** Shared SQLite connection for sessions, attachments and runs with re-entrant transactions and post-commit hooks. */
-export class SessionDatabase {
+/** Shared SQLite connection for chats, attachments and runs with re-entrant transactions and post-commit hooks. */
+export class ChatDatabase {
   readonly db: DatabaseSync
   private depth = 0
   private callbacks: (() => void)[] = []
@@ -15,28 +15,28 @@ export class SessionDatabase {
     let db: DatabaseSync | undefined
     try {
       if (!path.trim() || path === ':memory:')
-        throw new SessionError('SESSION_CONFIG', 'A durable database file path is required')
+        throw new DatabaseError('SESSION_CONFIG', 'A durable database file path is required')
       mkdirSync(dirname(path), { recursive: true })
       db = new DatabaseSync(path)
-      initialize(db)
+      migrateChatsDatabase(db)
       this.db = db
     } catch (error) {
       db?.close()
-      if (error instanceof SessionError) throw error
-      throw new SessionError(
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError(
         'SESSION_STORAGE',
-        'Cannot open Session database. Check the data directory, file integrity and write permissions',
+        'Cannot open chat database. Check the data directory, file integrity and write permissions',
       )
     }
   }
 
   run<T>(op: () => T): T {
-    if (this.closed) throw new SessionError('SESSION_CLOSED', 'Session storage is closed')
+    if (this.closed) throw new DatabaseError('SESSION_CLOSED', 'Chat storage is closed')
     try {
       return op()
     } catch (error) {
-      if (error instanceof SessionError) throw error
-      throw new SessionError('SESSION_STORAGE', 'Session storage operation failed')
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError('SESSION_STORAGE', 'Chat storage operation failed')
     }
   }
 

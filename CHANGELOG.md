@@ -22,6 +22,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Reduce the Host `server.ts` to startup, shutdown, configuration and wiring. Move run failure statuses to `http/error-handler.ts`, the admission allowlist to `RunController`, settings to `modules/settings/`, the storage layout and credentials to `storage/`, and rename the chat database to `ChatDatabase` and `DatabaseError` so `db/` maps no HTTP status. Narrow each Host barrel to the exports that other folders use.
 - Refactor the Host deck module into capability folders behind `DeckService`, `DeckWorkflowError`, `DeckChats` and `DeckAttachments`, move deck run planning out of `server.ts`, remove the `chatSessions` adapter by splitting `ToolSessionStore`, and enable `role-file-symbol` for `deck`.
 - Render the conversation, the draft, attachments, research and the request feedback with React. A request stream hook owns the SSE reader of the active request, the responses are decoded through the contracts package, and the legacy shell, request runner and draft sync are removed.
 - Render the workspace controls, the chat search and the chat list with React through query hooks. Decode the chat and workspace lists through the contracts package, and remove the legacy workspace view.

@@ -1,9 +1,9 @@
 import { extname, posix } from 'node:path'
 import { ZipReader, Uint8ArrayReader } from '@zip.js/zip.js'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
-import { attachmentLimits as limits, attachmentParserVersion } from './attachment-contracts.ts'
-import type { AttachmentLocation, AttachmentPart, ParsedAttachment } from './attachment-contracts.ts'
-import { SourceError } from '../policy/contracts.ts'
+import { attachmentLimits as limits, attachmentParserVersion } from './attachment.types.ts'
+import type { AttachmentLocation, AttachmentPart, ParsedAttachment } from './attachment.types.ts'
+import { SourceError } from '../policy/policy.types.ts'
 
 interface Budget {
   entries: number

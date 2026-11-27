@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { CredentialStore } from '../../credential-store.ts'
+import type { CredentialStore } from '../../storage/index.ts'
 import { TavilyError, type TavilyClient, type ResearchResult } from './tavily.ts'
 import type { SqliteResearchStore } from './research.store.ts'
 import { ResearchError } from './research.errors.ts'
@@ -165,7 +165,13 @@ export class ResearchService {
 
   async sources(sessionId: string): Promise<readonly ResearchSourceRecord[]> {
     if (!(await this.chats.getInfo(sessionId))) throw new ResearchError('SESSION_NOT_FOUND')
-    return this.runs.researchSources(sessionId)
+    try {
+      return this.runs.researchSources(sessionId)
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+        throw new ResearchError('CHAT_UNREADABLE')
+      throw error
+    }
   }
 
   async prepare(selected: boolean) {
