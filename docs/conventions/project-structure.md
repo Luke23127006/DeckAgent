@@ -217,8 +217,6 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | Folder cũ | Folder đích |
 | --- | --- |
 | `packages/host/contracts/` | `packages/contracts/` |
-| `apps/web/src/browser/transport/` | `apps/web/src/api/` |
-| `apps/web/src/browser/**`, `apps/web/src/index.ts` | Các folder trong bảng [`apps/web/`](#appsweb) |
 
 Rule khi đặt và chuyển code:
 
@@ -239,8 +237,8 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | --- | --- | --- |
 | Import package chỉ qua `exports`, không qua private subpath, relative path hoặc alias | `oxlint` (`no-restricted-imports`), `check:boundaries` (`private-package-import`, `tsconfig-private-alias`, `unresolved-internal-import`) | — |
 | Browser không import Node-only module | Browser build, `oxlint` (`no-restricted-imports`), `check:boundaries` (`browser-node-import`) | — |
-| Feature, Browser feature, integration, runtime và module không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | — |
-| Package graph, feature graph, Browser feature graph và module graph trong `apps/host/src/modules/` không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`, `module-cycle`) | — |
+| Feature, integration, runtime và module không lộ private implementation | `check:boundaries` (`feature-private-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | — |
+| Package graph, feature graph và module graph trong `apps/host/src/modules/` không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `module-cycle`) | — |
 | `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | Cùng rule cho `packages/contracts/` |
 | `runs/` không import module, HTTP, Express, SQL driver, `db/`, tool, `@deckagent/deck` hoặc adapter trong `runtimes/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runs/`, `check:boundaries` (`lifecycle-transport-import`) cho `apps/host/src/runs` | — |
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
@@ -249,8 +247,8 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | `storage/` không import module, HTTP, `runs/`, runtime, tool, `db/`, Express hoặc `node:sqlite` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/storage/` | — |
 | `http/` không import feature, module, integration, runtime, `runs/` (trừ `runs/ports.ts` trong `http/error-handler.ts`), store, `db/`, `storage/`, tool, `node:sqlite` hoặc `@deckagent/deck` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` và `apps/host/src/http/error-handler.ts` | — |
 | Adapter runtime không import module, Express, `node:sqlite`, `db/`, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/`, `check:boundaries` (`runtime-private-import`) | — |
-| Route không import store, `schema.ts`, `db/` hoặc SQL driver. Service không import Express, `db/` hoặc SQL driver. Chỉ `*.store.ts` được import `db/`. Chỉ `*.routes.ts` và `*.errors.ts` được import `http/route-helpers.ts` (vẫn chặn `http/{app,start-host,error-handler,change-feed}*`). Module không import store của module khác, tool hoặc runtime | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.store.ts`, `*.routes.ts`, `*.service.ts` và `*.errors.ts` | — |
-| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only của `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host` và domain package trong `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn Node-only module và mọi package khác `@deckagent/host-contracts` trong các folder mới của `apps/web/src/` | `check:boundaries` (`browser-node-import`) cho toàn bộ `apps/web/src/`, sau khi Phase 7 của Browser in React xoá `apps/web/src/index.ts` |
+| Route không import store, `*.migrations.ts`, `db/` hoặc SQL driver. Service không import Express, `db/` hoặc SQL driver. Chỉ `*.store.ts` được import `db/`. Chỉ `*.routes.ts` và `*.errors.ts` được import `http/route-helpers.ts` (vẫn chặn `http/{app,start-host,error-handler,change-feed}*`). Module không import store của module khác, tool hoặc runtime | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.store.ts`, `*.routes.ts`, `*.service.ts` và `*.errors.ts` | — |
+| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho toàn bộ `apps/web/src/`: chặn Node-only module, mọi workspace package khác `@deckagent/host-contracts` và relative import vào application khác. `oxlint` (`no-restricted-imports`) chặn Node-only module và mọi package khác `@deckagent/host-contracts` trong các folder của `apps/web/src/` | — |
 | Page, layout, context và component không gọi `api/`. Component, layout và context không import page. Hook không import page, component hay layout | `oxlint` (`no-restricted-imports`) cho `apps/web/src/{pages,components,layouts,contexts,hooks}/` | — |
 | `api/` và `editor/` không import React, TanStack Query hay UI code. `editor/` không gọi `api/` | `oxlint` (`no-restricted-imports`) cho `apps/web/src/{api,editor}/` | — |
 | Code production không import `mocks/` hay `msw`, trừ `src/main.tsx` | `oxlint` (`no-restricted-imports`) cho import tĩnh. Review cho import động. Vite build plugin (forbidMocksInBuild) kèm fixture âm trong tests/vite-build-mocks.test.mjs | — |

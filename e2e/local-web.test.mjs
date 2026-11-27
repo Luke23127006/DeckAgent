@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { StorageError, startLocalWeb } from '@deckagent/host'
-import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { HostClient } from './fixtures/browser-driver/index.mjs'
 import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 test('Local Web serves the page and fixed assets only; saved history survives a restart without a model', async t => {

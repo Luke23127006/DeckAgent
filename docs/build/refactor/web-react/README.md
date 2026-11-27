@@ -34,11 +34,11 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | --- | --- | --- | --- | --- |
 | 1 | Decisions, conventions and checks | The PO answers the `Open` items of [Browser Rules](web-rules.md#stack) | The rules of [Browser Rules](web-rules.md) are in the Project Structure [[4]](#ref-4), the Coding Guidelines [[5]](#ref-5) and the Testware [[6]](#ref-6). They are also in AGENTS.md [[7]](#ref-7), the target layout and the criteria. The folder rules for `apps/web/src/` exist, each with a negative fixture | Done ([Revision 1](plan/README.md#revision-1-phase-1-decisions-conventions-and-checks)) |
 | 2 | React shell | Phase 1 is done | Vite builds `apps/web/`. The Host serves the build folder with an SPA fallback, and `loadWebAssets` with its HTML and CSS strings is removed (WB-02, WB-05). Tailwind, shadcn/ui with the theme variables, Vitest, `main.tsx`, the route table, the app shell layout, the `QueryClient`, `api/client.ts` and the change feed hook exist. The old screens render inside the shell | Done ([Revision 2](plan/README.md#revision-2-phase-2-react-shell)) |
-| 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Implemented; [exit check blocked](#phase-3-settings) by concurrent Host edits |
+| 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Done ([Phase 3](#phase-3-settings)). The exit check ran in [Phase 7](#phase-7-removal-and-exit-check) |
 | 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Done ([Phase 4](#phase-4-workspaces-and-chat-navigation)) |
 | 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Done ([Phase 5](#phase-5-conversation-and-requests)) |
 | 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Done ([Phase 6](#phase-6-deck)) |
-| 7 | Removal and exit check | Phases 3 to 6 are done | `apps/web/src/browser/` and the second TypeScript project are removed (WB-09). `apps/web/` imports only the contracts package (WB-03). The old Browser rules of `check:boundaries` are replaced. A rescan checks TS-06 and TS-07 [[8]](#ref-8) | Pending |
+| 7 | Removal and exit check | Phases 3 to 6 are done | `apps/web/src/browser/` and the second TypeScript project are removed (WB-09). `apps/web/` imports only the contracts package (WB-03). The old Browser rules of `check:boundaries` are replaced. A rescan checks TS-06 and TS-07 [[8]](#ref-8) | Done ([Phase 7](#phase-7-removal-and-exit-check)) |
 
 Phases 3 and 4 can run in any order after Phase 2.
 
@@ -115,6 +115,31 @@ The phase was diagnosed and done in one run without task files. Its decisions:
 | The legacy transport clients for the deck, the Brief, the Outline and the confirmation stay | HTTP tests of the Host use them as the Browser driver. Phase 7 removes them with the second TypeScript project |
 
 Checks ran in a worktree at commit `6caa704` with the changes of this phase. The shared tree had no `packages/host/contracts/tsconfig.json` during the run, because of concurrent edits, so `tsc` and Vitest could not start there. `build`, `lint`, `check:boundaries`, `check:docs`, Vitest (33 tests), the contracts decoder tests (23 tests), `test:slide-pipeline`, `test:outline-workflow`, `test:brief-foundation`, `test:tools-browser` and the Vite build guard passed. At the request of the PO, the browser suite (`test:browser-smoke`) did not run. Thus no test of this phase ran the deck flows in a real browser. Phase 7 runs all non-live suites.
+
+### Phase 7: Removal and exit check
+
+`apps/web/src/browser/` and `tsconfig.browser.json` are removed. `apps/web/` has one TypeScript project (WB-09). Its `package.json` and its `tsconfig.json` refer only to `@deckagent/host-contracts` (WB-03). The motion layer moved from `browser/motion.ts` to `hooks/use-motion.ts`. `useMotion` starts it after the first render and disconnects its `MutationObserver` on unmount. `browser/change-watcher.ts`, the transport `ChangeClient` and their test are removed, because no product code and no other test used them. The change feed hook replaced them in Phase 2.
+
+The legacy transport clients moved to `e2e/fixtures/browser-driver/` as JavaScript. The HTTP tests of the Host and the tests in `e2e/` use them as the Browser driver. The five tests of these clients moved from `apps/web/tests/` to `e2e/` with the same names. `apps/web/tests/` now holds only Vitest tests.
+
+`check:boundaries` applies `browser-node-import` to all of `apps/web/src/`. The rule refuses a Node-only module, a workspace package other than `@deckagent/host-contracts`, and a relative import into another application. The rules `browser-feature-private-import`, `browser-feature-cycle` and `browser-transport-ui-import` are removed with the folders that they checked. The oxlint override for `apps/web/src/browser/` is removed. The negative fixtures of `tests/check-boundaries.test.mjs` and `tests/oxlint-boundaries.test.mjs` use the new folders.
+
+The phase was diagnosed and done in one run without task files. Its decisions:
+
+| Decision | Reason |
+| --- | --- |
+| The legacy clients become a test driver in `e2e/fixtures/browser-driver/`, not calls of `apps/web/src/api/` | `api/` uses the `@/` alias and the Vite environment, and Node cannot run it without a build. A rewrite of the HTTP tests to other clients would change tests that check the HTTP contract. A mechanical transpile with `typescript` keeps the behavior of the clients |
+| The driver is JavaScript (`.mjs`), not TypeScript | Without a TypeScript project for it, the type annotations are not checked. The other test fixtures are `.mjs` too |
+| The driver is in `e2e/fixtures/`, and the Host tests in `apps/host/tests/` import it from there | Before Phase 7 the Host tests imported the driver from `apps/web/tests/`, which is another component too. The driver stands for the Browser in a flow between the two applications, and `e2e/` holds these flows |
+| The four client tests that use only a fake server stay with the driver in `e2e/` | They show that the driver decodes and refuses responses as the Browser did. They do not test product code. A later revision can replace them when the HTTP tests use `apps/web/src/api/` |
+| `scripts/scan-module-design.mjs` keeps its area list | The list measures the baseline layout of the Module Design research. A change of the list changes the meaning of that baseline |
+
+Checks ran in a worktree at commit `780e18f` with the changes of this phase and the open Host changes of the Naming and Grouping Refactor. The shared tree had no `packages/host/contracts/tsconfig.json` during the run, because of concurrent edits. `build`, `lint`, `check:boundaries`, `check:docs`, Vitest (33 tests) and the 19 other non-live test scripts passed. The browser suite passed 21 of 22 tests in the first run. The failed test stopped at "Live reply not shown". Two isolated reruns of that test and a second run of the full browser suite (22 of 22) passed. Thus the exit checks of Phase 3 are also done.
+
+Rescan of TS-06 and TS-07 [[8]](#ref-8):
+
+- TS-06 passes. The 40 workspace imports in `apps/web/src/` all import `@deckagent/host-contracts`. No relative import leaves `apps/web/`.
+- TS-07 passes for the screens. No helper builds a screen by hand. Two hooks still make short-lived DOM nodes. `use-motion.ts` splits the welcome heading into letters for its animation, and restores the text after it. It also adds a sheen node. `use-panel-resizer.ts` adds an overlay while a divider moves.
 
 ## References
 

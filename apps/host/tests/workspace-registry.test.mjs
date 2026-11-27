@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { FolderPolicy } from '../lib/types/modules/workspaces/folder-policy.js'
 import { nameFromFolder, nameFromUser } from '../lib/types/modules/workspaces/workspace-name.js'
-import { WorkspaceRegistry } from '../lib/types/modules/workspaces/workspaces.store.js'
+import { SqliteWorkspaceStore, WorkspaceService } from '../lib/types/modules/workspaces/index.js'
 import { WorkspaceError, mapWorkspaceError } from '../lib/types/modules/workspaces/workspaces.errors.js'
 
 async function tree(folder) {
@@ -27,7 +27,7 @@ async function setup(t) {
   const options = { path: join(dataRoot, 'db', 'workspaces.sqlite'), home, dataRoot }
   const opened = []
   const open = () => {
-    const registry = new WorkspaceRegistry(options)
+    const registry = new SqliteWorkspaceStore(options)
     opened.push(registry)
     return registry
   }
@@ -343,7 +343,7 @@ test('a damaged or foreign Workspace database is refused without being reset', a
   const path = join(dataRoot, 'db', 'other.sqlite')
   await mkdir(join(dataRoot, 'db'), { recursive: true })
   await writeFile(path, 'not a database at all')
-  assert.throws(() => new WorkspaceRegistry({ path, home: dataRoot, dataRoot }), { code: 'WORKSPACE_STORAGE' })
+  assert.throws(() => new SqliteWorkspaceStore({ path, home: dataRoot, dataRoot }), { code: 'WORKSPACE_STORAGE' })
   assert.equal((await stat(path)).size, 'not a database at all'.length)
 })
 
@@ -375,7 +375,7 @@ test('schema 1 workspaces.sqlite upgrades to schema 2 in place while keeping wor
   v1.prepare("INSERT INTO registry_state (key, value) VALUES ('selected', 'ws-1')").run()
   v1.close()
 
-  const registry = new WorkspaceRegistry({ path: dbPath, home, dataRoot })
+  const registry = new SqliteWorkspaceStore({ path: dbPath, home, dataRoot })
   t.after(() => registry.close())
   assert.equal(registry.version(), 0)
   assert.equal(registry.selectedId(), 'ws-1')
@@ -398,7 +398,7 @@ test('schema 1 workspaces.sqlite upgrades to schema 2 in place while keeping wor
 test('every workspace write increments version inside a transaction and publishes notices after commit', async t => {
   const { dir, home, dataRoot } = await setup(t)
   const notices = []
-  const registry = new WorkspaceRegistry({
+  const registry = new SqliteWorkspaceStore({
     path: join(dataRoot, 'db', 'workspaces.sqlite'),
     home,
     dataRoot,
@@ -441,7 +441,7 @@ test('every workspace write increments version inside a transaction and publishe
 test('stale expectedVersion throws WORKSPACES_STALE, changes no row and publishes no notice', async t => {
   const { dir, home, dataRoot } = await setup(t)
   const notices = []
-  const registry = new WorkspaceRegistry({
+  const registry = new SqliteWorkspaceStore({
     path: join(dataRoot, 'db', 'workspaces.sqlite'),
     home,
     dataRoot,
@@ -495,4 +495,49 @@ test('WorkspaceError and mapWorkspaceError map codes to HTTP status and safe det
     code: 'WORKSPACES_STALE',
   })
   assert.equal(mapWorkspaceError(new Error('other')), undefined)
+})
+
+test('WorkspaceService blocks relink and remove on active requests and ungroups before publishing', async t => {
+  const { dir, home, dataRoot } = await setup(t)
+  const events = []
+  const store = new SqliteWorkspaceStore({
+    path: join(dataRoot, 'db', 'workspaces.sqlite'),
+    home,
+    dataRoot,
+    publish: notice => events.push(['publish', notice.version]),
+  })
+  t.after(() => store.close())
+  let active = true
+  const service = new WorkspaceService(store, {
+    hasActiveRequest: async () => active,
+    ungroup: async workspaceId => {
+      events.push(['ungroup', workspaceId])
+    },
+  })
+  const first = await folder(dir, 'first')
+  const second = await folder(dir, 'second')
+  const added = await service.add(first, 0)
+  const id = added.selectedId
+  events.length = 0
+
+  await assert.rejects(
+    service.relink(id, second, added.version),
+    error => error instanceof WorkspaceError && error.code === 'WORKSPACE_REQUEST_ACTIVE',
+  )
+  await assert.rejects(
+    service.remove(id, added.version),
+    error => error instanceof WorkspaceError && error.code === 'WORKSPACE_REQUEST_ACTIVE',
+  )
+  assert.equal((await store.get(id)).folder, await realpath(first))
+  assert.deepEqual(events, [])
+
+  active = false
+  const afterRemove = await service.remove(id, added.version)
+  assert.equal(afterRemove.selectedId, 'default')
+  assert.equal(afterRemove.version, added.version + 1)
+  assert.deepEqual(events, [
+    ['ungroup', id],
+    ['publish', added.version + 1],
+  ])
+  store.close()
 })

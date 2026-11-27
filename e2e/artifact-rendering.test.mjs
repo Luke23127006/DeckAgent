@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { DeckStore } from '@deckagent/deck'
-import { ConfirmationClient, DeckClient, ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { ConfirmationClient, DeckClient, ManagementClient } from './fixtures/browser-driver/index.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 import { startApp, finished, waitFor, MemoryCredentials } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 

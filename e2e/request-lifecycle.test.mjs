@@ -20,7 +20,7 @@ import test from 'node:test'
 import { DatabaseError, openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import { HttpError } from '../apps/host/tests/fixtures/http-host.mjs'
 import { startRequestHost as startHost } from '../apps/host/tests/fixtures/http-host.mjs'
-import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { HostClient } from './fixtures/browser-driver/index.mjs'
 
 const selection = { provider: 'fixture', model: 'model-a' }
 

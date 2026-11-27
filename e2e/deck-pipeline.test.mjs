@@ -8,7 +8,7 @@ import { once } from 'node:events'
 import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 import { startLocalWeb } from '@deckagent/host'
-import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { DeckClient } from './fixtures/browser-driver/index.mjs'
 import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 const confirmed = {

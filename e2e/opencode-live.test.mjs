@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import test from 'node:test'
 import { startLocalWeb } from '@deckagent/host'
 import { pinnedVersion } from '../apps/host/tests/fixtures/b02-helpers.mjs'
-import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { HostClient } from './fixtures/browser-driver/index.mjs'
 import { MemoryCredentials, filesContaining, finished, waitFor } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 // Real OpenCode CLI smoke (B02-IMP-02). Opt-in: DECKAGENT_OPENCODE_LIVE=1; DECKAGENT_OPENCODE optionally overrides the

@@ -1,21 +1,15 @@
 import { decodeBriefView } from '@deckagent/host-contracts'
-import type { BriefDraft, BriefView, InterviewState } from '@deckagent/host-contracts'
-import { fetchAuthorized, isRecord } from './http.ts'
-
-const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
-const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(text)
-
+import { fetchAuthorized, isRecord } from './http.mjs'
+const text = v => typeof v === 'string' && !!v.trim() && v.isWellFormed()
+const strings = v => Array.isArray(v) && v.every(text)
 export class BriefClient {
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-
-  private async request(
-    sessionId: string,
-    version?: number,
-    input?: { expectedVersion: number; draft: BriefDraft },
-  ): Promise<BriefView> {
+  origin
+  token
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async request(sessionId, version, input) {
     const response = await fetchAuthorized(
       this.origin,
       this.token,
@@ -29,7 +23,7 @@ export class BriefClient {
     )
     if (!response.ok) {
       if (response.status === 401) throw new Error('AUTH_REQUIRED')
-      const value: unknown = await response.json().catch(() => null)
+      const value = await response.json().catch(() => null)
       const codes = [
         'BRIEF_INVALID',
         'BRIEF_STALE',
@@ -57,15 +51,13 @@ export class BriefClient {
     if (version !== undefined && view.version !== version) throw new Error('INVALID_RESPONSE')
     return view
   }
-
-  snapshot(sessionId: string, version?: number): Promise<BriefView> {
+  snapshot(sessionId, version) {
     return this.request(sessionId, version)
   }
-  save(sessionId: string, expectedVersion: number, draft: BriefDraft): Promise<BriefView> {
+  save(sessionId, expectedVersion, draft) {
     return this.request(sessionId, undefined, { expectedVersion, draft })
   }
-
-  async interview(sessionId: string): Promise<{ brief: BriefView; state: InterviewState }> {
+  async interview(sessionId) {
     const response = await fetchAuthorized(
       this.origin,
       this.token,
@@ -73,7 +65,7 @@ export class BriefClient {
       { signal: AbortSignal.timeout(15000) },
     )
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'BRIEF_UNAVAILABLE')
-    const value: unknown = await response.json()
+    const value = await response.json()
     if (!isRecord(value) || !isRecord(value.state)) throw new Error('INVALID_RESPONSE')
     const s = value.state
     if (
@@ -84,27 +76,25 @@ export class BriefClient {
       !text(s.notice)
     )
       throw new Error('INVALID_RESPONSE')
-    const questions = s.questions.map((q: unknown) => {
+    const questions = s.questions.map(q => {
       if (!isRecord(q) || !text(q.prompt) || !strings(q.suggestions) || typeof q.required !== 'boolean')
         throw new Error('INVALID_RESPONSE')
-      const topic = (
-        [
-          'topic',
-          'audience',
-          'duration',
-          'purpose',
-          'sources',
-          'language',
-          'images',
-          'format',
-          'template',
-          'design-system',
-        ] as const
-      ).find(t => t === q.topic)
+      const topic = [
+        'topic',
+        'audience',
+        'duration',
+        'purpose',
+        'sources',
+        'language',
+        'images',
+        'format',
+        'template',
+        'design-system',
+      ].find(t => t === q.topic)
       if (!topic) throw new Error('INVALID_RESPONSE')
       return { topic, prompt: q.prompt, suggestions: q.suggestions, required: q.required }
     })
-    const blockers = s.blockers.map((b: unknown) => {
+    const blockers = s.blockers.map(b => {
       if (!isRecord(b) || !text(b.code) || !text(b.message)) throw new Error('INVALID_RESPONSE')
       return { code: b.code, message: b.message }
     })

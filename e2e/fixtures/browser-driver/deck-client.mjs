@@ -1,24 +1,20 @@
-import type { ImageCredit, DeckChange, DeckSnapshot, SlideContent } from '@deckagent/host-contracts'
 import { decodeGeneration } from '@deckagent/host-contracts'
 import { decodeArtifactDescriptor, decodeContentOrigins, decodeSlideDocument } from '@deckagent/presentation-document'
-import { fetchAuthorized, readSseFrames } from './http.ts'
-
-function object(value: unknown): value is Record<string, unknown> {
+import { fetchAuthorized, readSseFrames } from './http.mjs'
+function object(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
-function id(value: unknown): value is string {
+function id(value) {
   return typeof value === 'string' && /^[\w-]{1,100}$/.test(value)
 }
-function integer(value: unknown): value is number {
+function integer(value) {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
-function invalid(): never {
+function invalid() {
   throw new Error('INVALID_DECK_RESPONSE')
 }
-
-const IMAGE_LICENSES = ['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown'] as const
-
-function decodeImageCredits(value: unknown): readonly ImageCredit[] {
+const IMAGE_LICENSES = ['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown']
+function decodeImageCredits(value) {
   if (!Array.isArray(value) || value.length > 100) invalid()
   return value.map(item => {
     if (
@@ -49,26 +45,24 @@ function decodeImageCredits(value: unknown): readonly ImageCredit[] {
     }
   })
 }
-
-function decodeStringArray(value: unknown): readonly string[] {
+function decodeStringArray(value) {
   if (!Array.isArray(value)) invalid()
   return value.map(item => (typeof item === 'string' ? item : invalid()))
 }
-
-function change(value: unknown, sessionId: string): DeckChange {
+function change(value, sessionId) {
   if (!object(value) || value.sessionId !== sessionId || value.deckId !== sessionId || !integer(value.version))
     invalid()
   return { sessionId, deckId: sessionId, version: value.version }
 }
-
 /** Full authenticated metadata reads plus small SSE invalidations; no HTML in notices. */
 export class DeckClient {
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-
-  private async request(sessionId: string, suffix: string, signal?: AbortSignal): Promise<Response> {
+  origin
+  token
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async request(sessionId, suffix, signal) {
     if (!id(sessionId)) invalid()
     const response = await fetchAuthorized(
       this.origin,
@@ -79,9 +73,8 @@ export class DeckClient {
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'DECK_REQUEST_FAILED')
     return response
   }
-
-  async snapshot(sessionId: string, signal?: AbortSignal): Promise<DeckSnapshot> {
-    const value: unknown = await (await this.request(sessionId, '', signal)).json()
+  async snapshot(sessionId, signal) {
+    const value = await (await this.request(sessionId, '', signal)).json()
     const base = change(value, sessionId)
     if (
       !object(value) ||
@@ -90,7 +83,7 @@ export class DeckClient {
       (value.generation === undefined && value.slides.length > 100)
     )
       invalid()
-    const slides = value.slides.map((slide: unknown, position: number) => {
+    const slides = value.slides.map((slide, position) => {
       if (
         !object(slide) ||
         !id(slide.slideId) ||
@@ -107,7 +100,7 @@ export class DeckClient {
         title: slide.title,
         order: position,
         revision: slide.revision,
-        status: slide.revision ? ('published' as const) : ('pending' as const),
+        status: slide.revision ? 'published' : 'pending',
       }
     })
     if (
@@ -119,10 +112,9 @@ export class DeckClient {
     if (generation && generation.receipt.outlineId !== value.outlineId) invalid()
     return { ...base, outlineId: value.outlineId, slides, ...(generation ? { generation } : {}) }
   }
-
-  async content(sessionId: string, slideId: string, revision: number, signal?: AbortSignal): Promise<SlideContent> {
+  async content(sessionId, slideId, revision, signal) {
     if (!id(slideId) || !integer(revision) || !revision) invalid()
-    const value: unknown = await (
+    const value = await (
       await this.request(sessionId, `/slides/${encodeURIComponent(slideId)}/revisions/${revision}`, signal)
     ).json()
     if (
@@ -160,9 +152,8 @@ export class DeckClient {
       ...(Array.isArray(value.provenance) ? { provenance: decodeContentOrigins(value.provenance) } : {}),
     }
   }
-
   /** A connection always starts with a current-version notice, including an empty deck. */
-  async *watch(sessionId: string, signal: AbortSignal): AsyncGenerator<DeckChange> {
+  async *watch(sessionId, signal) {
     const response = await this.request(sessionId, '/events', signal)
     const frames = readSseFrames(response, {
       maxBufferBytes: 65536,

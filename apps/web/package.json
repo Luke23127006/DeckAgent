@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@deckagent/host-contracts": "workspace:*",
-    "@deckagent/presentation-document": "workspace:*",
     "@radix-ui/react-slot": "1.5.0",
     "@tanstack/react-query": "5.108.4",
     "class-variance-authority": "0.7.1",

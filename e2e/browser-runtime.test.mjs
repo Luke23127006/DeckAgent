@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { startRequestHost as startHost } from '../../host/tests/fixtures/http-host.mjs'
-import { HostClient } from './fixtures/browser-driver.mjs'
+import { startRequestHost as startHost } from '../apps/host/tests/fixtures/http-host.mjs'
+import { HostClient } from './fixtures/browser-driver/index.mjs'
 
 // B02: the in-request question/reply contract was removed (ADR-0004: a question ends its request, the reply is a new
 // request), so its waiting-snapshot case is gone. The browser follows saved request events instead of snapshots.

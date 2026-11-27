@@ -1,22 +1,9 @@
 import { decodeAttachment } from '@deckagent/host-contracts'
-import type {
-  ChatDraft,
-  ProviderProtocol,
-  ProviderSettings,
-  StoredActivity,
-  StoredRequest,
-  WebSession,
-  WebPreferences,
-  WebSettings,
-  WorkspaceList,
-} from '@deckagent/host-contracts'
-import { isRecord } from './http.ts'
-
-function invalid(): never {
+import { isRecord } from './http.mjs'
+function invalid() {
   throw new Error('INVALID_RESPONSE')
 }
-
-function decodeResearchSettings(value: unknown): NonNullable<WebSettings['research']> {
+function decodeResearchSettings(value) {
   if (
     !isRecord(value) ||
     value.provider !== 'tavily' ||
@@ -27,17 +14,17 @@ function decodeResearchSettings(value: unknown): NonNullable<WebSettings['resear
     invalid()
   return { provider: 'tavily', configured: value.configured, environmentKey: value.environmentKey, freeOnly: true }
 }
-const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
-const requestStatuses = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted'] as const
-function protocol(value: unknown): ProviderProtocol {
+const protocols = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
+const requestStatuses = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
+function protocol(value) {
   return protocols.find(item => item === value) ?? invalid()
 }
-function selection(value: unknown): { provider: string; model: string } | undefined {
+function selection(value) {
   if (value === undefined) return undefined
   if (!isRecord(value) || typeof value.provider !== 'string' || typeof value.model !== 'string') invalid()
   return { provider: value.provider, model: value.model }
 }
-function provider(value: unknown): ProviderSettings {
+function provider(value) {
   if (
     !isRecord(value) ||
     typeof value.id !== 'string' ||
@@ -60,8 +47,7 @@ function provider(value: unknown): ProviderSettings {
     models: value.models.map(item => (typeof item === 'string' ? item : invalid())),
   }
 }
-
-export function decodeSettings(value: unknown): WebSettings {
+export function decodeSettings(value) {
   if (
     !isRecord(value) ||
     !Array.isArray(value.providers) ||
@@ -78,7 +64,7 @@ export function decodeSettings(value: unknown): WebSettings {
     (value.runtime.reason !== undefined && typeof value.runtime.reason !== 'string')
   )
     invalid()
-  const builtIns = value.builtIns.map((item: unknown) => {
+  const builtIns = value.builtIns.map(item => {
     if (
       !isRecord(item) ||
       typeof item.id !== 'string' ||
@@ -109,7 +95,7 @@ export function decodeSettings(value: unknown): WebSettings {
     },
   }
 }
-export function decodeSession(value: unknown): WebSession {
+export function decodeSession(value) {
   if (
     !isRecord(value) ||
     typeof value.sessionId !== 'string' ||
@@ -146,8 +132,8 @@ export function decodeSession(value: unknown): WebSession {
     ...(typeof value.activeRequestId === 'string' ? { activeRequestId: value.activeRequestId } : {}),
   }
 }
-const workspaceStatuses = ['none', 'available', 'unreadable', 'different-folder'] as const
-export function decodeWorkspaceList(value: unknown): WorkspaceList {
+const workspaceStatuses = ['none', 'available', 'unreadable', 'different-folder']
+export function decodeWorkspaceList(value) {
   if (
     !isRecord(value) ||
     typeof value.selectedId !== 'string' ||
@@ -160,7 +146,7 @@ export function decodeWorkspaceList(value: unknown): WorkspaceList {
   return {
     selectedId: value.selectedId,
     version: value.version,
-    workspaces: value.workspaces.map((item: unknown) => {
+    workspaces: value.workspaces.map(item => {
       if (
         !isRecord(item) ||
         typeof item.id !== 'string' ||
@@ -180,9 +166,7 @@ export function decodeWorkspaceList(value: unknown): WorkspaceList {
     }),
   }
 }
-export function decodeResearchSources(
-  value: unknown,
-): readonly { title: string; url: string; content: string; sourceId: string; retrievedAt: string }[] {
+export function decodeResearchSources(value) {
   if (!Array.isArray(value)) invalid()
   return value.map(item => {
     if (
@@ -204,7 +188,7 @@ export function decodeResearchSources(
     }
   })
 }
-export function decodePreferences(value: unknown): WebPreferences {
+export function decodePreferences(value) {
   if (
     !isRecord(value) ||
     (value.theme !== 'light' && value.theme !== 'dark' && value.theme !== 'system') ||
@@ -215,12 +199,12 @@ export function decodePreferences(value: unknown): WebPreferences {
     invalid()
   return { theme: value.theme, version: value.version }
 }
-export function decodeTheme(value: unknown): 'light' | 'dark' | 'system' {
+export function decodeTheme(value) {
   return decodePreferences(value).theme
 }
-export function decodeActivities(value: unknown): readonly StoredActivity[] {
+export function decodeActivities(value) {
   if (!Array.isArray(value)) invalid()
-  return value.map((item: unknown): StoredActivity => {
+  return value.map(item => {
     if (
       !isRecord(item) ||
       typeof item.id !== 'string' ||
@@ -244,9 +228,9 @@ export function decodeActivities(value: unknown): readonly StoredActivity[] {
     }
   })
 }
-export function decodeRequests(value: unknown): readonly StoredRequest[] {
+export function decodeRequests(value) {
   if (!Array.isArray(value)) invalid()
-  return value.map((item: unknown): StoredRequest => {
+  return value.map(item => {
     if (
       !isRecord(item) ||
       typeof item.requestId !== 'string' ||
@@ -273,18 +257,18 @@ export function decodeRequests(value: unknown): readonly StoredRequest[] {
       lastSequence: item.lastSequence,
       ...(typeof item.endedAt === 'string' ? { endedAt: item.endedAt } : {}),
       ...(typeof item.errorCode === 'string' ? { errorCode: item.errorCode } : {}),
-      ...(item.summarized === true ? { summarized: true as const } : {}),
+      ...(item.summarized === true ? { summarized: true } : {}),
     }
   })
 }
-export function decodeDraft(value: unknown, id: string): ChatDraft {
+export function decodeDraft(value, id) {
   if (!isRecord(value) || value.sessionId !== id || typeof value.text !== 'string') invalid()
   if (value.revision === undefined && value.attachmentIds === undefined && value.attachments === undefined)
     return { sessionId: id, text: value.text }
   if (typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0) invalid()
   if (!Array.isArray(value.attachmentIds) || !Array.isArray(value.attachments)) invalid()
   const attachments = value.attachments.map(decodeAttachment)
-  const ids = value.attachmentIds.map((item: unknown) => (typeof item === 'string' ? item : invalid()))
+  const ids = value.attachmentIds.map(item => (typeof item === 'string' ? item : invalid()))
   if (
     new Set(ids).size !== ids.length ||
     ids.length !== attachments.length ||
@@ -293,11 +277,11 @@ export function decodeDraft(value: unknown, id: string): ChatDraft {
     invalid()
   return { sessionId: id, text: value.text, revision: value.revision, attachmentIds: ids, attachments }
 }
-export function decodeCatalog(value: unknown): readonly string[] {
+export function decodeCatalog(value) {
   if (!Array.isArray(value)) invalid()
   return value.map(item => (typeof item === 'string' ? item : invalid()))
 }
-export function decodePreviewText(value: unknown): string {
+export function decodePreviewText(value) {
   if (!isRecord(value) || typeof value.text !== 'string') invalid()
   return value.text
 }

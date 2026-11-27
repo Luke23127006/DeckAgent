@@ -191,7 +191,7 @@ Motion is expressive on purpose: the interface should feel alive at the moments 
 - **Theme switch:** the new theme opens as a circle from the control that was pressed (a view transition clipped with the Web Animations API), 700ms. The segment indicator slides between the three choices in 220ms.
 - **Press feedback:** every button scales to 97% in 140ms (CSS). The sidebar width eases in 220ms. The account chevron turns when the menu is open.
 - **Not animated, by decision:** keyboard actions, hover colour, chat switching and anything repeated many times a day. No always-running loops and no blur filters on animated elements: the window already blurs its backdrop, and a moving layer above it is expensive.
-- **Reduced motion:** `initMotion` does nothing, the CSS fallback shows a 150ms fade only, and the press scale and view transition are off. Without the script (or when it is off) the same elements get plain CSS transitions.
+- **Reduced motion:** `useMotion` does nothing, the CSS fallback shows a 150ms fade only, and the press scale and view transition are off. Without the script (or when it is off) the same elements get plain CSS transitions.
 
 ## Elevation
 

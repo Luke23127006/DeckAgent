@@ -1,15 +1,6 @@
 import { decodeAttachment, requestEvent } from '@deckagent/host-contracts'
-import type {
-  AgentRequest,
-  ApprovalView,
-  HistoryMessage,
-  RequestEvent,
-  RequestSnapshot,
-  RequestStatus,
-} from '@deckagent/host-contracts'
-import { fetchAuthorized, readJsonError, readSseFrames } from './http.ts'
-
-function approvalView(value: unknown): ApprovalView {
+import { fetchAuthorized, readJsonError, readSseFrames } from './http.mjs'
+function approvalView(value) {
   if (
     !object(value) ||
     typeof value.approvalId !== 'string' ||
@@ -37,34 +28,22 @@ function approvalView(value: unknown): ApprovalView {
     state,
   }
 }
-
-function object(value: unknown): value is Record<string, unknown> {
+function object(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
-
-const statuses: readonly RequestStatus[] = [
-  'active',
-  'waiting_approval',
-  'completed',
-  'failed',
-  'stopped',
-  'interrupted',
-]
+const statuses = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
 const code = /^[A-Z][A-Z0-9_]{0,63}$/
 const requestId = /^[\w-]{1,100}$/
-
 /** Whether a request still holds its chat's active slot. */
-export function isActive(status: RequestStatus): boolean {
+export function isActive(status) {
   return status === 'active' || status === 'waiting_approval'
 }
-
-function status(value: unknown): RequestStatus {
+function status(value) {
   const found = statuses.find(item => item === value)
   if (!found) throw new Error('INVALID_RESPONSE')
   return found
 }
-
-function snapshot(value: unknown): RequestSnapshot {
+function snapshot(value) {
   if (
     !object(value) ||
     typeof value.requestId !== 'string' ||
@@ -94,18 +73,15 @@ function snapshot(value: unknown): RequestSnapshot {
     ...(pending === undefined ? {} : { pendingApproval: pending }),
   }
 }
-
 /** A refused Host call: `message` is the stable code; `detail` holds only safe facts such as a reason word. */
 export class HostRequestError extends Error {
-  constructor(
-    code: string,
-    readonly detail: Readonly<Record<string, string | boolean>> = {},
-  ) {
+  detail
+  constructor(code, detail = {}) {
     super(code)
+    this.detail = detail
     this.name = 'HostRequestError'
   }
 }
-
 const allowed = [
   'BRIEF_REPAIR_LIMIT',
   'BRIEF_PROPOSAL_REQUIRED',
@@ -146,10 +122,11 @@ const allowed = [
   'REQUESTS_UNAVAILABLE',
   'INVALID_REQUEST',
 ]
-
 /** Uses fetch for authenticated SSE: credentials never enter query strings or history. */
 export class HostClient {
-  async decide(request: string, approvalId: string, decision: 'allow-once' | 'refuse'): Promise<ApprovalView> {
+  origin
+  token
+  async decide(request, approvalId, decision) {
     return approvalView(
       await (
         await this.request(
@@ -163,12 +140,11 @@ export class HostClient {
       ).json(),
     )
   }
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-
-  private async request(path: string, init: RequestInit = {}) {
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async request(path, init = {}) {
     const response = await fetchAuthorized(this.origin, this.token, path, init)
     if (!response.ok) {
       const { code, detail } = await readJsonError(response, allowed, 'HOST_REQUEST_FAILED', {
@@ -179,8 +155,7 @@ export class HostClient {
     }
     return response
   }
-
-  async send(request: AgentRequest): Promise<RequestSnapshot> {
+  async send(request) {
     return snapshot(
       await (
         await this.request('/api/requests', {
@@ -191,8 +166,7 @@ export class HostClient {
       ).json(),
     )
   }
-
-  async outlineImage(sessionId: string, outlineId: string, needId: string): Promise<Blob> {
+  async outlineImage(sessionId, outlineId, needId) {
     const response = await this.request(
       `/api/sessions/${encodeURIComponent(sessionId)}/outlines/${encodeURIComponent(outlineId)}/images/${encodeURIComponent(needId)}`,
     )
@@ -201,21 +175,18 @@ export class HostClient {
     if (blob.size > 256 * 1024) throw new HostRequestError('HOST_REQUEST_FAILED')
     return blob
   }
-
-  async snapshot(id: string): Promise<RequestSnapshot> {
+  async snapshot(id) {
     return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
   }
-
-  async stop(id: string): Promise<RequestSnapshot> {
+  async stop(id) {
     return snapshot(
       await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json(),
     )
   }
-
-  async history(id: string): Promise<readonly HistoryMessage[]> {
-    const data: unknown = await (await this.request(`/api/sessions/${encodeURIComponent(id)}/history`)).json()
+  async history(id) {
+    const data = await (await this.request(`/api/sessions/${encodeURIComponent(id)}/history`)).json()
     if (!Array.isArray(data)) throw new Error('INVALID_RESPONSE')
-    return data.map((message: unknown): HistoryMessage => {
+    return data.map(message => {
       if (
         !object(message) ||
         (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'tool') ||
@@ -239,19 +210,18 @@ export class HostClient {
         role: message.role,
         content: message.content,
         ...(Array.isArray(message.attachments) ? { attachments: message.attachments.map(decodeAttachment) } : {}),
-        ...(message.interrupted === true ? { interrupted: true as const } : {}),
+        ...(message.interrupted === true ? { interrupted: true } : {}),
         ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
         ...(typeof message.name === 'string' ? { name: message.name } : {}),
         ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}),
       }
     })
   }
-
   /**
    * Saved events after `after`, then live ones, until the request ends. A dropped connection throws
    * `CONNECTION_LOST`; calling again with the last sequence continues with no gap and no repeat.
    */
-  async *watch(id: string, signal?: AbortSignal, after = 0): AsyncIterable<RequestEvent> {
+  async *watch(id, signal, after = 0) {
     const response = await this.request(`/api/requests/${encodeURIComponent(id)}/events`, {
       headers: after ? { 'last-event-id': String(after) } : {},
       ...(signal ? { signal } : {}),

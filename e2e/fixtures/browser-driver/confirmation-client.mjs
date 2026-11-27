@@ -1,12 +1,10 @@
-import type { ConfirmationReceipt, ConfirmationResult, ConfirmationTarget } from '@deckagent/host-contracts'
-import { fetchAuthorized, isRecord } from './http.ts'
-
-const id = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
-const positive = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0
-const invalid = (): never => {
+import { fetchAuthorized, isRecord } from './http.mjs'
+const id = v => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
+const positive = v => typeof v === 'number' && Number.isSafeInteger(v) && v > 0
+const invalid = () => {
   throw new Error('INVALID_GENERATION_RESPONSE')
 }
-function receipt(v: unknown, sessionId: string): ConfirmationReceipt {
+function receipt(v, sessionId) {
   if (
     !isRecord(v) ||
     v.sessionId !== sessionId ||
@@ -38,13 +36,14 @@ function receipt(v: unknown, sessionId: string): ConfirmationReceipt {
     createdAt: v.createdAt,
   }
 }
-
 export class ConfirmationClient {
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-  async confirm(sessionId: string, target: ConfirmationTarget): Promise<ConfirmationResult> {
+  origin
+  token
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async confirm(sessionId, target) {
     const response = await fetchAuthorized(
       this.origin,
       this.token,
@@ -56,7 +55,7 @@ export class ConfirmationClient {
         signal: AbortSignal.timeout(15000),
       },
     )
-    const v: unknown = await response.json()
+    const v = await response.json()
     if (!response.ok) {
       const codes = [
         'CONFIRMATION_INVALID',
@@ -87,7 +86,7 @@ export class ConfirmationClient {
     if (!isRecord(v) || !isRecord(v.request)) return invalid()
     const r = receipt(v.receipt, sessionId),
       q = v.request
-    const status = (['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted'] as const).find(
+    const status = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted'].find(
       s => s === q.status,
     )
     if (

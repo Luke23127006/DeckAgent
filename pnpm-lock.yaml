@@ -112,9 +112,6 @@ importers:
       '@deckagent/host-contracts':
         specifier: workspace:*
         version: link:../../packages/host/contracts
-      '@deckagent/presentation-document':
-        specifier: workspace:*
-        version: link:../../packages/presentation/document
       '@radix-ui/react-slot':
         specifier: 1.5.0
         version: 1.5.0(@types/react@19.3.3)(react@19.3.1)

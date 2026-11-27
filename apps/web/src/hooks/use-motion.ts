@@ -1,4 +1,5 @@
 import { animate, createTimeline, spring, stagger, utils } from 'animejs'
+import { type RefObject, useEffect } from 'react'
 
 /**
  * Expressive motion for the moments a user notices: first load, sending, a request changing state, the
@@ -291,11 +292,11 @@ function intro(root: HTMLElement): void {
   })
 }
 
-export function initMotion(root: HTMLElement): void {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+function watch(root: HTMLElement): (() => void) | undefined {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
   root.dataset.motion = 'on'
   intro(root)
-  new MutationObserver(records => {
+  const observer = new MutationObserver(records => {
     const fresh: HTMLElement[] = []
     for (const record of records) {
       if (record.type === 'childList') {
@@ -343,11 +344,24 @@ export function initMotion(root: HTMLElement): void {
         if (node.matches('.message.user')) fly(root, node)
         else pop(node)
       }
-  }).observe(root, {
+  })
+  observer.observe(root, {
     subtree: true,
     childList: true,
     attributes: true,
     attributeOldValue: true,
     attributeFilter: ['data-status', 'hidden', 'srcdoc', 'data-presenting'],
   })
+  return () => {
+    observer.disconnect()
+    delete root.dataset.motion
+  }
+}
+
+/** Starts the motion layer on the element of `root` after the first render, and stops it on unmount. */
+export function useMotion(root: RefObject<HTMLElement | null>): void {
+  useEffect(() => {
+    const node = root.current
+    return node ? watch(node) : undefined
+  }, [root])
 }

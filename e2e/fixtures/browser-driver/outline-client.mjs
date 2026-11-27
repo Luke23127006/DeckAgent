@@ -1,18 +1,15 @@
 import { decodeBoundProposal } from '@deckagent/host-contracts'
-import type { OutlineProposal, OutlineSnapshot } from '@deckagent/host-contracts'
-import { fetchAuthorized, isRecord } from './http.ts'
-
-function id(value: unknown): value is string {
+import { fetchAuthorized, isRecord } from './http.mjs'
+function id(value) {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(value)
 }
-function integer(value: unknown): value is number {
+function integer(value) {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
-function text(value: unknown, max: number): value is string {
+function text(value, max) {
   return typeof value === 'string' && !!value.trim() && value.length <= max
 }
-
-function proposal(value: unknown, sessionId: string): OutlineProposal {
+function proposal(value, sessionId) {
   if (isRecord(value) && value.brief !== undefined) return decodeBoundProposal(value, sessionId)
   if (
     !isRecord(value) ||
@@ -31,7 +28,7 @@ function proposal(value: unknown, sessionId: string): OutlineProposal {
       value.status !== 'cancelled')
   )
     throw new Error('INVALID_RESPONSE')
-  const slides = value.slides.map((slide: unknown) => {
+  const slides = value.slides.map(slide => {
     if (!isRecord(slide) || !id(slide.slideId) || !text(slide.title, 300) || !text(slide.content, 8000))
       throw new Error('INVALID_RESPONSE')
     return { slideId: slide.slideId, title: slide.title, content: slide.content }
@@ -47,15 +44,15 @@ function proposal(value: unknown, sessionId: string): OutlineProposal {
     slides,
   }
 }
-
 /** Outline versions are independent of Deck revisions. Reads never replay requests. */
 export class OutlineClient {
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-
-  async snapshot(sessionId: string, signal?: AbortSignal): Promise<OutlineSnapshot> {
+  origin
+  token
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async snapshot(sessionId, signal) {
     const response = await fetchAuthorized(
       this.origin,
       this.token,
@@ -63,7 +60,7 @@ export class OutlineClient {
       { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) },
     )
     if (!response.ok) throw new Error(response.status === 401 ? 'AUTH_REQUIRED' : 'OUTLINE_UNAVAILABLE')
-    const value: unknown = await response.json()
+    const value = await response.json()
     if (
       !isRecord(value) ||
       value.sessionId !== sessionId ||

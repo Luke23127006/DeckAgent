@@ -2,10 +2,10 @@ import type { WebPreferences } from '@deckagent/host-contracts'
 import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { initMotion } from '../browser/motion.ts'
 import type { Conversation } from '../hooks/use-conversation.ts'
 import { requestLimit, sendBlocked, useConversation } from '../hooks/use-conversation.ts'
 import { DeckScreens, useDeckScreens } from '../hooks/use-deck-screens.ts'
+import { useMotion } from '../hooks/use-motion.ts'
 import { usePreferences, useThemeMutation } from '../hooks/use-preferences.ts'
 import { conversationText, deckText, researchText, settingsText, attachmentText } from '../text.ts'
 import { AttachmentDraft, AttachmentPicker, AttachmentPreviewDialog } from './attachment-draft.tsx'
@@ -326,10 +326,7 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
   })
   const deck = useDeckScreens(conversation.deck)
 
-  useEffect(() => {
-    const node = root.current
-    if (node) initMotion(node)
-  }, [])
+  useMotion(root)
 
   // The narrow layout folds the chat list; the navigation height stays free for the chat.
   useEffect(() => {

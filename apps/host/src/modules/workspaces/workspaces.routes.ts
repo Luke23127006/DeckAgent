@@ -8,7 +8,7 @@ import {
   decodeWorkspaceSelectBody,
 } from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { WorkspaceOperations } from './workspaces.service.ts'
+import type { WorkspaceService } from './workspaces.service.ts'
 
 function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
   try {
@@ -19,7 +19,7 @@ function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
   }
 }
 
-export function createWorkspaceRoutes(workspaces: WorkspaceOperations): Router {
+export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   router.get(
     '/api/workspaces',

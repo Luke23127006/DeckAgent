@@ -12,7 +12,7 @@ import { nameFromFolder, nameFromUser } from './workspace-name.ts'
 import { WorkspaceError } from './workspaces.errors.ts'
 import { migrateWorkspacesDatabase } from './workspaces.migrations.ts'
 
-export interface WorkspaceRegistryOptions extends FolderPolicyOptions {
+export interface WorkspaceStoreOptions extends FolderPolicyOptions {
   /** SQLite file inside DeckAgent Application Storage. */
   readonly path: string
   /** Name the system gives the default workspace on first start (FR-072). */
@@ -33,13 +33,13 @@ type Row = Record<string, SQLOutputValue>
  * The single Workspace registry. Stores folder references and identity, never folder contents:
  * no operation reads a file of a project folder or writes anything into it.
  */
-export class WorkspaceRegistry {
+export class SqliteWorkspaceStore {
   private readonly db: DatabaseSync
   private readonly policy: FolderPolicy
   private readonly publish: PublishChange | undefined
   private closed = false
 
-  constructor(options: WorkspaceRegistryOptions) {
+  constructor(options: WorkspaceStoreOptions) {
     this.policy = new FolderPolicy(options)
     this.publish = options.publish
     let db: DatabaseSync | undefined

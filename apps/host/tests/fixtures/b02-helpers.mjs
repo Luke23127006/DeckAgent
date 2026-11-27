@@ -5,7 +5,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startLocalWeb } from '../../lib/server.js'
-import { HostClient } from '../../../web/tests/fixtures/browser-driver.mjs'
+import { HostClient } from '../../../../e2e/fixtures/browser-driver/index.mjs'
 
 export { AttachmentParser } from '../../lib/types/tools/index.js'
 export {

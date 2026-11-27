@@ -1,13 +1,7 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
-
-export function fetchAuthorized(
-  origin: string,
-  token: string,
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
+export function fetchAuthorized(origin, token, path, init = {}) {
   return fetch(`${origin}${path}`, {
     ...init,
     credentials: 'omit',
@@ -15,34 +9,18 @@ export function fetchAuthorized(
     headers: { ...init.headers, authorization: `Bearer ${token}` },
   })
 }
-
-export async function readJsonError(
-  response: Response,
-  allowedCodes: readonly string[],
-  fallbackCode: string,
-  options?: { readonly includeDetail?: boolean; readonly fallback401?: boolean },
-): Promise<{ readonly code: string; readonly detail: Readonly<Record<string, string | boolean>> }> {
-  const data: unknown = await response.json().catch(() => undefined)
+export async function readJsonError(response, allowedCodes, fallbackCode, options) {
+  const data = await response.json().catch(() => undefined)
   const error = isRecord(data) && isRecord(data.error) ? data.error : undefined
   const known = error && typeof error.code === 'string' && allowedCodes.includes(error.code) ? error.code : undefined
-  const detail: Record<string, string | boolean> = {}
+  const detail = {}
   if (options?.includeDetail && known && error && isRecord(error.detail))
     for (const [key, item] of Object.entries(error.detail))
       if (typeof item === 'string' || typeof item === 'boolean') detail[key] = item
   const code = known ?? (options?.fallback401 && response.status === 401 ? 'AUTH_REQUIRED' : fallbackCode)
   return { code, detail }
 }
-
-export async function* readSseFrames(
-  response: Response,
-  options: {
-    readonly maxBufferBytes: number
-    readonly lostError: string
-    readonly invalidError: string
-    readonly eventName: string
-    readonly matchMode: 'line' | 'prefix'
-  },
-): AsyncGenerator<string> {
+export async function* readSseFrames(response, options) {
   if (!response.body || !response.headers.get('content-type')?.startsWith('text/event-stream'))
     throw new Error(options.invalidError)
   const reader = response.body.getReader()

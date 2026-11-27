@@ -65,8 +65,8 @@ import {
   mapSettingsError,
 } from './modules/settings/index.ts'
 import {
-  WorkspaceRegistry,
-  createWorkspaceOperations,
+  SqliteWorkspaceStore,
+  WorkspaceService,
   createWorkspaceRoutes,
   mapWorkspaceError,
 } from './modules/workspaces/index.ts'
@@ -143,7 +143,7 @@ function openChatStorage(path: string, options?: ChatStoreOptions) {
 type ChatStorage = ReturnType<typeof openChatStorage>
 
 interface StorageLayer {
-  readonly registry: WorkspaceRegistry
+  readonly registry: SqliteWorkspaceStore
   readonly sessions: ChatStorage
   readonly decks: DeckStore
   readonly settingsDb: SettingsDatabase
@@ -183,13 +183,13 @@ async function openStorageLayer(
   changeFeed: ChangeFeed,
 ): Promise<StorageLayer> {
   const initial = options.selection ? { ...options.selection } : undefined
-  let registry: WorkspaceRegistry | undefined
+  let registry: SqliteWorkspaceStore | undefined
   let sessions: ChatStorage | undefined
   let decks: DeckStore | undefined
   let settingsDb: SettingsDatabase | undefined
   try {
     try {
-      registry = new WorkspaceRegistry({
+      registry = new SqliteWorkspaceStore({
         path: join(layout.databases, 'workspaces.sqlite'),
         home: options.home ?? homedir(),
         dataRoot: layout.root,
@@ -465,7 +465,7 @@ function createHostOptions(
     onClose: () => runs.close(),
     ...(options.port === undefined ? {} : { port: options.port }),
     routes: [
-      createWorkspaceRoutes(createWorkspaceOperations(registry, chats)),
+      createWorkspaceRoutes(new WorkspaceService(registry, chats)),
       createChatRoutes(chats),
       createProviderRoutes(runtime.providers),
       createAttachmentRoutes(runtime.inputs),

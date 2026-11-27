@@ -47,48 +47,6 @@
     },
     {
       "files": [
-        "**/apps/web/src/browser/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
-      ],
-      "rules": {
-        "eslint/no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "@deckagent/*/src/*",
-                  "@deckagent/*/lib/*",
-                  "**/packages/*/*/src/*",
-                  "**/packages/*/*/lib/*",
-                  "**/apps/*/src/*",
-                  "**/apps/*/lib/*"
-                ],
-                "message": "Import another package through its public exports only."
-              },
-              {
-                "group": [
-                  "node:*",
-                  "node:*/*"
-                ],
-                "message": "Browser code must not import Node-only modules."
-              },
-              {
-                "group": [
-                  "@deckagent/host",
-                  "@deckagent/deck",
-                  "@deckagent/deck/*",
-                  "@deckagent/html-format",
-                  "@deckagent/pptx-format"
-                ],
-                "message": "Browser code must not import Local Host or domain packages."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": [
         "**/apps/host/src/db/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
       ],
       "rules": {
@@ -529,7 +487,7 @@
               {
                 "group": [
                   "./*.store.ts",
-                  "./schema.ts",
+                  "./*.migrations.ts",
                   "node:sqlite"
                 ],
                 "message": "A module route must not import a store or the SQL driver. Call the service of the module."

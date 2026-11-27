@@ -5,6 +5,7 @@
  * - Removing the runs directory from lifecycle enforcement failed the transport import test.
  * - Removing isTestFile guard caused packages/presentation/html/tests/html-template-v3.test.mjs importing @deckagent/deck to fail with format-adapter-dependency.
  * - Removing escapesBrowserIntoHost check caused the Browser-to-Local-Host relative import test to fail.
+ * - The checker before Phase 7 of Browser in React (rule limited to apps/web/src/browser, design and presentation-document allowed) failed the browser-node-import test; so did each of these alone: adding design and presentation-document back to BROWSER_ALLOWED_PACKAGES, and setting BROWSER_DIRECTORIES back to apps/web/src/browser.
  * - Removing the dynamic import() branch in extractImports caused the dynamic private import test to fail.
  * - Renaming the typescript-enum rule ID caused the enum and const enum test to fail.
  * - Removing the branch for a Service or Store suffix outside its role file caused the role file rejection test to fail.
@@ -73,7 +74,7 @@ test('checkBoundaries accepts valid production and owner-local test imports', ()
       content: "import { startHost } from '@deckagent/host'\nimport { run } from './features/deck/index.ts'\n",
     },
     {
-      path: 'apps/web/src/browser/transport/client.ts',
+      path: 'apps/web/src/api/client.ts',
       content: "import type { Req } from '@deckagent/host-contracts'\n",
     },
     {
@@ -108,20 +109,20 @@ test('checkBoundaries still rejects private package imports inside owner tests',
 
 test('checkBoundaries rejects dynamic import of private package path', () => {
   const files = [
-    { path: 'apps/web/src/index.ts', content: "export const f = () => import('@deckagent/deck/src/internal.ts')\n" },
+    { path: 'apps/host/src/server.ts', content: "export const f = () => import('@deckagent/deck/src/internal.ts')\n" },
   ]
-  assert.deepEqual(findings(files), [{ path: 'apps/web/src/index.ts', line: 1, rule: 'private-package-import' }])
+  assert.deepEqual(findings(files), [{ path: 'apps/host/src/server.ts', line: 1, rule: 'private-package-import' }])
 })
 
 test('checkBoundaries rejects undeclared subpath and cross-workspace relative import', () => {
   const files = [
-    { path: 'apps/web/src/a.ts', content: "import { x } from '@deckagent/deck/secret'\n" },
-    { path: 'apps/web/src/b.ts', content: "import { y } from '../../../packages/presentation/deck/src/index.ts'\n" },
+    { path: 'apps/host/src/a.ts', content: "import { x } from '@deckagent/deck/secret'\n" },
+    { path: 'apps/host/src/b.ts', content: "import { y } from '../../../packages/presentation/deck/src/index.ts'\n" },
     { path: 'packages/presentation/deck/src/index.ts', content: 'export const y = 1\n' },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/a.ts', line: 1, rule: 'private-package-import' },
-    { path: 'apps/web/src/b.ts', line: 1, rule: 'private-package-import' },
+    { path: 'apps/host/src/a.ts', line: 1, rule: 'private-package-import' },
+    { path: 'apps/host/src/b.ts', line: 1, rule: 'private-package-import' },
   ])
 })
 
@@ -134,22 +135,31 @@ test('checkBoundaries rejects tsconfig alias to private file', () => {
   ])
 })
 
-test('checkBoundaries rejects node builtin, host package, and Local Host relative imports in browser code', () => {
+test('checkBoundaries rejects node builtin, workspace packages other than contracts, and Local Host relative imports in browser code, and accepts contracts, third-party and local imports', () => {
   const files = [
     {
-      path: 'apps/web/src/browser/boot.ts',
+      path: 'apps/web/src/hooks/use-boot.ts',
       content: [
         "import fs from 'node:fs'",
         "import { h } from '@deckagent/host'",
-        "import { chat } from '../features/chats/index.ts'",
+        "import { chat } from '../../../host/src/server.ts'",
+        "import { decodeSlideDocument } from '@deckagent/presentation-document'",
+        "import { resolveDesign } from '@deckagent/design'",
+        "import { decodeChatList } from '@deckagent/host-contracts'",
+        "import { useState } from 'react'",
+        "import { api } from '../api/client.ts'",
       ].join('\n'),
     },
-    { path: 'apps/web/src/features/chats/index.ts', content: 'export const chat = () => 1\n' },
+    { path: 'apps/host/src/server.ts', content: 'export const chat = () => 1\n' },
+    { path: 'apps/web/src/api/client.ts', content: 'export const api = () => 1\n' },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/browser/boot.ts', line: 1, rule: 'browser-node-import' },
-    { path: 'apps/web/src/browser/boot.ts', line: 2, rule: 'browser-node-import' },
-    { path: 'apps/web/src/browser/boot.ts', line: 3, rule: 'browser-node-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 1, rule: 'browser-node-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 2, rule: 'browser-node-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 3, rule: 'browser-node-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 3, rule: 'private-package-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 4, rule: 'browser-node-import' },
+    { path: 'apps/web/src/hooks/use-boot.ts', line: 5, rule: 'browser-node-import' },
   ])
 })
 
@@ -248,49 +258,6 @@ test('checkBoundaries detects a three-way feature cycle with full chain', () => 
   assert.match(result[0].message, /a -> b -> c -> a/)
 })
 
-test('checkBoundaries rejects private import across browser features', () => {
-  const files = [
-    {
-      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
-      content: "import { model } from '../deck/deck-model.ts'\n",
-    },
-    { path: 'apps/web/src/browser/features/deck/deck-model.ts', content: 'export const model = 1\n' },
-  ]
-  assert.deepEqual(findings(files), [
-    {
-      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
-      line: 1,
-      rule: 'browser-feature-private-import',
-    },
-  ])
-})
-
-test('checkBoundaries detects a browser feature cycle separately from host features', () => {
-  const files = [
-    { path: 'apps/web/src/browser/features/a/index.ts', content: "import { b } from '../b/index.ts'\n" },
-    { path: 'apps/web/src/browser/features/b/index.ts', content: "import { a } from '../a/index.ts'\n" },
-  ]
-  const result = checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths: {} })
-  assert.deepEqual(
-    result.map(({ path, line, rule }) => ({ path, line, rule })),
-    [{ path: 'apps/web/src/browser/features/a', line: 1, rule: 'browser-feature-cycle' }],
-  )
-  assert.match(result[0].message, /a -> b -> a/)
-})
-
-test('checkBoundaries rejects browser transport importing browser UI features', () => {
-  const files = [
-    {
-      path: 'apps/web/src/browser/transport/host-client.ts',
-      content: "import { render } from '../features/chats/index.ts'\n",
-    },
-    { path: 'apps/web/src/browser/features/chats/index.ts', content: 'export const render = () => 1\n' },
-  ]
-  assert.deepEqual(findings(files), [
-    { path: 'apps/web/src/browser/transport/host-client.ts', line: 1, rule: 'browser-transport-ui-import' },
-  ])
-})
-
 test('checkBoundaries rejects private import into integrations', () => {
   const files = [
     {
@@ -331,13 +298,8 @@ test('checkBoundaries rejects unresolved relative import in production source', 
   ])
 })
 
-test('checkBoundaries accepts public browser feature and integration index imports', () => {
+test('checkBoundaries accepts public integration index imports', () => {
   const files = [
-    {
-      path: 'apps/web/src/browser/features/chats/conversation-view.ts',
-      content: "import { deck } from '../deck/index.ts'\n",
-    },
-    { path: 'apps/web/src/browser/features/deck/index.ts', content: 'export const deck = 1\n' },
     {
       path: 'apps/host/src/features/research/research-service.ts',
       content: "import { search } from '../../integrations/research/index.ts'\n",
@@ -368,13 +330,13 @@ test('checkBoundaries rejects private import into a module from a feature and fr
   const files = [
     {
       path: 'apps/host/src/features/chats/index.ts',
-      content: "import { WorkspaceRegistry } from '../../modules/workspaces/workspaces.store.ts'\n",
+      content: "import { SqliteWorkspaceStore } from '../../modules/workspaces/workspaces.store.ts'\n",
     },
     {
       path: 'apps/host/src/modules/sources/sources.service.ts',
       content: "import { FolderPolicy } from '../workspaces/folder-policy.ts'\n",
     },
-    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class WorkspaceRegistry {}\n' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class SqliteWorkspaceStore {}\n' },
     { path: 'apps/host/src/modules/workspaces/folder-policy.ts', content: 'export class FolderPolicy {}\n' },
   ]
   assert.deepEqual(findings(files), [
@@ -391,9 +353,9 @@ test('checkBoundaries accepts a module index import and an import inside the sam
     },
     {
       path: 'apps/host/src/modules/workspaces/index.ts',
-      content: "export { WorkspaceRegistry } from './workspaces.store.ts'\n",
+      content: "export { SqliteWorkspaceStore } from './workspaces.store.ts'\n",
     },
-    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class WorkspaceRegistry {}\n' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class SqliteWorkspaceStore {}\n' },
   ]
   assert.deepEqual(findings(files), [])
 })
@@ -459,6 +421,34 @@ test('checkBoundaries rejects role files without their role symbols in a listed 
     { path: 'apps/host/src/modules/chats/chats.service.ts', line: 1, rule: 'role-file-symbol' },
     { path: 'apps/host/src/modules/chats/chats.store.ts', line: 1, rule: 'role-file-symbol' },
   ])
+  const workspaceFiles = [
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.service.ts',
+      content: 'export function createWorkspaceOperations() {}\n',
+    },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', content: 'export class WorkspaceRegistry {}\n' },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.routes.ts',
+      content: 'export function workspaceRouter() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.errors.ts',
+      content: 'export class WorkspaceFailure extends Error {}\nexport function mapWorkspaceFailure() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/folder-policy.ts',
+      content: 'export class FolderService {}\nexport class FolderStore {}\n',
+    },
+  ]
+  assert.deepEqual(findings(workspaceFiles), [
+    { path: 'apps/host/src/modules/workspaces/folder-policy.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/folder-policy.ts', line: 2, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.routes.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/workspaces/workspaces.store.ts', line: 1, rule: 'role-file-symbol' },
+  ])
 })
 
 test('checkBoundaries accepts role symbols in a listed module and ignores modules outside the list', () => {
@@ -475,10 +465,26 @@ test('checkBoundaries accepts role symbols in a listed module and ignores module
     },
     {
       path: 'apps/host/src/modules/workspaces/workspaces.service.ts',
-      content: 'export function createWorkspaceOperations() {}\n',
+      content: 'export class WorkspaceService {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.store.ts',
+      content: 'export class SqliteWorkspaceStore {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.routes.ts',
+      content: 'export function createWorkspaceRoutes() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.errors.ts',
+      content: 'export class WorkspaceError extends Error {}\nexport function mapWorkspaceError() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/billing/billing.service.ts',
+      content: 'export function createBillingOperations() {}\n',
     },
   ]
-  assert.deepEqual(findings(files, {}, ['chats']), [])
+  assert.deepEqual(findings(files, {}, ['chats', 'workspaces']), [])
   assert.deepEqual(findings(files), [])
 })
 

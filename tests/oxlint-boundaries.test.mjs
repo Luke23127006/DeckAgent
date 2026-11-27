@@ -4,7 +4,7 @@
 // - Removing http/app restrictions failed four route and error mapper tests.
 // - node:fs/promises bypassed node:* in packages/client/runtime/src; test failed until node:*/* was added to .oxlintrc.json.
 // - @ts-expect-error with description bypassed default typescript/ban-ts-comment; test failed until ts-expect-error: true was set.
-// - Removing @deckagent/deck from the apps/web/src/browser override caused the @deckagent/deck browser test to fail.
+// - Allowing @deckagent/* again in the apps/web/src override made each workspace package test in apps/web/src fail.
 // - Each apps/web/src folder test failed before the Browser folder overrides existed in .oxlintrc.json.
 // Run: node --test --test-reporter=tap tests/oxlint-boundaries.test.mjs
 // Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/conventions/code.md (TypeScript).
@@ -42,7 +42,7 @@ function lintFixture(relativePath, code) {
 
 test('rejects private src subpath import in apps', () => {
   const result = lintFixture(
-    'apps/web/src/index.ts',
+    'apps/host/src/cli.ts',
     "import { x } from '@deckagent/deck/src/internal'\nconsole.log(x)\n",
   )
   assert.equal(result.status, 1)
@@ -64,10 +64,10 @@ test('rejects private lib subpath import in packages', () => {
   assert.match(result.diagnostics[0].help, /Import another package through its public exports only\./)
 })
 
-test('rejects both node builtin and private subpath in apps/web/src/browser', () => {
+test('rejects both node builtin and private subpath in apps/web/src', () => {
   const result = lintFixture(
-    'apps/web/src/browser/boot.ts',
-    "import fs from 'node:fs'\nimport { x } from '@deckagent/deck/src/internal'\nconsole.log(fs, x)\n",
+    'apps/web/src/routes.tsx',
+    "import fs from 'node:fs'\nimport { x } from '@deckagent/host-contracts/src/internal'\nconsole.log(fs, x)\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 2)
@@ -75,31 +75,27 @@ test('rejects both node builtin and private subpath in apps/web/src/browser', ()
   assert.match(result.diagnostics[1].help, /Import another package through its public exports only\./)
 })
 
-test('rejects @deckagent/host import in apps/web/src/browser', () => {
-  const result = lintFixture(
-    'apps/web/src/browser/transport/client.ts',
-    "import { startHost } from '@deckagent/host'\nconsole.log(startHost)\n",
-  )
-  assert.equal(result.status, 1)
-  assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /@deckagent\/host/)
-  assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
-})
+for (const specifier of [
+  '@deckagent/host',
+  '@deckagent/deck',
+  '@deckagent/presentation-document',
+  '@deckagent/design',
+]) {
+  test(`rejects ${specifier} import in apps/web/src`, () => {
+    const result = lintFixture('apps/web/src/routes.tsx', `import { x } from '${specifier}'\nconsole.log(x)\n`)
+    assert.equal(result.status, 1)
+    assert.equal(result.diagnostics.length, 1)
+    assert.ok(result.diagnostics[0].message.includes(specifier), result.diagnostics[0].message)
+    assert.match(
+      result.diagnostics[0].help,
+      /Browser code imports only @deckagent\/host-contracts from the workspace\./,
+    )
+  })
+}
 
-test('rejects @deckagent/deck import in apps/web/src/browser', () => {
+test('rejects node:fs/promises subpath import in apps/web/src', () => {
   const result = lintFixture(
-    'apps/web/src/browser/transport/client.ts',
-    "import { DeckStore } from '@deckagent/deck'\nconsole.log(DeckStore)\n",
-  )
-  assert.equal(result.status, 1)
-  assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /@deckagent\/deck/)
-  assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
-})
-
-test('rejects node:fs/promises subpath import in apps/web/src/browser', () => {
-  const result = lintFixture(
-    'apps/web/src/browser/sample.ts',
+    'apps/web/src/text.ts',
     "import { readFile } from 'node:fs/promises'\nconsole.log(readFile)\n",
   )
   assert.equal(result.status, 1)
@@ -183,29 +179,18 @@ test('rejects @ts-expect-error with description and explicit any', () => {
 
 test('accepts valid public package imports and allowed browser contract imports', () => {
   const appResult = lintFixture(
-    'apps/web/src/index.ts',
+    'apps/host/src/cli.ts',
     "import { startHost } from '@deckagent/host'\nconsole.log(startHost)\n",
   )
   assert.equal(appResult.status, 0, appResult.output)
   assert.deepEqual(appResult.diagnostics, [])
 
   const browserResult = lintFixture(
-    'apps/web/src/browser/transport/client.ts',
+    'apps/web/src/api/client.ts',
     "import type { AgentRequest } from '@deckagent/host-contracts'\nexport type Req = AgentRequest\n",
   )
   assert.equal(browserResult.status, 0, browserResult.output)
   assert.deepEqual(browserResult.diagnostics, [])
-})
-
-test('rejects @deckagent/host import in apps/web/src/browser', () => {
-  const result = lintFixture(
-    'apps/web/src/browser/transport/client.ts',
-    "import { startLocalWeb } from '@deckagent/host'\nconsole.log(startLocalWeb)\n",
-  )
-  assert.equal(result.status, 1)
-  assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /@deckagent\/host/)
-  assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
 })
 
 test('rejects feature, integration and store imports inside apps/host/src/http', () => {
@@ -356,23 +341,25 @@ test('rejects a runtime import inside apps/host/src/http and inside a module', (
   )
 })
 
-test('rejects a store, the SQL driver and another module store inside a module routes file', () => {
+test('rejects a store, migrations, the SQL driver and another module store inside a module routes file', () => {
   const result = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.routes.ts',
     [
-      "import { WorkspaceRegistry } from './workspaces.store.ts'",
+      "import { SqliteWorkspaceStore } from './workspaces.store.ts'",
+      "import { migrateWorkspacesDatabase } from './workspaces.migrations.ts'",
       "import { DatabaseSync } from 'node:sqlite'",
       "import { ChatStore } from '../chats/chats.store.ts'",
-      'console.log(WorkspaceRegistry, DatabaseSync, ChatStore)',
+      'console.log(SqliteWorkspaceStore, migrateWorkspacesDatabase, DatabaseSync, ChatStore)',
       '',
     ].join('\n'),
   )
   assert.equal(result.status, 1)
-  assert.equal(result.diagnostics.length, 3)
+  assert.equal(result.diagnostics.length, 4)
   const help = result.diagnostics.map(diagnostic => diagnostic.help).toSorted()
   assert.match(help[0], /A module must not import the store of another module, a storage package or the HTTP edge\./)
   assert.match(help[1], /A module route must not import a store or the SQL driver\./)
   assert.match(help[2], /A module route must not import a store or the SQL driver\./)
+  assert.match(help[3], /A module route must not import a store or the SQL driver\./)
 })
 
 test('rejects Express and the SQL driver inside a module service file', () => {
@@ -429,10 +416,10 @@ test('accepts the service, route helpers and Express inside a module routes file
   const routes = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.routes.ts',
     [
-      "import type { WorkspaceOperations } from './workspaces.service.ts'",
+      "import type { WorkspaceService } from './workspaces.service.ts'",
       "import { json } from '../../http/route-helpers.ts'",
       "import { Router } from 'express'",
-      'export const value: WorkspaceOperations | undefined = undefined',
+      'export const value: WorkspaceService | undefined = undefined',
       'console.log(json, Router)',
       '',
     ].join('\n'),
@@ -441,7 +428,7 @@ test('accepts the service, route helpers and Express inside a module routes file
   assert.equal(routes.diagnostics.length, 0)
   const store = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.store.ts',
-    "import { DatabaseSync } from 'node:sqlite'\nimport { initialize } from './schema.ts'\nconsole.log(DatabaseSync, initialize)\n",
+    "import { DatabaseSync } from 'node:sqlite'\nimport { migrateWorkspacesDatabase } from './workspaces.migrations.ts'\nconsole.log(DatabaseSync, migrateWorkspacesDatabase)\n",
   )
   assert.equal(store.status, 0)
   assert.equal(store.diagnostics.length, 0)

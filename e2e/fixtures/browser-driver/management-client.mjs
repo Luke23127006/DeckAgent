@@ -1,15 +1,5 @@
 import { decodeAttachment } from '@deckagent/host-contracts'
-import type {
-  AttachmentView,
-  ChatDraft,
-  StoredActivity,
-  StoredRequest,
-  WebPreferences,
-  WebSession,
-  WebSettings,
-  WorkspaceList,
-} from '@deckagent/host-contracts'
-import { fetchAuthorized, isRecord, readJsonError } from './http.ts'
+import { fetchAuthorized, isRecord, readJsonError } from './http.mjs'
 import {
   decodeActivities,
   decodeCatalog,
@@ -21,23 +11,19 @@ import {
   decodeSettings,
   decodePreferences,
   decodeWorkspaceList,
-} from './management-decoders.ts'
-
-function invalid(): never {
+} from './management-decoders.mjs'
+function invalid() {
   throw new Error('INVALID_RESPONSE')
 }
-
 /** A refused management request: `message` is the stable error code; `detail` holds only safe facts. */
 export class ManagementError extends Error {
-  constructor(
-    code: string,
-    readonly detail: Readonly<Record<string, string | boolean>> = {},
-  ) {
+  detail
+  constructor(code, detail = {}) {
     super(code)
+    this.detail = detail
     this.name = 'ManagementError'
   }
 }
-
 const allowedCodes = [
   'RESEARCH_UNAVAILABLE',
   'RESEARCH_KEY_UNAVAILABLE',
@@ -91,15 +77,15 @@ const allowedCodes = [
   'WORKSPACE_NAME_TOO_LONG',
   'WORKSPACES_STALE',
 ]
-
 /** Validates management responses separately from request streaming. */
 export class ManagementClient {
-  constructor(
-    private readonly origin: string,
-    private readonly token: string,
-  ) {}
-
-  private async request(path: string, method = 'GET', value?: unknown): Promise<unknown> {
+  origin
+  token
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async request(path, method = 'GET', value) {
     const response = await fetchAuthorized(this.origin, this.token, `/api/${path}`, {
       method,
       headers: { 'content-type': 'application/json' },
@@ -114,53 +100,45 @@ export class ManagementClient {
     }
     return response.json()
   }
-
-  async settings(): Promise<WebSettings> {
+  async settings() {
     return decodeSettings(await this.request('settings'))
   }
-  async saveResearch(
-    value: { readonly key: string } | { readonly useEnvironment: true },
-    expectedVersion: number,
-  ): Promise<void> {
+  async saveResearch(value, expectedVersion) {
     await this.request('research', 'PUT', { ...value, expectedVersion })
   }
-  async removeResearch(expectedVersion: number): Promise<void> {
+  async removeResearch(expectedVersion) {
     await this.request('research', 'DELETE', { expectedVersion })
   }
-  async researchSources(
-    id: string,
-  ): Promise<readonly { title: string; url: string; content: string; sourceId: string; retrievedAt: string }[]> {
+  async researchSources(id) {
     return decodeResearchSources(await this.request(`sessions/${encodeURIComponent(id)}/research-sources`))
   }
-  async preferences(): Promise<WebPreferences> {
+  async preferences() {
     return decodePreferences(await this.request('preferences'))
   }
-  async saveTheme(theme: WebPreferences['theme'], expectedVersion: number): Promise<WebPreferences> {
+  async saveTheme(theme, expectedVersion) {
     return decodePreferences(await this.request('preferences', 'PUT', { theme, expectedVersion }))
   }
-
-  async sessions(): Promise<readonly WebSession[]> {
+  async sessions() {
     const data = await this.request('sessions')
     if (!Array.isArray(data)) invalid()
     return data.map(decodeSession)
   }
-  async create(selection?: { provider: string; model: string }): Promise<WebSession> {
+  async create(selection) {
     return decodeSession(await this.request('sessions', 'POST', selection ? { selection } : {}))
   }
-  async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
+  async select(id, value) {
     return decodeSession(await this.request(`sessions/${encodeURIComponent(id)}/selection`, 'PUT', value))
   }
-  async draftState(id: string): Promise<ChatDraft> {
+  async draftState(id) {
     return decodeDraft(await this.request(`sessions/${encodeURIComponent(id)}/draft`), id)
   }
-  async saveDraftState(id: string, text: string, expectedRevision: number): Promise<ChatDraft> {
+  async saveDraftState(id, text, expectedRevision) {
     return decodeDraft(
       await this.request(`sessions/${encodeURIComponent(id)}/draft`, 'PUT', { text, expectedRevision }),
       id,
     )
   }
-
-  private async attachmentRequest(path: string, init: RequestInit = {}): Promise<Response> {
+  async attachmentRequest(path, init = {}) {
     const response = await fetchAuthorized(this.origin, this.token, `/api/${path}`, init)
     if (!response.ok) {
       const { code } = await readJsonError(response, allowedCodes, 'SETTINGS_REQUEST_FAILED', {
@@ -171,11 +149,7 @@ export class ManagementClient {
     }
     return response
   }
-  async uploadAttachment(
-    id: string,
-    file: File,
-    expectedRevision: number,
-  ): Promise<{ readonly attachment: AttachmentView; readonly draft: ChatDraft }> {
+  async uploadAttachment(id, file, expectedRevision) {
     const body = new FormData()
     body.append('expectedRevision', String(expectedRevision))
     body.append('file', file)
@@ -183,11 +157,11 @@ export class ManagementClient {
       method: 'POST',
       body,
     })
-    const value: unknown = await response.json()
+    const value = await response.json()
     if (!isRecord(value)) invalid()
     return { attachment: decodeAttachment(value.attachment), draft: decodeDraft(value.draft, id) }
   }
-  async removeAttachment(id: string, attachmentId: string, expectedRevision: number): Promise<ChatDraft> {
+  async removeAttachment(id, attachmentId, expectedRevision) {
     const path = `sessions/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`
     const response = await this.attachmentRequest(path, {
       method: 'DELETE',
@@ -196,43 +170,30 @@ export class ManagementClient {
     })
     return decodeDraft(await response.json(), id)
   }
-  async previewAttachment(id: string, attachmentId: string): Promise<Blob | string> {
+  async previewAttachment(id, attachmentId) {
     const response = await this.attachmentRequest(
       `sessions/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/preview`,
     )
     if (response.headers.get('content-type') === 'image/png') return response.blob()
     return decodePreviewText(await response.json())
   }
-
-  async workspaces(): Promise<WorkspaceList> {
+  async workspaces() {
     return decodeWorkspaceList(await this.request('workspaces'))
   }
-
-  async save(
-    id: string,
-    value: {
-      displayName: string
-      protocol: string
-      baseUrl: string
-      models: readonly string[]
-      key?: string
-      new?: boolean
-    },
-    expectedVersion: number,
-  ): Promise<void> {
+  async save(id, value, expectedVersion) {
     if (!/^[\w.-]{1,100}$/.test(id)) throw new ManagementError('INVALID_PROVIDER', { field: 'providerId' })
     await this.request(`providers/${encodeURIComponent(id)}`, 'PUT', { ...value, expectedVersion })
   }
-  async remove(id: string, expectedVersion: number): Promise<void> {
+  async remove(id, expectedVersion) {
     await this.request(`providers/${encodeURIComponent(id)}`, 'DELETE', { expectedVersion })
   }
-  async catalog(id: string): Promise<readonly string[]> {
+  async catalog(id) {
     return decodeCatalog(await this.request(`providers/${encodeURIComponent(id)}/catalog`))
   }
-  async activities(id: string): Promise<readonly StoredActivity[]> {
+  async activities(id) {
     return decodeActivities(await this.request(`sessions/${encodeURIComponent(id)}/activities`))
   }
-  async requests(id: string): Promise<readonly StoredRequest[]> {
+  async requests(id) {
     return decodeRequests(await this.request(`sessions/${encodeURIComponent(id)}/requests`))
   }
 }

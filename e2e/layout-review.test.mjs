@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
-import { ConfirmationClient } from './fixtures/browser-driver.mjs'
+import { ConfirmationClient } from './fixtures/browser-driver/index.mjs'
 import * as design from '@deckagent/design'
 
 const longBullet =

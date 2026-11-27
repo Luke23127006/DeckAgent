@@ -22,15 +22,11 @@ const NODE_BUILTINS = new Set([
   'worker_threads',
 ])
 
-const BROWSER_ALLOWED_PACKAGES = new Set([
-  '@deckagent/design',
-  '@deckagent/host-contracts',
-  '@deckagent/presentation-document',
-])
+const BROWSER_ALLOWED_PACKAGES = new Set(['@deckagent/host-contracts'])
 
 const CONTRACTS_ALLOWED_PACKAGES = new Set(['@deckagent/design', '@deckagent/presentation-document'])
 
-const BROWSER_DIRECTORIES = ['apps/web/src/browser', 'packages/client/runtime/src']
+const BROWSER_DIRECTORIES = ['apps/web/src', 'packages/client/runtime/src']
 
 const DOMAIN_DIRECTORIES = ['packages/presentation']
 
@@ -42,7 +38,7 @@ const RUNTIME_PACKAGES = new Set(['@deckagent/host', '@deckagent/browser-runtime
 
 const LIFECYCLE_DIRECTORIES = ['apps/host/src/runs']
 
-const ROLE_FILE_MODULES = ['chats', 'attachments', 'providers', 'research', 'deck', 'settings']
+const ROLE_FILE_MODULES = ['chats', 'attachments', 'workspaces', 'providers', 'research', 'deck', 'settings']
 
 const ROLE_FILE_EXPORTS = {
   service: [
@@ -122,11 +118,6 @@ const stripExtension = value => {
 
 const featureOfPath = value => {
   const match = /^apps\/host\/src\/features\/([^/]+)\//.exec(value)
-  return match === null ? null : match[1]
-}
-
-const browserFeatureOfPath = value => {
-  const match = /^apps\/web\/src\/browser\/features\/([^/]+)\//.exec(value)
   return match === null ? null : match[1]
 }
 
@@ -257,7 +248,6 @@ export const checkBoundaries = snapshot => {
   const add = (filePath, line, rule, message) => violations.push({ path: filePath, line, rule, message })
   const packageEdges = []
   const featureEdges = []
-  const browserFeatureEdges = []
   const moduleEdges = []
   const roleFileModules = new Set(snapshot.roleFileModules ?? ROLE_FILE_MODULES)
 
@@ -275,7 +265,6 @@ export const checkBoundaries = snapshot => {
     const testSource = isTestFile(file.path)
     const productionSource = owner !== undefined && !testSource
     const sourceFeature = productionSource ? featureOfPath(file.path) : null
-    const sourceBrowserFeature = productionSource ? browserFeatureOfPath(file.path) : null
     const sourceIntegration = productionSource ? integrationOfPath(file.path) : null
     const sourceRuntime = productionSource ? runtimeOfPath(file.path) : null
     const sourceModule = productionSource ? moduleOfPath(file.path) : null
@@ -353,9 +342,9 @@ export const checkBoundaries = snapshot => {
         const importedPackage = packageSpecifier === null ? null : packageSpecifier.name
         const escapesBrowserIntoHost =
           resolved !== null &&
-          isUnder(file.path, 'apps/web/src/browser') &&
-          isUnder(resolved, 'apps/web/src') &&
-          !isUnder(resolved, 'apps/web/src/browser')
+          isUnder(file.path, 'apps/web/src') &&
+          isUnder(resolved, 'apps') &&
+          !isUnder(resolved, 'apps/web')
         if (
           isNodeBuiltin(specifier) ||
           escapesBrowserIntoHost ||
@@ -365,7 +354,7 @@ export const checkBoundaries = snapshot => {
             file.path,
             line,
             'browser-node-import',
-            `Browser code must not import "${specifier}". Use the browser transport or a contract package.`,
+            `Browser code must not import "${specifier}". Import only @deckagent/host-contracts from the workspace. Call the Local Host through apps/web/src/api/.`,
           )
         }
       }
@@ -462,35 +451,6 @@ export const checkBoundaries = snapshot => {
           }
         }
         featureEdges.push([sourceFeature, targetFeature])
-      }
-
-      const targetBrowserFeature = resolved === null ? null : browserFeatureOfPath(resolved)
-      if (sourceBrowserFeature !== null && targetBrowserFeature !== null) {
-        if (targetBrowserFeature !== sourceBrowserFeature) {
-          const publicEntry = `apps/web/src/browser/features/${targetBrowserFeature}/index`
-          if (stripExtension(resolved) !== publicEntry) {
-            add(
-              file.path,
-              line,
-              'browser-feature-private-import',
-              `Browser feature "${sourceBrowserFeature}" must not import "${resolved}" of browser feature "${targetBrowserFeature}". Import the public index of browser feature "${targetBrowserFeature}".`,
-            )
-          }
-        }
-        browserFeatureEdges.push([sourceBrowserFeature, targetBrowserFeature])
-      }
-
-      if (
-        isUnder(file.path, 'apps/web/src/browser/transport') &&
-        resolved !== null &&
-        isUnder(resolved, 'apps/web/src/browser/features')
-      ) {
-        add(
-          file.path,
-          line,
-          'browser-transport-ui-import',
-          `Browser transport must not import "${specifier}" from browser UI features.`,
-        )
       }
 
       const targetIntegration = resolved === null ? null : integrationOfPath(resolved)
@@ -604,18 +564,6 @@ export const checkBoundaries = snapshot => {
       1,
       'feature-cycle',
       `Feature dependency cycle: ${describeCycle(cycle)}. Break the cycle by changing ownership.`,
-    )
-  }
-
-  const browserFeatures = [
-    ...new Set(files.map(file => browserFeatureOfPath(file.path)).filter(feature => feature !== null)),
-  ]
-  for (const cycle of findCycles(browserFeatures, browserFeatureEdges)) {
-    add(
-      `apps/web/src/browser/features/${cycle[0]}`,
-      1,
-      'browser-feature-cycle',
-      `Browser feature dependency cycle: ${describeCycle(cycle)}. Change ownership to break the cycle.`,
     )
   }
 

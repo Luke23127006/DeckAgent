@@ -36,7 +36,7 @@ Read this file to learn the steps of Task 9, which renames `WorkspaceRegistry` t
 
 **Forbidden:** Do not change `scripts/check-boundaries.mjs` or `.oxlintrc.json`. Do not change HTTP paths, status codes or JSON bodies.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `apps/host/tests/workspace-registry.test.mjs`:
 
@@ -90,12 +90,12 @@ test('WorkspaceService blocks relink and remove on active requests and ungroups 
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `node --test --test-reporter=tap apps/host/tests/workspace-registry.test.mjs`
 Expected: FAIL. Node exits with a non-zero code because `SqliteWorkspaceStore` and `WorkspaceService` do not exist in `modules/workspaces/index.js`.
 
-- [ ] **Step 3: Implement `SqliteWorkspaceStore`, `WorkspaceService`, `workspaces.routes.ts` and `workspaces/index.ts`**
+- [x] **Step 3: Implement `SqliteWorkspaceStore`, `WorkspaceService`, `workspaces.routes.ts` and `workspaces/index.ts`**
 
 1. In `apps/host/src/modules/workspaces/workspaces.store.ts`:
    - Rename `WorkspaceRegistryOptions` to `WorkspaceStoreOptions`.
@@ -109,13 +109,13 @@ Expected: FAIL. Node exits with a non-zero code because `SqliteWorkspaceStore` a
 3. In `apps/host/src/modules/workspaces/workspaces.routes.ts`, import `type { WorkspaceService }` from `'./workspaces.service.ts'` and change `createWorkspaceRoutes` to take `workspaces: WorkspaceService`.
 4. In `apps/host/src/modules/workspaces/index.ts`, export only `SqliteWorkspaceStore` (`./workspaces.store.ts`), `WorkspaceService` and `type WorkspaceChats` (`./workspaces.service.ts`), `createWorkspaceRoutes` (`./workspaces.routes.ts`), `mapWorkspaceError` (`./workspaces.errors.ts`), and `export type WorkspaceLookup = Pick<SqliteWorkspaceStore, 'selectedId' | 'get' | 'folders'>`.
 
-- [ ] **Step 4: Update `apps/host/src/server.ts`**
+- [x] **Step 4: Update `apps/host/src/server.ts`**
 
 1. Import `SqliteWorkspaceStore` and `WorkspaceService` in place of `WorkspaceRegistry` and `createWorkspaceOperations` from `'./modules/workspaces/index.ts'`.
 2. Change `StorageLayer.registry` and `let registry` in `openStorageLayer` from `WorkspaceRegistry` to `SqliteWorkspaceStore`, and construct `new SqliteWorkspaceStore(...)`.
 3. In `createHostOptions`, replace `createWorkspaceRoutes(createWorkspaceOperations(registry, chats))` with `createWorkspaceRoutes(new WorkspaceService(registry, chats))`.
 
-- [ ] **Step 5: Build, run tests and run checks**
+- [x] **Step 5: Build, run tests and run checks**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
@@ -126,6 +126,6 @@ Expected: exit code 0 and `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

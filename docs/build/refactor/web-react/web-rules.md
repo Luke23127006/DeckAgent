@@ -153,7 +153,7 @@ The canvas editor of UC-007 (editing a deck on a canvas) has a core without Reac
 
 | Rule | Tool | Status |
 | --- | --- | --- |
-| `apps/web/` imports only `@deckagent/host-contracts` (later `packages/contracts`) from the workspace, and no Node-only module | `oxlint` `no-restricted-imports` for the new folders. `check:boundaries` (`browser-node-import`) and `oxlint` for `apps/web/src/browser/` | Exists. Phase 7 extends `browser-node-import` to all of `apps/web/src/` and removes the document package from `BROWSER_ALLOWED_PACKAGES` |
+| `apps/web/` imports only `@deckagent/host-contracts` (later `packages/contracts`) from the workspace, and no Node-only module | `oxlint` `no-restricted-imports` for the folders of `apps/web/src/`. `check:boundaries` (`browser-node-import`) for all of `apps/web/src/` | Exists. Phase 7 extended `browser-node-import` to all of `apps/web/src/`. `BROWSER_ALLOWED_PACKAGES` holds only the contracts package |
 | `pages/`, `components/`, `layouts/` and `contexts/` do not import `api/` | `oxlint` `no-restricted-imports` | Exists |
 | `components/`, `layouts/`, `contexts/` and `hooks/` do not import `pages/`. `hooks/` does not import `components/` or `layouts/` | `oxlint` `no-restricted-imports` | Exists |
 | A page does not import another page | Review | No static pattern can tell another page from a folder of the same page |

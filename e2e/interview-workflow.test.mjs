@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startApp, finished, runs, waitFor, MemoryCredentials } from '../apps/host/tests/fixtures/b02-helpers.mjs'
-import { BriefClient, OutlineClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
+import { BriefClient, OutlineClient } from './fixtures/browser-driver/index.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 test('Create deck collects known answers, persists one request at a time and skip never grants sources', async t => {

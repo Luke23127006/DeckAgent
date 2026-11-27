@@ -31,7 +31,7 @@ Read this file to learn the steps of Task 10, which enables `role-file-symbol` f
 
 **Forbidden:** Do not change `apps/web/`, `packages/presentation/` or HTTP black-box test expectations.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 1. In `tests/check-boundaries.test.mjs`:
    - In the two module import tests (`checkBoundaries rejects private import into a module from a feature and from another module` and `checkBoundaries accepts a module index import and an import inside the same module`), replace `WorkspaceRegistry` with `SqliteWorkspaceStore`.
@@ -95,12 +95,12 @@ test('rejects a store, migrations, the SQL driver and another module store insid
 
    - In `accepts the service, route helpers and Express inside a module routes file, and SQL inside a store file`, replace `WorkspaceOperations` with `WorkspaceService` and replace `./schema.ts` and `initialize` with `./workspaces.migrations.ts` and `migrateWorkspacesDatabase`.
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/check-boundaries.test.mjs tests/oxlint-boundaries.test.mjs`
 Expected: FAIL. Both suites fail because `workspaces` is not in `ROLE_FILE_MODULES` and `./*.migrations.ts` is not restricted in `.oxlintrc.json`.
 
-- [ ] **Step 3: Enable `workspaces` in `ROLE_FILE_MODULES`, update `.oxlintrc.json` and update docs**
+- [x] **Step 3: Enable `workspaces` in `ROLE_FILE_MODULES`, update `.oxlintrc.json` and update docs**
 
 1. In `scripts/check-boundaries.mjs`, change `const ROLE_FILE_MODULES = ['chats']` to `const ROLE_FILE_MODULES = ['chats', 'workspaces']`.
 2. In `.oxlintrc.json`, inside the `**/apps/host/src/modules/*/*.routes.ts` override, change `"./schema.ts"` to `"./*.migrations.ts"`.
@@ -112,12 +112,12 @@ Expected: PASS. The output contains `# fail 0`.
 Run: `corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 4: Check that no old workspace symbol stays in production code or host tests**
+- [x] **Step 4: Check that no old workspace symbol stays in production code or host tests**
 
 Run: `git grep -n -E "WorkspaceRegistry|WorkspaceRegistryOptions|createWorkspaceOperations|WorkspaceOperations|WorkspaceWorkflowError|mapWorkspaceFailure|modules/workspaces/contracts|modules/workspaces/schema" -- apps/host/src apps/host/tests e2e`
 Expected: exit code 1 and no line.
 
-- [ ] **Step 5: Run the Phase 3 exit checks and fix defects**
+- [x] **Step 5: Run the Phase 3 exit checks and fix defects**
 
 Run: `corepack pnpm@11.28.5 exec biome format apps/host/src/modules/workspaces apps/host/src/server.ts apps/host/tests/workspace-registry.test.mjs scripts/check-boundaries.mjs tests/check-boundaries.test.mjs tests/oxlint-boundaries.test.mjs && corepack pnpm@11.28.5 build && corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries && corepack pnpm@11.28.5 check:docs`
 Expected: exit code 0.
@@ -135,6 +135,6 @@ If any suite fails because of a Phase 3 defect, fix the defect in `apps/host/`, 
 
 Expected: exit code 0, and `# fail 0` for each of the 19 suites. Record the table `Script | Exit code | Tests passed` in the report.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
