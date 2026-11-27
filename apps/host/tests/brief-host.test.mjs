@@ -1,3 +1,4 @@
+import { request } from 'node:http'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises'
@@ -170,4 +171,70 @@ test('Brief source receipts require owning Chat and expose superseded versions w
   const request = await f.client.send({ sessionId: id, input: '[mcp-research]' })
   await finished(f.client, request.requestId)
   assert.match((await f.client.history(id)).at(-1).content, /TOOL_NOT_ALLOWED/)
+})
+
+test('GET /api/sessions/:sessionId/changes emits initial and live brief notices and stays silent on BRIEF_STALE', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'brief-changes-'))
+  const f = await startApp(dir)
+  t.after(async () => {
+    await f.app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const id = (await f.call('sessions', 'POST', {})).data.sessionId
+  const { port, host } = new URL(f.app.origin)
+  const stream = await new Promise((resolve, reject) => {
+    const req = request(
+      {
+        host: '127.0.0.1',
+        port,
+        path: `/api/sessions/${id}/changes`,
+        headers: { host, authorization: `Bearer ${f.app.token}` },
+      },
+      res => resolve({ req, res }),
+    )
+    req.on('error', reject)
+    req.end()
+  })
+  t.after(() => stream.req.destroy())
+  let buffer = ''
+  const queued = []
+  const waiters = []
+  stream.res.on('data', chunk => {
+    buffer += chunk.toString('utf8')
+    let cut = buffer.indexOf('\n\n')
+    while (cut >= 0) {
+      const data = buffer
+        .slice(0, cut)
+        .split('\n')
+        .find(line => line.startsWith('data: '))
+        ?.slice(6)
+      buffer = buffer.slice(cut + 2)
+      if (data) {
+        const notice = JSON.parse(data)
+        const waiter = waiters.shift()
+        if (waiter) waiter(notice)
+        else queued.push(notice)
+      }
+      cut = buffer.indexOf('\n\n')
+    }
+  })
+  const nextNotice = () => {
+    if (queued.length) return Promise.resolve(queued.shift())
+    return new Promise((resolve, reject) => {
+      const deadline = setTimeout(() => reject(new Error('The session change notice did not arrive.')), 10000)
+      waiters.push(notice => {
+        clearTimeout(deadline)
+        resolve(notice)
+      })
+    })
+  }
+  assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'brief', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'outline', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'deck', key: id, version: 0 })
+  assert.equal((await f.call(`sessions/${id}/brief`, 'PUT', { expectedVersion: 0, draft: brief() })).status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'brief', key: id, version: 1 })
+  assert.equal((await f.call(`sessions/${id}/brief`, 'PUT', { expectedVersion: 0, draft: brief() })).status, 409)
+  assert.equal((await f.call(`sessions/${id}/brief`, 'PUT', { expectedVersion: 1, draft: brief() })).status, 200)
+  assert.deepEqual(await nextNotice(), { topic: 'brief', key: id, version: 2 })
 })

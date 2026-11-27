@@ -59,7 +59,7 @@ After this task, `DeckStore` reads the committed `decks.version` inside the SQL 
   - Update the `Hiện tại` cells of `deck`, `brief`, `outline`, `chats` and `workspaces` in `## Aggregate và change notice` to match the current implementation (committed `version` and notices on `GET /api/changes` and `GET /api/sessions/:sessionId/changes`, and `deck` keeping `GET /api/sessions/:sessionId/deck/events`).
   - Remove the bullet about the three hardcoded `notify(..., 1)` calls in `## Rủi ro và điểm còn mở`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -69,7 +69,7 @@ Run: `git grep -n "^| 44 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add this test at the end of `packages/presentation/deck/tests/deck-service.test.mjs` (import `brief` from `./fixtures/brief.mjs`):
 
@@ -166,7 +166,7 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test packages/presentation/deck
 
 Expected: FAIL. Both new tests fail (exit code 1).
 
-- [ ] **Step 3: Write the code and check no hardcoded notify stays**
+- [x] **Step 3: Write the code and check no hardcoded notify stays**
 
 Do the changes of the sections `Interfaces` and `Existing test and doc changes`. Run `git grep -n "notify(.*, 1)" -- packages/presentation/deck/src`.
 
@@ -176,19 +176,19 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test packages/presentation/deck
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the tests fail**
+- [x] **Step 4: Break the code and make sure that the tests fail**
 
 In `packages/presentation/deck/src/deck-authoring.ts`, remove `host.notifyBrief(sessionId, record.version)` from `saveBrief`. Build and run `node --test --test-timeout=15000 packages/presentation/deck/tests/deck-service.test.mjs`. Expected: FAIL. Undo the change and run `corepack pnpm@11.28.5 exec tsc -b --force`.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

@@ -53,3 +53,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 | [Task 43: Move the deck module report](task-43-move-deck-module.md) | Task 43 | Deck workflows and adapters moved behind narrow ports. All 19 required suites pass. |
 
 | [Task 44: Move deck and session-read routes report](task-44-move-deck-and-session-read-routes.md) | Task 44 | Deck routes and session reads moved to their modules. The Router guard has mutation coverage. All 19 required suites pass. |
+
+| [Task 45: Publish Brief, Outline and deck notices report](task-45-add-brief-outline-deck-notices.md) | Task 45 | Committed callbacks and four session topics have mutation coverage. All 19 required suites pass after isolated environment retries. |

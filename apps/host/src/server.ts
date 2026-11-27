@@ -162,9 +162,13 @@ function createDeckStore(
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
   getAttachments: () => ManagedAttachments | undefined,
+  changeFeed: ChangeFeed,
 ): DeckStore {
   return new DeckStore(join(layout.databases, 'decks.sqlite'), {
     formats: [new HtmlFormatAdapter()],
+    onDeckChanged: (key, version) => changeFeed.publish({ topic: 'deck', key, version }),
+    onBriefChanged: (key, version) => changeFeed.publish({ topic: 'brief', key, version }),
+    onOutlineChanged: (key, version) => changeFeed.publish({ topic: 'outline', key, version }),
     legacyHtmlPolicy: validateLegacySlideHtml,
     researchImage: (_id, query, signal) => commonsImages.find(query, signal),
     artifactRoot: join(layout.files, 'decks'),
@@ -208,7 +212,7 @@ async function openStorageLayer(
       sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'), {
         onChatsChanged: version => changeFeed.publish({ topic: 'chats', key: 'host', version }),
       })
-      decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments)
+      decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments, changeFeed)
       web = new WebState(
         join(layout.databases, 'web.sqlite'),
         value => isSelectable(value),
@@ -419,7 +423,12 @@ function createHostOptions(
         { topic: 'preferences', version: () => web.preferencesVersion() },
       ],
       sessionExists: async id => !!(await sessions.getInfo(id)),
-      sessionTopics: [{ topic: 'draft', version: id => runtime.inputs.draftVersion(id) }],
+      sessionTopics: [
+        { topic: 'draft', version: id => runtime.inputs.draftVersion(id) },
+        { topic: 'brief', version: id => storage.decks.briefHeadVersion(id) },
+        { topic: 'outline', version: id => storage.decks.outlineHeadVersion(id) },
+        { topic: 'deck', version: id => storage.decks.deckHeadVersion(id) },
+      ],
     },
   }
 }

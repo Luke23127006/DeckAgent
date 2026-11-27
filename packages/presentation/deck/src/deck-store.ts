@@ -97,7 +97,7 @@ export class DeckStore implements DeckReader {
       db?.close()
       throw error instanceof DeckError ? error : new DeckError('DECK_STORAGE')
     }
-    this.runtime = new DeckRuntime(this.db, this.listeners)
+    this.runtime = new DeckRuntime(this.db, this.listeners, options.onDeckChanged)
     this.host = this.createHost()
     this.reads = new DeckReads(this.createReadHost())
     this.authoring = new DeckAuthoring(this.host)
@@ -122,6 +122,8 @@ export class DeckStore implements DeckReader {
       asyncAccess: operation => this.runtime.asyncAccess(operation),
       transaction: operation => this.runtime.transaction(operation),
       notify: (sessionId, version) => this.runtime.notify(sessionId, version),
+      notifyBrief: (sessionId, version) => this.runtime.observe(this.options.onBriefChanged, sessionId, version),
+      notifyOutline: (sessionId, version) => this.runtime.observe(this.options.onOutlineChanged, sessionId, version),
     }
   }
 
@@ -146,6 +148,30 @@ export class DeckStore implements DeckReader {
 
   briefSnapshot(sessionId: string): BriefSnapshot {
     return this.authoring.briefSnapshot(sessionId)
+  }
+
+  briefHeadVersion(sessionId: string): number {
+    return this.runtime.access(() => {
+      this.runtime.id(sessionId)
+      const row = this.db.prepare('SELECT version FROM brief_heads WHERE session_id=?').get(sessionId)
+      return row ? Number(row.version) : 0
+    })
+  }
+
+  outlineHeadVersion(sessionId: string): number {
+    return this.runtime.access(() => {
+      this.runtime.id(sessionId)
+      const row = this.db.prepare('SELECT version FROM outline_heads WHERE session_id=?').get(sessionId)
+      return row ? Number(row.version) : 0
+    })
+  }
+
+  deckHeadVersion(sessionId: string): number {
+    return this.runtime.access(() => {
+      this.runtime.id(sessionId)
+      const row = this.db.prepare('SELECT version FROM decks WHERE session_id=?').get(sessionId)
+      return row ? Number(row.version) : 0
+    })
   }
 
   briefVersion(sessionId: string, briefId: string, version: number): BriefRecord {

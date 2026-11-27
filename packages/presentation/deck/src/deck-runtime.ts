@@ -14,6 +14,7 @@ export class DeckRuntime {
   constructor(
     private readonly db: DatabaseSync,
     private readonly listeners: Map<string, Set<(change: DeckChange) => void>>,
+    private readonly onDeckChanged?: (sessionId: string, version: number) => void,
   ) {}
 
   id(value: string): void {
@@ -63,6 +64,19 @@ export class DeckRuntime {
         // A failed transport observer cannot undo a commit. Reconnect reads current state.
         this.listeners.get(sessionId)?.delete(listener)
       }
+    }
+    this.observe(this.onDeckChanged, sessionId, version)
+  }
+
+  observe(
+    callback: ((sessionId: string, version: number) => void) | undefined,
+    sessionId: string,
+    version: number,
+  ): void {
+    try {
+      callback?.(sessionId, version)
+    } catch {
+      return
     }
   }
 

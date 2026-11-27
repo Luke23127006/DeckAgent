@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
 - Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
 - Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
 

@@ -37,6 +37,9 @@ export interface GenerationGrant {
   readonly sessionId: string
 }
 export interface DeckOptions {
+  readonly onDeckChanged?: (sessionId: string, version: number) => void
+  readonly onBriefChanged?: (sessionId: string, version: number) => void
+  readonly onOutlineChanged?: (sessionId: string, version: number) => void
   readonly formats?: readonly FormatAdapter[]
   readonly legacyHtmlPolicy?: (source: unknown) => void
   readonly researchImage?: (sessionId: string, query: string, signal: AbortSignal) => Promise<PreparedResearchImage>

@@ -21,8 +21,10 @@ export interface GenerationHost {
   readonly options: DeckOptions
   access<T>(operation: () => T): T
   transaction<T>(operation: () => T): T
-  insertPlan(sessionId: string, plan: ConfirmedDeckPlan): boolean
+  insertPlan(sessionId: string, plan: ConfirmedDeckPlan): number | null
   notify(sessionId: string, version: number): void
+  notifyBrief(sessionId: string, version: number): void
+  notifyOutline(sessionId: string, version: number): void
 }
 
 /** Confirmation, admission and completion of one generation request. Grants never leave this module. */
@@ -40,12 +42,11 @@ export class GenerationWorkflow {
     return host.access(() => {
       if (!validId(sessionId)) throw new DeckError('DECK_INVALID_ID')
       const target = validateConfirmation(value)
-      let fresh = false
-      const receipt = host.transaction(() => {
+      const result = host.transaction(() => {
         const old = host.generations.get(sessionId)
         if (old) {
           if (!sameConfirmation(old.receipt, target)) throw new DeckError('CONFIRMATION_CONFLICT')
-          return old.receipt
+          return { receipt: old.receipt, fresh: false, deckVersion: 0, outlineVersion: 0 }
         }
         const proposal = host.outlines.current(sessionId, {
           outlineId: target.outlineId,
@@ -67,11 +68,21 @@ export class GenerationWorkflow {
         if (host.images.imageBlockers(sessionId, proposal).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
         host.insertPlan(sessionId, proposal)
         host.outlines.confirm(sessionId, proposal)
-        fresh = true
-        return host.generations.insert(sessionId, target, brief, selection)
+        const receipt = host.generations.insert(sessionId, target, brief, selection)
+        const head = host.db.prepare('SELECT version FROM outline_heads WHERE session_id=?').get(sessionId)
+        if (!head) throw new DeckError('DECK_CORRUPT')
+        return {
+          receipt,
+          fresh: true,
+          deckVersion: deckVersion(host.db, sessionId),
+          outlineVersion: Number(head.version),
+        }
       })
-      if (fresh) host.notify(sessionId, 1)
-      return receipt
+      if (result.fresh) {
+        host.notifyOutline(sessionId, result.outlineVersion)
+        host.notify(sessionId, result.deckVersion)
+      }
+      return result.receipt
     })
   }
 
@@ -129,7 +140,7 @@ export class GenerationWorkflow {
     const version = host.access(() =>
       host.transaction(() => host.generations.finish(sessionId, intentId, requestId, outcome)),
     )
-    host.notify(sessionId, version ?? deckVersion(host.db, sessionId))
+    if (version !== null) host.notify(sessionId, version)
   }
 
   reconcileGenerations(requestExists?: (sessionId: string, requestId: string) => boolean): void {

@@ -341,7 +341,7 @@ Revision 3j adds these failure modes:
 | 42 | Done | [Connect the Browser to preferences notices and handle PREFERENCES_STALE](task-42-connect-browser-to-preferences-notices.md) ([report](../reports/task-42-connect-browser-to-preferences-notices.md)) |
 | 43 | Done | [Move the deck workflows, image and rendering adapters and error map](task-43-move-deck-module.md) ([report](../reports/task-43-move-deck-module.md)) |
 | 44 | Done | [Move deck and session-read routes and remove WebManagement](task-44-move-deck-and-session-read-routes.md) ([report](../reports/task-44-move-deck-and-session-read-routes.md)) |
-| 45 | Pending | [Fix deck notify versions and publish brief, outline and deck change notices](task-45-add-brief-outline-deck-notices.md) |
+| 45 | Done | [Fix deck notify versions and publish brief, outline and deck change notices](task-45-add-brief-outline-deck-notices.md) ([report](../reports/task-45-add-brief-outline-deck-notices.md)) |
 | 46 | Pending | [Connect the Browser to brief and outline change notices](task-46-connect-browser-to-brief-outline-notices.md) |
 | 47 | Pending | [Record the helmet decision and check the Phase 3 exit condition](task-47-check-phase-3-exit.md) |
 

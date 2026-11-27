@@ -7,6 +7,7 @@ import { saveBoundOutline } from './bound-outline.ts'
 import type { ConfirmedDeckPlan } from './deck-contracts.ts'
 import { DeckError, validId } from './errors.ts'
 import type { DeckOptions, ImageResolver, PreparedResearchImage } from './generation-contracts.ts'
+import { deckVersion } from './generation-store.ts'
 import type { PreparedImageStore } from './image-store.ts'
 import type {
   BoundOutlineInput,
@@ -27,6 +28,8 @@ export interface AuthoringHost {
   access<T>(operation: () => T): T
   transaction<T>(operation: () => T): T
   notify(sessionId: string, version: number): void
+  notifyBrief(sessionId: string, version: number): void
+  notifyOutline(sessionId: string, version: number): void
 }
 
 function requireId(value: string): void {
@@ -57,8 +60,8 @@ export class DeckAuthoring {
         new Set(plan.slides.map(s => s.slideId)).size !== plan.slides.length
       )
         throw new DeckError('DECK_INVALID_PLAN')
-      const changed = host.transaction(() => this.insertPlan(sessionId, plan))
-      if (changed) host.notify(sessionId, 1)
+      const version = host.transaction(() => this.insertPlan(sessionId, plan))
+      if (version !== null) host.notify(sessionId, version)
     })
   }
 
@@ -109,7 +112,9 @@ export class DeckAuthoring {
     const host = this.host
     return host.access(() => {
       requireId(sessionId)
-      return host.transaction(() => host.briefs.save(sessionId, input))
+      const record = host.transaction(() => host.briefs.save(sessionId, input))
+      host.notifyBrief(sessionId, record.version)
+      return record
     })
   }
 
@@ -117,11 +122,13 @@ export class DeckAuthoring {
     const host = this.host
     return host.access(() => {
       requireId(sessionId)
-      return host.transaction(() => {
+      const proposal = host.transaction(() => {
         const brief = host.briefs.snapshot(sessionId).current
         if (!brief) throw new DeckError('BRIEF_INCOMPLETE')
         return saveBoundOutline(host.db, sessionId, input, brief, host.outlines.snapshot(sessionId))
       })
+      host.notifyOutline(sessionId, proposal.version)
+      return proposal
     })
   }
 
@@ -183,7 +190,9 @@ export class DeckAuthoring {
     return host.access(() => {
       requireId(sessionId)
       requireId(input.requestId)
-      return host.transaction(() => {
+      let fresh = false
+      let outlineVersion: number | undefined
+      const brief = host.transaction(() => {
         const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex')
         const receipt = host.db.prepare('SELECT * FROM brief_request_receipts WHERE request_id=?').get(input.requestId)
         if (receipt) {
@@ -202,6 +211,7 @@ export class DeckAuthoring {
         )
           throw new DeckError('OUTLINE_STALE')
         const brief = host.briefs.save(sessionId, { expectedVersion: input.expectedBriefVersion, draft: input.draft })
+        fresh = true
         if (input.outline !== undefined) {
           const outline = saveBoundOutline(
             host.db,
@@ -218,12 +228,18 @@ export class DeckAuthoring {
             state,
           )
           host.images.commitImages(sessionId, input, outline, preparedImages)
+          outlineVersion = outline.version
         }
         host.db
           .prepare('INSERT INTO brief_request_receipts VALUES(?,?,?,?,?)')
           .run(input.requestId, sessionId, brief.briefId, brief.version, fingerprint)
         return brief
       })
+      if (fresh) {
+        host.notifyBrief(sessionId, brief.version)
+        if (outlineVersion !== undefined) host.notifyOutline(sessionId, outlineVersion)
+      }
+      return brief
     })
   }
 
@@ -242,7 +258,9 @@ export class DeckAuthoring {
     const host = this.host
     return host.access(() => {
       requireId(sessionId)
-      return host.transaction(() => host.outlines.propose(sessionId, input))
+      const proposal = host.transaction(() => host.outlines.propose(sessionId, input))
+      host.notifyOutline(sessionId, proposal.version)
+      return proposal
     })
   }
 
@@ -258,13 +276,17 @@ export class DeckAuthoring {
     const host = this.host
     host.access(() => {
       requireId(sessionId)
-      host.transaction(() => {
+      const versions = host.transaction(() => {
         const proposal = host.outlines.current(sessionId, target)
         if (proposal.brief) throw new DeckError('DECK_CONFIRMATION_REQUIRED')
         this.insertPlan(sessionId, proposal)
         host.outlines.confirm(sessionId, target)
+        const head = host.db.prepare('SELECT version FROM outline_heads WHERE session_id=?').get(sessionId)
+        if (!head) throw new DeckError('DECK_CORRUPT')
+        return { deckVersion: deckVersion(host.db, sessionId), outlineVersion: Number(head.version) }
       })
-      host.notify(sessionId, 1)
+      host.notifyOutline(sessionId, versions.outlineVersion)
+      host.notify(sessionId, versions.deckVersion)
     })
   }
 
@@ -272,11 +294,17 @@ export class DeckAuthoring {
     const host = this.host
     host.access(() => {
       requireId(sessionId)
-      host.transaction(() => host.outlines.cancel(sessionId, target))
+      const version = host.transaction(() => {
+        host.outlines.cancel(sessionId, target)
+        const head = host.db.prepare('SELECT version FROM outline_heads WHERE session_id=?').get(sessionId)
+        if (!head) throw new DeckError('DECK_CORRUPT')
+        return Number(head.version)
+      })
+      host.notifyOutline(sessionId, version)
     })
   }
 
-  insertPlan(sessionId: string, plan: ConfirmedDeckPlan): boolean {
+  insertPlan(sessionId: string, plan: ConfirmedDeckPlan): number | null {
     const host = this.host
     const normalized = JSON.stringify({
       outlineId: plan.outlineId,
@@ -285,13 +313,13 @@ export class DeckAuthoring {
     const existing = host.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
     if (existing) {
       if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
-      return false
+      return null
     }
     host.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
     const insert = host.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
     plan.slides.forEach((s, i) => {
       insert.run(sessionId, s.slideId, s.title, i)
     })
-    return true
+    return deckVersion(host.db, sessionId)
   }
 }

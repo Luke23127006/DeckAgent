@@ -319,12 +319,12 @@ Bảng và trạng thái hiện tại lấy từ chẩn đoán change notice [[9
 
 | Topic | Khoá | `version` lấy từ | Bảng hoặc state | Hiện tại | Code khi `version` cũ |
 | --- | --- | --- | --- | --- | --- |
-| `deck` | Chat ID | `decks.version` | `decks`, `slides`, `revisions`, `publications`, `generation_intents`, `artifact_revisions` | Notice `deck-changed`. Ba lời gọi `notify` truyền số `1` | `DECK_STALE` (mới). `DECK_CONFLICT` giữ cho revision của slide |
-| `brief` | Chat ID | `brief_heads.version` | `brief_heads`, `brief_versions`, `brief_request_receipts` | Không có notice | `BRIEF_STALE` |
-| `outline` | Chat ID | `outline_heads.version` | `outline_heads`, `outline_proposals`, `outline_details`, `prepared_images` | Không có notice | `OUTLINE_STALE` |
+| `deck` | Chat ID | `decks.version` | `decks`, `slides`, `revisions`, `publications`, `generation_intents`, `artifact_revisions` | Notice `deck` sau commit trên `GET /api/sessions/:sessionId/changes`. Giữ `GET /api/sessions/:sessionId/deck/events` | `DECK_STALE` (mới). `DECK_CONFLICT` giữ cho revision của slide |
+| `brief` | Chat ID | `brief_heads.version` | `brief_heads`, `brief_versions`, `brief_request_receipts` | Notice `brief` sau commit trên `GET /api/sessions/:sessionId/changes` | `BRIEF_STALE` |
+| `outline` | Chat ID | `outline_heads.version` | `outline_heads`, `outline_proposals`, `outline_details`, `prepared_images` | Notice `outline` sau commit trên `GET /api/sessions/:sessionId/changes` | `OUTLINE_STALE` |
 | `draft` | Chat ID | `revision` của draft | Draft trong bộ nhớ (`MemoryDraftStore`), `attachments` | Có notice `draft` trên `GET /api/sessions/:sessionId/changes` (phiên bản notice riêng với `revision` của draft). Browser nhận notice thay cho poll 500 ms | `DRAFT_CONFLICT` |
-| `chats` | `'host'` | `change_versions` trong `sessions.sqlite` | `sessions`, `messages` | Không có `version` | Không có. Lệnh ghi chat không gửi `expectedVersion` |
-| `workspaces` | `'host'` | `change_versions` | `workspaces`, `registry_state` | Không có `version` | `WORKSPACES_STALE` |
+| `chats` | `'host'` | `change_versions` trong `sessions.sqlite` | `sessions`, `messages` | Có committed `version` và notice `chats` trên `GET /api/changes` | Không có. Lệnh ghi chat không gửi `expectedVersion` |
+| `workspaces` | `'host'` | `change_versions` | `workspaces`, `registry_state` | Có committed `version` và notice `workspaces` trên `GET /api/changes` | `WORKSPACES_STALE` |
 | `providers` | `'host'` | `change_versions` | `providers` | Có `version` trong `change_versions` của `web.sqlite` (schema 2), notice `providers` sau commit | `PROVIDERS_STALE` |
 | `preferences` | `'host'` | `change_versions` | `preferences` | Có `version` trong `change_versions` của `web.sqlite` (schema 3), notice `preferences` sau commit cho `theme` và `research` (`lastSelection` không tăng `version`) | `PREFERENCES_STALE` |
 
@@ -374,7 +374,6 @@ Các phần sau là việc riêng của OpenCode và không đi qua `runs/prepar
 - `Open`: output thật của OpenCode 1.19.5 có `tokens` trong event `step_finish` hay không. Chỉ fixture giả có trường này.
 - `Open`: route SSE cho các topic khác `deck`, và format skill mà OpenCode nhận.
 - `Inferred`: `sourceKinds` cho cùng tập tool với `isSourceToolAllowed` và `sourceToolNames` hiện tại. Cần test so sánh trước khi bỏ hai hàm này.
-- Lỗi hiện tại: ba lời gọi `notify` của deck truyền số `1` (`deck-authoring.ts:61`, `deck-authoring.ts:267`, `deck-generation.ts:73`). Browser chỉ đọc lại khi notice mới hơn snapshot (`deck-model.ts:106-112`), nên một tab đang mở có thể không đọc lại sau ba lệnh ghi này (`Inferred`, chưa có test).
 
 ## References
 

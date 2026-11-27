@@ -336,6 +336,9 @@ test('draft writes and attachment preparation send draft notices on /api/session
     queued.length ? Promise.resolve(queued.shift()) : new Promise(resolve => waiters.push(resolve))
 
   assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'brief', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'outline', key: id, version: 0 })
+  assert.deepEqual(await nextNotice(), { topic: 'deck', key: id, version: 0 })
   const saved = await api(`sessions/${id}/draft`, 'PUT', { text: 'Hello', expectedRevision: 0 })
   assert.equal(saved.status, 200)
   assert.deepEqual(await nextNotice(), { topic: 'draft', key: id, version: 1 })
