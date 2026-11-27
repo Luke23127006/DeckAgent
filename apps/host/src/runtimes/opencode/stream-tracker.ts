@@ -1,6 +1,6 @@
-import { summarizedNotice } from '@deckagent/session-persistence'
 import type { RuntimeOutcome } from '@deckagent/host-api'
 import type { RunError, RunEvent, RunResult, RunUsage } from '../../runs/ports.ts'
+import { summarizedNotice } from '../../runs/ports.ts'
 import { classifyProviderError, isContextOverflow, parseEvent } from './events.ts'
 import type { OpenCodeEvent } from './events.ts'
 import type { ProcessResult } from './process.ts'

@@ -80,7 +80,12 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
 
   async availability(): Promise<RuntimeAvailability> {
     if (!this.executable) return { available: false, code: 'RUNTIME_UNAVAILABLE' }
-    if (!(await this.checkVersion(this.executable))) return { available: false, code: 'RUNTIME_VERSION_UNSUPPORTED' }
+    if (!(await this.checkVersion(this.executable)))
+      return {
+        available: false,
+        code: 'RUNTIME_VERSION_UNSUPPORTED',
+        detail: { version: this.options.version ?? pinnedVersion },
+      }
     return { available: true }
   }
 

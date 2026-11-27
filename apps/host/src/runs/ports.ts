@@ -10,6 +10,8 @@ import type {
 
 export type RunOwnerKind = 'chat'
 
+export const summarizedNotice = 'CONVERSATION_SUMMARIZED'
+
 export interface RunOwner {
   readonly kind: RunOwnerKind
   readonly id: string
@@ -35,8 +37,36 @@ export interface RunPlan {
   readonly grants: RunGrants
   readonly stepLimit: number | 'none'
   readonly contributions: readonly RunContribution[]
-  next?(result: RunResult): Promise<RunPlan | undefined>
+  /** Một pass không gọi runtime, ví dụ lệnh deck `restore`. */
+  readonly skipRuntime?: boolean
+  beforeRun?(context: RunLifecycleContext): Promise<void>
+  next?(result: RunResult, context?: RunLifecycleContext): Promise<RunPlan | undefined>
+  finalize?(result: RunResult, context: RunLifecycleContext): Promise<RunResult>
   closingText?(status: TerminalStatus): string | undefined
+}
+
+export interface RunLifecycleContext {
+  readonly owner: RunOwner
+  readonly requestId: string
+  readonly signal: AbortSignal
+  emit(event: RunEvent): Promise<void>
+}
+
+export interface RunStartOptions {
+  readonly attachmentIds?: readonly string[]
+  readonly draftRevision?: number
+  readonly onAdmitted?: () => void
+  readonly runtime?: AgentRuntime
+}
+
+export interface RunSnapshot {
+  readonly requestId: string
+  readonly owner: RunOwner
+  readonly status: RequestStatus
+  readonly errorCode?: string
+  readonly text: string
+  readonly sequence: number
+  readonly pendingApproval?: ApprovalView | null
 }
 
 export interface PreparationContext {
@@ -182,7 +212,13 @@ export type RunResult =
   | { readonly status: 'completed'; readonly usage: RunUsage; commit?(): void }
   | { readonly status: 'failed'; readonly usage: RunUsage; readonly error: RunError }
 
-export type RuntimeAvailability = { readonly available: true } | { readonly available: false; readonly code: string }
+export type RuntimeAvailability =
+  | { readonly available: true }
+  | {
+      readonly available: false
+      readonly code: string
+      readonly detail?: Readonly<Record<string, string | boolean>>
+    }
 
 export interface AgentRuntime {
   readonly name: string
@@ -249,7 +285,10 @@ export interface RunStore {
 }
 
 export class RunFailure extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
     super(code)
     this.name = 'RunFailure'
   }

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Implement owner-based `RunController` in `apps/host/src/runs/lifecycle/` and add `sourceKinds` filtering and `createSourceToolsContribution` to `apps/host/src/tools/`. Task 52 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Implement `OpenCodeAgentRuntime` (`AgentRuntime` port), `RunUsage` tracking and `RunErrorCategory` classification in `apps/host/src/runtimes/opencode/`. Task 51 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Add `apps/host/src/runs/` contracts (`ports.ts`), contribution preparation composer, budget monitor and folder-level oxlint rules, and move `ProviderRunSettings` into `runs/ports.ts`. Task 50 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move `apps/host/src/integrations/opencode/` into `apps/host/src/runtimes/opencode/` and enforce runtime adapter boundaries with `check:boundaries` and oxlint. Task 49 is `Done` in `docs/build/refactor/target-structure/plan/`.

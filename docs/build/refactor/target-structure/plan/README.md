@@ -371,7 +371,7 @@ Revision 4b adds these failure modes:
 | 49 | Done | [Move the OpenCode integration into apps/host/src/runtimes/opencode](task-49-move-opencode-runtime.md) ([report](../reports/task-49-move-opencode-runtime.md)) |
 | 50 | Done | [Add apps/host/src/runs contracts, preparation composer, budget monitor and boundary rules](task-50-add-runs-contracts-preparation-and-budget.md) ([report](../reports/task-50-add-runs-contracts-preparation-and-budget.md)) |
 | 51 | Done | [Implement the AgentRuntime port, usage tracking and error categories in apps/host/src/runtimes/opencode](task-51-implement-opencode-agent-runtime.md) ([report](../reports/task-51-implement-opencode-agent-runtime.md)) |
-| 52 | Pending | [Implement runs/lifecycle RunController and sourceKinds in apps/host/src/tools](task-52-implement-run-lifecycle-and-source-kinds.md) |
+| 52 | Done | [Implement runs/lifecycle RunController and sourceKinds in apps/host/src/tools](task-52-implement-run-lifecycle-and-source-kinds.md) ([report](../reports/task-52-implement-run-lifecycle-and-source-kinds.md)) |
 | 53 | Pending | [Add RunPlan and RunContribution builders in apps/host/src/modules/deck](task-53-add-deck-run-plans-and-contributions.md) |
 | 54 | Pending | [Cut over Host runs, routes and OpenCode adapter to RunController and OpenCodeAgentRuntime](task-54-cutover-host-to-run-controller-and-agent-runtime.md) |
 | 55 | Pending | [Move HTTP helpers into apps/host/src/http and remove packages/host/api](task-55-move-http-helpers-and-remove-host-api.md) |

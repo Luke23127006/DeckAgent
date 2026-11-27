@@ -9,8 +9,13 @@ export type {
   ParsedAttachment,
   AttachmentParseInput,
 } from './sources/attachment-contracts.ts'
-export { SourceToolFailure, prepareSourceTools } from './executors/source-tools.ts'
-export type { SourceToolOptions } from './executors/source-tools.ts'
+export {
+  SourceToolFailure,
+  createSourceToolsContribution,
+  mapSourceToolFailure,
+  prepareSourceTools,
+} from './executors/source-tools.ts'
+export type { SourceToolOptions, SourceToolsContributionOptions } from './executors/source-tools.ts'
 export type {
   ToolAttachmentReader,
   ToolResearchSession,

@@ -43,7 +43,7 @@ After this task, `apps/host/src/runs/lifecycle/` owns owner-based run admission,
 
 **Forbidden:** import any module, Express, HTTP, SQLite, tool or concrete runtime inside `apps/host/src/runs/`. Change `apps/host/src/server.ts` or `packages/host/api/`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -53,7 +53,7 @@ Run: `git grep -n "^| 51 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests in `apps/host/tests/run-lifecycle.test.mjs`**
+- [x] **Step 2: Write the failing tests in `apps/host/tests/run-lifecycle.test.mjs`**
 
 Create `apps/host/tests/run-lifecycle.test.mjs` with an in-memory `RunStore` and fake `AgentRuntime` covering:
 
@@ -67,13 +67,13 @@ Create `apps/host/tests/run-lifecycle.test.mjs` with an in-memory `RunStore` and
 
 Add `apps/host/tests/run-lifecycle.test.mjs` to `test:model-requests` in `package.json`.
 
-- [ ] **Step 3: Run the new test and check that it fails**
+- [x] **Step 3: Run the new test and check that it fails**
 
 Run: `node --test apps/host/tests/run-lifecycle.test.mjs`
 
 Expected: FAIL. Module import fails because `apps/host/src/runs/lifecycle/` does not exist yet.
 
-- [ ] **Step 4: Implement `runs/ports.ts`, `runs/lifecycle/`, OpenCode availability detail and `tools/executors/source-tools.ts`**
+- [x] **Step 4: Implement `runs/ports.ts`, `runs/lifecycle/`, OpenCode availability detail and `tools/executors/source-tools.ts`**
 
 1. Update `apps/host/src/runs/ports.ts` and `apps/host/src/runs/index.ts` with the interfaces above.
 2. Create `apps/host/src/runs/lifecycle/run-controller.ts` and `apps/host/src/runs/lifecycle/index.ts`:
@@ -84,7 +84,7 @@ Expected: FAIL. Module import fails because `apps/host/src/runs/lifecycle/` does
 3. Update `apps/host/src/runtimes/opencode/agent-runtime.ts` to return `{ available: false, code: 'RUNTIME_VERSION_UNSUPPORTED', detail: { version: this.options.version ?? pinnedVersion } }` from `availability()`. Update `apps/host/src/runtimes/opencode/stream-tracker.ts` to import `summarizedNotice` from `../../runs/ports.ts` instead of `@deckagent/session-persistence`.
 4. Update `apps/host/src/tools/executors/source-tools.ts` and `apps/host/src/tools/index.ts` to filter `buildSourceSchemas` by `sourceKinds`, export `createSourceToolsContribution` (returning `ToolSet` using `ToolContext` from `../../runs/ports.ts` and checking `context.owner.kind === 'chat' && context.owner.id === sessionId`), and export `mapSourceToolFailure`.
 
-- [ ] **Step 5: Check that `runs/` has no `sessionId` and run `run-lifecycle.test.mjs`**
+- [x] **Step 5: Check that `runs/` has no `sessionId` and run `run-lifecycle.test.mjs`**
 
 Run: `git grep --untracked -n "sessionId:" -- apps/host/src/runs`
 
@@ -98,17 +98,17 @@ Run: `node --test apps/host/tests/run-lifecycle.test.mjs`
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Format, build and check**
+- [x] **Step 6: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 7: Run every suite**
+- [x] **Step 7: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 8: Write the report file and stop**
+- [x] **Step 8: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

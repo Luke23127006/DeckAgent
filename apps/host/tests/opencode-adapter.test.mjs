@@ -475,6 +475,7 @@ test('agent runtime availability reports a missing or unsupported CLI', async t 
   assert.deepEqual(await agentRuntime({ root, version: '9.9.9' }).runtime.availability(), {
     available: false,
     code: 'RUNTIME_VERSION_UNSUPPORTED',
+    detail: { version: '9.9.9' },
   })
 })
 

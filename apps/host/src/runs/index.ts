@@ -1,4 +1,4 @@
-export { RunFailure, runOwnerKey } from './ports.ts'
+export { RunFailure, runOwnerKey, summarizedNotice } from './ports.ts'
 export type {
   AgentRuntime,
   ApprovalStep,
@@ -15,6 +15,7 @@ export type {
   RunEvent,
   RunGrants,
   RunInput,
+  RunLifecycleContext,
   RunOwner,
   RunOwnerKind,
   RunParts,
@@ -23,6 +24,8 @@ export type {
   RunResource,
   RunResult,
   RunSink,
+  RunSnapshot,
+  RunStartOptions,
   RunStore,
   RunTools,
   RunUsage,
@@ -34,5 +37,7 @@ export type {
   ToolSchema,
   ToolSet,
 } from './ports.ts'
+export { RunController } from './lifecycle/index.ts'
+export type { RunControllerOptions } from './lifecycle/index.ts'
 export { prepareRunInput } from './preparation/index.ts'
 export { createRunBudget } from './budget/index.ts'
