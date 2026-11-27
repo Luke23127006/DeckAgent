@@ -84,3 +84,7 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 | --- | --- | --- |
 | 1 | Done | [Write the naming rules into the conventions](task-01-write-naming-rules-into-conventions.md) ([report](../reports/task-01-write-naming-rules-into-conventions.md)) |
 | 2 | Done | [Add the enum check and the role file check](task-02-add-enum-and-role-file-checks.md) ([report](../reports/task-02-add-enum-and-role-file-checks.md)) |
+
+### Phase 1 exit
+
+Phase 1 is done. Tasks 1 and 2 are `Done`, and commit `b77d062` holds their changes. `build`, `lint`, `check:boundaries` (0 violations) and `check:docs` passed. Each of the 19 non-live `test:*` scripts passed with `# fail 0`. The report of Task 2 has the evidence. The next revision is Revision 2, for Phase 2 (chats module).
