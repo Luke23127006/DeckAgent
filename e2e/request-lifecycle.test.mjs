@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
-import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
+import { SessionError, openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import { HttpError } from '../apps/host/tests/fixtures/http-host.mjs'
 import { startRequestHost as startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
@@ -26,7 +26,7 @@ const selection = { provider: 'fixture', model: 'model-a' }
 
 async function storeFixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-requests-'))
-  const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
+  const store = openSessionStore(join(dir, 'sessions.sqlite'))
   const open = [store]
   // Every store closes before the folder goes (Windows keeps open files locked).
   t.after(async () => {
@@ -47,7 +47,9 @@ test('admission saves the user message and the active request together; a chat h
   const { store } = await storeFixture(t)
   const chat = await store.create('default')
   const other = await store.create('default')
-  const admitted = store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hello', selection })
+  const chatOwner = { kind: 'chat', id: chat.sessionId }
+  const otherOwner = { kind: 'chat', id: other.sessionId }
+  const admitted = store.requests.admit({ requestId: 'req-1', owner: chatOwner, input: 'Hello', selection })
   assert.equal(admitted.status, 'active')
   assert.equal(admitted.historyStart, 0)
   assert.deepEqual(await store.read(chat.sessionId), [{ role: 'user', content: 'Hello' }])
@@ -56,8 +58,8 @@ test('admission saves the user message and the active request together; a chat h
     [[1, 'status']],
   )
   assert.throws(
-    () => store.requests.admit({ requestId: 'req-2', sessionId: chat.sessionId, input: 'Again', selection }),
-    error => error instanceof SessionError && error.code === 'REQUEST_ACTIVE',
+    () => store.requests.admit({ requestId: 'req-2', owner: chatOwner, input: 'Again', selection }),
+    error => error instanceof SessionError && error.code === 'RUN_OWNER_BUSY',
   )
   assert.deepEqual(
     await store.read(chat.sessionId),
@@ -65,10 +67,16 @@ test('admission saves the user message and the active request together; a chat h
     'A refused admission adds no message',
   )
   // Another chat runs independently.
-  store.requests.admit({ requestId: 'req-3', sessionId: other.sessionId, input: 'Other', selection })
-  assert.equal(store.requests.activeFor(other.sessionId), 'req-3')
+  store.requests.admit({ requestId: 'req-3', owner: otherOwner, input: 'Other', selection })
+  assert.equal(store.requests.activeFor(otherOwner), 'req-3')
   assert.throws(
-    () => store.requests.admit({ requestId: 'req-4', sessionId: 'chat-missing', input: 'x', selection }),
+    () =>
+      store.requests.admit({
+        requestId: 'req-4',
+        owner: { kind: 'chat', id: 'chat-missing' },
+        input: 'x',
+        selection,
+      }),
     error => error instanceof SessionError && error.code === 'SESSION_NOT_FOUND',
   )
 })
@@ -76,7 +84,8 @@ test('admission saves the user message and the active request together; a chat h
 test('events are ordered; finish settles running activities, keeps the text once, and refuses later writes', async t => {
   const { store } = await storeFixture(t)
   const chat = await store.create('default')
-  store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
+  const chatOwner = { kind: 'chat', id: chat.sessionId }
+  store.requests.admit({ requestId: 'req-1', owner: chatOwner, input: 'Hi', selection })
   store.requests.append('req-1', {
     kind: 'activity',
     id: 'model-1',
@@ -118,7 +127,7 @@ test('events are ordered; finish settles running activities, keeps the text once
     { role: 'assistant', content: 'Hello there', interrupted: true },
   ])
   assert.deepEqual(
-    store.requests.activities(chat.sessionId).map(item => [item.id, item.status, item.sequence]),
+    store.requests.activities(chatOwner).map(item => [item.id, item.status, item.sequence]),
     [
       ['model-1', 'stopped', 2],
       ['tool-1', 'failed', 5],
@@ -126,13 +135,14 @@ test('events are ordered; finish settles running activities, keeps the text once
     'Activities keep the order they started in',
   )
   assert.equal(store.requests.get('req-1').status, 'stopped')
-  assert.equal(store.requests.activeFor(chat.sessionId), undefined)
+  assert.equal(store.requests.activeFor(chatOwner), undefined)
 })
 
 test('Host start marks requests left active as interrupted, keeps their text, and starts nothing', async t => {
   const { dir, store, track } = await storeFixture(t)
   const chat = await store.create('default')
-  store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
+  const chatOwner = { kind: 'chat', id: chat.sessionId }
+  store.requests.admit({ requestId: 'req-1', owner: chatOwner, input: 'Hi', selection })
   store.requests.append('req-1', {
     kind: 'activity',
     id: 'model-1',
@@ -142,14 +152,14 @@ test('Host start marks requests left active as interrupted, keeps their text, an
   })
   store.requests.append('req-1', { kind: 'text', part: 'p1', text: 'Half an answer' })
   store.close()
-  const reopened = track(new SqliteSessionStore(join(dir, 'sessions.sqlite')))
+  const reopened = track(openSessionStore(join(dir, 'sessions.sqlite')))
   assert.equal(reopened.requests.interruptActive(), 1)
   assert.equal(reopened.requests.interruptActive(), 0)
   const request = reopened.requests.get('req-1')
   assert.equal(request.status, 'interrupted')
   assert.equal(request.errorCode, 'HOST_RESTARTED')
   assert.deepEqual(
-    reopened.requests.activities(chat.sessionId).map(item => item.status),
+    reopened.requests.activities(chatOwner).map(item => item.status),
     ['failed'],
   )
   assert.deepEqual((await reopened.read(chat.sessionId)).at(-1), {
@@ -163,9 +173,11 @@ test('native session binding only follows a completed request of the same chat',
   const { store } = await storeFixture(t)
   const chat = await store.create('default')
   const other = await store.create('default')
-  store.requests.admit({ requestId: 'req-1', sessionId: chat.sessionId, input: 'Hi', selection })
+  const chatKey = `chat:${chat.sessionId}`
+  const otherKey = `chat:${other.sessionId}`
+  store.requests.admit({ requestId: 'req-1', owner: { kind: 'chat', id: chat.sessionId }, input: 'Hi', selection })
   const binding = {
-    sessionId: chat.sessionId,
+    ownerKey: chatKey,
     nativeSessionId: 'ses_abc',
     selection,
     context: 'ctx',
@@ -178,14 +190,14 @@ test('native session binding only follows a completed request of the same chat',
   )
   store.requests.finish('req-1', 'completed')
   assert.throws(
-    () => store.requests.bind({ ...binding, sessionId: other.sessionId }),
+    () => store.requests.bind({ ...binding, ownerKey: otherKey }),
     error => error.code === 'SESSION_CONFLICT',
   )
   store.requests.bind(binding)
-  assert.deepEqual(store.requests.binding(chat.sessionId), binding)
-  assert.equal(store.requests.binding(other.sessionId), undefined)
-  store.requests.unbind(chat.sessionId)
-  assert.equal(store.requests.binding(chat.sessionId), undefined)
+  assert.deepEqual(store.requests.binding(chatKey), binding)
+  assert.equal(store.requests.binding(otherKey), undefined)
+  store.requests.unbind(chatKey)
+  assert.equal(store.requests.binding(chatKey), undefined)
 })
 
 test('schema v2 files gain request tables in place; removed models leave chats with no selection', async t => {
@@ -206,7 +218,7 @@ test('schema v2 files gain request tables in place; removed models leave chats w
     INSERT INTO sessions VALUES ('kept', '2026-01-01', '2026-01-01', 'fixture', 'model-b', 'default');
     PRAGMA application_id = ${0x44414754}; PRAGMA user_version = 2;`)
   db.close()
-  store = new SqliteSessionStore(path)
+  store = openSessionStore(path)
   assert.deepEqual((await store.getInfo('old')).selection, selection)
   assert.deepEqual(await store.clearSelections('fixture', ['model-a']), ['old'])
   const info = await store.getInfo('old')

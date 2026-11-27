@@ -45,7 +45,7 @@ export function saveSourceRead(
     throw new SessionError('INVALID_REQUEST', 'Invalid source receipt')
   const previous = db
     .prepare('SELECT * FROM source_reads WHERE session_id = ? AND origin = ? ORDER BY version DESC LIMIT 1')
-    .get(request.sessionId, value.origin)
+    .get(request.owner.id, value.origin)
   const sourceId = previous ? String(previous.source_id) : `src-${randomUUID()}`
   let version = previous ? Number(previous.version) : 0
   if (!previous || previous.fingerprint !== value.fingerprint) {
@@ -55,7 +55,7 @@ export function saveSourceRead(
     ).run(
       sourceId,
       version,
-      request.sessionId,
+      request.owner.id,
       value.origin,
       value.label,
       value.fingerprint,
@@ -75,7 +75,7 @@ export function saveSourceRead(
 
 export function reserveResearchAttempt(db: DatabaseSync, requestId: string, sessionId: string): void {
   const request = requireRequest(db, requestId)
-  if (request.sessionId !== sessionId || request.status !== 'active')
+  if (request.owner.kind !== 'chat' || request.owner.id !== sessionId || request.status !== 'active')
     throw new SessionError('REQUEST_CLOSED', 'Request is not active')
   const row = db.prepare('SELECT selected, attempts FROM request_research WHERE request_id = ?').get(requestId)
   if (!row || row.selected !== 1) throw new SessionError('RESEARCH_NOT_SELECTED', 'Public research was not selected')
@@ -95,7 +95,13 @@ export function saveResearchResults(
 ): readonly ResearchSource[] {
   const request = requireRequest(db, requestId)
   const row = db.prepare('SELECT selected, attempts FROM request_research WHERE request_id = ?').get(requestId)
-  if (request.sessionId !== sessionId || request.status !== 'active' || row?.selected !== 1 || Number(row.attempts) < 1)
+  if (
+    request.owner.kind !== 'chat' ||
+    request.owner.id !== sessionId ||
+    request.status !== 'active' ||
+    row?.selected !== 1 ||
+    Number(row.attempts) < 1
+  )
     throw new SessionError('REQUEST_CLOSED', 'Research is not authorized')
   if (
     !query.trim() ||

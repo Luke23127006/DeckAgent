@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { StorageError, startLocalWeb } from '@deckagent/host'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 test('Local Web serves the page and fixed assets only; saved history survives a restart without a model', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-web-'))
@@ -16,7 +16,7 @@ test('Local Web serves the page and fixed assets only; saved history survives a 
   })
   const dataDir = join(dir, 'data')
   // Seeded history stands in for a request that a later build sends.
-  const seed = new SqliteSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
+  const seed = openSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
   await seed.open('seeded')
   await seed.append('seeded', [
     { role: 'user', content: 'Draft a deck' },

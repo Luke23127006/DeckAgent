@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { request as httpRequest } from 'node:http'
 import { startRequestHost as startHost } from './fixtures/http-host.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from './fixtures/session-store.mjs'
 import { Router } from 'express'
 
 // B02: the Host owns admission, events, Stop and terminal status (ADR-0004). The legacy question/reply case and the
@@ -13,7 +13,7 @@ import { Router } from 'express'
 
 async function fixture(t, start) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-host-api-'))
-  const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
+  const store = openSessionStore(join(dir, 'sessions.sqlite'))
   let host
   t.after(async () => {
     await host?.close()

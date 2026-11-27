@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { StorageError, resolveStorageRoot, startLocalWeb } from '@deckagent/host'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -248,7 +248,7 @@ test('drafts: each chat keeps its own while DeckAgent runs, and none is kept aft
 
 test('search, unreadable chats and folder status: a missing folder keeps its workspace and every chat readable', async t => {
   const { dir, options, start, project } = await area(t)
-  const store = new SqliteSessionStore(join(options.dataDir, 'db', 'sessions.sqlite'))
+  const store = openSessionStore(join(options.dataDir, 'db', 'sessions.sqlite'))
   await store.open('recycling')
   await store.append('recycling', [
     { role: 'user', content: 'Tái chế giấy' },

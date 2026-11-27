@@ -1,51 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
-import type { AttachmentRecord, AttachmentPreparation } from './contracts.ts'
-
-export function isAttachmentPreparation(value: unknown): value is AttachmentPreparation {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    !('parserVersion' in value) ||
-    typeof value.parserVersion !== 'string' ||
-    !/^[a-zA-Z0-9_.-]{1,80}$/.test(value.parserVersion)
-  )
-    return false
-  if (
-    !('capabilities' in value) ||
-    !Array.isArray(value.capabilities) ||
-    value.capabilities.length > 32 ||
-    !value.capabilities.every(item => typeof item === 'string' && /^[a-z0-9-]{1,80}$/.test(item))
-  )
-    return false
-  if (!('completeness' in value) || !['complete', 'partial'].includes(String(value.completeness))) return false
-  return (
-    'omitted' in value &&
-    Array.isArray(value.omitted) &&
-    value.omitted.length <= 1000 &&
-    value.omitted.every(
-      item =>
-        item &&
-        typeof item === 'object' &&
-        typeof item.code === 'string' &&
-        /^[A-Z_]{1,64}$/.test(item.code) &&
-        (item.entry === undefined || (typeof item.entry === 'string' && item.entry.length <= 512)),
-    )
-  )
-}
-
-interface Access {
-  run<T>(operation: () => T): T
-  transaction<T>(operation: () => T): T
-}
+import { SessionDatabase } from '../../db/index.ts'
+import { SessionError, isAttachmentPreparation } from '../../db/index.ts'
+import type { AttachmentRecord, AttachmentPreparation } from '../../db/index.ts'
 
 /** Chat-owned metadata; callers make bytes durable before recording their fingerprint. */
-export class AttachmentLog {
-  constructor(
-    private readonly db: DatabaseSync,
-    private readonly access: Access,
-  ) {}
+export class SqliteAttachmentLog {
+  private readonly db
+  private readonly access: SessionDatabase
+  constructor(sessionDb: SessionDatabase) {
+    this.db = sessionDb.db
+    this.access = sessionDb
+  }
 
   create(sessionId: string, name: string): AttachmentRecord {
     return this.access.transaction(() => {
@@ -209,5 +174,25 @@ export class AttachmentLog {
       this.db.prepare('DELETE FROM sources WHERE attachment_id = ?').run(attachmentId)
       this.db.prepare('DELETE FROM attachments WHERE id = ?').run(attachmentId)
     })
+  }
+  validateReadyInTx(sessionId: string, attachmentIds: readonly string[]): readonly AttachmentRecord[] {
+    if (new Set(attachmentIds).size !== attachmentIds.length)
+      throw new SessionError('INVALID_REQUEST', 'Attachment IDs must be unique')
+    return attachmentIds.map(id => {
+      const item = this.get(sessionId, id)
+      if (item.state === 'rejected')
+        throw new SessionError('ATTACHMENT_REJECTED', 'Remove the rejected attachment before sending')
+      if (item.state !== 'ready') throw new SessionError('ATTACHMENT_NOT_READY', 'Wait for attachment preparation')
+      const row = this.db.prepare('SELECT request_id FROM attachments WHERE id = ?').get(id)
+      if (!row || row.request_id !== null)
+        throw new SessionError('ATTACHMENT_CONFLICT', 'Attachment already belongs to a sent request')
+      return item
+    })
+  }
+  linkToRequestInTx(requestId: string, messageSequence: number | undefined, attachmentIds: readonly string[]): void {
+    for (const id of attachmentIds)
+      this.db
+        .prepare('UPDATE attachments SET request_id = ?, message_sequence = ? WHERE id = ?')
+        .run(requestId, messageSequence ?? null, id)
   }
 }

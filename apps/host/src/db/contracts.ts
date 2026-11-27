@@ -1,3 +1,5 @@
+import type { RunOwner } from '../runs/ports.ts'
+
 /** Chat contracts owned by DeckAgent persistence. No runtime or transport types cross this seam. */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
@@ -129,7 +131,7 @@ export interface ResearchSource {
 export interface RequestRecord {
   readonly publicResearch?: boolean
   readonly requestId: string
-  readonly sessionId: string
+  readonly owner: RunOwner
   readonly status: RequestStatus
   /** Model the request was admitted with; later changes never apply to it (FR-042). */
   readonly selection: ModelSelection
@@ -159,7 +161,7 @@ export interface ActivityRecord {
 
 /** Chat -> OpenCode native session, saved only after a completed request (ADR-0002). */
 export interface RuntimeBinding {
-  readonly sessionId: string
+  readonly ownerKey: string
   readonly nativeSessionId: string
   readonly selection: ModelSelection
   /** Execution context identity: managed working folder and tool boundary. */
@@ -182,4 +184,36 @@ export class SessionError extends Error {
     super(message)
     this.name = 'SessionError'
   }
+}
+
+export function isAttachmentPreparation(value: unknown): value is AttachmentPreparation {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('parserVersion' in value) ||
+    typeof value.parserVersion !== 'string' ||
+    !/^[a-zA-Z0-9_.-]{1,80}$/.test(value.parserVersion)
+  )
+    return false
+  if (
+    !('capabilities' in value) ||
+    !Array.isArray(value.capabilities) ||
+    value.capabilities.length > 32 ||
+    !value.capabilities.every(item => typeof item === 'string' && /^[a-z0-9-]{1,80}$/.test(item))
+  )
+    return false
+  if (!('completeness' in value) || !['complete', 'partial'].includes(String(value.completeness))) return false
+  return (
+    'omitted' in value &&
+    Array.isArray(value.omitted) &&
+    value.omitted.length <= 1000 &&
+    value.omitted.every(
+      item =>
+        item &&
+        typeof item === 'object' &&
+        typeof item.code === 'string' &&
+        /^[A-Z_]{1,64}$/.test(item.code) &&
+        (item.entry === undefined || (typeof item.entry === 'string' && item.entry.length <= 512)),
+    )
+  )
 }

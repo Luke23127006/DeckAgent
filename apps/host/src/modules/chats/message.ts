@@ -1,7 +1,3 @@
-import { SessionError } from './contracts.ts'
-import type { Message } from './contracts.ts'
-import { isAttachmentPreparation } from './attachments.ts'
-
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
@@ -24,8 +20,31 @@ function json(value: unknown, parents = new Set<object>()): boolean {
   return result
 }
 
+function isPreparation(value: unknown): boolean {
+  if (!record(value) || typeof value.parserVersion !== 'string' || !/^[a-zA-Z0-9_.-]{1,80}$/.test(value.parserVersion))
+    return false
+  if (
+    !Array.isArray(value.capabilities) ||
+    value.capabilities.length > 32 ||
+    !value.capabilities.every(item => typeof item === 'string' && /^[a-z0-9-]{1,80}$/.test(item))
+  )
+    return false
+  if (!['complete', 'partial'].includes(String(value.completeness))) return false
+  return (
+    Array.isArray(value.omitted) &&
+    value.omitted.length <= 1000 &&
+    value.omitted.every(
+      item =>
+        record(item) &&
+        typeof item.code === 'string' &&
+        /^[A-Z_]{1,64}$/.test(item.code) &&
+        (item.entry === undefined || (typeof item.entry === 'string' && item.entry.length <= 512)),
+    )
+  )
+}
+
 /** Validate before JSON encoding so unsupported values cannot silently disappear. */
-export function validateMessage(value: unknown): asserts value is Message {
+export function isValidMessage(value: unknown): boolean {
   let valid = false
   if (record(value) && typeof value.content === 'string' && json(value)) {
     if (value.role === 'system') valid = keys(value, ['role', 'content'])
@@ -66,7 +85,7 @@ export function validateMessage(value: unknown): asserts value is Message {
       }
     }
   }
-  if (!valid) throw new SessionError('SESSION_MESSAGE', 'Message does not match the supported Session format')
+  return valid
 }
 
 function attachment(value: unknown): boolean {
@@ -96,7 +115,7 @@ function attachment(value: unknown): boolean {
     nonempty(value.detectedType) &&
     typeof value.fingerprint === 'string' &&
     /^[a-f0-9]{64}$/.test(value.fingerprint) &&
-    (value.preparation === undefined || isAttachmentPreparation(value.preparation)) &&
+    (value.preparation === undefined || isPreparation(value.preparation)) &&
     (value.parsedFingerprint === undefined ||
       (typeof value.parsedFingerprint === 'string' && /^[a-f0-9]{64}$/.test(value.parsedFingerprint))) &&
     record(source) &&
@@ -108,10 +127,16 @@ function attachment(value: unknown): boolean {
   )
 }
 
+interface TextMessage {
+  readonly role: string
+  readonly content: string
+  readonly attachments?: readonly { readonly name: string }[]
+}
+
 const titleLength = 64
 
 /** A chat is named from its content: the first user message, on one line, cut to 64 characters. */
-export function chatTitle(messages: readonly Message[]): string {
+export function chatTitle(messages: readonly TextMessage[]): string {
   const message = messages.find(message => message.role === 'user')
   const first = (message?.content.trim() || (message?.role === 'user' ? message.attachments?.[0]?.name : '') || '')
     .replace(/\s+/g, ' ')
@@ -127,7 +152,7 @@ export function searchWords(value: string): readonly string[] {
 }
 
 /** A chat matches when every word appears in its name or in the text of its conversation. */
-export function chatMatches(title: string, messages: readonly Message[], words: readonly string[]): boolean {
+export function chatMatches(title: string, messages: readonly TextMessage[], words: readonly string[]): boolean {
   if (!words.length) return false
   const text = [
     title,

@@ -38,9 +38,6 @@ importers:
       '@deckagent/presentation-document':
         specifier: workspace:*
         version: link:packages/presentation/document
-      '@deckagent/session-persistence':
-        specifier: workspace:*
-        version: link:packages/session/persistence
       '@types/css-tree':
         specifier: 2.3.11
         version: 2.3.11
@@ -77,9 +74,6 @@ importers:
       '@deckagent/presentation-document':
         specifier: workspace:*
         version: link:../../packages/presentation/document
-      '@deckagent/session-persistence':
-        specifier: workspace:*
-        version: link:../../packages/session/persistence
       '@modelcontextprotocol/sdk':
         specifier: 1.26.0
         version: 1.26.0(zod@4.6.7)
@@ -184,8 +178,6 @@ importers:
       pptxgenjs:
         specifier: 4.0.1
         version: 4.0.1
-
-  packages/session/persistence: {}
 
 packages:
 

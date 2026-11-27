@@ -32,7 +32,7 @@ const CONTRACTS_ALLOWED_PACKAGES = new Set(['@deckagent/design', '@deckagent/pre
 
 const BROWSER_DIRECTORIES = ['apps/web/src/browser', 'packages/client/runtime/src']
 
-const DOMAIN_DIRECTORIES = ['packages/presentation', 'packages/session/persistence']
+const DOMAIN_DIRECTORIES = ['packages/presentation']
 
 const FORMAT_ADAPTER_DIRECTORIES = ['packages/presentation/html', 'packages/presentation/pptx']
 

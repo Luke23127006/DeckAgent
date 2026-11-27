@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { defaultCredentialStore } from '../apps/host/tests/fixtures/b02-helpers.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import {
   MemoryCredentials,
   filesContaining,
@@ -504,7 +504,7 @@ test('Host restart: an active request is shown as not finished and never started
 
   // A crash leaves the request active in storage; the next start marks it not finished.
   await app.close()
-  const store = new SqliteSessionStore(join(dir, 'data', 'db', 'sessions.sqlite'))
+  const store = openSessionStore(join(dir, 'data', 'db', 'sessions.sqlite'))
   store.requests.admit({
     requestId: 'req-crashed',
     sessionId: chat.sessionId,

@@ -8,7 +8,7 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { HostClient, ManagementClient, ManagementError } from '../../web/tests/fixtures/browser-driver.mjs'
 import { DatabaseSync } from 'node:sqlite'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from './fixtures/session-store.mjs'
 
 test('provider display names cannot become invalid management URL identities', async () => {
   const client = new ManagementClient('http://127.0.0.1:1', 'local-fixture')
@@ -28,7 +28,7 @@ test('provider display names cannot become invalid management URL identities', a
 
 test('History summaries derive titles and timestamps from saved sessions without starting work', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-history-summary-'))
-  const store = new SqliteSessionStore(join(dir, 'db', 'sessions.sqlite'))
+  const store = openSessionStore(join(dir, 'db', 'sessions.sqlite'))
   const input = `  Tái chế\n${'nội dung '.repeat(12)}`
   await store.open('saved')
   await store.append('saved', [{ role: 'user', content: input }])

@@ -5,7 +5,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
-    "test:local-foundation": "node --test apps/host/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
+    "test:local-foundation": "node --test apps/host/tests/workspace-registry.test.mjs apps/host/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
     "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/host/tests/opencode-adapter.test.mjs apps/host/tests/runs-preparation.test.mjs apps/host/tests/run-lifecycle.test.mjs e2e/model-requests.test.mjs apps/host/tests/wait-for.test.mjs",
     "test:source-permissions": "node --test apps/host/tests/source-access.test.mjs apps/host/tests/mcp-bridge.test.mjs e2e/step-approval.test.mjs e2e/source-requests.test.mjs",
     "test:attachments": "node --test apps/host/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
@@ -30,7 +30,7 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:boundaries:report": "node scripts/check-boundaries.mjs --report",
     "scan:module-design": "node scripts/scan-module-design.mjs",
-    "test:session-persistence": "node --test packages/session/persistence/tests/session-persistence.test.mjs",
+    "test:session-persistence": "node --test apps/host/tests/session-persistence.test.mjs",
     "test:tools-browser": "node --test packages/host/contracts/tests/validation.test.mjs apps/host/tests/http-server.test.mjs apps/host/tests/change-feed.test.mjs apps/web/tests/browser-runtime.test.mjs e2e/local-web.test.mjs",
     "web": "node --env-file-if-exists=.env --use-system-ca apps/host/lib/cli.js",
     "start:local": "npm exec --yes --package=node@22.19.0 -- node --env-file-if-exists=.env --use-system-ca apps/host/lib/cli.js",
@@ -39,7 +39,7 @@
     "test:browser-smoke": "node --test --test-concurrency=1 e2e/browser-smoke.test.mjs e2e/layout-review-browser.test.mjs",
     "test:env-startup": "node --test e2e/env-startup.test.mjs",
     "test:http-edge": "node --test e2e/http-edge.test.mjs",
-    "test:local-web": "node --test apps/web/tests/web-session.test.mjs apps/host/tests/web-management.test.mjs apps/web/tests/change-watcher.test.mjs",
+    "test:local-web": "node --test apps/host/tests/web-session.test.mjs apps/host/tests/web-management.test.mjs apps/web/tests/change-watcher.test.mjs",
     "test:layouts": "node --test packages/presentation/html/tests/html-template-v3.test.mjs packages/presentation/html/tests/layout-quality.test.mjs apps/web/tests/layout-review.test.mjs e2e/layout-review-http.test.mjs",
     "gallery:layouts": "node scripts/layout-gallery.mjs"
   },
@@ -54,7 +54,6 @@
     "@deckagent/local-web": "workspace:*",
     "@deckagent/pptx-format": "workspace:*",
     "@deckagent/presentation-document": "workspace:*",
-    "@deckagent/session-persistence": "workspace:*",
     "@types/css-tree": "2.3.11",
     "@types/node": "^22.20.1",
     "oxlint": "1.94.0",

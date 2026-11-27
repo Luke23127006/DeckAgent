@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startApp, finished, filesContaining, waitFor, MemoryCredentials } from './fixtures/b02-helpers.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from './fixtures/session-store.mjs'
 import { DatabaseSync } from 'node:sqlite'
 
 const freeUsage = {
@@ -75,7 +75,7 @@ test('free-only search rejects quota, malformed metadata, redirects, oversized r
 test('research choice and attempt budget are durable, isolated and revoked at terminal state; v6 migrates', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-research-budget-'))
   const path = join(dir, 'sessions.sqlite')
-  let store = new SqliteSessionStore(path)
+  let store = openSessionStore(path)
   t.after(async () => {
     store.close()
     await rm(dir, { recursive: true, force: true })
@@ -88,7 +88,7 @@ test('research choice and attempt budget are durable, isolated and revoked at te
     'DROP TABLE change_versions; DROP TABLE research_sources; DROP TABLE request_research; PRAGMA user_version=6;',
   )
   old.close()
-  store = new SqliteSessionStore(path)
+  store = openSessionStore(path)
   store.requests.admit({ requestId: 'off', sessionId: 'b', input: 'off', selection: { provider: 'p', model: 'm' } })
   assert.throws(() => store.requests.reserveResearch('off', 'b'), { code: 'RESEARCH_NOT_SELECTED' })
   store.requests.admit({
@@ -102,7 +102,7 @@ test('research choice and attempt budget are durable, isolated and revoked at te
   store.requests.reserveResearch('on', 'a')
   store.requests.reserveResearch('on', 'a')
   store.close()
-  store = new SqliteSessionStore(path)
+  store = openSessionStore(path)
   store.requests.reserveResearch('on', 'a')
   assert.throws(() => store.requests.reserveResearch('on', 'a'), { code: 'RESEARCH_BUDGET_EXHAUSTED' })
   assert.equal(store.requests.get('on').publicResearch, true)

@@ -34,6 +34,7 @@ import type {
   OutlineReader,
 } from '@deckagent/deck'
 import type {
+  ActivityRecord as PersistedActivityRecord,
   ActivityStatus as PersistedActivityStatus,
   ApprovalView as PersistedApprovalView,
   ModelSelection as PersistedModelSelection,
@@ -41,11 +42,10 @@ import type {
   RequestEventBody as PersistedRequestEventBody,
   RequestRecord,
   RequestStatus as PersistedRequestStatus,
-  SqliteSessionStore,
   TerminalStatus as PersistedTerminalStatus,
-} from '@deckagent/session-persistence'
+} from './db/index.ts'
 
-type PersistedActivityRecord = ReturnType<SqliteSessionStore['requests']['activities']>[number]
+type PersistedStoredRequest = Omit<RequestRecord, 'owner'> & { readonly sessionId: string }
 
 type DeckDeckSnapshot = ReturnType<DeckReader['snapshot']>
 type DeckSlideContent = ReturnType<DeckReader['content']>
@@ -73,7 +73,7 @@ type AllSynced = AssertEqual<HostModelSelection, PersistedModelSelection> &
   AssertEqual<HostRequestEventBody, PersistedRequestEventBody> &
   AssertEqual<HostApprovalView, PersistedApprovalView> &
   AssertEqual<HostRequestEvent, PersistedRequestEvent> &
-  AssertEqual<StoredRequest, RequestRecord> &
+  AssertEqual<StoredRequest, PersistedStoredRequest> &
   AssertEqual<StoredActivity, PersistedActivityRecord> &
   AssertEqual<HostBriefDraft, DeckBriefDraft> &
   AssertEqual<HostBriefRecord, DeckBriefRecord> &

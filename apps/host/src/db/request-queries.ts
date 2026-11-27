@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import type { RunOwner } from '../runs/ports.ts'
 import { SessionError } from './contracts.ts'
 import type { ActivityRecord, RequestEvent, RequestRecord } from './contracts.ts'
 import { isRequestStatus, validateEvent } from './request-validation.ts'
@@ -7,6 +8,11 @@ export const activeRequestFilter = "status IN ('active','waiting_approval')"
 
 /** Notice a runtime saves when the conversation before the request was summarized for the model (FR-079). */
 export const summarizedNotice = 'CONVERSATION_SUMMARIZED'
+
+function readOwner(row: Record<string, unknown>): RunOwner {
+  if (row.owner_kind !== 'chat') throw new SessionError('SESSION_CORRUPT', 'Stored request has an unknown owner kind')
+  return { kind: 'chat', id: String(row.owner_id) }
+}
 
 export function readRequest(db: DatabaseSync, requestId: string): RequestRecord | undefined {
   const row = db
@@ -21,7 +27,7 @@ export function readRequest(db: DatabaseSync, requestId: string): RequestRecord 
     requestId: String(row.id),
     publicResearch:
       db.prepare('SELECT selected FROM request_research WHERE request_id = ?').get(requestId)?.selected === 1,
-    sessionId: String(row.session_id),
+    owner: readOwner(row),
     status: row.status,
     selection: { provider: String(row.provider), model: String(row.model) },
     historyStart: Number(row.history_start),
@@ -39,17 +45,21 @@ export function requireRequest(db: DatabaseSync, requestId: string): RequestReco
   return request
 }
 
-export function listRequests(db: DatabaseSync, sessionId: string): readonly RequestRecord[] {
+export function listRequests(db: DatabaseSync, owner: RunOwner): readonly RequestRecord[] {
   const records: RequestRecord[] = []
-  for (const row of db.prepare('SELECT id FROM requests WHERE session_id = ? ORDER BY rowid').all(sessionId)) {
+  for (const row of db
+    .prepare('SELECT id FROM requests WHERE owner_kind = ? AND owner_id = ? ORDER BY rowid')
+    .all(owner.kind, owner.id)) {
     const record = readRequest(db, String(row.id))
     if (record) records.push(record)
   }
   return records
 }
 
-export function activeRequestFor(db: DatabaseSync, sessionId: string): string | undefined {
-  const row = db.prepare(`SELECT id FROM requests WHERE session_id = ? AND ${activeRequestFilter}`).get(sessionId)
+export function activeRequestFor(db: DatabaseSync, owner: RunOwner): string | undefined {
+  const row = db
+    .prepare(`SELECT id FROM requests WHERE owner_kind = ? AND owner_id = ? AND ${activeRequestFilter}`)
+    .get(owner.kind, owner.id)
   return row ? String(row.id) : undefined
 }
 
@@ -73,12 +83,12 @@ export function readRequestEvents(db: DatabaseSync, requestId: string, after = 0
     .map(row => readRequestEvent(requestId, row))
 }
 
-export function readRequestActivities(db: DatabaseSync, sessionId: string): readonly ActivityRecord[] {
+export function readRequestActivities(db: DatabaseSync, owner: RunOwner): readonly ActivityRecord[] {
   const latest = new Map<string, ActivityRecord>()
   for (const row of db
     .prepare(`SELECT e.request_id, e.sequence, e.created_at, e.payload FROM request_events e
-        JOIN requests r ON r.id = e.request_id WHERE r.session_id = ? ORDER BY r.rowid, e.sequence`)
-    .all(sessionId)) {
+        JOIN requests r ON r.id = e.request_id WHERE r.owner_kind = ? AND r.owner_id = ? ORDER BY r.rowid, e.sequence`)
+    .all(owner.kind, owner.id)) {
     const event = readRequestEvent(String(row.request_id), row)
     if (event.kind !== 'activity') continue
     const key = `${event.requestId}/${event.id}`

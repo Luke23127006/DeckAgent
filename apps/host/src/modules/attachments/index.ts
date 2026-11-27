@@ -19,3 +19,4 @@ export type {
 } from './attachments.service.ts'
 export { createAttachmentRoutes } from './attachments.routes.ts'
 export { mapAttachmentFailure } from './attachments.errors.ts'
+export { SqliteAttachmentLog } from './attachment-log.store.ts'

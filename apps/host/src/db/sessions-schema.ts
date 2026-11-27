@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { SessionError } from './contracts.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
-const schemaVersion = 8
+const schemaVersion = 9
 const researchTables = `
   CREATE TABLE request_research (
     request_id TEXT PRIMARY KEY REFERENCES requests(id), selected INTEGER NOT NULL CHECK(selected IN (0,1)),
@@ -24,8 +24,8 @@ const changeVersionsTable = `
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 
-/** Requests, their ordered events and the native session binding of each chat (schema v3, B02). */
-const requestTables = `
+/** Legacy v3-v8 request tables used during incremental migration before rebuilding to schema v9. */
+const requestTablesV8 = `
   CREATE TABLE requests (
     id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id),
     status TEXT NOT NULL CHECK (status IN ('active','waiting_approval','completed','failed','stopped','interrupted')),
@@ -45,6 +45,61 @@ const requestTables = `
   ALTER TABLE sessions ADD COLUMN removed_provider TEXT;
   ALTER TABLE sessions ADD COLUMN removed_model TEXT;
 `
+
+/** Requests, their ordered events and native session bindings keyed by run owner (schema v9, ADR-001). */
+const requestTablesV9 = `
+  CREATE TABLE requests (
+    id TEXT PRIMARY KEY, owner_kind TEXT NOT NULL, owner_id TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active','waiting_approval','completed','failed','stopped','interrupted')),
+    provider TEXT NOT NULL, model TEXT NOT NULL, history_start INTEGER NOT NULL CHECK (history_start >= 0),
+    started_at TEXT NOT NULL, ended_at TEXT, error_code TEXT
+  ) STRICT;
+  CREATE INDEX requests_owner ON requests(owner_kind, owner_id);
+  CREATE UNIQUE INDEX requests_one_active ON requests(owner_kind, owner_id) WHERE status IN ('active','waiting_approval');
+  CREATE TABLE request_events (
+    request_id TEXT NOT NULL REFERENCES requests(id), sequence INTEGER NOT NULL CHECK (sequence > 0),
+    created_at TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (request_id, sequence)
+  ) STRICT;
+  CREATE TABLE runtime_bindings (
+    owner_key TEXT PRIMARY KEY, native_session_id TEXT NOT NULL,
+    provider TEXT NOT NULL, model TEXT NOT NULL, context TEXT NOT NULL, last_request_id TEXT NOT NULL, updated_at TEXT NOT NULL
+  ) STRICT;
+  ALTER TABLE sessions ADD COLUMN removed_provider TEXT;
+  ALTER TABLE sessions ADD COLUMN removed_model TEXT;
+`
+
+const migrateRequestsV8ToV9 = `
+  CREATE TABLE requests_v9 (
+    id TEXT PRIMARY KEY, owner_kind TEXT NOT NULL, owner_id TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active','waiting_approval','completed','failed','stopped','interrupted')),
+    provider TEXT NOT NULL, model TEXT NOT NULL, history_start INTEGER NOT NULL CHECK (history_start >= 0),
+    started_at TEXT NOT NULL, ended_at TEXT, error_code TEXT
+  ) STRICT;
+  INSERT INTO requests_v9 (id, owner_kind, owner_id, status, provider, model, history_start, started_at, ended_at, error_code)
+  SELECT id, 'chat', session_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests;
+  DROP TABLE requests;
+  ALTER TABLE requests_v9 RENAME TO requests;
+  CREATE INDEX requests_owner ON requests(owner_kind, owner_id);
+  CREATE UNIQUE INDEX requests_one_active ON requests(owner_kind, owner_id) WHERE status IN ('active','waiting_approval');
+`
+
+const migrateRuntimeBindingsV8ToV9 = `
+  CREATE TABLE runtime_bindings_v9 (
+    owner_key TEXT PRIMARY KEY, native_session_id TEXT NOT NULL,
+    provider TEXT NOT NULL, model TEXT NOT NULL, context TEXT NOT NULL, last_request_id TEXT NOT NULL, updated_at TEXT NOT NULL
+  ) STRICT;
+  INSERT INTO runtime_bindings_v9 (owner_key, native_session_id, provider, model, context, last_request_id, updated_at)
+  SELECT 'chat:' || session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings;
+  DROP TABLE runtime_bindings;
+  ALTER TABLE runtime_bindings_v9 RENAME TO runtime_bindings;
+`
+
+function hasColumn(db: DatabaseSync, table: 'requests' | 'runtime_bindings', column: string): boolean {
+  return db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all()
+    .some(row => row.name === column)
+}
 
 const attachmentTables = `
   CREATE TABLE attachments (
@@ -86,7 +141,7 @@ const preparationColumns = `
 `
 
 export function initialize(db: DatabaseSync): void {
-  db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
+  db.exec('PRAGMA foreign_keys = OFF; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
     const version = Number(db.prepare('PRAGMA user_version').get()!.user_version)
     const owner = Number(db.prepare('PRAGMA application_id').get()!.application_id)
@@ -106,7 +161,7 @@ export function initialize(db: DatabaseSync): void {
           payload TEXT NOT NULL, PRIMARY KEY (session_id, sequence)
         ) STRICT;
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
-        ${requestTables}
+        ${requestTablesV9}
         ${attachmentTables}
         ${approvalTables}
         ${preparationColumns}
@@ -115,20 +170,22 @@ export function initialize(db: DatabaseSync): void {
         PRAGMA application_id = ${applicationId};
         PRAGMA user_version = ${schemaVersion};
       `)
-    } else if (version >= 1 && version <= 7 && owner === applicationId) {
-      // v1 -> v2: chats gain a workspace. v2 -> v3: requests, events and native session bindings. Rows are kept; none is reset.
+    } else if (version >= 1 && version <= 8 && owner === applicationId) {
       if (version === 1)
         db.exec(`
         ALTER TABLE sessions ADD COLUMN workspace_id TEXT;
         UPDATE sessions SET workspace_id = '${defaultWorkspaceId}';
         CREATE INDEX sessions_workspace ON sessions(workspace_id);
       `)
-      if (version < 3) db.exec(requestTables)
+      if (version < 3) db.exec(requestTablesV8)
       if (version < 4) db.exec(attachmentTables)
       if (version < 5) db.exec(approvalTables)
       if (version < 6) db.exec(preparationColumns)
       if (version < 7) db.exec(researchTables)
-      db.exec(`${changeVersionsTable} PRAGMA user_version = ${schemaVersion};`)
+      if (version < 8) db.exec(changeVersionsTable)
+      if (hasColumn(db, 'requests', 'session_id')) db.exec(migrateRequestsV8ToV9)
+      if (hasColumn(db, 'runtime_bindings', 'session_id')) db.exec(migrateRuntimeBindingsV8ToV9)
+      db.exec(`PRAGMA user_version = ${schemaVersion};`)
     } else if (version !== schemaVersion || owner !== applicationId) {
       throw new SessionError(
         'SESSION_SCHEMA',
@@ -144,11 +201,11 @@ export function initialize(db: DatabaseSync): void {
     ).all()
     db.prepare('SELECT session_id, sequence, payload FROM messages LIMIT 0').all()
     db.prepare(
-      'SELECT id, session_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests LIMIT 0',
+      'SELECT id, owner_kind, owner_id, status, provider, model, history_start, started_at, ended_at, error_code FROM requests LIMIT 0',
     ).all()
     db.prepare('SELECT request_id, sequence, created_at, payload FROM request_events LIMIT 0').all()
     db.prepare(
-      'SELECT session_id, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0',
+      'SELECT owner_key, native_session_id, provider, model, context, last_request_id, updated_at FROM runtime_bindings LIMIT 0',
     ).all()
     db.prepare(
       'SELECT id, session_id, name, state, byte_size, fingerprint, detected_type, rejection_code, request_id, message_sequence, preparation, parsed_fingerprint FROM attachments LIMIT 0',
@@ -166,7 +223,8 @@ export function initialize(db: DatabaseSync): void {
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')
+    db.exec('PRAGMA foreign_keys = ON;')
     throw error
   }
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;')
+  db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;')
 }

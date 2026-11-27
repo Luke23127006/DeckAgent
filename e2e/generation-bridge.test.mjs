@@ -7,7 +7,7 @@ import { DeckStore } from '@deckagent/deck'
 import { ConfirmationClient, DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 import { startApp, finished } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 test('confirmed production runtime publishes a full deck through the request MCP bridge', {
   timeout: 60000,
@@ -43,7 +43,7 @@ test('confirmed production runtime publishes a full deck through the request MCP
   const id = created.data.sessionId
   const read = await f.client.send({ sessionId: id, input: '[mcp-read]' })
   await finished(f.client, read.requestId)
-  const sessions = new SqliteSessionStore(join(dir, 'data', 'db', 'sessions.sqlite'))
+  const sessions = openSessionStore(join(dir, 'data', 'db', 'sessions.sqlite'))
   const selectedSource = sessions.requests.sourceCatalogue(id)[0]
   sessions.close()
   const decks = new DeckStore(join(dir, 'data', 'db', 'decks.sqlite'))

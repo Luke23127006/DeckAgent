@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { SqliteSessionStore } from '../lib/index.js'
+import { openSessionStore } from './fixtures/session-store.mjs'
 
 async function database(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-sessions-'))
@@ -14,14 +14,14 @@ async function database(t) {
 
 test('a conversation and its model selection survive closing and reopening storage', async t => {
   const path = await database(t)
-  const first = new SqliteSessionStore(path)
+  const first = openSessionStore(path)
   const info = await first.bind('chat-01', { provider: 'google', model: 'chosen-model' })
   await first.append('chat-01', [
     { role: 'user', content: 'Xin chào' },
     { role: 'assistant', content: 'Hello' },
   ])
   first.close()
-  const second = new SqliteSessionStore(path)
+  const second = openSessionStore(path)
   try {
     await second.open('chat-01')
     assert.deepEqual(await second.read('chat-01'), [
@@ -41,7 +41,7 @@ test('a conversation and its model selection survive closing and reopening stora
 
 test('a failed append rolls back its entire batch and leaves metadata and later ordering intact', async t => {
   const path = await database(t)
-  const store = new SqliteSessionStore(path)
+  const store = openSessionStore(path)
   try {
     await store.open('atomic')
     await store.append('atomic', [{ role: 'user', content: 'Before' }])
@@ -74,19 +74,19 @@ test('unsupported or unowned databases are refused without replacing their conte
   )
   external.close()
   const before = await readFile(path)
-  assert.throws(() => new SqliteSessionStore(path), { code: 'SESSION_SCHEMA' })
+  assert.throws(() => openSessionStore(path), { code: 'SESSION_SCHEMA' })
   assert.deepEqual(await readFile(path), before)
   const unknown = new DatabaseSync(path)
   unknown.exec('PRAGMA user_version = 0;')
   unknown.close()
   const unowned = await readFile(path)
-  assert.throws(() => new SqliteSessionStore(path), { code: 'SESSION_SCHEMA' })
+  assert.throws(() => openSessionStore(path), { code: 'SESSION_SCHEMA' })
   assert.deepEqual(await readFile(path), unowned)
 })
 
 test('all supported message fields round-trip exactly and read snapshots cannot change stored history', async t => {
   const path = await database(t)
-  const store = new SqliteSessionStore(path)
+  const store = openSessionStore(path)
   const messages = [
     { role: 'system', content: 'System message' },
     { role: 'user', content: 'Unicode: tiếng Việt 🚀\nSecond line' },
@@ -116,7 +116,7 @@ test('all supported message fields round-trip exactly and read snapshots cannot 
   snapshot[2].toolCalls[0].arguments.value = 'Changed'
   messages[1].content = 'Caller changed its array'
   store.close()
-  const reopened = new SqliteSessionStore(path)
+  const reopened = openSessionStore(path)
   try {
     const restored = await reopened.read('exact')
     assert.equal(restored[1].content, 'Unicode: tiếng Việt 🚀\nSecond line')
@@ -148,7 +148,7 @@ test('all supported message fields round-trip exactly and read snapshots cannot 
 })
 
 test('Session identities are isolated, model binding is stable, and closed storage rejects new work', async t => {
-  const store = new SqliteSessionStore(await database(t))
+  const store = openSessionStore(await database(t))
   try {
     await assert.rejects(store.open('  '), { code: 'SESSION_CONFIG' })
     await assert.rejects(store.read('missing'), { code: 'SESSION_NOT_FOUND' })
@@ -174,7 +174,7 @@ test('Session identities are isolated, model binding is stable, and closed stora
 })
 
 test('non-JSON message data is rejected instead of being silently changed or dropped', async t => {
-  const store = new SqliteSessionStore(await database(t))
+  const store = openSessionStore(await database(t))
   try {
     await store.open('invalid-json')
     for (const data of [undefined, NaN, Infinity, new Date(), [undefined], { value: undefined }, 1n]) {
@@ -196,12 +196,12 @@ test('invalid files and corrupted message payloads fail safely without resetting
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, 'not a database: untrusted-sensitive-details')
   assert.throws(
-    () => new SqliteSessionStore(path),
+    () => openSessionStore(path),
     error => error.code === 'SESSION_STORAGE' && !error.message.includes('untrusted-sensitive-details'),
   )
   assert.equal(await readFile(path, 'utf8'), 'not a database: untrusted-sensitive-details')
   const valid = join(dirname(path), 'valid.sqlite')
-  const store = new SqliteSessionStore(valid)
+  const store = openSessionStore(valid)
   await store.open('damaged')
   await store.append('damaged', [{ role: 'user', content: 'Keep the row' }])
   store.close()
@@ -209,7 +209,7 @@ test('invalid files and corrupted message payloads fail safely without resetting
   const external = new DatabaseSync(valid)
   external.prepare('UPDATE messages SET payload = ?').run('{bad json: untrusted-sensitive-details')
   external.close()
-  const reopened = new SqliteSessionStore(valid)
+  const reopened = openSessionStore(valid)
   try {
     await assert.rejects(
       reopened.read('damaged'),

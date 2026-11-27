@@ -30,7 +30,6 @@ const baseWorkspaces = [
   },
   { dir: 'packages/presentation/html', name: '@deckagent/html-format', exports: { '.': './lib/index.js' } },
   { dir: 'packages/presentation/pptx', name: '@deckagent/pptx-format', exports: { '.': './lib/index.js' } },
-  { dir: 'packages/session/persistence', name: '@deckagent/session-persistence', exports: { '.': './lib/index.js' } },
   { dir: 'packages/workspace/registry', name: '@deckagent/workspace-registry', exports: { '.': './lib/index.js' } },
   { dir: 'packages/tools/filesystem', name: '@deckagent/file-tools', exports: { '.': './lib/index.js' } },
 ]
@@ -190,12 +189,12 @@ test('checkBoundaries rejects format adapter importing outside design and docume
 test('checkBoundaries rejects package importing app and domain importing host runtime', () => {
   const files = [
     { path: 'packages/presentation/design/src/index.ts', content: "import { app } from '@deckagent/web'\n" },
-    { path: 'packages/session/persistence/src/index.ts', content: "import { startHost } from '@deckagent/host'\n" },
+    { path: 'packages/presentation/deck/src/index.ts', content: "import { startHost } from '@deckagent/host'\n" },
   ]
   assert.deepEqual(findings(files), [
+    { path: 'packages/presentation/deck/src/index.ts', line: 1, rule: 'domain-runtime-dependency' },
+    { path: 'packages/presentation/deck/src/index.ts', line: 1, rule: 'package-app-dependency' },
     { path: 'packages/presentation/design/src/index.ts', line: 1, rule: 'package-app-dependency' },
-    { path: 'packages/session/persistence/src/index.ts', line: 1, rule: 'domain-runtime-dependency' },
-    { path: 'packages/session/persistence/src/index.ts', line: 1, rule: 'package-app-dependency' },
   ])
 })
 

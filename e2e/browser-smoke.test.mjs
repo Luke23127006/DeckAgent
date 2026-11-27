@@ -11,7 +11,7 @@ import test from 'node:test'
 import { startLocalWeb } from '@deckagent/host'
 import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 async function eventually(operation, message, { retries = 200, intervalMs = 50, describe } = {}) {
   for (let i = 0; i < retries; i++) {
@@ -393,7 +393,7 @@ test('Outline review names its exact target, hides resolved interview questions 
     await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
   })
   const database = join(dir, 'data', 'db')
-  const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
+  const chats = openSessionStore(join(database, 'sessions.sqlite'))
   await chats.bind('review-controls', { provider: 'fixture', model: 'review' })
   await chats.append('review-controls', [
     { role: 'user', content: 'Lập Outline' },
@@ -1368,7 +1368,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   })
   // Seeded state stands in for decks that a later build publishes through the Agent runtime.
   const database = join(dir, 'data', 'db')
-  const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
+  const chats = openSessionStore(join(database, 'sessions.sqlite'))
   for (const [id, text] of [
     ['browser-deck', 'Publish slide 1 first'],
     ['large-deck', 'A long deck'],
@@ -2119,7 +2119,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   const before = await tree(project)
   // Seeded history stands in for requests that a later build sends.
   const database = join(dir, 'data', 'db')
-  const chats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
+  const chats = openSessionStore(join(database, 'sessions.sqlite'))
   await chats.open('recycling')
   await chats.append('recycling', [
     { role: 'user', content: 'Kế hoạch tái chế cho trường' },

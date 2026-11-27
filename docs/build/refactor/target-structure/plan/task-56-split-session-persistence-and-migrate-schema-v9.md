@@ -59,7 +59,7 @@ After this task, `packages/session/` no longer exists. `apps/host/src/db/` owns 
 | Test files | Replace `@deckagent/session-persistence` imports with `apps/host/tests/fixtures/session-store.mjs` (`openSessionStore`, `SessionError`). Update `chat-persistence.test.mjs` expected `user_version` from `8` to `9` and add a v8-to-v9 in-place migration test plus an atomic admission rollback test. Update direct store calls in `e2e/request-lifecycle.test.mjs` (lines testing `store.requests` directly) to pass `owner: { kind: 'chat', id }`, `ownerKey: 'chat:' + id`, and expect `RUN_OWNER_BUSY`. Update `tests/oxlint-boundaries.test.mjs` with negative fixtures for `apps/host/src/db/` and `../../db/index.ts` inside `*.service.ts` and `*.routes.ts`, plus a positive fixture for `*.store.ts` importing `../../db/index.ts`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -69,33 +69,33 @@ Run: `git grep -n "^| 55 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Split persistence into `apps/host/src/db/`, `modules/chats/`, `modules/attachments/` and remove `packages/session/`**
+- [x] **Step 2: Split persistence into `apps/host/src/db/`, `modules/chats/`, `modules/attachments/` and remove `packages/session/`**
 
 Create the files in `apps/host/src/db/`, `apps/host/src/modules/chats/` and `apps/host/src/modules/attachments/` following `Schema v9 rules` and `Interfaces`. Move the three test files into `apps/host/tests/`. Remove `packages/session/` completely so no old `lib/` stays on disk. Apply all rows of `Move rules`.
 
-- [ ] **Step 3: Sync the lockfile offline**
+- [x] **Step 3: Sync the lockfile offline**
 
 Run: `corepack pnpm@11.28.5 install --offline`
 
 Expected: PASS. Exit code 0.
 
-- [ ] **Step 4: Check that no `@deckagent/session-persistence` reference stays in production code**
+- [x] **Step 4: Check that no `@deckagent/session-persistence` reference stays in production code**
 
 Run: `git grep --untracked -n "@deckagent/session-persistence" -- apps packages e2e package.json tsconfig.json .oxlintrc.json`
 
 Expected: PASS. No line.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Split files` with the columns `Old path | New path | Owner`.
 

@@ -24,9 +24,6 @@
       "path": "../../packages/host/contracts"
     },
     {
-      "path": "../../packages/session/persistence"
-    },
-    {
       "path": "../web"
     }
   ]

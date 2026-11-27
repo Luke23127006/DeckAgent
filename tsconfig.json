@@ -8,9 +8,6 @@
       "path": "packages/presentation/deck"
     },
     {
-      "path": "packages/session/persistence"
-    },
-    {
       "path": "packages/host/contracts"
     },
     {

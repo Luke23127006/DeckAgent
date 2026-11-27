@@ -74,13 +74,51 @@
               {
                 "group": [
                   "@deckagent/host",
-                  "@deckagent/session-persistence",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
                   "@deckagent/html-format",
                   "@deckagent/pptx-format"
                 ],
                 "message": "Browser code must not import Local Host or domain packages."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/db/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../http/**",
+                  "../runs/lifecycle/**",
+                  "../runs/preparation/**",
+                  "../runs/budget/**",
+                  "../runtimes/**",
+                  "../tools/**",
+                  "express",
+                  "express/*"
+                ],
+                "message": "Database layer db/ must not import modules, HTTP, runs implementation, runtimes, tools or Express."
               }
             ]
           }
@@ -117,7 +155,7 @@
                   "../*-store.ts",
                   "../*-state.ts",
                   "node:sqlite",
-                  "@deckagent/session-persistence",
+                  "../db/**",
                   "../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
@@ -154,6 +192,7 @@
                   "express",
                   "express/*",
                   "node:sqlite",
+                  "../../db/**",
                   "../../modules/**",
                   "../../http/**",
                   "../../tools/**"
@@ -200,7 +239,8 @@
                   "node:http",
                   "node:https",
                   "node:sqlite",
-                  "@deckagent/session-persistence",
+                  "../db/**",
+                  "../../db/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -240,7 +280,7 @@
                   "node:sqlite",
                   "express",
                   "express/*",
-                  "@deckagent/session-persistence"
+                  "../../db/**"
                 ],
                 "message": "Tool executors must not import modules, HTTP, SQL or node:fs directly. Read files through tools/policy/."
               }
@@ -273,7 +313,7 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
@@ -312,13 +352,52 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
+                  "../../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
                   "../../../runtimes/**"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.store.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../tools/**",
+                  "../../runtimes/**",
+                  "express",
+                  "express/*",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module store must not import another module store, HTTP, tools, runtimes, Express or @deckagent/deck."
               }
             ]
           }
@@ -348,7 +427,7 @@
               {
                 "group": [
                   "../*/*.store.ts",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
@@ -399,7 +478,7 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
@@ -446,7 +525,7 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
@@ -492,7 +571,6 @@
                   "node:*",
                   "node:*/*",
                   "@deckagent/browser-runtime",
-                  "@deckagent/session-persistence",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
                   "@deckagent/html-format",
@@ -529,7 +607,7 @@
               {
                 "group": [
                   "../*/*.store.ts",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
@@ -571,7 +649,7 @@
               {
                 "group": [
                   "../*/*.store.ts",
-                  "@deckagent/session-persistence",
+                  "../../db/**",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",

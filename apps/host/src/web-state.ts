@@ -1,6 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import type { WebPreferences } from '@deckagent/host-contracts'
-import type { ModelSelection } from '@deckagent/session-persistence'
+import type { ModelSelection, WebPreferences } from '@deckagent/host-contracts'
 
 export type WebStateErrorCode =
   | 'INVALID_SELECTION'

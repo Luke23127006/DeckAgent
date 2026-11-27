@@ -7,8 +7,15 @@ import { AttachmentParser, attachmentLimits } from './tools/index.ts'
 import type { HostOptions, HostRouteContext } from './http/contracts.ts'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
-import type { WebSettings } from '@deckagent/host-contracts'
-import { SessionError, SqliteSessionStore, type ModelSelection } from '@deckagent/session-persistence'
+import type { StoredRequest, WebSettings } from '@deckagent/host-contracts'
+import {
+  SessionDatabase,
+  SessionError,
+  SqliteRunStore,
+  mapSessionFailure,
+  type ModelSelection,
+  type RequestRecord,
+} from './db/index.ts'
 import { MemoryDraftStore } from './modules/attachments/index.ts'
 import {
   WorkspaceRegistry,
@@ -21,6 +28,7 @@ import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-form
 import { loadWebAssets } from '@deckagent/local-web'
 import { WebState, selection, mapWebStateFailure } from './web-state.ts'
 import {
+  SqliteChatStore,
   createChatOperations,
   createConversationContribution,
   createChatRequestOperations,
@@ -30,10 +38,11 @@ import {
   createWorkspaceChats,
   mapChatFailure,
   type ChatMarks,
+  type ChatStoreOptions,
 } from './modules/chats/index.ts'
 import { RunController } from './runs/lifecycle/index.ts'
 import { RunFailure } from './runs/ports.ts'
-import type { RunRecord, RunStore } from './runs/ports.ts'
+import type { RunStore } from './runs/ports.ts'
 import {
   ProviderConfigurations,
   SqliteProviderStore,
@@ -49,6 +58,7 @@ import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } 
 import {
   AttachmentCoordinator,
   ManagedAttachments,
+  SqliteAttachmentLog,
   createAttachmentRoutes,
   mapAttachmentFailure,
 } from './modules/attachments/index.ts'
@@ -109,9 +119,38 @@ export interface LocalWebOptions {
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
 
+function toStoredRequest(record: RequestRecord): StoredRequest {
+  const { owner, ...fields } = record
+  return { ...fields, sessionId: owner.id }
+}
+
+/** Composes the shared SessionDatabase, module stores and run store with atomic admission and settlement hooks. */
+export function openSessionStorage(path: string, options?: ChatStoreOptions) {
+  const db = new SessionDatabase(path)
+  const chats = new SqliteChatStore(db, options)
+  const attachments = new SqliteAttachmentLog(db)
+  const runs = new SqliteRunStore(db, {
+    beforeAdmit: input => {
+      chats.requireSessionInTx(input.owner.id)
+      const ready = attachments.validateReadyInTx(input.owner.id, input.attachmentIds ?? [])
+      return chats.admitUserMessageInTx(input.owner.id, input.input, ready)
+    },
+    afterAdmit: (input, messageSequence) => {
+      if (input.attachmentIds?.length)
+        attachments.linkToRequestInTx(input.requestId, messageSequence, input.attachmentIds)
+    },
+    onSettle: (owner, status, text) => {
+      chats.appendAssistantMessageInTx(owner.id, text, status !== 'completed')
+    },
+  })
+  return { db, chats, attachments, runs, close: () => db.close() }
+}
+
+type SessionStorage = ReturnType<typeof openSessionStorage>
+
 interface StorageLayer {
   readonly registry: WorkspaceRegistry
-  readonly sessions: SqliteSessionStore
+  readonly sessions: SessionStorage
   readonly decks: DeckStore
   readonly web: WebState
   bindSelectability(isSelectable: (value: ModelSelection) => boolean): void
@@ -140,7 +179,7 @@ async function closeResources(closers: readonly (() => Promise<void> | void)[]):
   if (failures.length > 0) throw failures[0]
 }
 
-function createPreparedImageReader(sessions: SqliteSessionStore, getAttachments: () => ManagedAttachments | undefined) {
+function createPreparedImageReader(sessions: SessionStorage, getAttachments: () => ManagedAttachments | undefined) {
   return async (id: string, attachmentId: string, signal: AbortSignal) => {
     const item = sessions.attachments.get(id, attachmentId)
     const files = getAttachments()
@@ -168,7 +207,7 @@ function createPreparedImageReader(sessions: SqliteSessionStore, getAttachments:
 
 function createDeckStore(
   layout: StorageLayout,
-  sessions: SqliteSessionStore,
+  sessions: SessionStorage,
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
   getAttachments: () => ManagedAttachments | undefined,
@@ -185,8 +224,12 @@ function createDeckStore(
     renderCheck: (html, requiredText, signal) => renderer.render(html, requiredText, signal),
     preparedImage: createPreparedImageReader(sessions, getAttachments),
     activeRequest: (id, requestId) => {
-      const request = sessions.requests.get(requestId)
-      return request?.sessionId === id && ['active', 'waiting_approval'].includes(request.status)
+      const request = sessions.runs.get(requestId)
+      return (
+        request?.owner.kind === 'chat' &&
+        request.owner.id === id &&
+        ['active', 'waiting_approval'].includes(request.status)
+      )
     },
   })
 }
@@ -202,7 +245,7 @@ async function openStorageLayer(
   const initial = options.selection ? { ...options.selection } : undefined
   let isSelectable: (value: ModelSelection) => boolean = () => false
   let registry: WorkspaceRegistry | undefined
-  let sessions: SqliteSessionStore | undefined
+  let sessions: SessionStorage | undefined
   let decks: DeckStore | undefined
   let web: WebState | undefined
   try {
@@ -219,7 +262,7 @@ async function openStorageLayer(
     // Checked before any other database is created: app data never goes into a registered project folder.
     if (registry.overlapsFolder(layout.root)) throw new StorageError('STORAGE_INSIDE_WORKSPACE')
     try {
-      sessions = new SqliteSessionStore(join(layout.databases, 'sessions.sqlite'), {
+      sessions = openSessionStorage(join(layout.databases, 'sessions.sqlite'), {
         onChatsChanged: version => changeFeed.publish({ topic: 'chats', key: 'host', version }),
       })
       decks = createDeckStore(layout, sessions, renderer, commonsImages, getAttachments, changeFeed)
@@ -236,14 +279,17 @@ async function openStorageLayer(
     const presentation = decks
     const state = web
     // A request that was active when DeckAgent stopped did not finish; it is shown so and never started again (FR-019).
-    store.requests.interruptActive()
-    presentation.reconcileGenerations((id, requestId) => store.requests.get(requestId)?.sessionId === id)
+    store.runs.interruptActive()
+    presentation.reconcileGenerations((id, requestId) => {
+      const request = store.runs.get(requestId)
+      return request?.owner.kind === 'chat' && request.owner.id === id
+    })
     // A remove interrupted between the registry and the chats is completed here: no chat is lost or hidden.
-    await store.ungroupExcept(registry.activeIds())
+    await store.chats.ungroupExcept(registry.activeIds())
     for (const plan of options.confirmedDecks ?? []) {
-      if (!(await store.getInfo(plan.sessionId))) {
-        if (initial) await store.bind(plan.sessionId, initial)
-        else await store.open(plan.sessionId)
+      if (!(await store.chats.getInfo(plan.sessionId))) {
+        if (initial) await store.chats.bind(plan.sessionId, initial)
+        else await store.chats.open(plan.sessionId)
       }
       presentation.confirm(plan.sessionId, plan)
     }
@@ -288,7 +334,7 @@ async function createRuntimeLayer(
       options.providerAccess?.catalog ??
       ((endpoint, key, signal) => listModels(endpoint, key, { signal, timeoutMs: 30_000 })),
     modelsRemoved: async (provider, models) => {
-      await sessions.clearSelections(provider, models)
+      await sessions.chats.clearSelections(provider, models)
     },
     onProvidersChanged: version => changeFeed.publish({ topic: 'providers', key: 'host', version }),
   })
@@ -301,31 +347,14 @@ async function createRuntimeLayer(
       options.openCode?.resourceDir ?? fileURLToPath(new URL('../resources/opencode/', import.meta.url)),
     ),
     join(layout.files, 'runtime', 'opencode'),
-    {
-      binding: ownerKey => {
-        const binding = sessions.requests.binding(ownerKey.slice(5))
-        if (!binding) return undefined
-        const { sessionId: _sessionId, ...fields } = binding
-        return { ...fields, ownerKey }
-      },
-      bind: binding => {
-        const { ownerKey, ...fields } = binding
-        sessions.requests.bind({ ...fields, sessionId: ownerKey.slice(5) })
-      },
-      unbind: ownerKey => sessions.requests.unbind(ownerKey.slice(5)),
-      lastCompletedRequestId: (ownerKey, currentRequestId) =>
-        sessions.requests
-          .list(ownerKey.slice(5))
-          .filter(item => item.requestId !== currentRequestId)
-          .at(-1)?.requestId,
-    },
+    sessions.runs,
     options.openCode,
   )
   await openCode.availability()
   const research = new ResearchCoordinator(
     new SqliteResearchStore(web.db),
     credentials,
-    sessions,
+    { getInfo: id => sessions.chats.getInfo(id), requests: sessions.runs },
     options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
     new TavilyClient(options.researchAccess?.fetch),
     version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
@@ -341,7 +370,13 @@ async function createRuntimeLayer(
     runtime: openCode,
     research,
     images,
-    inputs: new AttachmentCoordinator(sessions, drafts, attachments, new AttachmentParser(), attachmentLimits),
+    inputs: new AttachmentCoordinator(
+      { getInfo: id => sessions.chats.getInfo(id), attachments: sessions.attachments },
+      drafts,
+      attachments,
+      new AttachmentParser(),
+      attachmentLimits,
+    ),
     ...(options.generationRuntime ? { generationRuntime: options.generationRuntime } : {}),
     settings: async () => {
       const availability = await openCode.availability()
@@ -403,26 +438,45 @@ function createHostOptions(
 ): StartHostOptions {
   if (!contractSync) throw new Error('Contract sync failed')
   const { sessions, web, decks, registry } = storage
-  const briefs = new BriefCoordinator(decks, sessions)
-  const projectRecord = (record: ReturnType<typeof sessions.requests.get>): RunRecord | undefined => {
-    if (!record) return undefined
-    const { sessionId, ...fields } = record
-    return { ...fields, owner: { kind: 'chat', id: sessionId } }
+  const chatSessions = {
+    getInfo: (id: string) => sessions.chats.getInfo(id),
+    read: (id: string) => sessions.chats.read(id),
+    chats: () => sessions.chats.chats(),
+    list: () => sessions.chats.list(),
+    create: (workspaceId: string, selected?: ModelSelection) => sessions.chats.create(workspaceId, selected),
+    select: (id: string, selected: ModelSelection) => sessions.chats.select(id, selected),
+    search: (words: string, chatIds: readonly string[]) => sessions.chats.search(words, chatIds),
+    ungroup: (workspaceId: string) => sessions.chats.ungroup(workspaceId),
+    attachments: sessions.attachments,
+    requests: {
+      activeFor: (id: string) => sessions.runs.activeFor({ kind: 'chat', id }),
+      activities: (id: string) => sessions.runs.activities({ kind: 'chat', id }),
+      list: (id: string) => sessions.runs.list({ kind: 'chat', id }).map(toStoredRequest),
+      get: (requestId: string) => {
+        const record = sessions.runs.get(requestId)
+        return record ? toStoredRequest(record) : undefined
+      },
+      text: (requestId: string) => sessions.runs.text(requestId),
+      sourceCatalogue: (id: string) => sessions.runs.sourceCatalogue(id),
+      researchSources: (id: string) => sessions.runs.researchSources(id),
+      recordSourceRead: (requestId: string, value: Parameters<SqliteRunStore['recordSourceRead']>[1]) =>
+        sessions.runs.recordSourceRead(requestId, value),
+    },
   }
+  const briefs = new BriefCoordinator(decks, chatSessions)
   const runStore: RunStore = {
-    approvals: sessions.requests.approvals,
+    approvals: sessions.runs.approvals,
     admit: input => {
-      const { owner, ...fields } = input
       try {
-        const saved = runtime.inputs.admitDraft({ ...fields, sessionId: owner.id }, admitted =>
-          sessions.requests.admit(admitted),
+        return runtime.inputs.admitDraft({ ...input, sessionId: input.owner.id }, admitted =>
+          sessions.runs.admit({ ...input, ...admitted }),
         )
-        return { ...saved, owner }
       } catch (error) {
         const code = error instanceof Error && 'code' in error ? error.code : undefined
         if (
           typeof code === 'string' &&
           [
+            'RUN_OWNER_BUSY',
             'REQUEST_ACTIVE',
             'SESSION_NOT_FOUND',
             'DRAFT_CONFLICT',
@@ -436,15 +490,15 @@ function createHostOptions(
         throw new RunFailure('REQUEST_NOT_SAVED')
       }
     },
-    append: (id, event) => sessions.requests.append(id, event),
-    finish: (id, status, code) => sessions.requests.finish(id, status, code),
-    get: id => projectRecord(sessions.requests.get(id)),
-    events: (id, after) => sessions.requests.events(id, after),
-    text: id => sessions.requests.text(id),
-    activeFor: owner => sessions.requests.activeFor(owner.id),
+    append: (id, event) => sessions.runs.append(id, event),
+    finish: (id, status, code) => sessions.runs.finish(id, status, code),
+    get: id => sessions.runs.get(id),
+    events: (id, after) => sessions.runs.events(id, after),
+    text: id => sessions.runs.text(id),
+    activeFor: owner => sessions.runs.activeFor(owner),
   }
   const sourceOptions = {
-    store: sessions,
+    store: chatSessions,
     registry,
     dataRoot: layout.root,
     home: options.home ?? homedir(),
@@ -472,12 +526,12 @@ function createHostOptions(
         return runtime.providers.runSettings(selected)
       },
     },
-    contributions: [createConversationContribution(id => sessions.read(id)), sourceToolsContribution],
+    contributions: [createConversationContribution(id => sessions.chats.read(id)), sourceToolsContribution],
     hasTools: true,
   })
   const generationDependencies = {
     decks,
-    sessions,
+    sessions: chatSessions,
     sourceTools: {
       prepare: async (
         sessionId: string,
@@ -500,14 +554,17 @@ function createHostOptions(
       overrideSelections.add(JSON.stringify(prepared.selection))
       return { selection: prepared.selection, override: prepared }
     }
-    const selected = await readChatSelection({ sessions, providers: runtime.providers }, request.sessionId)
+    const selected = await readChatSelection(
+      { sessions: chatSessions, providers: runtime.providers },
+      request.sessionId,
+    )
     const availability = await runtime.runtime.availability()
     if (!availability.available) throw new RunFailure(availability.code, availability.detail)
     await runtime.research.prepare(request.publicResearch === true)
     return { selection: selected }
   }
   const requests = createChatRequestOperations({
-    sessions,
+    sessions: chatSessions,
     providers: runtime.providers,
     runs,
     preflightResearch: async selected => {
@@ -528,7 +585,11 @@ function createHostOptions(
           return { plan: prepared.plan, ...(prepared.runtime ? { options: { runtime: prepared.runtime } } : {}) }
         }
         return {
-          plan: await createDeckRunPlan({ decks, sessions, briefs, imageResearch: runtime.images }, request, selected),
+          plan: await createDeckRunPlan(
+            { decks, sessions: chatSessions, briefs, imageResearch: runtime.images },
+            request,
+            selected,
+          ),
         }
       },
     },
@@ -536,7 +597,7 @@ function createHostOptions(
   const deckOps = createDeckOperations(
     decks,
     briefs,
-    new ConfirmationCoordinator(decks, sessions, briefs, runs, generationDependencies, prepareGeneration),
+    new ConfirmationCoordinator(decks, chatSessions, briefs, runs, generationDependencies, prepareGeneration),
   )
 
   return {
@@ -550,22 +611,14 @@ function createHostOptions(
       mapDeckFailure(error) ??
       mapSourceToolFailure(error) ??
       mapWebStateFailure(error) ??
-      (error instanceof SessionError
-        ? error.code === 'SESSION_NOT_FOUND'
-          ? { status: 404, code: 'SESSION_NOT_FOUND' }
-          : error.code === 'SESSION_CORRUPT'
-            ? { status: 409, code: 'CHAT_UNREADABLE' }
-            : error.code === 'DRAFT_TOO_LARGE'
-              ? { status: 413, code: 'DRAFT_TOO_LARGE' }
-              : undefined
-        : undefined),
+      mapSessionFailure(error),
     failureMessage: deckFailureMessage,
     assets,
     onClose: () => runs.close(),
     ...(options.port === undefined ? {} : { port: options.port }),
     routes: [
-      createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
-      createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),
+      createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(chatSessions))),
+      createChatRoutes(createChatOperations(chatSessions, registry, web, chatMarks(decks, drafts)), selection),
       createProviderRoutes(runtime.providers),
       createAttachmentRoutes(runtime.inputs),
       createResearchRoutes(runtime.research),
@@ -583,11 +636,11 @@ function createHostOptions(
       feed: changeFeed,
       hostTopics: [
         { topic: 'workspaces', version: () => registry.version() },
-        { topic: 'chats', version: () => sessions.chatsVersion() },
+        { topic: 'chats', version: () => sessions.chats.chatsVersion() },
         { topic: 'providers', version: () => runtime.providers.version() },
         { topic: 'preferences', version: () => web.preferencesVersion() },
       ],
-      sessionExists: async id => !!(await sessions.getInfo(id)),
+      sessionExists: async id => !!(await sessions.chats.getInfo(id)),
       sessionTopics: [
         { topic: 'draft', version: id => runtime.inputs.draftVersion(id) },
         { topic: 'brief', version: id => storage.decks.briefHeadVersion(id) },

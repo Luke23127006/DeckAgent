@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import {
   AttachmentParser,
   ManagedAttachments,
@@ -15,7 +15,7 @@ async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-attachments-'))
   const stores = []
   const open = () => {
-    const store = new SqliteSessionStore(join(dir, 'sessions.sqlite'))
+    const store = openSessionStore(join(dir, 'sessions.sqlite'))
     stores.push(store)
     return store
   }

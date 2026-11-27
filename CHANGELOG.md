@@ -5,6 +5,7 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
+- Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`), `modules/chats/chats.store.ts` and `modules/attachments/attachment-log.store.ts`, and remove `@deckagent/session-persistence`. Task 56 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 
 - Add deck review and generation run plans with source grants and image recovery contributions.

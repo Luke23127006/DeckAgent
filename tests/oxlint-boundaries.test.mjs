@@ -232,9 +232,9 @@ test('rejects storage package and node:sqlite imports inside apps/host/src/http'
     'apps/host/src/http/error-handler.ts',
     [
       "import { DatabaseSync } from 'node:sqlite'",
-      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { SessionDatabase } from '../db/index.ts'",
       "import { DeckStore } from '@deckagent/deck'",
-      'console.log(DatabaseSync, SqliteSessionStore, DeckStore)',
+      'console.log(DatabaseSync, SessionDatabase, DeckStore)',
       '',
     ].join('\n'),
   )
@@ -344,9 +344,9 @@ test('rejects another module store, a storage package and the HTTP edge inside a
     'apps/host/src/modules/workspaces/index.ts',
     [
       "import { ChatStore } from '../chats/chats.store.ts'",
-      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { SessionDatabase } from '../../db/index.ts'",
       "import { createHttpApp } from '../../http/app.ts'",
-      'console.log(ChatStore, SqliteSessionStore, createHttpApp)',
+      'console.log(ChatStore, SessionDatabase, createHttpApp)',
       '',
     ].join('\n'),
   )
@@ -403,18 +403,18 @@ test('deck services accept the deck package and reject storage packages, Express
   const denied = lintFixture(
     'apps/host/src/modules/deck/deck.service.ts',
     [
-      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { SessionDatabase } from '../../db/index.ts'",
       "import { prepareSourceTools } from '../../tools/index.ts'",
       "import { Router } from 'express'",
       "import { DatabaseSync } from 'node:sqlite'",
-      'console.log(SqliteSessionStore, prepareSourceTools, Router, DatabaseSync)',
+      'console.log(SessionDatabase, prepareSourceTools, Router, DatabaseSync)',
       '',
     ].join('\n'),
   )
   assert.equal(denied.status, 1)
   assert.equal(denied.diagnostics.length, 4)
   for (const diagnostic of denied.diagnostics) assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
-  for (const name of ['@deckagent/session-persistence', '../../tools/index.ts', 'express', 'node:sqlite'])
+  for (const name of ['../../db/index.ts', '../../tools/index.ts', 'express', 'node:sqlite'])
     assert.ok(
       denied.diagnostics.some(diagnostic => diagnostic.message.includes(name)),
       name,
@@ -437,8 +437,8 @@ test('tool executors reject node:fs, module and storage imports', () => {
     [
       "import { readFile } from 'node:fs/promises'",
       "import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'",
-      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
-      'console.log(readFile, SqliteSessionStore)',
+      "import { SessionDatabase } from '../../db/index.ts'",
+      'console.log(readFile, SessionDatabase)',
       'export type Lookup = WorkspaceLookup',
       '',
     ].join('\n'),
@@ -478,8 +478,8 @@ test('agent core runs rejects modules, runtimes, Express, SQL, HTTP and storage'
       "import express from 'express'",
       "import { DatabaseSync } from 'node:sqlite'",
       "import { createServer } from 'node:http'",
-      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
-      'console.log(createChatOperations, OpenCodeRuntime, express, DatabaseSync, createServer, SqliteSessionStore)',
+      "import { SessionDatabase } from '../../db/index.ts'",
+      'console.log(createChatOperations, OpenCodeRuntime, express, DatabaseSync, createServer, SessionDatabase)',
       '',
     ].join('\n'),
   )
@@ -540,3 +540,55 @@ for (const module of ['chats', 'deck']) {
     assert.equal(denied.diagnostics[0].code, 'eslint(no-restricted-imports)')
   })
 }
+
+test('database layer db/ rejects modules, HTTP, runs implementation, runtimes, tools and Express', () => {
+  const denied = lintFixture(
+    'apps/host/src/db/run-store.ts',
+    [
+      "import { SqliteChatStore } from '../modules/chats/index.ts'",
+      "import { createHttpApp } from '../http/app.ts'",
+      "import { RunController } from '../runs/lifecycle/index.ts'",
+      "import { OpenCodeAgentRuntime } from '../runtimes/opencode/index.ts'",
+      "import { prepareSourceTools } from '../tools/index.ts'",
+      "import express from 'express'",
+      'console.log(SqliteChatStore, createHttpApp, RunController, OpenCodeAgentRuntime, prepareSourceTools, express)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(denied.status, 1, denied.output)
+  assert.equal(denied.diagnostics.length, 6)
+  for (const diagnostic of denied.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.equal(
+      diagnostic.help,
+      'Database layer db/ must not import modules, HTTP, runs implementation, runtimes, tools or Express.',
+    )
+  }
+
+  const allowed = lintFixture(
+    'apps/host/src/db/run-store.ts',
+    "import type { RunOwner } from '../runs/ports.ts'\nexport type Owner = RunOwner\n",
+  )
+  assert.equal(allowed.status, 0, allowed.output)
+  assert.deepEqual(allowed.diagnostics, [])
+})
+
+test('module routes and services reject ../../db/index.ts while module stores accept it', () => {
+  for (const file of ['apps/host/src/modules/chats/chats.routes.ts', 'apps/host/src/modules/chats/chats.service.ts']) {
+    const denied = lintFixture(
+      file,
+      "import { SessionDatabase } from '../../db/index.ts'\nconsole.log(SessionDatabase)\n",
+    )
+    assert.equal(denied.status, 1, denied.output)
+    assert.equal(denied.diagnostics.length, 1)
+    assert.equal(denied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+    assert.match(denied.diagnostics[0].message, /\.\.\/\.\.\/db\/index\.ts/)
+  }
+
+  const allowed = lintFixture(
+    'apps/host/src/modules/chats/chats.store.ts',
+    "import { SessionDatabase } from '../../db/index.ts'\nconsole.log(SessionDatabase)\n",
+  )
+  assert.equal(allowed.status, 0, allowed.output)
+  assert.deepEqual(allowed.diagnostics, [])
+})

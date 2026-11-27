@@ -9,7 +9,7 @@ import { DeckStore } from '@deckagent/deck'
 import { validateLegacySlideHtml } from '@deckagent/html-format'
 import { startLocalWeb } from '@deckagent/host'
 import { DeckClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 
 const confirmed = {
   sessionId: 'pipeline',
@@ -82,7 +82,7 @@ test('A saved deck reads through Host snapshot, content and events; the chat say
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-pipeline-'))
   const database = join(dir, 'data', 'db')
   // Seeded state stands in for a deck that a later build publishes through the Agent runtime.
-  const seededChats = new SqliteSessionStore(join(database, 'sessions.sqlite'))
+  const seededChats = openSessionStore(join(database, 'sessions.sqlite'))
   await seededChats.open('pipeline')
   await seededChats.append('pipeline', [{ role: 'user', content: 'Two slides please' }])
   seededChats.close()

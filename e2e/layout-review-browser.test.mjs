@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { startLocalWeb } from '@deckagent/host'
 import { DeckStore } from '@deckagent/deck'
-import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import { browserSession } from '../scripts/lib/browser-session.mjs'
 import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -31,7 +31,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
   })
   const id = 'layout-review-chat',
     dataDir = join(dir, 'data')
-  const sessions = new SqliteSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
+  const sessions = openSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
   await sessions.bind(id, { provider: 'fixture', model: 'workflow' })
   await sessions.append(id, [
     { role: 'user', content: 'Giới thiệu môi trường' },
@@ -160,7 +160,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
   )
   assert.equal(await browser.evaluate(`document.querySelector('.outline-dock .outline-actions button').disabled`), true)
   const updated = new DeckStore(join(dataDir, 'db', 'decks.sqlite'), options)
-  const history = new SqliteSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
+  const history = openSessionStore(join(dataDir, 'db', 'sessions.sqlite'))
   await history.append(id, [
     { role: 'user', content: 'Sửa nội dung cho vừa bố cục' },
     { role: 'assistant', content: 'Outline đã sửa' },

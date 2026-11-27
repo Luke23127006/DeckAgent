@@ -1,11 +1,10 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { SessionError } from './contracts.ts'
+import type { RunOwner, RunStore } from '../runs/ports.ts'
 import { ApprovalLog } from './approvals.ts'
-import type { AttachmentLog } from './attachments.ts'
+import { SessionError } from './contracts.ts'
 import type {
   ActivityRecord,
   ActivityStatus,
-  Message,
   ModelSelection,
   RequestEvent,
   RequestEventBody,
@@ -33,30 +32,48 @@ import {
 } from './request-sources.ts'
 import { requestCodePattern, requestIdPattern, validateEvent } from './request-validation.ts'
 import { deleteRuntimeBinding, readRuntimeBinding, saveRuntimeBinding } from './runtime-bindings.ts'
+import type { SessionDatabase } from './session-database.ts'
 
 export { summarizedNotice } from './request-queries.ts'
 
-interface Access {
-  run<T>(operation: () => T): T
-  transaction<T>(operation: () => T): T
-  appendMessages(sessionId: string, messages: readonly Message[]): void
-  messageCount(sessionId: string): number
+export interface RunAdmitInput {
+  readonly publicResearch?: boolean
+  readonly requestId: string
+  readonly owner: RunOwner
+  readonly input: string
+  readonly selection: ModelSelection
+  readonly attachmentIds?: readonly string[]
+  readonly draftRevision?: number
+}
+
+export interface RunStoreHooks {
+  beforeAdmit?(input: RunAdmitInput): { readonly historyStart: number; readonly messageSequence?: number }
+  afterAdmit?(input: RunAdmitInput, messageSequence: number | undefined): void
+  onSettle?(owner: RunOwner, status: TerminalStatus, text: string): void
+}
+
+function parseOwnerKey(ownerKey: string): { readonly kind: string; readonly id: string } | undefined {
+  const index = ownerKey.indexOf(':')
+  if (index <= 0 || index === ownerKey.length - 1) return undefined
+  return { kind: ownerKey.slice(0, index), id: ownerKey.slice(index + 1) }
 }
 
 /**
- * Requests, their ordered events and native session bindings of chats. One owner for request state:
- * the Host's request controller writes through here, the browser reads through the Host.
+ * Durable run store backed by `SessionDatabase` (schema v9). Owns `requests`, `request_events`,
+ * `request_approvals`, `runtime_bindings`, `source_reads`, `request_research` and `research_sources`.
  */
-export class RequestLog {
+export class SqliteRunStore implements RunStore {
+  private readonly db: DatabaseSync
   readonly approvals: ApprovalLog
+
   constructor(
-    private readonly db: DatabaseSync,
-    private readonly access: Access,
-    private readonly attachments: AttachmentLog,
+    private readonly sessionDb: SessionDatabase,
+    private readonly hooks: RunStoreHooks = {},
   ) {
-    this.approvals = new ApprovalLog(db, {
-      run: operation => this.access.run(operation),
-      transaction: operation => this.access.transaction(operation),
+    this.db = sessionDb.db
+    this.approvals = new ApprovalLog(this.db, {
+      run: operation => this.sessionDb.run(operation),
+      transaction: operation => this.sessionDb.transaction(operation),
       assertActive: requestId => {
         const request = requireRequest(this.db, requestId)
         if (request.status !== 'active' && request.status !== 'waiting_approval')
@@ -67,56 +84,37 @@ export class RequestLog {
   }
 
   /**
-   * Admission: the user's message and the active request are saved in one transaction.
-   * A chat that already has an active request refuses a second one (FR-014).
+   * Admission: runs `beforeAdmit`, inserts the active run, runs `afterAdmit`, and saves the initial status event
+   * inside one `SessionDatabase` transaction. One active run is allowed per `(owner_kind, owner_id)`.
    */
-  admit(input: {
-    readonly publicResearch?: boolean
-    readonly requestId: string
-    readonly sessionId: string
-    readonly input: string
-    readonly selection: ModelSelection
-    readonly attachmentIds?: readonly string[]
-  }): RequestRecord {
-    return this.access.transaction(() => {
+  admit(input: RunAdmitInput): RequestRecord {
+    return this.sessionDb.transaction(() => {
       if (!requestIdPattern.test(input.requestId)) throw new SessionError('SESSION_CONFIG', 'Invalid request ID')
-      if (!this.db.prepare('SELECT 1 FROM sessions WHERE id = ?').get(input.sessionId))
-        throw new SessionError('SESSION_NOT_FOUND', 'Session does not exist')
       if (
-        this.db.prepare(`SELECT 1 FROM requests WHERE session_id = ? AND ${activeRequestFilter}`).get(input.sessionId)
+        this.db
+          .prepare(`SELECT 1 FROM requests WHERE owner_kind = ? AND owner_id = ? AND ${activeRequestFilter}`)
+          .get(input.owner.kind, input.owner.id)
       )
-        throw new SessionError('REQUEST_ACTIVE', 'The chat already has an active request')
-      const historyStart = this.access.messageCount(input.sessionId)
-      const ids = input.attachmentIds ?? []
-      if (new Set(ids).size !== ids.length) throw new SessionError('INVALID_REQUEST', 'Attachment IDs must be unique')
-      const attachments = ids.map(attachmentId => {
-        const item = this.attachments.get(input.sessionId, attachmentId)
-        if (item.state === 'rejected')
-          throw new SessionError('ATTACHMENT_REJECTED', 'Remove the rejected attachment before sending')
-        if (item.state !== 'ready') throw new SessionError('ATTACHMENT_NOT_READY', 'Wait for attachment preparation')
-        const attachmentRow = this.db.prepare('SELECT request_id FROM attachments WHERE id = ?').get(attachmentId)
-        if (!attachmentRow) throw new SessionError('ATTACHMENT_NOT_FOUND', 'Attachment does not exist')
-        if (attachmentRow.request_id !== null)
-          throw new SessionError('ATTACHMENT_CONFLICT', 'Attachment already belongs to a sent request')
-        return item
-      })
-      this.access.appendMessages(input.sessionId, [
-        { role: 'user', content: input.input, ...(attachments.length ? { attachments } : {}) },
-      ])
+        throw new SessionError('RUN_OWNER_BUSY', 'The run owner already has an active request')
+      const prepared = this.hooks.beforeAdmit?.(input) ?? { historyStart: 0 }
       const now = new Date().toISOString()
       this.db
         .prepare(
-          `INSERT INTO requests (id, session_id, status, provider, model, history_start, started_at) VALUES (?, ?, 'active', ?, ?, ?, ?)`,
+          `INSERT INTO requests (id, owner_kind, owner_id, status, provider, model, history_start, started_at) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)`,
         )
-        .run(input.requestId, input.sessionId, input.selection.provider, input.selection.model, historyStart, now)
-      const sequence = this.access.messageCount(input.sessionId)
+        .run(
+          input.requestId,
+          input.owner.kind,
+          input.owner.id,
+          input.selection.provider,
+          input.selection.model,
+          prepared.historyStart,
+          now,
+        )
       this.db
         .prepare('INSERT INTO request_research (request_id, selected) VALUES (?, ?)')
         .run(input.requestId, input.publicResearch === true ? 1 : 0)
-      for (const attachmentId of ids)
-        this.db
-          .prepare('UPDATE attachments SET request_id = ?, message_sequence = ? WHERE id = ?')
-          .run(input.requestId, sequence, attachmentId)
+      this.hooks.afterAdmit?.(input, prepared.messageSequence)
       this.insert(input.requestId, { kind: 'status', status: 'active' }, now)
       return requireRequest(this.db, input.requestId)
     })
@@ -125,7 +123,7 @@ export class RequestLog {
   /** Persist one event of an active request. A request that ended accepts no more writes. */
   append(requestId: string, event: RequestEventBody): RequestEvent {
     validateEvent(event)
-    return this.access.transaction(() => {
+    return this.sessionDb.transaction(() => {
       const request = requireRequest(this.db, requestId)
       if (request.status !== 'active' && request.status !== 'waiting_approval')
         throw new SessionError('REQUEST_CLOSED', 'The request has ended')
@@ -135,20 +133,16 @@ export class RequestLog {
     })
   }
 
-  /**
-   * End an active request once. Running activities settle (`stopped` after Stop, otherwise `failed`),
-   * saved text becomes the assistant message (marked interrupted unless completed), and the status event is last.
-   * Returns the events written, or `undefined` when the request had already ended.
-   */
+  /** End an active request once, settling activities, assistant text and terminal status in one transaction. */
   finish(requestId: string, status: TerminalStatus, errorCode?: string): readonly RequestEvent[] | undefined {
     if (errorCode !== undefined && !requestCodePattern.test(errorCode))
       throw new SessionError('REQUEST_EVENT', 'Invalid error code')
-    return this.access.transaction(() => this.settle(requestId, status, errorCode))
+    return this.sessionDb.transaction(() => this.settle(requestId, status, errorCode))
   }
 
   /** Host start: every request left active by an earlier run did not finish. Nothing is started again (FR-019). */
   interruptActive(): number {
-    return this.access.transaction(() => {
+    return this.sessionDb.transaction(() => {
       const rows = this.db.prepare(`SELECT id FROM requests WHERE ${activeRequestFilter}`).all()
       for (const row of rows) this.settle(String(row.id), 'interrupted', 'HOST_RESTARTED')
       return rows.length
@@ -156,51 +150,56 @@ export class RequestLog {
   }
 
   get(requestId: string): RequestRecord | undefined {
-    return this.access.run(() => readRequest(this.db, requestId))
+    return this.sessionDb.run(() => readRequest(this.db, requestId))
   }
 
-  /** Requests of a chat, oldest first. */
-  list(sessionId: string): readonly RequestRecord[] {
-    return this.access.run(() => listRequests(this.db, sessionId))
+  list(owner: RunOwner): readonly RequestRecord[] {
+    return this.sessionDb.run(() => listRequests(this.db, owner))
   }
 
-  /** The active request of a chat, if any. */
-  activeFor(sessionId: string): string | undefined {
-    return this.access.run(() => activeRequestFor(this.db, sessionId))
+  activeFor(owner: RunOwner): string | undefined {
+    return this.sessionDb.run(() => activeRequestFor(this.db, owner))
   }
 
-  /** Events after a cursor, in order. A reconnecting reader passes its last sequence and misses nothing. */
   events(requestId: string, after = 0): readonly RequestEvent[] {
-    return this.access.run(() => readRequestEvents(this.db, requestId, after))
+    return this.sessionDb.run(() => readRequestEvents(this.db, requestId, after))
   }
 
-  /** Latest state of each activity of a chat's requests, in the order the activities happened. */
-  activities(sessionId: string): readonly ActivityRecord[] {
-    return this.access.run(() => readRequestActivities(this.db, sessionId))
+  activities(owner: RunOwner): readonly ActivityRecord[] {
+    return this.sessionDb.run(() => readRequestActivities(this.db, owner))
   }
 
-  /** The assistant text saved so far: each text part once, in the order parts first appeared. */
   text(requestId: string): string {
-    return this.access.run(() => assembleRequestText(this.db, requestId))
+    return this.sessionDb.run(() => assembleRequestText(this.db, requestId))
   }
 
-  binding(sessionId: string): RuntimeBinding | undefined {
-    return this.access.run(() => readRuntimeBinding(this.db, sessionId))
+  binding(ownerKey: string): RuntimeBinding | undefined {
+    return this.sessionDb.run(() => readRuntimeBinding(this.db, ownerKey))
   }
 
-  /** Saved only for a completed request of the same chat. */
   bind(binding: RuntimeBinding): void {
-    this.access.transaction(() => saveRuntimeBinding(this.db, binding))
+    this.sessionDb.transaction(() => saveRuntimeBinding(this.db, binding))
   }
 
-  /** The native session no longer matches the chat; the chat and its history stay. */
-  unbind(sessionId: string): void {
-    this.access.run(() => deleteRuntimeBinding(this.db, sessionId))
+  unbind(ownerKey: string): void {
+    this.sessionDb.run(() => deleteRuntimeBinding(this.db, ownerKey))
   }
 
-  /** Records the exact bytes returned, keeping private origins out of tool results. */
+  lastCompletedRequestId(ownerKey: string, currentRequestId: string): string | undefined {
+    return this.sessionDb.run(() => {
+      const owner = parseOwnerKey(ownerKey)
+      if (!owner) return undefined
+      const row = this.db
+        .prepare(
+          'SELECT id FROM requests WHERE owner_kind = ? AND owner_id = ? AND id != ? ORDER BY rowid DESC LIMIT 1',
+        )
+        .get(owner.kind, owner.id, currentRequestId)
+      return row ? String(row.id) : undefined
+    })
+  }
+
   sourceCatalogue(sessionId: string) {
-    return this.access.run(() => readSourceCatalogue(this.db, sessionId))
+    return this.sessionDb.run(() => readSourceCatalogue(this.db, sessionId))
   }
 
   recordSourceRead(
@@ -213,12 +212,11 @@ export class RequestLog {
       readonly kind: 'project-file' | 'approved-file'
     },
   ) {
-    return this.access.transaction(() => saveSourceRead(this.db, requestId, value))
+    return this.sessionDb.transaction(() => saveSourceRead(this.db, requestId, value))
   }
 
-  /** Counts an attempt before any network I/O; ended or unselected requests cannot reserve one. */
   reserveResearch(requestId: string, sessionId: string): void {
-    this.access.transaction(() => reserveResearchAttempt(this.db, requestId, sessionId))
+    this.sessionDb.transaction(() => reserveResearchAttempt(this.db, requestId, sessionId))
   }
 
   recordResearch(
@@ -230,11 +228,11 @@ export class RequestLog {
       readonly results: readonly { readonly title: string; readonly url: string; readonly content: string }[]
     },
   ): readonly ResearchSource[] {
-    return this.access.transaction(() => saveResearchResults(this.db, requestId, sessionId, query, result))
+    return this.sessionDb.transaction(() => saveResearchResults(this.db, requestId, sessionId, query, result))
   }
 
   researchSources(sessionId: string): readonly ResearchSource[] {
-    return this.access.run(() => readResearchSources(this.db, sessionId))
+    return this.sessionDb.run(() => readResearchSources(this.db, sessionId))
   }
 
   private settle(
@@ -275,12 +273,7 @@ export class RequestLog {
         ),
       )
     const text = assembleRequestText(this.db, requestId)
-    if (text.trim())
-      this.access.appendMessages(request.sessionId, [
-        status === 'completed'
-          ? { role: 'assistant', content: text }
-          : { role: 'assistant', content: text, interrupted: true },
-      ])
+    if (text.trim()) this.hooks.onSettle?.(request.owner, status, text)
     this.db
       .prepare('UPDATE requests SET status = ?, ended_at = ?, error_code = ? WHERE id = ?')
       .run(status, now, errorCode ?? null, requestId)
