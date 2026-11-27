@@ -1,7 +1,7 @@
 import { HttpError, json, param, params, readJson, receiveAttachment, route } from '../../http/route-helpers.ts'
 import { RequestValidationError, decodeAttachmentRemoveBody, decodeDraftSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { AttachmentOperations } from './attachments.service.ts'
+import type { AttachmentService } from './attachments.service.ts'
 
 const WORD_ID = /^[\w-]{1,100}$/
 
@@ -14,7 +14,7 @@ function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
   }
 }
 
-export function createAttachmentRoutes(attachments: AttachmentOperations): Router {
+export function createAttachmentRoutes(attachments: AttachmentService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const session = params({ sessionId: WORD_ID })
   const ids = params({ sessionId: WORD_ID, attachmentId: WORD_ID })

@@ -1,22 +1,23 @@
-export { DraftError, MemoryDraftStore } from './draft.store.ts'
-export type { DraftErrorCode, DraftSnapshot } from './draft.store.ts'
-export { AttachmentStorageError, ManagedAttachments } from './attachments.store.ts'
+export { MemoryDraftStore } from './draft.store.ts'
+export type { DraftSnapshot } from './draft.store.ts'
+export { AttachmentFileStore } from './attachment-files.store.ts'
 export type {
   AttachmentLogPort,
   AttachmentRecordView,
   AttachmentUpload,
   ParsedAttachmentData,
-} from './attachments.store.ts'
-export { AttachmentCoordinator, AttachmentFailure } from './attachments.service.ts'
+} from './attachment-files.store.ts'
+export { AttachmentService } from './attachments.service.ts'
 export type {
   AttachmentLimits,
-  AttachmentOperations,
   AttachmentParserPort,
   AttachmentPreview,
-  AttachmentSessionStore,
+  AttachmentChats,
   AttachmentUploadInput,
   DraftAdmitInput,
 } from './attachments.service.ts'
 export { createAttachmentRoutes } from './attachments.routes.ts'
-export { mapAttachmentFailure } from './attachments.errors.ts'
-export { SqliteAttachmentLog } from './attachment-log.store.ts'
+export { mapAttachmentError } from './attachments.errors.ts'
+export { SqliteAttachmentStore } from './attachments.store.ts'
+export { AttachmentError } from './attachments.errors.ts'
+export type { AttachmentErrorCode } from './attachments.errors.ts'

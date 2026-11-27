@@ -9,7 +9,7 @@ import { HostClient } from '../../../web/tests/fixtures/browser-driver.mjs'
 
 export { AttachmentParser } from '../../lib/types/tools/index.js'
 export {
-  ManagedAttachments,
+  AttachmentFileStore,
   MemoryDraftStore,
   createAttachmentRoutes,
 } from '../../lib/types/modules/attachments/index.js'

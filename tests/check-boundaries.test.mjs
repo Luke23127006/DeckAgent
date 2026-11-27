@@ -9,6 +9,7 @@
  * - Renaming the typescript-enum rule ID caused the enum and const enum test to fail.
  * - Removing the branch for a Service or Store suffix outside its role file caused the role file rejection test to fail.
  * - Setting ROLE_FILE_MODULES to ['workspaces'] caused the role file acceptance test and two module import tests to fail.
+ * - Removing attachments from ROLE_FILE_MODULES failed the attachments role test.
  * Run: node --test --test-reporter=tap tests/check-boundaries.test.mjs
  * Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/build/refactor/boundaries/plan/task-03-boundary-checker.md.
  */
@@ -478,4 +479,23 @@ test('checkBoundaries accepts role symbols in a listed module and ignores module
   ]
   assert.deepEqual(findings(files, {}, ['chats']), [])
   assert.deepEqual(findings(files), [])
+})
+
+test('checkBoundaries applies role symbol checks to attachments by default', () => {
+  assert.deepEqual(
+    findings([
+      {
+        path: 'apps/host/src/modules/attachments/attachments.service.ts',
+        content: 'export class AttachmentCoordinator {}\n',
+      },
+      {
+        path: 'apps/host/src/modules/attachments/attachments.store.ts',
+        content: 'export class SqliteAttachmentLog {}\n',
+      },
+    ]),
+    [
+      { path: 'apps/host/src/modules/attachments/attachments.service.ts', line: 1, rule: 'role-file-symbol' },
+      { path: 'apps/host/src/modules/attachments/attachments.store.ts', line: 1, rule: 'role-file-symbol' },
+    ],
+  )
 })

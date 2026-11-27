@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`.
+**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`. Phase 5 refactors the attachments module and runs its exit checks.
 
 **Approach:** One revision for each phase of the Naming and Grouping Refactor. The planner does the diagnosis of each phase, and the decision table records every answer. Each task is an execution task.
 
@@ -200,3 +200,36 @@ Phase 2 is done. Tasks 3 to 7 are `Done` (commits `102366c` and `f0c6c40` hold T
 | 13 | Pending | [Add ResearchError and the Tavily error codes](task-13-add-research-error-and-tavily-codes.md) |
 | 14 | Pending | [Convert ResearchService and split the research ports](task-14-convert-research-service-and-ports.md) |
 | 15 | Pending | [Enable role-file-symbol for providers and research and check Phase 4](task-15-enable-providers-research-role-check-and-verify-phase-4.md) |
+
+## Revision 5: Phase 5, attachments module
+
+The user requested one task for Phase 5 after direct diagnosis and execution. Task 16 records that work and its remaining exit check.
+
+### Decisions (Revision 5)
+
+| Topic | Decision |
+| --- | --- |
+| Service | `AttachmentService` replaces `AttachmentCoordinator`. Remove `AttachmentOperations`. Routes use the class |
+| Errors | One `AttachmentError` replaces `AttachmentFailure`, `AttachmentStorageError` and `DraftError`. Shared database errors stay unchanged |
+| HTTP table | Use `Readonly<Record<AttachmentErrorCode, number>>`. Recognize codes from this table. Preserve `REQUEST_EMPTY` at HTTP 500 |
+| Internal messages | Store internal messages on the error. Do not expose them through `mapAttachmentError` |
+| File storage | `AttachmentFileStore` lives in `attachment-files.store.ts` |
+| SQLite metadata | `SqliteAttachmentStore` lives in `attachments.store.ts` |
+| Chat port | `AttachmentChats` has `getInfo(id: string): Promise<unknown>`. `ChatService` implements it |
+| Metadata dependency | Pass `SqliteAttachmentStore` separately. Do not combine it with the chat port |
+| Composition | Reuse one `ChatService` instance for attachments and chat routes |
+| Role enforcement | Add `attachments` without removing other modules from `ROLE_FILE_MODULES` |
+| Concurrent changes | Stop at failures outside Phase 5. Preserve web, workspace, provider and research work |
+
+### Review Focus (Revision 5)
+
+- Preserve HTTP statuses, private messages and safe detail fields. Test: `attachment errors keep HTTP statuses and hide internal messages`.
+- Keep attachments in default role enforcement. Test: `checkBoundaries applies role symbol checks to attachments by default`.
+- Keep the chat port separate from attachment metadata. Inspect `AttachmentService` and its production wiring.
+- Distinguish related test success from the failed full exit check. Read the Task 16 report.
+
+### Tasks (Revision 5)
+
+| Task | Status | File |
+| --- | --- | --- |
+| 16 | Blocked: implementation complete, exit check failed | [Refactor attachments and check Phase 5](task-16-refactor-attachments-and-check-phase-5.md) ([report](../reports/task-16-refactor-attachments-and-check-phase-5.md)) |

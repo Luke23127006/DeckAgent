@@ -57,10 +57,10 @@ The rules are in [Naming Rules](naming-rules.md). The problems are in [Naming an
 | Current | Target | Problems |
 | --- | --- | --- |
 | `AttachmentCoordinator`, `AttachmentOperations` | `class AttachmentService` | NG-01, NG-02 |
-| `AttachmentFailure`, `AttachmentStorageError`, `DraftError` | One `AttachmentError` in `attachments.errors.ts`, unless a caller handles one of them differently. Remove the copy of the code list (`knownAttachmentCodes` beside `attachmentStatus`) | NG-06, NG-25 |
+| `AttachmentFailure`, `AttachmentStorageError`, `DraftError` | One `AttachmentError` in `attachments.errors.ts`, with `AttachmentErrorCode` and a typed HTTP status table. Internal messages stay private. Database `SessionError` stays unchanged | NG-06, NG-25 |
 | `ManagedAttachments` in `attachments.store.ts` (files on disk) | `AttachmentFileStore` in `attachment-files.store.ts` | NG-01 |
 | `SqliteAttachmentLog` in `attachment-log.store.ts` (rows in SQLite) | `SqliteAttachmentStore` in `attachments.store.ts` | NG-01 |
-| `AttachmentSessionStore` | `AttachmentChats` | NG-17 |
+| `AttachmentSessionStore` | `AttachmentChats` reads chat existence through `ChatService`. Attachment metadata goes directly to `SqliteAttachmentStore` | NG-17 |
 | `MemoryDraftStore`, `AttachmentParserPort` | No change | — |
 
 ## `modules/deck/`

@@ -8,7 +8,7 @@
     "test:local-foundation": "node --test apps/host/tests/workspace-registry.test.mjs apps/host/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
     "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/host/tests/opencode-adapter.test.mjs apps/host/tests/runs-preparation.test.mjs apps/host/tests/run-lifecycle.test.mjs e2e/model-requests.test.mjs apps/host/tests/wait-for.test.mjs",
     "test:source-permissions": "node --test apps/host/tests/source-access.test.mjs apps/host/tests/mcp-bridge.test.mjs e2e/step-approval.test.mjs e2e/source-requests.test.mjs",
-    "test:attachments": "node --test apps/host/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
+    "test:attachments": "node --test apps/host/tests/attachment-errors.test.mjs apps/host/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
     "test:research": "node --test apps/host/tests/research.test.mjs",
     "test:images": "node --test --test-concurrency=1 e2e/image-recovery-http.test.mjs apps/host/tests/image-research.test.mjs apps/host/tests/commons-images.test.mjs e2e/portable-generation.test.mjs e2e/portable-generation-http.test.mjs",
     "test:research-live": "node --env-file-if-exists=.env --test e2e/research-live.test.mjs",

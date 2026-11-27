@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { openSessionStore } from '../apps/host/tests/fixtures/session-store.mjs'
 import {
   AttachmentParser,
-  ManagedAttachments,
+  AttachmentFileStore,
   MemoryDraftStore,
 } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
@@ -32,7 +32,7 @@ test('versioned prepared content survives committed restart and foreign Chat rea
   await store.open('a')
   await store.open('b')
   const drafts = new MemoryDraftStore()
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   const bytes = Buffer.from('Saved source\nsecond line')
   const item = await files.receive({
     sessionId: 'a',
@@ -65,7 +65,7 @@ test('versioned prepared content survives committed restart and foreign Chat rea
   store.requests.finish('req-parsed', 'completed')
   store.close()
   const reopened = open()
-  const restored = await ManagedAttachments.open(join(dir, 'files'), reopened.attachments, new MemoryDraftStore())
+  const restored = await AttachmentFileStore.open(join(dir, 'files'), reopened.attachments, new MemoryDraftStore())
   assert.deepEqual(await restored.prepared('a', item.attachmentId, new AbortController().signal), parsed)
   await assert.rejects(restored.prepared('b', item.attachmentId, new AbortController().signal), {
     code: 'ATTACHMENT_NOT_FOUND',
@@ -158,7 +158,7 @@ test('managed bytes survive committed restart; unsent uploads expire with the dr
   await store.open('a')
   await store.open('b')
   const drafts = new MemoryDraftStore()
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   const upload = name =>
     files.receive({
       sessionId: 'a',
@@ -191,7 +191,7 @@ test('managed bytes survive committed restart; unsent uploads expire with the dr
   store.close()
   const next = open()
   const reopenedDrafts = new MemoryDraftStore()
-  const reopened = await ManagedAttachments.open(join(dir, 'files'), next.attachments, reopenedDrafts)
+  const reopened = await AttachmentFileStore.open(join(dir, 'files'), next.attachments, reopenedDrafts)
   assert.equal((await reopened.read('a', sent.attachmentId, new AbortController().signal)).toString(), 'hello')
   assert.throws(() => next.attachments.get('a', unsent.attachmentId), { code: 'ATTACHMENT_NOT_FOUND' })
   assert.deepEqual(reopenedDrafts.snapshot('a'), { text: '', attachmentIds: [], revision: 0 })
@@ -204,7 +204,7 @@ test('failed and oversized uploads keep the draft and rejection; removal clears 
   await store.open('a')
   const drafts = new MemoryDraftStore()
   drafts.set('a', 'keep this text')
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   await assert.rejects(
     files.receive({
       sessionId: 'a',
@@ -251,7 +251,7 @@ test('a source file is unchanged and a modified managed copy is reported unreada
   const store = open()
   await store.open('a')
   const drafts = new MemoryDraftStore()
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   const item = await files.receive({
     sessionId: 'a',
     name: 'user.txt',
@@ -334,7 +334,7 @@ test('database failure rolls back message/request associations and restart remov
   const store = open()
   await store.open('a')
   const drafts = new MemoryDraftStore()
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   const item = await files.receive({
     sessionId: 'a',
     name: 'notes.txt',
@@ -367,7 +367,7 @@ test('database failure rolls back message/request associations and restart remov
   fault.close()
   store.close()
   const next = open()
-  await ManagedAttachments.open(join(dir, 'files'), next.attachments, new MemoryDraftStore())
+  await AttachmentFileStore.open(join(dir, 'files'), next.attachments, new MemoryDraftStore())
   assert.deepEqual(await readdir(join(dir, 'files', 'attachments')), [])
 })
 
@@ -376,7 +376,7 @@ test('cancellation stops an upload even when the next input chunk never arrives'
   const store = open()
   await store.open('a')
   const drafts = new MemoryDraftStore()
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   const abort = new AbortController()
   let started
   const waiting = new Promise(resolve => {
@@ -418,7 +418,7 @@ test('removing a preparing attachment cancels its upload and keeps the draft tex
   await store.open('a')
   const drafts = new MemoryDraftStore()
   drafts.set('a', 'keep')
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, drafts)
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, drafts)
   let started
   const waiting = new Promise(resolve => {
     started = resolve
@@ -461,7 +461,7 @@ test('startup rejects a linked attachment root without deleting the linked folde
   await mkdir(root)
   await writeFile(join(source, 'keep.txt'), 'untouched')
   await symlink(source, join(root, 'attachments'), process.platform === 'win32' ? 'junction' : 'dir')
-  await assert.rejects(ManagedAttachments.open(root, open().attachments, new MemoryDraftStore()), {
+  await assert.rejects(AttachmentFileStore.open(root, open().attachments, new MemoryDraftStore()), {
     code: 'ATTACHMENT_NOT_SAVED',
   })
   assert.equal(await readFile(join(source, 'keep.txt'), 'utf8'), 'untouched')
@@ -471,7 +471,7 @@ test('missing committed bytes stay referenced after recovery and cannot be silen
   const { dir, open } = await fixture(t)
   const store = open()
   await store.open('a')
-  const files = await ManagedAttachments.open(join(dir, 'files'), store.attachments, new MemoryDraftStore())
+  const files = await AttachmentFileStore.open(join(dir, 'files'), store.attachments, new MemoryDraftStore())
   const item = await files.receive({
     sessionId: 'a',
     name: 'notes.txt',
@@ -494,7 +494,7 @@ test('missing committed bytes stay referenced after recovery and cannot be silen
   await unlink(join(dir, 'files', 'attachments', `${item.attachmentId}.bin`))
   store.close()
   const next = open()
-  const recovered = await ManagedAttachments.open(join(dir, 'files'), next.attachments, new MemoryDraftStore())
+  const recovered = await AttachmentFileStore.open(join(dir, 'files'), next.attachments, new MemoryDraftStore())
   assert.equal((await next.read('a'))[0].attachments[0].attachmentId, item.attachmentId)
   await assert.rejects(recovered.read('a', item.attachmentId, new AbortController().signal), {
     code: 'ATTACHMENT_UNREADABLE',

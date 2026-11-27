@@ -14,3 +14,4 @@ Read this file to find the execution report of each task of the Naming and Group
 | 8 | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) |
 | 11 | [Add ProviderError, ProviderCheckCode and providerProtocols](task-11-add-provider-error-check-code-and-protocols.md) |
 | 12 | [Rename ProviderService and narrow the providers index](task-12-convert-provider-service-and-index.md) |
+| 16 | [Refactor attachments and check Phase 5](task-16-refactor-attachments-and-check-phase-5.md) |

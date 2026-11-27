@@ -48,11 +48,11 @@ import { defaultCredentialStore, type CredentialStore } from './credential-store
 import { OpenCodeAgentRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
 import {
-  AttachmentCoordinator,
-  ManagedAttachments,
-  SqliteAttachmentLog,
+  AttachmentService,
+  AttachmentFileStore,
+  SqliteAttachmentStore,
   createAttachmentRoutes,
-  mapAttachmentFailure,
+  mapAttachmentError,
 } from './modules/attachments/index.ts'
 import { prepareSourceTools, createSourceToolsContribution, mapSourceToolFailure } from './tools/index.ts'
 import {
@@ -115,7 +115,7 @@ export interface LocalWebOptions {
 export function openSessionStorage(path: string, options?: ChatStoreOptions) {
   const db = new SessionDatabase(path)
   const chats = new SqliteChatStore(db, options)
-  const attachments = new SqliteAttachmentLog(db)
+  const attachments = new SqliteAttachmentStore(db)
   const runs = new SqliteRunStore(db, {
     beforeAdmit: input => {
       chats.requireSessionInTx(input.owner.id)
@@ -144,11 +144,12 @@ interface StorageLayer {
 }
 
 interface RuntimeLayer {
+  readonly chats: ChatService
   readonly providers: ProviderService
   readonly runtime: OpenCodeAgentRuntime
   readonly research: ResearchCoordinator
   readonly images: WebImageResearch
-  readonly inputs: AttachmentCoordinator
+  readonly inputs: AttachmentService
   readonly generationRuntime?: GenerationRuntimeOverride
   readonly settings: () => Promise<WebSettings>
 }
@@ -166,7 +167,7 @@ async function closeResources(closers: readonly (() => Promise<void> | void)[]):
   if (failures.length > 0) throw failures[0]
 }
 
-function createPreparedImageReader(sessions: SessionStorage, getAttachments: () => ManagedAttachments | undefined) {
+function createPreparedImageReader(sessions: SessionStorage, getAttachments: () => AttachmentFileStore | undefined) {
   return async (id: string, attachmentId: string, signal: AbortSignal) => {
     const item = sessions.attachments.get(id, attachmentId)
     const files = getAttachments()
@@ -197,7 +198,7 @@ function createDeckStore(
   sessions: SessionStorage,
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
-  getAttachments: () => ManagedAttachments | undefined,
+  getAttachments: () => AttachmentFileStore | undefined,
   changeFeed: ChangeFeed,
 ): DeckStore {
   return new DeckStore(join(layout.databases, 'decks.sqlite'), {
@@ -226,7 +227,7 @@ async function openStorageLayer(
   options: LocalWebOptions,
   renderer: ArtifactRenderer,
   commonsImages: CommonsImages,
-  getAttachments: () => ManagedAttachments | undefined,
+  getAttachments: () => AttachmentFileStore | undefined,
   changeFeed: ChangeFeed,
 ): Promise<StorageLayer> {
   const initial = options.selection ? { ...options.selection } : undefined
@@ -304,12 +305,13 @@ async function createRuntimeLayer(
   options: LocalWebOptions,
   storage: StorageLayer,
   commonsImages: CommonsImages,
-  attachments: ManagedAttachments,
+  attachments: AttachmentFileStore,
   drafts: MemoryDraftStore,
   credentials: CredentialStore,
   changeFeed: ChangeFeed,
 ): Promise<RuntimeLayer> {
-  const { sessions, web } = storage
+  const { sessions, web, decks, registry } = storage
+  const chats = new ChatService(sessions.chats, sessions.runs, registry, web, chatMarks(decks, drafts))
   const initial = options.selection ? { ...options.selection } : undefined
   const providers = new ProviderService(new SqliteProviderStore(web.db), credentials, {
     check:
@@ -353,12 +355,14 @@ async function createRuntimeLayer(
     new PublicImageReader(options.imageAccess?.fetch, options.imageAccess?.resolve),
   )
   return {
+    chats,
     providers,
     runtime: openCode,
     research,
     images,
-    inputs: new AttachmentCoordinator(
-      { getInfo: id => sessions.chats.getInfo(id), attachments: sessions.attachments },
+    inputs: new AttachmentService(
+      chats,
+      sessions.attachments,
       drafts,
       attachments,
       new AttachmentParser(),
@@ -418,14 +422,13 @@ function createHostOptions(
   options: LocalWebOptions,
   storage: StorageLayer,
   runtime: RuntimeLayer,
-  attachments: ManagedAttachments,
-  drafts: MemoryDraftStore,
+  attachments: AttachmentFileStore,
   assets: NonNullable<HostOptions['assets']>,
   changeFeed: ChangeFeed,
 ): StartHostOptions {
   if (!contractSync) throw new Error('Contract sync failed')
   const { sessions, web, decks, registry } = storage
-  const chats = new ChatService(sessions.chats, sessions.runs, registry, web, chatMarks(decks, drafts))
+  const chats = runtime.chats
   const chatSessions = {
     getInfo: (id: string) => sessions.chats.getInfo(id),
     read: (id: string) => sessions.chats.read(id),
@@ -583,7 +586,7 @@ function createHostOptions(
       mapWorkspaceError(error) ??
       mapChatError(error) ??
       mapProviderError(error) ??
-      mapAttachmentFailure(error) ??
+      mapAttachmentError(error) ??
       mapResearchFailure(error) ??
       mapDeckFailure(error) ??
       mapSourceToolFailure(error) ??
@@ -641,7 +644,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
   const drafts = new MemoryDraftStore((key, version) => changeFeed.publish({ topic: 'draft', key, version }))
   let opened: StorageLayer | undefined
   let runtime: RuntimeLayer | undefined
-  let attachments: ManagedAttachments | undefined
+  let attachments: AttachmentFileStore | undefined
   let host: Awaited<ReturnType<typeof startHost>> | undefined
   let closing: Promise<void> | undefined
   const closers: (() => Promise<void> | void)[] = [
@@ -660,7 +663,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     opened = await openStorageLayer(layout, options, renderer, commonsImages, () => attachments, changeFeed)
     const storage = opened
     const credentials = options.credentials ?? defaultCredentialStore(layout.root)
-    attachments = await ManagedAttachments.open(layout.files, storage.sessions.attachments, drafts)
+    attachments = await AttachmentFileStore.open(layout.files, storage.sessions.attachments, drafts)
     runtime = await createRuntimeLayer(
       layout,
       options,
@@ -675,9 +678,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       fileURLToPath(new URL('../../web/dist', import.meta.url)),
       () => storage.web.preferences().theme,
     )
-    host = await startHost(
-      createHostOptions(layout, options, storage, runtime, attachments, drafts, assets, changeFeed),
-    )
+    host = await startHost(createHostOptions(layout, options, storage, runtime, attachments, assets, changeFeed))
     return {
       origin: host.origin,
       token: host.token,

@@ -2,7 +2,7 @@ import busboy from 'busboy'
 import type { IncomingMessage } from 'node:http'
 import { HttpError } from './http-error.ts'
 
-/** The Host operation that receives one streamed file. `AttachmentCoordinator` implements it. */
+/** The Host operation that receives one streamed file. `AttachmentService` implements it. */
 export interface AttachmentUploadTarget {
   readonly maxBytes: number
   upload(input: {

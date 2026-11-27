@@ -6,7 +6,6 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 - **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, complete Phase 1 conventions and oxlint folder rules, install and pin Phase 2 Browser dependencies (React 19.3.1, Vite 8.4.0, React Router 8.5.3, TanStack Query 5.108.4, Tailwind CSS 4.3.5, shadcn/ui, Vitest 5.1.2, MSW 3.0.8) with `components.json` and `vitest.config.ts`, and add the Phase 2 React shell execution plan (Revision 2), then configure Vite, Tailwind CSS 4 and shadcn/ui for `apps/web/` with the legacy CSS behind Tailwind layers and a build guard against mocks and MSW, then add the typed browser API client in `apps/web/src/api/` with a Vietnamese error text map, then add the host connection and change feed hooks, the React shell with declarative routes, `main.tsx`, and the temporary mount for the legacy screens with explicit cleanup.
-- **Naming and grouping refactor:** add the problems, naming rules, module map and eight-phase plan in `docs/build/refactor/naming-and-grouping/` for `apps/host/src/`, enforce `typescript-enum`, `oxc/no-const-enum` and `role-file-symbol` (enabled for `chats`), and add the Phase 3 workspaces and Phase 4 providers and research execution plans.
 - Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 - Add deck review and generation run plans with source grants and image recovery contributions.
@@ -23,17 +22,16 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.
 - Serve the Vite output in `apps/web/dist` from the Host with an SPA fallback and a dynamic `/theme.js`, and remove `loadWebAssets`, `apps/web/src/index.ts` and the Host dependency on `@deckagent/local-web`.
 - Move the provider error class into `providers.errors.ts` as `ProviderError`, rename the provider check type to `ProviderCheckCode`, move the API protocol list into `@deckagent/host-contracts`, and replace `ProviderConfigurations` with `ProviderService`, dropping `ProviderOperations` and narrowing `modules/providers/index.ts`.
 - Replace the chat operation functions with `ChatService` and `ChatRequestService`, move the chat error class, the error map and the conversation contribution into their own files, and narrow `modules/chats/index.ts` to the symbols that other modules use.
 - Add Zod chat and approval body decoders in `@deckagent/host-contracts`, and split `apps/host/src/modules/chats/message.ts` into `message-validation.ts` and `chat-text.ts`.
 - Move HTTP helpers into Host and remove the host-api package. Enforce HTTP helper boundaries for module routes and error maps.
 - Move deck routes, deck workflows and image and rendering adapters into the Host deck module, and session activity and request reads into chats. Keep the deck package boundary and remove the old management contracts.
-- Compact `CHANGELOG.md` to under 50 lines; `commit` and `commit-push` now remove low-value entries before they add a new one, so the file does not grow.
 - Rewrite `docs/conventions/code.md` around the rules production code follows; use oxlint 1.94.0 as the only linter and Biome as the formatter only.
 - Separate Browser transport from UI features, Node builds from Browser builds, and application failure classes from HTTP status mapping.
 - Move 62 tests to their owners under `apps/web/tests/`, `packages/*/*/tests/` and `e2e/`, and replace fixed waits with explicit promises.
-- Require a task report, a report index row and a `Done` row in the plan after each implementation-plan task.
 
 ### Fixed
 - Share one strict Brief schema between Host validation, Browser decoding and model tools; validate layout capacities before image search; report exact field errors and derived layout blockers.

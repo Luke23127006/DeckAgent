@@ -44,7 +44,7 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | 2 | Chats module | Phase 1 is done | `ChatService`, `ChatRequestService`, `ChatError`, `chats.run-contribution.ts`, `message-validation.ts` and `chat-text.ts` exist as [Module Map](module-map.md#moduleschats) gives them. The chat routes read bodies with `decode*` functions. `ChatService` implements `WorkspaceChats`. The chats module is in the list of the role symbol rule | Done ([Revision 2](plan/README.md#revision-2-phase-2-chats-module)) |
 | 3 | Workspaces module | Phase 2 is done | `WorkspaceService`, `SqliteWorkspaceStore`, one `WorkspaceError`, `workspace.types.ts` and `workspaces.migrations.ts` exist. The workspaces module is in the list of the role symbol rule | Pending |
 | 4 | Providers and research modules | Phase 2 is done | `ProviderService`, `ProviderError`, `ProviderCheckCode`, `ResearchService` and `ResearchError` exist. The research port has the owner that the Phase 4 diagnosis selects. Both modules are in the list of the role symbol rule | Pending |
-| 5 | Attachments module | Phase 2 is done | `AttachmentService`, one `AttachmentError` with a typed status table, `AttachmentFileStore`, `SqliteAttachmentStore` and the port `AttachmentChats` exist. The attachments module is in the list of the role symbol rule | Pending |
+| 5 | Attachments module | Phase 2 is done | `AttachmentService`, one `AttachmentError` with a typed status table, `AttachmentFileStore`, `SqliteAttachmentStore` and the port `AttachmentChats` exist. The attachments module is in the list of the role symbol rule | [Implemented; exit blocked](#phase-5-attachments-module) |
 | 6 | Deck module | Phases 2 to 5 are done | `DeckService` owns the brief and confirmation use cases. `DeckWorkflowError` and the port `DeckChats` exist. The files in the module root are in folders by capability. Deck run planning is not in `server.ts`. The `chatSessions` adapter in `server.ts` is removed. The deck module is in the list of the role symbol rule | Pending |
 | 7 | Composition root, `db/` and root files | Phase 6 is done | `server.ts` holds only startup, shutdown, configuration and wiring. `mapRunFailure` is in `http/`. `db/` maps no error to an HTTP status. Each file in the root of `apps/host/src/` has an owner in the Project Structure [[5]](#ref-5). Each barrel exports only operations that a consumer outside the module uses | Pending |
 | 8 | Contract rename of the chat ID | Phase 7 is done, and Phase 5 of the Target Structure Refactor is done | `sessionId`, `/api/sessions` and the `SESSION_*` codes have the chat names in the wire, the database, `packages/presentation/`, `apps/web/` and the tests, in one revision. A database migration keeps the user data | Pending |
@@ -58,6 +58,13 @@ Change the conventions before any code changes. Then the executors of this works
 ### Phase 2: Chats module
 
 Start with the chats module, because it has the most problems and because the workspaces module uses `ChatService`. The diagnosis of this phase decides which operations of the `chatSessions` adapter move to `ChatService` now, and which stay until Phase 6.
+
+### Phase 5: Attachments module
+
+[Task 16](plan/task-16-refactor-attachments-and-check-phase-5.md) covers all of Phase 5.
+The user requested this task after direct diagnosis and execution.
+The [Task 16 report](reports/task-16-refactor-attachments-and-check-phase-5.md) records changes, commands, review findings and evidence limits.
+Implementation is complete. The full exit check remains blocked, so Phase 5 is not Done.
 
 ### Phase 6: Deck module
 

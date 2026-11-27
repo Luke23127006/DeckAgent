@@ -1,3 +1,4 @@
+import type { AttachmentChats } from '../attachments/index.ts'
 import type { RunOwner } from '../../runs/ports.ts'
 import type {
   AttachmentView,
@@ -58,7 +59,7 @@ export interface ChatMarks {
 }
 
 /** Coordinates chat creation, model selection, listing, search, and Browser projection. */
-export class ChatService implements WorkspaceChats {
+export class ChatService implements WorkspaceChats, AttachmentChats {
   constructor(
     private readonly store: ChatStore,
     private readonly runs: ChatRuns,
@@ -66,6 +67,10 @@ export class ChatService implements WorkspaceChats {
     private readonly models: ChatModels,
     private readonly marks: ChatMarks,
   ) {}
+
+  getInfo(id: string): Promise<unknown> {
+    return this.store.getInfo(id)
+  }
 
   async hasActiveRequest(workspaceId: string): Promise<boolean> {
     return (await this.store.list())
