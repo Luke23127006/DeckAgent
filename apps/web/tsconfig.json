@@ -22,12 +22,12 @@
   "include": [
     "src"
   ],
-  "exclude": [
-    "src/browser/**"
-  ],
   "references": [
     {
       "path": "../../packages/host/contracts"
+    },
+    {
+      "path": "../../packages/presentation/document"
     },
     {
       "path": "./tsconfig.browser.json"

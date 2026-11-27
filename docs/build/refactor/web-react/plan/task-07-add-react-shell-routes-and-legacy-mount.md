@@ -32,7 +32,7 @@ Read this file to learn the steps of Task 7, which adds `AppShell`, the declarat
 
 **Forbidden:** Do not import `src/api/` from `pages/`, `components/` or `layouts/`. Do not change any legacy CSS class name or DOM selector used by `e2e/browser-smoke.test.mjs`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/web/tests/app-shell-routes.test.tsx` with a header comment that follows `docs/conventions/testware.md`:
 
@@ -93,19 +93,19 @@ describe('AppRoutes', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/app-shell-routes.test.tsx`
 Expected: FAIL. The output reports that `routes.tsx` does not exist.
 
-- [ ] **Step 3: Refactor `shell-dom.ts`, `theme.ts` and `boot.ts` for explicit mount and cleanup**
+- [x] **Step 3: Refactor `shell-dom.ts`, `theme.ts` and `boot.ts` for explicit mount and cleanup**
 
 1. Update `apps/web/src/browser/shell-dom.ts`: accept `(root: HTMLElement, changed: () => void)` in `ShellDom` and `createShellDom`, call `root.replaceChildren()`, save the `keydown`, `pointerdown` and `compactNavigation` listener functions, and remove them with `navigationSize?.disconnect()` in `dispose()`.
 2. Update `apps/web/src/browser/theme.ts`: toggle `document.documentElement.classList.toggle('dark', theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches))` without writing `dataset.theme`. Listen to `matchMedia('(prefers-color-scheme: dark)')` when `current === 'system'` and return `{ node: group, update, dispose }`.
 3. Update `apps/web/src/browser/boot.ts`: export `LegacyBrowserOptions` and `mountLegacyBrowser(root, options): () => void` using `options.origin` and `options.token`. Do not run boot code at module top level. Track `disposed = false`, sync initial theme via `management.preferences()`, open `options.initialSessionId` if present or call `options.onMissingSession?.()`, and open `settingsUI.open()` when `options.openSettings` is true. Return a cleanup function that sets `disposed = true`, removes `pagehide` and `pageshow` listeners, disposes all controllers and clears `root.replaceChildren()`.
 4. Update `apps/web/tsconfig.json`: remove `"exclude": ["src/browser/**"]` and add `{ "path": "../../packages/presentation/document" }` to `"references"`.
 
-- [ ] **Step 4: Implement `AppShell`, `LegacyBrowserMount`, pages, `routes.tsx` and `main.tsx`**
+- [x] **Step 4: Implement `AppShell`, `LegacyBrowserMount`, pages, `routes.tsx` and `main.tsx`**
 
 1. Create `apps/web/src/layouts/app-shell.tsx`: call `useHostConnection()` and `useChangeFeed({ enabled: connection.token.length > 0 })`, and render `<div className="h-dvh w-full"><Outlet /></div>`.
 2. Create `apps/web/src/components/legacy-browser-mount.tsx`: call `useHostConnection()`, render `<main id="app" ref={containerRef} />`, and run `mountLegacyBrowser` inside `useEffect` with its cleanup return.
@@ -115,7 +115,7 @@ Expected: FAIL. The output reports that `routes.tsx` does not exist.
 6. Create `apps/web/src/routes.tsx`: export `AppRoutes()` with `<Routes>`, `<Route element={<AppShell />}>`, `<Route index element={<HomePage />} />`, `<Route path="/chats/:sessionId" element={<ChatPage />} />`, `<Route path="/settings" element={<SettingsPage />} />`, and `<Route path="*" element={<Navigate to="/" replace />} />`.
 7. Create `apps/web/src/main.tsx`: import `'@/styles/app.css'`, read the hash token once with `readTokenFromHash(window.location.hash)`, call `configureApiClient({ origin: window.location.origin, token })`, create `new QueryClient()`, and mount `<StrictMode><QueryClientProvider client={queryClient}><BrowserRouter><AppRoutes /></BrowserRouter></QueryClientProvider></StrictMode>` on `document.getElementById('root')`.
 
-- [ ] **Step 5: Run tests, Vite build and static checks**
+- [x] **Step 5: Run tests, Vite build and static checks**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/app-shell-routes.test.tsx`
 Expected: PASS. Exit code 0.
@@ -126,6 +126,6 @@ Expected: exit code 0. `apps/web/dist/index.html` and `apps/web/dist/samples/1.h
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

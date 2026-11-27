@@ -1,14 +1,6 @@
 import { element } from './dom.ts'
 
-function appRoot(): HTMLElement {
-  const root = document.querySelector<HTMLElement>('#app')
-  if (!root) throw new Error('APP_ROOT_MISSING')
-  root.replaceChildren()
-  return root
-}
-
 export class ShellDom {
-  readonly root = appRoot()
   readonly navigation = element('aside', undefined, 'chat-navigation')
   readonly chats = element('nav')
   readonly conversation = element('section', undefined, 'conversation')
@@ -53,17 +45,31 @@ export class ShellDom {
   readonly primaryAction = element('div', undefined, 'composer-primary')
   private readonly compactNavigation = matchMedia('(max-width:720px)')
   private navigationSize: ResizeObserver | undefined
+  private readonly onDocumentKeydown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') this.closeAccountMenu(true)
+  }
+  private readonly onDocumentPointerDown = (event: PointerEvent): void => {
+    const target = event.target
+    if (!(target instanceof Node)) return
+    if (!this.accountMenu.hidden && !this.accountMenu.contains(target) && !this.accountTrigger.contains(target))
+      this.closeAccountMenu()
+  }
+  private readonly onCompactNavigationChange = (): void => {
+    this.foldRecents()
+    this.changed()
+  }
 
-  constructor(changed: () => void) {
+  constructor(
+    readonly root: HTMLElement,
+    private readonly changed: () => void,
+  ) {
+    root.replaceChildren()
     this.recents.addEventListener('click', () => {
       this.chats.hidden = !this.chats.hidden
       this.recents.setAttribute('aria-expanded', String(!this.chats.hidden))
       changed()
     })
-    this.compactNavigation.addEventListener('change', () => {
-      this.foldRecents()
-      changed()
-    })
+    this.compactNavigation.addEventListener('change', this.onCompactNavigationChange)
     this.navToggle.addEventListener('click', () => this.setNavigation(this.root.dataset.nav !== 'collapsed'))
     this.accountTrigger.addEventListener('click', () =>
       this.accountMenu.hidden ? this.openAccountMenu() : this.closeAccountMenu(),
@@ -133,15 +139,8 @@ export class ShellDom {
       element('span', 'Cài đặt', 'account-label'),
     )
     // The menu closes on Escape and on any press outside it, like the model popover.
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') this.closeAccountMenu(true)
-    })
-    document.addEventListener('pointerdown', event => {
-      const target = event.target
-      if (!(target instanceof Node)) return
-      if (!this.accountMenu.hidden && !this.accountMenu.contains(target) && !this.accountTrigger.contains(target))
-        this.closeAccountMenu()
-    })
+    document.addEventListener('keydown', this.onDocumentKeydown)
+    document.addEventListener('pointerdown', this.onDocumentPointerDown)
   }
 
   private configureSearch(): void {
@@ -248,10 +247,13 @@ export class ShellDom {
   }
 
   dispose(): void {
+    document.removeEventListener('keydown', this.onDocumentKeydown)
+    document.removeEventListener('pointerdown', this.onDocumentPointerDown)
+    this.compactNavigation.removeEventListener('change', this.onCompactNavigationChange)
     this.navigationSize?.disconnect()
   }
 }
 
-export function createShellDom(changed: () => void): ShellDom {
-  return new ShellDom(changed)
+export function createShellDom(root: HTMLElement, changed: () => void): ShellDom {
+  return new ShellDom(root, changed)
 }

@@ -25,7 +25,7 @@ Read this file to learn the steps of Task 6, which adds `useChangeFeed` for TanS
 
 **Forbidden:** Do not write notice payloads into the TanStack Query cache (`setQueryData`). Invalidate query key prefixes only.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/web/tests/use-change-feed.test.tsx` with a header comment that follows `docs/conventions/testware.md`:
 
@@ -116,12 +116,12 @@ describe('useChangeFeed', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/use-change-feed.test.tsx`
 Expected: FAIL. The output reports that `use-change-feed.ts` does not exist.
 
-- [ ] **Step 3: Implement `apps/web/src/hooks/use-change-feed.ts` and `apps/web/src/hooks/use-host-connection.ts`**
+- [x] **Step 3: Implement `apps/web/src/hooks/use-change-feed.ts` and `apps/web/src/hooks/use-host-connection.ts`**
 
 1. Create `apps/web/src/hooks/use-host-connection.ts`:
    - Export `useHostConnection(): ApiClientConfig` returning `getApiClientConfig()`.
@@ -133,7 +133,7 @@ Expected: FAIL. The output reports that `use-change-feed.ts` does not exist.
      - First `useEffect`: when `options.enabled !== false`, create an `AbortController`, run `followStream(watchHostChanges, ...)`, and abort in the cleanup function.
      - Second `useEffect`: when `options.enabled !== false && options.sessionId`, create an `AbortController`, run `followStream(signal => watchChatChanges(sessionId, signal), ...)`, and abort in the cleanup function.
 
-- [ ] **Step 4: Run the test and static checks**
+- [x] **Step 4: Run the test and static checks**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/use-change-feed.test.tsx`
 Expected: PASS. Exit code 0.
@@ -141,6 +141,6 @@ Expected: PASS. Exit code 0.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
