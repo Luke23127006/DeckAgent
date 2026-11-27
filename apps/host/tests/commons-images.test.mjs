@@ -1,9 +1,12 @@
+import { AttachmentParser } from '@deckagent/file-tools'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
-import { CommonsImages } from '../lib/types/integrations/images/index.js'
+import { CommonsImages } from '../lib/types/modules/deck/index.js'
 
-const png = await readFile(new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+const png = await readFile(
+  new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+)
 const page = (license, url = 'https://upload.wikimedia.org/wikipedia/commons/example.png') => ({
   title: 'File:Example.png',
   imageinfo: [
@@ -21,7 +24,7 @@ const page = (license, url = 'https://upload.wikimedia.org/wikipedia/commons/exa
 
 test('public images retain attribution, use only fixed Commons hosts and reject disallowed licences', async t => {
   const seen = []
-  const images = new CommonsImages(async (url, options) => {
+  const images = new CommonsImages(new AttachmentParser(), async (url, options) => {
     seen.push({ url: String(url), options })
     return String(url).startsWith('https://commons.wikimedia.org/w/api.php?')
       ? Response.json({ query: { pages: [page('CC BY-NC 4.0'), page('CC BY 4.0')] } })
@@ -39,7 +42,7 @@ test('public images retain attribution, use only fixed Commons hosts and reject 
 
 test('known prohibited licences and unsafe image destinations are not fetched', async t => {
   let calls = 0
-  const images = new CommonsImages(async () => {
+  const images = new CommonsImages(new AttachmentParser(), async () => {
     calls++
     return Response.json({ query: { pages: [page('CC BY-SA 4.0'), page('CC BY 4.0', 'http://127.0.0.1/private')] } })
   })
@@ -49,7 +52,7 @@ test('known prohibited licences and unsafe image destinations are not fetched', 
 })
 
 test('unknown licences remain explicitly unknown rather than being reported as accepted', async t => {
-  const images = new CommonsImages(async url =>
+  const images = new CommonsImages(new AttachmentParser(), async url =>
     String(url).includes('/w/api.php?')
       ? Response.json({ query: { pages: [page('')] } })
       : new Response(png, { headers: { 'content-type': 'image/png' } }),
@@ -62,7 +65,7 @@ test('Commons thumbnail host is accepted and contradictory prohibited licence me
   const prohibited = page('CC BY-SA 4.0')
   prohibited.imageinfo[0].extmetadata.LicenseUrl.value = 'https://creativecommons.org/publicdomain/zero/1.0/'
   const seen = []
-  const images = new CommonsImages(async url => {
+  const images = new CommonsImages(new AttachmentParser(), async url => {
     seen.push(String(url))
     return String(url).includes('/w/api.php?')
       ? Response.json({

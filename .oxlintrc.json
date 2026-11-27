@@ -19,7 +19,10 @@
   },
   "overrides": [
     {
-      "files": ["**/apps/**/*.{ts,tsx,mts,cts,js,mjs,cjs}", "**/packages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/apps/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/packages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -42,7 +45,9 @@
       }
     },
     {
-      "files": ["**/apps/web/src/browser/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/apps/web/src/browser/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -60,7 +65,10 @@
                 "message": "Import another package through its public exports only."
               },
               {
-                "group": ["node:*", "node:*/*"],
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
                 "message": "Browser code must not import Node-only modules."
               },
               {
@@ -82,7 +90,9 @@
       }
     },
     {
-      "files": ["**/apps/host/src/http/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/apps/host/src/http/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -121,7 +131,9 @@
       }
     },
     {
-      "files": ["**/apps/host/src/modules/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/apps/host/src/modules/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -156,7 +168,44 @@
       }
     },
     {
-      "files": ["**/apps/host/src/modules/*/*.routes.ts"],
+      "files": [
+        "**/apps/host/src/modules/deck/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "@deckagent/session-persistence",
+                  "@deckagent/file-tools"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.routes.ts"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -186,7 +235,11 @@
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               },
               {
-                "group": ["./*.store.ts", "./schema.ts", "node:sqlite"],
+                "group": [
+                  "./*.store.ts",
+                  "./schema.ts",
+                  "node:sqlite"
+                ],
                 "message": "A module route must not import a store or the SQL driver. Call the service of the module."
               }
             ]
@@ -195,7 +248,9 @@
       }
     },
     {
-      "files": ["**/apps/host/src/modules/*/*.service.ts"],
+      "files": [
+        "**/apps/host/src/modules/*/*.service.ts"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",
@@ -225,7 +280,11 @@
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               },
               {
-                "group": ["express", "express/*", "node:sqlite"],
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
                 "message": "A module service must not import Express or the SQL driver. The routes file owns HTTP, and the store file owns SQL."
               }
             ]
@@ -234,7 +293,52 @@
       }
     },
     {
-      "files": ["**/packages/host/contracts/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
+      "files": [
+        "**/apps/host/src/modules/deck/deck.service.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "@deckagent/session-persistence",
+                  "@deckagent/file-tools"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
+                "message": "A module service must not import Express or the SQL driver. The routes file owns HTTP, and the store file owns SQL."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/packages/host/contracts/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
       "rules": {
         "eslint/no-restricted-imports": [
           "error",

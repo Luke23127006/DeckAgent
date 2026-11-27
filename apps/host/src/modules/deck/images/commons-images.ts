@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { AttachmentParser } from '@deckagent/file-tools'
+import type { ImageParserPort } from '../ports.ts'
 import { DeckError } from '@deckagent/deck'
 import type { ImageCredit, PreparedResearchImage } from '@deckagent/deck'
 
@@ -120,8 +120,10 @@ export interface CommonsCandidate {
 
 /** Fixed public metadata/upload hosts only; no provider key, arbitrary URL, redirect or model switch. */
 export class CommonsImages {
-  private readonly parser = new AttachmentParser()
-  constructor(private readonly request: typeof fetch = fetch) {}
+  constructor(
+    private readonly parser: ImageParserPort,
+    private readonly request: typeof fetch = fetch,
+  ) {}
   close(): Promise<void> {
     return this.parser.close()
   }
@@ -174,7 +176,8 @@ export class CommonsImages {
       signal: operation,
     })
     const image = parsed.parts.find(p => p.type === 'image')
-    if (!image || image.type !== 'image') throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+    if (!image || image.type !== 'image' || !('data' in image) || typeof image.data !== 'string')
+      throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     operation.throwIfAborted()
     const normalized = Buffer.from(image.data, 'base64')
     return {

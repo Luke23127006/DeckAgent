@@ -49,3 +49,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 
 | [Task 41: Add Zod decoders and PREFERENCES_STALE checks report](task-41-add-preferences-stale-check.md) | Task 41 | Strict decoders require expectedVersion. Stale writes return 409 before Tavily and inside the SQL transaction. All 19 suites pass after the Browser boot fix. |
 | [Task 42: Connect the Browser to preferences notices report](task-42-connect-browser-to-preferences-notices.md) | Task 42 | The Browser refreshes research controls and theme from preferences notices. Stale research saves refresh settings without another write. All 19 suites pass. |
+
+| [Task 43: Move the deck module report](task-43-move-deck-module.md) | Task 43 | Deck workflows and adapters moved behind narrow ports. All 19 required suites pass. |

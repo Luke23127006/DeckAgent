@@ -1,7 +1,8 @@
 import { findCompatibleLayouts, listTemplates } from '@deckagent/design'
 import type { BriefSourceRef, GenerationCapability } from '@deckagent/deck'
 import type { ToolSchema } from '@deckagent/host-api'
-import type { AttachmentRecord, ResearchSource } from '@deckagent/session-persistence'
+import type { DeckAttachmentRecord } from './ports.ts'
+import type { ResearchSourceRecord } from '../research/index.ts'
 
 export type GenerationPlan = ReturnType<GenerationCapability['plan']>
 
@@ -70,8 +71,8 @@ export const generationToolSchemas: readonly ToolSchema[] = Object.entries(opera
 export function buildGenerationContext(
   plan: GenerationPlan,
   files: readonly GenerationSource[],
-  attachments: readonly AttachmentRecord[],
-  research: readonly ResearchSource[],
+  attachments: readonly DeckAttachmentRecord[],
+  research: readonly ResearchSourceRecord[],
 ): GenerationContext {
   return {
     promptVersion: 'b05-generation-v2',

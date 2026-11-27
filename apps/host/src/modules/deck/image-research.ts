@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { AttachmentParser } from '@deckagent/file-tools'
+import type { ImageParserPort } from './ports.ts'
 import { DeckError } from '@deckagent/deck'
 import type {
   ImageNeed,
@@ -8,10 +8,10 @@ import type {
   OutlineImageReview,
   ImageSourceCheck,
 } from '@deckagent/deck'
-import { ResearchFailure } from '../../modules/research/index.ts'
-import type { ResearchCoordinator } from '../../modules/research/index.ts'
-import type { CommonsImages, CommonsCandidate } from '../../integrations/images/index.ts'
-import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from '../../integrations/images/index.ts'
+import { ResearchFailure } from '../research/index.ts'
+import type { ResearchCoordinator } from '../research/index.ts'
+import type { CommonsImages, CommonsCandidate } from './images/index.ts'
+import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from './images/index.ts'
 import { imagePageCredit } from './image-credit.ts'
 import { ImageReviewRun } from './image-review-run.ts'
 import type { Candidate } from './image-review-run.ts'
@@ -26,10 +26,10 @@ type SourceResolution =
   | { readonly kind: 'image'; readonly image: PreparedResearchImage }
 
 export class WebImageResearch {
-  private readonly parser = new AttachmentParser()
   constructor(
     private readonly research: Pick<ResearchCoordinator, 'imageSearch'>,
     private readonly commons: CommonsImages,
+    private readonly parser: ImageParserPort,
     private readonly reader = new PublicImageReader(),
   ) {}
   close() {
@@ -165,7 +165,8 @@ export class WebImageResearch {
         )
       })
     const image = parsed.parts.find(p => p.type === 'image')
-    if (!image || image.type !== 'image') throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+    if (!image || image.type !== 'image' || !('data' in image) || typeof image.data !== 'string')
+      throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     operation.throwIfAborted()
     const normalized = Buffer.from(image.data, 'base64')
     return {

@@ -3,7 +3,7 @@ import { DeckError, interviewState, validateBriefDraft } from '@deckagent/deck'
 import type { DeckStore, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
 import type { PreparedRequest, RequestRun, RequestRuntime, RuntimeOutcome } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
+import type { DeckSessionStore } from './ports.ts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
 import { DeckWorkflowFailure } from './failures.ts'
 import { buildDeckInstructions, buildDeckWorkflowContext, emptyBriefDraft } from './deck-prompts.ts'
@@ -22,7 +22,7 @@ export class DeckWorkflow implements RequestRuntime {
   constructor(
     private readonly runtime: RequestRuntime,
     private readonly decks: DeckStore,
-    private readonly sessions: SqliteSessionStore,
+    private readonly sessions: DeckSessionStore,
     private readonly briefs: BriefCoordinator,
     private readonly generationRuntime?: RequestRuntime,
     private readonly imageResearch?: WebImageResearch,

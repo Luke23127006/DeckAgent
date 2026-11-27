@@ -1,8 +1,9 @@
+import { AttachmentParser } from '@deckagent/file-tools'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { TavilyClient } from '../lib/types/modules/research/index.js'
-import { PublicImageReader } from '../lib/types/integrations/images/index.js'
-import { WebImageResearch } from '../lib/types/features/deck/index.js'
+import { PublicImageReader } from '../lib/types/modules/deck/index.js'
+import { WebImageResearch } from '../lib/types/modules/deck/index.js'
 import { DeckStore, outlineImageNeeds } from '@deckagent/deck'
 import { DatabaseSync } from 'node:sqlite'
 import { createHash } from 'node:crypto'
@@ -79,7 +80,7 @@ function service(t, entries = candidates) {
       return prepared
     },
   }
-  const images = new WebImageResearch({ imageSearch: async () => entries }, commons)
+  const images = new WebImageResearch({ imageSearch: async () => entries }, commons, new AttachmentParser())
   t.after(() => images.close())
   let attempts = 0
   const run = images.open(AbortSignal.timeout(5000), () => {
@@ -209,6 +210,7 @@ test('licence evidence must identify the exact image and an accepted licence', a
     const images = new WebImageResearch(
       { imageSearch: async () => [] },
       { candidates: async () => [] },
+      new AttachmentParser(),
       {
         read: async url => (url === imageUrl ? png : Buffer.from(html)),
       },
@@ -240,6 +242,7 @@ test('a top-level Pexels stock image resolves its source and retains its platfor
   const images = new WebImageResearch(
     { imageSearch: async () => [] },
     { candidates: async () => [] },
+    new AttachmentParser(),
     {
       read: async (url, _signal, _limit, types) => {
         reads.push(url)
@@ -274,6 +277,7 @@ test('source hints are checked against the exact image, including a relevant pag
   const images = new WebImageResearch(
     { imageSearch: async () => [] },
     { candidates: async () => [] },
+    new AttachmentParser(),
     {
       read: async url => {
         if (url === imageUrl) return png
@@ -308,7 +312,12 @@ test('a blocked source is reported with HTTP evidence instead of being labelled 
     async () => new Response('Forbidden', { status: 403, headers: { 'content-type': 'text/html' } }),
     async () => [{ address: '8.8.8.8', family: 4 }],
   )
-  const images = new WebImageResearch({ imageSearch: async () => [] }, { candidates: async () => [] }, reader)
+  const images = new WebImageResearch(
+    { imageSearch: async () => [] },
+    { candidates: async () => [] },
+    new AttachmentParser(),
+    reader,
+  )
   t.after(() => images.close())
   await assert.rejects(
     images.prepare(
@@ -363,7 +372,7 @@ test('a Commons thumbnail resolves by verified file identity while an unrelated 
       return prepared
     },
   }
-  const images = new WebImageResearch({ imageSearch: async () => [] }, commons)
+  const images = new WebImageResearch({ imageSearch: async () => [] }, commons, new AttachmentParser())
   t.after(() => images.close())
   await images.prepare(
     {
@@ -405,6 +414,7 @@ test('an in-flight image selection cannot override a newer search for the same s
         return prepared
       },
     },
+    new AttachmentParser(),
   )
   t.after(() => images.close())
   const run = images.open(AbortSignal.timeout(5000), () => {})
@@ -554,6 +564,7 @@ test('Stop after an image download starts prevents a completed selection from be
         return prepared
       },
     },
+    new AttachmentParser(),
   )
   t.after(() => images.close())
   const controller = new AbortController(),

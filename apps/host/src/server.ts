@@ -61,9 +61,13 @@ import {
   GenerationWorkflow,
   WebImageResearch,
   generationReport,
-} from './features/deck/index.ts'
-import { CommonsImages, PublicImageReader, type ImageLookup } from './integrations/images/index.ts'
-import { artifactRenderer, type ArtifactRenderer } from './integrations/rendering/index.ts'
+  CommonsImages,
+  PublicImageReader,
+  artifactRenderer,
+  mapDeckFailure,
+  type ImageLookup,
+  type ArtifactRenderer,
+} from './modules/deck/index.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { ProviderConnection } from './modules/providers/index.ts'
@@ -304,6 +308,7 @@ async function createRuntimeLayer(
   const images = new WebImageResearch(
     research,
     commonsImages,
+    new AttachmentParser(),
     new PublicImageReader(options.imageAccess?.fetch, options.imageAccess?.resolve),
   )
   return {
@@ -351,6 +356,7 @@ function createHostOptions(
       mapProviderFailure(error) ??
       mapAttachmentFailure(error) ??
       mapResearchFailure(error) ??
+      mapDeckFailure(error) ??
       mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
     confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
@@ -421,7 +427,7 @@ function createHostOptions(
  */
 export async function startLocalWeb(options: LocalWebOptions = {}) {
   const layout = await prepareStorage(options.dataDir ?? resolveStorageRoot())
-  const commonsImages = new CommonsImages(options.imageAccess?.fetch)
+  const commonsImages = new CommonsImages(new AttachmentParser(), options.imageAccess?.fetch)
   const renderer = artifactRenderer(join(layout.files, 'runtime', 'artifact-check'))
   const changeFeed = createChangeFeed()
   const drafts = new MemoryDraftStore((key, version) => changeFeed.publish({ topic: 'draft', key, version }))

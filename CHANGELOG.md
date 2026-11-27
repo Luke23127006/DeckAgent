@@ -9,10 +9,6 @@ Notable changes to this repository. The newest changes are at the top.
 - Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
 - Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
 
-- Connect the Browser to `GET /api/sessions/:sessionId/changes` for `draft` notices, remove the 500 ms attachment poll and window focus sync from `DraftSync`, and keep unsaved text with a clear message on `DRAFT_CONFLICT` without resending. Task 38 is `Done` in `docs/build/refactor/target-structure/plan/`.
-- Add Zod decoders `decodeDraftSaveBody` and `decodeAttachmentRemoveBody` in `@deckagent/host-contracts` and require `expectedRevision` on `PUT /api/sessions/:sessionId/draft`. Task 37 is `Done` in `docs/build/refactor/target-structure/plan/`.
-- Add `GET /api/sessions/:sessionId/changes` to the Host `ChangeFeed`, track a per-chat draft notice version in `MemoryDraftStore` apart from `draft.revision`, and publish `draft` notices after each draft write and attachment settlement. Task 36 is `Done` in `docs/build/refactor/target-structure/plan/`.
-- Move the attachments and draft module into `apps/host/src/modules/attachments/`, keep `busboy` 1.6.0 for multipart instead of `multer`, and remove the attachment and draft routes from `@deckagent/host-api` and `local-transport.ts`. Task 35 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - **Host modules and change notices:** move `workspaces`, `chats` and `providers` into `apps/host/src/modules/`, publish `ChangeNotice` values (`workspaces`, `chats`, `providers`) through `GET /api/changes`, refuse stale writes with `409 WORKSPACES_STALE` and `409 PROVIDERS_STALE`, and refresh Browser lists from those notices.
 - **Host package and HTTP edge:** add `@deckagent/host` (`apps/host/`), serve every route through Express 5.2.1, and record 15 shared HTTP behaviors in `e2e/http-edge.test.mjs` before the move.
 - **Boundaries and tooling:** add `@deckagent/host-contracts`, `check:boundaries` (with `module-private-import` and `module-cycle` rules and negative fixtures), `scan:module-design`, `check:docs` and `test:local-foundation`; enable the TypeScript safety and import-restriction rules in `.oxlintrc.json`.
@@ -23,6 +19,8 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+
+- Move deck workflows and image and rendering adapters into the Host deck module. Keep the deck package boundary.
 
 - Compact `CHANGELOG.md` to under 50 lines; `commit` and `commit-push` now remove low-value entries before they add a new one, so the file does not grow.
 - Rewrite `docs/conventions/code.md` around the rules production code follows; use oxlint 1.94.0 as the only linter and Biome as the formatter only.

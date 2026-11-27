@@ -7,10 +7,10 @@ import type {
   OutlineImageReview,
   PreparedResearchImage,
 } from '@deckagent/deck'
-import { ImageReadError, ImageSourceError, imageSource } from '../../integrations/images/index.ts'
-import type { CommonsCandidate } from '../../integrations/images/index.ts'
-import type { ImageSearchCandidate } from '../../modules/research/index.ts'
-import { ResearchFailure } from '../../modules/research/index.ts'
+import { ImageReadError, ImageSourceError, imageSource } from './images/index.ts'
+import type { CommonsCandidate } from './images/index.ts'
+import type { ImageSearchCandidate } from '../research/index.ts'
+import { ResearchFailure } from '../research/index.ts'
 import type { WebImageResearch } from './image-research.ts'
 
 const code = (error: unknown) =>

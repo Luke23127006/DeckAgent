@@ -112,7 +112,7 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | `presentation/pptx/` | Portable content thành PPTX artifact thế nào? | PPTX conversion, font mapping, PPTX validation | Deck lifecycle, request permission, publication authority |
 | `presentation/deck/` | Deck state và publication thay đổi hợp lệ thế nào? | Deck lifecycle, Brief và Outline state, generation state và grant, revision và publication invariant, artifact ownership | Vòng đời run, concrete HTML/PPTX adapter, workflow xuyên domain |
 
-`Open`: `presentation/deck/` có thể giữ làm package hoặc chuyển vào `apps/host/src/modules/deck/` [[1]](#ref-1). Cho tới khi quyết, `presentation/deck/` giữ vị trí và rule hiện tại.
+`packages/presentation/deck/` giữ dạng package để duy trì boundary `deck-concrete-adapter` và cung cấp type cho Host lifecycle. `apps/host/src/modules/deck/` sở hữu deck routes, workflows và adapters [[1]](#ref-1).
 
 ### Tests, scripts và docs
 

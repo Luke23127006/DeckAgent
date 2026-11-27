@@ -162,10 +162,7 @@ test('rejects relative http-error import inside packages/host/api/src/request-co
 })
 
 test('rejects @ts-expect-error with description and explicit any', () => {
-  const result = lintFixture(
-    'apps/web/src/sample.ts',
-    '// @ts-expect-error reason\nexport const value: any = 1\n',
-  )
+  const result = lintFixture('apps/web/src/sample.ts', '// @ts-expect-error reason\nexport const value: any = 1\n')
   assert.equal(result.status, 1)
   assert.deepEqual(
     result.diagnostics.map(d => d.code),
@@ -276,9 +273,12 @@ test('rejects a store, the SQL driver and another module store inside a module r
 test('rejects Express and the SQL driver inside a module service file', () => {
   const result = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.service.ts',
-    ["import { Router } from 'express'", "import { DatabaseSync } from 'node:sqlite'", 'console.log(Router, DatabaseSync)', ''].join(
-      '\n',
-    ),
+    [
+      "import { Router } from 'express'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      'console.log(Router, DatabaseSync)',
+      '',
+    ].join('\n'),
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 2)
@@ -340,4 +340,42 @@ test('accepts the service, the Host API and Express inside a module routes file,
   )
   assert.equal(store.status, 0)
   assert.equal(store.diagnostics.length, 0)
+})
+
+test('deck services accept the deck package and reject storage packages, Express and SQL', () => {
+  const allowed = lintFixture(
+    'apps/host/src/modules/deck/deck.service.ts',
+    "import { DeckStore } from '@deckagent/deck'\nconsole.log(DeckStore)\n",
+  )
+  assert.equal(allowed.status, 0, allowed.output)
+  assert.deepEqual(allowed.diagnostics, [])
+  const denied = lintFixture(
+    'apps/host/src/modules/deck/deck.service.ts',
+    [
+      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      "import { AttachmentParser } from '@deckagent/file-tools'",
+      "import { Router } from 'express'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      'console.log(SqliteSessionStore, AttachmentParser, Router, DatabaseSync)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(denied.status, 1)
+  assert.equal(denied.diagnostics.length, 4)
+  for (const diagnostic of denied.diagnostics) assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+  for (const name of ['@deckagent/session-persistence', '@deckagent/file-tools', 'express', 'node:sqlite'])
+    assert.ok(
+      denied.diagnostics.some(diagnostic => diagnostic.message.includes(name)),
+      name,
+    )
+})
+
+test('deck routes and other modules reject the deck package', () => {
+  for (const path of ['apps/host/src/modules/deck/deck.routes.ts', 'apps/host/src/modules/workspaces/index.ts']) {
+    const result = lintFixture(path, "import { DeckStore } from '@deckagent/deck'\nconsole.log(DeckStore)\n")
+    assert.equal(result.status, 1, result.output)
+    assert.equal(result.diagnostics.length, 1)
+    assert.equal(result.diagnostics[0].code, 'eslint(no-restricted-imports)')
+    assert.match(result.diagnostics[0].message, /@deckagent\/deck/)
+  }
 })

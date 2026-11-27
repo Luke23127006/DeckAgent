@@ -1,6 +1,6 @@
 import { DeckError } from '@deckagent/deck'
 import type { ImageCredit, ImageSourceCheck } from '@deckagent/deck'
-import type { ImageSearchCandidate } from '../../modules/research/index.ts'
+import type { ImageSearchCandidate } from '../../research/index.ts'
 
 export class ImageSourceError extends DeckError {
   constructor(

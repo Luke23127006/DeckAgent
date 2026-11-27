@@ -1,8 +1,6 @@
-import { DeckError } from '@deckagent/deck'
 import { HttpError } from '@deckagent/host-api'
 import type { HttpErrorDetail, HttpFailureResponse, WebManagement } from '@deckagent/host-api'
 import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
-import { DeckWorkflowFailure } from './features/deck/index.ts'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
@@ -22,30 +20,6 @@ const sourceToolStatus: Readonly<Record<string, number>> = {
   TOOL_NOT_ALLOWED: 403,
   SESSION_NOT_FOUND: 404,
   ATTACHMENT_NOT_FOUND: 404,
-}
-
-const deckWorkflowStatus = (error: DeckWorkflowFailure): number => {
-  if (error.code === 'OUTLINE_NOT_FOUND') return error.reason === 'restore-outline-missing' ? 404 : 409
-  if (error.code === 'BRIEF_INVALID' || error.code === 'CONFIRMATION_INVALID' || error.code.startsWith('DESIGN_'))
-    return 400
-  if (error.code === 'SESSION_NOT_FOUND' || error.code === 'SOURCE_NOT_FOUND' || error.code === 'BRIEF_NOT_FOUND')
-    return 404
-  if (
-    [
-      'BRIEF_LOCKED',
-      'BRIEF_STALE',
-      'OUTLINE_STALE',
-      'OUTLINE_ALREADY_CONFIRMED',
-      'SESSION_BUSY',
-      'GENERATION_INCOMPLETE',
-      'CONFIRMATION_CONFLICT',
-      'SOURCE_UNAVAILABLE',
-      'GENERATION_MODEL_CHANGED',
-    ].includes(error.code)
-  )
-    return 409
-  if (error.code === 'GENERATION_UNAVAILABLE') return 503
-  return 500
 }
 
 function mapFailureEntry(code: string, detail: HttpErrorDetail | undefined, status: number): HttpFailureResponse {
@@ -79,17 +53,6 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     if (error.code === 'DRAFT_TOO_LARGE') return { status: 413, code: 'DRAFT_TOO_LARGE' }
     return undefined
   }
-  if (error instanceof DeckError) {
-    if (
-      error.code === 'OUTLINE_STALE' ||
-      error.code === 'OUTLINE_ALREADY_CONFIRMED' ||
-      error.code === 'OUTLINE_READ_ONLY' ||
-      error.code === 'OUTLINE_LIMIT'
-    )
-      return { status: 409, code: error.code }
-    if (error.code === 'DECK_CONTENT_NOT_FOUND') return { status: 404, code: error.code }
-  }
-  if (error instanceof DeckWorkflowFailure) return mapFailureEntry(error.code, error.detail, deckWorkflowStatus(error))
   if (error instanceof WebStateError) {
     const status =
       error.code === 'PREFERENCES_STALE'

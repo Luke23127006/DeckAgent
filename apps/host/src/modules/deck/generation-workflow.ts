@@ -1,6 +1,6 @@
 import type { PreparedRequest, RequestRun, RequestRuntime, RuntimeOutcome } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
+import type { DeckSessionStore } from './ports.ts'
 import { buildGenerationContext, buildGenerationInstructions, generationToolSchemas } from './generation-prompts.ts'
 import { createGenerationTools } from './generation-tools.ts'
 
@@ -10,7 +10,7 @@ const portableOnly = ['read_slide_draft', 'record_slide_content', 'validate_slid
 export class GenerationWorkflow implements RequestRuntime {
   constructor(
     private readonly runtime: RequestRuntime,
-    private readonly sessions: SqliteSessionStore,
+    private readonly sessions: DeckSessionStore,
   ) {}
 
   async prepare(request: AgentRequest): Promise<PreparedRequest> {

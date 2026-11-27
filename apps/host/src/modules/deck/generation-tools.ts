@@ -3,7 +3,8 @@ import { DeckError } from '@deckagent/deck'
 import type { BriefDraft, BriefSourceRef, ContentProvenance, GenerationCapability } from '@deckagent/deck'
 import { FormatError, decodeSlideDocument } from '@deckagent/presentation-document'
 import type { RequestRun, RequestTools, ToolResult, ToolSchema } from '@deckagent/host-api'
-import type { AttachmentRecord, ResearchSource } from '@deckagent/session-persistence'
+import type { DeckAttachmentRecord } from './ports.ts'
+import type { ResearchSourceRecord } from '../research/index.ts'
 import type { GenerationContext, GenerationSource } from './generation-prompts.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
@@ -29,7 +30,7 @@ interface EvidenceRecord {
   readonly excerpt: string
 }
 
-function createEvidenceLedger(attachments: readonly AttachmentRecord[]) {
+function createEvidenceLedger(attachments: readonly DeckAttachmentRecord[]) {
   const entries = new Map<string, EvidenceRecord>()
   const remember = (data: Record<string, unknown>): Record<string, unknown> => {
     const ref = object(data.source) ? data.source : data
@@ -99,8 +100,8 @@ export interface GenerationToolOptions {
   readonly context: GenerationContext
   readonly schemas: readonly ToolSchema[]
   readonly files: readonly GenerationSource[]
-  readonly attachments: readonly AttachmentRecord[]
-  readonly research: readonly ResearchSource[]
+  readonly attachments: readonly DeckAttachmentRecord[]
+  readonly research: readonly ResearchSourceRecord[]
   readonly brief: BriefDraft
   readonly portable: boolean
   readonly selected: (sourceId: string, version: number) => boolean

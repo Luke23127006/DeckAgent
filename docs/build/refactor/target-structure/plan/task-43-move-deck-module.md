@@ -73,7 +73,7 @@ After this task, `apps/host/src/modules/deck/` holds the deck workflow files, th
 | `commons-images.test.mjs`, `image-research.test.mjs` | Import `CommonsImages`, `PublicImageReader` and `WebImageResearch` from `../lib/types/modules/deck/index.js`, import `AttachmentParser` from `@deckagent/file-tools`, and pass `new AttachmentParser()` to each constructor call. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -83,11 +83,11 @@ Run: `git grep -n "^| 42 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move the files and change the wiring**
+- [x] **Step 2: Move the files and change the wiring**
 
 Do the changes of the tables `Mapping` and `Move rules`. Use `git mv` for the moved files. Then remove `apps/host/src/features/deck/`, `apps/host/src/integrations/images/` and `apps/host/src/integrations/rendering/`.
 
-- [ ] **Step 3: Check that no old path or forbidden import stays**
+- [x] **Step 3: Check that no old path or forbidden import stays**
 
 Run: `git grep --untracked -n -E "features/deck|integrations/images|integrations/rendering" -- apps/host packages e2e scripts`
 
@@ -101,17 +101,17 @@ Run: `git grep -n -E "DeckError|DeckWorkflowFailure|deckWorkflowStatus" -- apps/
 
 Expected: PASS. No line.
 
-- [ ] **Step 4: Format, build and check**
+- [x] **Step 4: Format, build and check**
 
 Remove `apps/host/lib` first so that an old build output does not hide a broken import. Then do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs` and `node --test tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Each output contains `# fail 0`.
 
-- [ ] **Step 5: Run every suite**
+- [x] **Step 5: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path | Symbols`.
 

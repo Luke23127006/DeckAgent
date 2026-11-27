@@ -1,7 +1,7 @@
 import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
 import type { DeckStore, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
+import type { DeckSessionStore } from './ports.ts'
 import type { BriefManagement } from '@deckagent/host-api'
 import type { BriefView } from '@deckagent/host-contracts'
 import { emptyBriefDraft } from './deck-prompts.ts'
@@ -11,7 +11,7 @@ import { DeckWorkflowFailure } from './failures.ts'
 export class BriefCoordinator implements BriefManagement {
   constructor(
     private readonly decks: DeckStore,
-    private readonly sessions: SqliteSessionStore,
+    private readonly sessions: DeckSessionStore,
   ) {}
 
   private async chat(id: string) {

@@ -3,8 +3,8 @@ import type { DeckStore, ConfirmationReceipt } from '@deckagent/deck'
 import { RequestFailure } from '@deckagent/host-api'
 import type { RequestAdmission, RequestRuntime } from '@deckagent/host-api'
 import type { AgentRequest, ConfirmationResult, RequestSnapshot } from '@deckagent/host-contracts'
-import type { SqliteSessionStore } from '@deckagent/session-persistence'
-import { RequestPreparationFailure } from '../requests/index.ts'
+import type { DeckSessionStore } from './ports.ts'
+import { RequestPreparationFailure } from '../../features/requests/index.ts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
 import { executeGenerationRun } from './generation-execution.ts'
 import { DeckWorkflowFailure } from './failures.ts'
@@ -17,7 +17,7 @@ export class ConfirmationCoordinator {
   private readonly queues = new Map<string, Promise<void>>()
   constructor(
     private readonly decks: DeckStore,
-    private readonly sessions: SqliteSessionStore,
+    private readonly sessions: DeckSessionStore,
     private readonly briefs: BriefCoordinator,
     private readonly runtime?: RequestRuntime,
   ) {}

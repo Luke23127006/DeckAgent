@@ -339,7 +339,7 @@ Revision 3j adds these failure modes:
 | 40 | Done | [Upgrade web.sqlite to schema 3 and add preferences version and notices](task-40-add-preferences-version-and-notices.md) ([report](../reports/task-40-add-preferences-version-and-notices.md)) |
 | 41 | Done | [Add Zod decoders and PREFERENCES_STALE check on research and preferences writes](task-41-add-preferences-stale-check.md) ([report](../reports/task-41-add-preferences-stale-check.md)) |
 | 42 | Done | [Connect the Browser to preferences notices and handle PREFERENCES_STALE](task-42-connect-browser-to-preferences-notices.md) ([report](../reports/task-42-connect-browser-to-preferences-notices.md)) |
-| 43 | Pending | [Move the deck workflows, image and rendering adapters and error map](task-43-move-deck-module.md) |
+| 43 | Done | [Move the deck workflows, image and rendering adapters and error map](task-43-move-deck-module.md) ([report](../reports/task-43-move-deck-module.md)) |
 | 44 | Pending | [Move deck and session-read routes and remove WebManagement](task-44-move-deck-and-session-read-routes.md) |
 | 45 | Pending | [Fix deck notify versions and publish brief, outline and deck change notices](task-45-add-brief-outline-deck-notices.md) |
 | 46 | Pending | [Connect the Browser to brief and outline change notices](task-46-connect-browser-to-brief-outline-notices.md) |
