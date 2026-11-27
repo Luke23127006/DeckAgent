@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`.
+**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`.
 
 **Approach:** One revision for each phase of the Naming and Grouping Refactor. The planner does the diagnosis of each phase, and the decision table records every answer. Each task is an execution task.
 
@@ -161,3 +161,42 @@ Phase 2 is done. Tasks 3 to 7 are `Done` (commits `102366c` and `f0c6c40` hold T
 | 8 | Done | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) ([report](../reports/task-08-split-workspace-types-errors-and-migrations.md)) |
 | 9 | Pending | [Rename SqliteWorkspaceStore, convert WorkspaceService to a class and wire routes](task-09-convert-workspace-service-and-store.md) |
 | 10 | Pending | [Enable role-file-symbol for workspaces and check Phase 3](task-10-enable-workspaces-role-check-and-verify-phase-3.md) |
+
+## Revision 4: Phase 4, providers and research modules
+
+### Decisions (Revision 4)
+
+| Topic | Decision |
+| --- | --- |
+| Parallel phases | Phases 3 and 5 run at the same time as Phase 4. Other executors change `apps/host/src/server.ts`, `apps/host/src/modules/chats/chats.service.ts`, `scripts/check-boundaries.mjs` and `tests/check-boundaries.test.mjs`. In these files, change only the symbols that the task names. Do not revert or reformat a change that the task does not name. |
+| Provider error class and map | Move the class `ProviderFailure` from `providers.service.ts` to `providers.errors.ts` as `class ProviderError` with `code: ProviderErrorCode`. `ProviderErrorCode` is the union of the 18 codes of the current `providerStatus` table. Type `providerStatus` as `Readonly<Record<ProviderErrorCode, number>>` and remove the `?? 500` fallback. Rename `mapProviderFailure` to `mapProviderError`. `providers.errors.ts` does not import `providers.service.ts`. |
+| Provider check code | Rename the type `ProviderFailure` in `provider-catalog.ts` to `ProviderCheckCode`. `ProviderCheckError` keeps its name and its codes. |
+| Provider protocol list | Remove `protocols` from `providers.service.ts`. In `packages/host/contracts/src/management.ts`, export `const providerProtocols = ['chat-completions', 'responses', 'anthropic-messages', 'gemini'] as const` and `type ProviderProtocol = (typeof providerProtocols)[number]`. Export `providerProtocols` from `packages/host/contracts/src/index.ts`. Reason: the wire contract owns `ProviderProtocol`. `apps/web/` keeps its own list until the Browser rewrite. |
+| Provider service class | Rename `ProviderConfigurations` to `ProviderService` and `ProviderConfigurationsOptions` to `ProviderServiceOptions`. Remove `ProviderOperations`. `createProviderRoutes` takes `providers: ProviderService`. |
+| Public exports of `providers/index.ts` | Export only symbols that callers outside `modules/providers/` import: `SqliteProviderStore`, `ProviderService`, `type ProviderServiceOptions`, `type ProviderConnection`, `listModels`, `validBaseUrl`, `createProviderRoutes` and `mapProviderError`. |
+| Research error class and map | Move `ResearchFailure` from `research.service.ts` to `research.errors.ts` as `class ResearchError` with `code: ResearchErrorCode`. `ResearchErrorCode` is the union of the 11 codes of the current `researchStatus` table. Type `researchStatus` as `Readonly<Record<ResearchErrorCode, number>>` and remove the `?? 500` fallback. Rename `mapResearchFailure` to `mapResearchError`. |
+| Tavily error code | Add `type TavilyErrorCode` to `tavily.ts` with the 6 codes that `tavily.ts` throws: `'SOURCE_ARGUMENTS_INVALID'`, `'RESEARCH_KEY_REJECTED'`, `'RESEARCH_QUOTA_EXHAUSTED'`, `'RESEARCH_UNAVAILABLE'`, `'RESEARCH_RESPONSE_TOO_LARGE'` and `'RESEARCH_FREE_ONLY'`. `TavilyError.code` has this type. Then `new ResearchError(error.code)` type-checks without a cast. |
+| Research ports (the `Open` item of the module map) | Replace `ResearchSessionStore` with two ports in `research.service.ts`. `ResearchChats` has `getInfo(sessionId: string): Promise<unknown>`, and `ChatService` implements it. `ResearchRuns` has `reserveResearch`, `recordResearch` and `researchSources` with the current signatures. Its owner is `runs/`, because the operations write the run store and `SqliteRunStore` in `db/run-store.ts` implements them. `server.ts` passes `chats` and `sessions.runs`. |
+| Research service class | Rename `ResearchCoordinator` to `ResearchService` with the constructor `(store: SqliteResearchStore, credentials: CredentialStore, chats: ResearchChats, runs: ResearchRuns, environmentKey: string \| undefined, client: Pick<TavilyClient, 'check' \| 'search' \| 'images'>, onPreferencesChanged?: (version: number) => void)`. Remove `ResearchOperations`. `createResearchRoutes` takes `research: ResearchService`. |
+| Public exports of `research/index.ts` | Export only symbols that callers outside `modules/research/` import: `SqliteResearchStore`, `ResearchService`, `type ResearchChats`, `type ResearchSourceRecord`, `ResearchError`, `mapResearchError`, `TavilyClient`, `type ImageSearchCandidate` and `createResearchRoutes`. |
+| Deck call sites | Change only the imports and the names of `ResearchFailure` and `ResearchCoordinator` in `apps/host/src/modules/deck/`. Phase 6 owns the other changes of the deck module. |
+| Hand validation in providers and research | Do not replace `record()`, `parse` or the configuration checks in Phase 4. The Done criteria of Phase 4 do not include them, and the review row of [Naming Rules](../naming-rules.md#enforcement) still covers them. |
+| Role symbol check | Add `'providers'` and `'research'` to the end of `ROLE_FILE_MODULES` in `scripts/check-boundaries.mjs`. Keep the other entries. In the test that ignores modules outside the list, the unlisted fixture is `apps/host/src/modules/deck/deck.service.ts`. |
+
+### Review Focus (Revision 4)
+
+- `mapProviderError` maps a code to a different HTTP status than before, or drops the `detail` of `PROVIDER_ID_TAKEN` or `CATALOG_UNAVAILABLE`. Test: `ProviderError and mapProviderError map codes to HTTP status and detail` in [Task 11](task-11-add-provider-error-check-code-and-protocols.md).
+- `providerProtocols` has a different order or a different set of values than the wire type `ProviderProtocol`, so that `cli.ts` refuses a valid model config. Test: `providerProtocols lists the four API protocols of BR-005 V-4` in [Task 11](task-11-add-provider-error-check-code-and-protocols.md).
+- `mapResearchError` maps a `TavilyError` directly, or maps `SESSION_NOT_FOUND` to a status other than 404. Test: `ResearchError and mapResearchError map codes to HTTP status and detail` in [Task 13](task-13-add-research-error-and-tavily-codes.md).
+- `ResearchService.sources` reads the chat through `ResearchRuns`, or `search` calls `recordResearch` before `reserveResearch`. Test: `ResearchService reads chats through ResearchChats and records sources through ResearchRuns` in [Task 14](task-14-convert-research-service-and-ports.md).
+- `role-file-symbol` omits `providers` or `research` from the default `ROLE_FILE_MODULES`. Test: `checkBoundaries applies role symbol checks to providers and research by default` in [Task 15](task-15-enable-providers-research-role-check-and-verify-phase-4.md).
+
+### Tasks (Revision 4)
+
+| Task | Status | File |
+| --- | --- | --- |
+| 11 | Pending | [Add ProviderError, ProviderCheckCode and providerProtocols](task-11-add-provider-error-check-code-and-protocols.md) |
+| 12 | Pending | [Rename ProviderService and narrow the providers index](task-12-convert-provider-service-and-index.md) |
+| 13 | Pending | [Add ResearchError and the Tavily error codes](task-13-add-research-error-and-tavily-codes.md) |
+| 14 | Pending | [Convert ResearchService and split the research ports](task-14-convert-research-service-and-ports.md) |
+| 15 | Pending | [Enable role-file-symbol for providers and research and check Phase 4](task-15-enable-providers-research-role-check-and-verify-phase-4.md) |

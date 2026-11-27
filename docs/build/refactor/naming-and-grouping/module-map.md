@@ -40,7 +40,7 @@ The rules are in [Naming Rules](naming-rules.md). The problems are in [Naming an
 | `ProviderConfigurations`, `ProviderOperations` (`Pick` of the class) | `class ProviderService` | NG-01, NG-02 |
 | Class `ProviderFailure` in `providers.service.ts` | `ProviderError` in `providers.errors.ts` | NG-06, NG-18 |
 | Type `ProviderFailure` in `provider-catalog.ts` | `ProviderCheckCode`. `ProviderCheckError` stays as the integration error | NG-18 |
-| `protocols` | `providerProtocols` with `as const`, and the type comes from it | NG-08 |
+| `protocols` in `providers.service.ts` | `providerProtocols` with `as const` in `packages/host/contracts/src/management.ts`. `ProviderProtocol` comes from it, because the wire contract owns the protocol list | NG-08 |
 | `SqliteProviderStore` | No change | — |
 
 ## `modules/research/`
@@ -49,7 +49,7 @@ The rules are in [Naming Rules](naming-rules.md). The problems are in [Naming an
 | --- | --- | --- |
 | `ResearchCoordinator`, `ResearchOperations` | `class ResearchService` | NG-01, NG-02 |
 | `ResearchFailure` | `ResearchError` in `research.errors.ts`. `TavilyError` stays as the integration error | NG-06 |
-| `ResearchSessionStore` | A port named for what research reads and writes. Its operations (`reserveResearch`, `recordResearch`, `researchSources`) write the run store, not the chat store. `Open`: the owner of these operations, the chats module or `runs/` | NG-17 |
+| `ResearchSessionStore` | Two ports. `ResearchChats` has `getInfo(sessionId)`, and `ChatService` implements it. `ResearchRuns` has `reserveResearch`, `recordResearch` and `researchSources`. Its owner is `runs/`, because these operations write the run store and `SqliteRunStore` in `db/` implements them | NG-17 |
 | `SqliteResearchStore`, `TavilyClient` | No change | — |
 
 ## `modules/attachments/`
