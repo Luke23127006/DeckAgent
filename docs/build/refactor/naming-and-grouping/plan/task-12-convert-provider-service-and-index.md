@@ -31,7 +31,7 @@ Read this file to learn the steps of Task 12, which renames the provider service
 
 **Forbidden:** Do not change the methods of the provider service, their order or their bodies. Do not change `apps/host/src/modules/providers/providers.store.ts` or `provider-catalog.ts`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `apps/host/tests/web-management.test.mjs`, add this test at the end of the file:
 
@@ -49,12 +49,12 @@ test('providers index exports ProviderService and only the operations that calle
 })
 ```
 
-- [ ] **Step 2: Build and run the test, and make sure that it fails**
+- [x] **Step 2: Build and run the test, and make sure that it fails**
 
 Run: `corepack pnpm@11.28.5 build; node --test --test-reporter=tap apps/host/tests/web-management.test.mjs`
 Expected: FAIL. The new test reports `ProviderConfigurations` in place of `ProviderService`.
 
-- [ ] **Step 3: Rename the class and the options**
+- [x] **Step 3: Rename the class and the options**
 
 Use this mapping in `apps/host/src/modules/providers/` and `apps/host/src/server.ts`:
 
@@ -69,7 +69,7 @@ Use this mapping in `apps/host/src/modules/providers/` and `apps/host/src/server
 3. Replace the content of `apps/host/src/modules/providers/index.ts` with exports of the 8 names in Interfaces: `SqliteProviderStore` from `./providers.store.ts`, `ProviderService`, `type ProviderServiceOptions` and `type ProviderConnection` from `./providers.service.ts`, `listModels` and `validBaseUrl` from `./provider-catalog.ts`, `createProviderRoutes` from `./providers.routes.ts`, and `mapProviderError` from `./providers.errors.ts`.
 4. In `apps/host/src/server.ts`, replace `ProviderConfigurations` with `ProviderService` and `ProviderConfigurationsOptions` with `ProviderServiceOptions`.
 
-- [ ] **Step 4: Build, run the tests and run the checks**
+- [x] **Step 4: Build, run the tests and run the checks**
 
 Run: `corepack pnpm@11.28.5 build && node --test --test-reporter=tap apps/host/tests/web-management.test.mjs apps/host/tests/web-session.test.mjs`
 Expected: exit code 0 and `# fail 0`.
@@ -80,6 +80,6 @@ Expected: no line.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

@@ -417,3 +417,15 @@ test('ProviderError and mapProviderError map codes to HTTP status and detail', (
   assert.equal(mapProviderError(new ProviderCheckError('PROVIDER_HTTP', 500)), undefined)
   assert.equal(mapProviderError(new Error('other')), undefined)
 })
+
+test('providers index exports ProviderService and only the operations that callers use', async () => {
+  const providers = await import('../lib/types/modules/providers/index.js')
+  assert.deepEqual(Object.keys(providers).toSorted(), [
+    'ProviderService',
+    'SqliteProviderStore',
+    'createProviderRoutes',
+    'listModels',
+    'mapProviderError',
+    'validBaseUrl',
+  ])
+})

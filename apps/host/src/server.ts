@@ -36,12 +36,12 @@ import { RunController } from './runs/lifecycle/index.ts'
 import { RunFailure } from './runs/ports.ts'
 import type { RunStore } from './runs/ports.ts'
 import {
-  ProviderConfigurations,
+  ProviderService,
   SqliteProviderStore,
   createProviderRoutes,
   listModels,
   mapProviderError,
-  type ProviderConfigurationsOptions,
+  type ProviderServiceOptions,
   type ProviderConnection,
 } from './modules/providers/index.ts'
 import { defaultCredentialStore, type CredentialStore } from './credential-store.ts'
@@ -106,7 +106,7 @@ export interface LocalWebOptions {
   /** Defaults to the protected store of this OS. Tests may give their own. */
   readonly credentials?: CredentialStore
   /** Tests replace the provider check and catalog lookup; production calls the provider. */
-  readonly providerAccess?: Pick<ProviderConfigurationsOptions, 'check' | 'catalog'>
+  readonly providerAccess?: Pick<ProviderServiceOptions, 'check' | 'catalog'>
   /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
 }
@@ -144,7 +144,7 @@ interface StorageLayer {
 }
 
 interface RuntimeLayer {
-  readonly providers: ProviderConfigurations
+  readonly providers: ProviderService
   readonly runtime: OpenCodeAgentRuntime
   readonly research: ResearchCoordinator
   readonly images: WebImageResearch
@@ -311,7 +311,7 @@ async function createRuntimeLayer(
 ): Promise<RuntimeLayer> {
   const { sessions, web } = storage
   const initial = options.selection ? { ...options.selection } : undefined
-  const providers = new ProviderConfigurations(new SqliteProviderStore(web.db), credentials, {
+  const providers = new ProviderService(new SqliteProviderStore(web.db), credentials, {
     check:
       options.providerAccess?.check ??
       (async (endpoint, key) => {

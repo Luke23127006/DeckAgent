@@ -1,7 +1,7 @@
 import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
 import { RequestValidationError, decodeProviderRemoveBody, decodeProviderSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { ProviderOperations } from './providers.service.ts'
+import type { ProviderService } from './providers.service.ts'
 
 function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
   try {
@@ -12,7 +12,7 @@ function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
   }
 }
 
-export function createProviderRoutes(providers: ProviderOperations): Router {
+export function createProviderRoutes(providers: ProviderService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const providerId = params({ providerId: /^[\w.-]{1,100}$/ })
   router.put(

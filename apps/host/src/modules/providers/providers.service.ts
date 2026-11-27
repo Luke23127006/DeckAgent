@@ -43,7 +43,7 @@ interface ProviderInput {
   readonly isNew: boolean
 }
 
-export interface ProviderConfigurationsOptions {
+export interface ProviderServiceOptions {
   /** The connection and key check before saving (FR-041). Tests replace it; it never runs a model. */
   readonly check?: (endpoint: ProviderEndpoint, key: string | undefined) => Promise<void>
   readonly catalog?: (
@@ -117,7 +117,7 @@ function checkFailure(error: unknown): ProviderError {
  * Provider configurations and added models (BR-005, BR-008). SQLite keeps non-secret metadata and a credential
  * reference; the credential store keeps the key. Changes apply to requests that start later (FR-042).
  */
-export class ProviderConfigurations {
+export class ProviderService {
   private readonly providers = new Map<string, SavedProvider>()
   /** Keys read for this Host process. Never returned to the browser, never persisted elsewhere. */
   private readonly keys = new Map<string, string>()
@@ -128,7 +128,7 @@ export class ProviderConfigurations {
   constructor(
     private readonly store: SqliteProviderStore,
     private readonly credentials: CredentialStore,
-    private readonly options: ProviderConfigurationsOptions = {},
+    private readonly options: ProviderServiceOptions = {},
   ) {}
 
   async load(connections: readonly ProviderConnection[] = [], initial?: ModelSelection): Promise<void> {
@@ -369,5 +369,3 @@ export class ProviderConfigurations {
     return work
   }
 }
-
-export type ProviderOperations = Pick<ProviderConfigurations, 'save' | 'remove' | 'catalog'>
