@@ -4,12 +4,13 @@ import { basename, dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SQLOutputValue } from 'node:sqlite'
 import type { PublishChange } from '@deckagent/host-contracts'
-import { WorkspaceError, defaultWorkspaceId } from './contracts.ts'
-import type { FolderStatus, Workspace, WorkspaceState } from './contracts.ts'
+import { defaultWorkspaceId } from './workspace.types.ts'
+import type { FolderStatus, Workspace, WorkspaceState } from './workspace.types.ts'
 import { FolderPolicy } from './folder-policy.ts'
 import type { FolderPolicyOptions } from './folder-policy.ts'
 import { nameFromFolder, nameFromUser } from './workspace-name.ts'
-import { initialize } from './schema.ts'
+import { WorkspaceError } from './workspaces.errors.ts'
+import { migrateWorkspacesDatabase } from './workspaces.migrations.ts'
 
 export interface WorkspaceRegistryOptions extends FolderPolicyOptions {
   /** SQLite file inside DeckAgent Application Storage. */
@@ -45,7 +46,7 @@ export class WorkspaceRegistry {
     try {
       mkdirSync(dirname(options.path), { recursive: true })
       db = new DatabaseSync(options.path)
-      initialize(db, options.defaultName ?? 'Workspace mặc định')
+      migrateWorkspacesDatabase(db, options.defaultName ?? 'Workspace mặc định')
       this.db = db
     } catch (error) {
       db?.close()

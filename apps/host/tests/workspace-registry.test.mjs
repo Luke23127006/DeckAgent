@@ -7,6 +7,7 @@ import test from 'node:test'
 import { FolderPolicy } from '../lib/types/modules/workspaces/folder-policy.js'
 import { nameFromFolder, nameFromUser } from '../lib/types/modules/workspaces/workspace-name.js'
 import { WorkspaceRegistry } from '../lib/types/modules/workspaces/workspaces.store.js'
+import { WorkspaceError, mapWorkspaceError } from '../lib/types/modules/workspaces/workspaces.errors.js'
 
 async function tree(folder) {
   const entries = []
@@ -462,4 +463,36 @@ test('stale expectedVersion throws WORKSPACES_STALE, changes no row and publishe
   assert.equal(registry.selectedId(), added.workspace.id)
   assert.deepEqual(notices, [])
   registry.close()
+})
+
+test('WorkspaceError and mapWorkspaceError map codes to HTTP status and safe detail', () => {
+  const active = new WorkspaceError('WORKSPACE_REQUEST_ACTIVE', 'Workspace has an active request')
+  assert.equal(active.name, 'WorkspaceError')
+  assert.deepEqual(mapWorkspaceError(active), { status: 409, code: 'WORKSPACE_REQUEST_ACTIVE' })
+  assert.deepEqual(
+    mapWorkspaceError(
+      new WorkspaceError('WORKSPACE_FOLDER_IN_USE', 'Another workspace has this folder', {
+        workspaceName: 'Alpha',
+      }),
+    ),
+    { status: 409, code: 'WORKSPACE_FOLDER_IN_USE', detail: { workspaceName: 'Alpha' } },
+  )
+  assert.deepEqual(
+    mapWorkspaceError(
+      new WorkspaceError('WORKSPACE_FOLDER_REFUSED', 'The folder cannot be a project folder', {
+        reason: 'user-folder',
+        allowInside: true,
+      }),
+    ),
+    { status: 422, code: 'WORKSPACE_FOLDER_REFUSED', detail: { reason: 'user-folder', allowInside: true } },
+  )
+  assert.deepEqual(mapWorkspaceError(new WorkspaceError('WORKSPACE_NOT_FOUND', 'Workspace is not set up')), {
+    status: 404,
+    code: 'WORKSPACE_NOT_FOUND',
+  })
+  assert.deepEqual(mapWorkspaceError(new WorkspaceError('WORKSPACES_STALE', 'Stale')), {
+    status: 409,
+    code: 'WORKSPACES_STALE',
+  })
+  assert.equal(mapWorkspaceError(new Error('other')), undefined)
 })

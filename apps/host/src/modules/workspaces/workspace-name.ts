@@ -1,4 +1,4 @@
-import { WorkspaceError } from './contracts.ts'
+import { WorkspaceError } from './workspaces.errors.ts'
 
 /** BR-020 V-2: at most 100 characters, a character being one Unicode code point after NFC. */
 export const nameLimit = 100

@@ -42,7 +42,7 @@ Read this file to learn the steps of Task 8, which creates `workspace.types.ts` 
 
 **Forbidden:** Do not rename `WorkspaceRegistry`, `createWorkspaceOperations` or `WorkspaceOperations` in this task. Do not change `.oxlintrc.json` or `scripts/check-boundaries.mjs`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `apps/host/tests/workspace-registry.test.mjs`, import `WorkspaceError` and `mapWorkspaceError` from `'../lib/types/modules/workspaces/workspaces.errors.js'`. Add this test at the end of the file:
 
@@ -80,12 +80,12 @@ test('WorkspaceError and mapWorkspaceError map codes to HTTP status and safe det
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `node --test --test-reporter=tap apps/host/tests/workspace-registry.test.mjs`
 Expected: FAIL. Node exits with a non-zero code because `WorkspaceError` and `mapWorkspaceError` are not exported from `workspaces.errors.js`.
 
-- [ ] **Step 3: Create `workspace.types.ts` and `workspaces.migrations.ts`, and unify `workspaces.errors.ts`**
+- [x] **Step 3: Create `workspace.types.ts` and `workspaces.migrations.ts`, and unify `workspaces.errors.ts`**
 
 1. Create `apps/host/src/modules/workspaces/workspace.types.ts` with `defaultWorkspaceId`, `FolderStatus`, `Workspace`, `WorkspaceState` and `FolderRefusal` from `contracts.ts`. Remove `apps/host/src/modules/workspaces/contracts.ts`.
 2. In `apps/host/src/modules/workspaces/workspaces.errors.ts`:
@@ -99,7 +99,7 @@ Expected: FAIL. Node exits with a non-zero code because `WorkspaceError` and `ma
    - Rename `initialize` to `export function migrateWorkspacesDatabase(db: DatabaseSync, defaultName: string): void`. Keep all SQL statements, pragmas and checks unchanged.
    - Remove `apps/host/src/modules/workspaces/schema.ts`.
 
-- [ ] **Step 4: Update imports and callers**
+- [x] **Step 4: Update imports and callers**
 
 1. In `apps/host/src/modules/workspaces/folder-policy.ts`, import `FolderRefusal` from `'./workspace.types.ts'` and `WorkspaceError` from `'./workspaces.errors.ts'`.
 2. In `apps/host/src/modules/workspaces/workspace-name.ts`, import `WorkspaceError` from `'./workspaces.errors.ts'`.
@@ -107,7 +107,7 @@ Expected: FAIL. Node exits with a non-zero code because `WorkspaceError` and `ma
 4. In `apps/host/src/modules/workspaces/workspaces.service.ts`, remove `WorkspaceWorkflowErrorCode` and `WorkspaceWorkflowError`. Import `WorkspaceError` from `'./workspaces.errors.ts'` and throw `new WorkspaceError('WORKSPACE_REQUEST_ACTIVE', 'Workspace has an active request')` in `requireNoActiveRequest`.
 5. In `apps/host/src/modules/workspaces/index.ts` and `apps/host/src/server.ts`, replace `mapWorkspaceFailure` with `mapWorkspaceError`.
 
-- [ ] **Step 5: Build, run tests and run checks**
+- [x] **Step 5: Build, run tests and run checks**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
@@ -118,6 +118,6 @@ Expected: exit code 0 and `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

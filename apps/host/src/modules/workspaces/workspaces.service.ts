@@ -1,13 +1,6 @@
 import type { WorkspaceList } from '@deckagent/host-contracts'
 import type { WorkspaceRegistry } from './workspaces.store.ts'
-
-type WorkspaceWorkflowErrorCode = 'WORKSPACE_REQUEST_ACTIVE'
-
-export class WorkspaceWorkflowError extends Error {
-  constructor(readonly code: WorkspaceWorkflowErrorCode) {
-    super(code)
-  }
-}
+import { WorkspaceError } from './workspaces.errors.ts'
 
 export interface WorkspaceChats {
   hasActiveRequest(workspaceId: string): Promise<boolean>
@@ -33,7 +26,8 @@ export function createWorkspaceOperations(registry: WorkspaceRegistry, chats: Wo
 
   // UC-013 A5: a workspace with an active request in one of its chats is not removed or moved; no request is stopped.
   const requireNoActiveRequest = async (workspaceId: string): Promise<void> => {
-    if (await chats.hasActiveRequest(workspaceId)) throw new WorkspaceWorkflowError('WORKSPACE_REQUEST_ACTIVE')
+    if (await chats.hasActiveRequest(workspaceId))
+      throw new WorkspaceError('WORKSPACE_REQUEST_ACTIVE', 'Workspace has an active request')
   }
 
   return {

@@ -158,6 +158,6 @@ Phase 2 is done. Tasks 3 to 7 are `Done` (commits `102366c` and `f0c6c40` hold T
 
 | Task | Status | File |
 | --- | --- | --- |
-| 8 | Pending | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) |
+| 8 | Done | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) ([report](../reports/task-08-split-workspace-types-errors-and-migrations.md)) |
 | 9 | Pending | [Rename SqliteWorkspaceStore, convert WorkspaceService to a class and wire routes](task-09-convert-workspace-service-and-store.md) |
 | 10 | Pending | [Enable role-file-symbol for workspaces and check Phase 3](task-10-enable-workspaces-role-check-and-verify-phase-3.md) |

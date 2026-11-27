@@ -1,8 +1,8 @@
 import { constants, realpathSync } from 'node:fs'
 import { access, opendir, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
-import type { FolderRefusal } from './contracts.ts'
-import { WorkspaceError } from './contracts.ts'
+import type { FolderRefusal } from './workspace.types.ts'
+import { WorkspaceError } from './workspaces.errors.ts'
 
 export interface FolderPolicyOptions {
   /** The user's own folder (BR-019 V-3, V-4). */

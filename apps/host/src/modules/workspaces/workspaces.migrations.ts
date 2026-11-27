@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { WorkspaceError, defaultWorkspaceId } from './contracts.ts'
+import { defaultWorkspaceId } from './workspace.types.ts'
+import { WorkspaceError } from './workspaces.errors.ts'
 
 const applicationId = 0x44415753 // DAWS; distinguishes this file from another application's SQLite database.
 const schemaVersion = 2
@@ -14,7 +15,7 @@ const changeVersionsTable = `
   INSERT INTO change_versions (topic, key, version) VALUES ('workspaces', 'host', 0);
 `
 
-export function initialize(db: DatabaseSync, defaultName: string): void {
+export function migrateWorkspacesDatabase(db: DatabaseSync, defaultName: string): void {
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;')
   try {
     const version = Number(db.prepare('PRAGMA user_version').get()!.user_version)

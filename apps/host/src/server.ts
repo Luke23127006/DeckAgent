@@ -14,7 +14,7 @@ import {
   WorkspaceRegistry,
   createWorkspaceOperations,
   createWorkspaceRoutes,
-  mapWorkspaceFailure,
+  mapWorkspaceError,
 } from './modules/workspaces/index.ts'
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
@@ -580,7 +580,7 @@ function createHostOptions(
   return {
     mapApplicationFailure: error =>
       mapRunFailure(error) ??
-      mapWorkspaceFailure(error) ??
+      mapWorkspaceError(error) ??
       mapChatError(error) ??
       mapProviderFailure(error) ??
       mapAttachmentFailure(error) ??
