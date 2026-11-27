@@ -23,6 +23,9 @@ The Target Structure Refactor [[1]](#ref-1) moved the code of the Host to its ta
 
 The planner writes one revision in `plan/` for each phase, with the skill `write-implementation-plan` [[3]](#ref-3). Do not write a revision for a later phase before the current phase is done.
 
+- Each phase has exactly one revision. Do not divide a phase into smaller revisions or sub-phases, for example `2a`, `2b` and `2c`.
+- The planner writes all the tasks of the phase in that one revision, at one time. A later revision does not add tasks to a phase that already has a revision.
+
 - The planner does the diagnosis of the phase. It reads the code of the phase and answers each `Open` item of the phase in [Module Map](module-map.md). It records each answer in a decision table in the revision, with the reason.
 - The planner writes only execution tasks. A revision has no diagnosis task and no task that ends with `STOP` for a decision.
 - The executor does each task as written and makes no design decision. When the code does not match the task, the executor stops and reports the difference. The planner then changes the revision.
