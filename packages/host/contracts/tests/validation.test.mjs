@@ -9,13 +9,17 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   decodeAgentRequest,
+  decodeApprovalDecisionBody,
   decodeAttachment,
   decodeAttachmentRemoveBody,
   decodeBoundProposal,
   decodeBriefView,
   decodeChangeNotice,
+  decodeChatCreateBody,
+  decodeChatSearchBody,
   decodeDraftSaveBody,
   decodeGeneration,
+  decodeModelSelection,
   decodePreferencesSaveBody,
   decodeResearchSaveBody,
   decodeResearchRemoveBody,
@@ -435,4 +439,40 @@ test('preferences and research decoders require expectedVersion and reject malfo
     assert.throws(() => decodeResearchSaveBody(value), invalid)
   for (const value of [undefined, {}, { expectedVersion: -1 }, { expectedVersion: 0, extra: 1 }])
     assert.throws(() => decodeResearchRemoveBody(value), invalid)
+})
+
+test('chat and approval body decoders validate wire shapes and throw the expected validation codes', () => {
+  assert.deepEqual(decodeModelSelection({ provider: 'openai', model: 'gpt-4o' }), {
+    provider: 'openai',
+    model: 'gpt-4o',
+  })
+  assert.deepEqual(decodeChatCreateBody({}), {})
+  assert.deepEqual(decodeChatCreateBody({ selection: { provider: 'openai', model: 'gpt-4o' } }), {
+    selection: { provider: 'openai', model: 'gpt-4o' },
+  })
+  assert.deepEqual(decodeChatSearchBody({ words: '' }), { words: '' })
+  assert.deepEqual(decodeChatSearchBody({ words: 'x'.repeat(500) }), { words: 'x'.repeat(500) })
+  assert.deepEqual(decodeApprovalDecisionBody({ decision: 'allow-once' }), { decision: 'allow-once' })
+  assert.deepEqual(decodeApprovalDecisionBody({ decision: 'refuse' }), { decision: 'refuse' })
+
+  const hasCode = code => error => error instanceof RequestValidationError && error.code === code
+  for (const bad of [undefined, null, [], 'text', { extra: 1 }, { selection: { provider: 'p', model: 'm' }, extra: 1 }])
+    assert.throws(() => decodeChatCreateBody(bad), hasCode('INVALID_SESSION'))
+  for (const bad of [
+    null,
+    [],
+    {},
+    { provider: 'bad space', model: 'm' },
+    { provider: 'p'.repeat(101), model: 'm' },
+    { provider: 'p', model: '   ' },
+    { provider: 'p', model: 'm'.repeat(201) },
+    { provider: 'p', model: 'm', extra: 1 },
+  ]) {
+    assert.throws(() => decodeModelSelection(bad), hasCode('INVALID_SELECTION'))
+    assert.throws(() => decodeChatCreateBody({ selection: bad }), hasCode('INVALID_SELECTION'))
+  }
+  for (const bad of [undefined, null, [], {}, { words: 123 }, { words: 'x'.repeat(501) }, { words: 'ok', extra: 1 }])
+    assert.throws(() => decodeChatSearchBody(bad), hasCode('INVALID_REQUEST'))
+  for (const bad of [undefined, null, [], {}, { decision: 'allow' }, { decision: 'refuse', extra: 1 }])
+    assert.throws(() => decodeApprovalDecisionBody(bad), hasCode('INVALID_REQUEST'))
 })

@@ -1,24 +1,21 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { SessionError, defaultWorkspaceId } from '../../db/index.ts'
-import type {
-  AttachmentRecord,
-  ChatSummary,
-  Message,
-  ModelSelection,
-  SessionDatabase,
-  SessionInfo,
-} from '../../db/index.ts'
-import { chatMatches, chatTitle, isValidMessage, searchWords } from './message.ts'
+import type { AttachmentRecord, ChatSummary, ModelSelection, SessionDatabase, SessionInfo } from '../../db/index.ts'
+import { chatMatches, chatTitle, searchWords } from './chat-text.ts'
+import { decodeMessage, type Message } from './message-validation.ts'
 
 export interface ChatStoreOptions {
   /** Called after a committed write that changed the chat list, with the new chats version. */
   readonly onChatsChanged?: (version: number) => void
 }
 
-function validateMessage(value: unknown): asserts value is Message {
-  if (!isValidMessage(value))
+function validateMessage(value: unknown): Message {
+  try {
+    return decodeMessage(value)
+  } catch {
     throw new SessionError('SESSION_MESSAGE', 'Message does not match the supported Session format')
+  }
 }
 
 /** Durable SQLite store owning `sessions`, `messages` and `change_versions` for the chats module. */
@@ -229,9 +226,12 @@ export class SqliteChatStore {
     const historyStart = Number(
       this.db.prepare('SELECT COUNT(*) AS count FROM messages WHERE session_id = ?').get(sessionId)!.count,
     )
-    const messageSequence = this.insertMessages(sessionId, [
-      { role: 'user', content: input, ...(attachments.length ? { attachments } : {}) },
-    ])
+    const message = validateMessage({
+      role: 'user',
+      content: input,
+      ...(attachments.length ? { attachments } : {}),
+    })
+    const messageSequence = this.insertMessages(sessionId, [message])
     return { historyStart, messageSequence }
   }
 
@@ -249,8 +249,8 @@ export class SqliteChatStore {
     let sequence = Number(row.last)
     const insert = this.db.prepare('INSERT INTO messages (session_id, sequence, payload) VALUES (?, ?, ?)')
     for (const message of messages) {
-      validateMessage(message)
-      insert.run(sessionId, ++sequence, JSON.stringify(message))
+      const validated = validateMessage(message)
+      insert.run(sessionId, ++sequence, JSON.stringify(validated))
     }
     if (messages.length) {
       this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId)
@@ -278,9 +278,7 @@ export class SqliteChatStore {
       .all(sessionId)
       .map(row => {
         try {
-          const message: unknown = JSON.parse(String(row.payload))
-          validateMessage(message)
-          return message
+          return decodeMessage(JSON.parse(String(row.payload)))
         } catch {
           throw new SessionError('SESSION_CORRUPT', 'Stored message does not match the supported Session format')
         }

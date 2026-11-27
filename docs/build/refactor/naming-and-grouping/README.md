@@ -31,6 +31,7 @@ The planner writes one revision in `plan/` for each phase, with the skill `write
 - The planner does the diagnosis of the phase. It reads the code of the phase and answers each `Open` item of the phase in [Module Map](module-map.md). It records each answer in a decision table in the revision, with the reason.
 - The planner writes only execution tasks. A revision has no diagnosis task and no task that ends with `STOP` for a decision.
 - The executor does each task as written and makes no design decision. When the code does not match the task, the executor stops and reports the difference. The planner then changes the revision.
+- A regular task does not run the full test suite. It runs only the tests that cover the files it changes. Only the phase-exit task of a revision runs the full non-live test suite, to find and fix defects before the phase ends.
 - When a phase changes a name or a rule in [Naming Rules](naming-rules.md) or [Module Map](module-map.md), the planner changes that file in the same revision.
 
 ## Abstract phase plan

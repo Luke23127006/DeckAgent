@@ -47,11 +47,13 @@ export type {
 } from './requests.ts'
 export {
   decodeAgentRequest,
+  decodeApprovalDecisionBody,
   decodeAttachment,
   requestEvent,
   RequestValidationError,
   type RequestValidationCode,
 } from './request-validation.ts'
+export { decodeChatCreateBody, decodeChatSearchBody, decodeModelSelection } from './chat-validation.ts'
 export {
   decodeAttachmentRemoveBody,
   decodeDraftSaveBody,

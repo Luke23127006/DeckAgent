@@ -12,14 +12,14 @@ The rules are in [Naming Rules](naming-rules.md). The problems are in [Naming an
 | --- | --- | --- |
 | `createChatOperations`, `ChatOperations` in `chats.service.ts` | `class ChatService` in `chats.service.ts` | NG-01, NG-02 |
 | `createWorkspaceChats` | Methods `hasActiveRequest(workspaceId)` and `ungroup(workspaceId)` on `ChatService`. `ChatService` implements the port `WorkspaceChats`, so the adapter goes away | NG-05 |
-| `createChatRequestOperations`, `ChatRequestOperations`, `ChatRunOperations`, `ChatRequestDependencies`, `DeckRunPlanner`, `readChatSelection` | `class ChatRequestService` in `chat-requests.service.ts`. It has dependencies (runs, providers, deck planner) that `ChatService` does not have | NG-05 |
+| `createChatRequestOperations`, `ChatRequestOperations`, `ChatRunOperations`, `ChatRequestDependencies`, `DeckRunPlanner`, `readChatSelection` | `class ChatRequestService` in `chat-requests.service.ts` with `readSelection(sessionId)`. It has dependencies (runs, providers, deck planner) that `ChatService` does not have | NG-05 |
 | `request.routes.ts`, `createRequestRoutes` | `chat-requests.routes.ts`, `createChatRequestRoutes`. The paths `/api/requests/...` stay | NG-05 |
 | `createConversationContribution` in `chats.service.ts` | Same name, in `chats.run-contribution.ts` | NG-05, NG-07 |
 | `ChatWorkflowError`, `ChatWorkflowErrorCode` in `chats.service.ts`. `mapChatFailure` in `chats.errors.ts` | `ChatError`, `ChatErrorCode` and `mapChatError` in `chats.errors.ts` | NG-06 |
 | `message.ts`: `isValidMessage` and the type guards | `message-validation.ts`: `messageSchema = z.discriminatedUnion('role', [...])` and `decodeMessage`. The `Message` type comes from `z.infer` | NG-08, NG-10 |
 | `message.ts`: `chatTitle`, `searchWords`, `chatMatches` | `chat-text.ts`. The store and the service use it | NG-09 |
-| Hand checks of the body in `chats.routes.ts` (`isRecord`, `searchWords`) | `decodeChatCreateBody` and `decodeChatSearchBody` in the contracts package | NG-10, NG-20 |
-| `projectRequest` in `chats.service.ts` and `toStoredRequest` in `server.ts` | One converter in the chats module | NG-26 |
+| Hand checks of the body in `chats.routes.ts` (`isRecord`, `searchWords`), `request.routes.ts` (approval decision) and `decodeSelection` callback | `decodeChatCreateBody`, `decodeChatSearchBody`, `decodeModelSelection` and `decodeApprovalDecisionBody` in the contracts package | NG-10, NG-20 |
+| `projectRequest` in `chats.service.ts` and `toStoredRequest` in `server.ts` | `toChatRequest` in `chats.service.ts` | NG-26 |
 | Comment "`SqliteSessionStore` implements it" on `ChatStore` | "`SqliteChatStore` implements it" | NG-16 |
 | `SqliteChatStore`, `ChatStore`, `ChatModels` | No change | — |
 

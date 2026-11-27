@@ -9,7 +9,12 @@ import {
   positiveInt,
 } from './validation-primitives.ts'
 
-export type RequestValidationCode = 'INVALID_REQUEST' | 'REQUEST_EMPTY' | 'REQUEST_TEXT_TOO_LONG'
+export type RequestValidationCode =
+  | 'INVALID_REQUEST'
+  | 'INVALID_SESSION'
+  | 'INVALID_SELECTION'
+  | 'REQUEST_EMPTY'
+  | 'REQUEST_TEXT_TOO_LONG'
 
 export class RequestValidationError extends Error {
   public readonly code: RequestValidationCode
@@ -121,6 +126,10 @@ const agentRequestSchema = z.strictObject({
   publicResearch: z.boolean().optional(),
   deck: deckRequestSchema.optional(),
   continueDeck: z.literal(true).optional(),
+})
+
+const approvalDecisionBodySchema = z.strictObject({
+  decision: z.enum(['allow-once', 'refuse']),
 })
 
 function buildApprovalView(data: z.infer<typeof approvalViewSchema>): ApprovalView {
@@ -237,4 +246,12 @@ export function decodeAgentRequest(value: unknown, maxAttachments: number): Agen
     ...(ids !== undefined ? { attachmentIds: ids } : {}),
     ...(data.draftRevision !== undefined ? { draftRevision: data.draftRevision } : {}),
   }
+}
+
+export function decodeApprovalDecisionBody(value: unknown): { readonly decision: 'allow-once' | 'refuse' } {
+  const parsed = approvalDecisionBodySchema.safeParse(value)
+  if (!parsed.success) {
+    throw new RequestValidationError('INVALID_REQUEST', 'Request payload is invalid')
+  }
+  return parsed.data
 }

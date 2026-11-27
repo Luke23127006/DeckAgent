@@ -220,3 +220,44 @@ test('invalid files and corrupted message payloads fail safely without resetting
     reopened.close()
   }
 })
+
+test('message validation rejects unknown fields, explicit undefined, cycles, symbol keys and invalid attachments', async t => {
+  const store = openSessionStore(await database(t))
+  try {
+    await store.open('strict-msg')
+    const cyclic = {}
+    cyclic.self = cyclic
+    const withSymbol = { role: 'user', content: 'hi', [Symbol('tag')]: 1 }
+    const nonPlain = Object.assign(Object.create({ inherited: true }), { role: 'user', content: 'hi' })
+    for (const bad of [
+      { role: 'system', content: 'ok', extra: 1 },
+      { role: 'user', content: 'ok', extra: 1 },
+      { role: 'assistant', content: 'ok', interrupted: false },
+      { role: 'assistant', content: 'ok', interrupted: undefined },
+      { role: 'assistant', content: 'ok', toolCalls: undefined },
+      { role: 'assistant', content: 'ok', providerState: undefined },
+      { role: 'assistant', content: 'ok', providerState: { provider: 'p', model: 'm', data: cyclic } },
+      { role: 'tool', content: 'ok', toolCallId: '  ', name: 'read', isError: false },
+      { role: 'tool', content: 'ok', toolCallId: 'id-1', name: '  ', isError: false },
+      withSymbol,
+      nonPlain,
+    ]) {
+      await assert.rejects(store.append('strict-msg', [bad]), { code: 'SESSION_MESSAGE' })
+    }
+    assert.throws(
+      () =>
+        store.chatStore.admitUserMessageInTx('strict-msg', 'hello', [
+          {
+            attachmentId: 'bad-id',
+            name: 'note.txt',
+            state: 'preparing',
+            byteSize: 10,
+          },
+        ]),
+      { code: 'SESSION_MESSAGE' },
+    )
+    assert.deepEqual(await store.read('strict-msg'), [])
+  } finally {
+    store.close()
+  }
+})
