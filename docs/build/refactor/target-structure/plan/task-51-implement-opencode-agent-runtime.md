@@ -40,7 +40,7 @@ After this task, `apps/host/src/runtimes/opencode/` parses optional `tokens` on 
 
 **Forbidden:** change any existing error code string on the HTTP wire. Import any module from `apps/host/src/modules/` inside `apps/host/src/runtimes/opencode/`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -50,7 +50,7 @@ Run: `git grep -n "^| 50 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write failing tests in `apps/host/tests/opencode-adapter.test.mjs`**
+- [x] **Step 2: Write failing tests in `apps/host/tests/opencode-adapter.test.mjs`**
 
 Add tests in `apps/host/tests/opencode-adapter.test.mjs` covering:
 
@@ -62,13 +62,13 @@ Add tests in `apps/host/tests/opencode-adapter.test.mjs` covering:
    - `run(input, sink)` emits `activity`/`text` events, reports incremental `sink.usage(...)` with `modelCalls >= 1`, seeds from `RunResource` (`kind: 'conversation'`), keys its folder and `OwnerBindingStore` by `runOwnerKey(input.owner)`, and returns `{ status: 'completed', usage, commit }`.
    - `run(input, sink)` returns categorized `RunError` values for `runtime-unavailable` (missing executable), `runtime-config` (`PROVIDER_UNSUPPORTED`), `timeout` (`REQUEST_TIMEOUT`), `stopped` (`STOPPED`) and `content-blocked` (`CONTEXT_SUMMARY_FAILED` with `content-filter`).
 
-- [ ] **Step 3: Run the adapter test and check that it fails**
+- [x] **Step 3: Run the adapter test and check that it fails**
 
 Run: `node --test apps/host/tests/opencode-adapter.test.mjs`
 
 Expected: FAIL. New exports (`classifyProviderError`, `OpenCodeAgentRuntime`) do not exist yet.
 
-- [ ] **Step 4: Implement `events.ts`, `stream-tracker.ts`, `config.ts`, `history.ts` and `agent-runtime.ts`**
+- [x] **Step 4: Implement `events.ts`, `stream-tracker.ts`, `config.ts`, `history.ts` and `agent-runtime.ts`**
 
 1. In `events.ts`, parse optional `tokens` on `step_finish` and add `classifyProviderError`. Make `errorCode(event)` return `classifyProviderError(event).code`.
 2. In `stream-tracker.ts`, track `modelCalls` (from `modelSteps`) and optional cumulative `inputTokens`/`outputTokens`, notify an optional `onUsage?: (usage: RunUsage) => void` callback on each `step_finish`, and track `RunError` (`category` + `code`) for every condition in `docs/architecture/10-agent-core.md` (`content-blocked` for summary `content-filter`, `context-limit` for summary `error`/overflow/unclosed, `stopped`, `timeout`, `runtime-unavailable`, `runtime-protocol`, `runtime-failed`, `runtime-incomplete`). Expose `runResult: RunResult` on `AttemptResult` alongside `outcome` so existing `OpenCodeRuntime` stays intact.
@@ -76,17 +76,17 @@ Expected: FAIL. New exports (`classifyProviderError`, `OpenCodeAgentRuntime`) do
 4. In `history.ts`, extract `seedConversationPrompt(messages, input)` for `ConversationMessage` and have `seedPrompt` delegate to it.
 5. Create `apps/host/src/runtimes/opencode/agent-runtime.ts` implementing `OpenCodeAgentRuntime` (`AgentRuntime`), reusing `runtimeConfiguration`, `encodeConfiguration`, `isolatedEnvironment`, `safeConfiguration`, `openToolBridge`, `runProcess`, `seedConversationPrompt`, `createAttemptTimer` and `createStreamTracker`. Export `OpenCodeAgentRuntime`, `OwnerRuntimeBinding` and `OwnerBindingStore` from `apps/host/src/runtimes/opencode/index.ts`.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task protocol. Run `node --test apps/host/tests/opencode-adapter.test.mjs tests/oxlint-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add a table `Error category coverage` with columns `Code | Category | Covered by test`.
 

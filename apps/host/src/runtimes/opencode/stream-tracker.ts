@@ -1,6 +1,7 @@
 import { summarizedNotice } from '@deckagent/session-persistence'
-import type { RequestRun, RuntimeEvent, RuntimeOutcome } from '@deckagent/host-api'
-import { errorCode, isContextOverflow, parseEvent } from './events.ts'
+import type { RuntimeOutcome } from '@deckagent/host-api'
+import type { RunError, RunEvent, RunResult, RunUsage } from '../../runs/ports.ts'
+import { classifyProviderError, isContextOverflow, parseEvent } from './events.ts'
 import type { OpenCodeEvent } from './events.ts'
 import type { ProcessResult } from './process.ts'
 
@@ -8,6 +9,19 @@ export interface AttemptResult {
   readonly outcome: RuntimeOutcome
   readonly nativeSessionId?: string
   readonly noWork: boolean
+}
+
+export interface ClassifiedAttempt extends AttemptResult {
+  readonly runResult: RunResult
+}
+
+export interface AttemptRun {
+  readonly signal: AbortSignal
+  onApprovalWait?(listener: (waiting: boolean) => void): () => void
+}
+
+export interface RunStream {
+  readonly emit: (event: RunEvent) => Promise<void>
 }
 
 export interface AttemptTimer {
@@ -18,7 +32,7 @@ export interface AttemptTimer {
 }
 
 /** One attempt clock; an approval wait pauses it and a later resume keeps the remaining time. */
-export function createAttemptTimer(timeoutMs: number, run: RequestRun): AttemptTimer {
+export function createAttemptTimer(timeoutMs: number, run: AttemptRun): AttemptTimer {
   const local = new AbortController()
   let timedOut = false
   let remaining = timeoutMs
@@ -55,19 +69,31 @@ export function createAttemptTimer(timeoutMs: number, run: RequestRun): AttemptT
 export interface StreamTracker {
   onLine(value: unknown): void
   finalize(aborted: boolean, timedOut: boolean): Promise<void>
-  classify(result: ProcessResult, runAborted: boolean, timedOut: boolean, localAborted: boolean): AttemptResult
+  classify(result: ProcessResult, runAborted: boolean, timedOut: boolean, localAborted: boolean): ClassifiedAttempt
 }
 
 type SummaryState = 'none' | 'waiting' | 'writing'
+
+const stopped: RunError = { category: 'stopped', code: 'STOPPED' }
+const timedOutError: RunError = { category: 'timeout', code: 'REQUEST_TIMEOUT' }
+const runtimeUnavailable: RunError = { category: 'runtime-unavailable', code: 'RUNTIME_UNAVAILABLE' }
+const runtimeProtocol: RunError = { category: 'runtime-protocol', code: 'RUNTIME_PROTOCOL' }
+const requestNotSaved: RunError = { category: 'stopped', code: 'REQUEST_NOT_SAVED' }
+const runtimeFailed: RunError = { category: 'runtime-failed', code: 'RUNTIME_FAILED' }
+const runtimeIncomplete: RunError = { category: 'runtime-incomplete', code: 'RUNTIME_INCOMPLETE' }
+const summaryBlocked: RunError = { category: 'content-blocked', code: 'CONTEXT_SUMMARY_FAILED' }
+const summaryLimit: RunError = { category: 'context-limit', code: 'CONTEXT_SUMMARY_FAILED' }
 
 /** Reads the CLI event stream into request events and compacts the conversation around a context overflow (FR-079). */
 class StreamTracking implements StreamTracker {
   private nativeSessionId: string | undefined
   private steps = 0
   private modelSteps = 0
+  private inputTokens: number | undefined
+  private outputTokens: number | undefined
   private modelActivity: string | undefined
   private finishReason: string | undefined
-  private failure: string | undefined
+  private failure: RunError | undefined
   private protocolError = false
   private summary: SummaryState = 'none'
   private summaryMessage: string | undefined
@@ -79,8 +105,9 @@ class StreamTracking implements StreamTracker {
   private readonly texts = new Map<string, string>()
   private readonly tools = new Map<string, string>()
   constructor(
-    private readonly run: RequestRun,
+    private readonly sink: RunStream,
     private readonly abortLocal: () => void,
+    private readonly onUsage?: (usage: RunUsage) => void,
   ) {}
   onLine(value: unknown): void {
     const event = parseEvent(value)
@@ -96,39 +123,57 @@ class StreamTracking implements StreamTracker {
       return
     }
     if (event.type === 'step_start') this.startStep(event)
-    else if (event.type === 'step_finish') this.finishStep(event)
-    else if (event.type === 'text') this.saveText(event)
+    else if (event.type === 'step_finish') {
+      this.finishStep(event)
+      this.onUsage?.(this.usage())
+    } else if (event.type === 'text') this.saveText(event)
     else if (event.type === 'tool') this.recordTool(event)
     else if (event.type === 'error') this.failEvent(event)
   }
   async finalize(aborted: boolean, timedOut: boolean): Promise<void> {
     // A summary not written ends the request even when the CLI said nothing more (FR-079, as UC-003 A11).
     if (this.summary !== 'none' && !this.failure && !aborted && !timedOut) {
-      this.failure = 'CONTEXT_SUMMARY_FAILED'
+      this.failure = summaryLimit
       this.endSummary('failed')
     }
     await this.writes
   }
-  classify(result: ProcessResult, runAborted: boolean, timedOut: boolean, localAborted: boolean): AttemptResult {
+  classify(result: ProcessResult, runAborted: boolean, timedOut: boolean, localAborted: boolean): ClassifiedAttempt {
     // Work was done when a step ran or the native session already took part in a summary: never retried elsewhere.
     const noWork = this.steps === 0 && this.overflows === 0
-    const failed = (code: string): AttemptResult => ({ outcome: { status: 'failed', errorCode: code }, noWork })
-    if (runAborted) return failed('STOPPED')
-    if (timedOut) return failed('REQUEST_TIMEOUT')
-    if (result.startFailed) return { outcome: { status: 'failed', errorCode: 'RUNTIME_UNAVAILABLE' }, noWork: true }
-    if (this.protocolError || result.malformed) return failed('RUNTIME_PROTOCOL')
-    if (localAborted) return failed('REQUEST_NOT_SAVED')
+    const failed = (error: RunError, work = noWork): ClassifiedAttempt => ({
+      outcome: { status: 'failed', errorCode: error.code },
+      runResult: { status: 'failed', usage: this.usage(), error },
+      noWork: work,
+    })
+    if (runAborted) return failed(stopped)
+    if (timedOut) return failed(timedOutError)
+    if (result.startFailed) return failed(runtimeUnavailable, true)
+    if (this.protocolError || result.malformed) return failed(runtimeProtocol)
+    if (localAborted) return failed(requestNotSaved)
     if (this.failure) return failed(this.failure)
     // OpenCode 1.19.5 exits 1 after any reported error, including an overflow it then summarized and recovered from.
-    if (result.code !== 0 && !(result.code === 1 && this.summaries > 0)) return failed('RUNTIME_FAILED')
+    if (result.code !== 0 && !(result.code === 1 && this.summaries > 0)) return failed(runtimeFailed)
     // Exit 0 alone is not completion: the last step must have finished with a final answer, in a known native session.
     if (!this.steps || !this.finishReason || this.finishReason === 'tool-calls' || !this.nativeSessionId)
-      return failed('RUNTIME_INCOMPLETE')
-    return { outcome: { status: 'completed' }, nativeSessionId: this.nativeSessionId, noWork: false }
+      return failed(runtimeIncomplete)
+    return {
+      outcome: { status: 'completed' },
+      runResult: { status: 'completed', usage: this.usage() },
+      nativeSessionId: this.nativeSessionId,
+      noWork: false,
+    }
   }
-  private emit(event: RuntimeEvent): void {
+  private usage(): RunUsage {
+    return {
+      modelCalls: this.modelSteps,
+      ...(this.inputTokens === undefined ? {} : { inputTokens: this.inputTokens }),
+      ...(this.outputTokens === undefined ? {} : { outputTokens: this.outputTokens }),
+    }
+  }
+  private emit(event: RunEvent): void {
     // A refused write (the request ended or could not be saved) stops the run.
-    this.writes = this.writes.then(() => this.run.emit(event)).catch(() => this.abortLocal())
+    this.writes = this.writes.then(() => this.sink.emit(event)).catch(() => this.abortLocal())
   }
   private activity(id: string, label: string, status: 'running' | 'completed' | 'failed'): void {
     this.emit({ kind: 'activity', id, label, type: 'model', status })
@@ -158,9 +203,11 @@ class StreamTracking implements StreamTracker {
     this.activity(this.modelActivity, 'Model response', 'running')
   }
   private finishStep(event: Extract<OpenCodeEvent, { type: 'step_finish' }>): void {
+    if (event.tokens?.input !== undefined) this.inputTokens = (this.inputTokens ?? 0) + event.tokens.input
+    if (event.tokens?.output !== undefined) this.outputTokens = (this.outputTokens ?? 0) + event.tokens.output
     if (this.ofSummary(event.messageId)) {
       if (event.reason === 'error' || event.reason === 'content-filter') {
-        this.failure ??= 'CONTEXT_SUMMARY_FAILED'
+        this.failure ??= event.reason === 'content-filter' ? summaryBlocked : summaryLimit
         this.endSummary('failed')
         return
       }
@@ -206,14 +253,18 @@ class StreamTracking implements StreamTracker {
     }
     // An error while summarizing: the summary could not be written and the request does not finish.
     if (this.summary !== 'none') {
-      this.failure ??= isContextOverflow(event) ? 'CONTEXT_SUMMARY_FAILED' : errorCode(event)
+      this.failure ??= isContextOverflow(event) ? summaryLimit : classifyProviderError(event)
       this.endSummary('failed')
       return
     }
-    this.failure ??= errorCode(event)
+    this.failure ??= classifyProviderError(event)
   }
 }
 
-export function createStreamTracker(run: RequestRun, abortLocal: () => void): StreamTracker {
-  return new StreamTracking(run, abortLocal)
+export function createStreamTracker(
+  sink: RunStream,
+  abortLocal: () => void,
+  onUsage?: (usage: RunUsage) => void,
+): StreamTracker {
+  return new StreamTracking(sink, abortLocal, onUsage)
 }

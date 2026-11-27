@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { errorCode, isContextOverflow, parseEvent } from '../lib/types/runtimes/opencode/events.js'
+import { fileURLToPath } from 'node:url'
+import {
+  classifyProviderError,
+  errorCode,
+  isContextOverflow,
+  parseEvent,
+} from '../lib/types/runtimes/opencode/events.js'
 import {
   encodeConfiguration,
   isolatedEnvironment,
@@ -12,8 +19,11 @@ import {
   safeConfiguration,
 } from '../lib/types/runtimes/opencode/config.js'
 import { seedPrompt } from '../lib/types/runtimes/opencode/history.js'
+import { OpenCodeAgentRuntime } from '../lib/types/runtimes/opencode/index.js'
 import { UnsupportedProviderError, providerConfiguration } from '../lib/types/runtimes/opencode/provider.js'
 import { runProcess } from '../lib/types/runtimes/opencode/process.js'
+import { createStreamTracker } from '../lib/types/runtimes/opencode/stream-tracker.js'
+import { waitFor } from './fixtures/wait-for.mjs'
 
 const settings = {
   provider: 'fixture',
@@ -234,4 +244,396 @@ test('process runner: no shell, ordered JSON lines across chunks, malformed outp
     signal: new AbortController().signal,
   })
   assert.equal(missing.startFailed, true)
+})
+
+const fakeCli = fileURLToPath(new URL('./fixtures/fake-opencode.mjs', import.meta.url))
+
+function memoryBindings() {
+  const bound = new Map()
+  const completed = new Map()
+  return {
+    binding: ownerKey => bound.get(ownerKey),
+    bind(binding) {
+      bound.set(binding.ownerKey, binding)
+      completed.set(binding.ownerKey, binding.lastRequestId)
+    },
+    unbind(ownerKey) {
+      bound.delete(ownerKey)
+    },
+    lastCompletedRequestId(ownerKey, currentRequestId) {
+      const requestId = completed.get(ownerKey)
+      return requestId === currentRequestId ? undefined : requestId
+    },
+  }
+}
+
+function runInput(overrides = {}) {
+  return {
+    owner: { kind: 'chat', id: 'chat-1' },
+    requestId: 'request-1',
+    provider: settings,
+    instructions: [],
+    resources: [],
+    stepLimit: 4,
+    signal: new AbortController().signal,
+    onApprovalWait: () => () => {},
+    ...overrides,
+  }
+}
+
+function request(text) {
+  return [{ kind: 'conversation', messages: [{ role: 'user', content: text }] }]
+}
+
+function agentRuntime({ root, bindings = memoryBindings(), version = 'fake-1.0.0', timeoutMs = 30_000 }) {
+  const log = join(root, 'fake-opencode.log')
+  return {
+    bindings,
+    log,
+    runtime: new OpenCodeAgentRuntime(process.execPath, root, bindings, {
+      version,
+      timeoutMs,
+      launcherArgs: [fakeCli, log],
+    }),
+  }
+}
+
+async function loggedRuns(log) {
+  const lines = (await readFile(log, 'utf8')).split('\n').filter(Boolean)
+  return lines.map(line => JSON.parse(line)).filter(entry => entry.command === 'run')
+}
+
+function ended(code) {
+  return { startFailed: false, code, malformed: false, killed: false, stdout: '' }
+}
+
+test('step_finish token counts: non-negative finite values are kept, anything else is dropped', () => {
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { reason: 'stop', tokens: { input: 10, output: 5 } } }), {
+    type: 'step_finish',
+    reason: 'stop',
+    tokens: { input: 10, output: 5 },
+  })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { tokens: { input: 0 } } }), {
+    type: 'step_finish',
+    tokens: { input: 0 },
+  })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { tokens: { output: 0 } } }), {
+    type: 'step_finish',
+    tokens: { output: 0 },
+  })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { tokens: { input: -1, output: '5' } } }), {
+    type: 'step_finish',
+  })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { tokens: { input: 'lots', output: 1 } } }), {
+    type: 'step_finish',
+    tokens: { output: 1 },
+  })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { tokens: { input: null } } }), { type: 'step_finish' })
+  assert.deepEqual(parseEvent({ type: 'step_finish', part: { reason: 'stop' } }), {
+    type: 'step_finish',
+    reason: 'stop',
+  })
+})
+
+test('provider errors map to the RunError category table', () => {
+  assert.deepEqual(classifyProviderError({ type: 'error', statusCode: 401 }), {
+    category: 'provider-auth',
+    code: 'PROVIDER_AUTH',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', statusCode: 403 }), {
+    category: 'provider-auth',
+    code: 'PROVIDER_AUTH',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', name: 'ProviderAuthError' }), {
+    category: 'provider-auth',
+    code: 'PROVIDER_AUTH',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', statusCode: 429 }), {
+    category: 'provider-rate-limit',
+    code: 'PROVIDER_RATE_LIMIT',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', statusCode: 404 }), {
+    category: 'provider-model',
+    code: 'PROVIDER_MODEL_UNAVAILABLE',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', statusCode: 500 }), {
+    category: 'provider-other',
+    code: 'PROVIDER_HTTP',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error' }), {
+    category: 'provider-other',
+    code: 'RUNTIME_FAILED',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', name: 'ContextOverflowError' }), {
+    category: 'context-limit',
+    code: 'CONTEXT_LIMIT',
+  })
+  assert.deepEqual(classifyProviderError({ type: 'error', imageUnsupported: true }), {
+    category: 'input-unsupported',
+    code: 'IMAGE_INPUT_UNAVAILABLE',
+  })
+  assert.equal(errorCode({ type: 'error', statusCode: 429 }), 'PROVIDER_RATE_LIMIT')
+})
+
+test('run configuration applies the run step limit', () => {
+  assert.equal(runtimeConfiguration(settings, undefined, undefined, 4).agent.deckagent.steps, 4)
+  assert.equal('steps' in runtimeConfiguration(settings, undefined, undefined, 'none').agent.deckagent, false)
+  assert.equal(runtimeConfiguration(settings).agent.deckagent.steps, 8)
+  const published = runtimeConfiguration(settings, { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] })
+  assert.equal('steps' in published.agent.deckagent, false)
+  assert.equal(
+    runtimeConfiguration(settings, { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] }, undefined, 2).agent
+      .deckagent.steps,
+    2,
+  )
+})
+
+test('stream tracker reports cumulative model calls and tokens after each finished step', () => {
+  const usage = []
+  const tracker = createStreamTracker(
+    { emit: async () => {} },
+    () => {},
+    total => usage.push(total),
+  )
+  tracker.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_1' } })
+  tracker.onLine({
+    type: 'step_finish',
+    sessionID: 'ses_1',
+    part: { messageID: 'msg_1', reason: 'stop', tokens: { input: 4, output: 2 } },
+  })
+  tracker.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_2' } })
+  tracker.onLine({
+    type: 'step_finish',
+    sessionID: 'ses_1',
+    part: { messageID: 'msg_2', reason: 'stop', tokens: { input: 3 } },
+  })
+  assert.deepEqual(usage, [
+    { modelCalls: 1, inputTokens: 4, outputTokens: 2 },
+    { modelCalls: 2, inputTokens: 7, outputTokens: 2 },
+  ])
+  assert.deepEqual(tracker.classify(ended(0), false, false, false).runResult, {
+    status: 'completed',
+    usage: { modelCalls: 2, inputTokens: 7, outputTokens: 2 },
+  })
+})
+
+test('stream tracker classifies a blocked summary, an unfinished summary and a refused write', async () => {
+  const blockedControl = new AbortController()
+  const blocked = createStreamTracker({ emit: async () => {} }, () => blockedControl.abort())
+  blocked.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_1' } })
+  blocked.onLine({ type: 'error', sessionID: 'ses_1', error: { name: 'ContextOverflowError' } })
+  blocked.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_summary' } })
+  blocked.onLine({
+    type: 'step_finish',
+    sessionID: 'ses_1',
+    part: { messageID: 'msg_summary', reason: 'content-filter' },
+  })
+  await blocked.finalize(false, false)
+  const blockedAttempt = blocked.classify(ended(0), false, false, blockedControl.signal.aborted)
+  assert.deepEqual(blockedAttempt.outcome, { status: 'failed', errorCode: 'CONTEXT_SUMMARY_FAILED' })
+  assert.deepEqual(blockedAttempt.runResult, {
+    status: 'failed',
+    usage: { modelCalls: 1 },
+    error: { category: 'content-blocked', code: 'CONTEXT_SUMMARY_FAILED' },
+  })
+
+  const unfinished = createStreamTracker({ emit: async () => {} }, () => {})
+  unfinished.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_1' } })
+  unfinished.onLine({ type: 'error', sessionID: 'ses_1', error: { name: 'ContextOverflowError' } })
+  unfinished.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_summary' } })
+  await unfinished.finalize(false, false)
+  assert.deepEqual(unfinished.classify(ended(0), false, false, false).runResult.error, {
+    category: 'context-limit',
+    code: 'CONTEXT_SUMMARY_FAILED',
+  })
+
+  const refusedControl = new AbortController()
+  const refused = createStreamTracker(
+    {
+      emit: async () => {
+        throw new Error('closed')
+      },
+    },
+    () => refusedControl.abort(),
+  )
+  refused.onLine({ type: 'step_start', sessionID: 'ses_1', part: { messageID: 'msg_1' } })
+  await refused.finalize(false, false)
+  assert.deepEqual(refused.classify(ended(0), false, false, refusedControl.signal.aborted).runResult, {
+    status: 'failed',
+    usage: { modelCalls: 1 },
+    error: { category: 'stopped', code: 'REQUEST_NOT_SAVED' },
+  })
+})
+
+test('agent runtime availability reports a missing or unsupported CLI', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-agent-runtime-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const root = join(dir, 'runtime')
+  const missing = new OpenCodeAgentRuntime(undefined, root, memoryBindings())
+  assert.deepEqual(await missing.availability(), { available: false, code: 'RUNTIME_UNAVAILABLE' })
+  assert.deepEqual(await agentRuntime({ root }).runtime.availability(), { available: true })
+  assert.deepEqual(await agentRuntime({ root, version: '9.9.9' }).runtime.availability(), {
+    available: false,
+    code: 'RUNTIME_VERSION_UNSUPPORTED',
+  })
+})
+
+test('agent runtime streams a run, reports usage and binds the owner', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-agent-runtime-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const root = join(dir, 'runtime')
+  const { runtime, log, bindings } = agentRuntime({ root })
+  const events = []
+  const usage = []
+  const sink = {
+    emit: async event => {
+      events.push(event)
+    },
+    usage: total => {
+      usage.push(total)
+    },
+  }
+  const conversation = {
+    kind: 'conversation',
+    messages: [
+      { role: 'user', content: 'earlier question' },
+      { role: 'user', content: 'draw a deck' },
+    ],
+  }
+
+  const result = await runtime.run(runInput({ resources: [conversation] }), sink)
+
+  assert.equal(result.status, 'completed')
+  assert.deepEqual(result.usage, { modelCalls: 1, inputTokens: 10, outputTokens: 5 })
+  assert.deepEqual(usage.at(-1), { modelCalls: 1, inputTokens: 10, outputTokens: 5 })
+  assert.ok(events.some(event => event.kind === 'activity' && event.type === 'model'))
+  assert.ok(events.some(event => event.kind === 'text' && event.text === 'Echo 1: draw a deck'))
+  const [first] = await loggedRuns(log)
+  assert.ok(first.args.includes('deckagent'))
+  assert.ok(first.args.includes('json'))
+  assert.ok(first.prompt.includes('earlier question'))
+  assert.ok(first.prompt.endsWith("The user's new request:\ndraw a deck"))
+  assert.deepEqual(await readdir(join(root, 'chats')).catch(() => []), [
+    createHash('sha256').update('chat:chat-1').digest('hex').slice(0, 32),
+  ])
+  assert.equal(bindings.binding('chat:chat-1'), undefined)
+
+  result.commit()
+
+  const binding = bindings.binding('chat:chat-1')
+  assert.match(binding.nativeSessionId, /^ses_/)
+  assert.deepEqual(binding.selection, { provider: 'fixture', model: 'model-a' })
+  assert.equal(binding.lastRequestId, 'request-1')
+  assert.ok(
+    binding.context.startsWith(
+      join(root, 'chats', createHash('sha256').update('chat:chat-1').digest('hex').slice(0, 32), 'work'),
+    ),
+  )
+  assert.match(binding.context, /[a-f0-9]{64}$/)
+
+  const resumed = await runtime.run(runInput({ requestId: 'request-2', resources: request('follow up') }), sink)
+  assert.equal(resumed.status, 'completed')
+  const next = (await loggedRuns(log)).at(-1)
+  assert.equal(next.resume, binding.nativeSessionId)
+  assert.equal(next.prompt, 'follow up')
+  assert.ok(events.some(event => event.kind === 'text' && event.text === 'Echo 2: follow up'))
+})
+
+test('agent runtime returns a categorized failure for each runtime and provider condition', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-agent-runtime-failures-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const cases = [
+    {
+      name: 'missing executable',
+      runtime: { executable: undefined },
+      input: {},
+      usage: { modelCalls: 0 },
+      error: { category: 'runtime-unavailable', code: 'RUNTIME_UNAVAILABLE' },
+    },
+    {
+      name: 'unsupported provider settings',
+      input: { provider: { ...settings, protocol: 'other' } },
+      usage: { modelCalls: 0 },
+      error: { category: 'runtime-config', code: 'PROVIDER_UNSUPPORTED' },
+    },
+    {
+      name: 'unsafe effective configuration',
+      mode: { unsafe: true },
+      input: {},
+      usage: { modelCalls: 0 },
+      error: { category: 'runtime-config', code: 'RUNTIME_CONFIG_UNSAFE' },
+    },
+    {
+      name: 'process exit code',
+      input: { resources: request('fail [crash]') },
+      usage: { modelCalls: 0 },
+      error: { category: 'runtime-failed', code: 'RUNTIME_FAILED' },
+    },
+    {
+      name: 'malformed output',
+      input: { resources: request('fail [malformed]') },
+      usage: { modelCalls: 0 },
+      error: { category: 'runtime-protocol', code: 'RUNTIME_PROTOCOL' },
+    },
+    {
+      name: 'unfinished run',
+      input: { resources: request('fail [incomplete]') },
+      usage: { modelCalls: 1 },
+      error: { category: 'runtime-incomplete', code: 'RUNTIME_INCOMPLETE' },
+    },
+    {
+      name: 'rejected key',
+      input: { resources: request('fail [auth]') },
+      usage: { modelCalls: 1 },
+      error: { category: 'provider-auth', code: 'PROVIDER_AUTH' },
+    },
+    {
+      name: 'context overflow during the summary',
+      input: { resources: request('fail [overflow-fail]') },
+      usage: { modelCalls: 1 },
+      error: { category: 'context-limit', code: 'CONTEXT_SUMMARY_FAILED' },
+    },
+    {
+      name: 'attempt clock expired',
+      runtime: { timeoutMs: 300 },
+      input: { resources: request('fail [hang]') },
+      error: { category: 'timeout', code: 'REQUEST_TIMEOUT' },
+    },
+  ]
+  let index = 0
+  for (const item of cases) {
+    const root = join(dir, String(index++))
+    const executable = 'executable' in (item.runtime ?? {}) ? item.runtime.executable : process.execPath
+    const log = join(root, 'fake-opencode.log')
+    const runtime = new OpenCodeAgentRuntime(executable, root, memoryBindings(), {
+      version: 'fake-1.0.0',
+      timeoutMs: item.runtime?.timeoutMs ?? 30_000,
+      launcherArgs: [fakeCli, log],
+    })
+    await mkdir(root, { recursive: true })
+    if (item.mode) await writeFile(`${log}.mode.json`, JSON.stringify(item.mode))
+    const result = await runtime.run(runInput(item.input), { emit: async () => {}, usage: () => {} })
+    assert.equal(result.status, 'failed', item.name)
+    assert.deepEqual(result.error, item.error, item.name)
+    if (item.usage) assert.deepEqual(result.usage, item.usage, item.name)
+  }
+})
+
+test('agent runtime ends a stopped run with the stopped category', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-agent-runtime-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const { runtime } = agentRuntime({ root: join(dir, 'runtime') })
+  const control = new AbortController()
+  const events = []
+  const running = runtime.run(runInput({ resources: request('stop me [hang]'), signal: control.signal }), {
+    emit: async event => {
+      events.push(event)
+    },
+    usage: () => {},
+  })
+  await waitFor(() => events.some(event => event.kind === 'text'))
+  control.abort()
+  const result = await running
+  assert.equal(result.status, 'failed')
+  assert.deepEqual(result.error, { category: 'stopped', code: 'STOPPED' })
 })

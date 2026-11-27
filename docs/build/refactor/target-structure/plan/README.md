@@ -358,7 +358,7 @@ Revision 4a adds these failure modes:
 | 48 | Done | [Move file tools and source tools into apps/host/src/tools](task-48-move-tools-and-sources.md) ([report](../reports/task-48-move-tools-and-sources.md)) |
 | 49 | Done | [Move the OpenCode integration into apps/host/src/runtimes/opencode](task-49-move-opencode-runtime.md) ([report](../reports/task-49-move-opencode-runtime.md)) |
 | 50 | Done | [Add apps/host/src/runs contracts, preparation composer, budget monitor and boundary rules](task-50-add-runs-contracts-preparation-and-budget.md) ([report](../reports/task-50-add-runs-contracts-preparation-and-budget.md)) |
-| 51 | Pending | [Implement the AgentRuntime port, usage tracking and error categories in apps/host/src/runtimes/opencode](task-51-implement-opencode-agent-runtime.md) |
+| 51 | Done | [Implement the AgentRuntime port, usage tracking and error categories in apps/host/src/runtimes/opencode](task-51-implement-opencode-agent-runtime.md) ([report](../reports/task-51-implement-opencode-agent-runtime.md)) |
 
 ## Next revision
 

@@ -1,3 +1,5 @@
+import type { RunError } from '../../runs/ports.ts'
+
 /**
  * The structured events of `opencode run --format json` that DeckAgent reads. Every other field, and any event of
  * another type, is ignored: raw runtime output is input to the Host, never a product record or UI payload.
@@ -11,7 +13,13 @@ export type OpenCodeEvent =
       readonly partId: string
       readonly text: string
     }
-  | { readonly type: 'step_finish'; readonly sessionId?: string; readonly messageId?: string; readonly reason?: string }
+  | {
+      readonly type: 'step_finish'
+      readonly sessionId?: string
+      readonly messageId?: string
+      readonly reason?: string
+      readonly tokens?: { readonly input?: number; readonly output?: number }
+    }
   | {
       readonly type: 'tool'
       readonly sessionId?: string
@@ -41,6 +49,11 @@ function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+function tokenCount(tokens: unknown, field: 'input' | 'output'): number | undefined {
+  const value = record(tokens) ? tokens[field] : undefined
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined
+}
+
 const nativeId = /^[\w.-]{1,200}$/
 
 /** `undefined` for a value that is not an event object at all; the adapter treats it as a protocol failure. */
@@ -60,13 +73,19 @@ export function parseEvent(value: unknown): OpenCodeEvent | undefined {
       const partId = typeof part.id === 'string' && nativeId.test(part.id) ? part.id : 'text'
       return { type: 'text', ...base, ...message, partId, text: part.text }
     }
-    case 'step_finish':
+    case 'step_finish': {
+      const input = tokenCount(part?.tokens, 'input')
+      const output = tokenCount(part?.tokens, 'output')
       return {
         type: 'step_finish',
         ...base,
         ...message,
         ...(part && typeof part.reason === 'string' ? { reason: part.reason } : {}),
+        ...(input === undefined && output === undefined
+          ? {}
+          : { tokens: { ...(input === undefined ? {} : { input }), ...(output === undefined ? {} : { output }) } }),
       }
+    }
     case 'tool_use': {
       if (!part) return { type: 'other', ...base }
       const state = record(part.state) ? part.state : undefined
@@ -103,13 +122,25 @@ export function parseEvent(value: unknown): OpenCodeEvent | undefined {
   }
 }
 
+const providerAuth: RunError = { category: 'provider-auth', code: 'PROVIDER_AUTH' }
+const providerRateLimit: RunError = { category: 'provider-rate-limit', code: 'PROVIDER_RATE_LIMIT' }
+const providerModel: RunError = { category: 'provider-model', code: 'PROVIDER_MODEL_UNAVAILABLE' }
+const providerOther: RunError = { category: 'provider-other', code: 'PROVIDER_HTTP' }
+const runtimeProviderFailed: RunError = { category: 'provider-other', code: 'RUNTIME_FAILED' }
+const contextLimit: RunError = { category: 'context-limit', code: 'CONTEXT_LIMIT' }
+const inputUnsupported: RunError = { category: 'input-unsupported', code: 'IMAGE_INPUT_UNAVAILABLE' }
+
+export function classifyProviderError(event: Extract<OpenCodeEvent, { type: 'error' }>): RunError {
+  if (event.statusCode === 401 || event.statusCode === 403 || event.name === 'ProviderAuthError') return providerAuth
+  if (event.statusCode === 429) return providerRateLimit
+  if (event.name && /context|overflow/i.test(event.name)) return contextLimit
+  if (event.imageUnsupported) return inputUnsupported
+  if (event.statusCode === 404) return providerModel
+  if (event.statusCode !== undefined) return providerOther
+  return runtimeProviderFailed
+}
+
 /** A product error code from runtime evidence. Provider messages are never copied (they can echo keys). */
 export function errorCode(event: Extract<OpenCodeEvent, { type: 'error' }>): string {
-  if (event.statusCode === 401 || event.statusCode === 403 || event.name === 'ProviderAuthError') return 'PROVIDER_AUTH'
-  if (event.statusCode === 429) return 'PROVIDER_RATE_LIMIT'
-  if (event.name && /context|overflow/i.test(event.name)) return 'CONTEXT_LIMIT'
-  if (event.imageUnsupported) return 'IMAGE_INPUT_UNAVAILABLE'
-  if (event.statusCode === 404) return 'PROVIDER_MODEL_UNAVAILABLE'
-  if (event.statusCode !== undefined) return 'PROVIDER_HTTP'
-  return 'RUNTIME_FAILED'
+  return classifyProviderError(event).code
 }

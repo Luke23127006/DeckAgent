@@ -40,10 +40,12 @@ export function runtimeConfiguration(
   settings: ProviderRunSettings,
   bridge?: { readonly url: string; readonly names: readonly string[] },
   instructions?: string,
+  stepLimit?: number | 'none',
 ) {
   const grants = bridge
     ? { ...permission, ...Object.fromEntries(bridge.names.map(name => [`deckagent_${name}`, 'allow'])) }
     : permission
+  const steps = stepLimit ?? (bridge?.names.includes('publish_slide') ? 'none' : 8)
   return {
     permission: grants,
     plugin: [],
@@ -70,7 +72,7 @@ export function runtimeConfiguration(
               ].join(' ')
             : systemPrompt) + (instructions ? `\n\n${instructions}` : ''),
         permission: grants,
-        ...(bridge?.names.includes('publish_slide') ? {} : { steps: 8 }),
+        ...(steps === 'none' ? {} : { steps }),
       },
     },
     ...(bridge

@@ -1,3 +1,5 @@
+export { OpenCodeAgentRuntime } from './agent-runtime.ts'
+export type { OpenCodeAgentRuntimeOptions, OwnerBindingStore, OwnerRuntimeBinding } from './agent-runtime.ts'
 export { pinnedVersion } from './config.ts'
 export { OpenCodeError } from './contracts.ts'
 export type { OpenCodeExecutor } from './contracts.ts'

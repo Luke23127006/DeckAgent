@@ -1,4 +1,5 @@
 import type { HostMessage } from '@deckagent/host-api'
+import type { ConversationMessage } from '../../runs/ports.ts'
 
 /**
  * Safe context seeding for a new native session of a chat that already has a conversation (ADR-0002).
@@ -6,23 +7,14 @@ import type { HostMessage } from '@deckagent/host-api'
  * The whole saved conversation is quoted: no message is dropped without the user being told. A conversation that
  * does not fit the model's context goes through the runtime's summary (FR-079) or ends the request as not finished.
  */
-export function seedPrompt(earlier: readonly HostMessage[], input: string): string {
-  const quoted: {
-    role: 'user' | 'assistant'
-    content: string
-    unfinished?: true
-    attachments?: readonly { readonly attachmentId: string; readonly name: string }[]
-  }[] = []
-  for (const message of earlier) {
-    if (
-      (message.role !== 'user' && message.role !== 'assistant') ||
-      (!message.content.trim() && !message.attachments?.length)
-    )
-      continue
+export function seedConversationPrompt(messages: readonly ConversationMessage[], input: string): string {
+  const quoted: ConversationMessage[] = []
+  for (const message of messages) {
+    if (!message.content.trim() && !message.attachments?.length) continue
     quoted.push({
       role: message.role,
       content: message.content,
-      ...(message.role === 'assistant' && message.interrupted ? { unfinished: true as const } : {}),
+      ...(message.role === 'assistant' && message.unfinished ? { unfinished: true as const } : {}),
       ...(message.role === 'user' && message.attachments?.length
         ? { attachments: message.attachments.map(item => ({ attachmentId: item.attachmentId, name: item.name })) }
         : {}),
@@ -36,4 +28,20 @@ export function seedPrompt(earlier: readonly HostMessage[], input: string): stri
     "The user's new request:",
     input,
   ].join('\n')
+}
+
+export function seedPrompt(earlier: readonly HostMessage[], input: string): string {
+  const messages: ConversationMessage[] = []
+  for (const message of earlier) {
+    if (message.role !== 'user' && message.role !== 'assistant') continue
+    messages.push({
+      role: message.role,
+      content: message.content,
+      ...(message.role === 'assistant' && message.interrupted ? { unfinished: true as const } : {}),
+      ...(message.role === 'user' && message.attachments?.length
+        ? { attachments: message.attachments.map(item => ({ attachmentId: item.attachmentId, name: item.name })) }
+        : {}),
+    })
+  }
+  return seedConversationPrompt(messages, input)
 }
