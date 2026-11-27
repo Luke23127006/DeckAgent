@@ -114,6 +114,7 @@
                   "../modules/**",
                   "../integrations/**",
                   "../runtimes/**",
+                  "../runs/**",
                   "../*-store.ts",
                   "../*-state.ts",
                   "../local-transport.ts",
@@ -155,11 +156,59 @@
                   "express",
                   "express/*",
                   "node:sqlite",
+                  "../../modules/**",
                   "../../http/**",
                   "../../local-transport.ts",
                   "../../tools/**"
                 ],
                 "message": "A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/runs/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../../modules/**",
+                  "../runtimes/**",
+                  "../../runtimes/**",
+                  "../tools/**",
+                  "../../tools/**",
+                  "../http/**",
+                  "../../http/**",
+                  "../local-transport.ts",
+                  "express",
+                  "express/*",
+                  "node:http",
+                  "node:https",
+                  "node:sqlite",
+                  "@deckagent/session-persistence",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "Agent core runs/ must not import modules, HTTP, SQL, tools or concrete runtimes."
               }
             ]
           }

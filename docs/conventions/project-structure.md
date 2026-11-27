@@ -215,11 +215,12 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | Feature, Browser feature, integration, runtime và module không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | Rule theo folder cho `apps/web/src/api/` |
 | Package graph, feature graph, Browser feature graph và module graph trong `apps/host/src/modules/` không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`, `module-cycle`) | — |
 | `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | Cùng rule cho `packages/contracts/` |
-| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | `runs/` không import module, Express, SQL driver và adapter trong `runtimes/` |
+| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | — |
+| `runs/` không import module, Express, SQL driver, tool và adapter trong `runtimes/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runs/` | — |
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
 | Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
 | `http/` không import feature, module, integration, runtime, store hoặc storage package | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
-| Adapter runtime không import Express, SQL driver, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/` | — |
+| Adapter runtime không import module, Express, SQL driver, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/` | — |
 | Route không import store hoặc SQL driver. Service không import Express hoặc SQL driver. Module không import store của module khác, storage package hoặc `http/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.routes.ts` và `*.service.ts` | — |
 | `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host`, `@deckagent/host-api` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
 | Tool executor không tự cấp capability | `oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/` | — |

@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { delimiter, isAbsolute, join } from 'node:path'
 import type { RequestRun, RuntimeOutcome } from '@deckagent/host-api'
 import type { AgentRequest } from '@deckagent/host-contracts'
-import type { ProviderRunSettings } from '../../modules/providers/index.ts'
+import type { ProviderRunSettings } from '../../runs/ports.ts'
 import { OpenCodeError } from './contracts.ts'
 import type { OpenCodeExecutor, RuntimeSessionAccess } from './contracts.ts'
 import {

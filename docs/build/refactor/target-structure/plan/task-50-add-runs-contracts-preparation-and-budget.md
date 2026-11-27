@@ -42,7 +42,7 @@ After this task, `apps/host/src/runs/` defines the Phase 1 contracts of `docs/ar
 
 **Forbidden:** import any module, Express, `node:http`, `node:https`, `node:sqlite`, `@deckagent/session-persistence`, `@deckagent/deck` or `runtimes/` inside `apps/host/src/runs/`. Put a `sessionId` field on any contract type in `apps/host/src/runs/ports.ts`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -52,7 +52,7 @@ Run: `git grep -n "^| 49 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing test `apps/host/tests/runs-preparation.test.mjs`**
+- [x] **Step 2: Write the failing test `apps/host/tests/runs-preparation.test.mjs`**
 
 Create `apps/host/tests/runs-preparation.test.mjs` with tests covering:
 
@@ -62,26 +62,26 @@ Create `apps/host/tests/runs-preparation.test.mjs` with tests covering:
 
 Add `apps/host/tests/runs-preparation.test.mjs` to `test:model-requests` in `package.json`.
 
-- [ ] **Step 3: Run the new test and check that it fails**
+- [x] **Step 3: Run the new test and check that it fails**
 
 Run: `node --test apps/host/tests/runs-preparation.test.mjs`
 
 Expected: FAIL. Module import fails because `apps/host/lib/types/runs/index.js` does not exist yet.
 
-- [ ] **Step 4: Implement `apps/host/src/runs/` and move `ProviderRunSettings`**
+- [x] **Step 4: Implement `apps/host/src/runs/` and move `ProviderRunSettings`**
 
 1. Create `apps/host/src/runs/ports.ts` matching `docs/architecture/10-agent-core.md` (`## Contract`) word for word, importing types only from `@deckagent/host-contracts`.
 2. Implement `apps/host/src/runs/preparation/index.ts`. Call `registered` and then `plan.contributions`, and concatenate instructions and resources. Merge `ToolSet` values by hashing each `context` with sha256 and joining non-empty `manifest` strings with `'\n\n'`. Reject duplicate schema names with `new RunFailure('TOOL_NAME_CONFLICT')`. Bind `ToolContext` into `RunTools`, resolve `ProviderRunSettings` via `providers.resolve(plan.selection)` and return `RunInput`.
 3. Implement `apps/host/src/runs/budget/index.ts` (`createRunBudget`) and `apps/host/src/runs/index.ts`.
 4. Move the `ProviderRunSettings` declaration out of `apps/host/src/modules/providers/provider-catalog.ts` into `apps/host/src/runs/ports.ts`. Re-export `type ProviderRunSettings` from `modules/providers/provider-catalog.ts` and `modules/providers/index.ts` for existing callers. Change `apps/host/src/runtimes/opencode/{config,contracts,provider,runtime}.ts` to import `type { ProviderRunSettings }` from `../../runs/ports.ts`.
 
-- [ ] **Step 5: Add oxlint boundary rules and negative fixtures**
+- [x] **Step 5: Add oxlint boundary rules and negative fixtures**
 
 1. In `.oxlintrc.json`, add `../runs/**` to `http/**`, add `../../modules/**` to `runtimes/**`, and add an override for `**/apps/host/src/runs/**/*.{ts,tsx,mts,cts,js,mjs,cjs}` blocking private package imports plus `../modules/**`, `../../modules/**`, `../runtimes/**`, `../../runtimes/**`, `../tools/**`, `../../tools/**`, `../http/**`, `../../http/**`, `../local-transport.ts`, `express`, `express/*`, `node:http`, `node:https`, `node:sqlite`, `@deckagent/session-persistence`, `@deckagent/deck` and `@deckagent/deck/*` with message `Agent core runs/ must not import modules, HTTP, SQL, tools or concrete runtimes.`.
 2. In `tests/oxlint-boundaries.test.mjs`, add tests proving `apps/host/src/runs/preparation/index.ts` rejects `../../modules/chats/index.ts`, `../../runtimes/opencode/index.ts`, `express`, `node:sqlite`, `node:http` and `@deckagent/session-persistence`, and proving `apps/host/src/runtimes/opencode/provider.ts` rejects `../../modules/providers/index.ts` and accepts `../../runs/ports.ts`.
 3. Update `docs/conventions/project-structure.md` (`## Enforcement`) to record the new `apps/host/src/runs/` and `apps/host/src/runtimes/` oxlint rules in `Chặn bởi`.
 
-- [ ] **Step 6: Check `sessionId` absence, format, build and run tests**
+- [x] **Step 6: Check `sessionId` absence, format, build and run tests**
 
 Run: `git grep --untracked -n "sessionId:" -- apps/host/src/runs`
 
@@ -91,11 +91,11 @@ Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task 
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 7: Run every suite**
+- [x] **Step 7: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 8: Write the report file and stop**
+- [x] **Step 8: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Add `apps/host/src/runs/` contracts (`ports.ts`), contribution preparation composer, budget monitor and folder-level oxlint rules, and move `ProviderRunSettings` into `runs/ports.ts`. Task 50 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move `apps/host/src/integrations/opencode/` into `apps/host/src/runtimes/opencode/` and enforce runtime adapter boundaries with `check:boundaries` and oxlint. Task 49 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move file tools and source tools into `apps/host/src/tools/` (`policy/`, `sources/`, `executors/`), remove `@deckagent/file-tools` and enforce executor boundaries with oxlint. Task 48 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Close the `helmet` evaluation (keep `setSecurityHeaders` in `apps/host/src/http/app.ts`) and verify all Phase 3 domain-module and change-notice exit checks. Task 47 is `Done` in `docs/build/refactor/target-structure/plan/`.

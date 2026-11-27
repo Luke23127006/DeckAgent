@@ -1,17 +1,10 @@
 import type { ProviderProtocol } from '@deckagent/host-contracts'
 
+export type { ProviderRunSettings } from '../../runs/ports.ts'
+
 export interface ProviderEndpoint {
   readonly protocol: ProviderProtocol
   readonly baseUrl: string
-}
-
-/** The provider settings a request runs with, frozen at admission (FR-042). Host-only: it holds the key. */
-export interface ProviderRunSettings {
-  readonly provider: string
-  readonly protocol: ProviderProtocol
-  readonly baseUrl: string
-  readonly model: string
-  readonly key?: string
 }
 
 /** Why a check or a catalog lookup failed. Never holds a provider response body, a URL or a key. */

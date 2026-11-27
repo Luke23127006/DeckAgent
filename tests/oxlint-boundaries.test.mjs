@@ -458,3 +458,47 @@ test('tool executors accept policy and source contracts', () => {
   assert.equal(result.status, 0, result.output)
   assert.deepEqual(result.diagnostics, [])
 })
+
+test('agent core runs rejects modules, runtimes, Express, SQL, HTTP and storage', () => {
+  const result = lintFixture(
+    'apps/host/src/runs/preparation/index.ts',
+    [
+      "import { createChatOperations } from '../../modules/chats/index.ts'",
+      "import { OpenCodeRuntime } from '../../runtimes/opencode/index.ts'",
+      "import express from 'express'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      "import { createServer } from 'node:http'",
+      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      'console.log(createChatOperations, OpenCodeRuntime, express, DatabaseSync, createServer, SqliteSessionStore)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1, result.output)
+  assert.equal(result.diagnostics.length, 6)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.equal(diagnostic.help, 'Agent core runs/ must not import modules, HTTP, SQL, tools or concrete runtimes.')
+  }
+})
+
+test('runtime adapter rejects a module import and accepts the runs port', () => {
+  const denied = lintFixture(
+    'apps/host/src/runtimes/opencode/provider.ts',
+    "import type { ProviderRunSettings } from '../../modules/providers/index.ts'\nexport type Settings = ProviderRunSettings\n",
+  )
+  assert.equal(denied.status, 1, denied.output)
+  assert.equal(denied.diagnostics.length, 1)
+  assert.equal(denied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+  assert.match(denied.diagnostics[0].message, /\.\.\/\.\.\/modules\/providers\/index\.ts/)
+  assert.equal(
+    denied.diagnostics[0].help,
+    'A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly.',
+  )
+
+  const allowed = lintFixture(
+    'apps/host/src/runtimes/opencode/provider.ts',
+    "import type { ProviderRunSettings } from '../../runs/ports.ts'\nexport type Settings = ProviderRunSettings\n",
+  )
+  assert.equal(allowed.status, 0, allowed.output)
+  assert.deepEqual(allowed.diagnostics, [])
+})
