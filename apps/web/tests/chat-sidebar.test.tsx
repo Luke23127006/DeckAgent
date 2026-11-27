@@ -1,4 +1,4 @@
-// Checks the React chat list, the chat search and the workspace controls of the legacy navigation.
+// Checks the React chat list, the chat search and the workspace controls of the chat navigation.
 // Runs in Vitest and jsdom. MSW replaces only the Host HTTP boundary.
 // Run: corepack pnpm@11.28.5 test:web
 // Expected values follow the chat list and workspace HTTP contract, UC-006 S1, UC-013 and FR-134.
@@ -9,9 +9,13 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { configureApiClient } from '../src/api/client.ts'
-import { ChatSidebar } from '../src/components/chat-sidebar.tsx'
+import { ChatList } from '../src/components/chat-list.tsx'
+import { ChatSearch } from '../src/components/chat-search.tsx'
+import { WorkspaceControls } from '../src/components/workspace-controls.tsx'
 import type { OpenChatState } from '../src/components/chat-list.tsx'
 
 const origin = 'http://localhost:4321'
@@ -70,6 +74,24 @@ afterEach(() => {
 })
 afterAll(() => server.close())
 
+interface Slots {
+  readonly workspaces: HTMLElement
+  readonly search: HTMLElement
+  readonly chats: HTMLElement
+}
+
+/** The navigation parts of the chat screen, each in its own element, as the chat screen places them. */
+function Sidebar(props: { readonly slots: Slots; readonly open: OpenChatState; readonly onOpen: (chat: WebSession) => void }) {
+  const [words, setWords] = useState('')
+  return (
+    <>
+      {createPortal(<WorkspaceControls busy={false} />, props.slots.workspaces)}
+      {createPortal(<ChatSearch onWords={setWords} />, props.slots.search)}
+      {createPortal(<ChatList words={words} open={props.open} onOpen={props.onOpen} />, props.slots.chats)}
+    </>
+  )
+}
+
 const openState: OpenChatState = { currentSessionId: 'empty', locked: false, draftIds: [] }
 
 function mount(open: OpenChatState = openState, onOpen = vi.fn()) {
@@ -82,7 +104,7 @@ function mount(open: OpenChatState = openState, onOpen = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={client}>
-      <ChatSidebar slots={slots} open={open} busy={false} onOpen={onOpen} />
+      <Sidebar slots={slots} open={open} onOpen={onOpen} />
     </QueryClientProvider>,
   )
   return { slots, onOpen }

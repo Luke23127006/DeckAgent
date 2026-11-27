@@ -36,7 +36,7 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | 2 | React shell | Phase 1 is done | Vite builds `apps/web/`. The Host serves the build folder with an SPA fallback, and `loadWebAssets` with its HTML and CSS strings is removed (WB-02, WB-05). Tailwind, shadcn/ui with the theme variables, Vitest, `main.tsx`, the route table, the app shell layout, the `QueryClient`, `api/client.ts` and the change feed hook exist. The old screens render inside the shell | Done ([Revision 2](plan/README.md#revision-2-phase-2-react-shell)) |
 | 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Implemented; [exit check blocked](#phase-3-settings) by concurrent Host edits |
 | 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Done ([Phase 4](#phase-4-workspaces-and-chat-navigation)) |
-| 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Pending |
+| 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Done ([Phase 5](#phase-5-conversation-and-requests)) |
 | 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Pending |
 | 7 | Removal and exit check | Phases 3 to 6 are done | `apps/web/src/browser/` and the second TypeScript project are removed (WB-09). `apps/web/` imports only the contracts package (WB-03). The old Browser rules of `check:boundaries` are replaced. A rescan checks TS-06 and TS-07 [[8]](#ref-8) | Pending |
 
@@ -76,6 +76,24 @@ The phase was diagnosed and done in one run without task files. Its decisions:
 | The legacy screens keep their own read of chats and workspaces | `open`, `start` and the new chat need the list. Phase 5 removes this read with the legacy screens |
 
 Checks: `build`, `lint`, `check:boundaries`, `check:docs`, Vitest (23 tests) and the contracts tests passed. The browser suite passed 21 of 22 tests in the first run. The failed test stops at "1/3" slides after an explicit continuation of a deck. An isolated rerun with the same build passed. The same failure occurred in the Phase 3 run, so it is not a result of this phase.
+
+### Phase 5: Conversation and requests
+
+`ChatScreen` in `components/` renders the chat screen for the home route and the chat route. It holds the navigation, the conversation, the composer with the draft, the attachments, the research choice and the model picker, and the request records with their feedback. `useConversation` owns the open chat: the open with a generation guard, the draft mirror with its save delay, send, stop, approval and confirmation. `useRequestStream` owns the SSE reader of the active request and its `AbortController`, and continues after the last sequence. `useChatNotices` reads the notices of the open chat. The API layer uses `decodeRequestSnapshot`, `decodeHistory`, `decodeStoredRequests`, `decodeStoredActivities`, `decodeChatDraft`, `decodeAttachmentUpload` and `decodeResearchSources` of the contracts package. The text of the conversation and the request failures is in `text.ts`.
+
+The legacy shell, the navigation, the request runner, the draft sync, the theme control and the features `chats`, `requests`, `attachments`, `research` and `providers` of `src/browser/` are removed. The deck screens stay legacy until Phase 6. `browser/deck-bridge.ts` creates them, and `ChatScreen` places their nodes through `LegacyNode`.
+
+The phase was diagnosed and done in one run without task files. Its decisions:
+
+| Decision | Reason |
+| --- | --- |
+| The open chat is one object in `useConversation` that React reads through `useSyncExternalStore`, not one query per record | The open, the send and the stream end change history, requests, activities and the draft together under one generation. Separate queries would show a mix of two chats after a fast switch. Settings, the chat list and the workspace list stay in the query cache, and the object reads them from it |
+| The deck screens reach the conversation through the `ConversationDeck` port, implemented by `browser/deck-bridge.ts` | The Outline card is inside an assistant message, and the Brief command is part of a send. A port keeps the legacy deck code out of the hooks, and Phase 6 replaces only the bridge |
+| The text field of the composer is uncontrolled, and it uses native `input` and `keydown` listeners | A script event that does not bubble does not reach the root listener of React. A draft notice of another interface also changes the text without a render |
+| The legacy transport (`src/browser/transport/`) and `change-watcher.ts` stay | HTTP tests of the Host use them as the Browser driver. Phase 7 removes them with the second TypeScript project |
+| The model options show only when a chat is open | The query cache holds Settings before the chat opens. An option list without the choice of the chat shows an empty choice |
+
+Checks ran in a worktree at the Phase 4 commit with the changes of this phase, because concurrent Host edits in the shared tree stop `build`. `build`, the typecheck, `lint` of `apps/web/` and the contracts package, Vitest (23 tests), the contracts decoder tests and the browser suite (22 of 22 tests) passed. Fourteen non-live scripts passed. The run stopped at the request of the PO before `test:env-startup`, `test:http-edge`, `test:local-web`, `test:layouts`, `check:boundaries` and `check:docs`, so these did not run.
 
 ### Phase 6: Deck
 

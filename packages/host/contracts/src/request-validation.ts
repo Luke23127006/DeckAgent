@@ -143,6 +143,13 @@ function buildApprovalView(data: z.infer<typeof approvalViewSchema>): ApprovalVi
   }
 }
 
+/** Decodes the approval of a decision reply or a request snapshot. */
+export function decodeApprovalView(value: unknown): ApprovalView {
+  const parsed = approvalViewSchema.safeParse(value)
+  if (!parsed.success) return invalidResponse()
+  return buildApprovalView(parsed.data)
+}
+
 export function decodeAttachment(value: unknown): AttachmentView {
   const parsed = attachmentSchema.safeParse(value)
   if (!parsed.success) return invalidResponse()

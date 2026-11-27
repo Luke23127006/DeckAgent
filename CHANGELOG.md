@@ -23,6 +23,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 - Refactor the Host deck module into capability folders behind `DeckService`, `DeckWorkflowError`, `DeckChats` and `DeckAttachments`, move deck run planning out of `server.ts`, remove the `chatSessions` adapter by splitting `ToolSessionStore`, and enable `role-file-symbol` for `deck`.
+- Render the conversation, the draft, attachments, research and the request feedback with React. A request stream hook owns the SSE reader of the active request, the responses are decoded through the contracts package, and the legacy shell, request runner and draft sync are removed.
 - Render the workspace controls, the chat search and the chat list with React through query hooks. Decode the chat and workspace lists through the contracts package, and remove the legacy workspace view.
 - Render Settings with React for providers, models, credentials and theme. Decode Settings responses through the contracts package.
 - Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.

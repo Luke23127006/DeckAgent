@@ -177,7 +177,8 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
   })
 }
 
-async function readError(response: Response): Promise<ApiClientError> {
+/** Turns a refused Host reply into a typed client error. */
+export async function readApiError(response: Response): Promise<ApiClientError> {
   const value: unknown = await response.json().catch(() => undefined)
   const error = isRecord(value) && isRecord(value.error) ? value.error : undefined
   const detail: Record<string, string | boolean> = {}
@@ -195,7 +196,7 @@ async function readError(response: Response): Promise<ApiClientError> {
 /** Fetches JSON, refuses an unknown error code and turns a malformed body into `INVALID_RESPONSE`. */
 export async function apiJson<T>(path: string, decode: (value: unknown) => T, init: RequestInit = {}): Promise<T> {
   const response = await apiFetch(path, init)
-  if (!response.ok) throw await readError(response)
+  if (!response.ok) throw await readApiError(response)
   let value: unknown
   try {
     value = await response.json()
@@ -217,7 +218,7 @@ export async function* readSseFrames(response: Response, options: SseFrameOption
     throw new ApiClientError(options.invalidError, response.status)
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
-  const eventLine = `event: ${options.eventName}\n`
+  const eventLine = `event: ${options.eventName}`
   let buffer = ''
   try {
     while (true) {
@@ -229,7 +230,8 @@ export async function* readSseFrames(response: Response, options: SseFrameOption
       while (boundary >= 0) {
         const frame = buffer.slice(0, boundary)
         buffer = buffer.slice(boundary + 2)
-        if (frame.startsWith(eventLine))
+        // A frame can start with its id line, so each line of the frame is checked.
+        if (frame.split('\n').includes(eventLine))
           yield frame
             .split('\n')
             .filter(line => line.startsWith('data: '))

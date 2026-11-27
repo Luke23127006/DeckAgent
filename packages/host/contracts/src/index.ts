@@ -31,6 +31,17 @@ export type {
 export { providerProtocols } from './management.ts'
 export { decodeSettings, decodePreferences, decodeCatalog, decodeSettingsSaved } from './settings-validation.ts'
 export { decodeChat, decodeChatList, decodeWorkspaceList } from './chat-list-validation.ts'
+export {
+  decodeAttachmentUpload,
+  decodeChatDraft,
+  decodeHistory,
+  decodePreviewText,
+  decodeRequestSnapshot,
+  decodeResearchSources,
+  decodeStoredActivities,
+  decodeStoredRequests,
+  type ResearchSource,
+} from './conversation-validation.ts'
 export type {
   ActivityStatus,
   AgentRequest,
@@ -51,6 +62,7 @@ export type {
 export {
   decodeAgentRequest,
   decodeApprovalDecisionBody,
+  decodeApprovalView,
   decodeAttachment,
   requestEvent,
   RequestValidationError,

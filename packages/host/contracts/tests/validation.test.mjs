@@ -16,7 +16,13 @@ import {
   decodeBriefView,
   decodeChangeNotice,
   decodeChatCreateBody,
+  decodeChatDraft,
   decodeChatList,
+  decodeHistory,
+  decodeRequestSnapshot,
+  decodeResearchSources,
+  decodeStoredActivities,
+  decodeStoredRequests,
   decodeChatSearchBody,
   decodeDraftSaveBody,
   decodeGeneration,
@@ -529,4 +535,93 @@ test('decodeWorkspaceList accepts the four folder states and refuses a negative 
     { ...list, selectedId: 1 },
   ])
     assert.throws(() => decodeWorkspaceList(bad), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeRequestSnapshot keeps a pending approval of the same request and refuses one of another request', () => {
+  const approval = {
+    approvalId: 'a1',
+    requestId: 'r1',
+    operation: 'read-file',
+    target: 'C:/notes.txt',
+    reason: 'Đọc ghi chú',
+    state: 'pending',
+  }
+  const snapshot = { requestId: 'r1', sessionId: 's1', status: 'active', text: 'Partial', sequence: 3 }
+  assert.deepEqual(decodeRequestSnapshot({ ...snapshot, pendingApproval: approval }), {
+    ...snapshot,
+    pendingApproval: approval,
+  })
+  assert.deepEqual(decodeRequestSnapshot({ ...snapshot, status: 'failed', errorCode: 'RUNTIME_FAILED' }), {
+    ...snapshot,
+    status: 'failed',
+    errorCode: 'RUNTIME_FAILED',
+  })
+  for (const bad of [
+    { ...snapshot, pendingApproval: { ...approval, requestId: 'r2' } },
+    { ...snapshot, status: 'done' },
+    { ...snapshot, sequence: -1 },
+    { ...snapshot, errorCode: 'raw provider message' },
+  ])
+    assert.throws(() => decodeRequestSnapshot(bad), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeHistory keeps the public message fields and refuses tool fields on a user message', () => {
+  const history = [
+    { role: 'user', content: 'Xin chào' },
+    { role: 'assistant', content: 'Phần đầu', interrupted: true },
+    { role: 'tool', content: 'ok', toolCallId: 'call-1', name: 'read_source', isError: false },
+  ]
+  assert.deepEqual(decodeHistory(history), history)
+  for (const bad of [
+    {},
+    [{ role: 'system', content: 'x' }],
+    [{ role: 'user', content: 'x', interrupted: true }],
+    [{ role: 'user', content: 'x', name: 'read_source' }],
+    [{ role: 'assistant', content: 'x', attachments: [] }],
+  ])
+    assert.throws(() => decodeHistory(bad), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeStoredRequests and decodeStoredActivities keep the saved records and refuse an unknown status', () => {
+  const request = {
+    requestId: 'r1',
+    sessionId: 's1',
+    status: 'completed',
+    selection: { provider: 'fixture', model: 'm' },
+    historyStart: 0,
+    startedAt: '2026-11-01T00:00:00.000Z',
+    endedAt: '2026-11-01T00:00:01.000Z',
+    lastSequence: 4,
+    summarized: true,
+    publicResearch: false,
+  }
+  assert.deepEqual(decodeStoredRequests([request]), [request])
+  assert.throws(() => decodeStoredRequests([{ ...request, status: 'done' }]), { message: 'INVALID_RESPONSE' })
+  const activity = { id: 'a1', label: 'Model response', requestId: 'r1', sequence: 1, type: 'model', status: 'running' }
+  assert.deepEqual(decodeStoredActivities([activity]), [activity])
+  assert.throws(() => decodeStoredActivities([{ ...activity, type: 'agent' }]), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeChatDraft accepts a legacy text draft and refuses attachment ids that do not match the attachments', () => {
+  assert.deepEqual(decodeChatDraft({ sessionId: 's1', text: 'Nháp' }, 's1'), { sessionId: 's1', text: 'Nháp' })
+  const draft = { sessionId: 's1', text: '', revision: 2, attachmentIds: [], attachments: [] }
+  assert.deepEqual(decodeChatDraft(draft, 's1'), draft)
+  for (const [bad, id] of [
+    [draft, 's2'],
+    [{ ...draft, attachmentIds: ['att-1'] }, 's1'],
+    [{ sessionId: 's1', text: '', revision: 2 }, 's1'],
+  ])
+    assert.throws(() => decodeChatDraft(bad, id), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeResearchSources keeps http and https excerpts and refuses another scheme', () => {
+  const source = {
+    title: 'Báo cáo',
+    url: 'https://example.org/report',
+    content: '<script>x</script>',
+    sourceId: 'research-1',
+    retrievedAt: '2026-11-01T00:00:00.000Z',
+  }
+  assert.deepEqual(decodeResearchSources([source]), [source])
+  assert.throws(() => decodeResearchSources([{ ...source, url: 'javascript:alert(1)' }]), { message: 'INVALID_RESPONSE' })
 })
