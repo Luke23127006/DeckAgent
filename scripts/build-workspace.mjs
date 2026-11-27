@@ -68,6 +68,16 @@ function visit(pkg) {
 for (const pkg of discovered) visit(pkg)
 
 for (const pkg of packages) {
+  if (pkg.name === '@deckagent/local-web') {
+    const vite = spawnSync(
+      process.execPath,
+      [resolve(pkg.path, 'node_modules/vite/bin/vite.js'), 'build', '--configLoader', 'native'],
+      { cwd: resolve(pkg.path), stdio: 'inherit' },
+    )
+    if (vite.error) throw vite.error
+    if (vite.status !== 0) throw new Error(`Vite build for ${pkg.name} exited with code ${vite.status}`)
+    continue
+  }
   const config = {
     cwd: resolve(pkg.path),
     config: false,
@@ -79,24 +89,6 @@ for (const pkg of packages) {
     fixedExtension: false,
     dts: false,
     clean: false,
-  }
-  if (pkg.name === '@deckagent/local-web') {
-    await build({
-      cwd: resolve(pkg.path),
-      config: false,
-      entry: ['lib/browser-types/boot.js'],
-      outDir: 'lib/browser',
-      format: ['esm'],
-      platform: 'browser',
-      target: 'es2024',
-      fixedExtension: false,
-      dts: false,
-      clean: false,
-      deps: {
-        alwaysBundle: ['@deckagent/host-contracts', '@deckagent/presentation-document', 'zod'],
-        onlyBundle: [/^@deckagent\//, /^zod(?:\/|$)/, 'animejs'],
-      },
-    })
   }
   await build(config)
 }

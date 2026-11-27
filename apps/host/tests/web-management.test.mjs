@@ -298,10 +298,10 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
   let app = await open()
   try {
     assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system', version: 0 })
-    assert.equal(
+    assert.match(
       await (await fetch(`${app.origin}/theme.js`)).text(),
-      '',
-      'System theme sets nothing before first paint',
+      /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
+      'System theme follows the media query before first paint',
     )
     for (const body of ['{"theme":"neon"}', '{"theme":"dark","extra":1}', '{}', '[]']) {
       const rejected = await call(app, '/api/preferences', { method: 'PUT', body })
@@ -311,7 +311,7 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
       (await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"dark","expectedVersion":0}' })).status,
       200,
     )
-    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /classList\.add\('dark'\)/)
     assert.equal(
       (await fetch(`${app.origin}/api/preferences`)).status,
       401,
@@ -323,9 +323,12 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
   app = await open()
   try {
     assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark', version: 1 })
-    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.theme='dark'/)
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /classList\.add\('dark'\)/)
     await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system","expectedVersion":1}' })
-    assert.equal(await (await fetch(`${app.origin}/theme.js`)).text(), '')
+    assert.match(
+      await (await fetch(`${app.origin}/theme.js`)).text(),
+      /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
+    )
   } finally {
     await app.close()
   }

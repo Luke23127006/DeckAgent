@@ -26,9 +26,11 @@ export interface HostOptions {
   readonly failureMessage?: (code: string) => string | undefined
   readonly port?: number
   readonly routes?: readonly HostRouteRegistrar[]
+  /** Serves the root document for GET paths that have no file extension and no reserved prefix. */
+  readonly spaFallback?: boolean
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
   readonly assets?: Readonly<
-    Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
+    Record<string, { readonly contentType: string; readonly body: string | Buffer; readonly sandboxed?: boolean }>
   >
 }
 

@@ -68,9 +68,6 @@ importers:
       '@deckagent/html-format':
         specifier: workspace:*
         version: link:../../packages/presentation/html
-      '@deckagent/local-web':
-        specifier: workspace:*
-        version: link:../web
       '@deckagent/presentation-document':
         specifier: workspace:*
         version: link:../../packages/presentation/document

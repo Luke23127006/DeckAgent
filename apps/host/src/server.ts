@@ -18,7 +18,7 @@ import {
 } from './modules/workspaces/index.ts'
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
-import { loadWebAssets } from '@deckagent/local-web'
+import { loadWebDistAssets } from './http/web-assets.ts'
 import { WebState, mapWebStateFailure } from './web-state.ts'
 import {
   ChatRequestService,
@@ -591,6 +591,7 @@ function createHostOptions(
       mapSessionFailure(error),
     failureMessage: deckFailureMessage,
     assets,
+    spaFallback: true,
     onClose: () => runs.close(),
     ...(options.port === undefined ? {} : { port: options.port }),
     routes: [
@@ -670,7 +671,10 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       credentials,
       changeFeed,
     )
-    const assets = await loadWebAssets(() => storage.web.preferences().theme)
+    const assets = await loadWebDistAssets(
+      fileURLToPath(new URL('../../web/dist', import.meta.url)),
+      () => storage.web.preferences().theme,
+    )
     host = await startHost(
       createHostOptions(layout, options, storage, runtime, attachments, drafts, assets, changeFeed),
     )

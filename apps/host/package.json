@@ -16,7 +16,6 @@
     "@deckagent/design": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
     "@deckagent/html-format": "workspace:*",
-    "@deckagent/local-web": "workspace:*",
     "@deckagent/presentation-document": "workspace:*",
     "@modelcontextprotocol/sdk": "1.26.0",
     "@zip.js/zip.js": "2.24.0",

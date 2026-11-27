@@ -27,7 +27,7 @@ test('Local Web serves the page and fixed assets only; saved history survives a 
   apps.push(app)
   const page = await fetch(app.origin)
   assert.equal(page.status, 200)
-  assert.match(await page.text(), /\/client\/boot\.js/)
+  assert.match(await page.text(), /\/assets\/.*\.js/)
   assert.equal((await fetch(`${app.origin}/slide.html`)).status, 404)
   assert.equal((await fetch(`${app.origin}/api/sessions`)).status, 401, 'the API needs the capability token')
   await app.close()

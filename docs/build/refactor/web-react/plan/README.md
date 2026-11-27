@@ -135,5 +135,5 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 | 5 | Done | [Add api/client.ts, api/changes.ts and text.ts](task-05-add-api-client-changes-and-text.md) ([report](../reports/task-05-add-api-client-changes-and-text.md)) |
 | 6 | Done | [Add change feed and host connection hooks](task-06-add-change-feed-and-connection-hooks.md) ([report](../reports/task-06-add-change-feed-and-connection-hooks.md)) |
 | 7 | Done | [Add React shell, routes, main.tsx and legacy mount](task-07-add-react-shell-routes-and-legacy-mount.md) ([report](../reports/task-07-add-react-shell-routes-and-legacy-mount.md)) |
-| 8 | Pending | [Serve apps/web/dist with SPA fallback and remove loadWebAssets](task-08-serve-web-dist-and-remove-load-web-assets.md) |
+| 8 | Done | [Serve apps/web/dist with SPA fallback and remove loadWebAssets](task-08-serve-web-dist-and-remove-load-web-assets.md) ([report](../reports/task-08-serve-web-dist-and-remove-load-web-assets.md)) |
 | 9 | Pending | [Phase 2 exit check](task-09-phase-2-exit-check.md) |

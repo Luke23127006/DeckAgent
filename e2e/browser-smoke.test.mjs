@@ -2807,7 +2807,7 @@ test('Browser updates research controls and theme from a preferences notice on /
   })
   assert.equal(themed.status, 200)
   await eventually(
-    () => evaluate(`document.documentElement.dataset.theme === 'dark'`),
+    () => evaluate(`document.documentElement.classList.contains('dark')`),
     'Browser did not apply dark theme after preferences notice',
   )
 })

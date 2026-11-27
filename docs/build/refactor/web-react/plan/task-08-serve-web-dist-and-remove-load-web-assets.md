@@ -30,7 +30,7 @@ Read this file to learn the steps of Task 8, which serves the Vite build output 
 
 **Forbidden:** Do not change any `/api/*` path, status code or JSON body. Do not read arbitrary files from disk per HTTP request.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/host/tests/web-assets.test.mjs` with a header comment that follows `docs/conventions/testware.md`:
 
@@ -76,12 +76,12 @@ test('loadWebDistAssets and Host SPA fallback enforce static, sandbox and 404 bo
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `node --test --test-reporter=tap apps/host/tests/web-assets.test.mjs`
 Expected: FAIL. The output reports that `web-assets.js` does not exist.
 
-- [ ] **Step 3: Implement `web-assets.ts`, SPA fallback, Host wiring and Vite build step**
+- [x] **Step 3: Implement `web-assets.ts`, SPA fallback, Host wiring and Vite build step**
 
 1. Update `apps/host/src/http/contracts.ts`: change asset `body` type to `string | Buffer` and add `readonly spaFallback?: boolean` to `HostOptions`.
 2. Create `apps/host/src/http/web-assets.ts`:
@@ -97,7 +97,7 @@ Expected: FAIL. The output reports that `web-assets.js` does not exist.
    - `e2e/local-web.test.mjs`: change `/\/client\/boot\.js/` to `/\/assets\/.*\.js/`.
    - `e2e/browser-smoke.test.mjs`: change `document.documentElement.dataset.theme === 'dark'` to `document.documentElement.classList.contains('dark')`.
 
-- [ ] **Step 4: Build and run related tests**
+- [x] **Step 4: Build and run related tests**
 
 Run: `corepack pnpm@11.28.5 build && corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0.
@@ -105,6 +105,6 @@ Expected: exit code 0.
 Run: `node --test --test-reporter=tap apps/host/tests/web-assets.test.mjs apps/host/tests/web-management.test.mjs e2e/local-web.test.mjs e2e/http-edge.test.mjs`
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

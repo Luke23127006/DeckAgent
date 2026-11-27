@@ -4,13 +4,14 @@
     "rootDir": "src",
     "outDir": "lib/types",
     "jsx": "react-jsx",
+    "emitDeclarationOnly": true,
+    "rewriteRelativeImportExtensions": false,
     "lib": [
       "ES2024",
       "DOM",
       "DOM.Iterable"
     ],
     "types": [
-      "node",
       "vite/client"
     ],
     "paths": {

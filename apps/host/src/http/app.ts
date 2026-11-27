@@ -32,9 +32,22 @@ function checkOrigin(req: IncomingMessage, origin: string): void {
     throw new HttpError(403, 'ORIGIN_DENIED')
 }
 
+function isSpaRoutePath(pathname: string): boolean {
+  const reserved = pathname.toLowerCase()
+  if (reserved.startsWith('/api/') || reserved.startsWith('/assets/') || reserved.startsWith('/samples/')) return false
+  if (pathname.includes('%')) return false
+  return !pathname.slice(pathname.lastIndexOf('/') + 1).includes('.')
+}
+
 function serveAsset(req: IncomingMessage, res: ServerResponse, pathname: string, options: HostOptions): void {
-  const asset = options.assets && Object.hasOwn(options.assets, pathname) ? options.assets[pathname] : undefined
-  if (req.method !== 'GET' || !asset) throw new HttpError(404, 'NOT_FOUND')
+  if (req.method !== 'GET') throw new HttpError(404, 'NOT_FOUND')
+  const owned = options.assets && Object.hasOwn(options.assets, pathname) ? options.assets[pathname] : undefined
+  const fallback =
+    options.spaFallback && isSpaRoutePath(pathname) && options.assets && Object.hasOwn(options.assets, '/')
+      ? options.assets['/']
+      : undefined
+  const asset = owned ?? fallback
+  if (!asset) throw new HttpError(404, 'NOT_FOUND')
   if (asset.sandboxed)
     res.setHeader(
       'content-security-policy',
