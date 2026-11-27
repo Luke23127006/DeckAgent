@@ -10,6 +10,7 @@
  * - Removing the branch for a Service or Store suffix outside its role file caused the role file rejection test to fail.
  * - Setting ROLE_FILE_MODULES to ['workspaces'] caused the role file acceptance test and two module import tests to fail.
  * - Removing attachments from ROLE_FILE_MODULES failed the attachments role test.
+ * - Removing deck from ROLE_FILE_MODULES failed the deck role test.
  * Run: node --test --test-reporter=tap tests/check-boundaries.test.mjs
  * Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/build/refactor/boundaries/plan/task-03-boundary-checker.md.
  */
@@ -542,6 +543,35 @@ test('checkBoundaries applies role symbol checks to providers and research by de
       content: 'export class ResearchError extends Error {}\nexport function mapResearchError() {}\n',
     },
     { path: 'apps/host/src/modules/research/tavily.ts', content: 'export class TavilyClient {}\n' },
+  ]
+  assert.deepEqual(findings(valid), [])
+})
+
+test('checkBoundaries applies role symbol checks to deck by default', () => {
+  const invalid = [
+    { path: 'apps/host/src/modules/deck/deck.service.ts', content: 'export function createDeckOperations() {}\n' },
+    {
+      path: 'apps/host/src/modules/deck/deck.errors.ts',
+      content: 'export class DeckWorkflowFailure extends Error {}\nexport function mapDeckFailure() {}\n',
+    },
+    { path: 'apps/host/src/modules/deck/deck.routes.ts', content: 'export function deckRouter() {}\n' },
+    { path: 'apps/host/src/modules/deck/brief/brief-workflow.ts', content: 'export class BriefService {}\n' },
+  ]
+  assert.deepEqual(findings(invalid), [
+    { path: 'apps/host/src/modules/deck/brief/brief-workflow.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/deck/deck.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/deck/deck.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/deck/deck.routes.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/deck/deck.service.ts', line: 1, rule: 'role-file-symbol' },
+  ])
+  const valid = [
+    { path: 'apps/host/src/modules/deck/deck.service.ts', content: 'export class DeckService {}\n' },
+    { path: 'apps/host/src/modules/deck/deck.routes.ts', content: 'export function createDeckRoutes() {}\n' },
+    {
+      path: 'apps/host/src/modules/deck/deck.errors.ts',
+      content: 'export class DeckWorkflowError extends Error {}\nexport function mapDeckError() {}\n',
+    },
+    { path: 'apps/host/src/modules/deck/brief/brief-workflow.ts', content: 'export class BriefWorkflow {}\n' },
   ]
   assert.deepEqual(findings(valid), [])
 })

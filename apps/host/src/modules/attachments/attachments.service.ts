@@ -1,3 +1,4 @@
+import type { DeckAttachments } from '../deck/index.ts'
 import type { SqliteAttachmentStore } from './attachments.store.ts'
 import { AttachmentError, attachmentErrorCode } from './attachments.errors.ts'
 import type { AttachmentView, ChatDraft, DraftSaveBody } from '@deckagent/host-contracts'
@@ -73,7 +74,7 @@ function safeError(error: unknown): never {
 }
 
 /** The existing storage owners remain private; every public operation binds the owning Chat. */
-export class AttachmentService {
+export class AttachmentService implements DeckAttachments {
   readonly maxBytes: number
   readonly maxFiles: number
   private readonly preparing = new Map<string, { readonly abort: AbortController; readonly work: Promise<void> }>()
@@ -104,6 +105,10 @@ export class AttachmentService {
   /** The draft change notice version of a chat. It changes on background settlement too. */
   draftVersion(id: string): number {
     return this.drafts.version(id)
+  }
+
+  sent(id: string): readonly AttachmentRecordView[] {
+    return this.attachments.sent(id)
   }
 
   private snapshot(id: string): ChatDraft {

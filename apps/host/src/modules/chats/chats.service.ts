@@ -1,4 +1,5 @@
 import type { AttachmentChats } from '../attachments/index.ts'
+import type { DeckChats } from '../deck/index.ts'
 import type { RunOwner } from '../../runs/ports.ts'
 import type {
   AttachmentView,
@@ -10,6 +11,10 @@ import type {
 import type { WorkspaceChats, WorkspaceLookup } from '../workspaces/index.ts'
 import type { ResearchChats } from '../research/index.ts'
 import { ChatError } from './chats.errors.ts'
+
+export interface ChatInfo {
+  readonly workspaceId: string | null
+}
 
 /** One saved chat as the chat store reads it. */
 export interface ChatRecord {
@@ -26,7 +31,7 @@ export interface ChatRecord {
 
 /** The chat part of the session database. `SqliteChatStore` implements it. */
 export interface ChatStore {
-  getInfo(sessionId: string): Promise<unknown>
+  getInfo(sessionId: string): Promise<ChatInfo | undefined>
   read(sessionId: string): Promise<readonly ChatHistoryMessage[]>
   chats(): Promise<readonly ChatRecord[]>
   list(): Promise<readonly { readonly sessionId: string; readonly workspaceId: string | null }[]>
@@ -60,7 +65,7 @@ export interface ChatMarks {
 }
 
 /** Coordinates chat creation, model selection, listing, search, and Browser projection. */
-export class ChatService implements WorkspaceChats, AttachmentChats, ResearchChats {
+export class ChatService implements WorkspaceChats, AttachmentChats, ResearchChats, DeckChats {
   constructor(
     private readonly store: ChatStore,
     private readonly runs: ChatRuns,
@@ -69,7 +74,7 @@ export class ChatService implements WorkspaceChats, AttachmentChats, ResearchCha
     private readonly marks: ChatMarks,
   ) {}
 
-  getInfo(id: string): Promise<unknown> {
+  getInfo(id: string): Promise<ChatInfo | undefined> {
     return this.store.getInfo(id)
   }
 

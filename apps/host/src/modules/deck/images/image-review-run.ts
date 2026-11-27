@@ -1,4 +1,4 @@
-﻿import { DeckError, ImagePreparationError } from '@deckagent/deck'
+import { DeckError, ImagePreparationError } from '@deckagent/deck'
 import type {
   ImageAttempt,
   ImageCredit,
@@ -7,11 +7,12 @@ import type {
   OutlineImageReview,
   PreparedResearchImage,
 } from '@deckagent/deck'
-import { ImageReadError, ImageSourceError, imageSource } from './images/index.ts'
-import type { CommonsCandidate } from './images/index.ts'
-import type { ImageSearchCandidate } from '../research/index.ts'
-import { ResearchError } from '../research/index.ts'
+import type { ImageSearchCandidate } from '../../research/index.ts'
+import { ResearchError } from '../../research/index.ts'
+import type { CommonsCandidate } from './commons-images.ts'
 import type { WebImageResearch } from './image-research.ts'
+import { ImageSourceError, imageSource } from './image-source.ts'
+import { ImageReadError } from './public-image-reader.ts'
 
 const code = (error: unknown) =>
   error instanceof DeckError || error instanceof ResearchError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'

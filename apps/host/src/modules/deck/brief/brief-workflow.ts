@@ -1,27 +1,29 @@
 import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
 import type { DeckStore, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
-import type { DeckSessionStore } from './ports.ts'
 import type { BriefView } from '@deckagent/host-contracts'
-import { emptyBriefDraft } from './deck-prompts.ts'
-import { DeckWorkflowFailure } from './failures.ts'
+import type { DeckAttachments, DeckChats, DeckRuns } from '../ports.ts'
+import { DeckWorkflowError, deckWorkflowErrorCode } from '../deck.errors.ts'
+import { emptyBriefDraft } from './brief-rules.ts'
 
-/** Composition verifies source ownership, without reading external files or granting research access. */
-export class BriefCoordinator {
+/** Verifies source ownership and manages brief reads, interview state and saves without granting external reads. */
+export class BriefWorkflow {
   constructor(
     private readonly decks: DeckStore,
-    private readonly sessions: DeckSessionStore,
+    private readonly chats: DeckChats,
+    private readonly attachments: DeckAttachments,
+    private readonly runs: DeckRuns,
   ) {}
 
   private async chat(id: string) {
-    if (!(await this.sessions.getInfo(id))) throw new DeckWorkflowFailure('SESSION_NOT_FOUND')
+    if (!(await this.chats.getInfo(id))) throw new DeckWorkflowError('SESSION_NOT_FOUND')
   }
 
   private sources(id: string) {
     return [
-      ...this.sessions.attachments.sent(id).flatMap(item => (item.source ? [item.source] : [])),
-      ...this.sessions.requests.sourceCatalogue(id),
-      ...this.sessions.requests.researchSources(id),
+      ...this.attachments.sent(id).flatMap(item => (item.source ? [item.source] : [])),
+      ...this.runs.sourceCatalogue(id),
+      ...this.runs.researchSources(id),
     ]
   }
 
@@ -29,10 +31,10 @@ export class BriefCoordinator {
     const known = this.sources(id)
     for (const ref of draft.sources.refs)
       if (!known.some(item => item.sourceId === ref.sourceId && item.version === ref.version && item.kind === ref.kind))
-        throw new DeckWorkflowFailure('SOURCE_NOT_FOUND')
-    const images = this.sessions.attachments.sent(id)
+        throw new DeckWorkflowError('SOURCE_NOT_FOUND')
+    const images = this.attachments.sent(id)
     for (const attachmentId of draft.images.attachmentIds) {
-      const item = images.find(item => item.attachmentId === attachmentId)
+      const item = images.find(entry => entry.attachmentId === attachmentId)
       const source = item?.source
       if (
         !item ||
@@ -43,7 +45,7 @@ export class BriefCoordinator {
           ref => ref.sourceId === source.sourceId && ref.version === source.version && ref.kind === 'attachment',
         )
       )
-        throw new DeckWorkflowFailure('SOURCE_NOT_FOUND')
+        throw new DeckWorkflowError('SOURCE_NOT_FOUND')
     }
   }
 
@@ -66,11 +68,11 @@ export class BriefCoordinator {
   }
 
   private map(error: unknown): never {
-    if (error instanceof DeckWorkflowFailure) throw error
+    if (error instanceof DeckWorkflowError) throw error
     if (error instanceof DeckError || error instanceof DesignError) {
-      throw new DeckWorkflowFailure(error.code)
+      throw new DeckWorkflowError(deckWorkflowErrorCode(error.code) ?? 'BRIEF_UNAVAILABLE')
     }
-    throw new DeckWorkflowFailure('BRIEF_UNAVAILABLE')
+    throw new DeckWorkflowError('BRIEF_UNAVAILABLE')
   }
 
   async get(id: string, version?: number): Promise<BriefView> {
@@ -105,7 +107,7 @@ export class BriefCoordinator {
 
   async save(id: string, value: unknown): Promise<BriefView> {
     await this.chat(id)
-    if (this.sessions.requests.activeFor(id)) throw new DeckWorkflowFailure('SESSION_BUSY')
+    if (this.runs.activeFor({ kind: 'chat', id })) throw new DeckWorkflowError('SESSION_BUSY')
     if (
       !value ||
       typeof value !== 'object' ||
@@ -116,7 +118,7 @@ export class BriefCoordinator {
       Number(value.expectedVersion) < 0 ||
       Object.keys(value).some(key => !['draft', 'expectedVersion'].includes(key))
     )
-      throw new DeckWorkflowFailure('BRIEF_INVALID')
+      throw new DeckWorkflowError('BRIEF_INVALID')
     try {
       const draft = validateBriefDraft(value.draft)
       this.verify(id, draft)

@@ -45,7 +45,7 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | 3 | Workspaces module | Phase 2 is done | `WorkspaceService`, `SqliteWorkspaceStore`, one `WorkspaceError`, `workspace.types.ts` and `workspaces.migrations.ts` exist. The workspaces module is in the list of the role symbol rule | Pending |
 | 4 | Providers and research modules | Phase 2 is done | `ProviderService`, `ProviderError`, `ProviderCheckCode`, `ResearchService` and `ResearchError` exist. The research port has the owner that the Phase 4 diagnosis selects. Both modules are in the list of the role symbol rule | Pending |
 | 5 | Attachments module | Phase 2 is done | `AttachmentService`, one `AttachmentError` with a typed status table, `AttachmentFileStore`, `SqliteAttachmentStore` and the port `AttachmentChats` exist. The attachments module is in the list of the role symbol rule | [Implemented; exit blocked](#phase-5-attachments-module) |
-| 6 | Deck module | Phases 2 to 5 are done | `DeckService` owns the brief and confirmation use cases. `DeckWorkflowError` and the port `DeckChats` exist. The files in the module root are in folders by capability. Deck run planning is not in `server.ts`. The `chatSessions` adapter in `server.ts` is removed. The deck module is in the list of the role symbol rule | Pending |
+| 6 | Deck module | Phases 2 to 5 are done | `DeckService` owns the brief and confirmation use cases. `DeckWorkflowError` and the port `DeckChats` exist. The files in the module root are in folders by capability. Deck run planning is not in `server.ts`. The `chatSessions` adapter in `server.ts` is removed. The deck module is in the list of the role symbol rule | Done ([Revision 6](plan/README.md#revision-6-phase-6-deck-module)) |
 | 7 | Composition root, `db/` and root files | Phase 6 is done | `server.ts` holds only startup, shutdown, configuration and wiring. `mapRunFailure` is in `http/`. `db/` maps no error to an HTTP status. Each file in the root of `apps/host/src/` has an owner in the Project Structure [[5]](#ref-5). Each barrel exports only operations that a consumer outside the module uses | Pending |
 | 8 | Contract rename of the chat ID | Phase 7 is done, and Phase 5 of the Target Structure Refactor is done | `sessionId`, `/api/sessions` and the `SESSION_*` codes have the chat names in the wire, the database, `packages/presentation/`, `apps/web/` and the tests, in one revision. A database migration keeps the user data | Pending |
 
@@ -68,7 +68,8 @@ Implementation is complete. The full exit check remains blocked, so Phase 5 is n
 
 ### Phase 6: Deck module
 
-The deck module is the largest module, and most of its logic is in `@deckagent/deck`. The planner reads the module and the package before the plan. The diagnosis decides the names of the private parts that replace `BriefCoordinator` and `ConfirmationCoordinator`, and the folders of the module root.
+[Task 17](plan/task-17-refactor-deck-and-check-phase-6.md) covers all of Phase 6 after direct diagnosis and execution.
+The [Task 17 report](reports/task-17-refactor-deck-and-check-phase-6.md) records the capability folders, port splits, `server.ts` removals, independent review fixes and exit checks.
 
 ### Phase 8: Contract rename of the chat ID
 

@@ -9,29 +9,21 @@ import {
 } from '@deckagent/deck'
 import type { BriefDraft, BoundOutlineDraft, DeckStore, OutlineImageReview } from '@deckagent/deck'
 import { reviewLayouts } from '@deckagent/design'
-import type { RunTools, RunEvent, ToolResult, ToolSchema } from '../../runs/ports.ts'
+import type { RunTools, ToolResult, ToolSchema } from '../../../runs/ports.ts'
 import type { AgentRequest } from '@deckagent/host-contracts'
-import type { BriefCoordinator } from './brief-coordinator.ts'
-import type { WebImageResearch } from './image-research.ts'
-import type { ImageReviewRun } from './image-review-run.ts'
+import type { DeckToolRun } from '../ports.ts'
+import type { ImageReviewRun, WebImageResearch } from '../images/index.ts'
+import type { BriefWorkflow } from './brief-workflow.ts'
+import { buildDeckToolSchemas } from './brief-prompts.ts'
+import { assertBriefChoices } from './brief-rules.ts'
 import {
-  assertBriefChoices,
-  buildDeckToolSchemas,
   decodeDeckToolArgs,
   decodeImageToolCall,
   deckRepairLimitResult,
   deckToolResult,
   recordDeckToolFailure,
-} from './deck-prompts.ts'
-import type { BriefFailureState } from './deck-prompts.ts'
-
-export interface DeckToolRun {
-  readonly requestId: string
-  readonly sessionId: string
-  readonly signal: AbortSignal
-  readonly tools?: RunTools
-  emit(event: RunEvent): Promise<void>
-}
+} from './brief-tool-protocol.ts'
+import type { BriefFailureState } from './brief-tool-protocol.ts'
 
 type DeckCommand = NonNullable<AgentRequest['deck']>
 type OutlineProposal = ReturnType<DeckStore['outlineSnapshot']>['proposals'][number]
@@ -52,8 +44,8 @@ export interface DeckImageReview {
   readonly restored: BoundOutlineDraft | undefined
 }
 
-export interface DeckToolSessionOptions {
-  readonly briefs: BriefCoordinator
+export interface DeckRunToolsOptions {
+  readonly briefs: BriefWorkflow
   readonly command: DeckCommand
   readonly context: unknown
   readonly initial: BriefDraft
@@ -69,7 +61,7 @@ export interface DeckImageRecovery {
   settle(completed: boolean, threw?: boolean): Promise<void>
 }
 
-export interface DeckToolSession {
+export interface DeckRunTools {
   readonly tools: RunTools | undefined
   readonly state: DeckStagingState
   prepareImageRecovery(): Promise<DeckImageRecovery | undefined>
@@ -85,7 +77,7 @@ const unrecoverableFailures = new Set(
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
-export function createDeckToolSession(options: DeckToolSessionOptions): DeckToolSession {
+export function createDeckRunTools(options: DeckRunToolsOptions): DeckRunTools {
   const state: DeckStagingState = {
     staged: options.review.staged,
     outline: options.review.outline,
@@ -170,7 +162,7 @@ export async function createDeckImageReview(
   return { resumeImages: resumeImages === true, staged, outline, previousReviews, imageReview, restored }
 }
 
-function buildTools(options: DeckToolSessionOptions, state: DeckStagingState): RunTools | undefined {
+function buildTools(options: DeckRunToolsOptions, state: DeckStagingState): RunTools | undefined {
   const baseTools = options.run.tools
   if (!baseTools) return undefined
   const schemas = buildDeckToolSchemas(
@@ -192,7 +184,7 @@ function buildTools(options: DeckToolSessionOptions, state: DeckStagingState): R
 async function callTool(
   name: string,
   args: unknown,
-  options: DeckToolSessionOptions,
+  options: DeckRunToolsOptions,
   state: DeckStagingState,
   schemas: readonly ToolSchema[],
 ): Promise<ToolResult> {
@@ -215,7 +207,7 @@ async function callTool(
 async function dispatchStagingTool(
   name: string,
   args: unknown,
-  options: DeckToolSessionOptions,
+  options: DeckRunToolsOptions,
   state: DeckStagingState,
 ): Promise<unknown> {
   if (imageTools.includes(name)) return executeImageTool(name, args, state, options.review.imageReview)
@@ -251,7 +243,7 @@ function executeStageBrief(
   command: DeckCommand,
   initial: BriefDraft,
   sessionId: string,
-  briefs: BriefCoordinator,
+  briefs: BriefWorkflow,
   state: DeckStagingState,
 ) {
   const draft = withImageProvider(validateBriefDraft(decodeDeckToolArgs(args)), initial)
@@ -317,7 +309,7 @@ function hasRecoverableImages(pendingImages: readonly PendingImage[]): boolean {
 }
 
 async function prepareImageRecovery(
-  options: DeckToolSessionOptions,
+  options: DeckRunToolsOptions,
   state: DeckStagingState,
   tools: RunTools | undefined,
 ): Promise<DeckImageRecovery | undefined> {

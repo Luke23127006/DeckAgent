@@ -1,29 +1,34 @@
 import { DeckError } from '@deckagent/deck'
 import type { DeckStore, GenerationCapability, GenerationGrant } from '@deckagent/deck'
 import type { AgentRequest, ModelSelection } from '@deckagent/host-contracts'
-import type { RunTools } from '../../runs/ports.ts'
-import type { DeckToolRun } from './deck-tool-session.ts'
-import type { AgentRuntime, RunLifecycleContext, RunPlan, RunResult, ToolContext, ToolSet } from '../../runs/index.ts'
-import type { DeckSessionStore } from './ports.ts'
-import { DeckWorkflowFailure } from './failures.ts'
-import { sourceKindsForBrief } from './deck-prompts.ts'
+import type {
+  AgentRuntime,
+  RunLifecycleContext,
+  RunPlan,
+  RunResult,
+  SourceKind,
+  ToolContext,
+  ToolSet,
+} from '../../../runs/index.ts'
+import type { RunTools } from '../../../runs/ports.ts'
+import { sourceKindsForBrief } from '../brief/brief-rules.ts'
+import { DeckWorkflowError } from '../deck.errors.ts'
+import type { DeckAttachments, DeckRuns, DeckToolRun } from '../ports.ts'
 import { buildGenerationContext, buildGenerationInstructions, generationToolSchemas } from './generation-prompts.ts'
-import { createGenerationTools } from './generation-tools.ts'
 import { generationReport } from './generation-report.ts'
+import { createGenerationTools } from './generation-tools.ts'
 
 export interface GenerationSourceToolsPort {
-  prepare(
-    sessionId: string,
-    sourceKinds: readonly import('../../runs/index.ts').SourceKind[],
-    publicResearch: boolean,
-  ): Promise<ToolSet>
+  prepare(sessionId: string, sourceKinds: readonly SourceKind[], publicResearch: boolean): Promise<ToolSet>
 }
+
 export interface GenerationOverrideRun extends DeckToolRun {
   readonly instructions?: string
   onApprovalWait?(listener: (waiting: boolean) => void): () => void
   readonly generation: GenerationGrant
   readonly presentation: GenerationCapability
 }
+
 export interface PreparedGenerationRuntime {
   readonly selection: ModelSelection
   start(
@@ -32,15 +37,19 @@ export interface PreparedGenerationRuntime {
     { readonly status: 'completed'; commit?(): void } | { readonly status: 'failed'; readonly errorCode: string }
   >
 }
+
 export interface GenerationRuntimeOverride {
   prepare(request: AgentRequest): Promise<PreparedGenerationRuntime>
 }
+
 export interface GenerationPlanDependencies {
   readonly decks: DeckStore
-  readonly sessions: DeckSessionStore
+  readonly attachments: DeckAttachments
+  readonly runs: DeckRuns
   readonly sourceTools: GenerationSourceToolsPort
   readonly generationRuntime?: GenerationRuntimeOverride
 }
+
 export interface GenerationPlanInput {
   readonly request: AgentRequest
   readonly selection: ModelSelection
@@ -48,10 +57,13 @@ export interface GenerationPlanInput {
   readonly requestId: string
   readonly continuation?: boolean
 }
+
 const portableOnly = ['read_slide_draft', 'record_slide_content', 'validate_slide']
+
 function failure(result: RunResult, code: string): RunResult {
   return { status: 'failed', usage: result.usage, error: { category: 'runtime-failed', code } }
 }
+
 export async function createGenerationRunPlan(
   deps: GenerationPlanDependencies,
   options: GenerationPlanInput,
@@ -59,7 +71,7 @@ export async function createGenerationRunPlan(
   const { request, selection, intentId, requestId } = options
   const sessionId = request.sessionId
   const brief = deps.decks.briefSnapshot(sessionId).current?.draft
-  if (!brief) throw new DeckWorkflowFailure('BRIEF_NOT_FOUND')
+  if (!brief) throw new DeckWorkflowError('BRIEF_NOT_FOUND')
   const publicResearch = brief.sources.publicResearch
   const prepared = await deps.generationRuntime?.prepare({ ...request, publicResearch })
   let lifecycle: RunLifecycleContext | undefined
@@ -86,28 +98,28 @@ export async function createGenerationRunPlan(
         capability = deps.decks.generationCapability(grant, ctx.signal)
       } catch {
         finish(ctx.signal.aborted ? 'stopped' : 'failed')
-        throw new DeckWorkflowFailure('GENERATION_FAILED')
+        throw new DeckWorkflowError('GENERATION_FAILED')
       }
     },
     contributions: [
       {
         name: 'deck-generation',
         async contribute() {
-          if (!lifecycle || !grant || !capability) throw new DeckWorkflowFailure('GENERATION_GRANT_REQUIRED')
+          if (!lifecycle || !grant || !capability) throw new DeckWorkflowError('GENERATION_GRANT_REQUIRED')
           const runContext = lifecycle
           const cap = capability
           const confirmed = cap.plan()
           const frozen = confirmed.outline.brief?.draft
-          if (!frozen) throw new DeckWorkflowFailure('BRIEF_NOT_FOUND')
+          if (!frozen) throw new DeckWorkflowError('BRIEF_NOT_FOUND')
           const selected = (sourceId: string, version: number) =>
             frozen.sources.refs.some(r => r.sourceId === sourceId && r.version === version)
-          const files = deps.sessions.requests
+          const files = deps.runs
             .sourceCatalogue(sessionId)
             .filter(s => frozen.sources.material && selected(s.sourceId, s.version))
-          const attachments = deps.sessions.attachments
+          const attachments = deps.attachments
             .sent(sessionId)
             .filter(a => frozen.sources.material && a.source && selected(a.source.sourceId, a.source.version))
-          const research = deps.sessions.requests
+          const research = deps.runs
             .researchSources(sessionId)
             .filter(s => selected(s.sourceId, s.version) && (frozen.sources.material || frozen.sources.publicResearch))
           const source = await deps.sourceTools.prepare(sessionId, sourceKindsForBrief(frozen), publicResearch)
@@ -117,7 +129,7 @@ export async function createGenerationRunPlan(
             manifest: source.manifest,
             schemas: source.schemas,
             call: (name, args) => {
-              if (!execution) throw new DeckWorkflowFailure('GENERATION_GRANT_REQUIRED')
+              if (!execution) throw new DeckWorkflowError('GENERATION_GRANT_REQUIRED')
               return source.executor.execute(name, args, execution)
             },
           }

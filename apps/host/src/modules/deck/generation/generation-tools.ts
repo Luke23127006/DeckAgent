@@ -2,10 +2,9 @@ import { createHash, randomUUID } from 'node:crypto'
 import { DeckError } from '@deckagent/deck'
 import type { BriefDraft, BriefSourceRef, ContentProvenance, GenerationCapability } from '@deckagent/deck'
 import { FormatError, decodeSlideDocument } from '@deckagent/presentation-document'
-import type { RunTools, ToolResult, ToolSchema } from '../../runs/ports.ts'
-import type { DeckToolRun } from './deck-tool-session.ts'
-import type { DeckAttachmentRecord } from './ports.ts'
-import type { ResearchSourceRecord } from '../research/index.ts'
+import type { RunTools, ToolResult, ToolSchema } from '../../../runs/ports.ts'
+import type { ResearchSourceRecord } from '../../research/index.ts'
+import type { DeckAttachmentRecord, DeckToolRun } from '../ports.ts'
 import type { GenerationContext, GenerationSource } from './generation-prompts.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)

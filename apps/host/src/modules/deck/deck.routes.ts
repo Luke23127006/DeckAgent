@@ -2,11 +2,11 @@ import { Router } from 'express'
 import { json, openSseStream, param, params, readJson, route } from '../../http/route-helpers.ts'
 import type { HostRouteContext } from '../../http/route-helpers.ts'
 import type { DeckChange } from '@deckagent/host-contracts'
-import type { DeckOperations } from './deck.service.ts'
+import type { DeckService } from './deck.service.ts'
 
 const WORD_ID = /^[\w-]{1,100}$/
 
-export function createDeckRoutes(deck: DeckOperations, context: HostRouteContext): Router {
+export function createDeckRoutes(deck: DeckService, context: HostRouteContext): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const session = params({ sessionId: WORD_ID })
   router.post(

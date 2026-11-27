@@ -18,9 +18,11 @@ import type { ParsedAttachment } from '../sources/attachment-contracts.ts'
 import type {
   ToolAttachmentReader,
   ToolAttachmentRecord,
+  ToolAttachmentRecords,
+  ToolChats,
   ToolResearchSession,
   ToolResearchSource,
-  ToolSessionStore,
+  ToolRuns,
   ToolSourceCatalogueItem,
   ToolWorkspaceLookup,
 } from './ports.ts'
@@ -55,7 +57,9 @@ const schema = (name: string, description: string, property: string, required: b
 /** Composition resolves the real Chat/Workspace; model arguments never choose identity or policy. */
 export interface SourceToolOptions {
   readonly sessionId: string
-  readonly store: ToolSessionStore
+  readonly chats: ToolChats
+  readonly attachmentRecords: ToolAttachmentRecords
+  readonly runs: ToolRuns
   readonly registry: ToolWorkspaceLookup
   readonly dataRoot: string
   readonly home: string
@@ -67,7 +71,9 @@ export interface SourceToolOptions {
 
 /** Sources a registered contribution may expose; a run grants a subset through RunGrants.sourceKinds. */
 export interface SourceToolsContributionOptions {
-  readonly store: ToolSessionStore
+  readonly chats: ToolChats
+  readonly attachmentRecords: ToolAttachmentRecords
+  readonly runs: ToolRuns
   readonly registry: ToolWorkspaceLookup
   readonly dataRoot: string
   readonly home: string
@@ -197,8 +203,8 @@ function buildSourceSchemas(
 function loadChatAttachments(options: SourceToolOptions): readonly ToolAttachmentRecord[] {
   try {
     return [
-      ...options.store.attachments.sent(options.sessionId),
-      ...(options.attachmentIds ?? []).map(id => options.store.attachments.get(options.sessionId, id)),
+      ...options.attachmentRecords.sent(options.sessionId),
+      ...(options.attachmentIds ?? []).map(id => options.attachmentRecords.get(options.sessionId, id)),
     ]
   } catch (error) {
     if (errorCodeOf(error) === 'ATTACHMENT_NOT_FOUND') throw new SourceToolFailure('ATTACHMENT_NOT_FOUND')
@@ -207,9 +213,9 @@ function loadChatAttachments(options: SourceToolOptions): readonly ToolAttachmen
 }
 
 async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools> {
-  const { sessionId, store, registry } = options
+  const { sessionId, chats, runs, registry } = options
   const sourceKinds = options.sourceKinds ?? allSourceKinds
-  const chat = await store.getInfo(sessionId)
+  const chat = await chats.getInfo(sessionId)
   if (!chat) throw new SourceToolFailure('SESSION_NOT_FOUND')
   const workspace = chat.workspaceId ? await registry.get(chat.workspaceId) : undefined
   const root = workspace?.folderStatus === 'available' ? (workspace.folder ?? undefined) : undefined
@@ -217,7 +223,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
     ...(root ? { root } : {}),
     deniedRoots: buildDeniedRoots(options, root),
     validate: async () => {
-      const current = await store.getInfo(sessionId)
+      const current = await chats.getInfo(sessionId)
       if (!current || current.workspaceId !== chat.workspaceId) throw new SourceError('SOURCE_CHANGED')
       if (
         root &&
@@ -229,8 +235,8 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
     },
   })
   const attachments = loadChatAttachments(options)
-  const sourceCatalogue = store.requests.sourceCatalogue(sessionId)
-  const researchSources = store.requests.researchSources(sessionId)
+  const sourceCatalogue = runs.sourceCatalogue(sessionId)
+  const researchSources = runs.researchSources(sessionId)
   const manifest = buildSourceManifest(
     root,
     sourceKinds,
@@ -278,7 +284,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
       if (name === 'list_sources') return textResult(await access.list(String(args.path ?? ''), context.signal))
       if (name === 'read_attachment')
         return readAttachmentPart(args, attachments, options.attachments, sessionId, context.signal)
-      return readFileSource(name, String(args[field]), access, store, context)
+      return readFileSource(name, String(args[field]), access, runs, context)
     },
   }
 }
@@ -300,7 +306,9 @@ export function createSourceToolsContribution(options: SourceToolsContributionOp
     async contribute(context: PreparationContext): Promise<RunParts> {
       if (context.grants.sourceKinds.length === 0 || context.owner.kind !== 'chat') return {}
       const tools = await buildSourceTools({
-        store: options.store,
+        chats: options.chats,
+        attachmentRecords: options.attachmentRecords,
+        runs: options.runs,
         registry: options.registry,
         dataRoot: options.dataRoot,
         home: options.home,
@@ -484,7 +492,7 @@ async function readFileSource(
   name: string,
   pathValue: string,
   access: SourceAccess,
-  store: ToolSessionStore,
+  runs: ToolRuns,
   context: ToolContext,
 ): Promise<ToolResult> {
   if (name !== 'read_source' && name !== 'read_external') throw new SourceError('SOURCE_ACCESS_DENIED')
@@ -502,7 +510,7 @@ async function readFileSource(
   context.signal.throwIfAborted()
   const read = await plan.read(context.signal)
   context.signal.throwIfAborted()
-  const source = store.requests.recordSourceRead(context.requestId, {
+  const source = runs.recordSourceRead(context.requestId, {
     origin: plan.origin,
     label: plan.target,
     fingerprint: read.fingerprint,

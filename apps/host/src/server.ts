@@ -1,5 +1,4 @@
 import type { ContractSyncVerified } from './contract-sync.ts'
-import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -28,7 +27,6 @@ import {
   createConversationContribution,
   createChatRoutes,
   mapChatError,
-  toChatRequest,
   type ChatMarks,
   type ChatStoreOptions,
 } from './modules/chats/index.ts'
@@ -64,18 +62,14 @@ import {
 } from './modules/research/index.ts'
 import { createSettingsRoutes } from './settings-routes.ts'
 import {
-  BriefCoordinator,
-  DeckWorkflowFailure,
-  createDeckOperations,
+  DeckService,
+  DeckWorkflowError,
   createDeckRoutes,
-  ConfirmationCoordinator,
-  createDeckRunPlan,
-  createGenerationRunPlan,
   WebImageResearch,
   CommonsImages,
   PublicImageReader,
   artifactRenderer,
-  mapDeckFailure,
+  mapDeckError,
   type ImageLookup,
   type ArtifactRenderer,
   type GenerationRuntimeOverride,
@@ -430,24 +424,6 @@ function createHostOptions(
   if (!contractSync) throw new Error('Contract sync failed')
   const { sessions, web, decks, registry } = storage
   const chats = runtime.chats
-  const chatSessions = {
-    getInfo: (id: string) => sessions.chats.getInfo(id),
-    read: (id: string) => sessions.chats.read(id),
-    attachments: sessions.attachments,
-    requests: {
-      activeFor: (id: string) => sessions.runs.activeFor({ kind: 'chat', id }),
-      get: (requestId: string) => {
-        const record = sessions.runs.get(requestId)
-        return record ? toChatRequest(record) : undefined
-      },
-      text: (requestId: string) => sessions.runs.text(requestId),
-      sourceCatalogue: (id: string) => sessions.runs.sourceCatalogue(id),
-      researchSources: (id: string) => sessions.runs.researchSources(id),
-      recordSourceRead: (requestId: string, value: Parameters<SqliteRunStore['recordSourceRead']>[1]) =>
-        sessions.runs.recordSourceRead(requestId, value),
-    },
-  }
-  const briefs = new BriefCoordinator(decks, chatSessions)
   const runStore: RunStore = {
     approvals: sessions.runs.approvals,
     admit: input => {
@@ -482,7 +458,9 @@ function createHostOptions(
     activeFor: owner => sessions.runs.activeFor(owner),
   }
   const sourceOptions = {
-    store: chatSessions,
+    chats,
+    attachmentRecords: sessions.attachments,
+    runs: sessions.runs,
     registry,
     dataRoot: layout.root,
     home: options.home ?? homedir(),
@@ -513,15 +491,16 @@ function createHostOptions(
     contributions: [createConversationContribution(id => sessions.chats.read(id)), sourceToolsContribution],
     hasTools: true,
   })
-  const generationDependencies = {
+  let requests: ChatRequestService | undefined
+  const deck = new DeckService({
     decks,
-    sessions: chatSessions,
+    chats,
+    attachments: runtime.inputs,
+    runs: sessions.runs,
+    runStarter: runs,
+    imageResearch: runtime.images,
     sourceTools: {
-      prepare: async (
-        sessionId: string,
-        sourceKinds: readonly import('./runs/ports.ts').SourceKind[],
-        publicResearch: boolean,
-      ) =>
+      prepare: async (sessionId, sourceKinds, publicResearch) =>
         prepareSourceTools({
           ...sourceOptions,
           sessionId,
@@ -529,57 +508,28 @@ function createHostOptions(
           research: await runtime.research.prepare(publicResearch),
         }),
     },
+    readSelection: sessionId => {
+      if (!requests) throw new DeckWorkflowError('CONFIRMATION_UNAVAILABLE')
+      return requests.readSelection(sessionId)
+    },
+    runtimeAvailability: () => runtime.runtime.availability(),
+    preflightResearch: async publicResearch => {
+      await runtime.research.prepare(publicResearch)
+    },
+    onOverrideSelection: selection => {
+      overrideSelections.add(JSON.stringify(selection))
+    },
     ...(runtime.generationRuntime ? { generationRuntime: runtime.generationRuntime } : {}),
-  }
-  const requests = new ChatRequestService({
+  })
+  requests = new ChatRequestService({
     chats: sessions.chats,
     providers: runtime.providers,
     runs,
     preflightResearch: async selected => {
       await runtime.research.prepare(selected)
     },
-    deckPlanner: {
-      prepare: async (request, selected) => {
-        if (request.continueDeck) {
-          const generation = decks.generation(request.sessionId)
-          if (!generation || generation.state !== 'incomplete') throw new DeckWorkflowFailure('GENERATION_INCOMPLETE')
-          const prepared = await createGenerationRunPlan(generationDependencies, {
-            request,
-            selection: selected,
-            intentId: generation.receipt.intentId,
-            requestId: `req-${randomUUID()}`,
-            continuation: true,
-          })
-          return { plan: prepared.plan, ...(prepared.runtime ? { options: { runtime: prepared.runtime } } : {}) }
-        }
-        return {
-          plan: await createDeckRunPlan(
-            { decks, sessions: chatSessions, briefs, imageResearch: runtime.images },
-            request,
-            selected,
-          ),
-        }
-      },
-    },
+    deckPlanner: { prepare: (request, selected) => deck.prepareRun(request, selected) },
   })
-  const prepareGeneration = async (request: import('@deckagent/host-contracts').AgentRequest) => {
-    if (runtime.generationRuntime) {
-      await runtime.research.prepare(request.publicResearch === true)
-      const prepared = await runtime.generationRuntime.prepare(request)
-      overrideSelections.add(JSON.stringify(prepared.selection))
-      return { selection: prepared.selection, override: prepared }
-    }
-    const selected = await requests.readSelection(request.sessionId)
-    const availability = await runtime.runtime.availability()
-    if (!availability.available) throw new RunFailure(availability.code, availability.detail)
-    await runtime.research.prepare(request.publicResearch === true)
-    return { selection: selected }
-  }
-  const deckOps = createDeckOperations(
-    decks,
-    briefs,
-    new ConfirmationCoordinator(decks, chatSessions, briefs, runs, generationDependencies, prepareGeneration),
-  )
 
   return {
     mapApplicationFailure: error =>
@@ -589,7 +539,7 @@ function createHostOptions(
       mapProviderError(error) ??
       mapAttachmentError(error) ??
       mapResearchError(error) ??
-      mapDeckFailure(error) ??
+      mapDeckError(error) ??
       mapSourceToolFailure(error) ??
       mapWebStateFailure(error) ??
       mapSessionFailure(error),
@@ -611,7 +561,7 @@ function createHostOptions(
           save: async (theme, expectedVersion) => web.savePreferences(theme, expectedVersion),
         },
       }),
-      (context: HostRouteContext) => createDeckRoutes(deckOps, context),
+      (context: HostRouteContext) => createDeckRoutes(deck, context),
       (context: HostRouteContext) => createChatRequestRoutes(requests, runtime.inputs.maxFiles, context.streams),
     ],
     changes: {

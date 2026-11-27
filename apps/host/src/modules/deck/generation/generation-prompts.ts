@@ -1,8 +1,8 @@
 import { findCompatibleLayouts, listTemplates } from '@deckagent/design'
 import type { BriefSourceRef, GenerationCapability } from '@deckagent/deck'
-import type { ToolSchema } from '../../runs/ports.ts'
-import type { DeckAttachmentRecord } from './ports.ts'
-import type { ResearchSourceRecord } from '../research/index.ts'
+import type { ToolSchema } from '../../../runs/ports.ts'
+import type { ResearchSourceRecord } from '../../research/index.ts'
+import type { DeckAttachmentRecord } from '../ports.ts'
 
 export type GenerationPlan = ReturnType<GenerationCapability['plan']>
 

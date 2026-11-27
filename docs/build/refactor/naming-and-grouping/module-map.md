@@ -65,17 +65,17 @@ The rules are in [Naming Rules](naming-rules.md). The problems are in [Naming an
 
 ## `modules/deck/`
 
-The deck module needs its own diagnosis before its revision, because it is the largest module and most of its logic is in `@deckagent/deck`. The table gives the direction only.
+Phase 6 completed these renames and capability folders (see [Revision 6](plan/README.md#revision-6-phase-6-deck-module)):
 
 | Current | Target | Problems |
 | --- | --- | --- |
-| `createDeckOperations`, `DeckOperations`. Each method calls `BriefCoordinator`, `ConfirmationCoordinator` or `DeckStore` with the same arguments | `class DeckService` that owns the brief and confirmation use cases. `BriefCoordinator` and `ConfirmationCoordinator` become private parts of the module with names that tell the use case | NG-02, NG-24 |
-| `DeckWorkflowFailure` in `failures.ts` | `DeckWorkflowError` in `deck.errors.ts` | NG-06 |
-| `DeckSessionStore` in `ports.ts` | `DeckChats` | NG-17 |
-| `deck-prompts.ts`: tool results, tool argument decode, brief validation, tool schemas, instructions, `sourceKindsForBrief` | Split by responsibility | NG-14 |
-| `deck-tool-session.ts`, `DeckToolSession` | A name without "session", for example `DeckRunTools` | NG-19 |
-| 18 files in the module root | `brief/`, `generation/`, `images/` (with `image-credit.ts`, `image-research.ts`, `image-review-run.ts`) and `rendering/` | NG-14 |
-| Deck planning in `server.ts` (`deckPlanner`, `prepareGeneration`, `generationDependencies`, `sourceToolsContribution`) | The deck module | NG-21 |
+| `createDeckOperations`, `DeckOperations`. Each method calls `BriefCoordinator`, `ConfirmationCoordinator` or `DeckStore` with the same arguments | `class DeckService` in `deck.service.ts` owning `BriefWorkflow` (`brief/brief-workflow.ts`), `GenerationConfirmation` (`generation/generation-confirmation.ts`) and `prepareRun` | NG-02, NG-24 |
+| `DeckWorkflowFailure` in `failures.ts` | `DeckWorkflowError`, `DeckWorkflowErrorCode` and `mapDeckError` in `deck.errors.ts` with a typed status table | NG-06, NG-25 |
+| `DeckSessionStore` in `ports.ts` | `DeckChats` (`ChatService`), `DeckAttachments` (`AttachmentService`) and `DeckRuns` (`SqliteRunStore`). `ToolSessionStore` in `tools/` splits into `ToolChats`, `ToolAttachmentRecords` and `ToolRuns` | NG-17 |
+| `deck-prompts.ts`: tool results, tool argument decode, brief validation, tool schemas, instructions, `sourceKindsForBrief` | `brief/brief-rules.ts`, `brief/brief-tool-protocol.ts` and `brief/brief-prompts.ts` | NG-14 |
+| `deck-tool-session.ts`, `DeckToolSession` | `brief/deck-run-tools.ts` and `DeckRunTools` | NG-19 |
+| 18 files in the module root | Module root keeps `index.ts`, `deck.service.ts`, `deck.routes.ts`, `deck.errors.ts` and `ports.ts`; other files live in `brief/`, `generation/`, `images/` (including `image-credit.ts`, `image-research.ts`, `image-review-run.ts`) and `rendering/` | NG-14 |
+| Deck planning in `server.ts` (`deckPlanner`, `prepareGeneration`, `generationDependencies`) | `DeckService.prepareRun` and `generation/generation-preparation.ts` | NG-21 |
 
 ## `server.ts`
 

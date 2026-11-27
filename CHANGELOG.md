@@ -22,6 +22,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Refactor the Host deck module into capability folders behind `DeckService`, `DeckWorkflowError`, `DeckChats` and `DeckAttachments`, move deck run planning out of `server.ts`, remove the `chatSessions` adapter by splitting `ToolSessionStore`, and enable `role-file-symbol` for `deck`.
 - Render the workspace controls, the chat search and the chat list with React through query hooks. Decode the chat and workspace lists through the contracts package, and remove the legacy workspace view.
 - Render Settings with React for providers, models, credentials and theme. Decode Settings responses through the contracts package.
 - Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.

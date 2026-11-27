@@ -1,31 +1,30 @@
-import { ResearchError } from '../research/index.ts'
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckStore, ConfirmationReceipt } from '@deckagent/deck'
-import { RunFailure } from '../../runs/ports.ts'
-import type { RunPlan, RunStartOptions, RunSnapshot } from '../../runs/ports.ts'
-import type { AgentRequest, ConfirmationResult, ModelSelection } from '@deckagent/host-contracts'
-import type { DeckSessionStore } from './ports.ts'
-import { ChatError } from '../chats/index.ts'
-import type { BriefCoordinator } from './brief-coordinator.ts'
+import type { AgentRequest, ConfirmationResult } from '@deckagent/host-contracts'
+import { RunFailure } from '../../../runs/ports.ts'
+import { ResearchError } from '../../research/index.ts'
+import type { BriefWorkflow } from '../brief/brief-workflow.ts'
+import { DeckWorkflowError, deckWorkflowErrorCode } from '../deck.errors.ts'
+import type { DeckRuns, DeckRunStarter } from '../ports.ts'
+import { SelectionPassthrough, prepareGeneration } from './generation-preparation.ts'
+import type { GenerationPreparationDependencies } from './generation-preparation.ts'
 import { createGenerationRunPlan } from './generation-run-plan.ts'
-import type { GenerationPlanDependencies, PreparedGenerationRuntime } from './generation-run-plan.ts'
-import { DeckWorkflowFailure } from './failures.ts'
+import type { GenerationPlanDependencies } from './generation-run-plan.ts'
 
 type ConfirmationTarget = ReturnType<typeof validateConfirmation>
 type Generation = ReturnType<DeckStore['generation']>
 
-/** Serializes confirmation/admission per Chat without giving model tools a confirmation capability. */
-export class ConfirmationCoordinator {
+/** Serializes confirmation and generation admission per chat without exposing a confirmation tool to models. */
+export class GenerationConfirmation {
   private readonly queues = new Map<string, Promise<void>>()
+
   constructor(
     private readonly decks: DeckStore,
-    private readonly sessions: DeckSessionStore,
-    private readonly briefs: BriefCoordinator,
-    private readonly runs: { start(plan: RunPlan, options?: RunStartOptions): Promise<RunSnapshot> },
+    private readonly runs: DeckRuns,
+    private readonly briefs: BriefWorkflow,
+    private readonly runStarter: DeckRunStarter,
     private readonly generation: GenerationPlanDependencies,
-    private readonly prepare: (
-      request: AgentRequest,
-    ) => Promise<{ readonly selection: ModelSelection; readonly override?: PreparedGenerationRuntime }>,
+    private readonly preparation: GenerationPreparationDependencies,
   ) {}
 
   async confirm(sessionId: string, value: unknown): Promise<ConfirmationResult> {
@@ -60,8 +59,8 @@ export class ConfirmationCoordinator {
           Object.entries(old.receipt).find(([key]) => key === k)?.[1],
       )
     )
-      throw new DeckWorkflowFailure('CONFIRMATION_CONFLICT')
-    const request = this.sessions.requests.get(old.receipt.requestId)
+      throw new DeckWorkflowError('CONFIRMATION_CONFLICT')
+    const request = this.runs.get(old.receipt.requestId)
     if (!request) return undefined
     return {
       receipt: old.receipt,
@@ -69,7 +68,7 @@ export class ConfirmationCoordinator {
         requestId: request.requestId,
         sessionId,
         status: request.status,
-        text: this.sessions.requests.text(request.requestId),
+        text: this.runs.text(request.requestId),
         sequence: request.lastSequence,
         ...(request.errorCode ? { errorCode: request.errorCode } : {}),
       },
@@ -82,25 +81,25 @@ export class ConfirmationCoordinator {
     old: Generation,
   ): Promise<ConfirmationResult> {
     const view = await this.briefs.get(sessionId)
-    if (view.sourceStates.some(s => s.status === 'unavailable')) throw new DeckWorkflowFailure('SOURCE_UNAVAILABLE')
+    if (view.sourceStates.some(s => s.status === 'unavailable')) throw new DeckWorkflowError('SOURCE_UNAVAILABLE')
     if (
       !old &&
       (!view.current || view.current.briefId !== target.briefId || view.current.version !== target.briefVersion)
     )
-      throw new DeckWorkflowFailure('BRIEF_STALE')
-    if (this.sessions.requests.activeFor(sessionId)) throw new DeckWorkflowFailure('SESSION_BUSY')
+      throw new DeckWorkflowError('BRIEF_STALE')
+    if (this.runs.activeFor({ kind: 'chat', id: sessionId })) throw new DeckWorkflowError('SESSION_BUSY')
     const request: AgentRequest = {
       sessionId,
       input: 'Generate the explicitly confirmed Outline.',
       publicResearch: view.current?.draft.sources.publicResearch === true,
     }
-    const preparation = await this.prepare(request)
-    const selection = preparation.selection
+    const prepared = await prepareGeneration(this.preparation, request)
+    const selection = prepared.selection
     if (old && (old.selection.provider !== selection.provider || old.selection.model !== selection.model))
-      throw new DeckWorkflowFailure('GENERATION_MODEL_CHANGED')
+      throw new DeckWorkflowError('GENERATION_MODEL_CHANGED')
     const receipt: ConfirmationReceipt = this.decks.confirmGeneration(sessionId, target, selection)
-    const override = preparation.override
-    const prepared = await createGenerationRunPlan(
+    const override = prepared.override
+    const built = await createGenerationRunPlan(
       override ? { ...this.generation, generationRuntime: { prepare: async () => override } } : this.generation,
       {
         request,
@@ -109,8 +108,8 @@ export class ConfirmationCoordinator {
         requestId: receipt.requestId,
       },
     )
-    const admitted = await this.runs.start(prepared.plan, {
-      ...(prepared.runtime ? { runtime: prepared.runtime } : {}),
+    const admitted = await this.runStarter.start(built.plan, {
+      ...(built.runtime ? { runtime: built.runtime } : {}),
       onAdmitted: () => {
         try {
           this.decks.admitGeneration(sessionId, receipt.intentId, receipt.requestId)
@@ -125,11 +124,11 @@ export class ConfirmationCoordinator {
   }
 
   private rethrowConfirmationError(error: unknown): never {
-    if (error instanceof RunFailure && error.code === 'RUN_OWNER_BUSY') throw new DeckWorkflowFailure('SESSION_BUSY')
+    if (error instanceof SelectionPassthrough) throw error.original
+    if (error instanceof RunFailure && error.code === 'RUN_OWNER_BUSY') throw new DeckWorkflowError('SESSION_BUSY')
     if (
-      error instanceof DeckWorkflowFailure ||
+      error instanceof DeckWorkflowError ||
       error instanceof RunFailure ||
-      error instanceof ChatError ||
       error instanceof ResearchError ||
       (error instanceof Error &&
         'status' in error &&
@@ -138,7 +137,8 @@ export class ConfirmationCoordinator {
         typeof error.code === 'string')
     )
       throw error
-    if (error instanceof DeckError) throw new DeckWorkflowFailure(error.code)
-    throw new DeckWorkflowFailure('CONFIRMATION_UNAVAILABLE')
+    if (error instanceof DeckError)
+      throw new DeckWorkflowError(deckWorkflowErrorCode(error.code) ?? 'CONFIRMATION_UNAVAILABLE')
+    throw new DeckWorkflowError('CONFIRMATION_UNAVAILABLE')
   }
 }

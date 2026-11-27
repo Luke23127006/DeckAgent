@@ -1,5 +1,5 @@
 /**
- * Tests deck grants, staging, restore, image recovery and generation evidence through RunController.
+ * Tests deck grants, staging, restore, image recovery and generation evidence through DeckService and RunController.
  * Node.js uses real deck SQLite stores and fake runtime, source-service and request-store boundaries.
  * Expected tools come from the sixteen grant cases in Task 53 and the legacy permission policy.
  * Injected faults removed grants, enabled restore execution, exposed recovery source tools, omitted proposal writes,
@@ -8,23 +8,39 @@
  * Expected behavior comes from Task 53 and ADR-003.
  */
 import assert from 'node:assert/strict'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
-import { sourceKindsForBrief } from '../lib/types/modules/deck/index.js'
+import { DeckStore } from '@deckagent/deck'
+import { HtmlFormatAdapter } from '@deckagent/html-format'
+import { brief as briefFixture } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
+import { DeckService } from '../lib/types/modules/deck/index.js'
+import { RunController } from '../lib/types/runs/lifecycle/index.js'
 import { createSourceToolsContribution } from '../lib/types/tools/index.js'
+import { waitFor } from './fixtures/wait-for.mjs'
+
+const selection = { provider: 'fixture', model: 'model-a' }
+const providers = {
+  resolve: async () => ({ ...selection, protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1' }),
+}
 
 function sourceOptions(hasResearchSources) {
   return {
-    store: {
+    chats: {
       getInfo: async () => ({ workspaceId: null }),
-      attachments: { sent: () => [], get: () => undefined },
-      requests: {
-        sourceCatalogue: () => [],
-        researchSources: () =>
-          hasResearchSources
-            ? [{ sourceId: 'research-1', version: 1, title: 'Research', url: 'https://example.com' }]
-            : [],
-        recordSourceRead: () => undefined,
-      },
+    },
+    attachmentRecords: {
+      sent: () => [],
+      get: () => undefined,
+    },
+    runs: {
+      sourceCatalogue: () => [],
+      researchSources: () =>
+        hasResearchSources
+          ? [{ sourceId: 'research-1', version: 1, title: 'Research', url: 'https://example.com' }]
+          : [],
+      recordSourceRead: () => undefined,
     },
     registry: { get: async () => ({ folderStatus: 'missing' }), folders: () => [] },
     dataRoot: 'C:/data',
@@ -34,53 +50,9 @@ function sourceOptions(hasResearchSources) {
   }
 }
 
-test('deck source grants expose the expected tool set for all sixteen flag combinations', async () => {
-  for (const material of [false, true])
-    for (const briefPublicResearch of [false, true])
-      for (const requestPublicResearch of [false, true])
-        for (const hasResearchSources of [false, true]) {
-          const brief = { sources: { material, publicResearch: briefPublicResearch } }
-          const contribution = createSourceToolsContribution(sourceOptions(hasResearchSources))
-          const context = {
-            owner: { kind: 'chat', id: 'chat-1' },
-            requestId: 'request-1',
-            signal: new AbortController().signal,
-          }
-          const actual = await contribution.contribute({
-            ...context,
-            grants: {
-              publicResearch: briefPublicResearch && requestPublicResearch,
-              sourceKinds: sourceKindsForBrief(brief),
-            },
-          })
-          assert.deepEqual(
-            actual.tools?.schemas.map(s => s.name) ?? [],
-            [
-              ...(material ? ['list_sources', 'read_source', 'read_external', 'read_attachment'] : []),
-              ...((material || briefPublicResearch) && hasResearchSources ? ['read_research'] : []),
-              ...(briefPublicResearch && requestPublicResearch ? ['research_public'] : []),
-            ],
-            JSON.stringify({ material, briefPublicResearch, requestPublicResearch, hasResearchSources }),
-          )
-        }
-})
-import { mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { HtmlFormatAdapter } from '@deckagent/html-format'
-import { DeckStore } from '@deckagent/deck'
-import { BriefCoordinator, createDeckRunPlan, createGenerationRunPlan } from '../lib/types/modules/deck/index.js'
-import { RunController } from '../lib/types/runs/lifecycle/index.js'
-import { waitFor } from './fixtures/wait-for.mjs'
-import { brief as briefFixture } from '../../../packages/presentation/deck/tests/fixtures/brief.mjs'
-
-const selection = { provider: 'fixture', model: 'model-a' }
-const providers = {
-  resolve: async () => ({ ...selection, protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1' }),
-}
-function runStore() {
-  const records = new Map(),
-    logs = new Map()
+function runStore(files = []) {
+  const records = new Map()
+  const logs = new Map()
   return {
     admit(input) {
       const record = { ...input, status: 'active', historyStart: 0, startedAt: '2026-01-01', lastSequence: 0 }
@@ -106,22 +78,37 @@ function runStore() {
         .map(e => e.text)
         .join(''),
     activeFor: owner => [...records.values()].find(r => r.owner.id === owner.id && r.status === 'active')?.requestId,
+    sourceCatalogue: () => files,
+    researchSources: () => [],
   }
 }
-function sessions(files = []) {
-  return {
-    getInfo: async () => ({}),
-    read: async () => [],
-    attachments: { sent: () => [] },
-    requests: {
-      sourceCatalogue: () => files,
-      researchSources: () => [],
-      activeFor: () => undefined,
-      get: () => undefined,
-      text: () => '',
+
+function createDeckService({ decks, runs = runStore(), runStarter, sourceTools, imageResearch }) {
+  return new DeckService({
+    decks,
+    chats: {
+      getInfo: async () => ({ workspaceId: null }),
+      history: async () => [],
     },
-  }
+    attachments: { sent: () => [] },
+    runs,
+    runStarter: runStarter ?? {
+      start: async () => {
+        throw new Error('unused')
+      },
+    },
+    sourceTools: sourceTools ?? {
+      prepare: async () => {
+        throw new Error('unused')
+      },
+    },
+    readSelection: async () => selection,
+    runtimeAvailability: async () => ({ available: true }),
+    preflightResearch: async () => {},
+    ...(imageResearch ? { imageResearch } : {}),
+  })
 }
+
 function readyBrief(images = false) {
   return {
     ...briefFixture(),
@@ -133,6 +120,7 @@ function readyBrief(images = false) {
     images: { mode: images ? 'public-research' : 'none', attachmentIds: [], unmetRequirements: [] },
   }
 }
+
 function outlineDraft(images = false) {
   return {
     overview: 'Purpose',
@@ -149,9 +137,11 @@ function outlineDraft(images = false) {
     ],
   }
 }
+
 function runtime(run) {
   return { name: 'fixture', availability: async () => ({ available: true }), run }
 }
+
 async function execute(controller, plan, options) {
   const admitted = await controller.start(plan, options)
   return waitFor(() => {
@@ -160,6 +150,51 @@ async function execute(controller, plan, options) {
   })
 }
 
+test('deck source grants expose the expected tool set for all sixteen flag combinations', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'deck-grants-plan-'))
+  const decks = new DeckStore(join(directory, 'decks.sqlite'))
+  t.after(async () => {
+    decks.close()
+    await rm(directory, { recursive: true, force: true })
+  })
+  const deck = createDeckService({ decks })
+  for (const material of [false, true])
+    for (const briefPublicResearch of [false, true])
+      for (const requestPublicResearch of [false, true])
+        for (const hasResearchSources of [false, true]) {
+          const prepared = await deck.prepareRun(
+            {
+              sessionId: 'chat-1',
+              input: 'Collect',
+              publicResearch: requestPublicResearch,
+              deck: {
+                action: 'collect',
+                sourceChoice: { material, modelKnowledge: false, publicResearch: briefPublicResearch },
+                expectedBriefVersion: 0,
+                expectedOutline: null,
+              },
+            },
+            selection,
+          )
+          const contribution = createSourceToolsContribution(sourceOptions(hasResearchSources))
+          const actual = await contribution.contribute({
+            owner: { kind: 'chat', id: 'chat-1' },
+            requestId: 'request-1',
+            signal: new AbortController().signal,
+            grants: prepared.plan.grants,
+          })
+          assert.deepEqual(
+            actual.tools?.schemas.map(s => s.name) ?? [],
+            [
+              ...(material ? ['list_sources', 'read_source', 'read_external', 'read_attachment'] : []),
+              ...((material || briefPublicResearch) && hasResearchSources ? ['read_research'] : []),
+              ...(briefPublicResearch && requestPublicResearch ? ['research_public'] : []),
+            ],
+            JSON.stringify({ material, briefPublicResearch, requestPublicResearch, hasResearchSources }),
+          )
+        }
+})
+
 test('deck plan stages a proposal and restores it without runtime calls', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'deck-run-plan-'))
   const decks = new DeckStore(join(directory, 'decks.sqlite'))
@@ -167,9 +202,8 @@ test('deck plan stages a proposal and restores it without runtime calls', async 
     decks.close()
     await rm(directory, { recursive: true, force: true })
   })
-  const store = runStore(),
-    sessionStore = sessions()
-  const deps = { decks, sessions: sessionStore, briefs: new BriefCoordinator(decks, sessionStore) }
+  const store = runStore()
+  const deck = createDeckService({ decks, runs: store })
   let calls = 0
   const controller = new RunController({
     store,
@@ -187,29 +221,25 @@ test('deck plan stages a proposal and restores it without runtime calls', async 
     }),
   })
   t.after(() => controller.close())
-  const first = await execute(
-    controller,
-    await createDeckRunPlan(
-      deps,
-      {
-        sessionId: 'chat',
-        input: 'Collect',
-        deck: {
-          action: 'collect',
-          sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
-          expectedBriefVersion: 0,
-          expectedOutline: null,
-        },
+  const firstPlan = await deck.prepareRun(
+    {
+      sessionId: 'chat',
+      input: 'Collect',
+      deck: {
+        action: 'collect',
+        sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+        expectedBriefVersion: 0,
+        expectedOutline: null,
       },
-      selection,
-    ),
+    },
+    selection,
   )
+  const first = await execute(controller, firstPlan.plan)
   assert.equal(first.status, 'completed', JSON.stringify(first))
   assert.match(first.text, /Đã lưu Outline mới/)
   const proposal = decks.outlineSnapshot('chat').proposals[0]
   assert.equal(proposal.slides[0].title, 'Purpose')
-  const restore = await createDeckRunPlan(
-    deps,
+  const restore = await deck.prepareRun(
     {
       sessionId: 'chat',
       input: 'Restore',
@@ -222,8 +252,8 @@ test('deck plan stages a proposal and restores it without runtime calls', async 
     },
     selection,
   )
-  assert.equal(restore.skipRuntime, true)
-  assert.equal((await execute(controller, restore)).status, 'completed')
+  assert.equal(restore.plan.skipRuntime, true)
+  assert.equal((await execute(controller, restore.plan)).status, 'completed')
   assert.equal(calls, 1)
   assert.equal(decks.briefSnapshot('chat').version, 2)
 })
@@ -254,9 +284,8 @@ test('deck recovery uses only image tools and commits the staged proposal', asyn
       throw new Error('No selected image')
     },
   }
-  const sessionStore = sessions(),
-    store = runStore(),
-    calls = []
+  const store = runStore()
+  const calls = []
   const controller = new RunController({
     store,
     providers,
@@ -274,30 +303,26 @@ test('deck recovery uses only image tools and commits the staged proposal', asyn
     }),
   })
   t.after(() => controller.close())
-  const deps = {
+  const deck = createDeckService({
     decks,
-    sessions: sessionStore,
-    briefs: new BriefCoordinator(decks, sessionStore),
+    runs: store,
     imageResearch: { open: () => imageReview },
-  }
-  const result = await execute(
-    controller,
-    await createDeckRunPlan(
-      deps,
-      {
-        sessionId: 'chat',
-        input: 'Collect',
-        deck: {
-          action: 'collect',
-          sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
-          imageChoice: 'public-research',
-          expectedBriefVersion: 0,
-          expectedOutline: null,
-        },
+  })
+  const prepared = await deck.prepareRun(
+    {
+      sessionId: 'chat',
+      input: 'Collect',
+      deck: {
+        action: 'collect',
+        sourceChoice: { material: false, modelKnowledge: true, publicResearch: false },
+        imageChoice: 'public-research',
+        expectedBriefVersion: 0,
+        expectedOutline: null,
       },
-      selection,
-    ),
+    },
+    selection,
   )
+  const result = await execute(controller, prepared.plan)
   assert.equal(result.status, 'completed', JSON.stringify(result))
   assert.deepEqual(calls, [
     ['stage_brief', 'stage_outline', 'search_slide_images', 'select_slide_image'],
@@ -346,25 +371,13 @@ test('generation plan restricts selected sources, records evidence, finishes inc
   })
   const outline = decks.outlineSnapshot('chat').proposals[0]
   const record = decks.briefSnapshot('chat').current
-  const receipt = decks.confirmGeneration(
-    'chat',
-    {
-      confirmationId: 'confirm-1',
-      outlineId: outline.outlineId,
-      outlineVersion: outline.version,
-      briefId: record.briefId,
-      briefVersion: record.version,
-    },
-    selection,
-  )
-  decks.admitGeneration('chat', receipt.intentId, receipt.requestId)
-  const reads = [],
-    evidence = [],
-    store = runStore()
+  const reads = []
+  const evidence = []
   const files = [
     { kind: 'project-file', sourceId: 'src-00000000-0000-4000-8000-000000000001', version: 1, label: 'selected.txt' },
     { kind: 'project-file', sourceId: 'src-00000000-0000-4000-8000-000000000002', version: 1, label: 'other.txt' },
   ]
+  const store = runStore(files)
   const sourceTools = {
     prepare: async () => ({
       context: 'source',
@@ -400,15 +413,6 @@ test('generation plan restricts selected sources, records evidence, finishes inc
       },
     }),
   }
-  const built = await createGenerationRunPlan(
-    { decks, sessions: sessions(files), sourceTools },
-    {
-      request: { sessionId: 'chat', input: 'Generate' },
-      selection,
-      intentId: receipt.intentId,
-      requestId: receipt.requestId,
-    },
-  )
   const controller = new RunController({
     store,
     providers,
@@ -435,7 +439,18 @@ test('generation plan restricts selected sources, records evidence, finishes inc
     }),
   })
   t.after(() => controller.close())
-  const result = await execute(controller, built.plan)
+  const deck = createDeckService({ decks, runs: store, runStarter: controller, sourceTools })
+  const confirmed = await deck.confirm('chat', {
+    confirmationId: 'confirm-1',
+    outlineId: outline.outlineId,
+    outlineVersion: outline.version,
+    briefId: record.briefId,
+    briefVersion: record.version,
+  })
+  const result = await waitFor(() => {
+    const current = controller.get(confirmed.request.requestId)
+    return current.status !== 'active' && current
+  })
   assert.equal(result.status, 'failed')
   assert.equal(result.errorCode, 'GENERATION_INCOMPLETE', JSON.stringify(result))
   assert.deepEqual(reads, ['selected.txt'])

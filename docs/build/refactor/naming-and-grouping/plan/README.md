@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`. Phase 5 refactors the attachments module and runs its exit checks.
+**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`. Phase 4 refactors `apps/host/src/modules/providers/` and `apps/host/src/modules/research/` to match those rules and enables `role-file-symbol` for `providers` and `research`. Phase 5 refactors the attachments module and runs its exit checks. Phase 6 refactors `apps/host/src/modules/deck/`, removes the `chatSessions` adapter and deck run planning from `server.ts`, and enables `role-file-symbol` for `deck`.
 
 **Approach:** One revision for each phase of the Naming and Grouping Refactor. The planner does the diagnosis of each phase, and the decision table records every answer. Each task is an execution task.
 
@@ -233,3 +233,36 @@ The user requested one task for Phase 5 after direct diagnosis and execution. Ta
 | Task | Status | File |
 | --- | --- | --- |
 | 16 | Blocked: implementation complete, exit check failed | [Refactor attachments and check Phase 5](task-16-refactor-attachments-and-check-phase-5.md) ([report](../reports/task-16-refactor-attachments-and-check-phase-5.md)) |
+
+## Revision 6: Phase 6, deck module
+
+The user requested direct diagnosis and execution before task creation, followed by one Task 17 record and report for Phase 6.
+
+### Decisions (Revision 6)
+
+| Topic | Decision |
+| --- | --- |
+| Service and private workflows | Replace `createDeckOperations` and `DeckOperations` with `export class DeckService` in `deck.service.ts`. Rename `BriefCoordinator` to `BriefWorkflow` in `brief/brief-workflow.ts` and `ConfirmationCoordinator` to `GenerationConfirmation` in `generation/generation-confirmation.ts`. Both stay private to `modules/deck/`. `createDeckRoutes` takes `DeckService`. |
+| Deck errors | Remove `failures.ts`. Move `DeckWorkflowError`, `DeckWorkflowErrorCode`, `OutlineNotFoundReason`, `deckWorkflowErrorCode` and `mapDeckError` into `deck.errors.ts` with `deckWorkflowStatus: Readonly<Record<DeckWorkflowErrorCode, number>>`. Keep `OUTLINE_NOT_FOUND` at HTTP 404 for `restore-outline-missing` and 409 otherwise, keep all `DESIGN_*` codes at 400 (including `DESIGN_SYSTEM_NOT_FOUND`), and keep `@deckagent/deck` `DeckError` mapping unchanged. |
+| Capability folders and prompt split | Keep `index.ts`, `deck.service.ts`, `deck.routes.ts`, `deck.errors.ts` and `ports.ts` in the module root. Group the rest into `brief/`, `generation/`, `images/` (adding `image-credit.ts`, `image-research.ts`, `image-review-run.ts`) and `rendering/`. Split `deck-prompts.ts` into `brief/brief-rules.ts`, `brief/brief-tool-protocol.ts` and `brief/brief-prompts.ts`. Rename `deck-tool-session.ts` and `DeckToolSession` to `brief/deck-run-tools.ts` and `DeckRunTools`. |
+| Deck run planning and generation preparation | Move `deckPlanner` branching into `DeckService.prepareRun` and move `prepareGeneration` into `generation/generation-preparation.ts`. Use module-private `SelectionPassthrough` so `ChatError` from `readSelection` propagates through `GenerationConfirmation.confirm` without importing `modules/chats/`, keeping the module dependency graph acyclic. |
+| Ports and `chatSessions` removal | Replace `DeckSessionStore` with `DeckChats` (implemented by `ChatService`, with `getInfo` returning `ChatInfo \| undefined` and `history`), `DeckAttachments` (implemented by `AttachmentService.sent`) and `DeckRuns` (implemented directly by `SqliteRunStore`). Split `ToolSessionStore` in `apps/host/src/tools/` into `ToolChats`, `ToolAttachmentRecords` and `ToolRuns`. Remove the `chatSessions` adapter from `server.ts`. Keep `createPreparedImageReader` and `createDeckStore` in `server.ts` until Phase 7. |
+| Public exports of `deck/index.ts` | Export only symbols imported outside `modules/deck/`: `DeckService`, `createDeckRoutes`, `DeckWorkflowError`, `mapDeckError`, `type DeckAttachments`, `type DeckChats`, `CommonsImages`, `PublicImageReader`, `WebImageResearch`, `type ImageLookup`, `artifactRenderer`, `type ArtifactRenderer` and `type GenerationRuntimeOverride`. Update `apps/host/tests/deck-run-plan.test.mjs` to test through `DeckService`. |
+| Role symbol check | Add `'deck'` to `ROLE_FILE_MODULES` in `scripts/check-boundaries.mjs` while keeping existing entries. Move the unlisted fixture in `tests/check-boundaries.test.mjs` to `settings` and add a default `deck` role check test. |
+
+### Review Focus (Revision 6)
+
+- `mapDeckError` preserves HTTP 404 vs 409 for `OUTLINE_NOT_FOUND` reasons, HTTP 400 for `DESIGN_*` codes (including `DESIGN_SYSTEM_NOT_FOUND`), and `DeckError` codes. Test: `DeckWorkflowError and mapDeckError preserve HTTP statuses, reasons and detail fields` in [Task 17](task-17-refactor-deck-and-check-phase-6.md).
+- `DeckService.confirm` translates `DeckError` and unexpected failures while preserving `ChatError` from `readSelection` without creating a `chats <-> deck` cycle. Test: `DeckService.confirm translates DeckError and unexpected failures while preserving ChatError from readSelection` in [Task 17](task-17-refactor-deck-and-check-phase-6.md).
+- `DeckService.prepareRun` computes all 16 source grant combinations and runs review, restore, image recovery and generation plans through `RunController`. Test: `apps/host/tests/deck-run-plan.test.mjs`.
+- `role-file-symbol` includes `deck` by default in `ROLE_FILE_MODULES`. Test: `checkBoundaries applies role symbol checks to deck by default` in `tests/check-boundaries.test.mjs`.
+
+### Tasks (Revision 6)
+
+| Task | Status | File |
+| --- | --- | --- |
+| 17 | Done | [Refactor deck module and check Phase 6](task-17-refactor-deck-and-check-phase-6.md) ([report](../reports/task-17-refactor-deck-and-check-phase-6.md)) |
+
+### Phase 6 exit
+
+Phase 6 is done. Task 17 is `Done`. `build`, `lint`, `check:boundaries` (`0 violation(s)` with `deck` in `ROLE_FILE_MODULES`), `check:docs`, Biome format on Phase 6 files, all 19 non-live `test:*` scripts and `test:web` Vitest (6 files, 23 tests) passed with zero failures. Independent review findings were fixed and re-verified. The report of Task 17 has the evidence.

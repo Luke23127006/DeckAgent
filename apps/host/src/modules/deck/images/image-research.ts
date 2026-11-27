@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { ImageParserPort } from './ports.ts'
 import { DeckError } from '@deckagent/deck'
 import type {
   ImageNeed,
@@ -8,13 +7,15 @@ import type {
   OutlineImageReview,
   ImageSourceCheck,
 } from '@deckagent/deck'
-import { ResearchError } from '../research/index.ts'
-import type { ResearchService } from '../research/index.ts'
-import type { CommonsImages, CommonsCandidate } from './images/index.ts'
-import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from './images/index.ts'
+import { ResearchError } from '../../research/index.ts'
+import type { ResearchService } from '../../research/index.ts'
+import type { ImageParserPort } from '../ports.ts'
+import type { CommonsImages, CommonsCandidate } from './commons-images.ts'
 import { imagePageCredit } from './image-credit.ts'
 import { ImageReviewRun } from './image-review-run.ts'
 import type { Candidate } from './image-review-run.ts'
+import { ImageSourceError, imageSource } from './image-source.ts'
+import { ImageReadError, PublicImageReader } from './public-image-reader.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')

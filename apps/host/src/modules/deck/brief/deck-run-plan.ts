@@ -1,36 +1,34 @@
 import { randomUUID } from 'node:crypto'
 import { DeckError, interviewState, skipInterview, validateBriefDraft } from '@deckagent/deck'
 import type { DeckStore, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
-import type { RunTools } from '../../runs/ports.ts'
-import type { DeckToolRun } from './deck-tool-session.ts'
 import type { AgentRequest, ModelSelection } from '@deckagent/host-contracts'
-import type { RunPlan, RunResult, ToolSet } from '../../runs/index.ts'
-import type { DeckSessionStore } from './ports.ts'
-import type { BriefCoordinator } from './brief-coordinator.ts'
-import { DeckWorkflowFailure } from './failures.ts'
-import {
-  buildDeckInstructions,
-  buildDeckWorkflowContext,
-  buildRecoveryInstructions,
-  emptyBriefDraft,
-  sourceKindsForBrief,
-} from './deck-prompts.ts'
-import { createDeckImageReview, createDeckToolSession } from './deck-tool-session.ts'
-import type { DeckImageReview, DeckToolSession, DeckImageRecovery } from './deck-tool-session.ts'
-import type { WebImageResearch } from './image-research.ts'
+import type { RunPlan, RunResult, ToolSet } from '../../../runs/index.ts'
+import type { RunTools } from '../../../runs/ports.ts'
+import { DeckWorkflowError } from '../deck.errors.ts'
+import type { WebImageResearch } from '../images/index.ts'
+import type { DeckChats, DeckToolRun } from '../ports.ts'
+import { buildDeckInstructions, buildDeckWorkflowContext, buildRecoveryInstructions } from './brief-prompts.ts'
+import { emptyBriefDraft, sourceKindsForBrief } from './brief-rules.ts'
+import type { BriefWorkflow } from './brief-workflow.ts'
+import { createDeckImageReview, createDeckRunTools } from './deck-run-tools.ts'
+import type { DeckImageRecovery, DeckImageReview, DeckRunTools } from './deck-run-tools.ts'
 
 type DeckCommand = NonNullable<AgentRequest['deck']>
+
 export interface DeckPlanDependencies {
   readonly decks: DeckStore
-  readonly sessions: DeckSessionStore
-  readonly briefs: BriefCoordinator
+  readonly chats: DeckChats
+  readonly briefs: BriefWorkflow
   readonly imageResearch?: WebImageResearch
 }
+
 const unchangedOutlineText =
   'Giữ nguyên Outline và Brief. Chưa tạo slide. Câu hỏi hoặc yêu cầu cần làm rõ không tạo phiên bản mới.'
+
 function failed(result: RunResult, code: string): RunResult {
   return { status: 'failed', usage: result.usage, error: { category: 'runtime-failed', code } }
 }
+
 function toolSet(tools: RunTools): ToolSet {
   return {
     context: tools.context,
@@ -39,16 +37,17 @@ function toolSet(tools: RunTools): ToolSet {
     executor: { execute: (name, args) => tools.call(name, args) },
   }
 }
+
 export async function createDeckRunPlan(
   deps: DeckPlanDependencies,
   request: AgentRequest,
   selection: ModelSelection,
 ): Promise<RunPlan> {
   const command = request.deck
-  if (!command) throw new DeckWorkflowFailure('OUTLINE_NOT_FOUND')
+  if (!command) throw new DeckWorkflowError('OUTLINE_NOT_FOUND')
   const snapshot = await deps.briefs.get(request.sessionId)
-  if (snapshot.locked) throw new DeckWorkflowFailure('BRIEF_LOCKED')
-  if (snapshot.version !== command.expectedBriefVersion) throw new DeckWorkflowFailure('BRIEF_STALE')
+  if (snapshot.locked) throw new DeckWorkflowError('BRIEF_LOCKED')
+  if (snapshot.version !== command.expectedBriefVersion) throw new DeckWorkflowError('BRIEF_STALE')
   const outlines = deps.decks.outlineSnapshot(request.sessionId)
   const current = outlines.proposals.find(p => p.outlineId === outlines.currentId)
   if (
@@ -58,13 +57,13 @@ export async function createDeckRunPlan(
         current.outlineId !== command.expectedOutline.outlineId ||
         current.version !== command.expectedOutline.version
   )
-    throw new DeckWorkflowFailure('OUTLINE_STALE')
+    throw new DeckWorkflowError('OUTLINE_STALE')
   if (['question', 'clarify', 'revise', 'restore'].includes(command.action) && !current)
-    throw new DeckWorkflowFailure('OUTLINE_NOT_FOUND', undefined, 'current-outline-required')
+    throw new DeckWorkflowError('OUTLINE_NOT_FOUND', undefined, 'current-outline-required')
   const restoreTarget = outlines.proposals.find(p => p.outlineId === command.restoreOutlineId && p.brief)
   const restored = command.action === 'restore' ? restoreTarget : undefined
   if (command.action === 'restore' && !restored?.brief)
-    throw new DeckWorkflowFailure('OUTLINE_NOT_FOUND', undefined, 'restore-outline-missing')
+    throw new DeckWorkflowError('OUTLINE_NOT_FOUND', undefined, 'restore-outline-missing')
   const base = restored?.brief?.draft ?? snapshot.current?.draft ?? emptyBriefDraft()
   const choice = command.sourceChoice ?? {
     material: base.sources.material || !!request.attachmentIds?.length,
@@ -85,7 +84,7 @@ export async function createDeckRunPlan(
   }
 
   const readOnly = command.action === 'question' || command.action === 'clarify'
-  let session: DeckToolSession | undefined
+  let runTools: DeckRunTools | undefined
   let review: DeckImageReview | undefined
   let run: DeckToolRun | undefined
   let instructions = ''
@@ -128,7 +127,7 @@ export async function createDeckRunPlan(
       const expected = outlines.proposals.find(p => p.outlineId === command.expectedOutline?.outlineId) ?? null
       const context = buildDeckWorkflowContext(command, initial, previous, review, expected)
       instructions = buildDeckInstructions(context)
-      session = createDeckToolSession({
+      runTools = createDeckRunTools({
         briefs: deps.briefs,
         command,
         context,
@@ -144,23 +143,23 @@ export async function createDeckRunPlan(
       {
         name: 'deck-review',
         async contribute() {
-          if (!session?.tools) throw new DeckWorkflowFailure('BRIEF_PROPOSAL_REQUIRED')
-          return { instructions: [instructions], tools: toolSet(session.tools) }
+          if (!runTools?.tools) throw new DeckWorkflowError('BRIEF_PROPOSAL_REQUIRED')
+          return { instructions: [instructions], tools: toolSet(runTools.tools) }
         },
       },
     ],
     async next(result) {
       if (
         result.status !== 'completed' ||
-        !session ||
-        session.state.briefRepairLimit ||
-        session.state.outlineRepairLimit ||
-        session.state.outlineError
+        !runTools ||
+        runTools.state.briefRepairLimit ||
+        runTools.state.outlineRepairLimit ||
+        runTools.state.outlineError
       )
         return undefined
-      recovery = await session.prepareImageRecovery()
-      if (!recovery || !session.tools) return undefined
-      const tools = session.tools
+      recovery = await runTools.prepareImageRecovery()
+      if (!recovery || !runTools.tools) return undefined
+      const tools = runTools.tools
       return {
         owner: plan.owner,
         input: request.input,
@@ -185,9 +184,9 @@ export async function createDeckRunPlan(
       }
     },
     async finalize(result) {
-      if (!session || !review || !run) return failed(result, 'BRIEF_PROPOSAL_REQUIRED')
+      if (!runTools || !review || !run) return failed(result, 'BRIEF_PROPOSAL_REQUIRED')
       if (recovery) await recovery.settle(result.status === 'completed')
-      const state = session.state
+      const state = runTools.state
       if (run.signal.aborted) return result
       if (state.briefRepairLimit) return failed(result, 'BRIEF_REPAIR_LIMIT')
       if (state.outlineRepairLimit) return failed(result, 'OUTLINE_REPAIR_LIMIT')
@@ -222,6 +221,7 @@ export async function createDeckRunPlan(
   }
   return plan
 }
+
 async function commitProposal(
   deps: DeckPlanDependencies,
   request: AgentRequest,
@@ -233,7 +233,7 @@ async function commitProposal(
 ): Promise<{ readonly status: 'failed'; readonly errorCode: string } | undefined> {
   try {
     deps.briefs.verify(request.sessionId, staged)
-    const history = await deps.sessions.read(request.sessionId)
+    const history = await deps.chats.history(request.sessionId)
     run.signal.throwIfAborted()
     const proposal = {
       requestId: run.requestId,

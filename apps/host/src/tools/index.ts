@@ -18,7 +18,9 @@ export {
 export type { SourceToolOptions, SourceToolsContributionOptions } from './executors/source-tools.ts'
 export type {
   ToolAttachmentReader,
+  ToolAttachmentRecords,
+  ToolChats,
   ToolResearchSession,
-  ToolSessionStore,
+  ToolRuns,
   ToolWorkspaceLookup,
 } from './executors/ports.ts'

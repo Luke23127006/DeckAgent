@@ -209,22 +209,22 @@ function researchSource() {
 
 function sourceOptions(sources = []) {
   return {
-    store: {
+    chats: {
       async getInfo() {
         return { workspaceId: null }
       },
-      attachments: {
-        sent: () => [],
-        get() {
-          notFound()
-        },
+    },
+    attachmentRecords: {
+      sent: () => [],
+      get() {
+        notFound()
       },
-      requests: {
-        sourceCatalogue: () => [],
-        researchSources: () => sources,
-        recordSourceRead() {
-          return undefined
-        },
+    },
+    runs: {
+      sourceCatalogue: () => [],
+      researchSources: () => sources,
+      recordSourceRead() {
+        return undefined
       },
     },
     registry: {

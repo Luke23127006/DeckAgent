@@ -84,16 +84,20 @@ export interface ToolSourceReadReceipt extends ToolSourceCatalogueItem {
   readonly location: { readonly kind: 'lines'; readonly start: number; readonly end: number }
 }
 
-/** Chat, attachment and source records that the source tools read and write. */
-export interface ToolSessionStore {
+/** Chat metadata the source tools read. `ChatService` implements it. */
+export interface ToolChats {
   getInfo(sessionId: string): Promise<ToolSessionInfo | undefined>
-  readonly attachments: {
-    sent(sessionId: string): readonly ToolAttachmentRecord[]
-    get(sessionId: string, attachmentId: string): ToolAttachmentRecord
-  }
-  readonly requests: {
-    sourceCatalogue(sessionId: string): readonly ToolSourceCatalogueItem[]
-    researchSources(sessionId: string): readonly ToolResearchSource[]
-    recordSourceRead(requestId: string, value: ToolSourceReadInput): ToolSourceReadReceipt
-  }
+}
+
+/** Attachment metadata the source tools read. `SqliteAttachmentStore` implements it. */
+export interface ToolAttachmentRecords {
+  sent(sessionId: string): readonly ToolAttachmentRecord[]
+  get(sessionId: string, attachmentId: string): ToolAttachmentRecord
+}
+
+/** Run source records that the source tools read and write. `SqliteRunStore` implements it. */
+export interface ToolRuns {
+  sourceCatalogue(sessionId: string): readonly ToolSourceCatalogueItem[]
+  researchSources(sessionId: string): readonly ToolResearchSource[]
+  recordSourceRead(requestId: string, value: ToolSourceReadInput): ToolSourceReadReceipt
 }
