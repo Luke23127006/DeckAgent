@@ -28,7 +28,7 @@ After this task, ADR-001 to ADR-004 carry status `Accepted`, and `docs/architect
 
 **Forbidden:** change any production code, test file, `package.json` or `.oxlintrc.json`. Change `docs/build/refactor/target-structure/README.md` or sibling research files.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -38,26 +38,26 @@ Run: `git grep -n "^| 56 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Update `docs/architecture/30-decisions.md`**
+- [x] **Step 2: Update `docs/architecture/30-decisions.md`**
 
 1. Change `**Status:** Proposed` to `**Status:** Accepted` on ADR-001, ADR-002, ADR-003 and ADR-004.
 2. In ADR-001: record that `SqliteRunStore` lives in `apps/host/src/db/run-store.ts` on `sessions.sqlite` (schema v9 with `(owner_kind, owner_id)` unique index and `owner_key` bindings). Also record that atomic admission across `requests`, `messages` and `attachments` runs inside one `SessionDatabase` transaction via `RunStoreHooks` wired in `apps/host/src/server.ts`.
 3. In ADR-003: record that `apps/host/tests/deck-run-plan.test.mjs` checked all 16 combinations of `sourceKinds` equivalence and that `isSourceToolAllowed`, `sourceToolNames` and `executeRecoveryRun` no longer exist.
 4. In ADR-004: record that Host-scoped topics stream on `GET /api/changes` and chat-scoped topics (`draft`, `brief`, `outline`, `deck`) stream on `GET /api/sessions/:sessionId/changes`.
 
-- [ ] **Step 3: Update `docs/architecture/10-agent-core.md`**
+- [x] **Step 3: Update `docs/architecture/10-agent-core.md`**
 
 1. Update the opening status paragraph from `Proposed` to `Accepted` and state that Phase 4 implemented all four contracts.
 2. Update every "Code hiện tại" table cell and code reference to the live Phase 4 paths (`apps/host/src/runs/lifecycle/run-controller.ts`, `apps/host/src/runs/preparation/index.ts`, `apps/host/src/runs/budget/index.ts`, `apps/host/src/runs/ports.ts`, `apps/host/src/runtimes/opencode/`, `apps/host/src/tools/executors/source-tools.ts`, `apps/host/src/db/run-store.ts`, `apps/host/src/modules/chats/`, `apps/host/src/modules/deck/`, `apps/host/src/http/change-feed.ts`).
 3. Update `Rủi ro và điểm còn mở`: remove the resolved items (`RunStore` location, atomic admission, SSE routes, `sourceKinds` equivalence). Keep only items that remain open: live OpenCode 1.19.5 `tokens` output check, future skill format, and open product questions (`OQ-061`, `OQ-062`, `OQ-063`, `OQ-069`).
 
-- [ ] **Step 4: Update `docs/conventions/project-structure.md`**
+- [x] **Step 4: Update `docs/conventions/project-structure.md`**
 
 1. In `## Trong lúc chuyển`: remove the completed rows for `packages/host/api/`, `apps/host/src/local-transport.ts`, `apps/host/src/features/<name>/` and `packages/session/persistence/`. Keep only the Phase 5 rows (`packages/host/contracts/`, `apps/web/src/browser/transport/`, `apps/web/src/browser/**`). Remove the three legacy-layout bullets about `packages/host/api/` and `contract-sync.ts` (note that `apps/host/src/contract-sync.ts` now owns compile-time sync checks).
 2. In `## Enforcement`: update the rules for `db/` (`apps/host/src/db/` and `*.store.ts` boundary), `http/route-helpers.ts`, `runs/` (`oxlint` + `lifecycle-transport-import` on `apps/host/src/runs`), `runtimes/` and `tools/executors/`.
 3. Update the `apps/host/` `src/db/` row in `## Cấu trúc đích` to state that `src/db/` owns database connections, migrations and `SqliteRunStore` (the SQL implementation of `RunStore`).
 
-- [ ] **Step 5: Check Phase 4 exit criteria**
+- [x] **Step 5: Check Phase 4 exit criteria**
 
 Run: `git grep -n "Status:\*\* Proposed" -- docs/architecture/30-decisions.md`
 
@@ -79,11 +79,11 @@ Run: `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.m
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Phase 4 exit criteria` with the columns `Criterion | Evidence | Status` covering TS-04, TS-05, TS-09, TS-13, ADR-001 to ADR-004 `Accepted`, and removal of `packages/host/api/`, `packages/tools/`, `packages/session/`, `apps/host/src/features/`, `apps/host/src/integrations/` and `apps/host/src/local-transport.ts`.
 

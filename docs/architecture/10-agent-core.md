@@ -1,8 +1,8 @@
 # Agent core
 
-Đọc file này để biết lõi agent của DeckAgent gồm những contract nào (owner của run, chuẩn bị run, port AgentRuntime, change notice), các phần phối hợp thế nào trong một run, và code hiện tại khác contract đích ở đâu.
+Đọc file này để biết lõi agent của DeckAgent gồm những contract nào (owner của run, chuẩn bị run, port AgentRuntime, change notice), các phần phối hợp thế nào trong một run, và vị trí cài đặt của từng thành phần trong code.
 
-Mọi contract trong file này có trạng thái `Proposed`. Lý do và trade-off của từng contract nằm trong [Quyết định kiến trúc](30-decisions.md) [[1]](#ref-1): owner của run ở ADR-001, port AgentRuntime ở ADR-002, chuẩn bị run ở ADR-003, change notice ở ADR-004. Code hiện tại chưa dùng các contract này. Cột "Code hiện tại" trong các bảng dưới đây chỉ ra nơi code đang làm việc tương ứng.
+Mọi contract trong file này có trạng thái `Accepted` và đã được Phase 4 cài đặt đầy đủ. Lý do và trade-off của từng contract nằm trong [Quyết định kiến trúc](30-decisions.md) [[1]](#ref-1): owner của run ở ADR-001, port AgentRuntime ở ADR-002, chuẩn bị run ở ADR-003, change notice ở ADR-004. Cột "Code hiện tại" trong các bảng dưới đây chỉ ra vị trí cài đặt hiện hành của từng thành phần.
 
 ## Drivers
 
@@ -33,12 +33,12 @@ flowchart LR
 
 | Phần | Trách nhiệm | Code hiện tại |
 | --- | --- | --- |
-| `runs/lifecycle/` | Admit run, rule mỗi owner một run đang chạy, giới hạn số owner đang chạy, event log, approval, stop, pass tiếp theo, terminal status | `packages/host/api/src/lifecycle/request-controller.ts` |
-| `runs/preparation/` | Gọi contribution, gộp instruction, tool set và resource thành `RunInput` | Rải trong `apps/host/src/features/deck/`, `features/sources/source-tools.ts`, `features/requests/prepare-runtime.ts` và `apps/host/src/server.ts:313-323` |
-| `runs/budget/` | Đọc usage và dừng run khi vượt giới hạn | Chưa có |
-| `runs/ports.ts` | Các type trong [Contract](#contract) | `packages/host/api/src/lifecycle/contracts.ts`, `lifecycle/tool-contracts.ts` |
-| `runtimes/opencode/` | Implement `AgentRuntime` cho OpenCode | `apps/host/src/integrations/opencode/` |
-| `ChangeFeed` trong `http/` | Chuyển change notice từ store tới Browser | `DeckRuntime.notify` trong `packages/presentation/deck/src/deck-runtime.ts` và route trong `packages/host/api/src/transport/deck-routes.ts` |
+| `runs/lifecycle/` | Admit run, rule mỗi owner một run đang chạy, giới hạn số owner đang chạy, event log, approval, stop, pass tiếp theo, terminal status | `apps/host/src/runs/lifecycle/run-controller.ts`, `apps/host/src/db/run-store.ts` |
+| `runs/preparation/` | Gọi contribution, gộp instruction, tool set và resource thành `RunInput` | `apps/host/src/runs/preparation/index.ts` |
+| `runs/budget/` | Đọc usage và dừng run khi vượt giới hạn | `apps/host/src/runs/budget/index.ts` |
+| `runs/ports.ts` | Các type trong [Contract](#contract) | `apps/host/src/runs/ports.ts` |
+| `runtimes/opencode/` | Implement `AgentRuntime` cho OpenCode | `apps/host/src/runtimes/opencode/` |
+| `ChangeFeed` trong `http/` | Chuyển change notice từ store tới Browser | `apps/host/src/http/change-feed.ts` |
 
 `runs/` không import module, Express, SQL driver hay adapter trong `runtimes/` [[7]](#ref-7). Module dùng type trong `runs/ports.ts` và public operation của `runs/`. Composition root `server.ts` tạo adapter, store và contribution, rồi truyền chúng vào `runs/`.
 
@@ -109,14 +109,14 @@ export interface ConversationMessage {
 export type RunResource = { readonly kind: 'conversation'; readonly messages: readonly ConversationMessage[] }
 ```
 
-`ConversationMessage` có các trường mà `seedPrompt` hiện đọc (`apps/host/src/integrations/opencode/history.ts:9-39`). `runs/preparation/` gọi contribution đăng ký tại `server.ts` theo thứ tự đăng ký, rồi contribution của `RunPlan` theo thứ tự trong plan. Nó nối instruction theo thứ tự đó, gộp các tool set, và từ chối khi hai tool set có cùng tên tool.
+`ConversationMessage` có các trường mà `seedPrompt` đọc trong `apps/host/src/runtimes/opencode/history.ts`. `runs/preparation/` gọi contribution đăng ký tại `server.ts` theo thứ tự đăng ký, rồi contribution của `RunPlan` theo thứ tự trong plan. Nó nối instruction theo thứ tự đó, gộp các tool set, và từ chối khi hai tool set có cùng tên tool.
 
 | Contribution | Module | Phần góp | Code hiện tại |
 | --- | --- | --- | --- |
-| Source tool | sources | Tool set của các nguồn trong `sourceKinds`, kèm `read_research` và `research_public` theo grant | `prepareSourceTools` (`source-tools.ts:157-196`), closure `prepareTools` (`index.ts:313-323`) |
-| Lịch sử hội thoại | chats | Resource `conversation` | `RuntimeSessionAccess.read`, gọi tại `runtime.ts:164` và `prepare-runtime.ts:42` |
-| Lệnh deck | deck, riêng cho run | Instruction deck, staging tool, image tool | `buildDeckInstructions`, `buildTools` trong `deck-tool-session.ts:163-183` |
-| Generation | deck, riêng cho run | Instruction generation, generation tool, `GenerationGrant`, `GenerationCapability` | `GenerationWorkflow.startRun` (`generation-workflow.ts:24-57`) |
+| Source tool | `tools/executors/` | Tool set của các nguồn trong `sourceKinds`, kèm `read_research` và `research_public` theo grant | `apps/host/src/tools/executors/source-tools.ts` (đăng ký tại `apps/host/src/server.ts`) |
+| Lịch sử hội thoại | `modules/chats/` | Resource `conversation` | `apps/host/src/modules/chats/` (đăng ký tại `apps/host/src/server.ts`) |
+| Lệnh deck | `modules/deck/`, riêng cho run | Instruction deck, staging tool, image tool | `apps/host/src/modules/deck/deck-run-plan.ts`, `apps/host/src/modules/deck/deck-tool-session.ts` |
+| Generation | `modules/deck/`, riêng cho run | Instruction generation, generation tool, `GenerationGrant`, `GenerationCapability` | `apps/host/src/modules/deck/generation-run-plan.ts`, `apps/host/src/modules/deck/generation-tools.ts` |
 
 ### Tool
 
@@ -147,7 +147,7 @@ export interface RunTools {
 }
 ```
 
-`ToolSchema`, `ToolResult` và `ApprovalStep` giữ nguyên định nghĩa hiện tại trong `packages/host/api/src/lifecycle/tool-contracts.ts` và `@deckagent/session-persistence`. `ToolSet` thay cho `PreparedTools`. `RunTools` thay cho `RequestTools`: lifecycle gắn `ToolContext` vào lời gọi, nên runtime chỉ nhận capability đã gắn.
+`ToolSchema`, `ToolResult` và `ApprovalStep` nằm trong `apps/host/src/runs/ports.ts`. `ToolSet` thay cho `PreparedTools`. `RunTools` thay cho `RequestTools`: `runs/lifecycle/` gắn `ToolContext` vào lời gọi, nên runtime chỉ nhận capability đã gắn.
 
 ### Port AgentRuntime
 
@@ -217,9 +217,9 @@ export interface ProviderResolver {
 }
 ```
 
-`RequestEventBody` giữ nguyên định nghĩa trong `packages/host/contracts/src/requests.ts`. `RunEvent` có ba loại `activity`, `text` và `notice`, như `RuntimeEvent` hiện tại. `ProviderRunSettings` giữ các trường hiện có mà `providerConfiguration` đọc (`apps/host/src/integrations/opencode/provider.ts:34-66`). Module providers implement `ProviderResolver`. `commit` chỉ chạy sau khi lifecycle đã lưu status `completed`, như hiện tại.
+`RequestEventBody` giữ nguyên định nghĩa trong `packages/host/contracts/src/requests.ts`. `RunEvent` có ba loại `activity`, `text` và `notice`. `ProviderRunSettings` nằm trong `apps/host/src/runs/ports.ts` và cung cấp các trường mà `providerConfiguration` đọc trong `apps/host/src/runtimes/opencode/provider.ts`. Module providers implement `ProviderResolver`. `commit` chỉ chạy sau khi `apps/host/src/runs/lifecycle/run-controller.ts` đã lưu status `completed`.
 
-Port `RunStore` giữ các method của `RequestStore` hiện tại, với `owner` thay cho `sessionId`. Store khoá rule mỗi owner một run đang chạy bằng unique index trên `(owner_kind, owner_id)` với status `active` và `waiting_approval`, và trả `RUN_OWNER_BUSY` khi vi phạm.
+Port `RunStore` trong `apps/host/src/runs/ports.ts` do `SqliteRunStore` trong `apps/host/src/db/run-store.ts` hiện thực trên `sessions.sqlite` (schema v9). Store khoá rule mỗi owner một run đang chạy bằng unique index trên `(owner_kind, owner_id)` với status `active` và `waiting_approval`, và trả `RUN_OWNER_BUSY` khi vi phạm. Thao tác admit ghi `requests`, `messages` và `attachments` trong cùng một transaction của `SessionDatabase` qua `RunStoreHooks` nối tại `apps/host/src/server.ts`.
 
 ### Change notice
 
@@ -283,7 +283,7 @@ sequenceDiagram
   end
 ```
 
-Chỉ `runs/lifecycle/` ghi status. Khi pass tiếp theo có, lifecycle chuẩn bị và chạy pass đó trong cùng request. Khi lưu text kết thúc thất bại, status `completed` thành `failed` với `REQUEST_NOT_SAVED`, như hiện tại (`request-controller.ts:287-290`).
+Chỉ `apps/host/src/runs/lifecycle/run-controller.ts` ghi status. Khi pass tiếp theo có, lifecycle chuẩn bị và chạy pass đó trong cùng request. Khi lưu text kết thúc thất bại, status `completed` thành `failed` với `REQUEST_NOT_SAVED`.
 
 ## Map từ code lỗi sang category
 
@@ -356,24 +356,22 @@ Khi kết nối SSE, Host gửi một notice với `version` hiện tại, như 
 
 ## Phần ở lại trong adapter OpenCode
 
-Các phần sau là việc riêng của OpenCode và không đi qua `runs/preparation/`. Nguồn là chẩn đoán chuẩn bị run [[10]](#ref-10).
+Các phần sau là việc riêng của OpenCode trong `apps/host/src/runtimes/opencode/` và không đi qua `runs/preparation/`. Nguồn là chẩn đoán chuẩn bị run [[10]](#ref-10).
 
-- Cấu hình OpenCode, block provider và việc encode cấu hình (`config.ts:39-104`, `provider.ts:34-66`).
-- Biến môi trường cô lập và folder của run (`config.ts:107-143`, `runtime.ts:140-153`). Folder lấy từ hash của `owner` thay cho chat ID.
-- MCP bridge, tool server và permission `deckagent_<name>: allow` (`mcp-bridge.ts:57-177`, `config.ts:44-46`).
-- Tham số dòng lệnh và text của stdin (`runtime.ts:232-251`).
-- Việc tìm executable, kiểm version và kiểm resource (`runtime.ts:41-138`, `resources.ts:16-45`).
-- Hash của resume guard và binding session native (`runtime.ts:159-199`). Binding có khoá là `owner`.
-- Prompt khung khi không có tool bridge (`config.ts:13-18`).
-- Đồng hồ của attempt, dừng trong lúc chờ approval (`stream-tracker.ts:36-43`).
+- Cấu hình OpenCode, block provider và việc encode cấu hình (`apps/host/src/runtimes/opencode/config.ts`, `provider.ts`).
+- Biến môi trường cô lập và folder của run (`config.ts`, `agent-runtime.ts`). Folder lấy từ hash của `owner` thay cho chat ID.
+- MCP bridge, tool server và permission `deckagent_<name>: allow` (`mcp-bridge.ts`, `config.ts`).
+- Tham số dòng lệnh và text của stdin (`agent-runtime.ts`, `process.ts`).
+- Việc tìm executable, kiểm version và kiểm resource (`agent-runtime.ts`, `resources.ts`).
+- Hash của resume guard và binding session native (`agent-runtime.ts`). Binding có khoá là `owner_key`.
+- Prompt khung khi không có tool bridge (`config.ts`).
+- Đồng hồ của attempt, dừng trong lúc chờ approval (`stream-tracker.ts`).
 
 ## Rủi ro và điểm còn mở
 
-- `Open`: transaction admit hiện ghi request, message của người dùng và liên kết attachment cùng lúc (`request-controller.ts:98-106`). Request thuộc `runs/`, còn message và attachment thuộc module chats và attachments. Cách giữ ba lần ghi này atomic chưa được quyết.
-- `Open`: vị trí của code SQL hiện thực `RunStore`, vì `runs/` không import SQL driver.
-- `Open`: output thật của OpenCode 1.19.5 có `tokens` trong event `step_finish` hay không. Chỉ fixture giả có trường này.
-- `Open`: route SSE cho các topic khác `deck`, và format skill mà OpenCode nhận.
-- `Inferred`: `sourceKinds` cho cùng tập tool với `isSourceToolAllowed` và `sourceToolNames` hiện tại. Cần test so sánh trước khi bỏ hai hàm này.
+- `Open`: output thật của OpenCode 1.19.5 có trường `tokens` trong event `step_finish` hay không. Hiện chỉ fixture giả có trường này.
+- `Open`: format skill mà OpenCode nhận khi module skills có code.
+- `Open`: các câu hỏi sản phẩm chưa chốt gồm hành vi hiển thị khi ghi với `version` cũ ([OQ-061](../open-questions.md#oq-061)), thời gian chờ provider ([OQ-062](../open-questions.md#oq-062)), các loại lỗi provider cần phân biệt ([OQ-063](../open-questions.md#oq-063)) và giới hạn tài nguyên của một request ([OQ-069](../open-questions.md#oq-069)).
 
 ## References
 

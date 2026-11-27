@@ -72,3 +72,4 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 - [Task 55: Move HTTP helpers and remove host-api](task-55-move-http-helpers-and-remove-host-api.md)
 
 - [Task 56: Split packages/session/persistence into apps/host/src/db and module stores with schema v9 report](task-56-split-session-persistence-and-migrate-schema-v9.md)
+- [Task 57: Mark ADR-001 to ADR-004 Accepted and check the Phase 4 exit condition report](task-57-accept-adrs-and-check-phase-4-exit.md)

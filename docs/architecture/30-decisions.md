@@ -4,7 +4,7 @@
 
 ## ADR-001: Run thuộc về một owner có kiểu và ID, và mỗi owner chỉ có một run đang chạy
 
-**Status:** Proposed
+**Status:** Accepted
 
 ### Bối cảnh
 
@@ -32,7 +32,8 @@ Contract của run không được có `sessionId` và `runs/` không được i
 - Kiểm tra "request đã lưu thuộc chat khác" (`GENERATION_LINK_CONFLICT`) so sánh `owner` của request đã lưu với `owner` của kế hoạch run.
 - Module workspaces hỏi `runs/` owner nào đang có run, qua danh sách chat mà module chats trả về, để giữ rule `WORKSPACE_REQUEST_ACTIVE`.
 - HTTP wire contract giữ trường `sessionId` và các code lỗi hiện tại. Module chats chuyển `sessionId` thành `{ kind: 'chat', id: sessionId }`.
-- `runs/ports.ts` khai báo port `RunStore`. Code SQL hiện thực port này nằm ngoài `runs/`. Vị trí cụ thể là `Open` và được quyết khi Phase 4 chuyển `packages/session/persistence/`.
+- `runs/ports.ts` khai báo port `RunStore`. `SqliteRunStore` trong `apps/host/src/db/run-store.ts` hiện thực port này trên `sessions.sqlite` (schema v9 với unique index trên `(owner_kind, owner_id)` và bảng `runtime_bindings` dùng khoá `owner_key`).
+- Thao tác admit ghi `requests`, `messages` và `attachments` atomic trong một transaction của `SessionDatabase` qua `RunStoreHooks` nối tại `apps/host/src/server.ts`, nên `db/` không import `modules/`.
 
 ### Lý do
 
@@ -41,8 +42,7 @@ Phương án A giữ nguyên cách khoá rule đang chạy đúng: một unique 
 ### Rủi ro chấp nhận
 
 - Owner kind cần nhiều run song song cho cùng một owner phải có ADR mới.
-- Đổi cột `session_id` của bảng `requests` sang `owner_kind` và `owner_id` cần migration của database session.
-- Transaction admit hiện ghi request, message của người dùng và liên kết attachment cùng lúc (`request-controller.ts:98-106`). Khi request thuộc `runs/` còn message thuộc module chats, cách giữ ba lần ghi này atomic là `Open`.
+- Đổi cột `session_id` của bảng `requests` sang `owner_kind` và `owner_id` và `runtime_bindings` sang `owner_key` cần migration lên schema v9 của `sessions.sqlite`.
 
 ### Hệ quả
 
@@ -52,7 +52,7 @@ Phương án A giữ nguyên cách khoá rule đang chạy đúng: một unique 
 
 ## ADR-002: Port AgentRuntime trả event, usage và lỗi có phân loại
 
-**Status:** Proposed
+**Status:** Accepted
 
 ### Bối cảnh
 
@@ -98,7 +98,7 @@ Phương án A giữ chiều phụ thuộc đúng: adapter biết OpenCode, `run
 
 ## ADR-003: Module góp phần chuẩn bị run qua contribution đăng ký tại composition root
 
-**Status:** Proposed
+**Status:** Accepted
 
 ### Bối cảnh
 
@@ -127,6 +127,7 @@ Hai đường vào cùng kết thúc tại `RequestController.submit`: route g�
 - Model selection đổi thành provider settings qua port `ProviderResolver` do module providers hiện thực. Key không đi vào `RunPlan`.
 - Ở lại trong adapter: cấu hình OpenCode, biến môi trường cô lập, MCP bridge, tham số dòng lệnh, việc tìm và kiểm executable, hash cho resume guard, và prompt khung khi không có tool bridge.
 - Skill chưa có trong `RunParts`. Trường cho skill được thêm khi module skills có code. Format skill mà OpenCode nhận là `Open`.
+- Bộ test `apps/host/tests/deck-run-plan.test.mjs` đã kiểm đủ 16 tổ hợp tương đương của `sourceKinds`. Các hàm cũ `isSourceToolAllowed`, `sourceToolNames` và `executeRecoveryRun` đã bị xoá.
 
 ### Lý do
 
@@ -134,8 +135,7 @@ Phương án A biến việc lọc tool đang ẩn trong lớp bọc thành dữ
 
 ### Rủi ro chấp nhận
 
-- Việc thay `isSourceToolAllowed` và `sourceToolNames` bằng `sourceKinds` cho cùng tập tool là suy luận từ code (`Inferred`). Phase 4 cần test so sánh tập tool trước và sau.
-- Pass recovery đổi từ lời gọi `start` thứ hai bên trong deck sang hook `next`. Hành vi phải giữ nguyên khi Phase 4 chuyển code.
+- Pass recovery dùng hook `next` trên `RunPlan` thay cho lời gọi `start` thứ hai bên trong deck. Thay đổi mới với luồng recovery phải giữ nguyên trạng thái đã kiểm.
 
 ### Hệ quả
 
@@ -145,7 +145,7 @@ Phương án A biến việc lọc tool đang ẩn trong lớp bọc thành dữ
 
 ## ADR-004: Mỗi aggregate người dùng thấy có một version và phát change notice sau khi commit
 
-**Status:** Proposed
+**Status:** Accepted
 
 ### Bối cảnh
 
@@ -170,7 +170,7 @@ Mọi đối tượng người dùng thấy phải dùng chung một cơ chế b
 - Lệnh ghi qua HTTP route gửi `expectedVersion`. Store từ chối lệnh ghi khi `version` đã đổi. Code hiện có giữ nguyên: `BRIEF_STALE`, `OUTLINE_STALE`, `DRAFT_CONFLICT`. Aggregate mới dùng code `<TOPIC>_STALE`, ví dụ `WORKSPACES_STALE`.
 - Topic `chats` là ngoại lệ. Lệnh ghi chat không gửi `expectedVersion`, và không có code `CHATS_STALE`. Mỗi tin nhắn trong một chat cũng tăng `version` của danh sách chat. Nếu store kiểm `version`, lệnh tạo chat và lệnh đổi model bị từ chối khi không có xung đột thật. Lệnh tạo chat chỉ thêm một chat, và lệnh đổi model chỉ đổi một chat.
 - Store nhận hàm `publish` qua constructor tại `server.ts`. `ChangeFeed` trong `apps/host/src/http/` chuyển notice tới Browser qua SSE. Listener nào throw thì bị xoá, như `DeckRuntime.notify` hiện tại.
-- Route SSE của deck giữ nguyên path và tên event `deck-changed`. Route cho các topic khác là `Open` và được quyết khi module đầu tiên của Phase 3 cần notice.
+- Các topic phạm vi Host (`chats`, `workspaces`, `providers`, `preferences`) stream trên `GET /api/changes`. Các topic phạm vi chat (`draft`, `brief`, `outline`, `deck`) stream trên `GET /api/sessions/:sessionId/changes`. Route SSE của deck giữ nguyên path và tên event `deck-changed`.
 - Request, event, approval và các bảng mà run ghi dùng event log với cursor `sequence`, không dùng change notice.
 
 ### Lý do

@@ -65,7 +65,7 @@ apps/host/src/
     executors/         thực thi tool trong capability đã cấp
     sources/           nguồn tài liệu: filesystem, connector
   runtimes/<name>/     adapter cho port AgentRuntime
-  db/                  connection và migration
+  db/                  connection, migration và SqliteRunStore
 apps/host/tests/
 apps/web/src/          React và Vite, chia theo feature
   api/                 HTTP/SSE client
@@ -91,7 +91,7 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | `src/runs/` | Một run chạy, dừng và kết thúc thế nào? | Vòng đời run, event log, approval, cancel, chuẩn bị run, ngân sách tài nguyên, port `AgentRuntime` và port `ToolExecutor` | Module, Express, SQL driver, adapter cụ thể, rule riêng của owner của run |
 | `src/tools/` | Agent truy cập tài liệu trong phạm vi được cấp thế nào? | Tool policy, tool executor, nguồn tài liệu | User approval, request admission |
 | `src/runtimes/<name>/` | Một agent runtime cụ thể chạy thế nào? | Process, protocol, MCP bridge, parse event, chuyển skill sang format của runtime | Terminal status của run, permission |
-| `src/db/` | Local Host mở database và migrate thế nào? | Connection, migration | SQL của module |
+| `src/db/` | Local Host mở database, migrate và lưu run thế nào? | Connection, migration, `SqliteRunStore` (cài đặt SQL của `RunStore`) | SQL của module |
 
 ### `apps/web/`
 
@@ -176,13 +176,6 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 
 | Folder cũ | Folder đích |
 | --- | --- |
-| `packages/host/api/src/transport/http-io.ts`, `transport/sse.ts`, `transport/multipart.ts`, `transport/http-error.ts`, `transport/route-params.ts` | `apps/host/src/http/` |
-| `packages/host/api/src/index.ts` (`createHostRoutes`) | `apps/host/src/server.ts` |
-| `packages/host/api/src/transport/*-routes.ts` | `apps/host/src/modules/<name>/<name>.routes.ts` |
-| `packages/host/api/src/lifecycle/` | `apps/host/src/runs/` |
-| `apps/host/src/local-transport.ts` | Error handler trong `apps/host/src/http/` và bảng ánh xạ lỗi của từng module, xem [Dependency rules](#dependency-rules) |
-| `apps/host/src/features/<name>/` | `apps/host/src/modules/<name>/` |
-| `packages/session/persistence/` | Store của `modules/chats/`, `modules/attachments/` và `runs/`, cùng với `apps/host/src/db/` |
 | `packages/host/contracts/` | `packages/contracts/` |
 | `apps/web/src/browser/transport/` | `apps/web/src/api/` |
 | `apps/web/src/browser/**`, `apps/web/src/index.ts` | Component và page React trong `apps/web/src/` |
@@ -198,11 +191,7 @@ Rule khi đặt và chuyển code:
 5. HTTP contract giữa Browser và Local Host giữ nguyên trong lúc chuyển: path, status code và JSON body chỉ đổi khi revision ghi rõ thay đổi đó *(test)*.
 6. Rule của `check:boundaries` cho một path cũ còn hiệu lực cho tới khi revision chuyển path đó thêm rule theo folder kèm negative fixture *(check-boundaries)*.
 
-Ba rule của layout cũ còn hiệu lực cho tới khi code của chúng được chuyển:
-
-- Local Transport và Request Lifecycle cùng nằm trong `packages/host/api/` nhưng là hai trách nhiệm riêng. Request Lifecycle không import HTTP transport và không dùng HTTP status làm error contract.
-- `packages/host/api/` chỉ import type-level reader port của domain package (như DeckReader, OutlineReader), không import runtime class hoặc hàm của domain package.
-- `packages/host/contracts/` giữ bản sao độc lập của các wire DTO dùng chung với `session/persistence/`, `presentation/deck/` và `presentation/design/`. `packages/host/api/` giữ kiểm tra tương đương ở mức type lúc compile (`tsc -b`) trong `contract-sync.ts`.
+Kiểm tra tương đương kiểu lúc compile (`tsc -b`) giữa `@deckagent/host-contracts`, `apps/host/src/db/` và `@deckagent/deck` nằm trong `apps/host/src/contract-sync.ts`.
 
 ## Enforcement
 
@@ -215,15 +204,15 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | Feature, Browser feature, integration, runtime và module không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | Rule theo folder cho `apps/web/src/api/` |
 | Package graph, feature graph, Browser feature graph và module graph trong `apps/host/src/modules/` không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`, `module-cycle`) | — |
 | `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | Cùng rule cho `packages/contracts/` |
-| Request Lifecycle không import transport | `oxlint` (`no-restricted-imports`), `check:boundaries` (`lifecycle-transport-import`) | — |
-| `runs/` không import module, Express, SQL driver, tool và adapter trong `runtimes/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runs/` | — |
+| `runs/` không import module, HTTP, Express, SQL driver, `db/`, tool, `@deckagent/deck` hoặc adapter trong `runtimes/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runs/`, `check:boundaries` (`lifecycle-transport-import`) cho `apps/host/src/runs` | — |
 | `deck/` không import concrete adapter. Format adapter chỉ import contract của `design/` và `document/` | `check:boundaries` (`deck-concrete-adapter`, `format-adapter-dependency`) | — |
 | Package không import application. Domain package không import runtime implementation | `check:boundaries` (`package-app-dependency`, `domain-runtime-dependency`) | — |
-| `http/` không import feature, module, integration, runtime, store hoặc storage package | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
-| Adapter runtime không import module, Express, SQL driver, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/` | — |
-| Route không import store hoặc SQL driver. Service không import Express hoặc SQL driver. Module không import store của module khác, storage package hoặc `http/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.routes.ts` và `*.service.ts` | — |
-| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host`, `@deckagent/host-api` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
-| Tool executor không tự cấp capability | `oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/` | — |
+| `db/` không import module, HTTP, `runs/{lifecycle,preparation,budget}/`, runtime, tool hoặc Express | `oxlint` (`no-restricted-imports`) cho `apps/host/src/db/` | — |
+| `http/` không import feature, module, integration, runtime, `runs/`, store, `db/`, tool, `node:sqlite` hoặc `@deckagent/deck` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
+| Adapter runtime không import module, Express, `node:sqlite`, `db/`, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/`, `check:boundaries` (`runtime-private-import`) | — |
+| Route không import store, `schema.ts`, `db/` hoặc SQL driver. Service không import Express, `db/` hoặc SQL driver. Chỉ `*.store.ts` được import `db/`. Chỉ `*.routes.ts` và `*.errors.ts` được import `http/route-helpers.ts` (vẫn chặn `http/{app,start-host,error-handler,change-feed}*`). Module không import store của module khác, tool hoặc runtime | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.store.ts`, `*.routes.ts`, `*.service.ts` và `*.errors.ts` | — |
+| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
+| Tool executor không tự cấp capability, không import module, HTTP, `node:fs`, `node:sqlite`, `db/` hoặc Express | `oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/` | — |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 
 Ưu tiên TypeScript, `exports` và lint trước khi viết check script riêng. Chỉ viết check script khi công cụ hiện có không kiểm được boundary. Mỗi check kiểm một ownership rule trong file này. Check không chứa bản sao của toàn bộ kiến trúc. Mỗi check phải có negative fixture hoặc test chứng minh check bắt được vi phạm. Build thành công không phải bằng chứng duy nhất cho dependency boundary.

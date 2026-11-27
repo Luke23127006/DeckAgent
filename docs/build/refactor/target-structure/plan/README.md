@@ -376,7 +376,7 @@ Revision 4b adds these failure modes:
 | 54 | Done | [Cut over Host runs, routes and OpenCode adapter to RunController and OpenCodeAgentRuntime](task-54-cutover-host-to-run-controller-and-agent-runtime.md) ([report](../reports/task-54-cutover-host-to-run-controller-and-agent-runtime.md)) |
 | 55 | Done | [Move HTTP helpers into apps/host/src/http and remove packages/host/api](task-55-move-http-helpers-and-remove-host-api.md) ([report](../reports/task-55-move-http-helpers-and-remove-host-api.md)) |
 | 56 | Done | [Split packages/session/persistence into apps/host/src/db and module stores with schema v9](task-56-split-session-persistence-and-migrate-schema-v9.md) ([report](../reports/task-56-split-session-persistence-and-migrate-schema-v9.md)) |
-| 57 | Pending | [Mark ADR-001 to ADR-004 Accepted and check the Phase 4 exit condition](task-57-accept-adrs-and-check-phase-4-exit.md) |
+| 57 | Done | [Mark ADR-001 to ADR-004 Accepted and check the Phase 4 exit condition](task-57-accept-adrs-and-check-phase-4-exit.md) ([report](../reports/task-57-accept-adrs-and-check-phase-4-exit.md)) |
 
 ## Next revision
 
