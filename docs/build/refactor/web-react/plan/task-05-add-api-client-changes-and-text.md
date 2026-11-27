@@ -30,7 +30,7 @@ Read this file to learn the steps of Task 5, which adds the API client, change-n
 
 **Forbidden:** Do not import React, TanStack Query, Node modules or UI folders in `apps/web/src/api/`. Do not declare a TypeScript `enum`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/web/tests/api-client.test.ts` with a header comment that follows `docs/conventions/testware.md`:
 
@@ -105,12 +105,12 @@ describe('api/client, api/changes and text', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/api-client.test.ts`
 Expected: FAIL. The output reports that `api/client.ts`, `api/changes.ts` or `text.ts` does not exist.
 
-- [ ] **Step 3: Implement `apps/web/src/api/client.ts`, `apps/web/src/api/changes.ts` and `apps/web/src/text.ts`**
+- [x] **Step 3: Implement `apps/web/src/api/client.ts`, `apps/web/src/api/changes.ts` and `apps/web/src/text.ts`**
 
 1. Create `apps/web/src/api/client.ts`:
    - Define `CLIENT_ERROR_CODES` as an `as const` array containing the union of all error codes from `HostClient`, `ManagementClient`, `request-feedback.ts`, plus `HOST_REQUEST_FAILED`, `SETTINGS_REQUEST_FAILED`, `CHANGES_REQUEST_FAILED`, `CHANGES_CONNECTION_LOST`, `CONNECTION_LOST`, and `INVALID_RESPONSE`. Export `type ClientErrorCode = (typeof CLIENT_ERROR_CODES)[number]`.
@@ -126,7 +126,7 @@ Expected: FAIL. The output reports that `api/client.ts`, `api/changes.ts` or `te
    - Export `errorText: Readonly<Record<ClientErrorCode, string>>` mapping every `ClientErrorCode` to its Vietnamese message (reusing the copy in `request-feedback.ts` where it exists).
    - Export `formatClientError(code: ClientErrorCode): string`.
 
-- [ ] **Step 4: Run the test and static checks**
+- [x] **Step 4: Run the test and static checks**
 
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/api-client.test.ts`
 Expected: PASS. Exit code 0.
@@ -134,6 +134,6 @@ Expected: PASS. Exit code 0.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
