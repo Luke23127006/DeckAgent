@@ -68,3 +68,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 | [Task 53: Add deck run plans and contributions report](task-53-add-deck-run-plans-and-contributions.md) | Task 53 | Deck plans pass targeted lifecycle and recovery checks. The complete suite run remains deferred until Tasks 53 through 57 finish. |
 
 - [Task 54: Cut over Host runs and runtime](task-54-cutover-host-to-run-controller-and-agent-runtime.md)
+
+- [Task 55: Move HTTP helpers and remove host-api](task-55-move-http-helpers-and-remove-host-api.md)

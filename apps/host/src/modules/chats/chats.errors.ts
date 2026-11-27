@@ -1,4 +1,4 @@
-import type { HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 import { ChatWorkflowError, type ChatWorkflowErrorCode } from './chats.service.ts'
 
 const chatStatus: Readonly<Record<ChatWorkflowErrorCode, number>> = {

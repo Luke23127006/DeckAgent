@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { startHost } from '../../host/tests/fixtures/http-host.mjs'
+import { startRequestHost as startHost } from '../../host/tests/fixtures/http-host.mjs'
 import { HostClient } from './fixtures/browser-driver.mjs'
 
 // B02: the in-request question/reply contract was removed (ADR-0004: a question ends its request, the reply is a new

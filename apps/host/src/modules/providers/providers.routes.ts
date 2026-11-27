@@ -1,4 +1,4 @@
-import { HttpError, json, param, params, readJson, route } from '@deckagent/host-api'
+import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
 import { RequestValidationError, decodeProviderRemoveBody, decodeProviderSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { ProviderOperations } from './providers.service.ts'

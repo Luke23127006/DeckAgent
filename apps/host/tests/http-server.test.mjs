@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { request as httpRequest } from 'node:http'
-import { startHost } from '../lib/types/http/start-host.js'
+import { startRequestHost as startHost } from './fixtures/http-host.mjs'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
 import { Router } from 'express'
 

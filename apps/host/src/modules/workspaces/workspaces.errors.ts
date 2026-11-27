@@ -1,4 +1,4 @@
-import type { HttpErrorDetail, HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpErrorDetail, HttpFailureResponse } from '../../http/route-helpers.ts'
 import { WorkspaceError } from './contracts.ts'
 import { WorkspaceWorkflowError } from './workspaces.service.ts'
 

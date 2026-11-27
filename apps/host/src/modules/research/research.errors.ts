@@ -1,4 +1,4 @@
-import type { HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 import { ResearchFailure } from './research.service.ts'
 
 const researchStatus: Readonly<Record<string, number>> = {

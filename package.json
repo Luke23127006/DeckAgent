@@ -6,7 +6,7 @@
   },
   "scripts": {
     "test:local-foundation": "node --test apps/host/tests/workspace-registry.test.mjs packages/session/persistence/tests/chat-persistence.test.mjs apps/host/tests/draft-store.test.mjs e2e/local-foundation.test.mjs e2e/attachment-storage.test.mjs",
-    "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/host/tests/opencode-adapter.test.mjs apps/host/tests/runs-preparation.test.mjs apps/host/tests/run-lifecycle.test.mjs e2e/model-requests.test.mjs packages/host/api/tests/request-failure.test.mjs apps/host/tests/wait-for.test.mjs",
+    "test:model-requests": "node --test e2e/request-lifecycle.test.mjs apps/host/tests/opencode-adapter.test.mjs apps/host/tests/runs-preparation.test.mjs apps/host/tests/run-lifecycle.test.mjs e2e/model-requests.test.mjs apps/host/tests/wait-for.test.mjs",
     "test:source-permissions": "node --test apps/host/tests/source-access.test.mjs apps/host/tests/mcp-bridge.test.mjs e2e/step-approval.test.mjs e2e/source-requests.test.mjs",
     "test:attachments": "node --test apps/host/tests/attachment-parser.test.mjs e2e/attachment-storage.test.mjs e2e/attachment-admission.test.mjs",
     "test:research": "node --test apps/host/tests/research.test.mjs",
@@ -49,7 +49,6 @@
     "@deckagent/deck": "workspace:*",
     "@deckagent/design": "workspace:*",
     "@deckagent/host": "workspace:*",
-    "@deckagent/host-api": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
     "@deckagent/html-format": "workspace:*",
     "@deckagent/local-web": "workspace:*",

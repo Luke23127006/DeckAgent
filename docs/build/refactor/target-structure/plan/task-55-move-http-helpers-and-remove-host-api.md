@@ -57,7 +57,7 @@ After this task, `packages/host/api/` no longer exists. `apps/host/src/http/` ow
 | Test files | Point `e2e/attachment-admission.test.mjs` and `e2e/request-lifecycle.test.mjs` `HttpError` imports to `apps/host/tests/fixtures/http-host.mjs`. Update `apps/host/tests/http-server.test.mjs`, `apps/web/tests/browser-runtime.test.mjs`, `e2e/request-lifecycle.test.mjs`, `e2e/attachment-admission.test.mjs` and `e2e/attachment-storage.test.mjs` to mount `createChatRoutes` / `createRequestRoutes` with `RunController` (or a small history route) via `options.routes` and `onClose`. Update `tests/oxlint-boundaries.test.mjs` and `tests/check-boundaries.test.mjs` with negative fixtures proving `*.routes.ts` rejects `../../http/app.ts` and accepts `../../http/route-helpers.ts`, and `*.service.ts` rejects `../../http/route-helpers.ts`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -67,33 +67,33 @@ Run: `git grep -n "^| 54 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move files, remove `packages/host/api/` and apply `Move rules`**
+- [x] **Step 2: Move files, remove `packages/host/api/` and apply `Move rules`**
 
 Run `git mv` for each row of `Mapping`. Remove `packages/host/api/` completely so no old `lib/` stays on disk. Create `apps/host/src/http/route-helpers.ts` and apply every row of `Move rules`.
 
-- [ ] **Step 3: Sync the lockfile offline**
+- [x] **Step 3: Sync the lockfile offline**
 
 Run: `corepack pnpm@11.28.5 install --offline`
 
 Expected: PASS. Exit code 0.
 
-- [ ] **Step 4: Check that no `@deckagent/host-api` reference stays in production code**
+- [x] **Step 4: Check that no `@deckagent/host-api` reference stays in production code**
 
 Run: `git grep --untracked -n "@deckagent/host-api" -- apps packages e2e package.json tsconfig.json .oxlintrc.json`
 
 Expected: PASS. No line.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
-Do the step `Run every suite` of the Task protocol.
+Deferred by user instruction until Tasks 53 through 57 finish.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path | Symbols`.
 

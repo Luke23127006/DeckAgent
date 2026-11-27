@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { randomBytes } from 'node:crypto'
 import { createServer, type ServerResponse } from 'node:http'
-import { createHostRoutes, type HostOptions, type HostRouteRegistrar } from '@deckagent/host-api'
+import type { HostOptions, HostRouteRegistrar } from './contracts.ts'
 import { createHttpApp } from './app.ts'
 import { createChangeRoutes, type ChangeFeed, type HostChangeTopic, type SessionChangeTopic } from './change-feed.ts'
 
@@ -10,8 +10,6 @@ function isRouter(entry: HostRouteRegistrar): entry is Router {
 }
 
 export interface StartHostOptions extends HostOptions {
-  readonly onClose?: () => Promise<void> | void
-  readonly omitLegacyRoutes?: boolean
   readonly changes?: {
     readonly feed: ChangeFeed
     readonly hostTopics: readonly HostChangeTopic[]
@@ -23,17 +21,12 @@ export interface StartHostOptions extends HostOptions {
 /** Loopback-only, authenticated HTTP/SSE boundary. Disconnect never cancels a request. */
 export async function startHost(options: StartHostOptions) {
   const token = randomBytes(32).toString('hex')
-  const routes = options.omitLegacyRoutes
-    ? (() => {
-        const router = Router({ caseSensitive: true, strict: true })
-        const streams = new Set<ServerResponse>()
-        for (const entry of options.routes ?? []) router.use(isRouter(entry) ? entry : entry({ streams }))
-        return { router, streams, close: async () => {} }
-      })()
-    : createHostRoutes(options)
+  const router = Router({ caseSensitive: true, strict: true })
+  const streams = new Set<ServerResponse>()
+  for (const entry of options.routes ?? []) router.use(isRouter(entry) ? entry : entry({ streams }))
   if (options.changes) {
-    routes.router.use(
-      createChangeRoutes(options.changes.feed, options.changes.hostTopics, routes.streams, {
+    router.use(
+      createChangeRoutes(options.changes.feed, options.changes.hostTopics, streams, {
         topics: options.changes.sessionTopics ?? [],
         ...(options.changes.sessionExists ? { exists: options.changes.sessionExists } : {}),
       }),
@@ -44,7 +37,7 @@ export async function startHost(options: StartHostOptions) {
   const app = createHttpApp({
     options,
     token,
-    router: routes.router,
+    router: router,
     origin: () => origin,
     closing: () => closing !== undefined,
   })
@@ -77,9 +70,9 @@ export async function startHost(options: StartHostOptions) {
         const stopped = new Promise<void>((resolve, reject) =>
           server.close(error => (error ? reject(error) : resolve())),
         )
-        for (const stream of routes.streams) stream.end()
+        for (const stream of streams) stream.end()
         server.closeAllConnections()
-        await Promise.all([stopped, routes.close(), options.onClose?.()])
+        await Promise.all([stopped, options.onClose?.()])
       })()
       return closing
     },

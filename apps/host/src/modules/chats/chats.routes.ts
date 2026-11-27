@@ -1,4 +1,4 @@
-import { HttpError, json, param, params, readJson, route } from '@deckagent/host-api'
+import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
 import type { ModelSelection } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { ChatOperations } from './chats.service.ts'

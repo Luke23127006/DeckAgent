@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { HttpError, type HostOptions } from '@deckagent/host-api'
+import { HttpError } from './http-error.ts'
+import type { HostOptions } from './contracts.ts'
 import express, { type Express, type NextFunction, type Request, type Response, type Router } from 'express'
 import { writeRouteError } from './error-handler.ts'
 

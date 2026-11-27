@@ -1,4 +1,4 @@
-import type { HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 import { AttachmentFailure } from './attachments.service.ts'
 import { DraftError } from './draft.store.ts'
 

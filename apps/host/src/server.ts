@@ -1,9 +1,10 @@
+import type { ContractSyncVerified } from './contract-sync.ts'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AttachmentParser, attachmentLimits } from './tools/index.ts'
-import type { HostOptions, HostRouteContext } from '@deckagent/host-api'
+import type { HostOptions, HostRouteContext } from './http/contracts.ts'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
@@ -80,6 +81,8 @@ import {
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
 export type { ProviderConnection } from './modules/providers/index.ts'
+
+const contractSync: ContractSyncVerified = true
 
 export interface LocalWebOptions {
   /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
@@ -398,6 +401,7 @@ function createHostOptions(
   assets: NonNullable<HostOptions['assets']>,
   changeFeed: ChangeFeed,
 ): StartHostOptions {
+  if (!contractSync) throw new Error('Contract sync failed')
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
   const projectRecord = (record: ReturnType<typeof sessions.requests.get>): RunRecord | undefined => {
@@ -558,10 +562,7 @@ function createHostOptions(
     failureMessage: deckFailureMessage,
     assets,
     onClose: () => runs.close(),
-    omitLegacyRoutes: true,
-    maxAttachments: runtime.inputs.maxFiles,
     ...(options.port === undefined ? {} : { port: options.port }),
-    readHistory: id => sessions.read(id),
     routes: [
       createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(sessions))),
       createChatRoutes(createChatOperations(sessions, registry, web, chatMarks(decks, drafts)), selection),

@@ -13,7 +13,7 @@ import {
   route,
   WORD_ID,
   openSseStream,
-} from '@deckagent/host-api'
+} from '../../http/route-helpers.ts'
 
 const activeStatuses = new Set(['active', 'waiting_approval'])
 

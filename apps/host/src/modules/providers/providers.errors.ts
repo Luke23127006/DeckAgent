@@ -1,4 +1,4 @@
-import type { HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 import { ProviderFailure } from './providers.service.ts'
 
 const providerStatus: Readonly<Record<string, number>> = {

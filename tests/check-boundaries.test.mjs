@@ -2,6 +2,7 @@
  * Tests: scripts/check-boundaries.mjs AST import extraction, dependency boundary rules, cycle detection, and report formatting.
  * Environment: pure in-memory workspace snapshots parsed with the real TypeScript compiler API (no mocked parser or disk I/O).
  * Faults caught during mutant verification:
+ * - Removing the runs directory from lifecycle enforcement failed the transport import test.
  * - Removing isTestFile guard caused packages/presentation/html/tests/html-template-v3.test.mjs importing @deckagent/deck to fail with format-adapter-dependency.
  * - Removing escapesBrowserIntoHost check caused the Browser-to-Local-Host relative import test to fail.
  * - Removing the dynamic import() branch in extractImports caused the dynamic private import test to fail.
@@ -15,7 +16,6 @@ import { checkBoundaries, extractImports, formatReport } from '../scripts/check-
 const baseWorkspaces = [
   { dir: 'apps/web', name: '@deckagent/web', exports: { '.': './lib/index.js' } },
   { dir: 'apps/host', name: '@deckagent/host', exports: { '.': './lib/server.js' } },
-  { dir: 'packages/host/api', name: '@deckagent/host-api', exports: { '.': './lib/index.js' } },
   { dir: 'packages/host/contracts', name: '@deckagent/host-contracts', exports: { '.': './lib/index.js' } },
   {
     dir: 'packages/presentation/deck',
@@ -61,7 +61,7 @@ test('checkBoundaries accepts valid production and owner-local test imports', ()
   const files = [
     {
       path: 'apps/host/src/server.ts',
-      content: "import { startHost } from '@deckagent/host-api'\nimport { run } from './features/deck/index.ts'\n",
+      content: "import { startHost } from '@deckagent/host'\nimport { run } from './features/deck/index.ts'\n",
     },
     {
       path: 'apps/web/src/browser/transport/client.ts',
@@ -131,7 +131,7 @@ test('checkBoundaries rejects node builtin, host package, and Local Host relativ
       path: 'apps/web/src/browser/boot.ts',
       content: [
         "import fs from 'node:fs'",
-        "import { h } from '@deckagent/host-api'",
+        "import { h } from '@deckagent/host'",
         "import { chat } from '../features/chats/index.ts'",
       ].join('\n'),
     },
@@ -146,22 +146,23 @@ test('checkBoundaries rejects node builtin, host package, and Local Host relativ
 
 test('checkBoundaries rejects runtime imports in host contracts', () => {
   const files = [
-    { path: 'packages/host/contracts/src/index.ts', content: "import { startHost } from '@deckagent/host-api'\n" },
+    { path: 'packages/host/contracts/src/index.ts', content: "import { startHost } from '@deckagent/host'\n" },
   ]
   assert.deepEqual(findings(files), [
     { path: 'packages/host/contracts/src/index.ts', line: 1, rule: 'contracts-runtime-import' },
+    { path: 'packages/host/contracts/src/index.ts', line: 1, rule: 'package-app-dependency' },
   ])
 })
 
 test('checkBoundaries rejects transport imports in Request Lifecycle', () => {
   const files = [
-    { path: 'packages/host/api/src/request-controller.ts', content: "import { HttpError } from './http-error.ts'\n" },
-    { path: 'packages/host/api/src/http-error.ts', content: 'export class HttpError extends Error {}\n' },
-    { path: 'packages/host/api/src/lifecycle/controller.ts', content: "import http from 'node:http'\n" },
+    { path: 'apps/host/src/runs/run-controller.ts', content: "import { HttpError } from '../http/http-error.ts'\n" },
+    { path: 'apps/host/src/http/http-error.ts', content: 'export class HttpError extends Error {}\n' },
+    { path: 'apps/host/src/runs/lifecycle/controller.ts', content: "import http from 'node:http'\n" },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'packages/host/api/src/lifecycle/controller.ts', line: 1, rule: 'lifecycle-transport-import' },
-    { path: 'packages/host/api/src/request-controller.ts', line: 1, rule: 'lifecycle-transport-import' },
+    { path: 'apps/host/src/runs/lifecycle/controller.ts', line: 1, rule: 'lifecycle-transport-import' },
+    { path: 'apps/host/src/runs/run-controller.ts', line: 1, rule: 'lifecycle-transport-import' },
   ])
 })
 
@@ -188,12 +189,13 @@ test('checkBoundaries rejects format adapter importing outside design and docume
 
 test('checkBoundaries rejects package importing app and domain importing host runtime', () => {
   const files = [
-    { path: 'packages/host/api/src/index.ts', content: "import { app } from '@deckagent/web'\n" },
-    { path: 'packages/session/persistence/src/index.ts', content: "import { startHost } from '@deckagent/host-api'\n" },
+    { path: 'packages/presentation/design/src/index.ts', content: "import { app } from '@deckagent/web'\n" },
+    { path: 'packages/session/persistence/src/index.ts', content: "import { startHost } from '@deckagent/host'\n" },
   ]
   assert.deepEqual(findings(files), [
-    { path: 'packages/host/api/src/index.ts', line: 1, rule: 'package-app-dependency' },
+    { path: 'packages/presentation/design/src/index.ts', line: 1, rule: 'package-app-dependency' },
     { path: 'packages/session/persistence/src/index.ts', line: 1, rule: 'domain-runtime-dependency' },
+    { path: 'packages/session/persistence/src/index.ts', line: 1, rule: 'package-app-dependency' },
   ])
 })
 

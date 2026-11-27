@@ -1,4 +1,4 @@
-import { HttpError, json, param, params, readJson, route } from '@deckagent/host-api'
+import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
 import { decodeResearchSaveBody, decodeResearchRemoveBody, RequestValidationError } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { ResearchOperations } from './research.service.ts'

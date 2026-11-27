@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { startLocalWeb } from '@deckagent/host'
 import { startApp, finished, waitFor, createAttachmentRoutes } from '../apps/host/tests/fixtures/b02-helpers.mjs'
 import { ManagementClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
-import { HttpError } from '@deckagent/host-api'
+import { HttpError } from '../apps/host/tests/fixtures/http-host.mjs'
 import { startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { Readable } from 'node:stream'
 
@@ -36,8 +36,6 @@ test('multipart closes promptly when its storage consumer rejects a file before 
     throw new HttpError(404, 'ATTACHMENT_NOT_FOUND')
   }
   const host = await startHost({
-    readHistory: async () => [],
-    maxAttachments: 10,
     routes: [
       createAttachmentRoutes({
         maxBytes: 8,

@@ -1,5 +1,5 @@
 import { DeckError } from '@deckagent/deck'
-import type { HttpFailureResponse } from '@deckagent/host-api'
+import type { HttpFailureResponse } from '../../http/route-helpers.ts'
 import { DeckWorkflowFailure } from './failures.ts'
 
 const deckWorkflowStatus = (error: DeckWorkflowFailure): number => {

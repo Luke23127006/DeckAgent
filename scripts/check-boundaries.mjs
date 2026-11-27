@@ -38,11 +38,9 @@ const FORMAT_ADAPTER_DIRECTORIES = ['packages/presentation/html', 'packages/pres
 
 const CONCRETE_ADAPTER_PACKAGES = new Set(['@deckagent/html-format', '@deckagent/pptx-format'])
 
-const RUNTIME_PACKAGES = new Set(['@deckagent/host-api', '@deckagent/browser-runtime'])
+const RUNTIME_PACKAGES = new Set(['@deckagent/host', '@deckagent/browser-runtime'])
 
-const TRANSPORT_MODULES = new Set(['deck-routes', 'http-error', 'multipart'])
-
-const LIFECYCLE_DIRECTORIES = ['packages/host/api/src/lifecycle']
+const LIFECYCLE_DIRECTORIES = ['apps/host/src/runs']
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs'])
 
@@ -285,14 +283,9 @@ export const checkBoundaries = snapshot => {
         }
       }
 
-      const isLifecycleSource =
-        file.path === 'packages/host/api/src/request-controller.ts' ||
-        LIFECYCLE_DIRECTORIES.some(directory => isUnder(file.path, directory))
+      const isLifecycleSource = LIFECYCLE_DIRECTORIES.some(directory => isUnder(file.path, directory))
       if (isLifecycleSource) {
-        const isTransportModule =
-          resolved !== null &&
-          (TRANSPORT_MODULES.has(stripExtension(path.posix.basename(resolved))) ||
-            isUnder(resolved, 'packages/host/api/src/transport'))
+        const isTransportModule = resolved !== null && isUnder(resolved, 'apps/host/src/http')
         if (specifier === 'node:http' || specifier === 'node:https' || isTransportModule) {
           add(
             file.path,
@@ -577,7 +570,7 @@ const listRepositoryFiles = () =>
 const run = () => {
   const repositoryFiles = listRepositoryFiles()
   const workspaces = repositoryFiles
-    .filter(filePath => WORKSPACE_MANIFEST.test(filePath))
+    .filter(filePath => WORKSPACE_MANIFEST.test(filePath) && existsSync(filePath))
     .map(filePath => {
       const manifest = readJson(filePath)
       return { dir: path.posix.dirname(filePath), name: manifest.name, exports: manifest.exports }

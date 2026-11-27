@@ -1,5 +1,5 @@
 import type { ServerResponse } from 'node:http'
-import { HttpError, openSseStream, param, params, route } from '@deckagent/host-api'
+import { HttpError, openSseStream, param, params, route } from './route-helpers.ts'
 import type { ChangeNotice, ChangeTopic, PublishChange } from '@deckagent/host-contracts'
 import { Router } from 'express'
 

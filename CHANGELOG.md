@@ -5,12 +5,10 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
-
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 
 - Add deck review and generation run plans with source grants and image recovery contributions.
 
-- Connect the Browser session change watcher on `GET /api/sessions/:sessionId/changes` to `brief` and `outline` notices so remote Brief and Outline changes refresh the open view without reload. Task 46 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
 - Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
 - Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
@@ -25,6 +23,8 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+
+- Move HTTP helpers into Host and remove the host-api package. Enforce HTTP helper boundaries for module routes and error maps.
 
 - Move deck routes into the deck module and session activity and request reads into chats. Remove the old management contracts.
 

@@ -1,4 +1,4 @@
-import { HttpError, json, param, params, readJson, receiveAttachment, route } from '@deckagent/host-api'
+import { HttpError, json, param, params, readJson, receiveAttachment, route } from '../../http/route-helpers.ts'
 import { RequestValidationError, decodeAttachmentRemoveBody, decodeDraftSaveBody } from '@deckagent/host-contracts'
 import { Router } from 'express'
 import type { AttachmentOperations } from './attachments.service.ts'

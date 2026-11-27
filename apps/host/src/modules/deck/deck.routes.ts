@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { json, openSseStream, param, params, readJson, route } from '@deckagent/host-api'
-import type { HostRouteContext } from '@deckagent/host-api'
+import { json, openSseStream, param, params, readJson, route } from '../../http/route-helpers.ts'
+import type { HostRouteContext } from '../../http/route-helpers.ts'
 import type { DeckChange } from '@deckagent/host-contracts'
 import type { DeckOperations } from './deck.service.ts'
 

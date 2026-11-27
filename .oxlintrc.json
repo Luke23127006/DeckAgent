@@ -74,7 +74,6 @@
               {
                 "group": [
                   "@deckagent/host",
-                  "@deckagent/host-api",
                   "@deckagent/session-persistence",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
@@ -117,7 +116,6 @@
                   "../runs/**",
                   "../*-store.ts",
                   "../*-state.ts",
-                  "../local-transport.ts",
                   "node:sqlite",
                   "@deckagent/session-persistence",
                   "../tools/**",
@@ -158,7 +156,6 @@
                   "node:sqlite",
                   "../../modules/**",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "../../tools/**"
                 ],
                 "message": "A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly."
@@ -198,7 +195,6 @@
                   "../../tools/**",
                   "../http/**",
                   "../../http/**",
-                  "../local-transport.ts",
                   "express",
                   "express/*",
                   "node:http",
@@ -239,7 +235,6 @@
                 "group": [
                   "../../modules/**",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "node:fs",
                   "node:fs/*",
                   "node:sqlite",
@@ -278,7 +273,6 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
@@ -318,7 +312,6 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
@@ -355,15 +348,17 @@
               {
                 "group": [
                   "../*/*.store.ts",
-                  "../../http/**",
-                  "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
                   "../../runtimes/**",
                   "../../../runtimes/**",
                   "@deckagent/deck",
-                  "@deckagent/deck/*"
+                  "@deckagent/deck/*",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               },
@@ -404,7 +399,6 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
@@ -452,7 +446,6 @@
                 "group": [
                   "../*/*.store.ts",
                   "../../http/**",
-                  "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
@@ -498,13 +491,13 @@
                 "group": [
                   "node:*",
                   "node:*/*",
-                  "@deckagent/host-api",
                   "@deckagent/browser-runtime",
                   "@deckagent/session-persistence",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
                   "@deckagent/html-format",
-                  "@deckagent/pptx-format"
+                  "@deckagent/pptx-format",
+                  "@deckagent/host"
                 ],
                 "message": "Host contracts must not import runtime implementations."
               }
@@ -515,8 +508,7 @@
     },
     {
       "files": [
-        "**/packages/host/api/src/lifecycle/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
-        "**/packages/host/api/src/request-controller.ts"
+        "**/apps/host/src/modules/*/*.errors.ts"
       ],
       "rules": {
         "eslint/no-restricted-imports": [
@@ -536,15 +528,60 @@
               },
               {
                 "group": [
-                  "node:http",
-                  "node:https",
-                  "../http-error*",
-                  "./http-error*",
-                  "../deck-routes*",
-                  "../multipart*",
-                  "../transport/*"
+                  "../*/*.store.ts",
+                  "@deckagent/session-persistence",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
                 ],
-                "message": "Request Lifecycle must not import HTTP transport modules."
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/deck/deck.errors.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "@deckagent/session-persistence",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               }
             ]
           }

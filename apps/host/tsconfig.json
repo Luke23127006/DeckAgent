@@ -8,13 +8,26 @@
     "src"
   ],
   "references": [
-    { "path": "../../packages/presentation/deck" },
-    { "path": "../../packages/presentation/design" },
-    { "path": "../../packages/presentation/document" },
-    { "path": "../../packages/presentation/html" },
-    { "path": "../../packages/host/api" },
-    { "path": "../../packages/host/contracts" },
-    { "path": "../../packages/session/persistence" },
-    { "path": "../web" }
+    {
+      "path": "../../packages/presentation/deck"
+    },
+    {
+      "path": "../../packages/presentation/design"
+    },
+    {
+      "path": "../../packages/presentation/document"
+    },
+    {
+      "path": "../../packages/presentation/html"
+    },
+    {
+      "path": "../../packages/host/contracts"
+    },
+    {
+      "path": "../../packages/session/persistence"
+    },
+    {
+      "path": "../web"
+    }
   ]
 }

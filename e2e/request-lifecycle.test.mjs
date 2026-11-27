@@ -8,7 +8,7 @@
  * Expected values source: docs/UCs/requests.md, docs/UCs/quality-attributes.md (NFR-011), and
  * docs/build/refactor/boundaries/plan/task-16-remove-fixed-test-waits.md.
  * Fault check: temporarily replacing `if (execution.ended) throw new Error('Request ended')` with
- * `if (execution.ended) return` in packages/host/api/src/request-controller.ts failed the Stop test on
+ * `if (execution.ended) return` in apps/host/src/runs/lifecycle/run-controller.ts failed the Stop test on
  * `assert.equal(await lateWrite, 'refused')` (actual: 'accepted', expected: 'refused').
  */
 import assert from 'node:assert/strict'
@@ -18,8 +18,8 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { SessionError, SqliteSessionStore } from '@deckagent/session-persistence'
-import { HttpError } from '@deckagent/host-api'
-import { startHost } from '../apps/host/tests/fixtures/http-host.mjs'
+import { HttpError } from '../apps/host/tests/fixtures/http-host.mjs'
+import { startRequestHost as startHost } from '../apps/host/tests/fixtures/http-host.mjs'
 import { HostClient } from '../apps/web/tests/fixtures/browser-driver.mjs'
 
 const selection = { provider: 'fixture', model: 'model-a' }

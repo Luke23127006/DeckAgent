@@ -1,6 +1,7 @@
 // Tests: .oxlintrc.json import boundary rules and TypeScript safety rules.
 // Environment: real oxlint binary spawned against temporary fixture files and the real .oxlintrc.json config (no mocked linter).
 // Faults caught with this driver:
+// - Removing http/app restrictions failed four route and error mapper tests.
 // - node:fs/promises bypassed node:* in packages/client/runtime/src; test failed until node:*/* was added to .oxlintrc.json.
 // - @ts-expect-error with description bypassed default typescript/ban-ts-comment; test failed until ts-expect-error: true was set.
 // - Removing @deckagent/deck from the apps/web/src/browser override caused the @deckagent/deck browser test to fail.
@@ -73,14 +74,14 @@ test('rejects both node builtin and private subpath in apps/web/src/browser', ()
   assert.match(result.diagnostics[1].help, /Import another package through its public exports only\./)
 })
 
-test('rejects @deckagent/host-api import in apps/web/src/browser', () => {
+test('rejects @deckagent/host import in apps/web/src/browser', () => {
   const result = lintFixture(
     'apps/web/src/browser/transport/client.ts',
-    "import { startHost } from '@deckagent/host-api'\nconsole.log(startHost)\n",
+    "import { startHost } from '@deckagent/host'\nconsole.log(startHost)\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /@deckagent\/host-api/)
+  assert.match(result.diagnostics[0].message, /@deckagent\/host/)
   assert.match(result.diagnostics[0].help, /Browser code must not import Local Host or domain packages\./)
 })
 
@@ -117,48 +118,57 @@ test('rejects node:http import inside packages/host/contracts/src', () => {
   assert.match(result.diagnostics[0].help, /Host contracts must not import runtime implementations\./)
 })
 
-test('rejects @deckagent/host-api import inside packages/host/contracts/src', () => {
+test('rejects @deckagent/host import inside packages/host/contracts/src', () => {
   const result = lintFixture(
     'packages/host/contracts/src/wire.ts',
-    "import { startHost } from '@deckagent/host-api'\nconsole.log(startHost)\n",
+    "import { startHost } from '@deckagent/host'\nconsole.log(startHost)\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /@deckagent\/host-api/)
+  assert.match(result.diagnostics[0].message, /@deckagent\/host/)
   assert.match(result.diagnostics[0].help, /Host contracts must not import runtime implementations\./)
 })
 
-test('rejects node:http import inside packages/host/api/src/lifecycle', () => {
+test('rejects node:http import inside apps/host/src/runs/lifecycle', () => {
   const result = lintFixture(
-    'packages/host/api/src/lifecycle/controller.ts',
+    'apps/host/src/runs/lifecycle/controller.ts',
     "import type { ServerResponse } from 'node:http'\nexport type T = ServerResponse\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
   assert.match(result.diagnostics[0].message, /node:http/)
-  assert.match(result.diagnostics[0].help, /Request Lifecycle must not import HTTP transport modules\./)
+  assert.match(
+    result.diagnostics[0].help,
+    /Agent core runs\/ must not import modules, HTTP, SQL, tools or concrete runtimes\./,
+  )
 })
 
-test('rejects relative http-error import inside packages/host/api/src/lifecycle', () => {
+test('rejects relative http-error import inside apps/host/src/runs/lifecycle', () => {
   const result = lintFixture(
-    'packages/host/api/src/lifecycle/controller.ts',
-    "import { HttpError } from '../http-error.ts'\nexport type T = typeof HttpError\n",
+    'apps/host/src/runs/lifecycle/controller.ts',
+    "import { HttpError } from '../../http/http-error.ts'\nexport type T = typeof HttpError\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /\.\.\/http-error\.ts/)
-  assert.match(result.diagnostics[0].help, /Request Lifecycle must not import HTTP transport modules\./)
+  assert.match(result.diagnostics[0].message, /\.\.\/\.\.\/http\/http-error\.ts/)
+  assert.match(
+    result.diagnostics[0].help,
+    /Agent core runs\/ must not import modules, HTTP, SQL, tools or concrete runtimes\./,
+  )
 })
 
-test('rejects relative http-error import inside packages/host/api/src/request-controller.ts', () => {
+test('rejects relative http-error import inside apps/host/src/runs/run-controller.ts', () => {
   const result = lintFixture(
-    'packages/host/api/src/request-controller.ts',
-    "import { HttpError } from './http-error.ts'\nexport type T = typeof HttpError\n",
+    'apps/host/src/runs/run-controller.ts',
+    "import { HttpError } from '../http/http-error.ts'\nexport type T = typeof HttpError\n",
   )
   assert.equal(result.status, 1)
   assert.equal(result.diagnostics.length, 1)
-  assert.match(result.diagnostics[0].message, /\.\/http-error\.ts/)
-  assert.match(result.diagnostics[0].help, /Request Lifecycle must not import HTTP transport modules\./)
+  assert.match(result.diagnostics[0].message, /\.\.\/http\/http-error\.ts/)
+  assert.match(
+    result.diagnostics[0].help,
+    /Agent core runs\/ must not import modules, HTTP, SQL, tools or concrete runtimes\./,
+  )
 })
 
 test('rejects @ts-expect-error with description and explicit any', () => {
@@ -173,7 +183,7 @@ test('rejects @ts-expect-error with description and explicit any', () => {
 test('accepts valid public package imports and allowed browser contract imports', () => {
   const appResult = lintFixture(
     'apps/web/src/index.ts',
-    "import { startHost } from '@deckagent/host-api'\nconsole.log(startHost)\n",
+    "import { startHost } from '@deckagent/host'\nconsole.log(startHost)\n",
   )
   assert.equal(appResult.status, 0, appResult.output)
   assert.deepEqual(appResult.diagnostics, [])
@@ -204,7 +214,7 @@ test('rejects feature, integration and store imports inside apps/host/src/http',
       "import { createChatOperations } from '../features/chats/index.ts'",
       "import { OpenCodeRuntime } from '../integrations/opencode/index.ts'",
       "import { MemoryDraftStore } from '../draft-store.ts'",
-      "import { mapApplicationFailure } from '../local-transport.ts'",
+      "import { mapApplicationFailure } from '../runs/index.ts'",
       'console.log(createChatOperations, OpenCodeRuntime, MemoryDraftStore, mapApplicationFailure)',
       '',
     ].join('\n'),
@@ -236,14 +246,14 @@ test('rejects storage package and node:sqlite imports inside apps/host/src/http'
   }
 })
 
-test('accepts the Host API, Express and Node HTTP imports inside apps/host/src/http', () => {
+test('accepts local route helpers, Express and Node HTTP imports inside apps/host/src/http', () => {
   const result = lintFixture(
     'apps/host/src/http/start-host.ts',
     [
       "import { createServer } from 'node:http'",
-      "import { createHostRoutes } from '@deckagent/host-api'",
+      "import { json } from './route-helpers.ts'",
       "import express from 'express'",
-      'console.log(createServer, createHostRoutes, express)',
+      'console.log(createServer, json, express)',
       '',
     ].join('\n'),
   )
@@ -361,12 +371,12 @@ test('rejects a module import inside apps/host/src/http', () => {
   assert.match(result.diagnostics[0].help, /The HTTP edge must not import module services, stores or storage\./)
 })
 
-test('accepts the service, the Host API and Express inside a module routes file, and SQL inside a store file', () => {
+test('accepts the service, route helpers and Express inside a module routes file, and SQL inside a store file', () => {
   const routes = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.routes.ts',
     [
       "import type { WorkspaceOperations } from './workspaces.service.ts'",
-      "import { json } from '@deckagent/host-api'",
+      "import { json } from '../../http/route-helpers.ts'",
       "import { Router } from 'express'",
       'export const value: WorkspaceOperations | undefined = undefined',
       'console.log(json, Router)',
@@ -502,3 +512,31 @@ test('runtime adapter rejects a module import and accepts the runs port', () => 
   assert.equal(allowed.status, 0, allowed.output)
   assert.deepEqual(allowed.diagnostics, [])
 })
+
+for (const module of ['chats', 'deck']) {
+  for (const suffix of ['routes', 'errors']) {
+    test(`${module} ${suffix} imports route helpers and rejects HTTP composition`, () => {
+      const allowed = lintFixture(
+        `apps/host/src/modules/${module}/fixture.${suffix}.ts`,
+        "import { json } from '../../http/route-helpers.ts'\nconsole.log(json)\n",
+      )
+      assert.equal(allowed.status, 0, allowed.output)
+      for (const file of ['app', 'start-host', 'error-handler', 'change-feed']) {
+        const denied = lintFixture(
+          `apps/host/src/modules/${module}/fixture.${suffix}.ts`,
+          `import { value } from '../../http/${file}.ts'\nconsole.log(value)\n`,
+        )
+        assert.equal(denied.status, 1, denied.output)
+        assert.equal(denied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+      }
+    })
+  }
+  test(`${module} service rejects route helpers`, () => {
+    const denied = lintFixture(
+      `apps/host/src/modules/${module}/fixture.service.ts`,
+      "import { json } from '../../http/route-helpers.ts'\nconsole.log(json)\n",
+    )
+    assert.equal(denied.status, 1, denied.output)
+    assert.equal(denied.diagnostics[0].code, 'eslint(no-restricted-imports)')
+  })
+}
