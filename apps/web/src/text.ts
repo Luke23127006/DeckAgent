@@ -161,3 +161,93 @@ export const settingsText = {
   system: 'Hệ thống',
   catalogHelp: 'Catalog không bảo đảm quyền truy cập hoặc tương thích. Bạn có thể nhập model ID bằng tay.',
 } as const
+
+const workspaceRefusals: Readonly<Record<string, string>> = {
+  'drive-root': 'đây là thư mục gốc của ổ đĩa',
+  system: 'đây là thư mục hệ thống của Windows, hoặc chứa thư mục đó',
+  'user-folder': 'đây là thư mục người dùng của bạn',
+  'key-folder': 'thư mục này chứa khóa hoặc thông tin đăng nhập',
+  'deckagent-data': 'thư mục này chứa, hoặc nằm trong, dữ liệu của DeckAgent',
+}
+
+export const workspaceText = {
+  label: 'Workspace',
+  defaultSuffix: ' · mặc định',
+  checkFolderSuffix: ' · cần kiểm tra thư mục',
+  defaultTitle: 'Workspace mặc định, không có thư mục dự án',
+  add: '+ Thư mục',
+  addTitle: 'Thêm workspace cho một thư mục',
+  rename: 'Đổi tên',
+  relink: 'Đổi thư mục',
+  remove: 'Gỡ',
+  removeTitle: 'Gỡ workspace',
+  adopt: 'Dùng thư mục này',
+  save: 'Lưu',
+  cancel: 'Hủy',
+  renameHeading: 'Đổi tên workspace',
+  renameHelp: 'Tên dài tối đa 100 ký tự. Đổi tên giữ nguyên thư mục dự án và các chat.',
+  nameLabel: 'Tên workspace',
+  addHeading: 'Thêm workspace cho một thư mục',
+  relinkHeading: 'Chọn thư mục khác cho workspace',
+  folderHelp:
+    'Nhập đường dẫn đầy đủ của thư mục trên máy này. DeckAgent không đọc file nào của thư mục khi thiết lập, không gửi gì tới model và không ghi gì vào thư mục.',
+  folderLabel: 'Đường dẫn thư mục',
+  confirmRemove: (name: string) =>
+    `Gỡ workspace “${name}”? Thư mục dự án và mọi file trong đó được giữ nguyên. Các chat của workspace được giữ lại trong nhóm “Chat chưa nhóm”, cùng hội thoại, deck và model đã chọn.`,
+  /** FR-074 and FR-142: name the workspace and say what the user does next; name no unknown cause. */
+  unreadableFolder: (name: string) =>
+    `Workspace “${name}”: không đọc được các file của thư mục dự án. Hãy đưa thư mục trở lại, cấp lại quyền đọc, hoặc chọn thư mục khác. Các chat vẫn mở được.`,
+  differentFolder: (name: string) =>
+    `Workspace “${name}”: ở vị trí của thư mục dự án giờ là một thư mục khác. DeckAgent không đọc file nào của thư mục đó. Các chat vẫn mở được.`,
+} as const
+
+/** User-facing text for a refused workspace change: what failed and what to do next. Never a raw message. */
+export function workspaceErrorText(code: ClientErrorCode, detail: Readonly<Record<string, string | boolean>>): string {
+  switch (code) {
+    case 'WORKSPACE_FOLDER_REQUIRED':
+      return 'Chưa chọn thư mục. Không có workspace nào được thiết lập.'
+    case 'WORKSPACE_FOLDER_INVALID':
+      return 'Hãy nhập đường dẫn đầy đủ tới thư mục, ví dụ C:\\Users\\ten\\Documents\\du-an.'
+    case 'WORKSPACE_FOLDER_UNREADABLE':
+      return 'Không đọc được thư mục này. Kiểm tra đường dẫn và quyền truy cập, hoặc chọn thư mục khác.'
+    case 'WORKSPACE_FOLDER_REFUSED': {
+      const why = typeof detail.reason === 'string' ? workspaceRefusals[detail.reason] : undefined
+      const inside =
+        detail.allowInside === true ? ' Bạn có thể chọn một thư mục bên trong nó.' : ' Hãy chọn thư mục khác.'
+      return `Thư mục này không thể là thư mục dự án${why ? `: ${why}` : ''}.${inside}`
+    }
+    case 'WORKSPACE_FOLDER_IN_USE':
+      return typeof detail.workspaceName === 'string'
+        ? `Workspace “${detail.workspaceName}” đang dùng thư mục này. Hãy chọn workspace đó, hoặc chọn thư mục khác.`
+        : 'Một workspace khác đang dùng thư mục này. Hãy chọn workspace đó, hoặc chọn thư mục khác.'
+    case 'WORKSPACE_DEFAULT':
+      return 'Workspace mặc định không có thư mục dự án và không gỡ được.'
+    case 'WORKSPACE_NAME_EMPTY':
+      return 'Tên workspace cần ít nhất một ký tự. Tên cũ được giữ nguyên.'
+    case 'WORKSPACE_NAME_TOO_LONG':
+      return 'Tên workspace dài tối đa 100 ký tự. Tên cũ được giữ nguyên.'
+    case 'WORKSPACE_NOT_FOUND':
+      return 'Workspace này không còn được thiết lập. Danh sách đã được làm mới.'
+    case 'WORKSPACES_STALE':
+      return 'Danh sách workspace vừa thay đổi ở nơi khác. Danh sách đã được làm mới, hãy kiểm tra rồi thử lại.'
+    default:
+      return 'Không thay đổi được workspace. Kiểm tra kết nối với DeckAgent rồi thử lại.'
+  }
+}
+
+export const chatListText = {
+  searchPlaceholder: 'Tìm chat theo từ…',
+  searchLabel: 'Tìm chat trước theo từ',
+  noMatch: 'Không có chat nào khớp với các từ đã nhập.',
+  empty: 'Chưa có chat trước.',
+  ungrouped: 'Chat chưa nhóm',
+  unknownTime: 'Chưa rõ thời gian cập nhật',
+  unreadable: 'Không mở được chat này',
+  slidesUnknown: 'Chưa rõ slide',
+  hasSlides: 'Có slide',
+  noSlides: 'Chưa có slide',
+  unreadableName: 'Chat không đọc được',
+  newChat: 'Chat mới',
+  untitled: 'Chat chưa có tên',
+  working: ' · Đang làm việc…',
+} as const

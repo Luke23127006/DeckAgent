@@ -1,12 +1,11 @@
 import type { HistoryMessage, OutlineSnapshot, WebSession, WebSettings, WorkspaceList } from '@deckagent/host-contracts'
 import { isActive } from './transport/index.ts'
 import type { HostClient, ManagementClient, OutlineClient } from './transport/index.ts'
-import { button, element } from './dom.ts'
+import { element } from './dom.ts'
 import type { ShellDom } from './shell-dom.ts'
 import type { ConversationView } from './features/chats/index.ts'
 import type { DeckModel, DeckWorkflowView } from './features/deck/index.ts'
 import type { modelPicker } from './features/providers/index.ts'
-import type { workspaceView } from './features/workspaces/index.ts'
 import type { DraftSync } from './draft-sync.ts'
 
 export interface ChatNavigationOptions {
@@ -18,12 +17,13 @@ export interface ChatNavigationOptions {
   readonly timeline: ConversationView
   readonly workflow: DeckWorkflowView
   readonly deckModel: DeckModel
-  readonly workspaceUI: ReturnType<typeof workspaceView>
   readonly draftSync: DraftSync
   readonly sending: ReadonlySet<string>
   readonly run: (work: Promise<void>) => void
   readonly changed: () => void
   readonly onSessionOpen?: (sessionId: string) => void
+  /** Runs after each read of the chat list, so that the React chat list reads it again. */
+  readonly onRefreshed?: () => void
   readonly follow: (id: string, sessionId: string, expected: number) => Promise<void>
 }
 
@@ -49,21 +49,8 @@ export class ChatNavigation {
   opening: number | undefined
   creating = false
   generation = 0
-  private searchWords = ''
-  private searchResults: Set<string> | undefined
-  private searchTimer: ReturnType<typeof setTimeout> | undefined
 
-  constructor(private readonly options: ChatNavigationOptions) {
-    options.shell.searchInput.addEventListener('input', () => {
-      clearTimeout(this.searchTimer)
-      this.searchTimer = setTimeout(() => this.findChats(), 200)
-    })
-    options.shell.search.addEventListener('submit', event => {
-      event.preventDefault()
-      clearTimeout(this.searchTimer)
-      this.findChats()
-    })
-  }
+  constructor(private readonly options: ChatNavigationOptions) {}
 
   /** Only an open or a send in progress blocks switching. A running request keeps going in the Host (UC-003 A13). */
   switchingBlocked(): boolean {
@@ -102,62 +89,11 @@ export class ChatNavigation {
     this.options.changed()
   }
 
-  renderChats(): void {
-    const chats = this.options.shell.chats
-    chats.replaceChildren()
-    const listed = (session: WebSession) =>
-      session.sessionId === this.current?.sessionId ||
-      session.messageCount ||
-      session.selection ||
-      session.hasSlides ||
-      !session.readable ||
-      session.hasDraft ||
-      this.options.draftSync.hasDraftText(session.sessionId)
-    const found = this.searchResults
-    const visible = this.sessions.filter(session => (found ? found.has(session.sessionId) : listed(session)))
-    // Keep each chat where it is when opened; a new chat has the newest time, so it still lists first.
-    visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.sessionId.localeCompare(b.sessionId))
-    // UC-006 S1: the chats of the workspace in use, and the ungrouped chats apart from them, whichever workspace is in use.
-    const grouped = visible.filter(session => session.workspaceId === this.workspaces.selectedId)
-    const ungrouped = visible.filter(session => session.workspaceId === null)
-    if (!grouped.length && !ungrouped.length)
-      chats.append(element('p', found ? 'Không có chat nào khớp với các từ đã nhập.' : 'Chưa có chat trước.'))
-    for (const session of grouped) chats.append(this.chatButton(session))
-    if (ungrouped.length) {
-      chats.append(element('h3', 'Chat chưa nhóm', 'chat-group-heading'))
-      for (const session of ungrouped) chats.append(this.chatButton(session))
-    }
-  }
-
-  private chatButton(session: WebSession): HTMLButtonElement {
-    const item = button('', () => this.options.run(this.open(session)))
-    const updated = element('time')
-    updated.dateTime = session.updatedAt
-    const date = new Date(session.updatedAt)
-    updated.textContent = Number.isNaN(date.getTime()) ? 'Chưa rõ thời gian cập nhật' : date.toLocaleString('vi-VN')
-    const slides = !session.readable
-      ? 'Không mở được chat này'
-      : session.hasSlides === undefined
-        ? 'Chưa rõ slide'
-        : session.hasSlides
-          ? 'Có slide'
-          : 'Chưa có slide'
-    const name = !session.readable
-      ? 'Chat không đọc được'
-      : !session.messageCount
-        ? 'Chat mới'
-        : (session.title ?? 'Chat chưa có tên')
-    item.append(
-      element('strong', name),
-      updated,
-      element('small', `${slides}${session.activeRequestId ? ' · Đang làm việc…' : ''}`),
-    )
-    item.title = `${name} · ${updated.textContent} · ${slides}`
-    item.dataset.sessionId = session.sessionId
-    if (!session.readable) item.dataset.unreadable = 'true'
-    item.setAttribute('aria-current', String(session.sessionId === this.current?.sessionId))
-    item.disabled = this.switchingBlocked() || this.creating
-    return item
+  /** The chats with draft text that this tab has not saved yet. The React chat list keeps them listed. */
+  draftIds(): readonly string[] {
+    return this.sessions
+      .filter(session => this.options.draftSync.hasDraftText(session.sessionId))
+      .map(session => session.sessionId)
   }
 
   async refresh(): Promise<void> {
@@ -168,16 +104,11 @@ export class ChatNavigation {
     ])
     this.settings = nextSettings
     this.sessions = nextSessions
-    this.workspaces = nextWorkspaces
-    this.options.workspaceUI.update(nextWorkspaces)
+    if (nextWorkspaces.version >= this.workspaces.version) this.workspaces = nextWorkspaces
     const current = this.current
     if (current) this.current = this.sessions.find(session => session.sessionId === current.sessionId) ?? current
-    if (this.searchWords)
-      this.searchResults = new Set(
-        (await this.options.management.search(this.searchWords)).map(session => session.sessionId),
-      )
     this.renderModels()
-    this.renderChats()
+    this.options.onRefreshed?.()
   }
 
   async showHistory(id: string, expected: number): Promise<void> {
@@ -248,7 +179,6 @@ export class ChatNavigation {
     const expected = this.generation
     this.opening = expected
     this.renderModels()
-    this.renderChats()
     this.options.shell.status.hidden = true
     if (session.activeRequestId)
       this.options.timeline.snapshot({
@@ -292,24 +222,6 @@ export class ChatNavigation {
     }
   }
 
-  findChats(): void {
-    const words = this.options.shell.searchInput.value.trim()
-    this.searchWords = words
-    if (!words) {
-      this.searchResults = undefined
-      this.renderChats()
-      return
-    }
-    this.options.run(
-      this.options.management.search(words).then(found => {
-        // FR-134: keep the words; show only the chats that hold them.
-        if (this.searchWords !== words) return
-        this.searchResults = new Set(found.map(session => session.sessionId))
-        this.renderChats()
-      }),
-    )
-  }
-
   /** Loads the saved list and opens the remembered chat, or starts a new one. */
   async start(): Promise<void> {
     await this.refresh()
@@ -324,9 +236,6 @@ export class ChatNavigation {
     else await this.newChat()
   }
 
-  dispose(): void {
-    clearTimeout(this.searchTimer)
-  }
 }
 
 export const createChatNavigation = (options: ChatNavigationOptions): ChatNavigation => new ChatNavigation(options)

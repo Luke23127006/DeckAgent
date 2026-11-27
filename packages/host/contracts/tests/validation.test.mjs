@@ -3,7 +3,7 @@
  * Environment: compiled @deckagent/host-contracts lib/index.js in Node.js with zero external I/O.
  * Fault check: removing a schema constraint or cross-field guard lets invalid payloads pass without throwing the expected error code or message.
  * Run: node --test --test-reporter=tap packages/host/contracts/tests/validation.test.mjs
- * Expected values source: packages/host/contracts/src/request-validation.ts, brief-validation.ts, outline-validation.ts, generation-validation.ts.
+ * Expected values source: packages/host/contracts/src/request-validation.ts, brief-validation.ts, outline-validation.ts, generation-validation.ts, chat-list-validation.ts.
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
@@ -16,6 +16,7 @@ import {
   decodeBriefView,
   decodeChangeNotice,
   decodeChatCreateBody,
+  decodeChatList,
   decodeChatSearchBody,
   decodeDraftSaveBody,
   decodeGeneration,
@@ -26,6 +27,7 @@ import {
   decodeProviderRemoveBody,
   decodeProviderSaveBody,
   decodeWorkspaceAddBody,
+  decodeWorkspaceList,
   decodeWorkspaceRelinkBody,
   decodeWorkspaceRemoveBody,
   decodeWorkspaceRenameBody,
@@ -480,4 +482,51 @@ test('chat and approval body decoders validate wire shapes and throw the expecte
 
 test('providerProtocols lists the four API protocols of BR-005 V-4', () => {
   assert.deepEqual([...providerProtocols], ['chat-completions', 'responses', 'anthropic-messages', 'gemini'])
+})
+
+test('decodeChatList keeps the listed chat fields and refuses a chat without a workspace field', () => {
+  const chat = {
+    sessionId: 's1',
+    createdAt: '2026-11-01T00:00:00.000Z',
+    updatedAt: '2026-11-02T00:00:00.000Z',
+    messageCount: 2,
+    selectable: true,
+    workspaceId: null,
+    readable: true,
+    title: 'Kế hoạch',
+    hasDraft: false,
+    selection: { provider: 'river', model: 'deepseek' },
+    removedSelection: 'old',
+  }
+  assert.deepEqual(decodeChatList([chat]), [
+    {
+      sessionId: 's1',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      updatedAt: '2026-11-02T00:00:00.000Z',
+      messageCount: 2,
+      selectable: true,
+      workspaceId: null,
+      readable: true,
+      title: 'Kế hoạch',
+      selection: { provider: 'river', model: 'deepseek' },
+    },
+  ])
+  const { workspaceId: _workspaceId, ...withoutWorkspace } = chat
+  for (const bad of [undefined, {}, [withoutWorkspace], [{ ...chat, readable: 'yes' }]])
+    assert.throws(() => decodeChatList(bad), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeWorkspaceList accepts the four folder states and refuses a negative version', () => {
+  const list = {
+    selectedId: 'default',
+    version: 3,
+    workspaces: [{ id: 'default', name: 'Mặc định', folder: null, isDefault: true, folderStatus: 'none' }],
+  }
+  assert.deepEqual(decodeWorkspaceList(list), list)
+  for (const bad of [
+    { ...list, version: -1 },
+    { ...list, workspaces: [{ ...list.workspaces[0], folderStatus: 'gone' }] },
+    { ...list, selectedId: 1 },
+  ])
+    assert.throws(() => decodeWorkspaceList(bad), { message: 'INVALID_RESPONSE' })
 })

@@ -35,7 +35,7 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | 1 | Decisions, conventions and checks | The PO answers the `Open` items of [Browser Rules](web-rules.md#stack) | The rules of [Browser Rules](web-rules.md) are in the Project Structure [[4]](#ref-4), the Coding Guidelines [[5]](#ref-5) and the Testware [[6]](#ref-6). They are also in AGENTS.md [[7]](#ref-7), the target layout and the criteria. The folder rules for `apps/web/src/` exist, each with a negative fixture | Done ([Revision 1](plan/README.md#revision-1-phase-1-decisions-conventions-and-checks)) |
 | 2 | React shell | Phase 1 is done | Vite builds `apps/web/`. The Host serves the build folder with an SPA fallback, and `loadWebAssets` with its HTML and CSS strings is removed (WB-02, WB-05). Tailwind, shadcn/ui with the theme variables, Vitest, `main.tsx`, the route table, the app shell layout, the `QueryClient`, `api/client.ts` and the change feed hook exist. The old screens render inside the shell | Done ([Revision 2](plan/README.md#revision-2-phase-2-react-shell)) |
 | 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Implemented; [exit check blocked](#phase-3-settings) by concurrent Host edits |
-| 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Pending |
+| 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Done ([Phase 4](#phase-4-workspaces-and-chat-navigation)) |
 | 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Pending |
 | 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Pending |
 | 7 | Removal and exit check | Phases 3 to 6 are done | `apps/web/src/browser/` and the second TypeScript project are removed (WB-09). `apps/web/` imports only the contracts package (WB-03). The old Browser rules of `check:boundaries` are replaced. A rescan checks TS-06 and TS-07 [[8]](#ref-8) | Pending |
@@ -60,6 +60,22 @@ The form keeps its read version until submission. A stale response refreshes set
 The Settings implementation is complete. All 20 non-live test scripts passed, with isolated retries for three scripts. Vitest passed 15 tests, the checker suite passed 112 tests, and the complete browser suite passed 22 tests. The scoped web typecheck and Vite build also passed. A focused browser test passed after the final mobile scroll change.
 
 The full build passed earlier in this run. The last full build failed in concurrent Host deck edits outside this phase. Missing exports included `DeckSessionStore`, `ImageReviewRun` and `mapDeckFailure`. Phase 3 keeps its exit check open until the shared tree builds again.
+
+### Phase 4: Workspaces and chat navigation
+
+The workspace controls, the chat search and the chat list are React components in `components/`. They read the Host through `useWorkspaces`, `useChats` and `useChatSearch`, and they write through `useWorkspaceChange`. The API layer uses `decodeChatList` and `decodeWorkspaceList` of the contracts package. A `chats` or `workspaces` notice invalidates the query keys.
+
+The conversation screen stays legacy until Phase 5. Thus `ChatSidebar` renders through portals into three slots of the legacy navigation, and the legacy CSS layout does not change. The legacy screens send the open chat, the switch lock and the unsaved draft chats to React. React sends the chat to open and the workspace list to the legacy screens. The legacy workspace view and the unused search and workspace writes of the legacy client are removed.
+
+The phase was diagnosed and done in one run without task files. Its decisions:
+
+| Decision | Reason |
+| --- | --- |
+| Portals into slots of the legacy navigation, not a new sidebar in `layouts/` | The account menu, the new chat button and the navigation toggle belong to the conversation screen until Phase 5. One layout owner prevents two navigation columns |
+| The search field and the workspace select use native `input` and `change` listeners | A script event that does not bubble does not reach the root listener of React. The browser tests send such events |
+| The legacy screens keep their own read of chats and workspaces | `open`, `start` and the new chat need the list. Phase 5 removes this read with the legacy screens |
+
+Checks: `build`, `lint`, `check:boundaries`, `check:docs`, Vitest (23 tests) and the contracts tests passed. The browser suite passed 21 of 22 tests in the first run. The failed test stops at "1/3" slides after an explicit continuation of a deck. An isolated rerun with the same build passed. The same failure occurred in the Phase 3 run, so it is not a result of this phase.
 
 ### Phase 6: Deck
 

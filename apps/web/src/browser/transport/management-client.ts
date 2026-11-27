@@ -150,12 +150,6 @@ export class ManagementClient {
   async select(id: string, value: { provider: string; model: string }): Promise<WebSession> {
     return decodeSession(await this.request(`sessions/${encodeURIComponent(id)}/selection`, 'PUT', value))
   }
-  /** Earlier chats whose name or conversation holds every word. */
-  async search(words: string): Promise<readonly WebSession[]> {
-    const data = await this.request('sessions/search', 'POST', { words })
-    if (!Array.isArray(data)) invalid()
-    return data.map(decodeSession)
-  }
   async draftState(id: string): Promise<ChatDraft> {
     return decodeDraft(await this.request(`sessions/${encodeURIComponent(id)}/draft`), id)
   }
@@ -212,27 +206,6 @@ export class ManagementClient {
 
   async workspaces(): Promise<WorkspaceList> {
     return decodeWorkspaceList(await this.request('workspaces'))
-  }
-  async addWorkspace(folder: string, expectedVersion: number): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request('workspaces', 'POST', { folder, expectedVersion }))
-  }
-  async selectWorkspace(id: string, expectedVersion: number): Promise<WorkspaceList> {
-    return decodeWorkspaceList(await this.request('workspaces/selected', 'PUT', { id, expectedVersion }))
-  }
-  async renameWorkspace(id: string, name: string, expectedVersion: number): Promise<WorkspaceList> {
-    return decodeWorkspaceList(
-      await this.request(`workspaces/${encodeURIComponent(id)}`, 'PUT', { name, expectedVersion }),
-    )
-  }
-  async relinkWorkspace(id: string, folder: string, expectedVersion: number): Promise<WorkspaceList> {
-    return decodeWorkspaceList(
-      await this.request(`workspaces/${encodeURIComponent(id)}/folder`, 'PUT', { folder, expectedVersion }),
-    )
-  }
-  async removeWorkspace(id: string, expectedVersion: number): Promise<WorkspaceList> {
-    return decodeWorkspaceList(
-      await this.request(`workspaces/${encodeURIComponent(id)}`, 'DELETE', { expectedVersion }),
-    )
   }
 
   async save(

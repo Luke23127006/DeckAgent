@@ -1,4 +1,4 @@
-import type { WebSession } from '@deckagent/host-contracts'
+import type { WebSession, WorkspaceList } from '@deckagent/host-contracts'
 import {
   BriefClient,
   ChangeClient,
@@ -15,25 +15,47 @@ import { ConversationView } from './features/chats/index.ts'
 import { failureFeedback } from './features/requests/index.ts'
 import { themeControl } from './theme.ts'
 import { initMotion } from './motion.ts'
-import { workspaceView } from './features/workspaces/index.ts'
 import { AttachmentDraftView } from './features/attachments/index.ts'
 import { researchView } from './features/research/index.ts'
 import { createShellDom } from './shell-dom.ts'
+import type { ShellSlots } from './shell-dom.ts'
 import { createDraftSync } from './draft-sync.ts'
 import { createChatNavigation } from './chat-navigation.ts'
 import { createRequestRunner, sendBlocked } from './request-runner.ts'
 import { ChangeWatcher } from './change-watcher.ts'
 
+/** The state of the open chat that the React chat list and workspace controls read. */
+export interface LegacyNavigationState {
+  readonly currentSessionId: string | undefined
+  /** An open or a send in progress blocks switching (UC-003 A13). */
+  readonly locked: boolean
+  /** An open or a chat creation is in progress. The workspace controls wait. */
+  readonly busy: boolean
+  readonly draftIds: readonly string[]
+}
+
 export interface LegacyBrowserOptions {
   readonly origin: string
   readonly token: string
+  /** React renders the workspace controls, the chat search and the chat list into these elements. */
+  readonly slots: ShellSlots
   readonly initialSessionId?: string
   readonly onOpenSettings?: (sessionId?: string) => void
   readonly onMissingSession?: () => void
+  readonly onNavigationChange?: (state: LegacyNavigationState) => void
+  /** Runs after the legacy screens read the chat list again. */
+  readonly onChatsRefreshed?: () => void
 }
 
-/** Mounts the legacy screens into `root` and returns the cleanup for the React lifetime. */
-export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOptions): () => void {
+/** The legacy screens while they are mounted: React opens a chat and gives the workspace list through it. */
+export interface LegacyBrowser {
+  readonly dispose: () => void
+  readonly openChat: (chat: WebSession) => void
+  readonly setWorkspaces: (list: WorkspaceList) => void
+}
+
+/** Mounts the legacy screens into `root`. React calls `dispose` when it unmounts the page. */
+export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOptions): LegacyBrowser {
   const client = new HostClient(options.origin, options.token)
   const management = new ManagementClient(options.origin, options.token)
   const outlines = new OutlineClient(options.origin, options.token)
@@ -41,7 +63,7 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
   const confirmations = new ConfirmationClient(options.origin, options.token)
   const deckClient = new DeckClient(options.origin, options.token)
   const changeClient = new ChangeClient(options.origin, options.token)
-  const shell = createShellDom(root, () => controls())
+  const shell = createShellDom(root, options.slots, () => controls())
   const sending = new Set<string>()
   const selecting = new Set<string>()
   const requestLimit = 16000
@@ -116,13 +138,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     }
     options.onOpenSettings?.(sessionId)
   }
-  const workspaceUI = workspaceView(management, shell.root, async (next, reloadChats) => {
-    // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
-    navigation.workspaces = next
-    if (reloadChats) await navigation.refresh()
-    else navigation.renderChats()
-    controls()
-  })
   const researchUI = researchView(
     management,
     shell.root,
@@ -203,8 +218,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
       const next = await management.workspaces()
       if (next.version < navigation.workspaces.version) return
       navigation.workspaces = next
-      workspaceUI.update(next)
-      navigation.renderChats()
       controls()
     },
   })
@@ -217,12 +230,12 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     timeline,
     workflow,
     deckModel,
-    workspaceUI,
     draftSync,
     sending,
     run,
     changed: () => controls(),
     onSessionOpen: openSessionChanges,
+    ...(options.onChatsRefreshed === undefined ? {} : { onRefreshed: options.onChatsRefreshed }),
     follow: (id, sessionId, expected) => follow(id, sessionId, expected),
   })
   const runner = createRequestRunner({
@@ -247,7 +260,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     remove: id => run(draftSync.removeAttachment(id)),
     preview: item => run(draftSync.previewAttachment(item)),
   })
-  shell.navigation.insertBefore(workspaceUI.node, shell.newChatButton)
   shell.conversation.insertBefore(workflow.node, shell.welcome)
   shell.composerControls.append(attachmentUI.trigger, researchUI.control, researchUI.sources)
   shell.primaryAction.prepend(picker.node)
@@ -296,12 +308,16 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     shell.stopRequest.hidden = !activeId
     shell.stopRequest.disabled = !!activeId && runner.stopping.has(activeId)
     shell.submit.hidden = !!activeId
-    for (const item of shell.chats.querySelectorAll('button'))
-      item.disabled = navigation.switchingBlocked() || navigation.creating
-    shell.newChatButton.disabled = navigation.switchingBlocked() || navigation.creating
+    const locked = navigation.switchingBlocked() || navigation.creating
+    shell.newChatButton.disabled = locked
     shell.model.disabled =
       !current || selecting.has(current.sessionId) || navigation.opening !== undefined || navigation.creating
-    workspaceUI.setBusy(navigation.opening !== undefined || navigation.creating)
+    publishNavigation({
+      currentSessionId: current?.sessionId,
+      locked,
+      busy: navigation.opening !== undefined || navigation.creating,
+      draftIds: navigation.draftIds(),
+    })
     // A chat without a selectable model keeps its draft and says why it cannot send (FR-046).
     const blocked = sendBlocked(current, navigation.settings)
     const draft = current ? draftSync.getDraftState(current.sessionId) : undefined
@@ -342,6 +358,14 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     researchUI.control.hidden = workflow.preparingDeck
     updatePresentation(current, activeId)
     shell.fitInput()
+  }
+
+  let publishedNavigation = ''
+  function publishNavigation(state: LegacyNavigationState): void {
+    const key = JSON.stringify(state)
+    if (key === publishedNavigation) return
+    publishedNavigation = key
+    options.onNavigationChange?.(state)
   }
 
   function updatePresentation(current: WebSession | undefined, activeId: string | undefined): void {
@@ -471,7 +495,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     shell.dispose()
     runner.dispose()
     draftSync.dispose()
-    navigation.dispose()
     deckModel.close()
     changeWatcher.close()
     sessionWatcher?.close()
@@ -516,5 +539,15 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     })
     .catch(() => {})
   run(start())
-  return dispose
+  return {
+    dispose,
+    openChat: chat => {
+      if (!disposed) run(navigation.open(chat))
+    },
+    setWorkspaces: list => {
+      if (disposed || list.version < navigation.workspaces.version) return
+      navigation.workspaces = list
+      controls()
+    },
+  }
 }

@@ -429,3 +429,4 @@ body.deck-resizing iframe{pointer-events:none}
 }
 
 @keyframes mark-turn{to{transform:rotate(360deg)}}
+.requests-unavailable{font-size:12px;margin:0 0 6px;opacity:.85}

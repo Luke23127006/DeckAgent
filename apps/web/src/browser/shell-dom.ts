@@ -1,8 +1,15 @@
 import { element } from './dom.ts'
 
+/** The places in the navigation where React renders the workspace controls, the chat search and the chat list. */
+export interface ShellSlots {
+  readonly workspaces: HTMLElement
+  readonly search: HTMLElement
+  readonly chats: HTMLElement
+}
+
 export class ShellDom {
   readonly navigation = element('aside', undefined, 'chat-navigation')
-  readonly chats = element('nav')
+  readonly chats: HTMLElement
   readonly conversation = element('section', undefined, 'conversation')
   readonly heading = element('header', undefined, 'conversation-header')
   readonly title = element('h1', 'Chat mới')
@@ -35,8 +42,6 @@ export class ShellDom {
   readonly navToggle = element('button', '', 'nav-toggle')
   readonly accountMenu = element('div', undefined, 'account-menu')
   readonly accountTrigger = element('button', '', 'account-trigger')
-  readonly search = element('form', undefined, 'chat-search')
-  readonly searchInput = element('input')
   readonly openDeck = element('button', 'Mở deck')
   readonly retryGeneration = element('button', 'Thử bắt đầu tạo deck')
   readonly reconnect = element('button', 'Kết nối lại / đọc lịch sử')
@@ -61,8 +66,10 @@ export class ShellDom {
 
   constructor(
     readonly root: HTMLElement,
+    private readonly slots: ShellSlots,
     private readonly changed: () => void,
   ) {
+    this.chats = slots.chats
     root.replaceChildren()
     this.recents.addEventListener('click', () => {
       this.chats.hidden = !this.chats.hidden
@@ -120,7 +127,6 @@ export class ShellDom {
     this.recents.setAttribute('aria-controls', 'recent-chats')
     this.navTop.append(element('div', 'DeckAgent', 'wordmark'), this.navToggle)
     this.configureAccountMenu()
-    this.configureSearch()
     this.configureComposer()
     this.mount()
   }
@@ -143,14 +149,6 @@ export class ShellDom {
     document.addEventListener('pointerdown', this.onDocumentPointerDown)
   }
 
-  private configureSearch(): void {
-    this.search.setAttribute('role', 'search')
-    this.searchInput.type = 'search'
-    this.searchInput.placeholder = 'Tìm chat theo từ…'
-    this.searchInput.setAttribute('aria-label', 'Tìm chat trước theo từ')
-    this.search.append(this.searchInput)
-  }
-
   private configureComposer(): void {
     const headingText = element('div', undefined, 'chat-heading')
     headingText.append(this.title, this.headerState)
@@ -169,12 +167,16 @@ export class ShellDom {
     const dock = element('div', undefined, 'composer-dock')
     dock.append(this.outlineDock, this.form)
     this.conversation.append(this.heading, this.status, this.welcome, this.messages, dock)
+    // The slots of React take no box of their own, so the navigation layout sees their content.
+    this.slots.workspaces.style.display = 'contents'
+    this.slots.search.style.display = 'contents'
     this.navigation.append(
       this.navTop,
+      this.slots.workspaces,
       this.newChatButton,
       this.navigationHint,
       this.recents,
-      this.search,
+      this.slots.search,
       this.chats,
       this.accountTrigger,
       this.accountMenu,
@@ -254,6 +256,6 @@ export class ShellDom {
   }
 }
 
-export function createShellDom(root: HTMLElement, changed: () => void): ShellDom {
-  return new ShellDom(root, changed)
+export function createShellDom(root: HTMLElement, slots: ShellSlots, changed: () => void): ShellDom {
+  return new ShellDom(root, slots, changed)
 }

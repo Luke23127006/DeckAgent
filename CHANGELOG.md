@@ -22,6 +22,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Render the workspace controls, the chat search and the chat list with React through query hooks. Decode the chat and workspace lists through the contracts package, and remove the legacy workspace view.
 - Render Settings with React for providers, models, credentials and theme. Decode Settings responses through the contracts package.
 - Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.
 - Serve the Vite output in `apps/web/dist` from the Host with an SPA fallback and a dynamic `/theme.js`, and remove `loadWebAssets`, `apps/web/src/index.ts` and the Host dependency on `@deckagent/local-web`.
