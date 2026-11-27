@@ -2,7 +2,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AttachmentParser, attachmentLimits } from '@deckagent/file-tools'
-import type { HostOptions, RequestRuntime } from '@deckagent/host-api'
+import type { HostOptions, HostRouteContext, RequestRuntime } from '@deckagent/host-api'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
@@ -25,7 +25,7 @@ import {
   mapChatFailure,
   type ChatMarks,
 } from './modules/chats/index.ts'
-import { mapApplicationFailure, sessionReadManagement } from './local-transport.ts'
+import { mapApplicationFailure } from './local-transport.ts'
 import {
   ProviderConfigurations,
   SqliteProviderStore,
@@ -56,6 +56,8 @@ import {
 import { createSettingsRoutes } from './settings-routes.ts'
 import {
   BriefCoordinator,
+  createDeckOperations,
+  createDeckRoutes,
   ConfirmationCoordinator,
   DeckWorkflow,
   GenerationWorkflow,
@@ -349,6 +351,11 @@ function createHostOptions(
 ): StartHostOptions {
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
+  const deckOps = createDeckOperations(
+    decks,
+    briefs,
+    new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
+  )
   return {
     mapApplicationFailure: error =>
       mapWorkspaceFailure(error) ??
@@ -359,10 +366,6 @@ function createHostOptions(
       mapDeckFailure(error) ??
       mapApplicationFailure(error),
     failureMessage: deckFailureMessage,
-    confirmations: new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
-    briefs,
-    decks,
-    outlines: decks,
     assets,
     requests: {
       closingText: (sessionId, requestId, status) => generationReport(decks, sessionId, requestId, status),
@@ -405,6 +408,7 @@ function createHostOptions(
           save: async (theme, expectedVersion) => web.savePreferences(theme, expectedVersion),
         },
       }),
+      (context: HostRouteContext) => createDeckRoutes(deckOps, context),
     ],
     changes: {
       feed: changeFeed,
@@ -417,7 +421,6 @@ function createHostOptions(
       sessionExists: async id => !!(await sessions.getInfo(id)),
       sessionTopics: [{ topic: 'draft', version: id => runtime.inputs.draftVersion(id) }],
     },
-    management: sessionReadManagement(sessions),
   }
 }
 

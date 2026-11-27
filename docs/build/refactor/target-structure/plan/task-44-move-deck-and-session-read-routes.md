@@ -60,7 +60,7 @@ After this task, `apps/host/src/modules/deck/deck.routes.ts` registers all ten d
 | `apps/host/src/server.ts` | Remove `sessionReadManagement`, `confirmations`, `briefs`, `decks`, `outlines` and `management` from `createHostOptions`. Build `deckOps = createDeckOperations(decks, briefs, new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime))` and add `context => createDeckRoutes(deckOps, context)` after `createSettingsRoutes(...)` in `routes`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -70,11 +70,11 @@ Run: `git grep -n "^| 43 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move the routes and remove WebManagement**
+- [x] **Step 2: Move the routes and remove WebManagement**
 
 Do the changes of the table `Move rules`.
 
-- [ ] **Step 3: Check that no removed symbol or file stays**
+- [x] **Step 3: Check that no removed symbol or file stays**
 
 Run: `git grep --untracked -n -E "WebManagement|BriefManagement|registerDeckRoutes|registerManagementRoutes|sessionReadManagement" -- apps packages e2e scripts`
 
@@ -84,15 +84,15 @@ Run: `git grep --untracked -n "@deckagent/deck" -- apps/host/src/modules/deck/de
 
 Expected: PASS. No line.
 
-- [ ] **Step 4: Format, build and check**
+- [x] **Step 4: Format, build and check**
 
 Remove `apps/host/lib` and `packages/host/api/lib` first so that an old build output does not hide a broken import. Then do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 5: Run every suite**
+- [x] **Step 5: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved routes` with the columns `Method | Path | New file`.
 

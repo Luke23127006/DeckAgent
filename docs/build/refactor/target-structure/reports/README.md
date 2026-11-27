@@ -51,3 +51,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 | [Task 42: Connect the Browser to preferences notices report](task-42-connect-browser-to-preferences-notices.md) | Task 42 | The Browser refreshes research controls and theme from preferences notices. Stale research saves refresh settings without another write. All 19 suites pass. |
 
 | [Task 43: Move the deck module report](task-43-move-deck-module.md) | Task 43 | Deck workflows and adapters moved behind narrow ports. All 19 required suites pass. |
+
+| [Task 44: Move deck and session-read routes report](task-44-move-deck-and-session-read-routes.md) | Task 44 | Deck routes and session reads moved to their modules. The Router guard has mutation coverage. All 19 required suites pass. |

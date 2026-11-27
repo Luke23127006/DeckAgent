@@ -1,6 +1,5 @@
-import { HttpError } from '@deckagent/host-api'
-import type { HttpErrorDetail, HttpFailureResponse, WebManagement } from '@deckagent/host-api'
-import { SessionError, type SqliteSessionStore } from '@deckagent/session-persistence'
+import type { HttpErrorDetail, HttpFailureResponse } from '@deckagent/host-api'
+import { SessionError } from '@deckagent/session-persistence'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
 import { SourceToolFailure } from './features/sources/index.ts'
@@ -63,24 +62,4 @@ export function mapApplicationFailure(error: unknown): HttpFailureResponse | und
     return mapFailureEntry(error.code, undefined, status)
   }
   return undefined
-}
-
-export type SessionReadManagement = Required<Pick<WebManagement, 'activities' | 'requests'>>
-
-async function requireSession(store: SqliteSessionStore, id: string): Promise<void> {
-  if (!(await store.getInfo(id))) throw new HttpError(404, 'SESSION_NOT_FOUND')
-}
-
-/** Read endpoints that need an existing chat. Each one rejects an unknown chat before it reads. */
-export function sessionReadManagement(store: SqliteSessionStore): SessionReadManagement {
-  return {
-    activities: async id => {
-      await requireSession(store, id)
-      return store.requests.activities(id)
-    },
-    requests: async id => {
-      await requireSession(store, id)
-      return store.requests.list(id)
-    },
-  }
 }

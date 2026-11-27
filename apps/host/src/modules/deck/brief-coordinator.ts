@@ -2,13 +2,12 @@ import { DeckError, validateBriefDraft, interviewState } from '@deckagent/deck'
 import type { DeckStore, BriefDraft } from '@deckagent/deck'
 import { DesignError } from '@deckagent/design'
 import type { DeckSessionStore } from './ports.ts'
-import type { BriefManagement } from '@deckagent/host-api'
 import type { BriefView } from '@deckagent/host-contracts'
 import { emptyBriefDraft } from './deck-prompts.ts'
 import { DeckWorkflowFailure } from './failures.ts'
 
 /** Composition verifies source ownership, without reading external files or granting research access. */
-export class BriefCoordinator implements BriefManagement {
+export class BriefCoordinator {
   constructor(
     private readonly decks: DeckStore,
     private readonly sessions: DeckSessionStore,

@@ -6,6 +6,7 @@ import test from 'node:test'
 import { request as httpRequest } from 'node:http'
 import { startHost } from '../lib/types/http/start-host.js'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
+import { Router } from 'express'
 
 // B02: the Host owns admission, events, Stop and terminal status (ADR-0004). The legacy question/reply case and the
 // openAgent lock case were replaced; lifecycle details are checked in request-lifecycle.test.mjs.
@@ -36,6 +37,35 @@ async function fixture(t, start) {
     headers: { authorization: `Bearer ${host.token}`, 'content-type': 'application/json' },
   }
 }
+
+test('Host mounts an existing Router and a route factory that receives context', async t => {
+  const existing = Router({ caseSensitive: true, strict: true })
+  existing.get('/api/existing', (_req, res) => res.json({ source: 'existing' }))
+  let calls = 0
+  const host = await startHost({
+    readHistory: async () => [],
+    routes: [
+      existing,
+      context => {
+        calls++
+        const router = Router({ caseSensitive: true, strict: true })
+        router.get('/api/factory', (_req, res) =>
+          res.json({ streams: context.streams instanceof Set, submit: typeof context.submit }),
+        )
+        return router
+      },
+    ],
+  })
+  t.after(() => host.close())
+  const headers = { authorization: `Bearer ${host.token}` }
+  const existingResponse = await fetch(`${host.origin}/api/existing`, { headers })
+  assert.equal(existingResponse.status, 200)
+  assert.deepEqual(await existingResponse.json(), { source: 'existing' })
+  const factoryResponse = await fetch(`${host.origin}/api/factory`, { headers })
+  assert.equal(factoryResponse.status, 200)
+  assert.deepEqual(await factoryResponse.json(), { streams: true, submit: 'undefined' })
+  assert.equal(calls, 1)
+})
 
 test('unauthenticated and cross-origin callers cannot submit requests; malformed input has no side effect', async t => {
   const { host, store, runtime, chat, headers } = await fixture(t, async () => ({ status: 'completed' }))

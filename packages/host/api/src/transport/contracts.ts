@@ -1,14 +1,5 @@
-import type { DeckReader, InterviewState, OutlineReader } from '@deckagent/deck'
-import type {
-  AgentRequest,
-  AttachmentView,
-  BriefView,
-  ConfirmationResult,
-  RequestSnapshot,
-  StoredActivity,
-  StoredRequest,
-  TerminalStatus,
-} from '@deckagent/host-contracts'
+import type { ServerResponse } from 'node:http'
+import type { AgentRequest, AttachmentView, RequestSnapshot, TerminalStatus } from '@deckagent/host-contracts'
 import type { RequestStore } from '@deckagent/session-persistence'
 import type { Router } from 'express'
 import type { RequestAdmission, RequestRuntime } from '../lifecycle/contracts.ts'
@@ -35,14 +26,6 @@ export interface HttpFailureResponse {
 export interface HostOptions {
   readonly mapApplicationFailure?: (error: unknown) => HttpFailureResponse | undefined
   readonly failureMessage?: (code: string) => string | undefined
-  readonly confirmations?: {
-    confirm(
-      sessionId: string,
-      value: unknown,
-      submit: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>,
-    ): Promise<ConfirmationResult>
-  }
-  readonly briefs?: BriefManagement
   /** Absent while no Agent runtime is connected: `POST /api/requests` is refused with `REQUESTS_UNAVAILABLE`. */
   readonly requests?: {
     /** Host-owned summary derived from committed product state, including explicit Stop. */
@@ -57,26 +40,18 @@ export interface HostOptions {
   }
   readonly readHistory: (sessionId: string) => Promise<readonly HostMessage[]>
   readonly port?: number
-  readonly management?: WebManagement
-  readonly routes?: readonly Router[]
+  readonly routes?: readonly HostRouteRegistrar[]
   /** Files that one request may carry. Feeds request admission and the attachment routes. */
   readonly maxAttachments?: number
-  readonly decks?: DeckReader
-  readonly outlines?: OutlineReader
   /** Fixed trusted assets only. Workspace files are never exposed over HTTP. */
   readonly assets?: Readonly<
     Record<string, { readonly contentType: string; readonly body: string; readonly sandboxed?: boolean }>
   >
 }
 
-export interface BriefManagement {
-  interview?(sessionId: string): Promise<{ readonly brief: BriefView; readonly state: InterviewState }>
-  get(sessionId: string, version?: number): Promise<BriefView>
-  save(sessionId: string, value: unknown): Promise<BriefView>
+export interface HostRouteContext {
+  readonly streams: Set<ServerResponse>
+  readonly submit?: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>
 }
 
-/** Management inputs are untrusted JSON; application validates before mutating storage. */
-export interface WebManagement {
-  activities(id: string): Promise<readonly StoredActivity[]>
-  requests(id: string): Promise<readonly StoredRequest[]>
-}
+export type HostRouteRegistrar = Router | ((context: HostRouteContext) => Router)

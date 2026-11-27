@@ -45,5 +45,19 @@ export function createChatRoutes(chats: ChatOperations, decodeSelection: (value:
       json(res, 200, await chats.search(searchWords(await readJson(req))))
     }),
   )
+  router.get(
+    '/api/sessions/:sessionId/activities',
+    params({ sessionId: /^[\w-]{1,100}$/ }),
+    route(async (req, res) => {
+      json(res, 200, await chats.activities(param(req, 'sessionId')))
+    }),
+  )
+  router.get(
+    '/api/sessions/:sessionId/requests',
+    params({ sessionId: /^[\w-]{1,100}$/ }),
+    route(async (req, res) => {
+      json(res, 200, await chats.requests(param(req, 'sessionId')))
+    }),
+  )
   return router
 }

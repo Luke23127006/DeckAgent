@@ -20,6 +20,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Changed
 
+- Move deck routes into the deck module and session activity and request reads into chats. Remove the old management contracts.
+
 - Move deck workflows and image and rendering adapters into the Host deck module. Keep the deck package boundary.
 
 - Compact `CHANGELOG.md` to under 50 lines; `commit` and `commit-push` now remove low-value entries before they add a new one, so the file does not grow.

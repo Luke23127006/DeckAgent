@@ -1,4 +1,4 @@
-import type { ModelSelection, WebSession } from '@deckagent/host-contracts'
+import type { ModelSelection, StoredActivity, StoredRequest, WebSession } from '@deckagent/host-contracts'
 import type { WorkspaceChats, WorkspaceLookup } from '../workspaces/index.ts'
 
 export type ChatWorkflowErrorCode = 'SESSION_NOT_FOUND' | 'MODEL_NOT_SELECTABLE' | 'CHAT_UNREADABLE' | 'DRAFT_TOO_LARGE'
@@ -29,13 +29,18 @@ export interface ChatRecord {
 
 /** The chat part of the session database. `SqliteSessionStore` implements it. */
 export interface ChatStore {
+  getInfo(sessionId: string): Promise<unknown>
   chats(): Promise<readonly ChatRecord[]>
   list(): Promise<readonly { readonly sessionId: string; readonly workspaceId: string | null }[]>
   create(workspaceId: string, selection?: ModelSelection): Promise<{ readonly sessionId: string }>
   select(sessionId: string, selection: ModelSelection): Promise<unknown>
   search(words: string, chatIds: readonly string[]): Promise<readonly string[]>
   ungroup(workspaceId: string): Promise<void>
-  readonly requests: { activeFor(sessionId: string): string | undefined }
+  readonly requests: {
+    activeFor(sessionId: string): string | undefined
+    activities(sessionId: string): readonly StoredActivity[]
+    list(sessionId: string): readonly StoredRequest[]
+  }
 }
 
 /** The model choice rules of the Browser settings. `WebState` implements it. */
@@ -52,6 +57,8 @@ export interface ChatMarks {
 }
 
 export interface ChatOperations {
+  activities(id: string): Promise<readonly StoredActivity[]>
+  requests(id: string): Promise<readonly StoredRequest[]>
   create(selection?: ModelSelection): Promise<WebSession>
   selectModel(id: string, selection: ModelSelection): Promise<WebSession>
   list(): Promise<readonly WebSession[]>
@@ -106,6 +113,14 @@ export function createChatOperations(
   }
 
   return {
+    async activities(id: string): Promise<readonly StoredActivity[]> {
+      if (!(await store.getInfo(id))) throw new ChatWorkflowError('SESSION_NOT_FOUND')
+      return store.requests.activities(id)
+    },
+    async requests(id: string): Promise<readonly StoredRequest[]> {
+      if (!(await store.getInfo(id))) throw new ChatWorkflowError('SESSION_NOT_FOUND')
+      return store.requests.list(id)
+    },
     async create(chosen?: ModelSelection): Promise<WebSession> {
       // FR-053: without an explicit choice, the most recent model choice in any chat when still selectable.
       const resolved = chosen === undefined ? models.lastSelection() : chosen

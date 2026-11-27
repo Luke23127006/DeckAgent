@@ -2,8 +2,7 @@ import type { ServerResponse } from 'node:http'
 import { Router } from 'express'
 import type { ContractSyncVerified } from './contract-sync.ts'
 import { RequestController } from './lifecycle/request-controller.ts'
-import type { HostOptions } from './transport/contracts.ts'
-import { registerManagementRoutes } from './transport/management-routes.ts'
+import type { HostOptions, HostRouteContext, HostRouteRegistrar } from './transport/contracts.ts'
 import { registerRequestRoutes } from './transport/request-routes.ts'
 import { registerSessionRoutes } from './transport/session-routes.ts'
 
@@ -18,11 +17,11 @@ export type {
 } from './lifecycle/contracts.ts'
 export type { PreparedTools, RequestTools, ToolContext, ToolResult, ToolSchema } from './lifecycle/tool-contracts.ts'
 export type {
-  BriefManagement,
   HostMessage,
   HostOptions,
   HttpFailureResponse,
-  WebManagement,
+  HostRouteContext,
+  HostRouteRegistrar,
 } from './transport/contracts.ts'
 export { HttpError } from './transport/http-error.ts'
 export { json, readJson } from './transport/http-io.ts'
@@ -31,6 +30,10 @@ export type { AttachmentUploadTarget } from './transport/multipart.ts'
 export { param, params, route } from './transport/route-params.ts'
 export { openSseStream } from './transport/sse.ts'
 export type { HttpErrorDetail } from './transport/http-error.ts'
+
+function isRouter(entry: HostRouteRegistrar): entry is Router {
+  return 'handle' in entry && typeof entry.handle === 'function'
+}
 
 const contractSync: ContractSyncVerified = true
 
@@ -53,9 +56,12 @@ export function createHostRoutes(options: HostOptions): HostRoutes {
     : undefined
   const streams = new Set<ServerResponse>()
   const router = Router({ caseSensitive: true, strict: true })
-  registerSessionRoutes(router, options, controller, streams)
-  if (options.management) registerManagementRoutes(router, options.management)
-  for (const routes of options.routes ?? []) router.use(routes)
+  registerSessionRoutes(router, options)
+  const context: HostRouteContext = {
+    streams,
+    ...(controller ? { submit: (request, settings) => controller.submit(request, settings) } : {}),
+  }
+  for (const entry of options.routes ?? []) router.use(isRouter(entry) ? entry : entry(context))
   registerRequestRoutes(router, controller, options.maxAttachments ?? 0, streams)
   return {
     router,
