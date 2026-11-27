@@ -40,7 +40,7 @@ After this task, a newer `brief` notice on `GET /api/sessions/:sessionId/changes
 
 **Forbidden:** remove or change `DeckModel`'s `GET /api/sessions/:sessionId/deck/events` connection. Refresh a chat other than the open chat.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -50,7 +50,7 @@ Run: `git grep -n "^| 45 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Add this test at the end of `e2e/browser-smoke.test.mjs`:
 
@@ -112,25 +112,25 @@ Run: `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="brief
 
 Expected: FAIL. The output contains `# fail 1`.
 
-- [ ] **Step 3: Write the code**
+- [x] **Step 3: Write the code**
 
 Do the changes of the section `Interfaces`. Run `corepack pnpm@11.28.5 build`, then `node --test --test-name-pattern="brief and outline notices" e2e/browser-smoke.test.mjs`.
 
 Expected: PASS. The output contains `# fail 0`.
 
-- [ ] **Step 4: Break the code and make sure that the test fails**
+- [x] **Step 4: Break the code and make sure that the test fails**
 
 In `apps/web/src/browser/boot.ts`, remove the `notice.topic === 'brief'` branch from `openSessionChanges`. Build and run `node --test --test-name-pattern="brief and outline notices" e2e/browser-smoke.test.mjs`. Expected: FAIL. `# fail 1`. Undo the change and run `corepack pnpm@11.28.5 exec tsc -b --force`.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

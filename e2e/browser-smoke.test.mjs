@@ -2894,3 +2894,55 @@ test('A research save after a change in another client gets PREFERENCES_STALE, r
   assert.equal(await evaluate('window.__researchWrites'), 1, 'Browser must not send the stale research write again')
   assert.equal(tavilyCalls, 0, 'A stale research save must not call Tavily')
 })
+
+test('Browser updates Brief and Outline views from brief and outline notices on /api/sessions/:sessionId/changes', {
+  timeout: 60000,
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-brief-outline-changes-'))
+  const state = {}
+  t.after(async () => {
+    try {
+      await closeBrowser(state.session)
+      if (state.app) await state.app.close()
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })
+    }
+  })
+  state.session = await openBrowser(dir)
+  state.app = await startLocalWeb({ dataDir: join(dir, 'data'), home: join(dir, 'home') })
+  const { protocol, evaluate } = state.session
+  await protocol.call('Page.enable')
+  await protocol.call('Page.navigate', { url: `${state.app.origin}/#token=${state.app.token}` })
+  await eventually(
+    () => evaluate(`!!document.querySelector('[data-session-id]')`),
+    'Browser did not open initial chat',
+  )
+  const sessionId = await evaluate(`document.querySelector('[data-session-id][aria-current="true"]').dataset.sessionId`)
+  await delay(300)
+  const headers = { authorization: `Bearer ${state.app.token}`, 'content-type': 'application/json' }
+  const first = await fetch(`${state.app.origin}/api/sessions/${sessionId}/brief`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ expectedVersion: 0, draft: brief() }),
+  })
+  assert.equal(first.status, 200)
+  await eventually(
+    () => evaluate(`document.querySelector('.deck-workflow details summary')?.textContent?.includes('v1') === true`),
+    'Browser did not refresh Brief from brief notice',
+  )
+  const updated = brief()
+  updated.topic = 'Updated Brief Topic'
+  const second = await fetch(`${state.app.origin}/api/sessions/${sessionId}/brief`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ expectedVersion: 1, draft: updated }),
+  })
+  assert.equal(second.status, 200)
+  await eventually(
+    () =>
+      evaluate(
+        `document.querySelector('.deck-workflow details summary')?.textContent?.includes('v2') === true && document.querySelector('.deck-workflow details').textContent.includes('Updated Brief Topic')`,
+      ),
+    'Browser did not show second Brief version from brief notice',
+  )
+})

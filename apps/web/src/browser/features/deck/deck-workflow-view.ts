@@ -98,6 +98,7 @@ export class DeckWorkflowView {
     if (this.sessionId !== id) return
     const changed = this.state?.brief.version !== next.brief.version
     if (!this.state) this.active = next.brief.version > 0
+    else if (changed && next.brief.version > 0) this.active = true
     this.state = next
     if (changed && next.brief.current) {
       const sources = next.brief.current.draft.sources
@@ -112,6 +113,10 @@ export class DeckWorkflowView {
     this.current = proposal
     this.busy = busy
     this.render()
+  }
+
+  get briefVersion(): number | undefined {
+    return this.state?.brief.version
   }
 
   get preparingDeck(): boolean {

@@ -138,9 +138,18 @@ function openSessionChanges(sessionId: string): void {
   watchedSessionId = sessionId
   const watcher = new ChangeWatcher({
     client: { watch: signal => changeClient.watchSession(sessionId, signal) },
-    onNotice: notice => {
-      if (watchedSessionId !== sessionId || notice.key !== sessionId || notice.topic !== 'draft') return
-      return draftSync.onDraftNotice(sessionId, notice.version)
+    onNotice: async notice => {
+      if (watchedSessionId !== sessionId || notice.key !== sessionId) return
+      if (notice.topic === 'draft') return draftSync.onDraftNotice(sessionId, notice.version)
+      if (notice.topic === 'brief') {
+        if (workflow.briefVersion === undefined || notice.version <= workflow.briefVersion) return
+        await workflow.refresh(sessionId)
+        controls()
+        return
+      }
+      if (notice.topic !== 'outline') return
+      if (navigation.outlineState?.sessionId !== sessionId || notice.version <= navigation.outlineState.version) return
+      return navigation.showOutlines(sessionId, navigation.generation)
     },
   })
   sessionWatcher = watcher
