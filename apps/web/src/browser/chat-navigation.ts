@@ -5,7 +5,7 @@ import { button, element } from './dom.ts'
 import type { ShellDom } from './shell-dom.ts'
 import type { ConversationView } from './features/chats/index.ts'
 import type { DeckModel, DeckWorkflowView } from './features/deck/index.ts'
-import type { modelPicker, settingsPanel } from './features/providers/index.ts'
+import type { modelPicker } from './features/providers/index.ts'
 import type { workspaceView } from './features/workspaces/index.ts'
 import type { DraftSync } from './draft-sync.ts'
 
@@ -14,7 +14,6 @@ export interface ChatNavigationOptions {
   readonly client: HostClient
   readonly management: ManagementClient
   readonly outlines: OutlineClient
-  readonly settingsUI: ReturnType<typeof settingsPanel>
   readonly picker: ReturnType<typeof modelPicker>
   readonly timeline: ConversationView
   readonly workflow: DeckWorkflowView
@@ -213,7 +212,6 @@ export class ChatNavigation {
     let session = listed
     const switching = this.current?.sessionId !== session.sessionId
     if (switching && this.switchingBlocked()) return
-    if (switching && !this.options.settingsUI.leave()) return
     this.options.picker.close()
     // Read everything before replacing current state. A failed open leaves the old chat intact.
     const previousGeneration = this.generation
@@ -275,7 +273,6 @@ export class ChatNavigation {
 
   async newChat(): Promise<void> {
     if (this.switchingBlocked() || this.creating) return
-    if (!this.options.settingsUI.leave()) return
     // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
     const current = this.current
     if (current && !this.historyPresent && current.workspaceId === this.workspaces.selectedId) {

@@ -21,12 +21,12 @@ Read this file to learn the steps of Task 9, which runs the Phase 2 exit checks 
 
 **Forbidden:** Do not run `test:research-live` or `test:opencode-live`, because they need live services.
 
-- [ ] **Step 1: Run the static checks**
+- [x] **Step 1: Run the static checks**
 
 Run: `corepack pnpm@11.28.5 build && corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries && corepack pnpm@11.28.5 check:docs`
 Expected: exit code 0.
 
-- [ ] **Step 2: Run the check tests and Vitest suite**
+- [x] **Step 2: Run the check tests and Vitest suite**
 
 Run: `node --test --test-reporter=tap tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs tests/check-docs.test.mjs tests/vite-build-mocks.test.mjs`
 Expected: PASS. The output contains `# fail 0`.
@@ -34,14 +34,14 @@ Expected: PASS. The output contains `# fail 0`.
 Run: `corepack pnpm@11.28.5 test:web`
 Expected: PASS. Exit code 0.
 
-- [ ] **Step 3: Run all non-live test suites**
+- [x] **Step 3: Run all non-live test suites**
 
 Run each script of `package.json` whose name starts with `test:`, except `test:research-live` and `test:opencode-live`, with `corepack pnpm@11.28.5 <script>`. When a suite fails, run it again alone.
 Expected: each suite passes in its first run or in its run alone.
 
 Write the table `Suites` with the columns `Script | First run | Run alone` in the report.
 
-- [ ] **Step 4: Record Phase 2 as done and update Enforcement tables**
+- [x] **Step 4: Record Phase 2 as done and update Enforcement tables**
 
 1. In `docs/build/refactor/web-react/README.md`:
    - In the table `Abstract phase plan`, change Phase 2 `Status` from `Pending` to `Done ([Revision 2](plan/README.md#revision-2-phase-2-react-shell))`.
@@ -52,6 +52,6 @@ Write the table `Suites` with the columns `Script | First run | Run alone` in th
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: exit code 0.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

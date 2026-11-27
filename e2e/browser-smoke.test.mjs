@@ -1020,43 +1020,35 @@ test('saving a Custom API model ID from the input makes it available without a s
   await evaluate(
     `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click(); true`,
   )
-  await eventually(() => evaluate(`document.querySelector('.settings-dialog').open`), 'Provider wizard missing')
-  await evaluate(`{
-    [...document.querySelectorAll('.settings-dialog button')].find(b=>b.textContent==='Tiếp tục →').click();
-    document.querySelector('[aria-label="Provider ID"]').value='River AI';
+  await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
+  const setField = async (label, value, textarea = false) => evaluate(`{
+    const input = document.querySelector('[aria-label="' + ${JSON.stringify(label)} + '"]');
+    Object.getOwnPropertyDescriptor(${textarea ? 'HTMLTextAreaElement' : 'HTMLInputElement'}.prototype, 'value').set.call(input, ${JSON.stringify(value)});
+    input.dispatchEvent(new Event('input', {bubbles: true}));
   } true`)
-  assert.equal(
-    await evaluate(`document.querySelector('[aria-label="Provider ID"]').validity.patternMismatch`),
-    true,
-    'A display name with spaces must not be accepted as a provider URL identity',
-  )
-  await evaluate(`{
-    document.querySelector('[aria-label="Provider ID"]').value='custom-fixture';
-    document.querySelector('[aria-label="Display name"]').value='Custom fixture';
-    document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};
-    document.querySelector('.settings-dialog form').requestSubmit();
-  } true`)
-  await eventually(
-    () => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`),
-    'Connection was not saved',
-  )
-  await evaluate(
-    `document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.settings-dialog form').requestSubmit();true`,
-  )
-  await eventually(
-    () => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('Đã lưu model')`),
-    'Model save did not finish',
-  )
-  assert.equal(
-    await evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`),
-    true,
-    'Save must persist the model ID still in the manual entry field',
-  )
-  assert.equal(
-    await evaluate(`document.querySelector('.composer select').value`),
-    '',
-    'Adding a model must not choose it for the Chat automatically',
-  )
+  await setField('Provider ID', 'River AI')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Provider ID"]').validity.patternMismatch`), true,
+    'A display name with spaces must not be accepted as a provider URL identity')
+  await setField('Provider ID', 'custom-fixture')
+  await setField('Tên hiển thị', 'Custom fixture')
+  await setField('Base URL', endpoint.baseUrl)
+  await setField('Model ID', 'wizard-model', true)
+  await evaluate(`document.querySelector('main form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Đã lưu')`), 'Model save did not finish')
+  await protocol.call('Page.reload')
+  await eventually(() => evaluate(`location.pathname === '/settings' && document.querySelector('main nav')?.textContent.includes('Custom fixture')`), 'Settings reload lost authentication or the saved provider', {
+    describe: () => evaluate(`({path:location.pathname,hasToken:location.hash.startsWith('#token='),text:document.body.innerText.slice(0,400)})`),
+  })
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 390, height: 600, deviceScaleFactor: 1, mobile: false })
+  await eventually(() => evaluate(`!![...document.querySelectorAll('main button')].find(button => button.textContent === 'Hệ thống')`), 'Theme controls missing')
+  await evaluate(`document.querySelector('main').scrollTop=document.querySelector('main').scrollHeight;true`)
+  assert.equal(await evaluate(`document.querySelector('main').scrollHeight > document.querySelector('main').clientHeight`), true, 'Mobile Settings must scroll inside the app frame')
+  assert.equal(await evaluate(`[...document.querySelectorAll('main button')].find(button => button.textContent === 'Hệ thống').getBoundingClientRect().bottom <= innerHeight`), true, 'Mobile Settings must expose its final controls')
+  await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.composer select')?.textContent.includes('wizard-model')`), 'Saved model is missing')
+  assert.equal(await evaluate(`document.querySelector('.composer select').value`), '',
+    'Adding a model must not choose it for the Chat automatically')
 })
 
 test('interactive composer: model choice, Send, live reply and Stop survive a reload; drafts stay per chat', {
@@ -1268,58 +1260,35 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   await evaluate(
     `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`,
   )
-  await eventually(() => evaluate(`document.querySelector('dialog').open`), 'Settings missing')
-  assert.equal(
-    await evaluate(`document.querySelector('dialog').matches(':modal')`),
-    true,
-    'Settings is a popup over the chat',
-  )
-  await evaluate(
-    `document.querySelector('[aria-label="Display name"]').value='Unsaved';document.querySelector('[aria-label="Display name"]').dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;document.querySelector('.settings-back').click();true`,
-  )
-  assert.equal(
-    await evaluate(`document.querySelector('dialog').open`),
-    true,
-    'Declining discard must keep Settings open',
-  )
-  await evaluate(`window.confirm=()=>true;document.querySelector('.settings-back').click();true`)
-  await eventually(() => evaluate(`!document.querySelector('dialog').open`), 'Settings did not close after discard')
-  // The quick wizard: a provider that does not answer is refused with a reason; one that answers is saved.
-  await evaluate(
-    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`,
-  )
-  await eventually(
-    () => evaluate(`document.querySelector('dialog').matches(':modal')`),
-    'Quick provider wizard did not open',
-  )
-  await evaluate(
-    `[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Tiếp tục →').click();document.querySelector('[aria-label="Provider ID"]').value='wizard-api';document.querySelector('[aria-label="Display name"]').value='Wizard API';document.querySelector('[aria-label="Base URL"]').value='http://127.0.0.1:1/v1';document.querySelector('dialog form').requestSubmit();true`,
-  )
-  await eventually(
-    () => evaluate(`document.querySelector('.settings-body [role=status]').textContent.includes('không trả lời')`),
-    'A silent provider was not refused with a reason',
-  )
-  assert.equal(
-    await evaluate(`document.querySelector('.settings-header h2').textContent.includes('2/3')`),
-    true,
-    'A failed check does not advance',
-  )
-  await evaluate(
-    `document.querySelector('[aria-label="Base URL"]').value=${JSON.stringify(endpoint.baseUrl)};document.querySelector('dialog form').requestSubmit();true`,
-  )
-  await eventually(
-    () => evaluate(`document.querySelector('.settings-header h2').textContent.includes('3/3')`),
-    'Wizard did not save the connection and advance',
-  )
-  await evaluate(
-    `document.querySelector('[aria-label="Thêm bằng model ID"]').value='wizard-model';document.querySelector('.manual-model-row button').click();document.querySelector('dialog form').requestSubmit();true`,
-  )
-  await eventually(
-    () => evaluate(`document.querySelector('.composer select').textContent.includes('wizard-model')`),
-    'Wizard did not save model IDs',
-  )
-  await evaluate(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Xong').click();true`)
-  await eventually(() => evaluate(`!document.querySelector('dialog').open`), 'Wizard did not return to chat')
+  await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
+  const setProviderField = async (label, value, textarea = false) => evaluate(`{
+    const input = document.querySelector('[aria-label="' + ${JSON.stringify(label)} + '"]');
+    Object.getOwnPropertyDescriptor(${textarea ? 'HTMLTextAreaElement' : 'HTMLInputElement'}.prototype, 'value').set.call(input, ${JSON.stringify(value)});
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  } true`)
+  await setProviderField('Tên hiển thị', 'Unsaved')
+  await evaluate(`window.__discardPrompts=0;window.__settingsIndex=history.state.idx;window.confirm=()=>{window.__discardPrompts++;return false};history.back();true`)
+  await eventually(() => evaluate(`window.__discardPrompts === 1 && history.state.idx === window.__settingsIndex`), 'History discard guard missing', {
+    describe: () => evaluate(`({prompts:window.__discardPrompts,index:history.state.idx,expected:window.__settingsIndex,path:location.pathname})`),
+  })
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'Unsaved', 'Rejected history navigation must keep the draft')
+  await evaluate(`window.confirm=()=>false;[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  assert.equal(await evaluate(`location.pathname`), '/settings', 'Declining discard must keep Settings open')
+  await evaluate(`window.confirm=()=>true;[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await eventually(() => evaluate(`!!document.querySelector('.composer select')`), 'Settings did not return to chat')
+  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`)
+  await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Provider form missing')
+  await setProviderField('Provider ID', 'wizard-api')
+  await setProviderField('Tên hiển thị', 'Wizard API')
+  await setProviderField('Base URL', 'http://127.0.0.1:1/v1')
+  await evaluate(`document.querySelector('main form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('[role=alert]')?.textContent.includes('không trả lời')`), 'A silent provider was not refused')
+  await setProviderField('Base URL', endpoint.baseUrl)
+  await setProviderField('Model ID', 'wizard-model', true)
+  await evaluate(`document.querySelector('main form').requestSubmit();true`)
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Đã lưu')`), 'Provider save did not finish')
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await eventually(() => evaluate(`document.querySelector('.composer select')?.textContent.includes('wizard-model')`), 'Saved model missing from chat')
   assert.equal(
     await evaluate(`document.querySelector('.composer select').value.includes('interactive')`),
     true,
@@ -2598,26 +2567,19 @@ test('Browser shows a provider that another client saves, from the providers not
 test('A settings save after a change in another client gets PROVIDERS_STALE, reads the settings again and does not send again', {
   timeout: 60000,
 }, async t => {
-  const { evaluate, saveOther, pickerShowsOther } = await openProviderChanges(t, 'provider-stale')
-  await evaluate(
-    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`,
-  )
-  await eventually(() => evaluate(`document.querySelector('.settings-dialog').open`), 'Settings missing')
-  await evaluate(`document.querySelector('.settings-dialog [data-provider="fixture"]').click();true`)
-  await eventually(
-    () => evaluate(`document.querySelector('[aria-label="Display name"]').value === 'fixture'`),
-    'Settings did not show the saved provider',
-  )
-  await evaluate(
-    `{const name=document.querySelector('[aria-label="Display name"]');name.value='Renamed';name.dispatchEvent(new Event('input',{bubbles:true}))} true`,
-  )
+  const { evaluate, saveOther } = await openProviderChanges(t, 'provider-stale')
+  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`)
+  await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
+  await evaluate(`[...document.querySelectorAll('main nav button')].find(button => button.textContent.startsWith('fixture')).click();true`)
+  await eventually(() => evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value === 'fixture'`), 'Saved provider missing')
+  await evaluate(`{
+    const input = document.querySelector('[aria-label="Tên hiển thị"]');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Renamed');
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  } true`)
   await saveOther()
-  await pickerShowsOther()
-  assert.equal(
-    await evaluate(`document.querySelector('[aria-label="Display name"]').value`),
-    'Renamed',
-    'A providers notice must not fill the open form again',
-  )
+  await eventually(() => evaluate(`[...document.querySelectorAll('main nav button')].some(button => button.textContent.startsWith('Other'))`), 'Provider notice missing')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'Renamed', 'A notice must not replace the draft')
   await evaluate(`{
     const original = window.fetch;
     window.__providerWrites = 0;
@@ -2625,22 +2587,12 @@ test('A settings save after a change in another client gets PROVIDERS_STALE, rea
       if (String(url).endsWith('/api/providers/fixture') && init?.method === 'PUT') window.__providerWrites += 1;
       return original(url, init);
     };
+    document.querySelector('main form').requestSubmit();
   } true`)
-  await evaluate(`document.querySelector('.settings-dialog form').requestSubmit();true`)
-  await eventually(
-    () =>
-      evaluate(
-        `document.querySelector('.settings-body [role=status]').textContent.includes('vừa thay đổi ở nơi khác')`,
-      ),
-    'Browser did not show the PROVIDERS_STALE message',
-  )
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Display name"]').value`), 'fixture')
-  assert.equal(
-    await evaluate(`!!document.querySelector('.settings-dialog [data-provider="other"]')`),
-    true,
-    'The dialog must read the settings again',
-  )
-  assert.equal(await evaluate('window.__providerWrites'), 1, 'The Browser must not send the stale write again')
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Danh sách provider đã thay đổi')`), 'Stale notice missing')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'fixture')
+  assert.equal(await evaluate(`[...document.querySelectorAll('main nav button')].some(button => button.textContent.startsWith('Other'))`), true)
+  assert.equal(await evaluate('window.__providerWrites'), 1, 'The Browser must not retry a stale write')
 })
 
 test('Browser updates the open draft from the draft notice of /api/sessions/:sessionId/changes', {

@@ -9,7 +9,7 @@ import {
   OutlineClient,
 } from './transport/index.ts'
 import { button, element } from './dom.ts'
-import { modelPicker, settingsPanel } from './features/providers/index.ts'
+import { modelPicker } from './features/providers/index.ts'
 import { DeckWorkflowView, mountDeckCanvas, mountDeckTab } from './features/deck/index.ts'
 import { ConversationView } from './features/chats/index.ts'
 import { failureFeedback } from './features/requests/index.ts'
@@ -28,7 +28,7 @@ export interface LegacyBrowserOptions {
   readonly origin: string
   readonly token: string
   readonly initialSessionId?: string
-  readonly openSettings?: boolean
+  readonly onOpenSettings?: (sessionId?: string) => void
   readonly onMissingSession?: () => void
 }
 
@@ -92,7 +92,7 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
         draftSync.saveDraft()
         controls()
       },
-      settings: () => run(settingsUI.open()),
+      settings: () => run(openSettings()),
       draft: () => shell.input.value,
       previewAttachment: item => run(draftSync.previewAttachment(item)),
       previewOutlineImage: (sessionId, outlineId, needId) => client.outlineImage(sessionId, outlineId, needId),
@@ -108,12 +108,14 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     shell.deck.hidden = true
     shell.openDeck.hidden = true
   })
-  const settingsUI = settingsPanel(
-    management,
-    () => navigation.refresh(),
-    shell.root,
-    () => shell.input.focus(),
-  )
+  async function openSettings() {
+    const sessionId = navigation.current?.sessionId
+    if (sessionId) {
+      draftSync.saveDraft()
+      if (!(await draftSync.flushDraft(sessionId))) return
+    }
+    options.onOpenSettings?.(sessionId)
+  }
   const workspaceUI = workspaceView(management, shell.root, async (next, reloadChats) => {
     // Switching or adding keeps the open chat and its draft; only the list of earlier chats changes.
     navigation.workspaces = next
@@ -133,8 +135,8 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
   )
   const picker = modelPicker(
     shell.model,
-    () => run(settingsUI.open()),
-    () => run(settingsUI.open(true)),
+    () => run(openSettings()),
+    () => run(openSettings()),
   )
   const draftSync = createDraftSync({
     management,
@@ -211,7 +213,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     client,
     management,
     outlines,
-    settingsUI,
     picker,
     timeline,
     workflow,
@@ -254,7 +255,7 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
   shell.form.insertBefore(attachmentUI.picker, shell.input)
   const settingsButton = button('Cài đặt model', () => {
     shell.closeAccountMenu()
-    run(settingsUI.open())
+    run(openSettings())
   })
   settingsButton.className = 'settings-open'
   settingsButton.title = 'Cài đặt model'
@@ -375,7 +376,7 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
     if (shell.model.value === '__settings') {
       const current = navigation.current
       shell.model.value = current?.selectable && current.selection ? JSON.stringify(current.selection) : ''
-      run(settingsUI.open())
+      run(openSettings())
       return
     }
     const current = navigation.current
@@ -502,8 +503,6 @@ export function mountLegacyBrowser(root: HTMLElement, options: LegacyBrowserOpti
       }
       await navigation.open(target)
     } else await navigation.start()
-    if (disposed) return
-    if (options.openSettings) await settingsUI.open()
     if (disposed) return
     changeWatcher.start()
   }

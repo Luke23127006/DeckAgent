@@ -29,6 +29,7 @@ export type {
   ChatDraft,
 } from './management.ts'
 export { providerProtocols } from './management.ts'
+export { decodeSettings, decodePreferences, decodeCatalog, decodeSettingsSaved } from './settings-validation.ts'
 export type {
   ActivityStatus,
   AgentRequest,

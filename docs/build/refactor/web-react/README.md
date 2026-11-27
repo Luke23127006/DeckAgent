@@ -33,8 +33,8 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | Phase | Name | Starts when | Done when | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Decisions, conventions and checks | The PO answers the `Open` items of [Browser Rules](web-rules.md#stack) | The rules of [Browser Rules](web-rules.md) are in the Project Structure [[4]](#ref-4), the Coding Guidelines [[5]](#ref-5) and the Testware [[6]](#ref-6). They are also in AGENTS.md [[7]](#ref-7), the target layout and the criteria. The folder rules for `apps/web/src/` exist, each with a negative fixture | Done ([Revision 1](plan/README.md#revision-1-phase-1-decisions-conventions-and-checks)) |
-| 2 | React shell | Phase 1 is done | Vite builds `apps/web/`. The Host serves the build folder with an SPA fallback, and `loadWebAssets` with its HTML and CSS strings is removed (WB-02, WB-05). Tailwind, shadcn/ui with the theme variables, Vitest, `main.tsx`, the route table, the app shell layout, the `QueryClient`, `api/client.ts` and the change feed hook exist. The old screens render inside the shell | Pending |
-| 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Pending |
+| 2 | React shell | Phase 1 is done | Vite builds `apps/web/`. The Host serves the build folder with an SPA fallback, and `loadWebAssets` with its HTML and CSS strings is removed (WB-02, WB-05). Tailwind, shadcn/ui with the theme variables, Vitest, `main.tsx`, the route table, the app shell layout, the `QueryClient`, `api/client.ts` and the change feed hook exist. The old screens render inside the shell | Done ([Revision 2](plan/README.md#revision-2-phase-2-react-shell)) |
+| 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Implemented; [exit check blocked](#phase-3-settings) by concurrent Host edits |
 | 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Pending |
 | 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Pending |
 | 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Pending |
@@ -48,7 +48,18 @@ Change the conventions before any screen moves, so that the executors do not app
 
 ### Phase 2: React shell
 
-`Open`: how the old screens render inside the React shell until their phase moves them. `Proposed`: one temporary component mounts an old screen into a `ref`. Phase 7 removes it. Without this step, the Browser does not work between Phases 3 and 6.
+Phase 2 is done. Legacy screens mount into a ref through `LegacyBrowserMount` until Phases 3 to 6 replace them. [Revision 2](plan/README.md#revision-2-phase-2-react-shell) of the plan has the tasks and the reports.
+
+### Phase 3: Settings
+
+The settings route renders React components for providers, models, credentials and theme. Query hooks read server state, and mutation hooks send writes. The API layer uses response decoders from the contracts package.
+
+Legacy settings entry points save the chat draft before navigation. The return path uses router state because the Host rejects query strings. Navigation preserves the token fragment, so Settings supports reload. The history guard registers before React Router and protects unsaved edits.
+
+The form keeps its read version until submission. A stale response refreshes settings and resets the form without another write. Submitted credentials leave the input immediately. The form resets completed mutations to release submitted credentials.
+The Settings implementation is complete. All 20 non-live test scripts passed, with isolated retries for three scripts. Vitest passed 15 tests, the checker suite passed 112 tests, and the complete browser suite passed 22 tests. The scoped web typecheck and Vite build also passed. A focused browser test passed after the final mobile scroll change.
+
+The full build passed earlier in this run. The last full build failed in concurrent Host deck edits outside this phase. Missing exports included `DeckSessionStore`, `ImageReviewRun` and `mapDeckFailure`. Phase 3 keeps its exit check open until the shared tree builds again.
 
 ### Phase 6: Deck
 

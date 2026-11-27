@@ -159,7 +159,7 @@ The canvas editor of UC-007 (editing a deck on a canvas) has a core without Reac
 | A page does not import another page | Review | No static pattern can tell another page from a folder of the same page |
 | `api/` and `editor/` do not import React, TanStack Query or UI code. `editor/` does not import `api/` | `oxlint` `no-restricted-imports` | Exists |
 | Code in `src/` does not import `mocks/` or `msw`. Only `main.tsx` starts the mocks in development | `oxlint` `no-restricted-imports` for static imports. Review for dynamic imports | Exists |
-| Production build has no chunk from `mocks/` or MSW | Build check | `Proposed`: Phase 2, with the Vite build |
+| Production build has no chunk from `mocks/` or MSW | Build check | Exists |
 | No `dangerouslySetInnerHTML` | `oxlint` `react/no-danger` | Exists |
 | File names in kebab case | `oxlint` `unicorn/filename-case` | Exists for `apps/web/src/` and `apps/web/mocks/` |
 | Text only in `text.ts` | Review | Exists |

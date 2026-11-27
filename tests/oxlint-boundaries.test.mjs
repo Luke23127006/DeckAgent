@@ -607,7 +607,10 @@ test('rejects a const enum', () => {
 })
 
 const restrictedHelps = result =>
-  result.diagnostics.filter(d => d.code === 'eslint(no-restricted-imports)').map(d => d.help).toSorted()
+  result.diagnostics
+    .filter(d => d.code === 'eslint(no-restricted-imports)')
+    .map(d => d.help)
+    .toSorted()
 
 test('browser pages reject src/api, Node modules, domain packages and mocks', () => {
   const result = lintFixture(
@@ -625,13 +628,24 @@ test('browser pages reject src/api, Node modules, domain packages and mocks', ()
 })
 
 test('browser components, layouts and contexts reject pages and src/api', () => {
-  for (const path of ['apps/web/src/components/request-row.tsx', 'apps/web/src/layouts/app-shell.tsx', 'apps/web/src/contexts/workspace-context.tsx']) {
-    const result = lintFixture(path, "import { a } from '../pages/chat/chat-page.tsx'\nimport { b } from '../api/chats.ts'\nexport const all = [a, b]\n")
+  for (const path of [
+    'apps/web/src/components/request-row.tsx',
+    'apps/web/src/layouts/app-shell.tsx',
+    'apps/web/src/contexts/workspace-context.tsx',
+  ]) {
+    const result = lintFixture(
+      path,
+      "import { a } from '../pages/chat/chat-page.tsx'\nimport { b } from '../api/chats.ts'\nexport const all = [a, b]\n",
+    )
     assert.equal(result.status, 1, path)
-    assert.deepEqual(restrictedHelps(result), [
-      'Shared code must not import a page. Move the shared code to src/components/.',
-      'UI code must not call src/api/. Read and write server data through a hook in src/hooks/.',
-    ], path)
+    assert.deepEqual(
+      restrictedHelps(result),
+      [
+        'Shared code must not import a page. Move the shared code to src/components/.',
+        'UI code must not call src/api/. Read and write server data through a hook in src/hooks/.',
+      ],
+      path,
+    )
   }
 })
 
@@ -677,7 +691,7 @@ test('browser editor rejects React and src/api', () => {
 test('browser files reject a PascalCase file name and dangerouslySetInnerHTML', () => {
   const result = lintFixture(
     'apps/web/src/components/RequestRow.tsx',
-    "export const RequestRow = ({ html }: { html: string }) => <div dangerouslySetInnerHTML={{ __html: html }} />\n",
+    'export const RequestRow = ({ html }: { html: string }) => <div dangerouslySetInnerHTML={{ __html: html }} />\n',
   )
   assert.equal(result.status, 1)
   assert.deepEqual(result.diagnostics.map(d => d.code).toSorted(), ['react(no-danger)', 'unicorn(filename-case)'])
@@ -685,9 +699,18 @@ test('browser files reject a PascalCase file name and dangerouslySetInnerHTML', 
 
 test('browser folders accept the allowed data flow and main.tsx accepts mocks', () => {
   const fixtures = [
-    ['apps/web/src/pages/chat/chat-page.tsx', "import { useChats } from '../../hooks/use-chats.ts'\nimport { Button } from '../../components/ui/button.tsx'\nimport type { AgentRequest } from '@deckagent/host-contracts'\nimport { useState } from 'react'\nexport const all = [useChats, Button, useState]\nexport type R = AgentRequest\n"],
-    ['apps/web/src/hooks/use-chats.ts', "import { listChats } from '../api/chats.ts'\nimport { useQuery } from '@tanstack/react-query'\nexport const all = [listChats, useQuery]\n"],
-    ['apps/web/src/main.tsx', "import { worker } from '../mocks/browser.ts'\nimport { createRoot } from 'react-dom/client'\nexport const all = [worker, createRoot]\n"],
+    [
+      'apps/web/src/pages/chat/chat-page.tsx',
+      "import { useChats } from '../../hooks/use-chats.ts'\nimport { Button } from '../../components/ui/button.tsx'\nimport type { AgentRequest } from '@deckagent/host-contracts'\nimport { useState } from 'react'\nexport const all = [useChats, Button, useState]\nexport type R = AgentRequest\n",
+    ],
+    [
+      'apps/web/src/hooks/use-chats.ts',
+      "import { listChats } from '../api/chats.ts'\nimport { useQuery } from '@tanstack/react-query'\nexport const all = [listChats, useQuery]\n",
+    ],
+    [
+      'apps/web/src/main.tsx',
+      "import { worker } from '../mocks/browser.ts'\nimport { createRoot } from 'react-dom/client'\nexport const all = [worker, createRoot]\n",
+    ],
   ]
   for (const [path, code] of fixtures) {
     const result = lintFixture(path, code)
