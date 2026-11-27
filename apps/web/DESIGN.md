@@ -108,7 +108,7 @@ The app is one glass window that fills the whole screen edge to edge, over a sof
 
 The direction follows the "Liquid Glass" guidance: glass for navigation and controls, content on a separate, calmer layer, colour used sparingly, and a solid fallback when transparency is off.
 
-The theme has three choices: **Sáng** (light), **Tối** (dark) and **Hệ thống** (follow the system). The Host keeps the choice (`GET/PUT /api/preferences`, stored in `web.sqlite`) and `/theme.js` applies it before first paint. Nothing is kept in browser storage, so a changed local port or a different browser keeps the same theme. If saving fails, the control goes back to the saved choice and shows a hover message.
+The theme has three choices: **Sáng** (light), **Tối** (dark) and **Hệ thống** (follow the system). The Host keeps the choice (`GET/PUT /api/preferences`, stored in `web.sqlite`) and `/theme.js` applies it before first paint. The `dark` class on the `html` element replaces the `data-theme` attribute: **Tối** adds the class, **Sáng** removes it, and **Hệ thống** follows `prefers-color-scheme`. Nothing is kept in browser storage, so a changed local port or a different browser keeps the same theme. If saving fails, the control goes back to the saved choice and shows a hover message.
 
 **Key characteristics:**
 - Fixed wallpaper behind the window made of soft-edged colour orbs (pink, violet, sky, mint and amber in light; magenta, cobalt, teal and rose in dark). The window blurs 48px at 1.9 saturation, so the orbs show as frosted shapes through the sidebar, content and deck. A rim highlight (`#app::after`, `--rim`) lights the top-left edge.
@@ -129,6 +129,31 @@ Neutrals plus one blue.
 - **Accent soft**: the tint of the one block waiting for the user (the request row and the waiting chip).
 - **Glass layers** (`window-tint`, `side`, `content`, `card`, `edge`, `line`, `fill`): translucent whites in light, translucent indigo-blacks in dark. Solid fallbacks live in `--s-*` tokens.
 - **OK / Error**: completed mark, failed mark and failed label only.
+
+### shadcn/ui tokens
+
+`apps/web/src/styles/app.css` maps the raw tokens above to the shadcn/ui CSS variables. `:root` holds the light theme and `.dark` holds the dark theme. `.dark` replaces `data-theme`, so no rule reads `data-theme` any more.
+
+| Variable | Light (`:root`) | Dark (`.dark`) | Raw token |
+| --- | --- | --- | --- |
+| `--background` | `rgba(255, 255, 255, 0.6)` | `rgba(26, 28, 42, 0.62)` | `content` |
+| `--foreground` | `#1d1d1f` | `#f5f5f7` | `ink` |
+| `--card`, `--popover` | `rgba(255, 255, 255, 0.74)` | `rgba(48, 50, 70, 0.78)` | `card` |
+| `--card-foreground`, `--popover-foreground` | `#1d1d1f` | `#f5f5f7` | `ink` |
+| `--primary` | `#0066cc` | `#0a6ede` | `accent` / `dark-accent-fill` |
+| `--primary-foreground` | `#ffffff` | `#ffffff` | message text on accent |
+| `--secondary`, `--sidebar` | `rgba(244, 245, 250, 0.45)` | `rgba(18, 20, 32, 0.5)` | `side` / `dark-side` |
+| `--secondary-foreground`, `--sidebar-foreground` | `#1d1d1f` | `#f5f5f7` | `ink` |
+| `--muted` | `rgba(60, 60, 67, 0.07)` | `rgba(235, 235, 245, 0.09)` | `fill` |
+| `--muted-foreground` | `#5f5f65` | `#a8a8b0` | `ink-muted` |
+| `--accent`, `--sidebar-accent` | `rgba(0, 102, 204, 0.12)` | `rgba(107, 182, 255, 0.18)` | `accent-soft` |
+| `--accent-foreground`, `--sidebar-accent-foreground` | `#005bb8` | `#6bb6ff` | `accent-text` |
+| `--destructive` | `#c4001a` | `#ff7a68` | `err` |
+| `--border`, `--input`, `--sidebar-border` | `rgba(60, 60, 67, 0.14)` | `rgba(235, 235, 245, 0.14)` | `line` |
+| `--ring` | `rgba(0, 102, 204, 0.35)` | `rgba(107, 182, 255, 0.5)` | `accent` at 35% |
+| `--legacy-accent` | `#0066cc` | `#6bb6ff` | `accent` / `dark-accent` |
+
+The dark `fill` and `line` values have no frontmatter entry. They are the glass values that `apps/web/src/index.ts` used for the dark theme.
 
 ### Named Rules
 

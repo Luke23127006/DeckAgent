@@ -131,7 +131,7 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 
 | Task | Status | File |
 | --- | --- | --- |
-| 4 | Pending | [Configure Vite, Tailwind, shadcn/ui and DESIGN.md](task-04-configure-vite-tailwind-and-shadcn.md) |
+| 4 | Done | [Configure Vite, Tailwind, shadcn/ui and DESIGN.md](task-04-configure-vite-tailwind-and-shadcn.md) ([report](../reports/task-04-configure-vite-tailwind-and-shadcn.md)) |
 | 5 | Pending | [Add api/client.ts, api/changes.ts and text.ts](task-05-add-api-client-changes-and-text.md) |
 | 6 | Pending | [Add change feed and host connection hooks](task-06-add-change-feed-and-connection-hooks.md) |
 | 7 | Pending | [Add React shell, routes, main.tsx and legacy mount](task-07-add-react-shell-routes-and-legacy-mount.md) |

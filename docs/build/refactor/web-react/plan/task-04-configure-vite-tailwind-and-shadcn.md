@@ -24,7 +24,7 @@ Read this file to learn the steps of Task 4, which configures Vite, Tailwind, sh
 
 **Forbidden:** Do not delete `apps/web/src/index.ts` or change `scripts/build-workspace.mjs` in this task.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/vite-build-mocks.test.mjs` with a header comment that follows `docs/conventions/testware.md`:
 
@@ -76,7 +76,7 @@ describe('Button and cn', () => {
 })
 ```
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/vite-build-mocks.test.mjs`
 Expected: FAIL. The output reports that `apps/web/vite.config.ts` does not exist.
@@ -84,7 +84,7 @@ Expected: FAIL. The output reports that `apps/web/vite.config.ts` does not exist
 Run: `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native tests/button.test.tsx`
 Expected: FAIL. The output reports that `button.tsx` or `cn.ts` does not exist.
 
-- [ ] **Step 3: Create `apps/web/index.html`, `apps/web/vite.config.ts`, sample HTML files and `apps/web/tsconfig.json` updates**
+- [x] **Step 3: Create `apps/web/index.html`, `apps/web/vite.config.ts`, sample HTML files and `apps/web/tsconfig.json` updates**
 
 1. Create `apps/web/index.html` with `lang="vi"`, `<script src="/theme.js"></script>`, `<div id="root"></div>`, and `<script type="module" src="/src/main.tsx"></script>`.
 2. Create `apps/web/vite.config.ts`:
@@ -94,7 +94,7 @@ Expected: FAIL. The output reports that `button.tsx` or `cn.ts` does not exist.
 4. Update `apps/web/tsconfig.json`: add `"jsx": "react-jsx"`, `"lib": ["ES2024", "DOM", "DOM.Iterable"]`, `"types": ["node", "vite/client"]`, and `"paths": { "@/*": ["./src/*"] }`. Keep `"exclude": ["src/browser/**"]` for now.
 5. Add `"test:web": "pnpm --filter @deckagent/local-web exec vitest run --configLoader native"` to `package.json` `scripts`.
 
-- [ ] **Step 4: Create Tailwind theme styles, `cn.ts`, `button.tsx` and update `apps/web/DESIGN.md`**
+- [x] **Step 4: Create Tailwind theme styles, `cn.ts`, `button.tsx` and update `apps/web/DESIGN.md`**
 
 1. Create `apps/web/src/styles/app.css`:
    - Start with `@import "tailwindcss";` and `@custom-variant dark (&:where(.dark, .dark *));`.
@@ -109,7 +109,7 @@ Expected: FAIL. The output reports that `button.tsx` or `cn.ts` does not exist.
 4. Create `apps/web/src/components/ui/button.tsx` exporting `buttonVariants` (using `class-variance-authority` with variants `default`, `secondary`, `outline`, `ghost`, `destructive` and sizes `default`, `sm`, `icon`) and `Button` (supporting `asChild` via `@radix-ui/react-slot` and semantic Tailwind theme classes).
 5. Update `apps/web/DESIGN.md`: map the raw CSS tokens in `Overview` and `Colors` to the shadcn/ui CSS variables (`--background`, `--foreground`, `--primary`, `--card`, `--muted`, `--accent`, `--destructive`, `--border`, `--ring`, `--sidebar`) under `:root` and `.dark`, and state that `.dark` class replaces `data-theme`.
 
-- [ ] **Step 5: Run tests and static checks**
+- [x] **Step 5: Run tests and static checks**
 
 Run: `node --test --test-reporter=tap tests/vite-build-mocks.test.mjs`
 Expected: PASS. The output contains `# fail 0`.
@@ -120,6 +120,6 @@ Expected: PASS. Exit code 0 and `button.test.tsx` passes.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries && corepack pnpm@11.28.5 check:docs`
 Expected: exit code 0.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
