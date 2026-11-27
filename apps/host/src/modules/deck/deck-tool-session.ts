@@ -59,9 +59,15 @@ export interface DeckToolSessionOptions {
   readonly sessionId: string
 }
 
+export interface DeckImageRecovery {
+  readonly recovery: string
+  settle(completed: boolean, threw?: boolean): Promise<void>
+}
+
 export interface DeckToolSession {
   readonly tools: RequestTools | undefined
   readonly state: DeckStagingState
+  prepareImageRecovery(): Promise<DeckImageRecovery | undefined>
   runImageRecovery(instructions: string): Promise<void>
 }
 
@@ -93,6 +99,7 @@ export function createDeckToolSession(options: DeckToolSessionOptions): DeckTool
   return {
     tools,
     state,
+    prepareImageRecovery: () => prepareImageRecovery(options, state, tools),
     runImageRecovery: instructions => recoverImages(options, state, tools, instructions),
   }
 }
@@ -319,12 +326,11 @@ function hasRecoverableImages(pendingImages: readonly PendingImage[]): boolean {
   )
 }
 
-async function recoverImages(
+async function prepareImageRecovery(
   options: DeckToolSessionOptions,
   state: DeckStagingState,
   tools: RequestTools | undefined,
-  instructions: string,
-): Promise<void> {
+): Promise<DeckImageRecovery | undefined> {
   const { run } = options
   const imageReview = options.review.imageReview
   const pending = imageReview?.pending().filter(n => n.required) ?? []
@@ -345,14 +351,34 @@ async function recoverImages(
   const activity = (status: 'running' | 'completed' | 'failed') =>
     run.emit({ kind: 'activity', id: recoveryId, label: 'recover_slide_images', type: 'tool', status })
   await activity('running')
+  return {
+    recovery,
+    async settle(completed, threw = false) {
+      if (run.signal.aborted) return
+      if (threw) {
+        await activity('failed')
+        await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
+        return
+      }
+      if (!completed) await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
+      await activity(imageReview?.pending().some(n => n.required) ? 'failed' : 'completed')
+    },
+  }
+}
+
+async function recoverImages(
+  options: DeckToolSessionOptions,
+  state: DeckStagingState,
+  tools: RequestTools | undefined,
+  instructions: string,
+): Promise<void> {
+  const recovery = await prepareImageRecovery(options, state, tools)
+  if (!recovery || !tools) return
   try {
-    const outcome = await executeRecoveryRun(options.prepared, run, tools, instructions, recovery)
-    if (outcome.status !== 'completed' && !run.signal.aborted)
-      await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
-    if (!run.signal.aborted) await activity(imageReview?.pending().some(n => n.required) ? 'failed' : 'completed')
+    const outcome = await executeRecoveryRun(options.prepared, options.run, tools, instructions, recovery.recovery)
+    await recovery.settle(outcome.status === 'completed')
   } catch {
-    run.signal.throwIfAborted()
-    await activity('failed')
-    await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
+    options.run.signal.throwIfAborted()
+    await recovery.settle(false, true)
   }
 }

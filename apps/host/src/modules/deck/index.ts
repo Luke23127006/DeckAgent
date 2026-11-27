@@ -14,3 +14,14 @@ export type { DeckSessionStore, ImageParserPort } from './ports.ts'
 export { createDeckOperations } from './deck.service.ts'
 export type { DeckOperations } from './deck.service.ts'
 export { createDeckRoutes } from './deck.routes.ts'
+export { sourceKindsForBrief } from './deck-prompts.ts'
+export { createDeckRunPlan } from './deck-run-plan.ts'
+export type { DeckPlanDependencies } from './deck-run-plan.ts'
+export { createGenerationRunPlan } from './generation-run-plan.ts'
+export type {
+  GenerationPlanDependencies,
+  GenerationPlanInput,
+  GenerationOverrideRun,
+  GenerationRuntimeOverride,
+  GenerationSourceToolsPort,
+} from './generation-run-plan.ts'

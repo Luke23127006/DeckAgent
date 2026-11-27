@@ -48,7 +48,7 @@ After this task, `apps/host/src/modules/deck/` builds `RunPlan` and `RunContribu
 
 **Forbidden:** import `apps/host/src/tools/` or `@deckagent/session-persistence` inside `apps/host/src/modules/deck/`. Change `apps/host/src/server.ts`, `deck-workflow.ts` or `generation-workflow.ts`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -58,7 +58,7 @@ Run: `git grep -n "^| 52 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Write the failing tests in `apps/host/tests/deck-run-plan.test.mjs`**
+- [x] **Step 2: Write the failing tests in `apps/host/tests/deck-run-plan.test.mjs`**
 
 Create `apps/host/tests/deck-run-plan.test.mjs` covering:
 
@@ -68,19 +68,19 @@ Create `apps/host/tests/deck-run-plan.test.mjs` covering:
 
 Add `apps/host/tests/deck-run-plan.test.mjs` to `test:deck-review` in `package.json`.
 
-- [ ] **Step 3: Run the new test and check that it fails**
+- [x] **Step 3: Run the new test and check that it fails**
 
 Run: `node --test apps/host/tests/deck-run-plan.test.mjs`
 
 Expected: FAIL. Missing exports `sourceKindsForBrief`, `createDeckRunPlan` and `createGenerationRunPlan`.
 
-- [ ] **Step 4: Implement `sourceKindsForBrief`, `deck-run-plan.ts` and `generation-run-plan.ts`**
+- [x] **Step 4: Implement `sourceKindsForBrief`, `deck-run-plan.ts` and `generation-run-plan.ts`**
 
 1. Export `sourceKindsForBrief` in `apps/host/src/modules/deck/deck-prompts.ts`.
 2. Create `apps/host/src/modules/deck/deck-run-plan.ts` and `apps/host/src/modules/deck/generation-run-plan.ts` matching the signatures in `Interfaces`, reusing existing prompt builders, validation helpers, `EvidenceLedger`, `ImageReviewRun` and `generationReport` without duplicating them.
 3. Export `sourceKindsForBrief`, `createDeckRunPlan`, `createGenerationRunPlan` and their public types from `apps/host/src/modules/deck/index.ts`.
 
-- [ ] **Step 5: Build and run `deck-run-plan.test.mjs`**
+- [x] **Step 5: Build and run `deck-run-plan.test.mjs`**
 
 Run: `corepack pnpm@11.28.5 build`
 
@@ -90,7 +90,7 @@ Run: `node --test apps/host/tests/deck-run-plan.test.mjs`
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Format, build and check**
+- [x] **Step 6: Format, build and check**
 
 Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
@@ -98,9 +98,9 @@ Expected: PASS. Output contains `# fail 0`.
 
 - [ ] **Step 7: Run every suite**
 
-Do the step `Run every suite` of the Task protocol.
+Deferred by user instruction until Tasks 53 through 57 finish.
 
-- [ ] **Step 8: Write the report file and stop**
+- [x] **Step 8: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

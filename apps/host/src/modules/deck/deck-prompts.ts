@@ -1,3 +1,4 @@
+import type { SourceKind } from '../../runs/index.ts'
 import { briefContractVersion, briefJsonSchema, DeckError, interviewState } from '@deckagent/deck'
 import type { BriefDraft, BoundOutlineDraft, DeckStore, OutlineImageReview } from '@deckagent/deck'
 import { listDesignSystems, listTemplates } from '@deckagent/design'
@@ -382,4 +383,9 @@ function imageFailure(error: unknown, state: BriefFailureState, imageReview: Ima
         ? 'Use the current imageNeeds and search for new candidate IDs. Historical IDs are not current. A tool error is not an empty search result.'
         : 'Choose an untried relevant candidate or refine the query within remaining budgets. Keep required image positions.'
   return deckToolResult({ code, imageNeeds: imageReview?.snapshot() ?? [], notice }, true)
+}
+
+export function sourceKindsForBrief(brief: BriefDraft): readonly SourceKind[] {
+  if (brief.sources.material) return ['workspace-files', 'attachments', 'research']
+  return brief.sources.publicResearch ? ['research'] : []
 }
