@@ -28,6 +28,7 @@ export type {
   WorkspaceView,
   ChatDraft,
 } from './management.ts'
+export { providerProtocols } from './management.ts'
 export type {
   ActivityStatus,
   AgentRequest,

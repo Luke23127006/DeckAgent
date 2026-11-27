@@ -39,7 +39,7 @@ Read this file to learn the steps of Task 11, which adds `ProviderError`, `Provi
 
 **Forbidden:** Do not rename `ProviderConfigurations`, `ProviderConfigurationsOptions` or `ProviderOperations` in this task. Do not change `apps/web/`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 1. In `packages/host/contracts/tests/validation.test.mjs`, add `providerProtocols` to the existing import from the contracts package. Add this test at the end of the file:
 
@@ -87,17 +87,17 @@ test('ProviderError and mapProviderError map codes to HTTP status and detail', (
 })
 ```
 
-- [ ] **Step 2: Build and run the tests, and make sure that they fail**
+- [x] **Step 2: Build and run the tests, and make sure that they fail**
 
 Run: `corepack pnpm@11.28.5 build; node --test --test-reporter=tap packages/host/contracts/tests/validation.test.mjs apps/host/tests/web-management.test.mjs`
 Expected: FAIL. `providerProtocols` is not exported from the contracts package, and `ProviderError` is not exported from `providers.errors.js`.
 
-- [ ] **Step 3: Move the protocol list to the host contracts**
+- [x] **Step 3: Move the protocol list to the host contracts**
 
 1. In `packages/host/contracts/src/management.ts`, replace the type `ProviderProtocol` with `providerProtocols` and the type from it, as Interfaces gives them. Keep the comment `/** API protocols of BR-005 V-4. */` on `providerProtocols`.
 2. In `packages/host/contracts/src/index.ts`, add `export { providerProtocols } from './management.ts'`. Keep `ProviderProtocol` in the type export.
 
-- [ ] **Step 4: Move the provider error and rename the check code**
+- [x] **Step 4: Move the provider error and rename the check code**
 
 1. In `apps/host/src/modules/providers/providers.errors.ts`, add `ProviderErrorCode` with the 18 keys of `providerStatus`, and `ProviderError` as Interfaces gives it. Type `providerStatus` as `Readonly<Record<ProviderErrorCode, number>>`. Rename `mapProviderFailure` to `mapProviderError`, and use `providerStatus[error.code]` without `?? 500`. Remove the import of `./providers.service.ts`.
 2. In `apps/host/src/modules/providers/providers.service.ts`, remove the class `ProviderFailure` and the constant `protocols`. Import `ProviderError` from `./providers.errors.ts` and `providerProtocols` from `@deckagent/host-contracts`. Replace each `ProviderFailure` with `ProviderError`, and each `protocols` with `providerProtocols`.
@@ -106,7 +106,7 @@ Expected: FAIL. `providerProtocols` is not exported from the contracts package, 
 5. In `apps/host/src/cli.ts`, import `providerProtocols` from `@deckagent/host-contracts` and `validBaseUrl` from `./modules/providers/index.ts`. Replace `protocols.find` with `providerProtocols.find`.
 6. In `apps/host/src/server.ts`, replace `mapProviderFailure` with `mapProviderError` in the import and in the call.
 
-- [ ] **Step 5: Build, run the tests and run the checks**
+- [x] **Step 5: Build, run the tests and run the checks**
 
 Run: `corepack pnpm@11.28.5 build && node --test --test-reporter=tap packages/host/contracts/tests/validation.test.mjs apps/host/tests/web-management.test.mjs`
 Expected: exit code 0 and `# fail 0`.
@@ -117,6 +117,6 @@ Expected: no line.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

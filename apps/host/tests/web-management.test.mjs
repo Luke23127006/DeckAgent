@@ -9,6 +9,8 @@ import { once } from 'node:events'
 import { HostClient, ManagementClient, ManagementError } from '../../web/tests/fixtures/browser-driver.mjs'
 import { DatabaseSync } from 'node:sqlite'
 import { openSessionStore } from './fixtures/session-store.mjs'
+import { ProviderError, mapProviderError } from '../lib/types/modules/providers/providers.errors.js'
+import { ProviderCheckError } from '../lib/types/modules/providers/provider-catalog.js'
 
 test('provider display names cannot become invalid management URL identities', async () => {
   const client = new ManagementClient('http://127.0.0.1:1', 'local-fixture')
@@ -372,4 +374,43 @@ test('Chat HTTP routes reject invalid create, selection and search payloads with
     assert.equal(reply.status, 400)
     assert.equal(reply.data.error.code, code)
   }
+})
+
+test('ProviderError and mapProviderError map codes to HTTP status and detail', () => {
+  const stale = new ProviderError('PROVIDERS_STALE')
+  assert.equal(stale.name, 'ProviderError')
+  assert.deepEqual(mapProviderError(stale), { status: 409, code: 'PROVIDERS_STALE' })
+  assert.deepEqual(mapProviderError(new ProviderError('INVALID_PROVIDER', { field: 'baseUrl' })), {
+    status: 400,
+    code: 'INVALID_PROVIDER',
+    detail: { field: 'baseUrl' },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_ID_TAKEN', { provider: 'OpenAI', builtIn: true })), {
+    status: 409,
+    code: 'PROVIDER_ID_TAKEN',
+    detail: { provider: 'OpenAI', builtIn: true },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_NOT_FOUND')), {
+    status: 404,
+    code: 'PROVIDER_NOT_FOUND',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_KEY_REFUSED')), {
+    status: 422,
+    code: 'PROVIDER_KEY_REFUSED',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('CATALOG_UNAVAILABLE', { reason: 'no-answer' })), {
+    status: 502,
+    code: 'CATALOG_UNAVAILABLE',
+    detail: { reason: 'no-answer' },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_NO_ANSWER')), {
+    status: 504,
+    code: 'PROVIDER_NO_ANSWER',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('CREDENTIAL_NOT_SAVED')), {
+    status: 500,
+    code: 'CREDENTIAL_NOT_SAVED',
+  })
+  assert.equal(mapProviderError(new ProviderCheckError('PROVIDER_HTTP', 500)), undefined)
+  assert.equal(mapProviderError(new Error('other')), undefined)
 })

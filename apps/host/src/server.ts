@@ -40,7 +40,7 @@ import {
   SqliteProviderStore,
   createProviderRoutes,
   listModels,
-  mapProviderFailure,
+  mapProviderError,
   type ProviderConfigurationsOptions,
   type ProviderConnection,
 } from './modules/providers/index.ts'
@@ -582,7 +582,7 @@ function createHostOptions(
       mapRunFailure(error) ??
       mapWorkspaceError(error) ??
       mapChatError(error) ??
-      mapProviderFailure(error) ??
+      mapProviderError(error) ??
       mapAttachmentFailure(error) ??
       mapResearchFailure(error) ??
       mapDeckFailure(error) ??

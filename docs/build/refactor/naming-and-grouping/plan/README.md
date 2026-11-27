@@ -195,7 +195,7 @@ Phase 2 is done. Tasks 3 to 7 are `Done` (commits `102366c` and `f0c6c40` hold T
 
 | Task | Status | File |
 | --- | --- | --- |
-| 11 | Pending | [Add ProviderError, ProviderCheckCode and providerProtocols](task-11-add-provider-error-check-code-and-protocols.md) |
+| 11 | Done | [Add ProviderError, ProviderCheckCode and providerProtocols](task-11-add-provider-error-check-code-and-protocols.md) ([report](../reports/task-11-add-provider-error-check-code-and-protocols.md)) |
 | 12 | Pending | [Rename ProviderService and narrow the providers index](task-12-convert-provider-service-and-index.md) |
 | 13 | Pending | [Add ResearchError and the Tavily error codes](task-13-add-research-error-and-tavily-codes.md) |
 | 14 | Pending | [Convert ResearchService and split the research ports](task-14-convert-research-service-and-ports.md) |

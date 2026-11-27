@@ -1,25 +1,15 @@
+import { providerProtocols } from '@deckagent/host-contracts'
 import type { ModelSelection, ProviderProtocol, ProviderSettings, ProviderTemplate } from '@deckagent/host-contracts'
 import { builtInProviders } from './built-in-providers.ts'
 import { CredentialError, ProtectedFileCredentialStore } from '../../credential-store.ts'
 import type { CredentialStore } from '../../credential-store.ts'
 import { ProviderCheckError, validBaseUrl } from './provider-catalog.ts'
 import type { ProviderEndpoint, ProviderRunSettings } from './provider-catalog.ts'
+import { ProviderError } from './providers.errors.ts'
 import type { ProviderRow, SqliteProviderStore } from './providers.store.ts'
 
-export const protocols: readonly ProviderProtocol[] = ['chat-completions', 'responses', 'anthropic-messages', 'gemini']
-
-export class ProviderFailure extends Error {
-  constructor(
-    readonly code: string,
-    readonly detail?: Readonly<Record<string, string | boolean>>,
-  ) {
-    super(code)
-    this.name = 'ProviderFailure'
-  }
-}
-
 function isProviderProtocol(value: unknown): value is ProviderProtocol {
-  return protocols.some(item => item === value)
+  return providerProtocols.some(item => item === value)
 }
 
 /** A connection given at startup (CLI flags); its key stays in the environment and is never saved. */
@@ -92,12 +82,12 @@ function parse(id: string, value: unknown): ProviderInput {
     (value.key !== undefined && (typeof value.key !== 'string' || (value.key !== '' && !keyText.test(value.key)))) ||
     (value.new !== undefined && typeof value.new !== 'boolean')
   )
-    throw new ProviderFailure('INVALID_PROVIDER')
-  if (!validBaseUrl(value.baseUrl)) throw new ProviderFailure('INVALID_PROVIDER', { field: 'baseUrl' })
+    throw new ProviderError('INVALID_PROVIDER')
+  if (!validBaseUrl(value.baseUrl)) throw new ProviderError('INVALID_PROVIDER', { field: 'baseUrl' })
   const protocol = value.protocol
   const models = value.models.map(model => String(model))
   if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
-    throw new ProviderFailure('INVALID_PROVIDER', { field: 'models' })
+    throw new ProviderError('INVALID_PROVIDER', { field: 'models' })
   return {
     displayName: value.displayName.trim(),
     protocol,
@@ -109,18 +99,18 @@ function parse(id: string, value: unknown): ProviderInput {
 }
 
 /** Failed checks save nothing and say which kind of refusal it was; no provider text is passed on. */
-function checkFailure(error: unknown): ProviderFailure {
+function checkFailure(error: unknown): ProviderError {
   if (error instanceof ProviderCheckError) {
-    if (error.code === 'PROVIDER_REFUSED_KEY') return new ProviderFailure('PROVIDER_KEY_REFUSED')
-    if (error.code === 'PROVIDER_NO_ANSWER') return new ProviderFailure('PROVIDER_NO_ANSWER')
-    if (error.code === 'PROVIDER_TLS') return new ProviderFailure('PROVIDER_NO_ANSWER', { reason: 'certificate' })
+    if (error.code === 'PROVIDER_REFUSED_KEY') return new ProviderError('PROVIDER_KEY_REFUSED')
+    if (error.code === 'PROVIDER_NO_ANSWER') return new ProviderError('PROVIDER_NO_ANSWER')
+    if (error.code === 'PROVIDER_TLS') return new ProviderError('PROVIDER_NO_ANSWER', { reason: 'certificate' })
     if (error.code === 'PROVIDER_RATE_LIMIT')
-      return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
+      return new ProviderError('PROVIDER_CHECK_FAILED', { reason: 'rate-limit' })
     if (error.code === 'PROVIDER_HTTP')
-      return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
-    return new ProviderFailure('PROVIDER_CHECK_FAILED', { reason: 'protocol' })
+      return new ProviderError('PROVIDER_CHECK_FAILED', { reason: `http-${error.status ?? 0}` })
+    return new ProviderError('PROVIDER_CHECK_FAILED', { reason: 'protocol' })
   }
-  return new ProviderFailure('PROVIDER_NO_ANSWER')
+  return new ProviderError('PROVIDER_NO_ANSWER')
 }
 
 /**
@@ -150,7 +140,7 @@ export class ProviderConfigurations {
         this.deleted.add(id)
         continue
       }
-      if (!record(data)) throw new ProviderFailure('SETTINGS_STORAGE')
+      if (!record(data)) throw new ProviderError('SETTINGS_STORAGE')
       // Older files kept the protected key inside the provider row (B01). It moves to the credential store unchanged.
       let credentialRef = typeof data.credentialRef === 'string' ? data.credentialRef : undefined
       if (typeof data.encryptedKey === 'string' && this.credentials instanceof ProtectedFileCredentialStore) {
@@ -192,7 +182,7 @@ export class ProviderConfigurations {
       const connection = connections.find(value => value.id === initial.provider)
       if (
         connection &&
-        protocols.includes(connection.protocol) &&
+        providerProtocols.includes(connection.protocol) &&
         validBaseUrl(connection.baseUrl) &&
         providerId.test(connection.id)
       ) {
@@ -243,9 +233,9 @@ export class ProviderConfigurations {
   /** Capture the settings of one request; later changes do not reach it (FR-042). */
   runSettings(selection: ModelSelection): ProviderRunSettings {
     const saved = this.providers.get(selection.provider)
-    if (!saved || !saved.models.includes(selection.model)) throw new ProviderFailure('MODEL_NOT_SELECTABLE')
+    if (!saved || !saved.models.includes(selection.model)) throw new ProviderError('MODEL_NOT_SELECTABLE')
     const key = this.keys.get(saved.id)
-    if (saved.credentialRef && !key) throw new ProviderFailure('PROVIDER_KEY_UNAVAILABLE')
+    if (saved.credentialRef && !key) throw new ProviderError('PROVIDER_KEY_UNAVAILABLE')
     return {
       provider: saved.id,
       protocol: saved.protocol,
@@ -257,27 +247,27 @@ export class ProviderConfigurations {
 
   save(id: string, value: unknown, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
-      if (expectedVersion !== this.store.version()) throw new ProviderFailure('PROVIDERS_STALE')
+      if (expectedVersion !== this.store.version()) throw new ProviderError('PROVIDERS_STALE')
       const input = parse(id, value)
       const previous = this.providers.get(id)
       const template = builtInProviders.find(provider => provider.id === id)
       // BR-008: one saved configuration per provider ID; built-in IDs are reserved even before they are saved.
-      if (input.isNew && previous) throw new ProviderFailure('PROVIDER_ID_TAKEN', { provider: previous.displayName })
+      if (input.isNew && previous) throw new ProviderError('PROVIDER_ID_TAKEN', { provider: previous.displayName })
       if (template && (input.protocol !== template.protocol || input.baseUrl !== template.baseUrl))
-        throw new ProviderFailure('PROVIDER_ID_TAKEN', { provider: template.displayName, builtIn: true })
+        throw new ProviderError('PROVIDER_ID_TAKEN', { provider: template.displayName, builtIn: true })
       if ([...this.providers.values()].some(other => other.id !== id && other.displayName === input.displayName))
-        throw new ProviderFailure('PROVIDER_NAME_EXISTS')
-      if (previous && previous.protocol !== input.protocol) throw new ProviderFailure('PROTOCOL_IMMUTABLE')
+        throw new ProviderError('PROVIDER_NAME_EXISTS')
+      if (previous && previous.protocol !== input.protocol) throw new ProviderError('PROTOCOL_IMMUTABLE')
       const hadKey = !!previous && (!!previous.credentialRef || this.keys.has(id))
       const endpointChanged = !!previous && previous.baseUrl !== input.baseUrl
       // A saved key is never sent to a new endpoint the user did not give a key for.
-      if (endpointChanged && hadKey && input.key === undefined) throw new ProviderFailure('NEW_ENDPOINT_REQUIRES_KEY')
-      if (template && input.key === '') throw new ProviderFailure('PROVIDER_KEY_REQUIRED', { missing: 'key' })
+      if (endpointChanged && hadKey && input.key === undefined) throw new ProviderError('NEW_ENDPOINT_REQUIRES_KEY')
+      if (template && input.key === '') throw new ProviderError('PROVIDER_KEY_REQUIRED', { missing: 'key' })
       const key = input.key === undefined ? this.keys.get(id) : input.key || undefined
-      if (template && !key) throw new ProviderFailure('PROVIDER_KEY_REQUIRED', { missing: 'key' })
-      if (input.key && !this.credentials.persistent) throw new ProviderFailure('CREDENTIAL_STORE_UNAVAILABLE')
+      if (template && !key) throw new ProviderError('PROVIDER_KEY_REQUIRED', { missing: 'key' })
+      if (input.key && !this.credentials.persistent) throw new ProviderError('CREDENTIAL_STORE_UNAVAILABLE')
       if (!previous || endpointChanged || input.key !== undefined) {
-        if (!this.options.check) throw new ProviderFailure('PROVIDER_NO_ANSWER')
+        if (!this.options.check) throw new ProviderError('PROVIDER_NO_ANSWER')
         const endpoint = { protocol: input.protocol, baseUrl: input.baseUrl }
         try {
           await this.options.check(endpoint, key)
@@ -291,7 +281,7 @@ export class ProviderConfigurations {
         try {
           created = await this.credentials.save(input.key)
         } catch (error) {
-          throw new ProviderFailure(error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED')
+          throw new ProviderError(error instanceof CredentialError ? error.code : 'CREDENTIAL_NOT_SAVED')
         }
         credentialRef = created
       } else if (input.key === '') credentialRef = undefined
@@ -308,7 +298,7 @@ export class ProviderConfigurations {
         version = this.store.put(this.row(saved))
       } catch {
         if (created) await this.credentials.remove(created).catch(() => {})
-        throw new ProviderFailure('SETTINGS_STORAGE')
+        throw new ProviderError('SETTINGS_STORAGE')
       }
       this.providers.set(id, saved)
       this.deleted.delete(id)
@@ -325,9 +315,9 @@ export class ProviderConfigurations {
   /** Deletes the configuration, its added models and its key from DeckAgent only (FR-063). */
   remove(id: string, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
-      if (expectedVersion !== this.store.version()) throw new ProviderFailure('PROVIDERS_STALE')
+      if (expectedVersion !== this.store.version()) throw new ProviderError('PROVIDERS_STALE')
       const previous = this.providers.get(id)
-      if (!previous) throw new ProviderFailure('PROVIDER_NOT_FOUND')
+      if (!previous) throw new ProviderError('PROVIDER_NOT_FOUND')
       // A tombstone keeps a startup flag from bringing a deleted configuration back.
       const version = this.store.put({ id, payload: JSON.stringify({ deleted: true }) })
       this.providers.delete(id)
@@ -342,8 +332,8 @@ export class ProviderConfigurations {
   /** The provider's model catalog (FR-058). Changes no added model. */
   async catalog(id: string): Promise<readonly string[]> {
     const saved = this.providers.get(id)
-    if (!saved) throw new ProviderFailure('PROVIDER_NOT_FOUND')
-    if (!this.options.catalog) throw new ProviderFailure('CATALOG_UNAVAILABLE', { reason: 'no-answer' })
+    if (!saved) throw new ProviderError('PROVIDER_NOT_FOUND')
+    if (!this.options.catalog) throw new ProviderError('CATALOG_UNAVAILABLE', { reason: 'no-answer' })
     const endpoint = { protocol: saved.protocol, baseUrl: saved.baseUrl }
     const key = this.keys.get(id)
     try {
@@ -357,7 +347,7 @@ export class ProviderConfigurations {
               ? 'no-answer'
               : 'unusable'
           : 'no-answer'
-      throw new ProviderFailure('CATALOG_UNAVAILABLE', { reason })
+      throw new ProviderError('CATALOG_UNAVAILABLE', { reason })
     }
   }
 

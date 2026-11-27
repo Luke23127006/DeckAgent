@@ -1,7 +1,26 @@
 import type { HttpFailureResponse } from '../../http/route-helpers.ts'
-import { ProviderFailure } from './providers.service.ts'
 
-const providerStatus: Readonly<Record<string, number>> = {
+export type ProviderErrorCode =
+  | 'INVALID_PROVIDER'
+  | 'PROVIDER_KEY_REQUIRED'
+  | 'PROVIDER_NOT_FOUND'
+  | 'MODEL_NOT_SELECTABLE'
+  | 'PROVIDER_KEY_UNAVAILABLE'
+  | 'PROVIDER_ID_TAKEN'
+  | 'PROVIDER_NAME_EXISTS'
+  | 'PROVIDERS_STALE'
+  | 'PROTOCOL_IMMUTABLE'
+  | 'NEW_ENDPOINT_REQUIRES_KEY'
+  | 'PROVIDER_KEY_REFUSED'
+  | 'PROVIDER_CHECK_FAILED'
+  | 'CREDENTIAL_STORE_UNAVAILABLE'
+  | 'CATALOG_UNAVAILABLE'
+  | 'PROVIDER_NO_ANSWER'
+  | 'SETTINGS_STORAGE'
+  | 'CREDENTIAL_NOT_SAVED'
+  | 'CREDENTIAL_UNAVAILABLE'
+
+const providerStatus: Readonly<Record<ProviderErrorCode, number>> = {
   INVALID_PROVIDER: 400,
   PROVIDER_KEY_REQUIRED: 400,
   PROVIDER_NOT_FOUND: 404,
@@ -22,10 +41,20 @@ const providerStatus: Readonly<Record<string, number>> = {
   CREDENTIAL_UNAVAILABLE: 500,
 }
 
-export function mapProviderFailure(error: unknown): HttpFailureResponse | undefined {
-  if (!(error instanceof ProviderFailure)) return undefined
+export class ProviderError extends Error {
+  constructor(
+    readonly code: ProviderErrorCode,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
+    super(code)
+    this.name = 'ProviderError'
+  }
+}
+
+export function mapProviderError(error: unknown): HttpFailureResponse | undefined {
+  if (!(error instanceof ProviderError)) return undefined
   return {
-    status: providerStatus[error.code] ?? 500,
+    status: providerStatus[error.code],
     code: error.code,
     ...(error.detail ? { detail: error.detail } : {}),
   }

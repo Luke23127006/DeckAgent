@@ -30,6 +30,7 @@ import {
   decodeWorkspaceRemoveBody,
   decodeWorkspaceRenameBody,
   decodeWorkspaceSelectBody,
+  providerProtocols,
   requestEvent,
   RequestValidationError,
 } from '../lib/index.js'
@@ -475,4 +476,8 @@ test('chat and approval body decoders validate wire shapes and throw the expecte
     assert.throws(() => decodeChatSearchBody(bad), hasCode('INVALID_REQUEST'))
   for (const bad of [undefined, null, [], {}, { decision: 'allow' }, { decision: 'refuse', extra: 1 }])
     assert.throws(() => decodeApprovalDecisionBody(bad), hasCode('INVALID_REQUEST'))
+})
+
+test('providerProtocols lists the four API protocols of BR-005 V-4', () => {
+  assert.deepEqual([...providerProtocols], ['chat-completions', 'responses', 'anthropic-messages', 'gemini'])
 })

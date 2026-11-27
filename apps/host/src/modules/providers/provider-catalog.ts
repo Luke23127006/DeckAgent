@@ -8,7 +8,7 @@ export interface ProviderEndpoint {
 }
 
 /** Why a check or a catalog lookup failed. Never holds a provider response body, a URL or a key. */
-export type ProviderFailure =
+export type ProviderCheckCode =
   | 'PROVIDER_REFUSED_KEY'
   | 'PROVIDER_NO_ANSWER'
   | 'PROVIDER_RATE_LIMIT'
@@ -18,7 +18,7 @@ export type ProviderFailure =
 
 export class ProviderCheckError extends Error {
   constructor(
-    readonly code: ProviderFailure,
+    readonly code: ProviderCheckCode,
     readonly status?: number,
   ) {
     super(code)

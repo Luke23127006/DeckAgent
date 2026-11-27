@@ -23,6 +23,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Move the provider error class into `providers.errors.ts` as `ProviderError`, rename the provider check type to `ProviderCheckCode`, and move the API protocol list into `@deckagent/host-contracts`.
 - Replace the chat operation functions with `ChatService` and `ChatRequestService`, move the chat error class, the error map and the conversation contribution into their own files, and narrow `modules/chats/index.ts` to the symbols that other modules use.
 - Add Zod chat and approval body decoders in `@deckagent/host-contracts`, and split `apps/host/src/modules/chats/message.ts` into `message-validation.ts` and `chat-text.ts`.
 - Move HTTP helpers into Host and remove the host-api package. Enforce HTTP helper boundaries for module routes and error maps.

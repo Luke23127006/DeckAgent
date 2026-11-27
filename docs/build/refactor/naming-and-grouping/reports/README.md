@@ -12,3 +12,4 @@ Read this file to find the execution report of each task of the Naming and Group
 | 6 | [Convert ChatService to a class and wire chat routes](task-06-convert-chat-service-and-routes.md) |
 | 7 | [Enable role-file-symbol for chats and check Phase 2](task-07-enable-chats-role-check-and-verify-phase-2.md) |
 | 8 | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) |
+| 11 | [Add ProviderError, ProviderCheckCode and providerProtocols](task-11-add-provider-error-check-code-and-protocols.md) |

@@ -1,7 +1,9 @@
 import type { AttachmentView, ModelSelection } from './requests.ts'
 
 /** API protocols of BR-005 V-4. */
-export type ProviderProtocol = 'chat-completions' | 'responses' | 'anthropic-messages' | 'gemini'
+export const providerProtocols = ['chat-completions', 'responses', 'anthropic-messages', 'gemini'] as const
+
+export type ProviderProtocol = (typeof providerProtocols)[number]
 
 export interface ProviderSettings {
   readonly id: string

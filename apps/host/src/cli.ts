@@ -4,7 +4,8 @@ import path from 'node:path'
 import { parseArgs, promisify } from 'node:util'
 import { StorageError, resolveStorageRoot, startLocalWeb } from './server.ts'
 import type { LocalWebOptions, ProviderConnection } from './server.ts'
-import { protocols, validBaseUrl } from './modules/providers/index.ts'
+import { providerProtocols } from '@deckagent/host-contracts'
+import { validBaseUrl } from './modules/providers/index.ts'
 
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -13,7 +14,7 @@ function object(value: unknown): value is Record<string, unknown> {
 /** A startup connection of the models config file. Tuning fields of older files are accepted and not used. */
 function connection(value: unknown): ProviderConnection {
   if (!object(value)) throw new Error('Invalid model config')
-  const protocol = protocols.find(item => item === value.protocol)
+  const protocol = providerProtocols.find(item => item === value.protocol)
   if (
     typeof value.id !== 'string' ||
     !/^[\w.-]{1,100}$/.test(value.id) ||
