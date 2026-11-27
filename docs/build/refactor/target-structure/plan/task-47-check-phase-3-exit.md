@@ -25,7 +25,7 @@ After this task, `AGENTS.md` records that Local Host keeps `setSecurityHeaders` 
 
 **Forbidden:** install `helmet`. Change any production code or test file.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -35,7 +35,7 @@ Run: `git grep -n "^| 46 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Record the helmet decision in AGENTS.md**
+- [x] **Step 2: Record the helmet decision in AGENTS.md**
 
 In `AGENTS.md` under `## Tech Stack`, replace the `helmet` bullet line:
 
@@ -44,7 +44,7 @@ In `AGENTS.md` under `## Tech Stack`, replace the `helmet` bullet line:
   - ``- Security headers của Local Host dùng `setSecurityHeaders` trong `apps/host/src/http/app.ts`. Không dùng `helmet`.``
   - ``- Thư viện đích đã chọn, chưa cài: React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.``
 
-- [ ] **Step 3: Check the Phase 3 exit conditions**
+- [x] **Step 3: Check the Phase 3 exit conditions**
 
 Run each command below and record its result in the report table `Phase 3 exit checks` (`Check | Command | Result`).
 
@@ -70,11 +70,11 @@ Run each command below and record its result in the report table `Phase 3 exit c
    Run: `corepack pnpm@11.28.5 build`, `corepack pnpm@11.28.5 lint`, `corepack pnpm@11.28.5 check:boundaries`, `corepack pnpm@11.28.5 check:docs`, `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
    Expected: PASS. Exit code 0, `0 violation(s)`, `0 error(s)`, `# fail 0`.
 
-- [ ] **Step 4: Run every suite**
+- [x] **Step 4: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Include the table `Phase 3 exit checks` and state explicitly that `packages/host/api/` stays as a Phase 4 shell for `lifecycle/`, `request-routes.ts`, `session-routes.ts` history and shared HTTP helpers until Phase 4 moves `lifecycle/` into `apps/host/src/runs/`.
 

@@ -57,3 +57,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 | [Task 45: Publish Brief, Outline and deck notices report](task-45-add-brief-outline-deck-notices.md) | Task 45 | Committed callbacks and four session topics have mutation coverage. All 19 required suites pass after isolated environment retries. |
 
 | [Task 46: Connect the Browser to brief and outline change notices report](task-46-connect-browser-to-brief-outline-notices.md) | Task 46 | The Browser refreshes the open Brief and Outline from the session change notices. A newer Brief shows the Brief view. All 19 required suites pass after two isolated renderer retries. |
+
+| [Task 47: Record the helmet decision and check the Phase 3 exit condition report](task-47-check-phase-3-exit.md) | Task 47 | Local Host keeps `setSecurityHeaders` and does not use `helmet`. All seven Phase 3 exit checks pass. All 19 required suites pass. |

@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Close the `helmet` evaluation (keep `setSecurityHeaders` in `apps/host/src/http/app.ts`) and verify all Phase 3 domain-module and change-notice exit checks. Task 47 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Connect the Browser session change watcher on `GET /api/sessions/:sessionId/changes` to `brief` and `outline` notices so remote Brief and Outline changes refresh the open view without reload. Task 46 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
 - Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.

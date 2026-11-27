@@ -343,7 +343,7 @@ Revision 3j adds these failure modes:
 | 44 | Done | [Move deck and session-read routes and remove WebManagement](task-44-move-deck-and-session-read-routes.md) ([report](../reports/task-44-move-deck-and-session-read-routes.md)) |
 | 45 | Done | [Fix deck notify versions and publish brief, outline and deck change notices](task-45-add-brief-outline-deck-notices.md) ([report](../reports/task-45-add-brief-outline-deck-notices.md)) |
 | 46 | Done | [Connect the Browser to brief and outline change notices](task-46-connect-browser-to-brief-outline-notices.md) ([report](../reports/task-46-connect-browser-to-brief-outline-notices.md)) |
-| 47 | Pending | [Record the helmet decision and check the Phase 3 exit condition](task-47-check-phase-3-exit.md) |
+| 47 | Done | [Record the helmet decision and check the Phase 3 exit condition](task-47-check-phase-3-exit.md) ([report](../reports/task-47-check-phase-3-exit.md)) |
 
 ## Next revision
 
