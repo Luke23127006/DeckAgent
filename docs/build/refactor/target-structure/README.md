@@ -88,7 +88,7 @@ Do the remaining items from Module Design Phases 3 to 5 on the new code (see [Ca
 
 | Module Design item [[1]](#ref-1) | Where it goes |
 | --- | --- |
-| Phase 3: remove non-`as const` type assertions, audit comments, rename `*Service` symbols | Each Phase 3 and Phase 4 revision, for the files it moves. Phase 6 for the remaining files |
+| Phase 3: remove non-`as const` type assertions, audit comments, rename symbols to the role file table in the Coding Guidelines (the Naming and Grouping Refactor does this for `apps/host/`) | Each Phase 3 and Phase 4 revision, for the files it moves. Phase 6 for the remaining files |
 | Phase 3: `packages/presentation/design/` refactors D12 and D13 | Phase 6, because `packages/presentation/` keeps its place |
 | Phase 3: lint rules against regressions | Phase 2 folder-level rules (TS-09) |
 | Phase 4: Testware alignment | Phase 6, after interfaces stop changing. HTTP black-box tests that a phase depends on are fixed in that phase |

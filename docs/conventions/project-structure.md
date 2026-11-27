@@ -54,7 +54,7 @@ Khi hai component cần import lẫn nhau, xem lại ownership và chiều phụ
 apps/host/src/
   server.ts            composition root
   http/                Express app, middleware, error handler, helper SSE, channel báo thay đổi
-  modules/<name>/      <name>.routes.ts, <name>.service.ts, <name>.store.ts
+  modules/<name>/      <name>.routes.ts, <name>.service.ts, <name>.store.ts, <name>.errors.ts
   runs/
     lifecycle/         run state machine, event log, approval, cancel
     preparation/       gom phần góp của các module cho một run
@@ -65,7 +65,7 @@ apps/host/src/
     executors/         thực thi tool trong capability đã cấp
     sources/           nguồn tài liệu: filesystem, connector
   runtimes/<name>/     adapter cho port AgentRuntime
-  db/                  connection, migration và SqliteRunStore
+  db/                  connection, migration, persistence adapter cho port của runs/
 apps/host/tests/
 apps/web/src/          React và Vite, chia theo feature
   api/                 HTTP/SSE client
@@ -91,7 +91,7 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | `src/runs/` | Một run chạy, dừng và kết thúc thế nào? | Vòng đời run, event log, approval, cancel, chuẩn bị run, ngân sách tài nguyên, port `AgentRuntime` và port `ToolExecutor` | Module, Express, SQL driver, adapter cụ thể, rule riêng của owner của run |
 | `src/tools/` | Agent truy cập tài liệu trong phạm vi được cấp thế nào? | Tool policy, tool executor, nguồn tài liệu | User approval, request admission |
 | `src/runtimes/<name>/` | Một agent runtime cụ thể chạy thế nào? | Process, protocol, MCP bridge, parse event, chuyển skill sang format của runtime | Terminal status của run, permission |
-| `src/db/` | Local Host mở database, migrate và lưu run thế nào? | Connection, migration, `SqliteRunStore` (cài đặt SQL của `RunStore`) | SQL của module |
+| `src/db/` | Local Host mở database, migrate và lưu run thế nào? | Connection, migration, persistence adapter cho port của `runs/` (`SqliteRunStore` và các file query của nó) | SQL của module, HTTP status |
 
 ### `apps/web/`
 
@@ -122,13 +122,14 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 
 ## Hình dạng module
 
-Một module trong `apps/host/src/modules/<name>/` bắt đầu với ba file:
+Một module trong `apps/host/src/modules/<name>/` bắt đầu với bốn file. Tên symbol chính của mỗi file nằm trong [File vai trò và symbol](code.md#file-vai-trò-và-symbol).
 
 - `<name>.routes.ts` đăng ký Express route. File này parse input bằng Zod schema từ `packages/contracts`, gọi service và ghi response. File này không chứa business rule *(review)*.
 - `<name>.service.ts` chứa use case và business rule. File này không import Express *(review)*.
 - `<name>.store.ts` chứa SQL cho các bảng mà module sở hữu, tăng `version` sau mỗi lần ghi và phát notice thay đổi. Ngoài transaction bảo vệ một invariant, file này không chứa business rule *(review)*.
+- `<name>.errors.ts` chứa error class của module và bảng status HTTP của error đó. `server.ts` đăng ký bảng này với error handler *(review)*.
 
-Module chỉ thêm file khác khi có một trách nhiệm riêng, ví dụ phần dựng prompt hoặc phần góp vào run. Module không có HTTP surface thì không có file routes. Module không sở hữu bảng nào thì không có file store. Không tạo folder `controllers/`, `services/` hoặc `repositories/` dùng chung cho nhiều module *(review)*.
+Module chỉ thêm file khác khi có một trách nhiệm riêng, ví dụ phần dựng prompt, phần góp vào run (`<name>.run-contribution.ts`) hoặc schema của database (`<name>.migrations.ts`). Module không có HTTP surface thì không có file routes. Module không sở hữu bảng nào thì không có file store. Không tạo folder `controllers/`, `services/` hoặc `repositories/` dùng chung cho nhiều module *(review)*.
 
 ## Dependency rules
 

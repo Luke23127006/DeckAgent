@@ -12,7 +12,38 @@ Mỗi quy tắc ghi công cụ chặn nó trong ngoặc. Không ghi một quy t�
 - Type và interface mang tên contract hoặc khái niệm mà chúng biểu diễn *(review)*.
 - Boolean mang tên một điều kiện đúng hoặc sai, ví dụ `isPublished` *(review)*.
 - Một khái niệm có một tên trong mọi module. Không đổi tên chỉ để tránh lặp từ *(review)*.
-- Không dùng `data`, `manager`, `handler`, `service` khi tên đó không phân biệt được trách nhiệm. Hậu tố `Controller`, `Service`, `Repository` chỉ dùng khi hậu tố mô tả đúng vai trò *(review)*.
+- Không dùng `data`, `manager`, `handler`, `coordinator` khi tên đó không phân biệt được trách nhiệm. Hậu tố `Controller` và `Repository` chỉ dùng khi hậu tố mô tả đúng vai trò. Hậu tố `Service` và `Store` chỉ dùng cho class chính của file vai trò trong bảng [File vai trò và symbol](#file-vai-trò-và-symbol) *(review, check-boundaries `role-file-symbol` cho các module trong danh sách của check)*.
+
+### File vai trò và symbol
+
+Tên file cho biết vai trò của file. Symbol chính của file lặp lại vai trò đó.
+
+| File | Symbol chính | Dạng |
+| --- | --- | --- |
+| `<name>.service.ts` | `<Name>Service` | Class. Method public của class là public operation của module. Không tạo interface `*Operations` riêng |
+| `<name>.store.ts` | `Sqlite<Name>Store`, `Memory<Name>Store` hoặc `<Name>FileStore` | Class. Tiền tố cho biết dữ liệu nằm ở đâu |
+| `<name>.routes.ts` | `create<Name>Routes` | Function trả về Express `Router` |
+| `<name>.errors.ts` | `<Name>Error`, `<Name>ErrorCode` và `map<Name>Error` | Class có `code` là union, và bảng status HTTP của module (xem [Đặt tên error](#đặt-tên-error)) |
+| `<name>.run-contribution.ts` | `create<Topic>Contribution` | Function trả về `RunContribution` |
+| `<name>.migrations.ts` | `migrate<Name>Database` | Function |
+
+- Symbol dùng danh từ số ít. Folder dùng số nhiều. Ví dụ: `modules/chats/chats.service.ts` export `ChatService` *(review)*.
+- Một module có một service. Khi hai nhóm use case có dependency khác nhau, mỗi nhóm có file `<topic>.service.ts` và class riêng, ví dụ `chat-requests.service.ts` export `ChatRequestService` *(review)*.
+
+### Tên cho khái niệm kỹ thuật
+
+Tên trong code theo bảng thuật ngữ sản phẩm trong [Use Cases](../UCs/README.md#thuật-ngữ). Bảng dưới cho tên của các khái niệm mà bảng thuật ngữ sản phẩm không có, hoặc có nhiều tên trong code *(review)*.
+
+| Khái niệm | Tên trong code | Không dùng | Quy tắc |
+| --- | --- | --- | --- |
+| Chat của người dùng | `Chat` cho type, class, function và biến | `Session`, `WebSession` | Symbol mới hoặc symbol được đổi tên dùng "chat" |
+| ID của chat | `sessionId` cho field, parameter, route `/api/sessions` và error code `SESSION_*` | — | Giữ `sessionId` cho tới khi một revision đổi contract ở wire, database, `packages/presentation/` và `apps/web/` cùng lúc. Trước revision đó, không trộn `chatId` với `sessionId` |
+| Request của người dùng | `Request` trong `modules/chats/`, trên wire và trong Browser | — | Request là một run có owner kind là `chat` |
+| Một lần chạy agent của một owner | `Run` trong `runs/`, `runtimes/` và `tools/` | `Request` | Module chats chuyển `RunSnapshot` thành `RequestSnapshot` tại boundary của module |
+| ID của request và của run | `requestId` | `runId` | Một ID cho cả hai, vì một request là một run |
+| Session của process OpenCode | `OpenCode session` | `session` đứng một mình | Chỉ dùng "session" trong `runtimes/opencode/` |
+| Schema của database | `<name>.migrations.ts` | `schema.ts` | "Schema" trong code là Zod schema |
+| Type mà một folder khai báo cho chính nó | `<name>.types.ts`, hoặc file của owner | `contracts.ts` | "Contracts" là `packages/contracts/` và contract trên wire |
 
 ## TypeScript
 
@@ -21,6 +52,8 @@ Mỗi quy tắc ghi công cụ chặn nó trong ngoặc. Không ghi một quy t�
 - Invariant mà type bảo vệ được thì đặt vào type, không đặt vào comment *(review)*.
 - Không dùng `any` *(lint: oxlint `typescript/no-explicit-any`)*, type assertion hoặc non-null assertion *(review)* để bỏ qua một lỗi type. Khi operation cần một giá trị, kiểm precondition hoặc sửa contract để bảo đảm giá trị đó *(review)*.
 - Phân biệt "không tồn tại", "chưa cung cấp" và `null` khi ba trường hợp có nghĩa khác nhau. Không thêm optional field chỉ để một object dùng chung cho nhiều operation không liên quan *(review)*.
+- Không dùng `enum` hoặc `const enum`. Dùng union. Khi code cần danh sách giá trị lúc runtime, dùng mảng `as const` và lấy type từ mảng đó *(check-boundaries `typescript-enum`, lint: oxlint `oxc/no-const-enum`)*.
+- Không thêm tiền tố `I` cho interface. Không dùng hậu tố `_` *(review)*.
 
 TypeScript không thay runtime validation. Dữ liệu từ HTTP, file, database, model hoặc external service phải được kiểm tại boundary (xem [Validation](#validation)) *(review)*.
 
@@ -44,6 +77,7 @@ Không viết comment lặp lại câu lệnh bên dưới. Khi sửa code làm 
 - Không tạo interface cho mỗi class hoặc function khi interface không bảo vệ một boundary thực *(review)*.
 - Hai operation có precondition hoặc authority khác nhau dùng hai contract khác nhau *(review)*.
 - Contract không cấp authority cho caller chỉ vì caller tạo được object cùng hình dạng *(review)*.
+- Interface mà một module khai báo cho operation của owner khác mang tên `<Consumer><Provider>`, ví dụ `WorkspaceChats` (operation mà module workspaces cần từ module chats). Chỉ thêm hậu tố `Port` khi tên không có hậu tố trùng tên class hiện thực interface. Service của owner hiện thực interface. `server.ts` không dựng adapter gộp store của nhiều owner *(review)*.
 - Khi sửa public contract, kiểm mọi consumer của contract đó *(typecheck, review)*. Typecheck chỉ thấy consumer nằm trong `tsc -b`.
 
 ### Validation
@@ -61,6 +95,8 @@ Kiểm dữ liệu tại boundary nơi dữ liệu không còn được một tr
 | Browser transport | Shape của response trước khi UI dùng |
 
 Không dùng dữ liệu do model trả về để xác định user permission hoặc resource authority *(review)*.
+
+Validation tại boundary dùng Zod theo dạng của contracts package: file `<topic>-validation.ts` chứa schema `<thing>Schema` và export function `decode<Thing>(value: unknown)`. Route chỉ đọc body qua một function `decode*`. Không chép type guard như `record()` vào từng file *(review)*.
 
 ### Representation
 
@@ -94,6 +130,13 @@ Error mô tả failure theo ngữ nghĩa của component phát hiện lỗi:
 | Browser | Thông báo lỗi hiển thị cho người dùng |
 
 Không dùng HTTP status làm error contract của domain, Request Lifecycle hoặc agent runtime *(review)*. Chọn error representation theo cách caller cần xử lý lỗi. Không bắt buộc custom error class cho mọi error code. Không tạo một Error Service chung sở hữu mọi lỗi *(review)*.
+
+### Đặt tên error
+
+- Mỗi module có một error class `<Name>Error` trong `<name>.errors.ts`, với `code` là union `<Name>ErrorCode`. Chỉ thêm class thứ hai khi caller xử lý class đó theo cách khác *(review)*.
+- Ngoại lệ: `@deckagent/deck` đã export `DeckError` cho domain deck. Error của module deck trong Local Host là `DeckWorkflowError` *(review)*.
+- Integration client giữ error riêng, ví dụ `TavilyError` và `ProviderCheckError`. Service chuyển error đó thành error của module *(review)*.
+- Bảng status HTTP có type `Readonly<Record<<Name>ErrorCode, number>>`, để TypeScript báo code chưa có status. Không dùng `Record<string, number>` kèm fallback `?? 500` *(typecheck, review)*.
 
 ### Chuyển lỗi và recovery
 

@@ -5,7 +5,7 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
-- **Naming and grouping refactor:** add the problems, naming rules, module map and an eight-phase plan in `docs/build/refactor/naming-and-grouping/` that rename symbols and split files in `apps/host/src/` with the HTTP contract unchanged.
+- **Naming and grouping refactor:** add the problems, naming rules, module map and an eight-phase plan in `docs/build/refactor/naming-and-grouping/` that rename symbols and split files in `apps/host/src/` with the HTTP contract unchanged. Phase 1 writes the role file table, the technical name table and the error, port, enum and validation rules into `docs/conventions/`, and adds the `check:boundaries` rules `typescript-enum` and `role-file-symbol` plus oxlint `oxc/no-const-enum`.
 - Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 - Add deck review and generation run plans with source grants and image recovery contributions.

@@ -42,6 +42,56 @@ const RUNTIME_PACKAGES = new Set(['@deckagent/host', '@deckagent/browser-runtime
 
 const LIFECYCLE_DIRECTORIES = ['apps/host/src/runs']
 
+const ROLE_FILE_MODULES = []
+
+const ROLE_FILE_EXPORTS = {
+  service: [
+    {
+      kind: 'classes',
+      pattern: /^[A-Z]\w*Service$/,
+      message:
+        'must export a class with a name that ends with "Service". Rename the main export to the role of the file.',
+    },
+  ],
+  store: [
+    {
+      kind: 'classes',
+      pattern: /^(?:Sqlite|Memory)[A-Z]\w*Store$|^[A-Z]\w*FileStore$/,
+      message:
+        'must export a class "Sqlite<Name>Store", "Memory<Name>Store" or "<Name>FileStore". Rename the main export to the role of the file.',
+    },
+  ],
+  routes: [
+    {
+      kind: 'functions',
+      pattern: /^create[A-Z]\w*Routes$/,
+      message: 'must export a function "create<Name>Routes". Rename the main export to the role of the file.',
+    },
+  ],
+  errors: [
+    {
+      kind: 'classes',
+      pattern: /^[A-Z]\w*Error$/,
+      message: 'must export a class "<Name>Error". Rename the error class to the module.',
+    },
+    {
+      kind: 'functions',
+      pattern: /^map[A-Z]\w*Error$/,
+      message: 'must export a function "map<Name>Error". Rename the status map to the module.',
+    },
+  ],
+}
+
+const ROLE_SUFFIXES = [
+  { suffix: 'Service', role: 'service' },
+  { suffix: 'Store', role: 'store' },
+]
+
+const roleOfPath = value => {
+  const match = /\.(service|store|routes|errors)\.ts$/.exec(value)
+  return match === null ? null : match[1]
+}
+
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs'])
 
 const toPosix = value => value.replaceAll('\\', '/').replace(/\/$/, '')
@@ -170,6 +220,28 @@ const describeCycle = cycle => `${cycle.join(' -> ')} -> ${cycle[0]}`
 
 const isTestFile = filePath => /(?:^|\/)tests\//.test(filePath) || isUnder(filePath, 'e2e')
 
+const hasExportKeyword = node =>
+  ts.canHaveModifiers(node) && (ts.getModifiers(node) ?? []).some(item => item.kind === ts.SyntaxKind.ExportKeyword)
+
+export const extractDeclarations = (filePath, sourceText) => {
+  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true)
+  const enums = []
+  const classes = []
+  const functions = []
+  const visit = node => {
+    if (ts.isEnumDeclaration(node)) enums.push({ line: lineOf(sourceFile, node), name: node.name.text })
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  for (const statement of sourceFile.statements) {
+    if (statement.name === undefined || !hasExportKeyword(statement)) continue
+    const item = { line: lineOf(sourceFile, statement), name: statement.name.text }
+    if (ts.isClassDeclaration(statement)) classes.push(item)
+    if (ts.isFunctionDeclaration(statement)) functions.push(item)
+  }
+  return { enums, classes, functions }
+}
+
 export const checkBoundaries = snapshot => {
   const workspaces = snapshot.workspaces.map(workspace => ({
     dir: toPosix(workspace.dir),
@@ -187,8 +259,18 @@ export const checkBoundaries = snapshot => {
   const featureEdges = []
   const browserFeatureEdges = []
   const moduleEdges = []
+  const roleFileModules = new Set(snapshot.roleFileModules ?? ROLE_FILE_MODULES)
 
   for (const file of files) {
+    const declarations = extractDeclarations(file.path, file.content)
+    for (const item of declarations.enums) {
+      add(
+        file.path,
+        item.line,
+        'typescript-enum',
+        `Do not declare the TypeScript enum "${item.name}". Use a union of string literals, or an "as const" array and a type from it.`,
+      )
+    }
     const owner = ownerOf(file.path)
     const testSource = isTestFile(file.path)
     const productionSource = owner !== undefined && !testSource
@@ -197,6 +279,26 @@ export const checkBoundaries = snapshot => {
     const sourceIntegration = productionSource ? integrationOfPath(file.path) : null
     const sourceRuntime = productionSource ? runtimeOfPath(file.path) : null
     const sourceModule = productionSource ? moduleOfPath(file.path) : null
+    if (sourceModule !== null && roleFileModules.has(sourceModule)) {
+      const role = roleOfPath(file.path)
+      for (const expected of ROLE_FILE_EXPORTS[role] ?? []) {
+        if (!declarations[expected.kind].some(item => expected.pattern.test(item.name))) {
+          add(file.path, 1, 'role-file-symbol', `File "${file.path}" ${expected.message}`)
+        }
+      }
+      for (const item of declarations.classes) {
+        for (const { suffix, role: suffixRole } of ROLE_SUFFIXES) {
+          if (item.name.endsWith(suffix) && role !== suffixRole) {
+            add(
+              file.path,
+              item.line,
+              'role-file-symbol',
+              `Class "${item.name}" ends with "${suffix}", but its file is not a ${suffixRole} file. Rename the class, or move it to a "*.${suffixRole}.ts" file.`,
+            )
+          }
+        }
+      }
+    }
     for (const entry of extractImports(file.path, file.content)) {
       const { line, specifier } = entry
       const packageSpecifier = parsePackageSpecifier(specifier)

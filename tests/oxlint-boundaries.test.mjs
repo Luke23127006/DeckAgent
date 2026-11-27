@@ -592,3 +592,15 @@ test('module routes and services reject ../../db/index.ts while module stores ac
   assert.equal(allowed.status, 0, allowed.output)
   assert.deepEqual(allowed.diagnostics, [])
 })
+
+test('rejects a const enum', () => {
+  const result = lintFixture(
+    'apps/host/src/sample.ts',
+    'const enum Phase {\n  Draft,\n}\nexport const first = Phase.Draft\n',
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(
+    result.diagnostics.map(d => d.code),
+    ['oxc(no-const-enum)'],
+  )
+})

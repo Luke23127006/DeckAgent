@@ -6,6 +6,9 @@
  * - Removing isTestFile guard caused packages/presentation/html/tests/html-template-v3.test.mjs importing @deckagent/deck to fail with format-adapter-dependency.
  * - Removing escapesBrowserIntoHost check caused the Browser-to-Local-Host relative import test to fail.
  * - Removing the dynamic import() branch in extractImports caused the dynamic private import test to fail.
+ * - Renaming the typescript-enum rule ID caused the enum and const enum test to fail.
+ * - Removing the branch for a Service or Store suffix outside its role file caused the role file rejection test to fail.
+ * - Setting ROLE_FILE_MODULES to ['workspaces'] caused the role file acceptance test and two module import tests to fail.
  * Run: node --test --test-reporter=tap tests/check-boundaries.test.mjs
  * Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/build/refactor/boundaries/plan/task-03-boundary-checker.md.
  */
@@ -34,8 +37,13 @@ const baseWorkspaces = [
   { dir: 'packages/tools/filesystem', name: '@deckagent/file-tools', exports: { '.': './lib/index.js' } },
 ]
 
-const findings = (files, tsconfigPaths = {}) =>
-  checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths }).map(({ path, line, rule }) => ({
+const findings = (files, tsconfigPaths = {}, roleFileModules) =>
+  checkBoundaries({
+    workspaces: baseWorkspaces,
+    files,
+    tsconfigPaths,
+    ...(roleFileModules ? { roleFileModules } : {}),
+  }).map(({ path, line, rule }) => ({
     path,
     line,
     rule,
@@ -399,4 +407,66 @@ test('checkBoundaries detects a module cycle separately from feature cycles', ()
     [{ path: 'apps/host/src/modules/a', line: 1, rule: 'module-cycle' }],
   )
   assert.match(result[0].message, /a -> b -> a/)
+})
+
+test('checkBoundaries rejects an enum and a const enum in source and test files', () => {
+  const files = [
+    { path: 'apps/host/src/modules/chats/message.ts', content: "export enum Role {\n  User = 'user',\n}\n" },
+    {
+      path: 'packages/presentation/deck/src/state.ts',
+      content: '\nconst enum Phase {\n  Draft,\n}\nexport const first = Phase.Draft\n',
+    },
+    { path: 'apps/host/tests/sample.test.ts', content: 'enum Local {\n  A,\n}\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/host/src/modules/chats/message.ts', line: 1, rule: 'typescript-enum' },
+    { path: 'apps/host/tests/sample.test.ts', line: 1, rule: 'typescript-enum' },
+    { path: 'packages/presentation/deck/src/state.ts', line: 2, rule: 'typescript-enum' },
+  ])
+})
+
+test('checkBoundaries rejects role files without their role symbols in a listed module', () => {
+  const files = [
+    { path: 'apps/host/src/modules/chats/chats.service.ts', content: 'export function createChatOperations() {}\n' },
+    { path: 'apps/host/src/modules/chats/chats.store.ts', content: 'export class ChatRecords {}\n' },
+    { path: 'apps/host/src/modules/chats/chats.routes.ts', content: 'export function chatRouter() {}\n' },
+    {
+      path: 'apps/host/src/modules/chats/chats.errors.ts',
+      content: 'export class ChatFailure extends Error {}\nexport function mapChatFailure() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/chats/chat-text.ts',
+      content: 'export class TitleService {}\nexport class TextStore {}\n',
+    },
+  ]
+  assert.deepEqual(findings(files, {}, ['chats']), [
+    { path: 'apps/host/src/modules/chats/chat-text.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chat-text.ts', line: 2, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.routes.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.store.ts', line: 1, rule: 'role-file-symbol' },
+  ])
+})
+
+test('checkBoundaries accepts role symbols in a listed module and ignores modules outside the list', () => {
+  const files = [
+    { path: 'apps/host/src/modules/chats/chats.service.ts', content: 'export class ChatService {}\n' },
+    { path: 'apps/host/src/modules/chats/chat-requests.service.ts', content: 'export class ChatRequestService {}\n' },
+    { path: 'apps/host/src/modules/chats/chats.store.ts', content: 'export class SqliteChatStore {}\n' },
+    { path: 'apps/host/src/modules/chats/draft.store.ts', content: 'export class MemoryDraftStore {}\n' },
+    { path: 'apps/host/src/modules/chats/files.store.ts', content: 'export class ChatFileStore {}\n' },
+    { path: 'apps/host/src/modules/chats/chats.routes.ts', content: 'export function createChatRoutes() {}\n' },
+    {
+      path: 'apps/host/src/modules/chats/chats.errors.ts',
+      content: 'export class ChatError extends Error {}\nexport function mapChatError() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/workspaces/workspaces.service.ts',
+      content: 'export function createWorkspaceOperations() {}\n',
+    },
+  ]
+  assert.deepEqual(findings(files, {}, ['chats']), [])
+  assert.deepEqual(findings(files), [])
 })

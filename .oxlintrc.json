@@ -15,7 +15,8 @@
         "ts-nocheck": true
       }
     ],
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+    "oxc/no-const-enum": "error"
   },
   "overrides": [
     {

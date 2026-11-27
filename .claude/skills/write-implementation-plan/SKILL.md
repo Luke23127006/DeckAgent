@@ -44,7 +44,7 @@ docs/build/<workstream>/<topic>/plan/
 | --- | --- | --- |
 | `feature` | The file name of the use case in `docs/UCs/`, without `.md` | For `docs/UCs/upload.md`, the topic is `upload` |
 | `fix` | `issue-<number>` of the GitHub Issue | `issue-58` |
-| `refactor` | One value from the next column | `rules`: conventions and the checks that enforce them. `boundaries`: source ownership, contracts, and dependency boundaries. `module-design`: internal module shape, code hygiene, testware alignment, and flow lookup maps. `docs`: structure of the documents in `docs/`. `UCs`: migration and structure of the use case files in `docs/UCs/` |
+| `refactor` | One value from the next column | `rules`: conventions and the checks that enforce them. `boundaries`: source ownership, contracts, and dependency boundaries. `module-design`: internal module shape, code hygiene, testware alignment, and flow lookup maps. `docs`: structure of the documents in `docs/`. `UCs`: migration and structure of the use case files in `docs/UCs/`. `naming-and-grouping`: symbol names, one name for each concept, and the grouping of code inside the modules of `apps/host/src/` |
 | `ops` | One value from the next column | `ci`: CI workflows. `release`: versions and packages. `runtime`: the runtime environment and its provisioning |
 
 Get the workstream and the topic from the user request and from these tables. Ask the user before you write files in these cases:

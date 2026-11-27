@@ -18,6 +18,8 @@ The Target Structure Refactor [[1]](#ref-1) moved the code of the Host to its ta
 | [problems.md](problems.md) | Which naming and grouping problems does `apps/host/src/` have, with which evidence, and which decisions are fixed? |
 | [naming-rules.md](naming-rules.md) | Which rules give one name for each concept, and which rules apply to role files, errors, ports and validation? |
 | [module-map.md](module-map.md) | What is the target name of each symbol, which parts of `server.ts` move, and where? |
+| [plan/README.md](plan/README.md) | Which tasks does each phase do, in which order? |
+| [reports/README.md](reports/README.md) | What did each task do, and which checks passed? |
 
 ## Planner and executor
 
