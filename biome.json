@@ -8,7 +8,7 @@
   },
   "files": {
     "includes": [
-      "apps/**/*.{ts,js,mjs,cjs}",
+      "apps/**/*.{ts,tsx,js,mjs,cjs}",
       "packages/**/*.{ts,js,mjs,cjs}",
       "scripts/**/*.{ts,js,mjs,cjs}",
       "tests/**/*.{ts,js,mjs,cjs}"
