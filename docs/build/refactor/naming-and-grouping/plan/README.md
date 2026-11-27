@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`.
+**Goal:** Phase 1 writes the naming rules into the conventions and adds the checks that enforce them. Phase 2 refactors `apps/host/src/modules/chats/` to match those rules and enables `role-file-symbol` for `chats`. Phase 3 refactors `apps/host/src/modules/workspaces/` to match those rules and enables `role-file-symbol` for `workspaces`.
 
 **Approach:** One revision for each phase of the Naming and Grouping Refactor. The planner does the diagnosis of each phase, and the decision table records every answer. Each task is an execution task.
 
@@ -118,7 +118,7 @@ Phase 1 is done. Tasks 1 and 2 are `Done`, and commit `b77d062` holds their chan
 - `ChatService.hasActiveRequest` counts an active run from another workspace, or `ChatService.requests` drops `sessionId` when converting a `RequestRecord`. Test: `ChatService implements WorkspaceChats and projects stored chat requests` in [Task 6](task-06-convert-chat-service-and-routes.md).
 - `role-file-symbol` does not include `chats` in `ROLE_FILE_MODULES` by default, so `check:boundaries` misses a regression in `apps/host/src/modules/chats/`. Test: `checkBoundaries rejects role files without their role symbols in a listed module` in [Task 7](task-07-enable-chats-role-check-and-verify-phase-2.md).
 
-### Tasks
+### Tasks (Revision 2)
 
 | Task | Status | File |
 | --- | --- | --- |
@@ -126,4 +126,38 @@ Phase 1 is done. Tasks 1 and 2 are `Done`, and commit `b77d062` holds their chan
 | 4 | Done | [Split message validation into Zod schema and chat text helpers](task-04-split-message-validation-and-chat-text.md) ([report](../reports/task-04-split-message-validation-and-chat-text.md)) |
 | 5 | Done | [Extract ChatError, ChatRequestService and conversation contribution](task-05-extract-chat-errors-requests-and-contribution.md) ([report](../reports/task-05-extract-chat-errors-requests-and-contribution.md)) |
 | 6 | Done | [Convert ChatService to a class and wire chat routes](task-06-convert-chat-service-and-routes.md) ([report](../reports/task-06-convert-chat-service-and-routes.md)) |
-| 7 | Pending | [Enable role-file-symbol for chats and check Phase 2](task-07-enable-chats-role-check-and-verify-phase-2.md) |
+| 7 | Done | [Enable role-file-symbol for chats and check Phase 2](task-07-enable-chats-role-check-and-verify-phase-2.md) ([report](../reports/task-07-enable-chats-role-check-and-verify-phase-2.md)) |
+
+### Phase 2 exit
+
+Phase 2 is done. Tasks 3 to 7 are `Done` (commits `102366c` and `f0c6c40` hold Tasks 3 to 6, and Task 7 is in the working tree). `build`, `lint`, `check:boundaries` (0 violations with `chats` in `ROLE_FILE_MODULES`) and `check:docs` passed. Each of the 19 non-live `test:*` scripts passed with `# fail 0` (426 tests). Every Phase 2 file passed `biome format`, and a person accepted the `format:check` exception for unrelated files outside Phase 2. The report of Task 7 has the evidence.
+
+## Revision 3: Phase 3, workspaces module
+
+### Decisions (Revision 3)
+
+| Topic | Decision |
+| --- | --- |
+| Workspace types and error split | Rename `apps/host/src/modules/workspaces/contracts.ts` to `workspace.types.ts` for `defaultWorkspaceId`, `FolderStatus`, `Workspace`, `WorkspaceState` and `FolderRefusal`. Move `WorkspaceErrorCode`, `WorkspaceErrorDetail` and `WorkspaceError` into `workspaces.errors.ts`. Remove `contracts.ts`. |
+| Single workspace error class and mapper | Merge `WorkspaceWorkflowError` from `workspaces.service.ts` into `WorkspaceError` in `workspaces.errors.ts`. Add `'WORKSPACE_REQUEST_ACTIVE'` to `WorkspaceErrorCode` and map it to HTTP 409 in `workspaceStatus: Readonly<Record<WorkspaceErrorCode, number>>`. Rename `mapWorkspaceFailure` to `mapWorkspaceError` and keep safe detail filtering (`workspaceName`, `reason`, `allowInside` only). |
+| Workspace migrations file | Rename `apps/host/src/modules/workspaces/schema.ts` to `workspaces.migrations.ts` and rename `initialize` to `migrateWorkspacesDatabase`. Keep schema version 2, application ID `0x44415753` and all SQL statements unchanged. Update `.oxlintrc.json` route restrictions and `docs/conventions/project-structure.md` from `schema.ts` to `*.migrations.ts`. |
+| Workspace store rename | Rename `WorkspaceRegistry` to `SqliteWorkspaceStore` and `WorkspaceRegistryOptions` to `WorkspaceStoreOptions` in `workspaces.store.ts`. Keep `AddResult` and all store methods unchanged. Keep `WorkspaceLookup = Pick<SqliteWorkspaceStore, 'selectedId' | 'get' | 'folders'>` in `workspaces/index.ts`. |
+| Workspace service class | Replace `WorkspaceOperations` and `createWorkspaceOperations` in `workspaces.service.ts` with `export class WorkspaceService` taking `(store: SqliteWorkspaceStore, chats: WorkspaceChats)`. Keep `WorkspaceChats` in `workspaces.service.ts`. Change `createWorkspaceRoutes` to take `workspaces: WorkspaceService`. |
+| Public exports of `workspaces/index.ts` | Export only symbols that callers outside `modules/workspaces/` import: `SqliteWorkspaceStore`, `WorkspaceService`, `type WorkspaceChats`, `createWorkspaceRoutes`, `mapWorkspaceError` and `type WorkspaceLookup`. |
+| Role symbol check | Change `ROLE_FILE_MODULES` in `scripts/check-boundaries.mjs` from `['chats']` to `['chats', 'workspaces']`. Update existing `workspaces` fixtures in `tests/check-boundaries.test.mjs` to use `SqliteWorkspaceStore` and move the unlisted-module fixture to `providers`. |
+
+### Review Focus (Revision 3)
+
+- `mapWorkspaceError` drops safe detail fields (`workspaceName`, `reason`, `allowInside`), returns a detail key on `WORKSPACE_REQUEST_ACTIVE`, or maps a code to the wrong HTTP status. Test: `WorkspaceError and mapWorkspaceError map codes to HTTP status and safe detail` in [Task 8](task-08-split-workspace-types-errors-and-migrations.md).
+- `migrateWorkspacesDatabase` fails to upgrade a schema 1 `workspaces.sqlite` database in place or loses the selected workspace. Test: `schema 1 workspaces.sqlite upgrades to schema 2 in place while keeping workspaces and selection` in [Task 8](task-08-split-workspace-types-errors-and-migrations.md).
+- `WorkspaceService.relink` or `WorkspaceService.remove` mutates the store or throws an error other than `WorkspaceError('WORKSPACE_REQUEST_ACTIVE')` when the workspace has an active request. Test: `WorkspaceService blocks relink and remove on active requests and ungroups before publishing` in [Task 9](task-09-convert-workspace-service-and-store.md).
+- `WorkspaceService.remove` publishes the `workspaces` change notice before `chats.ungroup(id)` finishes. Test: `WorkspaceService blocks relink and remove on active requests and ungroups before publishing` in [Task 9](task-09-convert-workspace-service-and-store.md).
+- `role-file-symbol` omits `workspaces` from default `ROLE_FILE_MODULES`, or a module route imports `./workspaces.migrations.ts` without an oxlint failure. Tests: `checkBoundaries rejects role files without their role symbols in a listed module` and `rejects a store, migrations, the SQL driver and another module store inside a module routes file` in [Task 10](task-10-enable-workspaces-role-check-and-verify-phase-3.md).
+
+### Tasks
+
+| Task | Status | File |
+| --- | --- | --- |
+| 8 | Pending | [Split workspace types, unify WorkspaceError and rename migrations](task-08-split-workspace-types-errors-and-migrations.md) |
+| 9 | Pending | [Rename SqliteWorkspaceStore, convert WorkspaceService to a class and wire routes](task-09-convert-workspace-service-and-store.md) |
+| 10 | Pending | [Enable role-file-symbol for workspaces and check Phase 3](task-10-enable-workspaces-role-check-and-verify-phase-3.md) |

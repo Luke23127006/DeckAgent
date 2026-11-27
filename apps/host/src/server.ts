@@ -8,13 +8,7 @@ import type { HostOptions, HostRouteContext } from './http/contracts.ts'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
-import {
-  SessionDatabase,
-  SessionError,
-  SqliteRunStore,
-  mapSessionFailure,
-  type ModelSelection,
-} from './db/index.ts'
+import { SessionDatabase, SessionError, SqliteRunStore, mapSessionFailure, type ModelSelection } from './db/index.ts'
 import { MemoryDraftStore } from './modules/attachments/index.ts'
 import {
   WorkspaceRegistry,

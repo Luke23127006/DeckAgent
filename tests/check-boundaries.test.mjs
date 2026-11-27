@@ -448,6 +448,15 @@ test('checkBoundaries rejects role files without their role symbols in a listed 
     { path: 'apps/host/src/modules/chats/chats.service.ts', line: 1, rule: 'role-file-symbol' },
     { path: 'apps/host/src/modules/chats/chats.store.ts', line: 1, rule: 'role-file-symbol' },
   ])
+  assert.deepEqual(findings(files), [
+    { path: 'apps/host/src/modules/chats/chat-text.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chat-text.ts', line: 2, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.routes.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/chats/chats.store.ts', line: 1, rule: 'role-file-symbol' },
+  ])
 })
 
 test('checkBoundaries accepts role symbols in a listed module and ignores modules outside the list', () => {

@@ -42,7 +42,7 @@ const RUNTIME_PACKAGES = new Set(['@deckagent/host', '@deckagent/browser-runtime
 
 const LIFECYCLE_DIRECTORIES = ['apps/host/src/runs']
 
-const ROLE_FILE_MODULES = []
+const ROLE_FILE_MODULES = ['chats']
 
 const ROLE_FILE_EXPORTS = {
   service: [
