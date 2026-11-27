@@ -42,7 +42,9 @@ The check printed one line for the Task 45 row.
 | 5 | `lint` | 0 | No lint finding. |
 | 5 | `check:boundaries` | 0 | `0 violation(s)`. |
 | 5 | `check:docs` | 0 | `261 file(s) checked, 0 error(s) in 0 file(s)`. |
-| 7 | `check:docs` with this report | 0 | `262 file(s) checked, 0 error(s) in 0 file(s)`. |
+| 7 | `check:docs` with this report and no index row | 1 | `unlisted-file` for this report. |
+| 7 | `check:docs` with the index row | 1 | `h1-first-line` for `reports/README.md`. The write added a byte-order mark. |
+| 7 | `check:docs` after the byte-order mark removal | 0 | `262 file(s) checked, 0 error(s) in 0 file(s)`. |
 | 7 | `python3.12 -I .agents/skills/asd-ste100/scripts/ste-lint.py` on this report | 0 | `0 violations`. |
 
 ## Regression suites
@@ -77,10 +79,12 @@ The table gives the count of each suite in its final run.
 ## STOP conditions and retries
 
 No STOP condition occurred.
-Two retries occurred in Step 6.
+Two retries occurred in Step 6 and two retries occurred in Step 7.
 
-- `test:images`: the test `Create deck prepares images, then MCP templates v2 publish all seven layouts through the real local renderer` failed with `ARTIFACT_RENDERER_FAILED`. The result was pass 38 and fail 1. The same suite passed alone with pass 39 and fail 0.
-- `test:generation-publication`: the same test failed in its cleanup hook with `EBUSY` on `CrashpadMetrics-active.pma`. The result was pass 71 and fail 1. The same suite passed alone with pass 72 and fail 0.
+- Step 6, `test:images`: the test `Create deck prepares images, then MCP templates v2 publish all seven layouts through the real local renderer` failed with `ARTIFACT_RENDERER_FAILED`. The result was pass 38 and fail 1. The same suite passed alone with pass 39 and fail 0.
+- Step 6, `test:generation-publication`: the same test failed in its cleanup hook with `EBUSY` on `CrashpadMetrics-active.pma`. The result was pass 71 and fail 1. The same suite passed alone with pass 72 and fail 0.
+- Step 7, `check:docs`: the first run reported `unlisted-file` because the index had no row for this report. The next run passed after I added the row.
+- Step 7, `check:docs`: the second run reported `h1-first-line` for `reports/README.md` because a PowerShell write added a byte-order mark. The next run passed after I removed the byte-order mark.
 
 Both failures are renderer resource contention. Task 45 recorded the same failures for the same test.
 
