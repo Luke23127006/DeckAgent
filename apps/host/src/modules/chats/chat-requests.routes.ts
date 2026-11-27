@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { decodeApprovalDecisionBody, RequestValidationError } from '@deckagent/host-contracts'
 import type { RequestEvent } from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { ChatRequestOperations } from './chats.service.ts'
+import type { ChatRequestService } from './chat-requests.service.ts'
 import {
   HttpError,
   json,
@@ -17,11 +18,20 @@ import {
 
 const activeStatuses = new Set(['active', 'waiting_approval'])
 
+function decodeDecision(value: unknown): 'allow-once' | 'refuse' {
+  try {
+    return decodeApprovalDecisionBody(value).decision
+  } catch (error) {
+    if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
+    throw error
+  }
+}
+
 function streamRequestEvents(
   req: IncomingMessage,
   res: ServerResponse,
   id: string,
-  controller: ChatRequestOperations,
+  controller: ChatRequestService,
   streams: Set<ServerResponse>,
 ): void {
   const after = parseCursor(req)
@@ -61,8 +71,8 @@ function streamRequestEvents(
   }
 }
 
-export function createRequestRoutes(
-  controller: ChatRequestOperations,
+export function createChatRequestRoutes(
+  requests: ChatRequestService,
   maxFiles: number,
   streams: Set<ServerResponse>,
 ): Router {
@@ -71,52 +81,43 @@ export function createRequestRoutes(
   router.post(
     '/api/requests',
     route(async (req, res) => {
-      if (!controller) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
-      json(res, 202, await controller.submit(await readAgentRequest(req, maxFiles)))
+      if (!requests) throw new HttpError(503, 'REQUESTS_UNAVAILABLE')
+      json(res, 202, await requests.submit(await readAgentRequest(req, maxFiles)))
     }),
   )
   router.post(
     '/api/requests/:requestId/approvals/:approvalId/decision',
     params({ requestId: WORD_ID, approvalId: WORD_ID }),
     route(async (req, res) => {
-      if (!controller) throw new HttpError(404, 'APPROVAL_NOT_FOUND')
-      const value = await readJson(req)
-      if (
-        !value ||
-        typeof value !== 'object' ||
-        Array.isArray(value) ||
-        !('decision' in value) ||
-        Object.keys(value).some(key => key !== 'decision') ||
-        (value.decision !== 'allow-once' && value.decision !== 'refuse')
-      )
-        throw new HttpError(400, 'INVALID_REQUEST')
-      json(res, 200, controller.decide(param(req, 'requestId'), param(req, 'approvalId'), value.decision))
+      if (!requests) throw new HttpError(404, 'APPROVAL_NOT_FOUND')
+      const decision = decodeDecision(await readJson(req))
+      json(res, 200, requests.decide(param(req, 'requestId'), param(req, 'approvalId'), decision))
     }),
   )
   router.post(
     '/api/requests/:requestId/stop',
     request,
     route((req, res) => {
-      if (!controller) throw new HttpError(404, 'REQUEST_NOT_FOUND')
-      json(res, 200, controller.stop(param(req, 'requestId')))
+      if (!requests) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+      json(res, 200, requests.stop(param(req, 'requestId')))
     }),
   )
   router.get(
     '/api/requests/:requestId',
     request,
     route((req, res) => {
-      if (!controller) throw new HttpError(404, 'REQUEST_NOT_FOUND')
-      json(res, 200, controller.get(param(req, 'requestId')))
+      if (!requests) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+      json(res, 200, requests.get(param(req, 'requestId')))
     }),
   )
   router.get(
     '/api/requests/:requestId/events',
     request,
     route((req, res) => {
-      if (!controller) throw new HttpError(404, 'REQUEST_NOT_FOUND')
+      if (!requests) throw new HttpError(404, 'REQUEST_NOT_FOUND')
       const requestId = param(req, 'requestId')
-      controller.get(requestId)
-      streamRequestEvents(req, res, requestId, controller, streams)
+      requests.get(requestId)
+      streamRequestEvents(req, res, requestId, requests, streams)
     }),
   )
   return router

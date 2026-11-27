@@ -1,15 +1,9 @@
-export {
-  createChatOperations,
-  createWorkspaceChats,
-  createConversationContribution,
-  createChatRequestOperations,
-  readChatSelection,
-  ChatWorkflowError,
-} from './chats.service.ts'
-export type { ChatMarks, ChatModels, ChatOperations, ChatRecord, ChatStore } from './chats.service.ts'
+export { ChatService, toChatRequest } from './chats.service.ts'
+export type { ChatMarks } from './chats.service.ts'
+export { ChatError, mapChatError } from './chats.errors.ts'
+export { ChatRequestService } from './chat-requests.service.ts'
+export { createConversationContribution } from './chats.run-contribution.ts'
 export { createChatRoutes } from './chats.routes.ts'
-export { mapChatFailure } from './chats.errors.ts'
-export { createRequestRoutes } from './request.routes.ts'
-export type { ChatRunOperations, ChatRequestOperations, DeckRunPlanner } from './chats.service.ts'
+export { createChatRequestRoutes } from './chat-requests.routes.ts'
 export { SqliteChatStore } from './chats.store.ts'
 export type { ChatStoreOptions } from './chats.store.ts'

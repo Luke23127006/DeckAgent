@@ -3,7 +3,7 @@ import { startHost } from '../../lib/types/http/start-host.js'
 import { HttpError, json, param, params, route, WORD_ID } from '../../lib/types/http/route-helpers.js'
 import { RunController } from '../../lib/types/runs/lifecycle/index.js'
 import { RunFailure } from '../../lib/types/runs/ports.js'
-import { createChatOperations, createRequestRoutes } from '../../lib/types/modules/chats/index.js'
+import { ChatService, createChatRequestRoutes } from '../../lib/types/modules/chats/index.js'
 export { startHost, HttpError }
 
 export async function startRequestHost({
@@ -14,7 +14,7 @@ export async function startRequestHost({
   ...options
 }) {
   const history = Router({ caseSensitive: true, strict: true })
-  const chats = createChatOperations({ read: readHistory }, {}, {}, {})
+  const chats = new ChatService({ read: readHistory }, {}, {}, {}, {})
   history.get(
     '/api/sessions/:sessionId/history',
     params({ sessionId: WORD_ID }),
@@ -135,7 +135,7 @@ export async function startRequestHost({
   return startHost({
     ...options,
     mapApplicationFailure,
-    routes: [history, ...routes, context => createRequestRoutes(operations, maxAttachments, context.streams)],
+    routes: [history, ...routes, context => createChatRequestRoutes(operations, maxAttachments, context.streams)],
     onClose: async () => {
       await runs.close()
       await options.onClose?.()

@@ -5,7 +5,7 @@ import { RunFailure } from '../../runs/ports.ts'
 import type { RunPlan, RunStartOptions, RunSnapshot } from '../../runs/ports.ts'
 import type { AgentRequest, ConfirmationResult, ModelSelection } from '@deckagent/host-contracts'
 import type { DeckSessionStore } from './ports.ts'
-import { ChatWorkflowError } from '../chats/index.ts'
+import { ChatError } from '../chats/index.ts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
 import { createGenerationRunPlan } from './generation-run-plan.ts'
 import type { GenerationPlanDependencies, PreparedGenerationRuntime } from './generation-run-plan.ts'
@@ -129,7 +129,7 @@ export class ConfirmationCoordinator {
     if (
       error instanceof DeckWorkflowFailure ||
       error instanceof RunFailure ||
-      error instanceof ChatWorkflowError ||
+      error instanceof ChatError ||
       error instanceof ResearchFailure ||
       (error instanceof Error &&
         'status' in error &&

@@ -42,7 +42,7 @@ Read this file to learn the steps of Task 5, which moves `ChatError`, extracts `
 
 **Forbidden:** Do not change `createChatOperations`, `ChatOperations`, `createWorkspaceChats` or `chats.routes.ts` in this task.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `apps/host/tests/chat-persistence.test.mjs`, import `ChatError` and `ChatRequestService` from `'../lib/types/modules/chats/index.js'` and `RunFailure` from `'../lib/types/runs/ports.js'`. Add this test at the end of the file:
 
@@ -107,12 +107,12 @@ test('ChatRequestService maps run busy errors and unreadable chat errors to Chat
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `node --test --test-reporter=tap apps/host/tests/chat-persistence.test.mjs`
 Expected: FAIL. Node exits with a non-zero code because `ChatError` and `ChatRequestService` do not exist in `modules/chats/index.js`.
 
-- [ ] **Step 3: Move `ChatError`, `chats.run-contribution.ts`, `ChatRequestService` and `chat-requests.routes.ts`**
+- [x] **Step 3: Move `ChatError`, `chats.run-contribution.ts`, `ChatRequestService` and `chat-requests.routes.ts`**
 
 1. In `apps/host/src/modules/chats/chats.errors.ts`, declare and export `ChatErrorCode`, `ChatError` (with `this.name = 'ChatError'`) and `mapChatError`. Keep `chatStatus` typed as `Readonly<Record<ChatErrorCode, number>>`.
 2. Create `apps/host/src/modules/chats/chats.run-contribution.ts` and move `createConversationContribution` there.
@@ -129,7 +129,7 @@ Expected: FAIL. Node exits with a non-zero code because `ChatError` and `ChatReq
    - Replace the hand-written approval decision body check with `decodeApprovalDecisionBody` from `@deckagent/host-contracts`, catching `RequestValidationError` and throwing `new HttpError(400, error.code)`.
 6. Update `apps/host/src/modules/chats/index.ts` to export `ChatError` and `mapChatError` from `./chats.errors.ts`, `toChatRequest` from `./chats.service.ts`, `ChatRequestService` from `./chat-requests.service.ts`, `createConversationContribution` from `./chats.run-contribution.ts` and `createChatRequestRoutes` from `./chat-requests.routes.ts`. Remove `ChatWorkflowError`, `mapChatFailure`, `createChatRequestOperations`, `ChatRequestOperations`, `ChatRunOperations`, `DeckRunPlanner`, `readChatSelection` and `createRequestRoutes`.
 
-- [ ] **Step 4: Update callers**
+- [x] **Step 4: Update callers**
 
 - In `apps/host/src/modules/deck/confirmation-coordinator.ts`: replace `ChatWorkflowError` with `ChatError`.
 - In `apps/host/src/server.ts`:
@@ -140,7 +140,7 @@ Expected: FAIL. Node exits with a non-zero code because `ChatError` and `ChatReq
   - Use `mapChatError(error)` and `createChatRequestRoutes(requests, runtime.inputs.maxFiles, context.streams)`.
 - In `apps/host/tests/fixtures/http-host.mjs`: replace `createRequestRoutes` with `createChatRequestRoutes`.
 
-- [ ] **Step 5: Build, run tests and run checks**
+- [x] **Step 5: Build, run tests and run checks**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
@@ -151,6 +151,6 @@ Expected: exit code 0 and `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

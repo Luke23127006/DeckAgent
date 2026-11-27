@@ -7,14 +7,13 @@ import { AttachmentParser, attachmentLimits } from './tools/index.ts'
 import type { HostOptions, HostRouteContext } from './http/contracts.ts'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
-import type { StoredRequest, WebSettings } from '@deckagent/host-contracts'
+import type { WebSettings } from '@deckagent/host-contracts'
 import {
   SessionDatabase,
   SessionError,
   SqliteRunStore,
   mapSessionFailure,
   type ModelSelection,
-  type RequestRecord,
 } from './db/index.ts'
 import { MemoryDraftStore } from './modules/attachments/index.ts'
 import {
@@ -26,17 +25,16 @@ import {
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import { loadWebAssets } from '@deckagent/local-web'
-import { WebState, selection, mapWebStateFailure } from './web-state.ts'
+import { WebState, mapWebStateFailure } from './web-state.ts'
 import {
+  ChatRequestService,
+  ChatService,
   SqliteChatStore,
-  createChatOperations,
+  createChatRequestRoutes,
   createConversationContribution,
-  createChatRequestOperations,
-  createRequestRoutes,
-  readChatSelection,
   createChatRoutes,
-  createWorkspaceChats,
-  mapChatFailure,
+  mapChatError,
+  toChatRequest,
   type ChatMarks,
   type ChatStoreOptions,
 } from './modules/chats/index.ts'
@@ -117,11 +115,6 @@ export interface LocalWebOptions {
   readonly providerAccess?: Pick<ProviderConfigurationsOptions, 'check' | 'catalog'>
   /** Controlled HTTP seam for research tests. Production always uses fixed Tavily endpoints. */
   readonly researchAccess?: { readonly fetch: typeof fetch; readonly key?: string }
-}
-
-function toStoredRequest(record: RequestRecord): StoredRequest {
-  const { owner, ...fields } = record
-  return { ...fields, sessionId: owner.id }
 }
 
 /** Composes the shared SessionDatabase, module stores and run store with atomic admission and settlement hooks. */
@@ -438,23 +431,16 @@ function createHostOptions(
 ): StartHostOptions {
   if (!contractSync) throw new Error('Contract sync failed')
   const { sessions, web, decks, registry } = storage
+  const chats = new ChatService(sessions.chats, sessions.runs, registry, web, chatMarks(decks, drafts))
   const chatSessions = {
     getInfo: (id: string) => sessions.chats.getInfo(id),
     read: (id: string) => sessions.chats.read(id),
-    chats: () => sessions.chats.chats(),
-    list: () => sessions.chats.list(),
-    create: (workspaceId: string, selected?: ModelSelection) => sessions.chats.create(workspaceId, selected),
-    select: (id: string, selected: ModelSelection) => sessions.chats.select(id, selected),
-    search: (words: string, chatIds: readonly string[]) => sessions.chats.search(words, chatIds),
-    ungroup: (workspaceId: string) => sessions.chats.ungroup(workspaceId),
     attachments: sessions.attachments,
     requests: {
       activeFor: (id: string) => sessions.runs.activeFor({ kind: 'chat', id }),
-      activities: (id: string) => sessions.runs.activities({ kind: 'chat', id }),
-      list: (id: string) => sessions.runs.list({ kind: 'chat', id }).map(toStoredRequest),
       get: (requestId: string) => {
         const record = sessions.runs.get(requestId)
-        return record ? toStoredRequest(record) : undefined
+        return record ? toChatRequest(record) : undefined
       },
       text: (requestId: string) => sessions.runs.text(requestId),
       sourceCatalogue: (id: string) => sessions.runs.sourceCatalogue(id),
@@ -547,24 +533,8 @@ function createHostOptions(
     },
     ...(runtime.generationRuntime ? { generationRuntime: runtime.generationRuntime } : {}),
   }
-  const prepareGeneration = async (request: import('@deckagent/host-contracts').AgentRequest) => {
-    if (runtime.generationRuntime) {
-      await runtime.research.prepare(request.publicResearch === true)
-      const prepared = await runtime.generationRuntime.prepare(request)
-      overrideSelections.add(JSON.stringify(prepared.selection))
-      return { selection: prepared.selection, override: prepared }
-    }
-    const selected = await readChatSelection(
-      { sessions: chatSessions, providers: runtime.providers },
-      request.sessionId,
-    )
-    const availability = await runtime.runtime.availability()
-    if (!availability.available) throw new RunFailure(availability.code, availability.detail)
-    await runtime.research.prepare(request.publicResearch === true)
-    return { selection: selected }
-  }
-  const requests = createChatRequestOperations({
-    sessions: chatSessions,
+  const requests = new ChatRequestService({
+    chats: sessions.chats,
     providers: runtime.providers,
     runs,
     preflightResearch: async selected => {
@@ -594,6 +564,19 @@ function createHostOptions(
       },
     },
   })
+  const prepareGeneration = async (request: import('@deckagent/host-contracts').AgentRequest) => {
+    if (runtime.generationRuntime) {
+      await runtime.research.prepare(request.publicResearch === true)
+      const prepared = await runtime.generationRuntime.prepare(request)
+      overrideSelections.add(JSON.stringify(prepared.selection))
+      return { selection: prepared.selection, override: prepared }
+    }
+    const selected = await requests.readSelection(request.sessionId)
+    const availability = await runtime.runtime.availability()
+    if (!availability.available) throw new RunFailure(availability.code, availability.detail)
+    await runtime.research.prepare(request.publicResearch === true)
+    return { selection: selected }
+  }
   const deckOps = createDeckOperations(
     decks,
     briefs,
@@ -604,7 +587,7 @@ function createHostOptions(
     mapApplicationFailure: error =>
       mapRunFailure(error) ??
       mapWorkspaceFailure(error) ??
-      mapChatFailure(error) ??
+      mapChatError(error) ??
       mapProviderFailure(error) ??
       mapAttachmentFailure(error) ??
       mapResearchFailure(error) ??
@@ -617,8 +600,8 @@ function createHostOptions(
     onClose: () => runs.close(),
     ...(options.port === undefined ? {} : { port: options.port }),
     routes: [
-      createWorkspaceRoutes(createWorkspaceOperations(registry, createWorkspaceChats(chatSessions))),
-      createChatRoutes(createChatOperations(chatSessions, registry, web, chatMarks(decks, drafts)), selection),
+      createWorkspaceRoutes(createWorkspaceOperations(registry, chats)),
+      createChatRoutes(chats),
       createProviderRoutes(runtime.providers),
       createAttachmentRoutes(runtime.inputs),
       createResearchRoutes(runtime.research),
@@ -630,7 +613,7 @@ function createHostOptions(
         },
       }),
       (context: HostRouteContext) => createDeckRoutes(deckOps, context),
-      (context: HostRouteContext) => createRequestRoutes(requests, runtime.inputs.maxFiles, context.streams),
+      (context: HostRouteContext) => createChatRequestRoutes(requests, runtime.inputs.maxFiles, context.streams),
     ],
     changes: {
       feed: changeFeed,

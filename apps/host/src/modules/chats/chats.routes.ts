@@ -1,20 +1,23 @@
 import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
-import type { ModelSelection } from '@deckagent/host-contracts'
+import {
+  RequestValidationError,
+  decodeChatCreateBody,
+  decodeChatSearchBody,
+  decodeModelSelection,
+} from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { ChatOperations } from './chats.service.ts'
+import type { ChatService } from './chats.service.ts'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value)
+function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
+  try {
+    return decode(value)
+  } catch (error) {
+    if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
+    throw error
+  }
 }
 
-function searchWords(value: unknown): string {
-  if (!isRecord(value) || Object.keys(value).some(name => name !== 'words')) throw new HttpError(400, 'INVALID_REQUEST')
-  const words = value.words
-  if (typeof words !== 'string' || words.length > 500) throw new HttpError(400, 'INVALID_REQUEST')
-  return words
-}
-
-export function createChatRoutes(chats: ChatOperations, decodeSelection: (value: unknown) => ModelSelection): Router {
+export function createChatRoutes(chats: ChatService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   router.get(
     '/api/sessions/:sessionId/history',
@@ -32,24 +35,23 @@ export function createChatRoutes(chats: ChatOperations, decodeSelection: (value:
   router.post(
     '/api/sessions',
     route(async (req, res) => {
-      const value = await readJson(req)
-      if (!isRecord(value) || Object.keys(value).some(key => key !== 'selection'))
-        throw new HttpError(400, 'INVALID_SESSION')
-      const chosen = value.selection === undefined ? undefined : decodeSelection(value.selection)
-      json(res, 201, await chats.create(chosen))
+      const body = parseBody(decodeChatCreateBody, await readJson(req))
+      json(res, 201, await chats.create(body.selection))
     }),
   )
   router.put(
     '/api/sessions/:sessionId/selection',
     params({ sessionId: /^[\w-]{1,100}$/ }),
     route(async (req, res) => {
-      json(res, 200, await chats.selectModel(param(req, 'sessionId'), decodeSelection(await readJson(req))))
+      const selection = parseBody(decodeModelSelection, await readJson(req))
+      json(res, 200, await chats.selectModel(param(req, 'sessionId'), selection))
     }),
   )
   router.post(
     '/api/sessions/search',
     route(async (req, res) => {
-      json(res, 200, await chats.search(searchWords(await readJson(req))))
+      const body = parseBody(decodeChatSearchBody, await readJson(req))
+      json(res, 200, await chats.search(body.words))
     }),
   )
   router.get(

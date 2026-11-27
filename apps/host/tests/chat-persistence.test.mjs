@@ -11,6 +11,8 @@ import {
   SqliteRunStore,
   openSessionStore,
 } from './fixtures/session-store.mjs'
+import { ChatError, ChatRequestService, ChatService } from '../lib/types/modules/chats/index.js'
+import { RunFailure } from '../lib/types/runs/ports.js'
 
 const stores = new WeakMap()
 
@@ -461,4 +463,92 @@ test('a write that changes no chat, or that fails, keeps the chats version and s
   assert.deepEqual(seen, [1])
   assert.equal(store.chatsVersion(), 1)
   assert.deepEqual(await store.read('chat-a'), [])
+})
+
+test('ChatRequestService maps run busy errors and unreadable chat errors to ChatError', async () => {
+  const selection = { provider: 'openai', model: 'gpt-4o' }
+  const unused = () => {
+    throw new Error('unused')
+  }
+  const makeService = ({ getInfo, read, start }) =>
+    new ChatRequestService({
+      chats: { getInfo, read },
+      providers: {
+        providerSettings: () => [{ models: ['gpt-4o'] }],
+        selectable: value => value.provider === 'openai' && value.model === 'gpt-4o',
+      },
+      runs: { start, get: unused, decide: unused, events: () => [], stop: unused, subscribe: () => () => {} },
+      deckPlanner: { prepare: async () => unused() },
+      preflightResearch: async () => {},
+    })
+
+  const isChatCode = code => error => error instanceof ChatError && error.code === code
+  const missing = makeService({ getInfo: async () => undefined, read: async () => [], start: async () => ({}) })
+  await assert.rejects(missing.readSelection('missing'), isChatCode('SESSION_NOT_FOUND'))
+
+  const corrupt = makeService({
+    getInfo: async () => ({ selection }),
+    read: async () => {
+      throw new SessionError('SESSION_CORRUPT', 'corrupt')
+    },
+    start: async () => ({}),
+  })
+  await assert.rejects(corrupt.readSelection('bad'), isChatCode('CHAT_UNREADABLE'))
+
+  const busy = makeService({
+    getInfo: async () => ({ selection }),
+    read: async () => [],
+    start: async () => {
+      throw new RunFailure('RUN_OWNER_BUSY')
+    },
+  })
+  await assert.rejects(busy.submit({ sessionId: 'chat-1', input: 'Hello' }), isChatCode('SESSION_BUSY'))
+
+  const ok = makeService({
+    getInfo: async () => ({ selection }),
+    read: async () => [],
+    start: async () => ({
+      requestId: 'req-1',
+      owner: { kind: 'chat', id: 'chat-1' },
+      status: 'active',
+      text: '',
+      sequence: 1,
+    }),
+  })
+  assert.deepEqual(await ok.submit({ sessionId: 'chat-1', input: 'Hello' }), {
+    requestId: 'req-1',
+    sessionId: 'chat-1',
+    status: 'active',
+    text: '',
+    sequence: 1,
+  })
+})
+
+test('ChatService implements WorkspaceChats and projects stored chat requests', async t => {
+  const store = storeIn(t, await directory(t))
+  const chatA = await store.create('workspace-a', { provider: 'openai', model: 'gpt-4o' })
+  const chatB = await store.create('workspace-b')
+  store.runs.admit({
+    requestId: 'req-ws-a',
+    owner: { kind: 'chat', id: chatA.sessionId },
+    input: 'Start',
+    selection: { provider: 'openai', model: 'gpt-4o' },
+  })
+  const service = new ChatService(
+    store.chatStore,
+    store.runs,
+    { selectedId: () => 'workspace-a' },
+    { lastSelection: () => undefined, selectable: () => true, rememberSelection: () => {} },
+    { hasSlides: () => false, hasDraft: () => false },
+  )
+  assert.equal(await service.hasActiveRequest('workspace-a'), true)
+  assert.equal(await service.hasActiveRequest('workspace-b'), false)
+  const requests = await service.requests(chatA.sessionId)
+  assert.equal(requests.length, 1)
+  assert.equal(requests[0].requestId, 'req-ws-a')
+  assert.equal(requests[0].sessionId, chatA.sessionId)
+  assert.equal('owner' in requests[0], false)
+  await service.ungroup('workspace-b')
+  assert.equal((await store.getInfo(chatB.sessionId)).workspaceId, null)
+  assert.equal((await store.getInfo(chatA.sessionId)).workspaceId, 'workspace-a')
 })

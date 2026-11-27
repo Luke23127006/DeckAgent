@@ -345,3 +345,31 @@ test('An existing web.sqlite without the preferences table is upgraded in place'
     await app.close()
   }
 })
+
+test('Chat HTTP routes reject invalid create, selection and search payloads with stable error codes', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-chat-validation-'))
+  const app = await startLocalWeb({ dataDir: join(dir, 'data') })
+  t.after(async () => {
+    await app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const send = async (path, method, body) => {
+    const res = await fetch(`${app.origin}${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { status: res.status, data: await res.json() }
+  }
+  const created = (await send('/api/sessions', 'POST', {})).data
+  for (const [path, method, body, code] of [
+    ['/api/sessions', 'POST', { extra: true }, 'INVALID_SESSION'],
+    ['/api/sessions', 'POST', { selection: { provider: 'bad space', model: 'm' } }, 'INVALID_SELECTION'],
+    [`/api/sessions/${created.sessionId}/selection`, 'PUT', { provider: 'openai', model: '   ' }, 'INVALID_SELECTION'],
+    ['/api/sessions/search', 'POST', { words: 'x'.repeat(501) }, 'INVALID_REQUEST'],
+  ]) {
+    const reply = await send(path, method, body)
+    assert.equal(reply.status, 400)
+    assert.equal(reply.data.error.code, code)
+  }
+})

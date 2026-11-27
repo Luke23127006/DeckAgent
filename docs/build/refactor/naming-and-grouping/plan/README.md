@@ -124,6 +124,6 @@ Phase 1 is done. Tasks 1 and 2 are `Done`, and commit `b77d062` holds their chan
 | --- | --- | --- |
 | 3 | Done | [Add chat and approval body decoders to host contracts](task-03-add-chat-contract-decoders.md) ([report](../reports/task-03-add-chat-contract-decoders.md)) |
 | 4 | Done | [Split message validation into Zod schema and chat text helpers](task-04-split-message-validation-and-chat-text.md) ([report](../reports/task-04-split-message-validation-and-chat-text.md)) |
-| 5 | Pending | [Extract ChatError, ChatRequestService and conversation contribution](task-05-extract-chat-errors-requests-and-contribution.md) |
-| 6 | Pending | [Convert ChatService to a class and wire chat routes](task-06-convert-chat-service-and-routes.md) |
+| 5 | Done | [Extract ChatError, ChatRequestService and conversation contribution](task-05-extract-chat-errors-requests-and-contribution.md) ([report](../reports/task-05-extract-chat-errors-requests-and-contribution.md)) |
+| 6 | Done | [Convert ChatService to a class and wire chat routes](task-06-convert-chat-service-and-routes.md) ([report](../reports/task-06-convert-chat-service-and-routes.md)) |
 | 7 | Pending | [Enable role-file-symbol for chats and check Phase 2](task-07-enable-chats-role-check-and-verify-phase-2.md) |

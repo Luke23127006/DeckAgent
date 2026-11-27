@@ -36,7 +36,7 @@ Read this file to learn the steps of Task 6, which introduces `class ChatService
 
 **Forbidden:** Do not remove `getInfo`, `read`, `attachments` or `requests.{activeFor, get, text, sourceCatalogue, researchSources, recordSourceRead}` from `chatSessions` in `server.ts`. Do not change `web-state.ts`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `apps/host/tests/chat-persistence.test.mjs`, import `ChatService` from `'../lib/types/modules/chats/index.js'` and add this test at the end of the file:
 
@@ -103,12 +103,12 @@ test('Chat HTTP routes reject invalid create, selection and search payloads with
 })
 ```
 
-- [ ] **Step 2: Run the test and make sure that it fails**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `node --test --test-reporter=tap apps/host/tests/chat-persistence.test.mjs`
 Expected: FAIL. Node exits with a non-zero code because `ChatService` does not exist in `modules/chats/index.js`.
 
-- [ ] **Step 3: Implement `ChatService`, update `chats.routes.ts` and narrow `chats/index.ts`**
+- [x] **Step 3: Implement `ChatService`, update `chats.routes.ts` and narrow `chats/index.ts`**
 
 1. In `apps/host/src/modules/chats/chats.service.ts`:
    - Change the comment on `ChatStore` from `SqliteSessionStore` to `SqliteChatStore`. Remove `requests` from `ChatStore`.
@@ -122,7 +122,7 @@ Expected: FAIL. Node exits with a non-zero code because `ChatService` does not e
    - Use `decodeChatCreateBody`, `decodeModelSelection` and `decodeChatSearchBody` from `@deckagent/host-contracts`.
 3. In `apps/host/src/modules/chats/index.ts`, export only `ChatError` and `mapChatError` (`./chats.errors.ts`), `ChatService`, `toChatRequest` and `type ChatMarks` (`./chats.service.ts`), `ChatRequestService` (`./chat-requests.service.ts`), `createConversationContribution` (`./chats.run-contribution.ts`), `createChatRoutes` (`./chats.routes.ts`), `createChatRequestRoutes` (`./chat-requests.routes.ts`), and `SqliteChatStore` and `type ChatStoreOptions` (`./chats.store.ts`).
 
-- [ ] **Step 4: Update `server.ts` and `http-host.mjs`**
+- [x] **Step 4: Update `server.ts` and `http-host.mjs`**
 
 - In `apps/host/src/server.ts`:
   - Import `ChatService` in place of `createChatOperations` and `createWorkspaceChats`. Remove `selection` from the `./web-state.ts` import.
@@ -131,7 +131,7 @@ Expected: FAIL. Node exits with a non-zero code because `ChatService` does not e
   - Remove `chats`, `list`, `create`, `select`, `search`, `ungroup`, `requests.activities` and `requests.list` from `chatSessions`.
 - In `apps/host/tests/fixtures/http-host.mjs`: replace `createChatOperations` with `ChatService` and construct `new ChatService({ read: readHistory }, {}, {}, {}, {})`.
 
-- [ ] **Step 5: Build, run tests and run checks**
+- [x] **Step 5: Build, run tests and run checks**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
@@ -142,6 +142,6 @@ Expected: exit code 0 and `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
