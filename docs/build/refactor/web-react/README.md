@@ -37,7 +37,7 @@ Every phase is done only when `build`, `lint`, `check:boundaries`, `check:docs` 
 | 3 | Settings | Phase 2 is done | The settings screen (providers, models, credentials, theme) is React. Its responses use `decode*` of the contracts package | Implemented; [exit check blocked](#phase-3-settings) by concurrent Host edits |
 | 4 | Workspaces and chat navigation | Phase 2 is done | The workspace screen and the chat list are React and read through query hooks | Done ([Phase 4](#phase-4-workspaces-and-chat-navigation)) |
 | 5 | Conversation and requests | Phase 4 is done | The conversation, the draft, attachments, research and the request feedback are React. The request stream hook owns the SSE reader | Done ([Phase 5](#phase-5-conversation-and-requests)) |
-| 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Pending |
+| 6 | Deck | Phase 5 is done | The brief, the outline, the deck canvas, the preview and the presentation are React. The preview iframe has one owner component. The editor core has a folder if UC-007 work started | Done ([Phase 6](#phase-6-deck)) |
 | 7 | Removal and exit check | Phases 3 to 6 are done | `apps/web/src/browser/` and the second TypeScript project are removed (WB-09). `apps/web/` imports only the contracts package (WB-03). The old Browser rules of `check:boundaries` are replaced. A rescan checks TS-06 and TS-07 [[8]](#ref-8) | Pending |
 
 Phases 3 and 4 can run in any order after Phase 2.
@@ -97,7 +97,24 @@ Checks ran in a worktree at the Phase 4 commit with the changes of this phase, b
 
 ### Phase 6: Deck
 
-The deck screens have the most hand-built DOM and the preview security. The planner reads `features/deck/` and the deck routes of the Host before the plan. The preview keeps the empty `sandbox` attribute and the slide CSP.
+The deck screens are React components in `components/`. `DeckWorkflow` renders the Brief workflow, `OutlineCard` renders an Outline proposal inside its assistant message, and `OutlineDock` renders the actions of the current Outline above the composer. `PublishedDeck` renders the stage, the filmstrip and the presentation mode, and `SampleDeck` renders the sample slides. `SlideFrame` is the only owner of a preview iframe: it sets the empty `sandbox` attribute, and it puts the slide CSP before the slide HTML in `srcdoc`.
+
+`DeckScreens` in `hooks/use-deck-screens.ts` implements the `ConversationDeck` port and replaces `browser/deck-bridge.ts`. It keeps the explicit choices of the user, the interview of the open chat and the visibility of the two deck panels. `DeckModel` in `hooks/use-deck-model.ts` owns the deck SSE reader and the slide reads of the open chat. `useSlidePreviews`, `usePresentation`, `usePanelResizer` and `useOutlineImage` own the thumbnail queue, the full-screen mode, the panel divider and the prepared Outline images. The conversation reads the Outline and sends the confirmation through `api/deck.ts`. The contracts package decodes each deck payload that the Browser reads (WB-03): `decodeDeckSnapshot`, `decodeDeckChange`, `decodeSlideContent`, `decodeOutlineSnapshot`, `decodeInterview` and `decodeConfirmationResult`. The text of the deck screens is `deckText` in `text.ts`.
+
+`browser/features/deck/`, `browser/deck-bridge.ts`, `browser/dom.ts` and `LegacyNode` are removed. The deck model test moved from `node:test` to Vitest. UC-007 work did not start, so `src/editor/` does not exist.
+
+The phase was diagnosed and done in one run without task files. Its decisions:
+
+| Decision | Reason |
+| --- | --- |
+| The components keep the classes, the labels and the order of the legacy DOM | The browser suite and `motion.ts` select the deck screens by these classes and labels, and `legacy.css` styles them |
+| The form controls of the Brief workflow are uncontrolled. `DeckScreens` reads them when a request is sent, and the selects use native `change` listeners | A script sets a choice without an event, and a script event that does not bubble does not reach the root listener of React |
+| `DeckScreens` tells the conversation about a deck change only when the chat, the Outline, the generation or a panel visibility changes | The stage and the filmstrip read `DeckModel` through `useDeckModel`. A slide read does not render the whole chat screen again. The poll of the conversation no longer compares a deck signature |
+| The port `ConversationDeck` no longer reads the Outline or sends its confirmation. The conversation calls `readOutlines` and `confirmOutline` of `api/deck.ts` | A hook can call `api/`. The port only kept the legacy deck code out of the hooks |
+| The outline read keeps `OUTLINE_UNAVAILABLE` for a refused read. The other deck reads use the error code of the Host | The conversation shows the text of `OUTLINE_UNAVAILABLE` today. A known Host code gives more exact text than the fixed fallback of the legacy clients |
+| The legacy transport clients for the deck, the Brief, the Outline and the confirmation stay | HTTP tests of the Host use them as the Browser driver. Phase 7 removes them with the second TypeScript project |
+
+Checks ran in a worktree at commit `6caa704` with the changes of this phase. The shared tree had no `packages/host/contracts/tsconfig.json` during the run, because of concurrent edits, so `tsc` and Vitest could not start there. `build`, `lint`, `check:boundaries`, `check:docs`, Vitest (33 tests), the contracts decoder tests (23 tests), `test:slide-pipeline`, `test:outline-workflow`, `test:brief-foundation`, `test:tools-browser` and the Vite build guard passed. At the request of the PO, the browser suite (`test:browser-smoke`) did not run. Thus no test of this phase ran the deck flows in a real browser. Phase 7 runs all non-live suites.
 
 ## References
 

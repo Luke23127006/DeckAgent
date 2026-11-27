@@ -1,5 +1,6 @@
-import type { DeckSnapshot } from '@deckagent/host-contracts'
-import type { DeckClient } from '../../transport/index.ts'
+import type { DeckChange, DeckSnapshot, SlideContent } from '@deckagent/host-contracts'
+import { useSyncExternalStore } from 'react'
+import { readDeck, readSlide, watchDeck } from '../api/deck.ts'
 
 export interface DeckViewState {
   readonly snapshot?: DeckSnapshot
@@ -8,24 +9,42 @@ export interface DeckViewState {
   readonly connection: 'connecting' | 'live' | 'reconnecting' | 'error'
 }
 
-/** Session generation and revision checks protect both metadata and HTML responses.
- * SSE is only a wake-up signal. Retry always reads current state, never republishes.
+/** The Host reads of the published deck. Tests give their own implementation. */
+export interface DeckApi {
+  snapshot(sessionId: string, signal?: AbortSignal): Promise<DeckSnapshot>
+  content(sessionId: string, slideId: string, revision: number, signal?: AbortSignal): Promise<SlideContent>
+  watch(sessionId: string, signal: AbortSignal): AsyncIterable<DeckChange>
+}
+
+export const hostDeckApi: DeckApi = { snapshot: readDeck, content: readSlide, watch: watchDeck }
+
+/**
+ * The published deck of the open chat. A chat generation and the revision checks protect both the metadata and the
+ * HTML replies. The SSE stream only wakes the model: a retry always reads the current state, and never publishes again.
  */
 export class DeckModel {
   private sessionId: string | undefined
   private control: AbortController | undefined
   private current: DeckViewState = { connection: 'connecting' }
   private readonly selections = new Map<string, string>()
+  private readonly listeners = new Set<() => void>()
   private load = 0
 
   constructor(
-    private readonly api: Pick<DeckClient, 'snapshot' | 'content' | 'watch'>,
-    private readonly changed: (state: DeckViewState) => void,
+    private readonly api: DeckApi,
+    private readonly changed: (state: DeckViewState) => void = () => {},
   ) {}
 
   get state(): DeckViewState {
     return this.current
   }
+
+  readonly subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
+  readonly getState = (): DeckViewState => this.current
 
   open(sessionId: string): void {
     if (this.sessionId === sessionId && !this.control?.signal.aborted) return
@@ -43,7 +62,7 @@ export class DeckModel {
     const sessionId = this.sessionId,
       signal = this.control?.signal
     if (!sessionId || !signal || signal.aborted) return
-    const snapshot = await this.api.snapshot(sessionId, AbortSignal.any([signal, AbortSignal.timeout(15000)]))
+    const snapshot = await this.api.snapshot(sessionId, signal)
     if (signal.aborted || sessionId !== this.sessionId || snapshot.sessionId !== sessionId) return
     if (this.current.snapshot && snapshot.version < this.current.snapshot.version) return
     const selection = this.current.selectedId ?? this.selections.get(sessionId)
@@ -74,6 +93,19 @@ export class DeckModel {
     })
   }
 
+  /** Selects the slide at `index`, when it exists. */
+  go(index: number): void {
+    const slide = this.current.snapshot?.slides[index]
+    if (slide) this.select(slide.slideId)
+  }
+
+  /** Moves the selection by `offset` slides. */
+  navigate(offset: number): void {
+    const slides = this.current.snapshot?.slides
+    if (!slides?.length) return
+    this.go(slides.findIndex(s => s.slideId === this.current.selectedId) + offset)
+  }
+
   close(): void {
     this.control?.abort()
     this.sessionId = undefined
@@ -83,18 +115,14 @@ export class DeckModel {
   private set(state: DeckViewState): void {
     this.current = state
     this.changed(state)
+    for (const listener of this.listeners) listener()
   }
 
   private async readSelected(sessionId: string, signal: AbortSignal): Promise<void> {
     const selected = this.current.snapshot?.slides.find(s => s.slideId === this.current.selectedId)
     const load = ++this.load
     if (!selected?.revision || this.current.html !== undefined) return
-    const content = await this.api.content(
-      sessionId,
-      selected.slideId,
-      selected.revision,
-      AbortSignal.any([signal, AbortSignal.timeout(15000)]),
-    )
+    const content = await this.api.content(sessionId, selected.slideId, selected.revision, signal)
     if (signal.aborted || this.sessionId !== sessionId || load !== this.load) return
     this.set({ ...this.current, html: content.html })
   }
@@ -131,4 +159,9 @@ export class DeckModel {
       retry = Math.min(retry * 2, 10000)
     }
   }
+}
+
+/** Renders the current state of a deck model, and renders again on each change. */
+export function useDeckModel(model: DeckModel): DeckViewState {
+  return useSyncExternalStore(model.subscribe, model.getState)
 }

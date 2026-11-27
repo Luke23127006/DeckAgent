@@ -1,6 +1,0 @@
-export type { DeckModel } from './deck-model.ts'
-export { DeckWorkflowView } from './deck-workflow-view.ts'
-export { mountDeckCanvas } from './deck-canvas.ts'
-export { mountDeckTab } from './deck-tab.ts'
-export { OutlineView } from './outline-view.ts'
-export type { OutlineAction } from './outline-view.ts'

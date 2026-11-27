@@ -77,6 +77,15 @@ export {
 export { decodeBriefView } from './brief-validation.ts'
 export { decodeBoundProposal } from './outline-validation.ts'
 export { decodeGeneration } from './generation-validation.ts'
+export {
+  decodeConfirmationResult,
+  decodeDeckChange,
+  decodeDeckSnapshot,
+  decodeInterview,
+  decodeOutlineSnapshot,
+  decodeSlideContent,
+  type InterviewView,
+} from './deck-validation.ts'
 export { decodeChangeNotice, type ChangeNotice, type ChangeTopic, type PublishChange } from './changes.ts'
 export {
   decodeProviderRemoveBody,

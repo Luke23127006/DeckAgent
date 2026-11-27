@@ -22,6 +22,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- Render the Brief workflow, the Outline proposals, the published deck with its presentation mode and the sample deck with React. `SlideFrame` is the only owner of a preview iframe, the deck responses are decoded through the contracts package, and the legacy deck screens and the deck bridge are removed.
 - Reduce the Host `server.ts` to startup, shutdown, configuration and wiring. Move run failure statuses to `http/error-handler.ts`, the admission allowlist to `RunController`, settings to `modules/settings/`, the storage layout and credentials to `storage/`, and rename the chat database to `ChatDatabase` and `DatabaseError` so `db/` maps no HTTP status. Narrow each Host barrel to the exports that other folders use.
 - Refactor the Host deck module into capability folders behind `DeckService`, `DeckWorkflowError`, `DeckChats` and `DeckAttachments`, move deck run planning out of `server.ts`, remove the `chatSessions` adapter by splitting `ToolSessionStore`, and enable `role-file-symbol` for `deck`.
 - Render the conversation, the draft, attachments, research and the request feedback with React. A request stream hook owns the SSE reader of the active request, the responses are decoded through the contracts package, and the legacy shell, request runner and draft sync are removed.
@@ -36,7 +37,6 @@ Notable changes to this repository. The newest changes are at the top.
 - Move deck routes, deck workflows and image and rendering adapters into the Host deck module, and session activity and request reads into chats. Keep the deck package boundary and remove the old management contracts.
 - Rewrite `docs/conventions/code.md` around the rules production code follows; use oxlint 1.94.0 as the only linter and Biome as the formatter only.
 - Separate Browser transport from UI features, Node builds from Browser builds, and application failure classes from HTTP status mapping.
-- Move 62 tests to their owners under `apps/web/tests/`, `packages/*/*/tests/` and `e2e/`, and replace fixed waits with explicit promises.
 
 ### Fixed
 - Share one strict Brief schema between Host validation, Browser decoding and model tools; validate layout capacities before image search; report exact field errors and derived layout blockers.

@@ -19,8 +19,17 @@ import type {
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { chatsKeys, createChat, listActivities, listChats, listRequests, readHistory, selectModel } from '../api/chats.ts'
+import {
+  chatsKeys,
+  createChat,
+  listActivities,
+  listChats,
+  listRequests,
+  readHistory,
+  selectModel,
+} from '../api/chats.ts'
 import { ApiClientError } from '../api/client.ts'
+import { confirmOutline, readOutlines } from '../api/deck.ts'
 import * as drafts from '../api/drafts.ts'
 import { getSettings, providersKeys } from '../api/providers.ts'
 import { decideApproval, isActive, readRequest, sendRequest, stopRequest } from '../api/requests.ts'
@@ -35,27 +44,17 @@ import type { RequestStreamTarget } from './use-request-stream.ts'
 /** The longest request text in code points. */
 export const requestLimit = 16000
 
-/** The deck screens that stay legacy until Phase 6. The conversation calls them through this port. */
+/** The deck screens of the open chat: the Brief workflow and the published deck. The conversation calls this port. */
 export interface ConversationDeck {
   readonly briefVersion: number | undefined
   readonly preparingDeck: boolean
-  readonly inputHint: string
   readonly deck: DeckSnapshot | undefined
   openChat(sessionId: string): void
   openWorkflow(sessionId: string): Promise<void>
   refreshWorkflow(sessionId: string): Promise<void>
-  updateWorkflow(proposal: OutlineProposal | undefined, busy: boolean): void
-  setResearchAvailable(available: boolean): void
   requestRevision(): void
-  command(skip: boolean): DeckRequest | undefined
-  readOutlines(sessionId: string): Promise<OutlineSnapshot>
-  setOutlines(snapshot: OutlineSnapshot): void
-  setOutlineBusy(busy: boolean): void
-  resetOutlines(): void
-  confirm(
-    sessionId: string,
-    target: ConfirmationTarget,
-  ): Promise<{ readonly request: RequestSnapshot; readonly receipt: unknown }>
+  /** The deck part of a request, or `undefined` for a chat request. `proposal` is the current Outline. */
+  command(skip: boolean, proposal: OutlineProposal | undefined): DeckRequest | undefined
 }
 
 export interface ConversationStatus {
@@ -141,7 +140,6 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   private readonly listeners = new Set<() => void>()
   private disposed = false
   private polling = false
-  private deckSignature = ''
   // The draft mirror: what this page last read or typed for each chat. It is not a second store (FR-038).
   private readonly drafts = new Map<string, string>()
   private readonly draftStates = new Map<string, ChatDraft>()
@@ -294,13 +292,6 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     return !!this.activeRequestId || (!!this.currentId && this.sending.has(this.currentId))
   }
 
-  /** Gives the deck screens the state that they show. */
-  syncDeck(): void {
-    this.deck.setOutlineBusy(this.working())
-    this.deck.updateWorkflow(this.currentProposal(), this.working() || this.busy)
-    this.deck.setResearchAvailable(this.settings.research?.configured === true)
-  }
-
   private describeHistory(history: readonly HistoryMessage[]): void {
     this.historyPresent = history.length > 0
     const user = history.find(message => message.role === 'user')
@@ -345,11 +336,10 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   }
 
   async showOutlines(id: string, expected: number): Promise<void> {
-    const next = await this.deck.readOutlines(id)
+    const next = await readOutlines(id)
     if (this.generation !== expected || this.currentId !== id) return
     if (this.outlines?.sessionId === id && this.outlines.version > next.version) return
     this.outlines = next
-    this.deck.setOutlines(next)
     await this.deck.refreshWorkflow(id)
     this.changed()
   }
@@ -394,7 +384,6 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     this.disconnected.clear()
     this.summarized.clear()
     this.outlines = undefined
-    this.deck.resetOutlines()
   }
 
   async open(listed: WebSession): Promise<void> {
@@ -412,7 +401,7 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
       readHistory(id),
       listActivities(id),
       listRequests(id),
-      this.deck.readOutlines(id),
+      readOutlines(id),
       this.readDraft(id),
     ])
     if (this.generation !== previousGeneration || (switching && this.switchingBlocked())) return
@@ -438,7 +427,6 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     this.describeHistory(history)
     this.setRecords(requests, activities)
     this.outlines = outlines
-    this.deck.setOutlines(outlines)
     this.changed()
     await this.deck.openWorkflow(id)
     if (this.opening === expected) this.opening = undefined
@@ -578,11 +566,6 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
 
   /** Reads the activities and the Outline while a request runs. */
   poll(): void {
-    const signature = JSON.stringify([this.deck.deck?.sessionId, this.deck.deck?.outlineId, this.deck.deck?.generation])
-    if (signature !== this.deckSignature) {
-      this.deckSignature = signature
-      this.changed()
-    }
     const id = this.currentId
     if (!id || !this.activeRequestId || this.polling || this.disposed) return
     this.polling = true
@@ -637,7 +620,7 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
       return
     }
     const expected = this.generation
-    const command = continueDeck ? undefined : this.deck.command(skip)
+    const command = continueDeck ? undefined : this.deck.command(skip, this.currentProposal())
     const publicResearch = command?.sourceChoice?.publicResearch ?? this.research.get(id) === true
     this.sending.add(id)
     this.status = { text: conversationText.sending, kind: 'sending' }
@@ -779,7 +762,7 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
       if (!(await this.flushDraft(id))) return
       const draft = await drafts.readDraft(id)
       if (draft.text.trim() || draft.attachmentIds?.length) throw new Error('DRAFT_CONFLICT')
-      const accepted = await this.deck.confirm(id, target)
+      const accepted = await confirmOutline(id, target)
       if (this.generation !== expected || this.currentId !== id) return
       this.snapshot(accepted.request)
       if (isActive(accepted.request.status)) this.activeRequestId = accepted.request.requestId
@@ -841,7 +824,11 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     try {
       const draft = await drafts.readDraft(id)
       this.noticeVersions.set(id, Math.max(version, this.noticeVersions.get(id) ?? -1))
-      if (this.currentId === id && !this.pendingDrafts.has(id) && this.text === (this.draftStates.get(id)?.text ?? '')) {
+      if (
+        this.currentId === id &&
+        !this.pendingDrafts.has(id) &&
+        this.text === (this.draftStates.get(id)?.text ?? '')
+      ) {
         this.drafts.set(id, draft.text)
         this.setText(draft.text)
         this.receiveDraft(draft, true)
@@ -1051,8 +1038,6 @@ export function useConversation<D extends ConversationDeck>(
   useEffect(() => {
     if (chats) conversation.adoptListedRequest()
   }, [conversation, chats])
-
-  useEffect(() => conversation.syncDeck())
 
   useChatNotices(conversation.currentId, notice => conversation.onNotice(notice))
   useRequestStream(conversation.streamTarget(), {

@@ -2,22 +2,24 @@ import type { WebPreferences } from '@deckagent/host-contracts'
 import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { createDeckBridge } from '../browser/deck-bridge.ts'
-import type { DeckBridge } from '../browser/deck-bridge.ts'
 import { initMotion } from '../browser/motion.ts'
 import type { Conversation } from '../hooks/use-conversation.ts'
 import { requestLimit, sendBlocked, useConversation } from '../hooks/use-conversation.ts'
-import { useHostConnection } from '../hooks/use-host-connection.ts'
+import { DeckScreens, useDeckScreens } from '../hooks/use-deck-screens.ts'
 import { usePreferences, useThemeMutation } from '../hooks/use-preferences.ts'
-import { conversationText, researchText, settingsText, attachmentText } from '../text.ts'
+import { conversationText, deckText, researchText, settingsText, attachmentText } from '../text.ts'
 import { AttachmentDraft, AttachmentPicker, AttachmentPreviewDialog } from './attachment-draft.tsx'
 import { ChatList } from './chat-list.tsx'
 import { ChatSearch } from './chat-search.tsx'
 import { ConversationMessages } from './conversation-messages.tsx'
-import { LegacyNode } from './legacy-node.tsx'
+import { DeckWorkflow } from './deck-workflow.tsx'
 import { ModelPicker } from './model-picker.tsx'
+import { OutlineDock } from './outline-card.tsx'
+import type { OutlineActions } from './outline-card.tsx'
+import { PublishedDeck } from './published-deck.tsx'
 import { ResearchChoice, ResearchDialog } from './research-controls.tsx'
 import type { ResearchDialogHandle } from './research-controls.tsx'
+import { SampleDeck } from './sample-deck.tsx'
 import { WorkspaceControls } from './workspace-controls.tsx'
 
 const themes: readonly (readonly [WebPreferences['theme'], string])[] = [
@@ -160,8 +162,8 @@ function AccountMenu(props: {
 
 /** The composer: the draft text, its files, the research choice, the model and Send or Stop. */
 function Composer(props: {
-  readonly conversation: Conversation<DeckBridge>
-  readonly deck: DeckBridge
+  readonly conversation: Conversation<DeckScreens>
+  readonly deck: DeckScreens
   readonly onResearchInfo: () => void
   readonly onResearchSources: () => void
 }) {
@@ -235,7 +237,7 @@ function Composer(props: {
         ref={input}
         name="input"
         required
-        placeholder={deck.inputHint}
+        placeholder={deckText.inputHints[deck.inputHint(conversation.currentProposal())]}
         aria-label={conversationText.inputLabel}
       />
       <div className="composer-actions">
@@ -305,39 +307,24 @@ function Composer(props: {
 
 /**
  * The chat screen: the navigation with the workspace controls and the chat list, the conversation with its composer,
- * and the deck screens that stay legacy until Phase 6.
+ * the Brief workflow and the Outline proposals, and the published deck beside the conversation.
  */
 export function ChatScreen(props: { readonly initialSessionId?: string; readonly onMissingChat?: () => void }) {
   const navigate = useNavigate()
   const { hash } = useLocation()
-  const connection = useHostConnection()
   const root = useRef<HTMLElement>(null)
   const navigation = useRef<HTMLElement>(null)
   const research = useRef<ResearchDialogHandle>(null)
   const [words, setWords] = useState('')
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [recentsOpen, setRecentsOpen] = useState(() => !matchMedia(compactLayout).matches)
-  const conversation = useConversation<DeckBridge>(
-    owner =>
-      createDeckBridge({
-        origin: connection.origin,
-        token: connection.token,
-        choose: text => owner.appendAnswer(text),
-        skip: () => owner.skipQuestions(),
-        confirmOutline: proposal => owner.run(owner.confirmOutline(proposal)),
-        revise: text => owner.revise(text),
-        changed: () => owner.changed(),
-      }),
-    {
+  const conversation = useConversation<DeckScreens>(owner => new DeckScreens(() => owner.changed()), {
     ...(props.initialSessionId === undefined ? {} : { initialSessionId: props.initialSessionId }),
     openSettings: sessionId =>
       navigate({ pathname: '/settings', hash }, { state: { returnTo: sessionId ? `/chats/${sessionId}` : '/' } }),
-      missingChat: () => props.onMissingChat?.(),
-    },
-  )
-  const deck = conversation.deck
-
-  useEffect(() => () => deck.dispose(), [deck])
+    missingChat: () => props.onMissingChat?.(),
+  })
+  const deck = useDeckScreens(conversation.deck)
 
   useEffect(() => {
     const node = root.current
@@ -377,8 +364,12 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
   const welcomeHidden = conversation.historyPresent || working || !current || opening
   const saved = deck.deck
   const ownDeck = saved?.sessionId === current?.sessionId
-  const openDeckHidden =
-    (!conversation.outlines?.confirmedId && !(ownDeck && saved?.outlineId)) || !deck.publishedDeck.hidden
+  const openDeckHidden = (!conversation.outlines?.confirmedId && !(ownDeck && saved?.outlineId)) || deck.publishedOpen
+  const outlineActions: OutlineActions = {
+    busy: working,
+    confirm: proposal => conversation.run(conversation.confirmOutline(proposal)),
+    revise: request => conversation.revise(request),
+  }
   const generation = ownDeck ? saved?.generation : undefined
   const continueHidden = !generation || !['pending', 'incomplete'].includes(generation.state)
   const status = conversation.status
@@ -446,11 +437,7 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
             </small>
           </div>
           <div className="chat-heading-actions">
-            <button type="button" hidden={openDeckHidden}               onClick={() => {
-                deck.showPublishedDeck()
-                conversation.changed()
-              }}
-            >
+            <button type="button" hidden={openDeckHidden} onClick={() => deck.showPublishedDeck()}>
               {conversationText.openDeck}
             </button>
             <button
@@ -475,7 +462,14 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
         >
           {status?.text ?? ''}
         </p>
-        <LegacyNode node={deck.workflow} />
+        <DeckWorkflow
+          deck={deck}
+          proposal={conversation.currentProposal()}
+          busy={working || conversation.busy}
+          researchAvailable={conversation.settings.research?.configured === true}
+          onChoose={answer => conversation.appendAnswer(answer)}
+          onSkip={() => conversation.skipQuestions()}
+        />
         <section className="welcome" hidden={welcomeHidden}>
           <h2>{preparing ? conversationText.welcomeDeck : conversationText.welcomeChat}</h2>
           <p>{preparing ? conversationText.welcomeDeckDetail : conversationText.welcomeChatDetail}</p>
@@ -484,7 +478,7 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
           records={conversation}
           hidden={!welcomeHidden}
           preview={item => conversation.run(conversation.previewAttachment(item))}
-          outlineCard={proposal => deck.outlineCard(proposal)}
+          outlineActions={outlineActions}
           actions={{
             retry: text => conversation.retry(text),
             settings: () => conversation.run(conversation.openSettings()),
@@ -493,7 +487,7 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
           }}
         />
         <div className="composer-dock">
-          <LegacyNode node={deck.outlineDock} />
+          <OutlineDock proposal={conversation.currentProposal()} actions={outlineActions} />
           <Composer
             conversation={conversation}
             deck={deck}
@@ -502,8 +496,8 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
           />
         </div>
       </section>
-      <LegacyNode node={deck.sampleDeck} />
-      <LegacyNode node={deck.publishedDeck} />
+      <SampleDeck open={deck.sampleOpen} onOpenChange={open => deck.setSampleOpen(open)} />
+      <PublishedDeck model={deck.model} open={deck.publishedOpen} onClose={() => deck.setPublishedOpen(false)} />
       <ResearchDialog
         ref={research}
         chatId={conversation.currentId}

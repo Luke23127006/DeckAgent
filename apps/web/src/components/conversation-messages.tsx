@@ -11,8 +11,9 @@ import type {
 import type { ReactNode } from 'react'
 import { useLayoutEffect, useRef } from 'react'
 import { conversationText } from '../text.ts'
-import { LegacyNode } from './legacy-node.tsx'
 import { MessageContent } from './message-content.tsx'
+import { OutlineCard } from './outline-card.tsx'
+import type { OutlineActions } from './outline-card.tsx'
 import { activeStatus, LiveReply, RequestRow } from './request-row.tsx'
 import type { RequestRowActions } from './request-row.tsx'
 
@@ -35,7 +36,8 @@ function requestState(live: RequestSnapshot | undefined, stored: StoredRequest |
 
 function Message(props: {
   readonly value: HistoryMessage
-  readonly outline: HTMLElement | undefined
+  readonly outline: OutlineProposal | undefined
+  readonly outlineActions: OutlineActions
   readonly preview: (item: AttachmentView) => void
 }) {
   const { value } = props
@@ -64,7 +66,7 @@ function Message(props: {
       )}
       {/* FR-019: a reply of a request that did not finish is kept, and says so. */}
       {value.interrupted && <small className="message-note">{conversationText.interrupted}</small>}
-      {props.outline && <LegacyNode node={props.outline} />}
+      {props.outline && <OutlineCard proposal={props.outline} actions={props.outlineActions} />}
     </article>
   )
 }
@@ -78,7 +80,7 @@ export function ConversationMessages(props: {
   readonly hidden: boolean
   readonly actions: RequestRowActions
   readonly preview: (item: AttachmentView) => void
-  readonly outlineCard: (proposal: OutlineProposal) => HTMLElement
+  readonly outlineActions: OutlineActions
 }) {
   const { records, actions } = props
   const ref = useRef<HTMLDivElement>(null)
@@ -101,9 +103,7 @@ export function ConversationMessages(props: {
     const start = request?.historyStart
     // A live request that the list does not hold yet shows after the conversation.
     const position =
-      start === undefined
-        ? history.length
-        : Math.min(start + (history[start]?.role === 'user' ? 1 : 0), history.length)
+      start === undefined ? history.length : Math.min(start + (history[start]?.role === 'user' ? 1 : 0), history.length)
     const items = positions.get(position) ?? []
     const state = requestState(live, request)
     items.push(
@@ -154,7 +154,8 @@ export function ConversationMessages(props: {
       <Message
         key={`message:${index}:${value.role}`}
         value={value}
-        outline={proposal ? props.outlineCard(proposal) : undefined}
+        outline={proposal}
+        outlineActions={props.outlineActions}
         preview={props.preview}
       />,
     )

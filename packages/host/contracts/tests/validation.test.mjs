@@ -3,7 +3,7 @@
  * Environment: compiled @deckagent/host-contracts lib/index.js in Node.js with zero external I/O.
  * Fault check: removing a schema constraint or cross-field guard lets invalid payloads pass without throwing the expected error code or message.
  * Run: node --test --test-reporter=tap packages/host/contracts/tests/validation.test.mjs
- * Expected values source: packages/host/contracts/src/request-validation.ts, brief-validation.ts, outline-validation.ts, generation-validation.ts, chat-list-validation.ts.
+ * Expected values source: packages/host/contracts/src/request-validation.ts, brief-validation.ts, outline-validation.ts, generation-validation.ts, chat-list-validation.ts, deck-validation.ts.
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
@@ -24,6 +24,12 @@ import {
   decodeStoredActivities,
   decodeStoredRequests,
   decodeChatSearchBody,
+  decodeConfirmationResult,
+  decodeDeckChange,
+  decodeDeckSnapshot,
+  decodeInterview,
+  decodeOutlineSnapshot,
+  decodeSlideContent,
   decodeDraftSaveBody,
   decodeGeneration,
   decodeModelSelection,
@@ -623,5 +629,130 @@ test('decodeResearchSources keeps http and https excerpts and refuses another sc
     retrievedAt: '2026-11-01T00:00:00.000Z',
   }
   assert.deepEqual(decodeResearchSources([source]), [source])
-  assert.throws(() => decodeResearchSources([{ ...source, url: 'javascript:alert(1)' }]), { message: 'INVALID_RESPONSE' })
+  assert.throws(() => decodeResearchSources([{ ...source, url: 'javascript:alert(1)' }]), {
+    message: 'INVALID_RESPONSE',
+  })
+})
+
+test('decodeDeckSnapshot and decodeDeckChange keep the deck of the chat and refuse a slide status that does not match', () => {
+  const deck = {
+    sessionId,
+    deckId: sessionId,
+    outlineId: 'out-1',
+    version: 2,
+    slides: [
+      { slideId: 'a', title: 'Intro', order: 0, revision: 1, status: 'published' },
+      { slideId: 'b', title: 'Next', order: 1, revision: 0, status: 'pending' },
+    ],
+  }
+  assert.deepEqual(decodeDeckSnapshot(deck, sessionId), deck)
+  assert.deepEqual(decodeDeckChange({ sessionId, deckId: sessionId, version: 3 }, sessionId), {
+    sessionId,
+    deckId: sessionId,
+    version: 3,
+  })
+  assert.deepEqual(decodeDeckSnapshot({ ...deck, version: 0, outlineId: null, slides: [] }, sessionId).slides, [])
+  for (const bad of [
+    { ...deck, sessionId: 'other' },
+    { ...deck, slides: [{ ...deck.slides[0], status: 'pending' }] },
+    { ...deck, slides: [deck.slides[0], { ...deck.slides[1], order: 0 }] },
+    { ...deck, version: 0 },
+    { ...deck, generation: { state: 'generating' } },
+  ])
+    assert.throws(() => decodeDeckSnapshot(bad, sessionId), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeSlideContent keeps the HTML of the asked revision and refuses another revision or an unsafe credit', () => {
+  const content = { sessionId, slideId: 'a', revision: 1, html: '<h1>Intro</h1>', notes: 'Say hello' }
+  assert.deepEqual(decodeSlideContent(content, sessionId, 'a', 1), content)
+  const credit = {
+    url: 'https://example.org/image',
+    author: 'A',
+    licenseUrl: 'https://example.org/license',
+    license: 'CC0',
+    unknownLicense: false,
+    retrievedAt: '2026-11-01T00:00:00.000Z',
+  }
+  assert.deepEqual(decodeSlideContent({ ...content, imageCredits: [credit] }, sessionId, 'a', 1).imageCredits, [credit])
+  for (const bad of [
+    { ...content, revision: 2 },
+    { ...content, html: 7 },
+    { ...content, imageCredits: [{ ...credit, url: 'http://example.org/image' }] },
+    { ...content, imageCredits: [{ ...credit, unknownLicense: true }] },
+    { ...content, document: { slideId: 'a' } },
+  ])
+    assert.throws(() => decodeSlideContent(bad, sessionId, 'a', 1), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeOutlineSnapshot keeps the proposals in version order and refuses a current id without its proposal', () => {
+  const proposal = {
+    outlineId: 'out-1',
+    requestId: 'req-1',
+    version: 1,
+    responseIndex: 1,
+    overview: 'Overview',
+    status: 'current',
+    slides: [{ slideId: 's1', title: 'Intro', content: 'Hello' }],
+  }
+  const snapshot = { sessionId, active: true, version: 1, currentId: 'out-1', confirmedId: null, proposals: [proposal] }
+  assert.deepEqual(decodeOutlineSnapshot(snapshot, sessionId), snapshot)
+  const empty = { sessionId, active: false, version: 0, currentId: null, confirmedId: null, proposals: [] }
+  assert.deepEqual(decodeOutlineSnapshot(empty, sessionId), empty)
+  for (const bad of [
+    { ...snapshot, currentId: 'out-2' },
+    { ...snapshot, version: 0 },
+    { ...snapshot, proposals: [{ ...proposal, slides: [] }] },
+    { ...empty, proposals: [proposal] },
+  ])
+    assert.throws(() => decodeOutlineSnapshot(bad, sessionId), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeInterview keeps the questions and refuses a ready interview that still asks a question', () => {
+  const brief = { sessionId, version: 0, current: null, locked: false, sourceStates: [] }
+  const question = { topic: 'audience', prompt: 'Ai nghe?', suggestions: ['Sinh viên'], required: true }
+  const state = {
+    questions: [question],
+    blockers: [],
+    readyForOutline: false,
+    skipAllowed: true,
+    notice: 'Cần trả lời',
+  }
+  const decoded = decodeInterview({ brief, state }, sessionId)
+  assert.deepEqual(decoded.state, state)
+  assert.equal(decoded.brief.version, 0)
+  for (const bad of [
+    { brief, state: { ...state, readyForOutline: true } },
+    { brief, state: { ...state, questions: [{ ...question, topic: 'colour' }] } },
+    { brief, state: { ...state, questions: [question, question] } },
+    { brief: { ...brief, sessionId: 'other' }, state },
+  ])
+    assert.throws(() => decodeInterview(bad, sessionId), { message: 'INVALID_RESPONSE' })
+})
+
+test('decodeConfirmationResult keeps the request of the receipt and refuses a receipt for another Outline version', () => {
+  const target = {
+    confirmationId: 'conf-1',
+    outlineId: 'out-1',
+    outlineVersion: 2,
+    briefId: 'brief-1',
+    briefVersion: 1,
+  }
+  const receipt = {
+    ...target,
+    sessionId,
+    deckId: sessionId,
+    intentId: 'intent-1',
+    requestId: 'req-1',
+    fingerprint: shaOne,
+    createdAt: '2026-11-01T00:00:00.000Z',
+  }
+  const request = { requestId: 'req-1', sessionId, status: 'active', text: '', sequence: 0 }
+  assert.deepEqual(decodeConfirmationResult({ receipt, request }, sessionId, target), { receipt, request })
+  for (const bad of [
+    { receipt: { ...receipt, outlineVersion: 1 }, request },
+    { receipt, request: { ...request, requestId: 'req-2' } },
+    { receipt, request: { ...request, status: 'queued' } },
+    { receipt: { ...receipt, fingerprint: 'x' }, request },
+  ])
+    assert.throws(() => decodeConfirmationResult(bad, sessionId, target), { message: 'INVALID_RESPONSE' })
 })
