@@ -185,7 +185,6 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | `apps/host/src/integrations/opencode/` | `apps/host/src/runtimes/opencode/` |
 | `apps/host/src/integrations/{images,research,rendering,credentials,providers}/` | Module dùng adapter đó, hoặc `apps/host/src/runtimes/` khi adapter phục vụ runtime |
 | `packages/session/persistence/` | Store của `modules/chats/`, `modules/attachments/` và `runs/`, cùng với `apps/host/src/db/` |
-| `packages/tools/filesystem/` | `apps/host/src/tools/` |
 | `packages/host/contracts/` | `packages/contracts/` |
 | `apps/web/src/browser/transport/` | `apps/web/src/api/` |
 | `apps/web/src/browser/**`, `apps/web/src/index.ts` | Component và page React trong `apps/web/src/` |
@@ -224,7 +223,7 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | `http/` không import feature, module, integration, store hoặc storage package | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
 | Route không import store hoặc SQL driver. Service không import Express hoặc SQL driver. Module không import store của module khác, storage package hoặc `http/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.routes.ts` và `*.service.ts` | — |
 | `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host`, `@deckagent/host-api` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
-| Tool executor không tự cấp capability | — | `oxlint` (`no-restricted-imports`) cho `tools/executors/` |
+| Tool executor không tự cấp capability | `oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/` | — |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 
 Ưu tiên TypeScript, `exports` và lint trước khi viết check script riêng. Chỉ viết check script khi công cụ hiện có không kiểm được boundary. Mỗi check kiểm một ownership rule trong file này. Check không chứa bản sao của toàn bộ kiến trúc. Mỗi check phải có negative fixture hoặc test chứng minh check bắt được vi phạm. Build thành công không phải bằng chứng duy nhất cho dependency boundary.

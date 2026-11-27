@@ -1,12 +1,10 @@
-import { AttachmentParser } from '@deckagent/file-tools'
+import { AttachmentParser } from '../lib/types/tools/index.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { CommonsImages } from '../lib/types/modules/deck/index.js'
 
-const png = await readFile(
-  new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-)
+const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
 const page = (license, url = 'https://upload.wikimedia.org/wikipedia/commons/example.png') => ({
   title: 'File:Example.png',
   imageinfo: [

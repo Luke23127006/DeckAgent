@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import * as files from '../lib/index.js'
+import * as files from '../lib/types/tools/index.js'
 
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-sources-'))

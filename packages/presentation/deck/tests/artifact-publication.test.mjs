@@ -84,9 +84,7 @@ async function fixture(t, options = {}, image) {
 }
 
 test('public image bytes and attribution survive reopen; missing essential images never publish', async t => {
-  const bytes = await readFile(
-    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-  )
+  const bytes = await readFile(new URL('../../../../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const digest = createHash('sha256').update(bytes).digest('hex')
   let calls = 0
   const credit = {
@@ -169,9 +167,7 @@ test('public image bytes and attribution survive reopen; missing essential image
 })
 
 test('layout retries reuse fetched web images without exhausting the request image budget', async t => {
-  const bytes = await readFile(
-    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-  )
+  const bytes = await readFile(new URL('../../../../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const digest = createHash('sha256').update(bytes).digest('hex')
   let calls = 0
   let renderCalls = 0
@@ -296,10 +292,7 @@ test('chunk retries are exact, only finalized validated artifacts publish, and l
     code: 'STAGE_CHUNK_CONFLICT',
   })
   const publication = { stageId: stage.stageId, slideId, publicationId: 'pub-1', expectedRevision: 0 }
-  const both = await Promise.all([
-    f.cap.publish(publication),
-    f.cap.publish(publication),
-  ])
+  const both = await Promise.all([f.cap.publish(publication), f.cap.publish(publication)])
   const first = both[0]
   assert.deepEqual(both[1], first)
   assert.deepEqual(f.cap.append(stage.stageId, chunk), final)
@@ -307,10 +300,9 @@ test('chunk retries are exact, only finalized validated artifacts publish, and l
   assert.match(f.decks.content('chat', slideId, 1).html, /--color-accent/)
   assert.ok((await readdir(join(f.dir, 'artifacts'))).some(n => n.endsWith('.html')))
   f.stop()
-  await assert.rejects(
-    f.cap.publish({ ...publication, publicationId: 'late', expectedRevision: 1 }),
-    { code: 'GENERATION_REQUEST_INACTIVE' },
-  )
+  await assert.rejects(f.cap.publish({ ...publication, publicationId: 'late', expectedRevision: 1 }), {
+    code: 'GENERATION_REQUEST_INACTIVE',
+  })
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 1)
 })
 
@@ -322,7 +314,9 @@ test('foreign grants, partial chunks, bounds, revision conflicts and interrupted
     },
   })
   const slideId = f.p.slides[0].slideId
-  assert.throws(() => f.decks.generationCapability({ ...f.grant }, new AbortController().signal), { code: 'GENERATION_GRANT_INVALID' })
+  assert.throws(() => f.decks.generationCapability({ ...f.grant }, new AbortController().signal), {
+    code: 'GENERATION_GRANT_INVALID',
+  })
   assert.throws(() => f.cap.begin('foreign', 'title-body'), { code: 'DECK_SLIDE_NOT_FOUND' })
   assert.throws(() => f.cap.begin(slideId, 'custom'), { code: 'DESIGN_LAYOUT_INCOMPATIBLE' })
   const a = f.cap.begin(slideId, 'title-body')
@@ -335,15 +329,13 @@ test('foreign grants, partial chunks, bounds, revision conflicts and interrupted
     code: 'STAGE_SEQUENCE_CONFLICT',
   })
   f.cap.append(a.stageId, { sequence: 0, text: '<h1>Purpose</h1>', final: false })
-  await assert.rejects(
-    f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'partial', expectedRevision: 0 }),
-    { code: 'STAGE_INCOMPLETE' },
-  )
+  await assert.rejects(f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'partial', expectedRevision: 0 }), {
+    code: 'STAGE_INCOMPLETE',
+  })
   f.cap.append(a.stageId, { sequence: 1, text: '<p>Explain the purpose</p>', final: true })
-  await assert.rejects(
-    f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'stale', expectedRevision: 1 }),
-    { code: 'DECK_CONFLICT' },
-  )
+  await assert.rejects(f.cap.publish({ stageId: a.stageId, slideId, publicationId: 'stale', expectedRevision: 1 }), {
+    code: 'DECK_CONFLICT',
+  })
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 0)
   f.cap.append(b.stageId, {
     sequence: 0,
@@ -351,10 +343,9 @@ test('foreign grants, partial chunks, bounds, revision conflicts and interrupted
     final: true,
   })
   stop = () => f.stop()
-  await assert.rejects(
-    f.cap.publish({ stageId: b.stageId, slideId, publicationId: 'stopped', expectedRevision: 0 }),
-    { code: 'GENERATION_REQUEST_INACTIVE' },
-  )
+  await assert.rejects(f.cap.publish({ stageId: b.stageId, slideId, publicationId: 'stopped', expectedRevision: 0 }), {
+    code: 'GENERATION_REQUEST_INACTIVE',
+  })
   assert.equal(f.decks.snapshot('chat').slides[0].revision, 0)
 })
 
@@ -420,9 +411,7 @@ test('metadata commit failure leaves last-good pointers intact; restart removes 
 })
 
 test('managed PNG assets retain provenance, materialize only published bytes and reject foreign attachment identities', async t => {
-  const bytes = await readFile(
-    new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-  )
+  const bytes = await readFile(new URL('../../../../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const attachmentId = 'att-00000000-0000-0000-0000-000000000001'
   const source = { sourceId: 'src-00000000-0000-0000-0000-000000000001', version: 1, kind: 'attachment' }
   const f = await fixture(
@@ -432,10 +421,9 @@ test('managed PNG assets retain provenance, materialize only published bytes and
   )
   const slideId = f.p.slides[0].slideId
   const stage = f.cap.begin(slideId, 'image-text')
-  await assert.rejects(
-    f.cap.image(stage.stageId, slideId, 'att-00000000-0000-0000-0000-000000000002'),
-    { code: 'ARTIFACT_ASSET_UNAVAILABLE' },
-  )
+  await assert.rejects(f.cap.image(stage.stageId, slideId, 'att-00000000-0000-0000-0000-000000000002'), {
+    code: 'ARTIFACT_ASSET_UNAVAILABLE',
+  })
   const asset = await f.cap.image(stage.stageId, slideId, attachmentId)
   assert.deepEqual(asset.source, source)
   assert.equal(asset.originalDigest, 'a'.repeat(64))

@@ -96,7 +96,7 @@ test('real CLI carries a normalized attachment image through MCP to the selected
   form.append('expectedRevision', '0')
   form.append(
     'file',
-    new Blob([await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))]),
+    new Blob([await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))]),
     'sample.png',
   )
   attachmentId = (await api(`sessions/${chat.sessionId}/attachments`, 'POST', form)).attachment.attachmentId

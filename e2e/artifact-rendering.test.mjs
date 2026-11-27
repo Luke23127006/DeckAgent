@@ -147,7 +147,7 @@ test('a prepared PNG and its result survive a Session terminal-write failure and
   })
   const id = (await f.call('sessions', 'POST', { selection: { provider: 'test', model: 'model-a' } })).data.sessionId
   const management = new ManagementClient(f.app.origin, f.app.token)
-  const bytes = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const upload = await management.uploadAttachment(id, new File([bytes], 'image.png'), 0)
   attachmentId = upload.attachment.attachmentId
   await waitFor(async () => (await f.call(`sessions/${id}/attachments/${attachmentId}`)).data.state === 'ready')

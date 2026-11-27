@@ -5,8 +5,11 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import { SqliteSessionStore } from '@deckagent/session-persistence'
-import { ManagedAttachments, MemoryDraftStore } from '../apps/host/tests/fixtures/b02-helpers.mjs'
-import { AttachmentParser } from '@deckagent/file-tools'
+import {
+  AttachmentParser,
+  ManagedAttachments,
+  MemoryDraftStore,
+} from '../apps/host/tests/fixtures/b02-helpers.mjs'
 
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-attachments-'))

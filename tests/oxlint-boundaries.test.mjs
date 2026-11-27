@@ -353,17 +353,17 @@ test('deck services accept the deck package and reject storage packages, Express
     'apps/host/src/modules/deck/deck.service.ts',
     [
       "import { SqliteSessionStore } from '@deckagent/session-persistence'",
-      "import { AttachmentParser } from '@deckagent/file-tools'",
+      "import { prepareSourceTools } from '../../tools/index.ts'",
       "import { Router } from 'express'",
       "import { DatabaseSync } from 'node:sqlite'",
-      'console.log(SqliteSessionStore, AttachmentParser, Router, DatabaseSync)',
+      'console.log(SqliteSessionStore, prepareSourceTools, Router, DatabaseSync)',
       '',
     ].join('\n'),
   )
   assert.equal(denied.status, 1)
   assert.equal(denied.diagnostics.length, 4)
   for (const diagnostic of denied.diagnostics) assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
-  for (const name of ['@deckagent/session-persistence', '@deckagent/file-tools', 'express', 'node:sqlite'])
+  for (const name of ['@deckagent/session-persistence', '../../tools/index.ts', 'express', 'node:sqlite'])
     assert.ok(
       denied.diagnostics.some(diagnostic => diagnostic.message.includes(name)),
       name,
@@ -378,4 +378,42 @@ test('deck routes and other modules reject the deck package', () => {
     assert.equal(result.diagnostics[0].code, 'eslint(no-restricted-imports)')
     assert.match(result.diagnostics[0].message, /@deckagent\/deck/)
   }
+})
+
+test('tool executors reject node:fs, module and storage imports', () => {
+  const result = lintFixture(
+    'apps/host/src/tools/executors/source-tools.ts',
+    [
+      "import { readFile } from 'node:fs/promises'",
+      "import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'",
+      "import { SqliteSessionStore } from '@deckagent/session-persistence'",
+      'console.log(readFile, SqliteSessionStore)',
+      'export type Lookup = WorkspaceLookup',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1, result.output)
+  assert.equal(result.diagnostics.length, 3)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.equal(
+      diagnostic.help,
+      'Tool executors must not import modules, HTTP, SQL or node:fs directly. Read files through tools/policy/.',
+    )
+  }
+})
+
+test('tool executors accept policy and source contracts', () => {
+  const result = lintFixture(
+    'apps/host/src/tools/executors/source-tools.ts',
+    [
+      "import { createSourceAccess } from '../policy/source-access.ts'",
+      "import type { AttachmentPart } from '../sources/attachment-contracts.ts'",
+      'console.log(createSourceAccess)',
+      'export type Part = AttachmentPart',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 0, result.output)
+  assert.deepEqual(result.diagnostics, [])
 })

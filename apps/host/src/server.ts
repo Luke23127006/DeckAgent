@@ -1,7 +1,7 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { AttachmentParser, attachmentLimits } from '@deckagent/file-tools'
+import { AttachmentParser, attachmentLimits } from './tools/index.ts'
 import type { HostOptions, HostRouteContext, RequestRuntime } from '@deckagent/host-api'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
@@ -45,7 +45,7 @@ import {
   createAttachmentRoutes,
   mapAttachmentFailure,
 } from './modules/attachments/index.ts'
-import { prepareSourceTools } from './features/sources/index.ts'
+import { prepareSourceTools } from './tools/index.ts'
 import {
   ResearchCoordinator,
   SqliteResearchStore,

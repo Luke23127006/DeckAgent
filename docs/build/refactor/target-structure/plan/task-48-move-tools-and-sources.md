@@ -67,7 +67,7 @@ After this task, `apps/host/src/tools/` holds `policy/`, `sources/`, `executors/
 | `docs/conventions/project-structure.md` | Remove the `packages/tools/filesystem/` row from `## Trong lúc chuyển`. Move the `Tool executor không tự cấp capability` rule to the `Chặn bởi` column (`oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/`). |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -77,17 +77,17 @@ Run: `git grep -n "^| 47 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move files, remove the old package and change wiring**
+- [x] **Step 2: Move files, remove the old package and change wiring**
 
 Run `git mv` for every row in `Mapping`. Run `git rm` on `packages/tools/filesystem/package.json`, `packages/tools/filesystem/tsconfig.json`, `packages/tools/filesystem/src/index.ts` and `apps/host/src/features/sources/index.ts`. Remove `packages/tools/` and `apps/host/src/features/sources/` completely so no old `lib/` stays on disk. Apply all rows of `Move rules`.
 
-- [ ] **Step 3: Sync the lockfile offline**
+- [x] **Step 3: Sync the lockfile offline**
 
 Run: `corepack pnpm@11.28.5 install --offline`
 
 Expected: PASS. Exit code 0.
 
-- [ ] **Step 4: Check that no old path or forbidden import stays**
+- [x] **Step 4: Check that no old path or forbidden import stays**
 
 Run: `git grep --untracked -n -E "@deckagent/file-tools|packages/tools/filesystem|features/sources" -- apps packages e2e tests scripts package.json tsconfig.json .oxlintrc.json`
 
@@ -97,17 +97,17 @@ Run: `git grep --untracked -n -E "\.\./\.\./modules/|node:fs|node:sqlite|@deckag
 
 Expected: PASS. No line.
 
-- [ ] **Step 5: Format, build and check**
+- [x] **Step 5: Format, build and check**
 
 Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 6: Run every suite**
+- [x] **Step 6: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 7: Write the report file and stop**
+- [x] **Step 7: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path | Symbols`.
 

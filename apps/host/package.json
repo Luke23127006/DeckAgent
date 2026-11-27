@@ -14,7 +14,6 @@
   "dependencies": {
     "@deckagent/deck": "workspace:*",
     "@deckagent/design": "workspace:*",
-    "@deckagent/file-tools": "workspace:*",
     "@deckagent/host-api": "workspace:*",
     "@deckagent/host-contracts": "workspace:*",
     "@deckagent/html-format": "workspace:*",
@@ -22,7 +21,11 @@
     "@deckagent/presentation-document": "workspace:*",
     "@deckagent/session-persistence": "workspace:*",
     "@modelcontextprotocol/sdk": "1.26.0",
-    "express": "5.2.1"
+    "@zip.js/zip.js": "2.24.0",
+    "express": "5.2.1",
+    "fast-xml-parser": "5.12.0",
+    "pdfjs-dist": "6.5.438",
+    "sharp": "0.35.5"
   },
   "optionalDependencies": {
     "opencode-windows-x64": "1.19.5"

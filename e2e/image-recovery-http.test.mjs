@@ -9,8 +9,8 @@ import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 async function fixture(t, { pexels = true, pause = false, preparedForest = false } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'image-recovery-'))
-  const png = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
-  const jpg = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.jpg', import.meta.url))
+  const png = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
+  const jpg = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.jpg', import.meta.url))
   let searches = 0,
     offline = false
   let available = pexels

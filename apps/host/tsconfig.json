@@ -12,7 +12,6 @@
     { "path": "../../packages/presentation/design" },
     { "path": "../../packages/presentation/document" },
     { "path": "../../packages/presentation/html" },
-    { "path": "../../packages/tools/filesystem" },
     { "path": "../../packages/host/api" },
     { "path": "../../packages/host/contracts" },
     { "path": "../../packages/session/persistence" },

@@ -1,0 +1,19 @@
+export { SourceError } from './policy/contracts.ts'
+export { createSourceAccess } from './policy/source-access.ts'
+export type { SourceAccess, SourceAccessOptions, SourceRead, SourceReadPlan } from './policy/contracts.ts'
+export { AttachmentParser, isParsedAttachment } from './sources/attachment-parser.ts'
+export { attachmentLimits, attachmentParserVersion } from './sources/attachment-contracts.ts'
+export type {
+  AttachmentLocation,
+  AttachmentPart,
+  ParsedAttachment,
+  AttachmentParseInput,
+} from './sources/attachment-contracts.ts'
+export { SourceToolFailure, prepareSourceTools } from './executors/source-tools.ts'
+export type { SourceToolOptions } from './executors/source-tools.ts'
+export type {
+  ToolAttachmentReader,
+  ToolResearchSession,
+  ToolSessionStore,
+  ToolWorkspaceLookup,
+} from './executors/ports.ts'

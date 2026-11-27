@@ -38,7 +38,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
     { role: 'assistant', content: 'Outline đã lưu' },
   ])
   sessions.close()
-  const bytes = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const digest = createHash('sha256').update(bytes).digest('hex')
   const options = {
     artifactRoot: join(dataDir, 'files', 'decks'),

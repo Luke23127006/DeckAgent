@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { startLocalWeb } from '../../lib/server.js'
 import { HostClient } from '../../../web/tests/fixtures/browser-driver.mjs'
 
+export { AttachmentParser } from '../../lib/types/tools/index.js'
 export {
   ManagedAttachments,
   MemoryDraftStore,

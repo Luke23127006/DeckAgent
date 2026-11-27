@@ -1,15 +1,26 @@
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
-import { attachmentLimits, createSourceAccess, SourceError } from '@deckagent/file-tools'
-import type { ParsedAttachment, SourceAccess } from '@deckagent/file-tools'
 import type { PreparedTools, ToolContext, ToolSchema, ToolResult } from '@deckagent/host-api'
-import { SessionError } from '@deckagent/session-persistence'
-import type { AttachmentRecord, ResearchSource, SqliteSessionStore } from '@deckagent/session-persistence'
-import type { WorkspaceLookup } from '../../modules/workspaces/index.ts'
-import { record } from '../../web-state.ts'
-import type { ManagedAttachments } from '../../modules/attachments/index.ts'
-import { ResearchFailure } from '../../modules/research/index.ts'
-import type { ResearchCoordinator } from '../../modules/research/index.ts'
+import { SourceError } from '../policy/contracts.ts'
+import { createSourceAccess } from '../policy/source-access.ts'
+import type { SourceAccess } from '../policy/contracts.ts'
+import { attachmentLimits } from '../sources/attachment-contracts.ts'
+import type { ParsedAttachment } from '../sources/attachment-contracts.ts'
+import type {
+  ToolAttachmentReader,
+  ToolAttachmentRecord,
+  ToolResearchSession,
+  ToolResearchSource,
+  ToolSessionStore,
+  ToolSourceCatalogueItem,
+  ToolWorkspaceLookup,
+} from './ports.ts'
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
+
+const errorCodeOf = (error: unknown): string | undefined =>
+  isRecord(error) && typeof error.code === 'string' ? error.code : undefined
 
 export class SourceToolFailure extends Error {
   constructor(
@@ -35,18 +46,17 @@ const schema = (name: string, description: string, property: string, required: b
 /** Composition resolves the real Chat/Workspace; model arguments never choose identity or policy. */
 export interface SourceToolOptions {
   readonly sessionId: string
-  readonly store: SqliteSessionStore
-  readonly registry: WorkspaceLookup
+  readonly store: ToolSessionStore
+  readonly registry: ToolWorkspaceLookup
   readonly dataRoot: string
   readonly home: string
-  readonly attachments: ManagedAttachments
+  readonly attachments: ToolAttachmentReader
   readonly attachmentIds?: readonly string[]
-  readonly research?: Awaited<ReturnType<ResearchCoordinator['prepare']>>
+  readonly research?: ToolResearchSession | undefined
 }
 
-type SourceCatalogue = ReturnType<SqliteSessionStore['requests']['sourceCatalogue']>
 type PartMetadata = Pick<ParsedAttachment, 'parserVersion' | 'capabilities' | 'omitted'> & {
-  readonly source: NonNullable<AttachmentRecord['source']>
+  readonly source: NonNullable<ToolAttachmentRecord['source']>
 }
 
 function textResult(value: unknown): ToolResult {
@@ -64,9 +74,9 @@ function buildDeniedRoots(options: SourceToolOptions, root: string | undefined):
 
 function buildSourceManifest(
   root: string | undefined,
-  sourceCatalogue: SourceCatalogue,
-  researchSources: readonly ResearchSource[],
-  attachments: readonly AttachmentRecord[],
+  sourceCatalogue: readonly ToolSourceCatalogueItem[],
+  researchSources: readonly ToolResearchSource[],
+  attachments: readonly ToolAttachmentRecord[],
   hasResearch: boolean,
 ): string {
   return JSON.stringify({
@@ -141,15 +151,14 @@ function buildSourceSchemas(hasResearchSources: boolean, hasResearch: boolean): 
   ]
 }
 
-function loadChatAttachments(options: SourceToolOptions): readonly AttachmentRecord[] {
+function loadChatAttachments(options: SourceToolOptions): readonly ToolAttachmentRecord[] {
   try {
     return [
       ...options.store.attachments.sent(options.sessionId),
       ...(options.attachmentIds ?? []).map(id => options.store.attachments.get(options.sessionId, id)),
     ]
   } catch (error) {
-    if (error instanceof SessionError && error.code === 'ATTACHMENT_NOT_FOUND')
-      throw new SourceToolFailure('ATTACHMENT_NOT_FOUND')
+    if (errorCodeOf(error) === 'ATTACHMENT_NOT_FOUND') throw new SourceToolFailure('ATTACHMENT_NOT_FOUND')
     throw error
   }
 }
@@ -198,7 +207,7 @@ export async function prepareSourceTools(options: SourceToolOptions): Promise<Pr
     schemas: buildSourceSchemas(researchSources.length > 0, !!options.research),
     async execute(name, args, context) {
       if (context.sessionId !== sessionId) throw new SourceError('SOURCE_ACCESS_DENIED')
-      if (!record(args)) throw new SourceError('SOURCE_ARGUMENTS_INVALID')
+      if (!isRecord(args)) throw new SourceError('SOURCE_ARGUMENTS_INVALID')
       if (name === 'read_research' || name === 'research_public')
         return executeResearchTool(name, args, researchSources, options.research, sessionId, context)
       const field = name === 'read_attachment' ? 'attachmentId' : 'path'
@@ -223,7 +232,7 @@ export async function prepareSourceTools(options: SourceToolOptions): Promise<Pr
 async function executeResearchTool(
   name: string,
   value: Record<string, unknown>,
-  researchSources: readonly ResearchSource[],
+  researchSources: readonly ToolResearchSource[],
   research: SourceToolOptions['research'],
   sessionId: string,
   context: ToolContext,
@@ -253,10 +262,7 @@ async function executeResearchTool(
     })
   } catch (error) {
     context.signal.throwIfAborted()
-    const safe =
-      error instanceof ResearchFailure || error instanceof SourceToolFailure || error instanceof SessionError
-        ? error.code
-        : 'RESEARCH_UNAVAILABLE'
+    const safe = errorCodeOf(error) ?? 'RESEARCH_UNAVAILABLE'
     return {
       isError: true,
       content: [{ type: 'text', text: /^RESEARCH_[A-Z_]+$/.test(safe) ? safe : 'RESEARCH_UNAVAILABLE' }],
@@ -265,8 +271,8 @@ async function executeResearchTool(
 }
 
 async function loadPreparedAttachment(
-  item: AttachmentRecord,
-  attachments: ManagedAttachments,
+  item: ToolAttachmentRecord,
+  attachments: ToolAttachmentReader,
   sessionId: string,
   signal: AbortSignal,
 ): Promise<ParsedAttachment> {
@@ -297,8 +303,8 @@ async function loadPreparedAttachment(
 
 async function readAttachmentPart(
   value: Record<string, unknown>,
-  attachments: readonly AttachmentRecord[],
-  managed: ManagedAttachments,
+  attachments: readonly ToolAttachmentRecord[],
+  managed: ToolAttachmentReader,
   sessionId: string,
   signal: AbortSignal,
 ): Promise<ToolResult> {
@@ -365,7 +371,7 @@ async function readFileSource(
   name: string,
   pathValue: string,
   access: SourceAccess,
-  store: SqliteSessionStore,
+  store: ToolSessionStore,
   context: ToolContext,
 ): Promise<ToolResult> {
   if (name !== 'read_source' && name !== 'read_external') throw new SourceError('SOURCE_ACCESS_DENIED')

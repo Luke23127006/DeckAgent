@@ -3,7 +3,7 @@ import { ZipReader, Uint8ArrayReader } from '@zip.js/zip.js'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { attachmentLimits as limits, attachmentParserVersion } from './attachment-contracts.ts'
 import type { AttachmentLocation, AttachmentPart, ParsedAttachment } from './attachment-contracts.ts'
-import { SourceError } from './contracts.ts'
+import { SourceError } from '../policy/contracts.ts'
 
 interface Budget {
   entries: number

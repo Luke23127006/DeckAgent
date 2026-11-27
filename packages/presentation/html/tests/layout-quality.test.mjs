@@ -11,8 +11,8 @@ test('seven controlled layouts keep real text and images legible in their own re
   const adapter = new HtmlFormatAdapter()
   const fixtures = await layoutFixtures({
     imagePaths: [
-      new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-      new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.jpg', import.meta.url),
+      new URL('../../../../apps/host/tests/fixtures/attachments/sample.png', import.meta.url),
+      new URL('../../../../apps/host/tests/fixtures/attachments/sample.jpg', import.meta.url),
     ],
   })
   const phrase = length => 'Bảo vệ môi trường bằng hành động thiết thực mỗi ngày. '.repeat(12).slice(0, length)

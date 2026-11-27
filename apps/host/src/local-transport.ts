@@ -2,7 +2,7 @@ import type { HttpErrorDetail, HttpFailureResponse } from '@deckagent/host-api'
 import { SessionError } from '@deckagent/session-persistence'
 import { RequestPreparationFailure } from './features/requests/index.ts'
 import type { RequestPreparationFailureCode } from './features/requests/index.ts'
-import { SourceToolFailure } from './features/sources/index.ts'
+import { SourceToolFailure } from './tools/index.ts'
 import { WebStateError } from './web-state.ts'
 
 const requestPreparationStatus: Readonly<Record<RequestPreparationFailureCode, number>> = {

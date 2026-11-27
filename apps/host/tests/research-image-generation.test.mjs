@@ -13,9 +13,7 @@ test('web-image generation saves attribution and separate presenter notes, then 
 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'web-image-generation-'))
   const credentials = new MemoryCredentials()
-  const png = await readFile(
-    new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-  )
+  const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
   let offline = false
   let imageCalls = 0
   const options = {

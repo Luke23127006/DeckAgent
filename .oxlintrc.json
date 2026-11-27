@@ -76,7 +76,6 @@
                   "@deckagent/host",
                   "@deckagent/host-api",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
                   "@deckagent/html-format",
@@ -119,11 +118,50 @@
                   "../local-transport.ts",
                   "node:sqlite",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
+                  "../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
                 "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/tools/executors/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../../modules/**",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "node:fs",
+                  "node:fs/*",
+                  "node:sqlite",
+                  "express",
+                  "express/*",
+                  "@deckagent/session-persistence"
+                ],
+                "message": "Tool executors must not import modules, HTTP, SQL or node:fs directly. Read files through tools/policy/."
               }
             ]
           }
@@ -156,7 +194,8 @@
                   "../../http/**",
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
+                  "../../tools/**",
+                  "../../../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -193,7 +232,8 @@
                   "../../http/**",
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools"
+                  "../../tools/**",
+                  "../../../tools/**"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               }
@@ -228,7 +268,8 @@
                   "../../http/**",
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
+                  "../../tools/**",
+                  "../../../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -273,7 +314,8 @@
                   "../../http/**",
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
+                  "../../tools/**",
+                  "../../../tools/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -318,7 +360,8 @@
                   "../../http/**",
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools"
+                  "../../tools/**",
+                  "../../../tools/**"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               },
@@ -362,7 +405,6 @@
                   "@deckagent/host-api",
                   "@deckagent/browser-runtime",
                   "@deckagent/session-persistence",
-                  "@deckagent/file-tools",
                   "@deckagent/deck",
                   "@deckagent/deck/*",
                   "@deckagent/html-format",

@@ -1,4 +1,4 @@
-import { AttachmentParser } from '@deckagent/file-tools'
+import { AttachmentParser } from '../lib/types/tools/index.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { TavilyClient } from '../lib/types/modules/research/index.js'
@@ -11,9 +11,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const png = await readFile(
-  new URL('../../../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
-)
+const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
 const digest = createHash('sha256').update(png).digest('hex')
 const credit = {
   url: 'https://photos.example/solar',

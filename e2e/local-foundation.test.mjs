@@ -404,11 +404,11 @@ test('the Local Web production path loads no custom Agent Loop or Cordis runtime
     [],
   )
   // B03 uses the filesystem owner's read interface. Its built entry must not load the legacy runtime.
-  const sourceBundle = await readFile(join(root, 'packages', 'tools', 'filesystem', 'lib', 'index.js'), 'utf8')
+  const sourceBundle = await readFile(join(root, 'apps', 'host', 'lib', 'types', 'tools', 'index.js'), 'utf8')
   assert.equal(sourceBundle.includes('@deckagent/agent-runtime'), false)
   assert.equal(sourceBundle.includes('@deepseek-ai/cordis'), false)
   const sourceComposition = await readFile(
-    join(root, 'apps', 'host', 'src', 'features', 'sources', 'source-tools.ts'),
+    join(root, 'apps', 'host', 'src', 'tools', 'executors', 'source-tools.ts'),
     'utf8',
   )
   assert.equal(
@@ -440,9 +440,9 @@ test('workspace manifests, TypeScript projects and lockfile exclude the legacy r
   }
   for (const name of ['tsconfig.json', 'tsconfig.base.json', 'pnpm-lock.yaml'])
     assert.doesNotMatch(await readFile(join(root, name), 'utf8'), retired, name)
-  const files = await import('@deckagent/file-tools')
-  assert.equal('registerFileTools' in files, false)
-  assert.equal('createWorkspaceReader' in files, false)
+  const toolsEntry = await readFile(join(root, 'apps', 'host', 'lib', 'types', 'tools', 'index.js'), 'utf8')
+  assert.equal(toolsEntry.includes('registerFileTools'), false)
+  assert.equal(toolsEntry.includes('createWorkspaceReader'), false)
 })
 
 test('workspace routes check expectedVersion, return 409 WORKSPACES_STALE and publish change notices after ungroup', async t => {

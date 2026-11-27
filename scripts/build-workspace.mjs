@@ -29,11 +29,16 @@ function discoverWorkspacePackages() {
 
 // tsc -b emits checked JavaScript and declarations first. tsdown then bundles each
 // package's lib/types entry. External package imports retain their public entry
-// points. Additional public subpaths and application/worker entry points are
-// listed explicitly: workspace discovery enumerates packages, not bundler entries.
-const extraEntries = {
-  '@deckagent/file-tools': ['lib/types/parser-worker.js'],
-  '@deckagent/host': ['lib/types/cli.js'],
+// points. Additional application, worker and public subpath entries are listed
+// explicitly: workspace discovery enumerates packages, not bundler entries.
+// A package that forks a worker from the output folder names its entries, so the
+// worker keeps a flat name beside the bundle that resolves it.
+const namedEntries = {
+  '@deckagent/host': {
+    server: 'lib/types/server.js',
+    cli: 'lib/types/cli.js',
+    'parser-worker': 'lib/types/tools/sources/parser-worker.js',
+  },
 }
 
 // An application whose public entry is not lib/types/index.js names its entry here.
@@ -66,7 +71,7 @@ for (const pkg of packages) {
   const config = {
     cwd: resolve(pkg.path),
     config: false,
-    entry: [mainEntries[pkg.name] ?? 'lib/types/index.js'],
+    entry: namedEntries[pkg.name] ?? [mainEntries[pkg.name] ?? 'lib/types/index.js'],
     outDir: 'lib',
     format: ['esm'],
     platform: 'node',
@@ -93,6 +98,5 @@ for (const pkg of packages) {
       },
     })
   }
-  if (extraEntries[pkg.name]) config.entry.push(...extraEntries[pkg.name])
   await build(config)
 }

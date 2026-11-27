@@ -12,8 +12,8 @@ for (const templateVersion of [2, 3])
     timeout: 180000,
   }, async t => {
     const dir = await mkdtemp(join(tmpdir(), 'portable-generation-http-'))
-    const png = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
-    const jpg = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.jpg', import.meta.url))
+    const png = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
+    const jpg = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.jpg', import.meta.url))
     let lookups = 0,
       offline = false
     const f = await startApp(dir, {

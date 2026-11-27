@@ -12,7 +12,7 @@ import { brief } from '../packages/presentation/deck/tests/fixtures/brief.mjs'
 
 async function fixture(t, options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'portable-generation-'))
-  const png = await readFile(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const png = await readFile(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const digest = createHash('sha256').update(png).digest('hex')
   let calls = 0
   const config = {

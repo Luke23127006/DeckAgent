@@ -821,7 +821,7 @@ test('web-image Outline completion clears request controls and history reopens a
   await writeFile(`${log}.workflow.json`, JSON.stringify({ brief: draft, outline: plan, selectImages: true }))
   let unknownLicence = false
   const png = await readFile(
-    new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url),
+    new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url),
   )
   app = await startLocalWeb({
     dataDir: join(dir, 'data'),
@@ -1954,7 +1954,7 @@ test('attachments survive reload and Chat switching, preview safely, reject inva
   await protocol.call('DOM.setFileInputFiles', {
     nodeId: pickerNode.nodeId,
     files: [
-      fileURLToPath(new URL('../packages/tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url)),
+      fileURLToPath(new URL('../apps/host/tests/fixtures/attachments/sample.png', import.meta.url)),
     ],
   })
   await eventually(

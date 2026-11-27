@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import * as files from '../lib/index.js'
+import * as files from '../lib/types/tools/index.js'
 import { readFile } from 'node:fs/promises'
 import { attachmentZip, noisyAttachmentPng } from './fixtures/attachment-fixtures.mjs'
 

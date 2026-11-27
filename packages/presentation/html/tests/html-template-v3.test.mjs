@@ -26,7 +26,7 @@ const document = {
 }
 
 test('version 3 supplies controlled image composition without changing the effective theme or legacy source', async () => {
-  const bytes = await readFile(new URL('../../../tools/filesystem/tests/fixtures/attachments/sample.png', import.meta.url))
+  const bytes = await readFile(new URL('../../../../apps/host/tests/fixtures/attachments/sample.png', import.meta.url))
   const html = new HtmlFormatAdapter()
   const context = {
     design: v3(),
