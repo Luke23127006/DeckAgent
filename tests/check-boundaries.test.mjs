@@ -23,7 +23,11 @@ const baseWorkspaces = [
     exports: { '.': './lib/index.js' },
   },
   { dir: 'packages/presentation/design', name: '@deckagent/design', exports: { '.': './lib/index.js' } },
-  { dir: 'packages/presentation/document', name: '@deckagent/presentation-document', exports: { '.': './lib/index.js' } },
+  {
+    dir: 'packages/presentation/document',
+    name: '@deckagent/presentation-document',
+    exports: { '.': './lib/index.js' },
+  },
   { dir: 'packages/presentation/html', name: '@deckagent/html-format', exports: { '.': './lib/index.js' } },
   { dir: 'packages/presentation/pptx', name: '@deckagent/pptx-format', exports: { '.': './lib/index.js' } },
   { dir: 'packages/session/persistence', name: '@deckagent/session-persistence', exports: { '.': './lib/index.js' } },
@@ -41,7 +45,7 @@ const findings = (files, tsconfigPaths = {}) =>
 test('extractImports ignores imports inside comments and strings', () => {
   const source = [
     "// import x from '@deckagent/deck/src/internal'",
-    "const text = \"import y from 'node:fs'\"",
+    'const text = "import y from \'node:fs\'"',
     "import { ok } from '@deckagent/design'",
     "export { ok } from '@deckagent/presentation-document'",
     "const lazy = () => import('@deckagent/host-contracts')",
@@ -59,8 +63,14 @@ test('checkBoundaries accepts valid production and owner-local test imports', ()
       path: 'apps/host/src/server.ts',
       content: "import { startHost } from '@deckagent/host-api'\nimport { run } from './features/deck/index.ts'\n",
     },
-    { path: 'apps/web/src/browser/transport/client.ts', content: "import type { Req } from '@deckagent/host-contracts'\n" },
-    { path: 'apps/host/src/features/deck/index.ts', content: "import { load } from '../research/index.ts'\nexport const run = () => load()\n" },
+    {
+      path: 'apps/web/src/browser/transport/client.ts',
+      content: "import type { Req } from '@deckagent/host-contracts'\n",
+    },
+    {
+      path: 'apps/host/src/features/deck/index.ts',
+      content: "import { load } from '../research/index.ts'\nexport const run = () => load()\n",
+    },
     { path: 'apps/host/src/features/research/index.ts', content: 'export const load = () => 1\n' },
     {
       path: 'packages/presentation/html/src/index.ts',
@@ -199,7 +209,10 @@ test('checkBoundaries rejects private import across features', () => {
 
 test('checkBoundaries detects a package cycle and reports lowest directory', () => {
   const files = [
-    { path: 'packages/presentation/design/src/index.ts', content: "import { a } from '@deckagent/presentation-document'\n" },
+    {
+      path: 'packages/presentation/design/src/index.ts',
+      content: "import { a } from '@deckagent/presentation-document'\n",
+    },
     { path: 'packages/presentation/document/src/index.ts', content: "import { b } from '@deckagent/design'\n" },
   ]
   const result = checkBoundaries({ workspaces: baseWorkspaces, files, tsconfigPaths: {} })
@@ -277,6 +290,24 @@ test('checkBoundaries rejects private import into integrations', () => {
   ]
   assert.deepEqual(findings(files), [
     { path: 'apps/host/src/features/research/research-service.ts', line: 1, rule: 'integration-private-import' },
+  ])
+})
+
+test('checkBoundaries rejects private import into a runtime and accepts its index', () => {
+  const files = [
+    {
+      path: 'apps/host/src/features/requests/prepare-runtime.ts',
+      content: "import { OpenCodeRuntime } from '../../runtimes/opencode/runtime.ts'\n",
+    },
+    { path: 'apps/host/src/runtimes/opencode/runtime.ts', content: 'export const OpenCodeRuntime = 1\n' },
+    {
+      path: 'apps/host/src/server.ts',
+      content: "import { OpenCodeRuntime } from './runtimes/opencode/index.ts'\nconsole.log(OpenCodeRuntime)\n",
+    },
+    { path: 'apps/host/src/runtimes/opencode/index.ts', content: 'export const OpenCodeRuntime = 1\n' },
+  ]
+  assert.deepEqual(findings(files), [
+    { path: 'apps/host/src/features/requests/prepare-runtime.ts', line: 1, rule: 'runtime-private-import' },
   ])
 })
 

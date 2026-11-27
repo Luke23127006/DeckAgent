@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import * as local from '../lib/types/integrations/opencode/index.js'
+import * as local from '../lib/types/runtimes/opencode/index.js'
 
 const tools = {
   context: 'fixture',

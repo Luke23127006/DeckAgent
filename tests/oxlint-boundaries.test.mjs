@@ -251,6 +251,47 @@ test('accepts the Host API, Express and Node HTTP imports inside apps/host/src/h
   assert.equal(result.diagnostics.length, 0)
 })
 
+test('rejects Express, SQL, the HTTP edge and Host tools inside a runtime adapter', () => {
+  const result = lintFixture(
+    'apps/host/src/runtimes/opencode/runtime.ts',
+    [
+      "import express from 'express'",
+      "import { DatabaseSync } from 'node:sqlite'",
+      "import { createHttpApp } from '../../http/app.ts'",
+      "import { prepareSourceTools } from '../../tools/index.ts'",
+      'console.log(express, DatabaseSync, createHttpApp, prepareSourceTools)',
+      '',
+    ].join('\n'),
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.diagnostics.length, 4)
+  for (const diagnostic of result.diagnostics) {
+    assert.equal(diagnostic.code, 'eslint(no-restricted-imports)')
+    assert.equal(diagnostic.help, 'A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly.')
+  }
+})
+
+test('rejects a runtime import inside apps/host/src/http and inside a module', () => {
+  const http = lintFixture(
+    'apps/host/src/http/app.ts',
+    "import { OpenCodeRuntime } from '../runtimes/opencode/index.ts'\nconsole.log(OpenCodeRuntime)\n",
+  )
+  assert.equal(http.status, 1)
+  assert.equal(http.diagnostics.length, 1)
+  assert.match(http.diagnostics[0].help, /The HTTP edge must not import module services, stores or storage\./)
+
+  const moduleIndex = lintFixture(
+    'apps/host/src/modules/workspaces/index.ts',
+    "import { OpenCodeRuntime } from '../../runtimes/opencode/index.ts'\nconsole.log(OpenCodeRuntime)\n",
+  )
+  assert.equal(moduleIndex.status, 1)
+  assert.equal(moduleIndex.diagnostics.length, 1)
+  assert.match(
+    moduleIndex.diagnostics[0].help,
+    /A module must not import the store of another module, a storage package or the HTTP edge\./,
+  )
+})
+
 test('rejects a store, the SQL driver and another module store inside a module routes file', () => {
   const result = lintFixture(
     'apps/host/src/modules/workspaces/workspaces.routes.ts',

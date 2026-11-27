@@ -6,6 +6,7 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Move `apps/host/src/integrations/opencode/` into `apps/host/src/runtimes/opencode/` and enforce runtime adapter boundaries with `check:boundaries` and oxlint. Task 49 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Move file tools and source tools into `apps/host/src/tools/` (`policy/`, `sources/`, `executors/`), remove `@deckagent/file-tools` and enforce executor boundaries with oxlint. Task 48 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Close the `helmet` evaluation (keep `setSecurityHeaders` in `apps/host/src/http/app.ts`) and verify all Phase 3 domain-module and change-notice exit checks. Task 47 is `Done` in `docs/build/refactor/target-structure/plan/`.
 - Connect the Browser session change watcher on `GET /api/sessions/:sessionId/changes` to `brief` and `outline` notices so remote Brief and Outline changes refresh the open view without reload. Task 46 is `Done` in `docs/build/refactor/target-structure/plan/`.

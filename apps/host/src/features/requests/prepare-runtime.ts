@@ -3,8 +3,8 @@ import type { AgentRequest } from '@deckagent/host-contracts'
 import { SessionError } from '@deckagent/session-persistence'
 import type { SqliteSessionStore } from '@deckagent/session-persistence'
 import type { ProviderConfigurations } from '../../modules/providers/index.ts'
-import { OpenCodeError } from '../../integrations/opencode/index.ts'
-import type { OpenCodeExecutor } from '../../integrations/opencode/index.ts'
+import { OpenCodeError } from '../../runtimes/opencode/index.ts'
+import type { OpenCodeExecutor } from '../../runtimes/opencode/index.ts'
 
 export type RequestPreparationFailureCode =
   | 'SESSION_NOT_FOUND'

@@ -113,6 +113,7 @@
                   "../features/**",
                   "../modules/**",
                   "../integrations/**",
+                  "../runtimes/**",
                   "../*-store.ts",
                   "../*-state.ts",
                   "../local-transport.ts",
@@ -123,6 +124,42 @@
                   "@deckagent/deck/*"
                 ],
                 "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/runtimes/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite",
+                  "../../http/**",
+                  "../../local-transport.ts",
+                  "../../tools/**"
+                ],
+                "message": "A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly."
               }
             ]
           }
@@ -196,6 +233,8 @@
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -233,7 +272,9 @@
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
-                  "../../../tools/**"
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               }
@@ -270,6 +311,8 @@
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -316,6 +359,8 @@
                   "@deckagent/session-persistence",
                   "../../tools/**",
                   "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
                   "@deckagent/deck",
                   "@deckagent/deck/*"
                 ],
@@ -361,7 +406,9 @@
                   "../../local-transport.ts",
                   "@deckagent/session-persistence",
                   "../../tools/**",
-                  "../../../tools/**"
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**"
                 ],
                 "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
               },

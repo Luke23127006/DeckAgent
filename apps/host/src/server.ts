@@ -37,7 +37,7 @@ import {
 } from './modules/providers/index.ts'
 import { createRequestRuntime } from './features/requests/index.ts'
 import { defaultCredentialStore, type CredentialStore } from './credential-store.ts'
-import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './integrations/opencode/index.ts'
+import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
 import {
   AttachmentCoordinator,

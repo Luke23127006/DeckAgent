@@ -92,6 +92,11 @@ const integrationOfPath = value => {
   return match === null ? null : match[1]
 }
 
+const runtimeOfPath = value => {
+  const match = /^apps\/host\/src\/runtimes\/([^/]+)\//.exec(value)
+  return match === null ? null : match[1]
+}
+
 const lineOf = (sourceFile, node) => sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
 
 export const extractImports = (filePath, sourceText) => {
@@ -192,6 +197,7 @@ export const checkBoundaries = snapshot => {
     const sourceFeature = productionSource ? featureOfPath(file.path) : null
     const sourceBrowserFeature = productionSource ? browserFeatureOfPath(file.path) : null
     const sourceIntegration = productionSource ? integrationOfPath(file.path) : null
+    const sourceRuntime = productionSource ? runtimeOfPath(file.path) : null
     const sourceModule = productionSource ? moduleOfPath(file.path) : null
     for (const entry of extractImports(file.path, file.content)) {
       const { line, specifier } = entry
@@ -401,6 +407,19 @@ export const checkBoundaries = snapshot => {
             line,
             'integration-private-import',
             `Code outside integration "${targetIntegration}" must not import "${resolved}". Import the public index of integration "${targetIntegration}".`,
+          )
+        }
+      }
+
+      const targetRuntime = resolved === null ? null : runtimeOfPath(resolved)
+      if (targetRuntime !== null && sourceRuntime !== targetRuntime) {
+        const publicEntry = `apps/host/src/runtimes/${targetRuntime}/index`
+        if (stripExtension(resolved) !== publicEntry) {
+          add(
+            file.path,
+            line,
+            'runtime-private-import',
+            `Code outside runtime "${targetRuntime}" must not import "${resolved}". Import the public index of runtime "${targetRuntime}".`,
           )
         }
       }

@@ -52,7 +52,7 @@ After this task, `apps/host/src/runtimes/opencode/` holds all eleven OpenCode ad
 | `docs/conventions/project-structure.md` | Remove the `apps/host/src/integrations/opencode/` and `apps/host/src/integrations/{images,...}/` rows from `## Trong lúc chuyển`. Add `runtime-private-import` and the `apps/host/src/runtimes/` oxlint rule to `## Enforcement`. |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -62,27 +62,27 @@ Run: `git grep -n "^| 48 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move the files and change the wiring**
+- [x] **Step 2: Move the files and change the wiring**
 
 Run `git mv` for all eleven files in `apps/host/src/integrations/opencode/` into `apps/host/src/runtimes/opencode/`. Remove the empty folder `apps/host/src/integrations/`. Apply all rows of `Move rules`.
 
-- [ ] **Step 3: Check that no old path stays**
+- [x] **Step 3: Check that no old path stays**
 
 Run: `git grep --untracked -n "integrations/opencode" -- apps packages e2e scripts`
 
 Expected: PASS. Only `scripts/scan-module-design.mjs` matches, or no line.
 
-- [ ] **Step 4: Format, build and check**
+- [x] **Step 4: Format, build and check**
 
 Remove `apps/host/lib` first. Do the step `Format, build and check` of the Task protocol. Run `node --test tests/oxlint-boundaries.test.mjs tests/check-boundaries.test.mjs`.
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 5: Run every suite**
+- [x] **Step 5: Run every suite**
 
 Do the step `Run every suite` of the Task protocol.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. Add the table `Moved files` with the columns `Old path | New path`.
 
