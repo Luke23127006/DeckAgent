@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { DeckError, interviewState, skipInterview, validateBriefDraft } from '@deckagent/deck'
 import type { DeckStore, BriefDraft, BoundOutlineDraft } from '@deckagent/deck'
-import type { RequestRun, RequestTools, RuntimeOutcome } from '@deckagent/host-api'
+import type { RunTools } from '../../runs/ports.ts'
+import type { DeckToolRun } from './deck-tool-session.ts'
 import type { AgentRequest, ModelSelection } from '@deckagent/host-contracts'
 import type { RunPlan, RunResult, ToolSet } from '../../runs/index.ts'
 import type { DeckSessionStore } from './ports.ts'
@@ -30,7 +31,7 @@ const unchangedOutlineText =
 function failed(result: RunResult, code: string): RunResult {
   return { status: 'failed', usage: result.usage, error: { category: 'runtime-failed', code } }
 }
-function toolSet(tools: RequestTools): ToolSet {
+function toolSet(tools: RunTools): ToolSet {
   return {
     context: tools.context,
     manifest: tools.manifest,
@@ -86,10 +87,10 @@ export async function createDeckRunPlan(
   const readOnly = command.action === 'question' || command.action === 'clarify'
   let session: DeckToolSession | undefined
   let review: DeckImageReview | undefined
-  let run: RequestRun | undefined
+  let run: DeckToolRun | undefined
   let instructions = ''
   let recovery: DeckImageRecovery | undefined
-  const baseTools: RequestTools = {
+  const baseTools: RunTools = {
     context: 'deck-staging',
     manifest: '',
     schemas: [],
@@ -132,12 +133,6 @@ export async function createDeckRunPlan(
         command,
         context,
         initial,
-        prepared: {
-          selection,
-          start: async () => {
-            throw new DeckWorkflowFailure('IMAGE_RECOVERY_INCOMPLETE')
-          },
-        },
         publicResearch: request.publicResearch === true,
         readOnly,
         review,
@@ -234,8 +229,8 @@ async function commitProposal(
   staged: BriefDraft,
   outline: BoundOutlineDraft | undefined,
   review: DeckImageReview,
-  run: RequestRun,
-): Promise<RuntimeOutcome | undefined> {
+  run: DeckToolRun,
+): Promise<{ readonly status: 'failed'; readonly errorCode: string } | undefined> {
   try {
     deps.briefs.verify(request.sessionId, staged)
     const history = await deps.sessions.read(request.sessionId)

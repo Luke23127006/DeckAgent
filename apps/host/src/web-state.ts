@@ -167,3 +167,14 @@ export class WebState {
     this.db.close()
   }
 }
+
+export function mapWebStateFailure(error: unknown): { readonly status: number; readonly code: string } | undefined {
+  if (!(error instanceof WebStateError)) return undefined
+  const status =
+    error.code === 'PREFERENCES_STALE'
+      ? 409
+      : error.code === 'INVALID_SELECTION' || error.code === 'INVALID_REQUEST'
+        ? 400
+        : 500
+  return { status, code: error.code }
+}

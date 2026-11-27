@@ -2,7 +2,7 @@ import type { SourceKind } from '../../runs/index.ts'
 import { briefContractVersion, briefJsonSchema, DeckError, interviewState } from '@deckagent/deck'
 import type { BriefDraft, BoundOutlineDraft, DeckStore, OutlineImageReview } from '@deckagent/deck'
 import { listDesignSystems, listTemplates } from '@deckagent/design'
-import type { ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { ToolResult, ToolSchema } from '../../runs/ports.ts'
 import type { AgentRequest } from '@deckagent/host-contracts'
 import type { ImageReviewRun } from './image-review-run.ts'
 import { DeckWorkflowFailure } from './failures.ts'
@@ -254,18 +254,8 @@ const repairInfo = (failures: number) => ({
 })
 const issuesOf = (error: unknown, code: string, path: string, message: string, expected: string) =>
   error instanceof DeckError && error.issues.length ? error.issues : [{ code, path, message, expected }]
-const materialTools = ['list_sources', 'read_source', 'read_external', 'read_attachment', 'read_research']
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-
-export function isSourceToolAllowed(name: string, initial: BriefDraft, publicResearch: boolean): boolean {
-  if (name === 'research_public') return initial.sources.publicResearch && publicResearch
-  return (
-    !materialTools.includes(name) ||
-    initial.sources.material ||
-    (name === 'read_research' && initial.sources.publicResearch)
-  )
-}
 
 export function deckRepairLimitResult(state: BriefFailureState): ToolResult | undefined {
   if (state.briefRepairLimit)

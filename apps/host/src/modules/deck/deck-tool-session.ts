@@ -9,10 +9,9 @@ import {
 } from '@deckagent/deck'
 import type { BriefDraft, BoundOutlineDraft, DeckStore, OutlineImageReview } from '@deckagent/deck'
 import { reviewLayouts } from '@deckagent/design'
-import type { PreparedRequest, RequestRun, RequestTools, ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { RunTools, RunEvent, ToolResult, ToolSchema } from '../../runs/ports.ts'
 import type { AgentRequest } from '@deckagent/host-contracts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
-import { executeRecoveryRun } from './generation-execution.ts'
 import type { WebImageResearch } from './image-research.ts'
 import type { ImageReviewRun } from './image-review-run.ts'
 import {
@@ -22,10 +21,17 @@ import {
   decodeImageToolCall,
   deckRepairLimitResult,
   deckToolResult,
-  isSourceToolAllowed,
   recordDeckToolFailure,
 } from './deck-prompts.ts'
 import type { BriefFailureState } from './deck-prompts.ts'
+
+export interface DeckToolRun {
+  readonly requestId: string
+  readonly sessionId: string
+  readonly signal: AbortSignal
+  readonly tools?: RunTools
+  emit(event: RunEvent): Promise<void>
+}
 
 type DeckCommand = NonNullable<AgentRequest['deck']>
 type OutlineProposal = ReturnType<DeckStore['outlineSnapshot']>['proposals'][number]
@@ -51,11 +57,10 @@ export interface DeckToolSessionOptions {
   readonly command: DeckCommand
   readonly context: unknown
   readonly initial: BriefDraft
-  readonly prepared: PreparedRequest
   readonly publicResearch: boolean
   readonly readOnly: boolean
   readonly review: DeckImageReview
-  readonly run: RequestRun
+  readonly run: DeckToolRun
   readonly sessionId: string
 }
 
@@ -65,10 +70,9 @@ export interface DeckImageRecovery {
 }
 
 export interface DeckToolSession {
-  readonly tools: RequestTools | undefined
+  readonly tools: RunTools | undefined
   readonly state: DeckStagingState
   prepareImageRecovery(): Promise<DeckImageRecovery | undefined>
-  runImageRecovery(instructions: string): Promise<void>
 }
 
 const imageTools = ['search_slide_images', 'select_slide_image']
@@ -100,7 +104,6 @@ export function createDeckToolSession(options: DeckToolSessionOptions): DeckTool
     tools,
     state,
     prepareImageRecovery: () => prepareImageRecovery(options, state, tools),
-    runImageRecovery: instructions => recoverImages(options, state, tools, instructions),
   }
 }
 
@@ -111,7 +114,7 @@ export async function createDeckImageReview(
   initial: BriefDraft,
   previousOutline: OutlineProposal | undefined,
   restored: BoundOutlineDraft | undefined,
-  run: RequestRun,
+  run: DeckToolRun,
 ): Promise<DeckImageReview> {
   const readOnly = command.action === 'question' || command.action === 'clarify'
   const resumeImages =
@@ -167,7 +170,7 @@ export async function createDeckImageReview(
   return { resumeImages: resumeImages === true, staged, outline, previousReviews, imageReview, restored }
 }
 
-function buildTools(options: DeckToolSessionOptions, state: DeckStagingState): RequestTools | undefined {
+function buildTools(options: DeckToolSessionOptions, state: DeckStagingState): RunTools | undefined {
   const baseTools = options.run.tools
   if (!baseTools) return undefined
   const schemas = buildDeckToolSchemas(
@@ -181,11 +184,8 @@ function buildTools(options: DeckToolSessionOptions, state: DeckStagingState): R
       .update(`${baseTools.context}|${JSON.stringify(options.context)}`)
       .digest('hex'),
     manifest: baseTools.manifest,
-    schemas: [
-      ...baseTools.schemas.filter(s => isSourceToolAllowed(s.name, options.initial, options.publicResearch)),
-      ...schemas,
-    ],
-    call: (name, args) => callTool(name, args, options, state, schemas, baseTools),
+    schemas: [...baseTools.schemas, ...schemas],
+    call: (name, args) => callTool(name, args, options, state, schemas),
   }
 }
 
@@ -195,29 +195,19 @@ async function callTool(
   options: DeckToolSessionOptions,
   state: DeckStagingState,
   schemas: readonly ToolSchema[],
-  baseTools: RequestTools,
 ): Promise<ToolResult> {
-  const { run, initial } = options
+  const { run } = options
   if (run.signal.aborted) return deckToolResult('REQUEST_CLOSED', true)
   if (state.repairingImages && !imageTools.includes(name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
-  if (!stagingTools.includes(name))
-    return isSourceToolAllowed(name, initial, options.publicResearch)
-      ? baseTools.call(name, args)
-      : deckToolResult('TOOL_NOT_ALLOWED', true)
+  if (!stagingTools.includes(name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
   if (!schemas.some(s => s.name === name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
   const blocked = deckRepairLimitResult(state)
   if (blocked) return blocked
-  const activityId = `tool-${randomUUID()}`
-  const activity = (status: 'running' | 'completed' | 'failed') =>
-    run.emit({ kind: 'activity', id: activityId, label: name, type: 'tool', status })
-  await activity('running')
   try {
     const response = await dispatchStagingTool(name, args, options, state)
-    await activity('completed')
     return deckToolResult(response)
   } catch (error) {
     if (name === 'stage_brief' || name === 'stage_outline') state.rejected = true
-    await activity('failed')
     return recordDeckToolFailure(name, error, state, options.review.imageReview)
   }
 }
@@ -329,7 +319,7 @@ function hasRecoverableImages(pendingImages: readonly PendingImage[]): boolean {
 async function prepareImageRecovery(
   options: DeckToolSessionOptions,
   state: DeckStagingState,
-  tools: RequestTools | undefined,
+  tools: RunTools | undefined,
 ): Promise<DeckImageRecovery | undefined> {
   const { run } = options
   const imageReview = options.review.imageReview
@@ -356,29 +346,11 @@ async function prepareImageRecovery(
     async settle(completed, threw = false) {
       if (run.signal.aborted) return
       if (threw) {
-        await activity('failed')
         await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
         return
       }
       if (!completed) await run.emit({ kind: 'notice', code: 'IMAGE_RECOVERY_INCOMPLETE' })
       await activity(imageReview?.pending().some(n => n.required) ? 'failed' : 'completed')
     },
-  }
-}
-
-async function recoverImages(
-  options: DeckToolSessionOptions,
-  state: DeckStagingState,
-  tools: RequestTools | undefined,
-  instructions: string,
-): Promise<void> {
-  const recovery = await prepareImageRecovery(options, state, tools)
-  if (!recovery || !tools) return
-  try {
-    const outcome = await executeRecoveryRun(options.prepared, options.run, tools, instructions, recovery.recovery)
-    await recovery.settle(outcome.status === 'completed')
-  } catch {
-    options.run.signal.throwIfAborted()
-    await recovery.settle(false, true)
   }
 }

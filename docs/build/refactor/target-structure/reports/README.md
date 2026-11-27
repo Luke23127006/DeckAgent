@@ -66,3 +66,5 @@ Read this file to find the execution reports of the Target Structure Refactor pl
 | [Task 52: Implement runs/lifecycle RunController and sourceKinds in apps/host/src/tools report](task-52-implement-run-lifecycle-and-source-kinds.md) | Task 52 | `RunController` owns one run for each owner, the multi-pass plan, approvals, Stop, the budget abort and the terminal status with no `sessionId` field. `sourceKinds` filters the source tools, and `mapSourceToolFailure` maps their HTTP failures. The build, the checks and all 19 suites pass after one availability test change. |
 
 | [Task 53: Add deck run plans and contributions report](task-53-add-deck-run-plans-and-contributions.md) | Task 53 | Deck plans pass targeted lifecycle and recovery checks. The complete suite run remains deferred until Tasks 53 through 57 finish. |
+
+- [Task 54: Cut over Host runs and runtime](task-54-cutover-host-to-run-controller-and-agent-runtime.md)

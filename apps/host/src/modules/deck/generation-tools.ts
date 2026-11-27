@@ -2,7 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { DeckError } from '@deckagent/deck'
 import type { BriefDraft, BriefSourceRef, ContentProvenance, GenerationCapability } from '@deckagent/deck'
 import { FormatError, decodeSlideDocument } from '@deckagent/presentation-document'
-import type { RequestRun, RequestTools, ToolResult, ToolSchema } from '@deckagent/host-api'
+import type { RunTools, ToolResult, ToolSchema } from '../../runs/ports.ts'
+import type { DeckToolRun } from './deck-tool-session.ts'
 import type { DeckAttachmentRecord } from './ports.ts'
 import type { ResearchSourceRecord } from '../research/index.ts'
 import type { GenerationContext, GenerationSource } from './generation-prompts.ts'
@@ -95,7 +96,7 @@ function parseProvenanceEntries(rawEntries: readonly unknown[], evidence: Eviden
 }
 
 export interface GenerationToolOptions {
-  readonly run: RequestRun
+  readonly run: DeckToolRun
   readonly capability: GenerationCapability
   readonly context: GenerationContext
   readonly schemas: readonly ToolSchema[]
@@ -117,7 +118,7 @@ interface DispatchContext {
 
 type DispatchResult = { readonly handled: true; readonly value: unknown } | { readonly handled: false }
 
-function sourceToolNames(options: GenerationToolOptions): ReadonlySet<string> {
+function selectedSourceNames(options: GenerationToolOptions): ReadonlySet<string> {
   const { files, attachments, research, brief } = options
   return new Set([
     ...(files.some(s => s.kind === 'project-file') ? ['read_source'] : []),
@@ -131,7 +132,7 @@ function sourceToolNames(options: GenerationToolOptions): ReadonlySet<string> {
 async function callAuthorizedSourceTool(
   options: GenerationToolOptions,
   evidence: EvidenceLedger,
-  tools: RequestTools,
+  tools: RunTools,
   name: string,
   args: unknown,
 ): Promise<ToolResult> {
@@ -315,9 +316,9 @@ async function dispatchGenerationTool(
 }
 
 /** Adds only the tools of the confirmed plan; the Host owns source authority and evidence identity. */
-export function createGenerationTools(options: GenerationToolOptions): RequestTools {
+export function createGenerationTools(options: GenerationToolOptions): RunTools {
   const { run, capability, context, brief, portable, schemas } = options
-  const sourceNames = sourceToolNames(options)
+  const sourceNames = selectedSourceNames(options)
   const evidence = createEvidenceLedger(options.attachments)
   const dispatch: DispatchContext = {
     capability,
@@ -337,9 +338,6 @@ export function createGenerationTools(options: GenerationToolOptions): RequestTo
     ],
     call: async (name, args) => {
       if (run.signal.aborted) return result('REQUEST_CLOSED', true)
-      const activityId = `tool-${randomUUID()}`
-      const activity = (status: 'running' | 'completed' | 'failed') =>
-        run.emit({ kind: 'activity', id: activityId, label: name, type: 'tool', status })
       try {
         if (sourceNames.has(name) && run.tools)
           return await callAuthorizedSourceTool(options, evidence, run.tools, name, args)
@@ -354,12 +352,9 @@ export function createGenerationTools(options: GenerationToolOptions): RequestTo
           return result('GENERATION_ARGUMENTS_INVALID', true)
         const v: unknown = JSON.parse(args.json)
         if (!object(v)) return result('GENERATION_ARGUMENTS_INVALID', true)
-        await activity('running')
         const value = await dispatchGenerationTool(dispatch, name, v)
-        await activity('completed')
         return result(value)
       } catch (error) {
-        await activity('failed')
         return result(
           error instanceof FormatError
             ? { code: error.code, message: error.message, issues: error.issues }

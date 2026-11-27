@@ -1,7 +1,8 @@
 import { DeckError } from '@deckagent/deck'
 import type { DeckStore, GenerationCapability, GenerationGrant } from '@deckagent/deck'
 import type { AgentRequest, ModelSelection } from '@deckagent/host-contracts'
-import type { RequestRun, RequestTools } from '@deckagent/host-api'
+import type { RunTools } from '../../runs/ports.ts'
+import type { DeckToolRun } from './deck-tool-session.ts'
 import type { AgentRuntime, RunLifecycleContext, RunPlan, RunResult, ToolContext, ToolSet } from '../../runs/index.ts'
 import type { DeckSessionStore } from './ports.ts'
 import { DeckWorkflowFailure } from './failures.ts'
@@ -17,19 +18,22 @@ export interface GenerationSourceToolsPort {
     publicResearch: boolean,
   ): Promise<ToolSet>
 }
-export interface GenerationOverrideRun extends RequestRun {
+export interface GenerationOverrideRun extends DeckToolRun {
+  readonly instructions?: string
+  onApprovalWait?(listener: (waiting: boolean) => void): () => void
   readonly generation: GenerationGrant
   readonly presentation: GenerationCapability
 }
+export interface PreparedGenerationRuntime {
+  readonly selection: ModelSelection
+  start(
+    run: GenerationOverrideRun,
+  ): Promise<
+    { readonly status: 'completed'; commit?(): void } | { readonly status: 'failed'; readonly errorCode: string }
+  >
+}
 export interface GenerationRuntimeOverride {
-  prepare(request: AgentRequest): Promise<{
-    readonly selection: ModelSelection
-    start(
-      run: GenerationOverrideRun,
-    ): Promise<
-      { readonly status: 'completed'; commit?(): void } | { readonly status: 'failed'; readonly errorCode: string }
-    >
-  }>
+  prepare(request: AgentRequest): Promise<PreparedGenerationRuntime>
 }
 export interface GenerationPlanDependencies {
   readonly decks: DeckStore
@@ -108,7 +112,7 @@ export async function createGenerationRunPlan(
             .filter(s => selected(s.sourceId, s.version) && (frozen.sources.material || frozen.sources.publicResearch))
           const source = await deps.sourceTools.prepare(sessionId, sourceKindsForBrief(frozen), publicResearch)
           let execution: ToolContext | undefined
-          const sourceTools: RequestTools = {
+          const sourceTools: RunTools = {
             context: source.context,
             manifest: source.manifest,
             schemas: source.schemas,

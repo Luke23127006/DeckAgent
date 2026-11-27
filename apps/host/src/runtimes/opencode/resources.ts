@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
-import { createReadStream } from 'node:fs'
-import { readFile, stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { createReadStream, constants } from 'node:fs'
+import { access, readFile, stat } from 'node:fs/promises'
+import { delimiter, isAbsolute, join } from 'node:path'
+import { createRequire } from 'node:module'
 import { pinnedVersion } from './config.ts'
 
 function hasCode(value: unknown): value is { readonly code?: unknown } {
@@ -42,4 +43,43 @@ export async function resourceExecutable(root: string): Promise<{ present: boole
   } catch {
     return { present: true }
   }
+}
+
+export async function findExecutable(
+  configured: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+  resourceDir?: string,
+): Promise<string | undefined> {
+  if (!configured && resourceDir) {
+    const bundled = await resourceExecutable(resourceDir)
+    if (bundled.present) return bundled.executable
+  }
+  let installed: string | undefined
+  if (!configured && process.platform === 'win32' && process.arch === 'x64') {
+    try {
+      installed = createRequire(import.meta.url).resolve('opencode-windows-x64/bin/opencode.exe')
+    } catch {
+      // Optional platform packages can be omitted; startup reports the missing runtime.
+    }
+  }
+  const candidates = configured
+    ? [configured]
+    : [
+        ...(installed ? [installed] : []),
+        ...(env.PATH ?? env.Path ?? '')
+          .split(delimiter)
+          .filter(Boolean)
+          .map(folder => join(folder, process.platform === 'win32' ? 'opencode.exe' : 'opencode')),
+      ]
+  for (const candidate of candidates) {
+    if (!isAbsolute(candidate)) continue
+    try {
+      if (!(await stat(candidate)).isFile()) continue
+      if (process.platform !== 'win32') await access(candidate, constants.X_OK)
+      return candidate
+    } catch {
+      /* Next candidate. */
+    }
+  }
+  return undefined
 }

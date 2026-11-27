@@ -24,10 +24,10 @@ export type {
   HostRouteRegistrar,
 } from './transport/contracts.ts'
 export { HttpError } from './transport/http-error.ts'
-export { json, readJson } from './transport/http-io.ts'
+export { json, readJson, parseCursor, readAgentRequest } from './transport/http-io.ts'
 export { receiveAttachment } from './transport/multipart.ts'
 export type { AttachmentUploadTarget } from './transport/multipart.ts'
-export { param, params, route } from './transport/route-params.ts'
+export { param, params, route, WORD_ID } from './transport/route-params.ts'
 export { openSseStream } from './transport/sse.ts'
 export type { HttpErrorDetail } from './transport/http-error.ts'
 

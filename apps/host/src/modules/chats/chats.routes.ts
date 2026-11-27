@@ -17,6 +17,13 @@ function searchWords(value: unknown): string {
 export function createChatRoutes(chats: ChatOperations, decodeSelection: (value: unknown) => ModelSelection): Router {
   const router = Router({ caseSensitive: true, strict: true })
   router.get(
+    '/api/sessions/:sessionId/history',
+    params({ sessionId: /^[\w-]{1,100}$/ }),
+    route(async (req, res) => {
+      json(res, 200, await chats.history(param(req, 'sessionId')))
+    }),
+  )
+  router.get(
     '/api/sessions',
     route(async (_req, res) => {
       json(res, 200, await chats.list())

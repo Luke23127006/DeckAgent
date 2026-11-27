@@ -9,16 +9,13 @@ const WORD_ID = /^[\w-]{1,100}$/
 export function createDeckRoutes(deck: DeckOperations, context: HostRouteContext): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const session = params({ sessionId: WORD_ID })
-  const submit = context.submit
-  if (submit) {
-    router.post(
-      '/api/sessions/:sessionId/deck/confirm',
-      session,
-      route(async (req, res) => {
-        json(res, 200, await deck.confirm(param(req, 'sessionId'), await readJson(req), submit))
-      }),
-    )
-  }
+  router.post(
+    '/api/sessions/:sessionId/deck/confirm',
+    session,
+    route(async (req, res) => {
+      json(res, 200, await deck.confirm(param(req, 'sessionId'), await readJson(req)))
+    }),
+  )
   router.get(
     '/api/sessions/:sessionId/interview',
     session,

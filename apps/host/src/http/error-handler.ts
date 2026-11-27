@@ -3,6 +3,9 @@ import { HttpError, RequestFailure, type HostOptions, type HttpFailureResponse }
 
 const requestFailureStatus: Readonly<Record<string, number>> = {
   HOST_CLOSED: 503,
+  RUN_OWNER_BUSY: 409,
+  RUNTIME_UNAVAILABLE: 503,
+  RUNTIME_VERSION_UNSUPPORTED: 503,
   HOST_BUSY: 429,
   REQUEST_NOT_FOUND: 404,
   APPROVAL_NOT_FOUND: 404,

@@ -10,7 +10,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { sourceKindsForBrief } from '../lib/types/modules/deck/index.js'
-import { isSourceToolAllowed } from '../lib/types/modules/deck/deck-prompts.js'
 import { createSourceToolsContribution } from '../lib/types/tools/index.js'
 
 function sourceOptions(hasResearchSources) {
@@ -35,7 +34,7 @@ function sourceOptions(hasResearchSources) {
   }
 }
 
-test('deck source grants preserve the legacy tool set for all sixteen flag combinations', async () => {
+test('deck source grants expose the expected tool set for all sixteen flag combinations', async () => {
   for (const material of [false, true])
     for (const briefPublicResearch of [false, true])
       for (const requestPublicResearch of [false, true])
@@ -47,13 +46,6 @@ test('deck source grants preserve the legacy tool set for all sixteen flag combi
             requestId: 'request-1',
             signal: new AbortController().signal,
           }
-          const full = await contribution.contribute({
-            ...context,
-            grants: {
-              publicResearch: requestPublicResearch,
-              sourceKinds: ['workspace-files', 'attachments', 'research'],
-            },
-          })
           const actual = await contribution.contribute({
             ...context,
             grants: {
@@ -63,7 +55,11 @@ test('deck source grants preserve the legacy tool set for all sixteen flag combi
           })
           assert.deepEqual(
             actual.tools?.schemas.map(s => s.name) ?? [],
-            full.tools.schemas.filter(s => isSourceToolAllowed(s.name, brief, requestPublicResearch)).map(s => s.name),
+            [
+              ...(material ? ['list_sources', 'read_source', 'read_external', 'read_attachment'] : []),
+              ...((material || briefPublicResearch) && hasResearchSources ? ['read_research'] : []),
+              ...(briefPublicResearch && requestPublicResearch ? ['research_public'] : []),
+            ],
             JSON.stringify({ material, briefPublicResearch, requestPublicResearch, hasResearchSources }),
           )
         }

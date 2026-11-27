@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AttachmentParser, attachmentLimits } from './tools/index.ts'
-import type { HostOptions, HostRouteContext, RequestRuntime } from '@deckagent/host-api'
+import type { HostOptions, HostRouteContext } from '@deckagent/host-api'
 import { createChangeFeed, type ChangeFeed } from './http/change-feed.ts'
 import { startHost, type StartHostOptions } from './http/start-host.ts'
 import type { WebSettings } from '@deckagent/host-contracts'
@@ -17,15 +18,21 @@ import {
 import { DeckStore, deckFailureMessage, type ConfirmedDeckPlan } from '@deckagent/deck'
 import { HtmlFormatAdapter, validateLegacySlideHtml } from '@deckagent/html-format'
 import { loadWebAssets } from '@deckagent/local-web'
-import { WebState, selection } from './web-state.ts'
+import { WebState, selection, mapWebStateFailure } from './web-state.ts'
 import {
   createChatOperations,
+  createConversationContribution,
+  createChatRequestOperations,
+  createRequestRoutes,
+  readChatSelection,
   createChatRoutes,
   createWorkspaceChats,
   mapChatFailure,
   type ChatMarks,
 } from './modules/chats/index.ts'
-import { mapApplicationFailure } from './local-transport.ts'
+import { RunController } from './runs/lifecycle/index.ts'
+import { RunFailure } from './runs/ports.ts'
+import type { RunRecord, RunStore } from './runs/ports.ts'
 import {
   ProviderConfigurations,
   SqliteProviderStore,
@@ -35,9 +42,8 @@ import {
   type ProviderConfigurationsOptions,
   type ProviderConnection,
 } from './modules/providers/index.ts'
-import { createRequestRuntime } from './features/requests/index.ts'
 import { defaultCredentialStore, type CredentialStore } from './credential-store.ts'
-import { OpenCodeRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
+import { OpenCodeAgentRuntime, findExecutable, type OpenCodeOptions } from './runtimes/opencode/index.ts'
 import { StorageError, prepareStorage, resolveStorageRoot, type StorageLayout } from './storage-root.ts'
 import {
   AttachmentCoordinator,
@@ -45,7 +51,7 @@ import {
   createAttachmentRoutes,
   mapAttachmentFailure,
 } from './modules/attachments/index.ts'
-import { prepareSourceTools } from './tools/index.ts'
+import { prepareSourceTools, createSourceToolsContribution, mapSourceToolFailure } from './tools/index.ts'
 import {
   ResearchCoordinator,
   SqliteResearchStore,
@@ -56,19 +62,20 @@ import {
 import { createSettingsRoutes } from './settings-routes.ts'
 import {
   BriefCoordinator,
+  DeckWorkflowFailure,
   createDeckOperations,
   createDeckRoutes,
   ConfirmationCoordinator,
-  DeckWorkflow,
-  GenerationWorkflow,
+  createDeckRunPlan,
+  createGenerationRunPlan,
   WebImageResearch,
-  generationReport,
   CommonsImages,
   PublicImageReader,
   artifactRenderer,
   mapDeckFailure,
   type ImageLookup,
   type ArtifactRenderer,
+  type GenerationRuntimeOverride,
 } from './modules/deck/index.ts'
 
 export { StorageError, resolveStorageRoot } from './storage-root.ts'
@@ -78,7 +85,7 @@ export interface LocalWebOptions {
   /** Controlled image transport/DNS seams for tests; production pins public DNS addresses. */
   readonly imageAccess?: { readonly fetch: typeof fetch; readonly resolve?: ImageLookup }
   /** Tests may replace generation; production uses the same isolated CLI with confirmed phase tools. */
-  readonly generationRuntime?: RequestRuntime
+  readonly generationRuntime?: GenerationRuntimeOverride
   /** Trusted test/manual plans only; no model-facing confirmation bypass. */
   readonly confirmedDecks?: readonly (ConfirmedDeckPlan & { readonly sessionId: string })[]
   readonly selection?: ModelSelection
@@ -109,12 +116,12 @@ interface StorageLayer {
 
 interface RuntimeLayer {
   readonly providers: ProviderConfigurations
-  readonly runtime: RequestRuntime
+  readonly runtime: OpenCodeAgentRuntime
   readonly research: ResearchCoordinator
   readonly images: WebImageResearch
   readonly inputs: AttachmentCoordinator
-  readonly generationRuntime: RequestRuntime
-  readonly settings: () => WebSettings
+  readonly generationRuntime?: GenerationRuntimeOverride
+  readonly settings: () => Promise<WebSettings>
 }
 
 /** Closes every resource even after a failure, then reports the first failure. */
@@ -284,7 +291,7 @@ async function createRuntimeLayer(
   })
   storage.bindSelectability(value => providers.selectable(value))
   await providers.load(options.connections, initial)
-  const openCode = new OpenCodeRuntime(
+  const openCode = new OpenCodeAgentRuntime(
     await findExecutable(
       options.openCode?.executable ?? (process.env.DECKAGENT_OPENCODE?.trim() || undefined),
       process.env,
@@ -292,17 +299,26 @@ async function createRuntimeLayer(
     ),
     join(layout.files, 'runtime', 'opencode'),
     {
-      read: sessionId => sessions.read(sessionId),
-      requests: sessionId => sessions.requests.list(sessionId),
-      request: requestId => sessions.requests.get(requestId),
-      binding: sessionId => sessions.requests.binding(sessionId),
-      bind: binding => sessions.requests.bind(binding),
-      unbind: sessionId => sessions.requests.unbind(sessionId),
+      binding: ownerKey => {
+        const binding = sessions.requests.binding(ownerKey.slice(5))
+        if (!binding) return undefined
+        const { sessionId: _sessionId, ...fields } = binding
+        return { ...fields, ownerKey }
+      },
+      bind: binding => {
+        const { ownerKey, ...fields } = binding
+        sessions.requests.bind({ ...fields, sessionId: ownerKey.slice(5) })
+      },
+      unbind: ownerKey => sessions.requests.unbind(ownerKey.slice(5)),
+      lastCompletedRequestId: (ownerKey, currentRequestId) =>
+        sessions.requests
+          .list(ownerKey.slice(5))
+          .filter(item => item.requestId !== currentRequestId)
+          .at(-1)?.requestId,
     },
     options.openCode,
   )
-  await openCode.initialize()
-  const runtime = createRequestRuntime({ sessions, providers, runtime: openCode })
+  await openCode.availability()
   const research = new ResearchCoordinator(
     new SqliteResearchStore(web.db),
     credentials,
@@ -319,20 +335,23 @@ async function createRuntimeLayer(
   )
   return {
     providers,
-    runtime,
+    runtime: openCode,
     research,
     images,
     inputs: new AttachmentCoordinator(sessions, drafts, attachments, new AttachmentParser(), attachmentLimits),
-    generationRuntime: options.generationRuntime ?? new GenerationWorkflow(runtime, sessions),
-    settings: () => ({
-      research: research.settings(),
-      providers: providers.providerSettings(),
-      providersVersion: providers.version(),
-      preferencesVersion: web.preferencesVersion(),
-      persistentKeys: providers.persistentKeys,
-      builtIns: providers.builtIns,
-      runtime: openCode.availability(),
-    }),
+    ...(options.generationRuntime ? { generationRuntime: options.generationRuntime } : {}),
+    settings: async () => {
+      const availability = await openCode.availability()
+      return {
+        research: research.settings(),
+        providers: providers.providerSettings(),
+        providersVersion: providers.version(),
+        preferencesVersion: web.preferencesVersion(),
+        persistentKeys: providers.persistentKeys,
+        builtIns: providers.builtIns,
+        runtime: availability.available ? { available: true } : { available: false, reason: availability.code },
+      }
+    },
   }
 }
 
@@ -341,6 +360,32 @@ function chatMarks(decks: DeckStore, drafts: MemoryDraftStore): ChatMarks {
     hasSlides: id => decks.snapshot(id).slides.some(slide => slide.revision > 0),
     hasDraft: id => drafts.get(id).trim() !== '' || drafts.snapshot(id).attachmentIds.length > 0,
   }
+}
+
+function mapRunFailure(error: unknown) {
+  if (!(error instanceof RunFailure)) return undefined
+  const statuses: Readonly<Record<string, number>> = {
+    HOST_CLOSED: 503,
+    HOST_BUSY: 429,
+    RUNTIME_UNAVAILABLE: 503,
+    RUNTIME_VERSION_UNSUPPORTED: 503,
+    REQUEST_NOT_FOUND: 404,
+    APPROVAL_NOT_FOUND: 404,
+    SESSION_NOT_FOUND: 404,
+    RUN_OWNER_BUSY: 409,
+    SESSION_BUSY: 409,
+    GENERATION_LINK_CONFLICT: 409,
+    APPROVAL_CONFLICT: 409,
+    REQUEST_CLOSED: 409,
+    DRAFT_CONFLICT: 409,
+    ATTACHMENT_REJECTED: 409,
+    ATTACHMENT_NOT_READY: 409,
+    ATTACHMENT_COUNT_EXCEEDED: 413,
+    REQUEST_EMPTY: 400,
+    REQUEST_NOT_SAVED: 500,
+    GENERATION_LINK_FAILED: 500,
+  }
+  return { status: statuses[error.code] ?? 500, code: error.code, ...(error.detail ? { detail: error.detail } : {}) }
 }
 
 function createHostOptions(
@@ -355,47 +400,165 @@ function createHostOptions(
 ): StartHostOptions {
   const { sessions, web, decks, registry } = storage
   const briefs = new BriefCoordinator(decks, sessions)
+  const projectRecord = (record: ReturnType<typeof sessions.requests.get>): RunRecord | undefined => {
+    if (!record) return undefined
+    const { sessionId, ...fields } = record
+    return { ...fields, owner: { kind: 'chat', id: sessionId } }
+  }
+  const runStore: RunStore = {
+    approvals: sessions.requests.approvals,
+    admit: input => {
+      const { owner, ...fields } = input
+      try {
+        const saved = runtime.inputs.admitDraft({ ...fields, sessionId: owner.id }, admitted =>
+          sessions.requests.admit(admitted),
+        )
+        return { ...saved, owner }
+      } catch (error) {
+        const code = error instanceof Error && 'code' in error ? error.code : undefined
+        if (
+          typeof code === 'string' &&
+          [
+            'REQUEST_ACTIVE',
+            'SESSION_NOT_FOUND',
+            'DRAFT_CONFLICT',
+            'ATTACHMENT_COUNT_EXCEEDED',
+            'ATTACHMENT_REJECTED',
+            'ATTACHMENT_NOT_READY',
+            'REQUEST_EMPTY',
+          ].includes(code)
+        )
+          throw error
+        throw new RunFailure('REQUEST_NOT_SAVED')
+      }
+    },
+    append: (id, event) => sessions.requests.append(id, event),
+    finish: (id, status, code) => sessions.requests.finish(id, status, code),
+    get: id => projectRecord(sessions.requests.get(id)),
+    events: (id, after) => sessions.requests.events(id, after),
+    text: id => sessions.requests.text(id),
+    activeFor: owner => sessions.requests.activeFor(owner.id),
+  }
+  const sourceOptions = {
+    store: sessions,
+    registry,
+    dataRoot: layout.root,
+    home: options.home ?? homedir(),
+    attachments,
+  }
+  const sourceToolsContribution = {
+    name: 'source-tools',
+    async contribute(context: import('./runs/ports.ts').PreparationContext) {
+      const research = await runtime.research.prepare(context.grants.publicResearch)
+      return createSourceToolsContribution({ ...sourceOptions, research }).contribute(context)
+    },
+  }
+  const overrideSelections = new Set<string>()
+  const runs = new RunController({
+    store: runStore,
+    runtime: runtime.runtime,
+    providers: {
+      resolve: async selected => {
+        if (
+          runtime.generationRuntime &&
+          overrideSelections.has(JSON.stringify(selected)) &&
+          !runtime.providers.selectable(selected)
+        )
+          return { ...selected, protocol: 'chat-completions', baseUrl: 'http://127.0.0.1' }
+        return runtime.providers.runSettings(selected)
+      },
+    },
+    contributions: [createConversationContribution(id => sessions.read(id)), sourceToolsContribution],
+    hasTools: true,
+  })
+  const generationDependencies = {
+    decks,
+    sessions,
+    sourceTools: {
+      prepare: async (
+        sessionId: string,
+        sourceKinds: readonly import('./runs/ports.ts').SourceKind[],
+        publicResearch: boolean,
+      ) =>
+        prepareSourceTools({
+          ...sourceOptions,
+          sessionId,
+          sourceKinds,
+          research: await runtime.research.prepare(publicResearch),
+        }),
+    },
+    ...(runtime.generationRuntime ? { generationRuntime: runtime.generationRuntime } : {}),
+  }
+  const prepareGeneration = async (request: import('@deckagent/host-contracts').AgentRequest) => {
+    if (runtime.generationRuntime) {
+      await runtime.research.prepare(request.publicResearch === true)
+      const prepared = await runtime.generationRuntime.prepare(request)
+      overrideSelections.add(JSON.stringify(prepared.selection))
+      return { selection: prepared.selection, override: prepared }
+    }
+    const selected = await readChatSelection({ sessions, providers: runtime.providers }, request.sessionId)
+    const availability = await runtime.runtime.availability()
+    if (!availability.available) throw new RunFailure(availability.code, availability.detail)
+    await runtime.research.prepare(request.publicResearch === true)
+    return { selection: selected }
+  }
+  const requests = createChatRequestOperations({
+    sessions,
+    providers: runtime.providers,
+    runs,
+    preflightResearch: async selected => {
+      await runtime.research.prepare(selected)
+    },
+    deckPlanner: {
+      prepare: async (request, selected) => {
+        if (request.continueDeck) {
+          const generation = decks.generation(request.sessionId)
+          if (!generation || generation.state !== 'incomplete') throw new DeckWorkflowFailure('GENERATION_INCOMPLETE')
+          const prepared = await createGenerationRunPlan(generationDependencies, {
+            request,
+            selection: selected,
+            intentId: generation.receipt.intentId,
+            requestId: `req-${randomUUID()}`,
+            continuation: true,
+          })
+          return { plan: prepared.plan, ...(prepared.runtime ? { options: { runtime: prepared.runtime } } : {}) }
+        }
+        return {
+          plan: await createDeckRunPlan({ decks, sessions, briefs, imageResearch: runtime.images }, request, selected),
+        }
+      },
+    },
+  })
   const deckOps = createDeckOperations(
     decks,
     briefs,
-    new ConfirmationCoordinator(decks, sessions, briefs, runtime.generationRuntime),
+    new ConfirmationCoordinator(decks, sessions, briefs, runs, generationDependencies, prepareGeneration),
   )
+
   return {
     mapApplicationFailure: error =>
+      mapRunFailure(error) ??
       mapWorkspaceFailure(error) ??
       mapChatFailure(error) ??
       mapProviderFailure(error) ??
       mapAttachmentFailure(error) ??
       mapResearchFailure(error) ??
       mapDeckFailure(error) ??
-      mapApplicationFailure(error),
+      mapSourceToolFailure(error) ??
+      mapWebStateFailure(error) ??
+      (error instanceof SessionError
+        ? error.code === 'SESSION_NOT_FOUND'
+          ? { status: 404, code: 'SESSION_NOT_FOUND' }
+          : error.code === 'SESSION_CORRUPT'
+            ? { status: 409, code: 'CHAT_UNREADABLE' }
+            : error.code === 'DRAFT_TOO_LARGE'
+              ? { status: 413, code: 'DRAFT_TOO_LARGE' }
+              : undefined
+        : undefined),
     failureMessage: deckFailureMessage,
     assets,
-    requests: {
-      closingText: (sessionId, requestId, status) => generationReport(decks, sessionId, requestId, status),
-      store: {
-        approvals: sessions.requests.approvals,
-        admit: input => runtime.inputs.admitDraft(input, admitted => sessions.requests.admit(admitted)),
-        append: (id, event) => sessions.requests.append(id, event),
-        finish: (id, status, code) => sessions.requests.finish(id, status, code),
-        get: id => sessions.requests.get(id),
-        events: (id, after) => sessions.requests.events(id, after),
-        text: id => sessions.requests.text(id),
-        activeFor: id => sessions.requests.activeFor(id),
-      },
-      runtime: new DeckWorkflow(runtime.runtime, decks, sessions, briefs, runtime.generationRuntime, runtime.images),
-      prepareTools: async (sessionId, attachmentIds, publicResearch) =>
-        prepareSourceTools({
-          sessionId,
-          store: sessions,
-          registry,
-          dataRoot: layout.root,
-          home: options.home ?? homedir(),
-          attachments,
-          research: await runtime.research.prepare(publicResearch === true),
-          ...(attachmentIds === undefined ? {} : { attachmentIds }),
-        }),
-    },
+    onClose: () => runs.close(),
+    omitLegacyRoutes: true,
     maxAttachments: runtime.inputs.maxFiles,
     ...(options.port === undefined ? {} : { port: options.port }),
     readHistory: id => sessions.read(id),
@@ -413,6 +576,7 @@ function createHostOptions(
         },
       }),
       (context: HostRouteContext) => createDeckRoutes(deckOps, context),
+      (context: HostRouteContext) => createRequestRoutes(requests, runtime.inputs.maxFiles, context.streams),
     ],
     changes: {
       feed: changeFeed,

@@ -1,25 +1,18 @@
 import type { DeckStore } from '@deckagent/deck'
-import type { RequestAdmission } from '@deckagent/host-api'
 import type {
-  AgentRequest,
   BriefView,
   ConfirmationResult,
   DeckChange,
   DeckSnapshot,
   InterviewState,
   OutlineSnapshot,
-  RequestSnapshot,
   SlideContent,
 } from '@deckagent/host-contracts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
 import type { ConfirmationCoordinator } from './confirmation-coordinator.ts'
 
 export interface DeckOperations {
-  confirm(
-    sessionId: string,
-    value: unknown,
-    submit: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>,
-  ): Promise<ConfirmationResult>
+  confirm(sessionId: string, value: unknown): Promise<ConfirmationResult>
   interview(sessionId: string): Promise<{ readonly brief: BriefView; readonly state: InterviewState }>
   getBrief(sessionId: string, version?: number): Promise<BriefView>
   saveBrief(sessionId: string, value: unknown): Promise<BriefView>
@@ -36,7 +29,7 @@ export function createDeckOperations(
   confirmations: ConfirmationCoordinator,
 ): DeckOperations {
   return {
-    confirm: (sessionId, value, submit) => confirmations.confirm(sessionId, value, submit),
+    confirm: (sessionId, value) => confirmations.confirm(sessionId, value),
     interview: sessionId => briefs.interview(sessionId),
     getBrief: (sessionId, version) => briefs.get(sessionId, version),
     saveBrief: (sessionId, value) => briefs.save(sessionId, value),

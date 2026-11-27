@@ -12,8 +12,10 @@ import { DatabaseSync } from 'node:sqlite'
 test('authenticated concurrent confirmation schedules one request, denies mixed input, and Stop preserves the snapshot lock', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'confirmation-host-'))
   let runs = 0
+  let preparations = 0
   const runtime = {
     async prepare() {
+      preparations++
       return {
         selection: { provider: 'fixture', model: 'model' },
         async start(run) {
@@ -67,6 +69,7 @@ test('authenticated concurrent confirmation schedules one request, denies mixed 
   const results = await Promise.all([client.confirm(id, target), client.confirm(id, target)])
   assert.deepEqual(results[0].receipt, results[1].receipt)
   assert.equal(runs, 1)
+  assert.equal(preparations, 1)
   const deckClient = new DeckClient(f.app.origin, f.app.token)
   assert.equal((await deckClient.snapshot(id)).generation.formatLocked, true)
   assert.equal((await f.call(`sessions/${id}/deck/confirm`, 'POST', { ...target, briefVersion: 2 })).status, 409)
@@ -75,6 +78,7 @@ test('authenticated concurrent confirmation schedules one request, denies mixed 
   assert.equal((await deckClient.snapshot(id)).generation.formatLocked, true)
   await client.confirm(id, target)
   assert.equal(runs, 1)
+  assert.equal(preparations, 1)
 })
 
 async function seed(f, dir) {

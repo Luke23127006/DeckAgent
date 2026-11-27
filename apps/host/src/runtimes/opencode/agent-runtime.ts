@@ -26,6 +26,19 @@ import { runProcess } from './process.ts'
 import { UnsupportedProviderError, selector } from './provider.ts'
 import { createAttemptTimer, createStreamTracker, type ClassifiedAttempt } from './stream-tracker.ts'
 
+export interface OpenCodeOptions {
+  /** Absolute developer override. Absent: use app resources, the installed platform runtime, then PATH. */
+  readonly executable?: string
+  /** Prepared release resources. App startup defaults to its own resources/opencode directory. */
+  readonly resourceDir?: string
+  /** Version the CLI must report. Tests with a fake CLI may set their own. */
+  readonly version?: string
+  /** Longest a request may run before it is ended as not finished. */
+  readonly timeoutMs?: number
+  /** Arguments placed before every OpenCode argument, for a launcher such as `node cli.mjs` (developer checks). */
+  readonly launcherArgs?: readonly string[]
+}
+
 export interface OwnerRuntimeBinding {
   readonly ownerKey: string
   readonly nativeSessionId: string
@@ -58,7 +71,6 @@ const noUsage: RunUsage = { modelCalls: 0 }
 
 function failed(error: RunError, usage: RunUsage = noUsage, noWork = true): ClassifiedAttempt {
   return {
-    outcome: { status: 'failed', errorCode: error.code },
     runResult: { status: 'failed', usage, error },
     noWork,
   }

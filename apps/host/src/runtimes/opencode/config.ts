@@ -45,7 +45,7 @@ export function runtimeConfiguration(
   const grants = bridge
     ? { ...permission, ...Object.fromEntries(bridge.names.map(name => [`deckagent_${name}`, 'allow'])) }
     : permission
-  const steps = stepLimit ?? (bridge?.names.includes('publish_slide') ? 'none' : 8)
+  const steps = stepLimit ?? 8
   return {
     permission: grants,
     plugin: [],

@@ -1,8 +1,6 @@
 export { DeckWorkflowFailure } from './failures.ts'
 export { BriefCoordinator } from './brief-coordinator.ts'
 export { ConfirmationCoordinator } from './confirmation-coordinator.ts'
-export { DeckWorkflow } from './deck-workflow.ts'
-export { GenerationWorkflow } from './generation-workflow.ts'
 export { generationReport } from './generation-report.ts'
 export { WebImageResearch } from './image-research.ts'
 export { CommonsImages, PublicImageReader } from './images/index.ts'
@@ -23,5 +21,6 @@ export type {
   GenerationPlanInput,
   GenerationOverrideRun,
   GenerationRuntimeOverride,
+  PreparedGenerationRuntime,
   GenerationSourceToolsPort,
 } from './generation-run-plan.ts'

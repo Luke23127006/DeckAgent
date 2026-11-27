@@ -1,7 +1,28 @@
-import type { ModelSelection, StoredActivity, StoredRequest, WebSession } from '@deckagent/host-contracts'
+import type { ConversationMessage, RunContribution, RunPlan, RunSnapshot, RunStartOptions } from '../../runs/ports.ts'
+import { RunFailure } from '../../runs/ports.ts'
+import type {
+  AgentRequest,
+  ApprovalView,
+  AttachmentView,
+  ModelSelection,
+  RequestEvent,
+  RequestSnapshot,
+  StoredActivity,
+  StoredRequest,
+  WebSession,
+} from '@deckagent/host-contracts'
 import type { WorkspaceChats, WorkspaceLookup } from '../workspaces/index.ts'
 
-export type ChatWorkflowErrorCode = 'SESSION_NOT_FOUND' | 'MODEL_NOT_SELECTABLE' | 'CHAT_UNREADABLE' | 'DRAFT_TOO_LARGE'
+export type ChatWorkflowErrorCode =
+  | 'SESSION_NOT_FOUND'
+  | 'MODEL_NOT_SELECTABLE'
+  | 'CHAT_UNREADABLE'
+  | 'DRAFT_TOO_LARGE'
+  | 'SESSION_BUSY'
+  | 'NO_SELECTABLE_MODEL'
+  | 'SESSION_UNAVAILABLE'
+  | 'RUNTIME_UNAVAILABLE'
+  | 'RUNTIME_VERSION_UNSUPPORTED'
 
 type ChatWorkflowErrorDetail = Readonly<Record<string, string | boolean>>
 
@@ -30,6 +51,7 @@ export interface ChatRecord {
 /** The chat part of the session database. `SqliteSessionStore` implements it. */
 export interface ChatStore {
   getInfo(sessionId: string): Promise<unknown>
+  read(sessionId: string): Promise<readonly ChatHistoryMessage[]>
   chats(): Promise<readonly ChatRecord[]>
   list(): Promise<readonly { readonly sessionId: string; readonly workspaceId: string | null }[]>
   create(workspaceId: string, selection?: ModelSelection): Promise<{ readonly sessionId: string }>
@@ -57,6 +79,7 @@ export interface ChatMarks {
 }
 
 export interface ChatOperations {
+  history(id: string): Promise<readonly ChatHistoryMessage[]>
   activities(id: string): Promise<readonly StoredActivity[]>
   requests(id: string): Promise<readonly StoredRequest[]>
   create(selection?: ModelSelection): Promise<WebSession>
@@ -113,6 +136,9 @@ export function createChatOperations(
   }
 
   return {
+    async history(id) {
+      return (await store.read(id)).filter(message => message.role !== 'system').map(projectHistoryMessage)
+    },
     async activities(id: string): Promise<readonly StoredActivity[]> {
       if (!(await store.getInfo(id))) throw new ChatWorkflowError('SESSION_NOT_FOUND')
       return store.requests.activities(id)
@@ -149,4 +175,187 @@ export function createChatOperations(
         .map(withActive)
     },
   }
+}
+
+function projectHistoryMessage(message: ChatHistoryMessage) {
+  return {
+    role: message.role,
+    content: message.content,
+    ...(message.role === 'user' && message.attachments
+      ? {
+          attachments: message.attachments.map(item => ({
+            attachmentId: item.attachmentId,
+            name: item.name,
+            state: item.state,
+            byteSize: item.byteSize,
+            ...(item.detectedType ? { detectedType: item.detectedType } : {}),
+            ...(item.rejectionCode ? { rejectionCode: item.rejectionCode } : {}),
+            ...(item.preparation ? { preparation: item.preparation } : {}),
+            ...(item.source
+              ? {
+                  source: {
+                    sourceId: item.source.sourceId,
+                    version: item.source.version,
+                    kind: item.source.kind,
+                    label: item.source.label,
+                  },
+                }
+              : {}),
+          })),
+        }
+      : {}),
+    ...(message.role === 'assistant' && message.interrupted ? { interrupted: true } : {}),
+    ...(message.role === 'tool'
+      ? { toolCallId: message.toolCallId, name: message.name, isError: message.isError === true }
+      : {}),
+  }
+}
+
+export interface ChatHistoryMessage {
+  readonly role: 'system' | 'user' | 'assistant' | 'tool'
+  readonly content: string
+  readonly interrupted?: boolean
+  readonly toolCallId?: string
+  readonly name?: string
+  readonly isError?: boolean
+  readonly attachments?: readonly AttachmentView[]
+}
+
+export interface ChatRequestOperations {
+  submit(request: AgentRequest): Promise<RequestSnapshot>
+  get(requestId: string): RequestSnapshot
+  decide(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): ApprovalView
+  events(requestId: string, after: number): readonly RequestEvent[]
+  stop(requestId: string): RequestSnapshot
+  subscribe(listener: (event: RequestEvent) => void): () => void
+}
+
+export interface ChatRunOperations {
+  start(plan: RunPlan, options?: RunStartOptions): Promise<RunSnapshot>
+  get(requestId: string): RunSnapshot
+  decide(requestId: string, approvalId: string, decision: 'allow-once' | 'refuse'): ApprovalView
+  events(requestId: string, after: number): readonly RequestEvent[]
+  stop(requestId: string): RunSnapshot
+  subscribe(listener: (event: RequestEvent) => void): () => void
+}
+
+export interface DeckRunPlanner {
+  prepare(
+    request: AgentRequest,
+    selection: ModelSelection,
+  ): Promise<{ readonly plan: RunPlan; readonly options?: RunStartOptions }>
+}
+
+export interface ChatRequestDependencies {
+  readonly sessions: {
+    getInfo(
+      id: string,
+    ): Promise<{ readonly selection?: ModelSelection; readonly removedSelection?: ModelSelection } | undefined>
+    read(id: string): Promise<readonly ChatHistoryMessage[]>
+  }
+  readonly providers: {
+    providerSettings(): readonly { readonly models: readonly string[] }[]
+    selectable(value: ModelSelection): boolean
+  }
+  readonly runs: ChatRunOperations
+  readonly deckPlanner: DeckRunPlanner
+  preflightResearch(selected: boolean): Promise<void>
+}
+
+export function createConversationContribution(
+  readMessages: (id: string) => Promise<readonly ChatHistoryMessage[]>,
+): RunContribution {
+  return {
+    name: 'conversation',
+    async contribute(context) {
+      if (context.owner.kind !== 'chat') return {}
+      const messages: ConversationMessage[] = []
+      for (const message of await readMessages(context.owner.id)) {
+        if (message.role !== 'user' && message.role !== 'assistant') continue
+        messages.push({
+          role: message.role,
+          content: message.content,
+          ...(message.role === 'assistant' && message.interrupted ? { unfinished: true } : {}),
+          ...(message.role === 'user' && message.attachments?.length
+            ? { attachments: message.attachments.map(item => ({ attachmentId: item.attachmentId, name: item.name })) }
+            : {}),
+        })
+      }
+      return { resources: [{ kind: 'conversation', messages }] }
+    },
+  }
+}
+
+function projectRequest(snapshot: RunSnapshot): RequestSnapshot {
+  const { owner, ...fields } = snapshot
+  return { ...fields, sessionId: owner.id }
+}
+
+export function createChatRequestOperations(deps: ChatRequestDependencies): ChatRequestOperations {
+  return {
+    async submit(request) {
+      const selected = await readChatSelection(deps, request.sessionId)
+      const prepared =
+        request.deck || request.continueDeck
+          ? await deps.deckPlanner.prepare(request, selected)
+          : {
+              plan: {
+                owner: { kind: 'chat' as const, id: request.sessionId },
+                input: request.input,
+                selection: selected,
+                grants: {
+                  publicResearch: request.publicResearch === true,
+                  sourceKinds: ['workspace-files', 'attachments', 'research'] as const,
+                },
+                stepLimit: 8,
+                contributions: [],
+              },
+            }
+      await deps.preflightResearch(prepared.plan.grants.publicResearch)
+      try {
+        return projectRequest(
+          await deps.runs.start(prepared.plan, {
+            ...prepared.options,
+            ...(request.attachmentIds === undefined ? {} : { attachmentIds: request.attachmentIds }),
+            ...(request.draftRevision === undefined ? {} : { draftRevision: request.draftRevision }),
+          }),
+        )
+      } catch (error) {
+        if (error instanceof RunFailure && error.code === 'RUN_OWNER_BUSY') throw new ChatWorkflowError('SESSION_BUSY')
+        throw error
+      }
+    },
+    get: id => projectRequest(deps.runs.get(id)),
+    stop: id => projectRequest(deps.runs.stop(id)),
+    decide: (id, approval, decision) => deps.runs.decide(id, approval, decision),
+    events: (id, after) => deps.runs.events(id, after),
+    subscribe: listener => deps.runs.subscribe(listener),
+  }
+}
+
+export async function readChatSelection(
+  deps: Pick<ChatRequestDependencies, 'sessions' | 'providers'>,
+  sessionId: string,
+): Promise<ModelSelection> {
+  const info = await deps.sessions.getInfo(sessionId).catch(() => undefined)
+  if (!info) throw new ChatWorkflowError('SESSION_NOT_FOUND')
+  try {
+    await deps.sessions.read(sessionId)
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'SESSION_CORRUPT')
+      throw new ChatWorkflowError('CHAT_UNREADABLE')
+    throw new ChatWorkflowError('SESSION_UNAVAILABLE')
+  }
+  const configured = deps.providers.providerSettings()
+  if (!info.selection || !deps.providers.selectable(info.selection)) {
+    const reason = !configured.length
+      ? 'no-provider'
+      : !configured.some(provider => provider.models.length)
+        ? 'no-model'
+        : info.selection || info.removedSelection
+          ? 'model-removed'
+          : 'no-selection'
+    throw new ChatWorkflowError('NO_SELECTABLE_MODEL', { reason })
+  }
+  return info.selection
 }

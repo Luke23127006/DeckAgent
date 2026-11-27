@@ -5,7 +5,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import type { RequestTools } from '@deckagent/host-api'
+import type { RunTools } from '../../runs/ports.ts'
 
 export interface ToolBridge {
   readonly url: string
@@ -54,7 +54,7 @@ async function readJsonBody(req: IncomingMessage, res: ServerResponse): Promise<
   }
 }
 
-function createToolServer(tools: RequestTools, active: () => boolean, servers: Set<Server>): Server {
+function createToolServer(tools: RunTools, active: () => boolean, servers: Set<Server>): Server {
   const server = new Server({ name: 'deckagent', version: '0.0.0' }, { capabilities: { tools: {} } })
   servers.add(server)
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -122,7 +122,7 @@ async function forwardMcpRequest(
 
 /** One loopback listener and fresh bearer per admitted request. No product state is written here. */
 export async function openToolBridge(options: {
-  readonly tools: RequestTools
+  readonly tools: RunTools
   readonly signal: AbortSignal
 }): Promise<ToolBridge> {
   const token = randomBytes(32).toString('hex')

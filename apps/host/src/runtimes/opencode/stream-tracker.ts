@@ -1,4 +1,3 @@
-import type { RuntimeOutcome } from '@deckagent/host-api'
 import type { RunError, RunEvent, RunResult, RunUsage } from '../../runs/ports.ts'
 import { summarizedNotice } from '../../runs/ports.ts'
 import { classifyProviderError, isContextOverflow, parseEvent } from './events.ts'
@@ -6,7 +5,6 @@ import type { OpenCodeEvent } from './events.ts'
 import type { ProcessResult } from './process.ts'
 
 export interface AttemptResult {
-  readonly outcome: RuntimeOutcome
   readonly nativeSessionId?: string
   readonly noWork: boolean
 }
@@ -142,7 +140,6 @@ class StreamTracking implements StreamTracker {
     // Work was done when a step ran or the native session already took part in a summary: never retried elsewhere.
     const noWork = this.steps === 0 && this.overflows === 0
     const failed = (error: RunError, work = noWork): ClassifiedAttempt => ({
-      outcome: { status: 'failed', errorCode: error.code },
       runResult: { status: 'failed', usage: this.usage(), error },
       noWork: work,
     })
@@ -158,7 +155,6 @@ class StreamTracking implements StreamTracker {
     if (!this.steps || !this.finishReason || this.finishReason === 'tool-calls' || !this.nativeSessionId)
       return failed(runtimeIncomplete)
     return {
-      outcome: { status: 'completed' },
       runResult: { status: 'completed', usage: this.usage() },
       nativeSessionId: this.nativeSessionId,
       noWork: false,

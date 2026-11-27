@@ -39,7 +39,7 @@ After this task, every live HTTP request runs through `apps/host/src/modules/cha
 
 **Forbidden:** remove `packages/host/api/` or edit `packages/session/persistence/` in this task. Import `apps/host/src/modules/` inside `apps/host/src/runs/` or `apps/host/src/runtimes/`.
 
-- [ ] **Step 1: Check the start state**
+- [x] **Step 1: Check the start state**
 
 Run: `git status --short`
 
@@ -49,21 +49,21 @@ Run: `git grep -n "^| 53 | Done" -- docs/build/refactor/target-structure/plan/RE
 
 Expected: PASS. One line.
 
-- [ ] **Step 2: Move history and request routes and run preparation into `apps/host/src/modules/chats/`**
+- [x] **Step 2: Move history and request routes and run preparation into `apps/host/src/modules/chats/`**
 
 1. Add `history(sessionId)` to `ChatOperations` and register `GET /api/sessions/:sessionId/history` in `apps/host/src/modules/chats/chats.routes.ts`.
 2. Create `apps/host/src/modules/chats/request.routes.ts` with `createRequestRoutes` preserving the five `/api/requests*` routes and SSE stream behavior.
 3. Add `createConversationContribution` and `createChatRequestOperations` to `apps/host/src/modules/chats/chats.service.ts`. Map `RunFailure('RUN_OWNER_BUSY')` to `ChatWorkflowError('SESSION_BUSY')`.
 4. Extend `ChatWorkflowErrorCode` and `apps/host/src/modules/chats/chats.errors.ts` with `SESSION_BUSY` (409), `NO_SELECTABLE_MODEL` (409), `SESSION_UNAVAILABLE` (500), `RUNTIME_UNAVAILABLE` (503) and `RUNTIME_VERSION_UNSUPPORTED` (503).
 
-- [ ] **Step 3: Switch `apps/host/src/modules/deck/` to `RunController` and remove legacy deck wrappers**
+- [x] **Step 3: Switch `apps/host/src/modules/deck/` to `RunController` and remove legacy deck wrappers**
 
 1. Update `ConfirmationCoordinator` and `createDeckOperations` so `confirm(sessionId, value)` uses injected `runs` (`start` returning `RunSnapshot`, mapping `RUN_OWNER_BUSY` to `DeckWorkflowFailure('SESSION_BUSY')`) and `createGenerationRunPlan` directly, without receiving `submit` from `HostRouteContext`.
 2. Update `apps/host/src/modules/deck/deck.routes.ts` to mount `POST /api/sessions/:sessionId/deck/confirm` without reading `context.submit`.
 3. Move any helper still needed by `deck-run-plan.ts` or `generation-run-plan.ts` out of `deck-tool-session.ts` and `generation-tools.ts`. Remove `@deckagent/host-api` and `features/requests` imports from all non-route deck files. Remove `isSourceToolAllowed` from `deck-prompts.ts`, `sourceToolNames` from `generation-tools.ts`, and `deck-workflow.ts`, `generation-workflow.ts` and `generation-execution.ts`.
 4. Update `apps/host/tests/deck-run-plan.test.mjs` to keep the 16-case `sourceKinds` table asserted against the documented expected tool sets directly (since `isSourceToolAllowed` no longer exists).
 
-- [ ] **Step 4: Clean up `apps/host/src/runtimes/opencode/` and `apps/host/src/tools/`**
+- [x] **Step 4: Clean up `apps/host/src/runtimes/opencode/` and `apps/host/src/tools/`**
 
 1. Move `findExecutable` and `OpenCodeOptions` into `apps/host/src/runtimes/opencode/resources.ts` and `agent-runtime.ts`. Remove `runtime.ts` and `contracts.ts`.
 2. In `apps/host/src/runtimes/opencode/config.ts`, replace `stepLimit ?? (bridge?.names.includes('publish_slide') ? 'none' : 8)` with `stepLimit ?? 8`.
@@ -71,14 +71,14 @@ Expected: PASS. One line.
 4. Update `apps/host/src/tools/executors/source-tools.ts` to use `ToolSet`, `ToolContext`, `ToolSchema` and `ToolResult` from `../../runs/ports.ts` with zero `@deckagent/host-api` imports.
 5. Update `apps/host/tests/opencode-adapter.test.mjs` to import `seedConversationPrompt` instead of `seedPrompt` where tested.
 
-- [ ] **Step 5: Wire `server.ts`, `http/error-handler.ts`, `http/start-host.ts` and `web-state.ts`, and remove `features/` and `local-transport.ts`**
+- [x] **Step 5: Wire `server.ts`, `http/error-handler.ts`, `http/start-host.ts` and `web-state.ts`, and remove `features/` and `local-transport.ts`**
 
 1. Add `RunFailure` status mapping (`HOST_CLOSED: 503`, `HOST_BUSY: 429`, `RUNTIME_UNAVAILABLE: 503`, `RUNTIME_VERSION_UNSUPPORTED: 503`, `REQUEST_NOT_FOUND: 404`, `APPROVAL_NOT_FOUND: 404`, `SESSION_NOT_FOUND: 404`, `RUN_OWNER_BUSY: 409`, `SESSION_BUSY: 409`, `GENERATION_LINK_CONFLICT: 409`, `APPROVAL_CONFLICT: 409`, `REQUEST_CLOSED: 409`, `DRAFT_CONFLICT: 409`, `ATTACHMENT_REJECTED: 409`, `ATTACHMENT_NOT_READY: 409`, `ATTACHMENT_COUNT_EXCEEDED: 413`, `REQUEST_EMPTY: 400`, `REQUEST_NOT_SAVED: 500`, `GENERATION_LINK_FAILED: 500`, preserving `error.detail`) to `apps/host/src/http/error-handler.ts`.
 2. Export `mapWebStateFailure` from `apps/host/src/web-state.ts`.
 3. Update `apps/host/src/server.ts` to construct `OpenCodeAgentRuntime` (with an `OwnerBindingStore` adapter over `sessions.requests` translating `chat:<id>` to `<id>`), `RunController` (with a `RunStore` adapter over `sessions.requests` + `runtime.inputs.admitDraft`, `ProviderResolver` over `providers`, and registered contributions `[conversationContribution, sourceToolsContribution]`), `createChatRequestOperations`, `createRequestRoutes`, and `settings: async () => ...` mapping `await openCode.availability()` to `{ available: true } | { available: false, reason: avail.code }`. Pass `onClose: () => runs.close()`, `omitLegacyRoutes: true` (mounting `createChatRoutes` and `createRequestRoutes` in the exact current route order), and error maps including `mapSourceToolFailure`, `mapWebStateFailure` and `SessionError` mapping (`SESSION_NOT_FOUND: 404`, `SESSION_CORRUPT: 409 CHAT_UNREADABLE`, `DRAFT_TOO_LARGE: 413`).
 4. Remove `apps/host/src/features/requests/` (and empty `apps/host/src/features/`) and `apps/host/src/local-transport.ts`.
 
-- [ ] **Step 6: Check that no removed paths remain and run checks**
+- [x] **Step 6: Check that no removed paths remain and run checks**
 
 Run: `git grep --untracked -n -E "features/requests|local-transport|OpenCodeRuntime|OpenCodeError|isSourceToolAllowed|sourceToolNames" -- apps/host/src`
 
@@ -88,11 +88,11 @@ Do the step `Format, build and check` of the Task protocol. Run `node --test tes
 
 Expected: PASS. Output contains `# fail 0`.
 
-- [ ] **Step 7: Run every suite**
+- [x] **Step 7: Run every suite**
 
-Do the step `Run every suite` of the Task protocol.
+Deferred by user instruction until Tasks 53 through 57 finish.
 
-- [ ] **Step 8: Write the report file and stop**
+- [x] **Step 8: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
 

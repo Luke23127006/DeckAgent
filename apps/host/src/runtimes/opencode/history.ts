@@ -1,4 +1,3 @@
-import type { HostMessage } from '@deckagent/host-api'
 import type { ConversationMessage } from '../../runs/ports.ts'
 
 /**
@@ -28,20 +27,4 @@ export function seedConversationPrompt(messages: readonly ConversationMessage[],
     "The user's new request:",
     input,
   ].join('\n')
-}
-
-export function seedPrompt(earlier: readonly HostMessage[], input: string): string {
-  const messages: ConversationMessage[] = []
-  for (const message of earlier) {
-    if (message.role !== 'user' && message.role !== 'assistant') continue
-    messages.push({
-      role: message.role,
-      content: message.content,
-      ...(message.role === 'assistant' && message.interrupted ? { unfinished: true as const } : {}),
-      ...(message.role === 'user' && message.attachments?.length
-        ? { attachments: message.attachments.map(item => ({ attachmentId: item.attachmentId, name: item.name })) }
-        : {}),
-    })
-  }
-  return seedConversationPrompt(messages, input)
 }

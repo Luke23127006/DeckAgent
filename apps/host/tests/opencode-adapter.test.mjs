@@ -1,3 +1,4 @@
+import { createConversationContribution } from '../lib/types/modules/chats/index.js'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
@@ -18,7 +19,7 @@ import {
   runtimeConfiguration,
   safeConfiguration,
 } from '../lib/types/runtimes/opencode/config.js'
-import { seedPrompt } from '../lib/types/runtimes/opencode/history.js'
+import { seedConversationPrompt } from '../lib/types/runtimes/opencode/history.js'
 import { OpenCodeAgentRuntime } from '../lib/types/runtimes/opencode/index.js'
 import { UnsupportedProviderError, providerConfiguration } from '../lib/types/runtimes/opencode/provider.js'
 import { runProcess } from '../lib/types/runtimes/opencode/process.js'
@@ -175,7 +176,7 @@ test('isolated environment: no inherited keys or settings; the key only in this 
   }
 })
 
-test('context seeding quotes only user and assistant text, in order, and drops no message', () => {
+test('conversation contribution and seeding quote user and assistant text in order without dropping messages', async () => {
   const history = [
     { role: 'user', content: 'first question' },
     { role: 'assistant', content: 'first answer' },
@@ -183,8 +184,14 @@ test('context seeding quotes only user and assistant text, in order, and drops n
     { role: 'user', content: 'second question' },
     { role: 'assistant', content: 'half', interrupted: true },
   ]
-  assert.equal(seedPrompt([], 'new'), 'new')
-  const prompt = seedPrompt(history, 'new request')
+  assert.equal(seedConversationPrompt([], 'new'), 'new')
+  const parts = await createConversationContribution(async () => history).contribute({
+    owner: { kind: 'chat', id: 'chat' },
+    requestId: 'request',
+    signal: new AbortController().signal,
+    grants: { publicResearch: false, sourceKinds: [] },
+  })
+  const prompt = seedConversationPrompt(parts.resources[0].messages, 'new request')
   assert.ok(prompt.endsWith("The user's new request:\nnew request"))
   assert.equal(prompt.includes('tool output'), false, 'Tool records are never replayed')
   assert.ok(prompt.includes('"unfinished":true'))
@@ -193,7 +200,7 @@ test('context seeding quotes only user and assistant text, in order, and drops n
     role: index % 2 ? 'assistant' : 'user',
     content: `message ${index} ${'x'.repeat(1000)}`,
   }))
-  const whole = seedPrompt(long, 'x')
+  const whole = seedConversationPrompt(long, 'x')
   assert.ok(whole.includes('message 0 ') && whole.includes('message 399 '))
   assert.equal(whole.includes('not included'), false)
 })
@@ -379,8 +386,17 @@ test('run configuration applies the run step limit', () => {
   assert.equal(runtimeConfiguration(settings, undefined, undefined, 4).agent.deckagent.steps, 4)
   assert.equal('steps' in runtimeConfiguration(settings, undefined, undefined, 'none').agent.deckagent, false)
   assert.equal(runtimeConfiguration(settings).agent.deckagent.steps, 8)
-  const published = runtimeConfiguration(settings, { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] })
+  const published = runtimeConfiguration(
+    settings,
+    { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] },
+    undefined,
+    'none',
+  )
   assert.equal('steps' in published.agent.deckagent, false)
+  assert.equal(
+    runtimeConfiguration(settings, { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] }).agent.deckagent.steps,
+    8,
+  )
   assert.equal(
     runtimeConfiguration(settings, { url: 'http://127.0.0.1:1/mcp', names: ['publish_slide'] }, undefined, 2).agent
       .deckagent.steps,
@@ -430,7 +446,6 @@ test('stream tracker classifies a blocked summary, an unfinished summary and a r
   })
   await blocked.finalize(false, false)
   const blockedAttempt = blocked.classify(ended(0), false, false, blockedControl.signal.aborted)
-  assert.deepEqual(blockedAttempt.outcome, { status: 'failed', errorCode: 'CONTEXT_SUMMARY_FAILED' })
   assert.deepEqual(blockedAttempt.runResult, {
     status: 'failed',
     usage: { modelCalls: 1 },

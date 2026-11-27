@@ -6,6 +6,8 @@ Notable changes to this repository. The newest changes are at the top.
 
 ### Added
 
+- Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
+
 - Add deck review and generation run plans with source grants and image recovery contributions.
 
 - Connect the Browser session change watcher on `GET /api/sessions/:sessionId/changes` to `brief` and `outline` notices so remote Brief and Outline changes refresh the open view without reload. Task 46 is `Done` in `docs/build/refactor/target-structure/plan/`.

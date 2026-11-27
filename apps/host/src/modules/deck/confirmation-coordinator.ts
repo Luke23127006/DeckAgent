@@ -1,12 +1,14 @@
+import { ResearchFailure } from '../research/index.ts'
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckStore, ConfirmationReceipt } from '@deckagent/deck'
-import { RequestFailure } from '@deckagent/host-api'
-import type { RequestAdmission, RequestRuntime } from '@deckagent/host-api'
-import type { AgentRequest, ConfirmationResult, RequestSnapshot } from '@deckagent/host-contracts'
+import { RunFailure } from '../../runs/ports.ts'
+import type { RunPlan, RunStartOptions, RunSnapshot } from '../../runs/ports.ts'
+import type { AgentRequest, ConfirmationResult, ModelSelection } from '@deckagent/host-contracts'
 import type { DeckSessionStore } from './ports.ts'
-import { RequestPreparationFailure } from '../../features/requests/index.ts'
+import { ChatWorkflowError } from '../chats/index.ts'
 import type { BriefCoordinator } from './brief-coordinator.ts'
-import { executeGenerationRun } from './generation-execution.ts'
+import { createGenerationRunPlan } from './generation-run-plan.ts'
+import type { GenerationPlanDependencies, PreparedGenerationRuntime } from './generation-run-plan.ts'
 import { DeckWorkflowFailure } from './failures.ts'
 
 type ConfirmationTarget = ReturnType<typeof validateConfirmation>
@@ -19,14 +21,14 @@ export class ConfirmationCoordinator {
     private readonly decks: DeckStore,
     private readonly sessions: DeckSessionStore,
     private readonly briefs: BriefCoordinator,
-    private readonly runtime?: RequestRuntime,
+    private readonly runs: { start(plan: RunPlan, options?: RunStartOptions): Promise<RunSnapshot> },
+    private readonly generation: GenerationPlanDependencies,
+    private readonly prepare: (
+      request: AgentRequest,
+    ) => Promise<{ readonly selection: ModelSelection; readonly override?: PreparedGenerationRuntime }>,
   ) {}
 
-  async confirm(
-    sessionId: string,
-    value: unknown,
-    submit: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>,
-  ): Promise<ConfirmationResult> {
+  async confirm(sessionId: string, value: unknown): Promise<ConfirmationResult> {
     const previous = this.queues.get(sessionId) ?? Promise.resolve()
     let release = () => {}
     const pending = new Promise<void>(resolve => {
@@ -39,7 +41,7 @@ export class ConfirmationCoordinator {
       const target = validateConfirmation(value)
       const existing = this.findExistingConfirmation(sessionId, target)
       if (existing) return existing
-      return await this.admitConfirmedGeneration(sessionId, target, this.decks.generation(sessionId), submit)
+      return await this.admitConfirmedGeneration(sessionId, target, this.decks.generation(sessionId))
     } catch (error) {
       return this.rethrowConfirmationError(error)
     } finally {
@@ -78,7 +80,6 @@ export class ConfirmationCoordinator {
     sessionId: string,
     target: ConfirmationTarget,
     old: Generation,
-    submit: (request: AgentRequest, options: RequestAdmission) => Promise<RequestSnapshot>,
   ): Promise<ConfirmationResult> {
     const view = await this.briefs.get(sessionId)
     if (view.sourceStates.some(s => s.status === 'unavailable')) throw new DeckWorkflowFailure('SOURCE_UNAVAILABLE')
@@ -88,22 +89,29 @@ export class ConfirmationCoordinator {
     )
       throw new DeckWorkflowFailure('BRIEF_STALE')
     if (this.sessions.requests.activeFor(sessionId)) throw new DeckWorkflowFailure('SESSION_BUSY')
-    if (!this.runtime) throw new DeckWorkflowFailure('GENERATION_UNAVAILABLE')
     const request: AgentRequest = {
       sessionId,
       input: 'Generate the explicitly confirmed Outline.',
       publicResearch: view.current?.draft.sources.publicResearch === true,
     }
-    const prepared = await this.runtime.prepare(request)
-    if (
-      old &&
-      (old.selection.provider !== prepared.selection.provider || old.selection.model !== prepared.selection.model)
-    )
+    const preparation = await this.prepare(request)
+    const selection = preparation.selection
+    if (old && (old.selection.provider !== selection.provider || old.selection.model !== selection.model))
       throw new DeckWorkflowFailure('GENERATION_MODEL_CHANGED')
-    const receipt: ConfirmationReceipt = this.decks.confirmGeneration(sessionId, target, prepared.selection)
-    const admitted = await submit(request, {
-      requestId: receipt.requestId,
-      admitted: () => {
+    const receipt: ConfirmationReceipt = this.decks.confirmGeneration(sessionId, target, selection)
+    const override = preparation.override
+    const prepared = await createGenerationRunPlan(
+      override ? { ...this.generation, generationRuntime: { prepare: async () => override } } : this.generation,
+      {
+        request,
+        selection,
+        intentId: receipt.intentId,
+        requestId: receipt.requestId,
+      },
+    )
+    const admitted = await this.runs.start(prepared.plan, {
+      ...(prepared.runtime ? { runtime: prepared.runtime } : {}),
+      onAdmitted: () => {
         try {
           this.decks.admitGeneration(sessionId, receipt.intentId, receipt.requestId)
         } catch (error) {
@@ -111,19 +119,18 @@ export class ConfirmationCoordinator {
           throw error
         }
       },
-      prepared: {
-        selection: prepared.selection,
-        start: run => executeGenerationRun(this.decks, prepared, sessionId, receipt.intentId, receipt.requestId, run),
-      },
     })
-    return { receipt, request: admitted }
+    const { owner, ...fields } = admitted
+    return { receipt, request: { ...fields, sessionId: owner.id } }
   }
 
   private rethrowConfirmationError(error: unknown): never {
+    if (error instanceof RunFailure && error.code === 'RUN_OWNER_BUSY') throw new DeckWorkflowFailure('SESSION_BUSY')
     if (
       error instanceof DeckWorkflowFailure ||
-      error instanceof RequestFailure ||
-      error instanceof RequestPreparationFailure ||
+      error instanceof RunFailure ||
+      error instanceof ChatWorkflowError ||
+      error instanceof ResearchFailure ||
       (error instanceof Error &&
         'status' in error &&
         typeof error.status === 'number' &&

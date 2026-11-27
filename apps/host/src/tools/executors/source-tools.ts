@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
-import type { PreparedTools } from '@deckagent/host-api'
 import type {
   PreparationContext,
   RunContribution,
@@ -284,20 +283,13 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
   }
 }
 
-/** Legacy composition path: the Host prepares tools at admission and the lifecycle binds the chat identity. */
-export async function prepareSourceTools(options: SourceToolOptions): Promise<PreparedTools> {
+export async function prepareSourceTools(options: SourceToolOptions): Promise<ToolSet> {
   const tools = await buildSourceTools(options)
   return {
     context: tools.context,
     manifest: tools.manifest,
     schemas: tools.schemas,
-    execute: (name, args, context) =>
-      tools.execute(name, args, {
-        owner: { kind: 'chat', id: context.sessionId },
-        requestId: context.requestId,
-        signal: context.signal,
-        approve: context.approve,
-      }),
+    executor: { execute: (name, args, context) => tools.execute(name, args, context) },
   }
 }
 
