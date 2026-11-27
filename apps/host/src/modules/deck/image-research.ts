@@ -8,8 +8,8 @@ import type {
   OutlineImageReview,
   ImageSourceCheck,
 } from '@deckagent/deck'
-import { ResearchFailure } from '../research/index.ts'
-import type { ResearchCoordinator } from '../research/index.ts'
+import { ResearchError } from '../research/index.ts'
+import type { ResearchService } from '../research/index.ts'
 import type { CommonsImages, CommonsCandidate } from './images/index.ts'
 import { PublicImageReader, ImageReadError, imageSource, ImageSourceError } from './images/index.ts'
 import { imagePageCredit } from './image-credit.ts'
@@ -19,7 +19,7 @@ import type { Candidate } from './image-review-run.ts'
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
 const code = (error: unknown) =>
-  error instanceof DeckError || error instanceof ResearchFailure ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
+  error instanceof DeckError || error instanceof ResearchError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
 
 type SourceResolution =
   | { readonly kind: 'credit'; readonly credit: ImageCredit }
@@ -27,7 +27,7 @@ type SourceResolution =
 
 export class WebImageResearch {
   constructor(
-    private readonly research: Pick<ResearchCoordinator, 'imageSearch'>,
+    private readonly research: Pick<ResearchService, 'imageSearch'>,
     private readonly commons: CommonsImages,
     private readonly parser: ImageParserPort,
     private readonly reader = new PublicImageReader(),

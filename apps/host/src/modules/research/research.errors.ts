@@ -1,7 +1,29 @@
 import type { HttpFailureResponse } from '../../http/route-helpers.ts'
-import { ResearchFailure } from './research.service.ts'
 
-const researchStatus: Readonly<Record<string, number>> = {
+export type ResearchErrorCode =
+  | 'INVALID_REQUEST'
+  | 'PREFERENCES_STALE'
+  | 'SOURCE_ARGUMENTS_INVALID'
+  | 'SESSION_NOT_FOUND'
+  | 'RESEARCH_KEY_UNAVAILABLE'
+  | 'RESEARCH_KEY_REJECTED'
+  | 'RESEARCH_QUOTA_EXHAUSTED'
+  | 'RESEARCH_FREE_ONLY'
+  | 'RESEARCH_RESPONSE_TOO_LARGE'
+  | 'RESEARCH_UNAVAILABLE'
+  | 'RESEARCH_NOT_SAVED'
+
+export class ResearchError extends Error {
+  constructor(
+    readonly code: ResearchErrorCode,
+    readonly detail?: Readonly<Record<string, string | boolean>>,
+  ) {
+    super(code)
+    this.name = 'ResearchError'
+  }
+}
+
+const researchStatus: Readonly<Record<ResearchErrorCode, number>> = {
   INVALID_REQUEST: 400,
   PREFERENCES_STALE: 409,
   SOURCE_ARGUMENTS_INVALID: 400,
@@ -15,10 +37,10 @@ const researchStatus: Readonly<Record<string, number>> = {
   RESEARCH_NOT_SAVED: 500,
 }
 
-export function mapResearchFailure(error: unknown): HttpFailureResponse | undefined {
-  if (!(error instanceof ResearchFailure)) return undefined
+export function mapResearchError(error: unknown): HttpFailureResponse | undefined {
+  if (!(error instanceof ResearchError)) return undefined
   return {
-    status: researchStatus[error.code] ?? 500,
+    status: researchStatus[error.code],
     code: error.code,
     ...(error.detail ? { detail: error.detail } : {}),
   }

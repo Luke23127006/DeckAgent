@@ -1,11 +1,11 @@
 import { HttpError, json, param, params, readJson, route } from '../../http/route-helpers.ts'
 import { decodeResearchSaveBody, decodeResearchRemoveBody, RequestValidationError } from '@deckagent/host-contracts'
 import { Router } from 'express'
-import type { ResearchOperations } from './research.service.ts'
+import type { ResearchService } from './research.service.ts'
 
 const WORD_ID = /^[\w-]{1,100}$/
 
-export function createResearchRoutes(research: ResearchOperations): Router {
+export function createResearchRoutes(research: ResearchService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   router.put(
     '/api/research',

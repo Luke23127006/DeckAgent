@@ -24,7 +24,7 @@ Notable changes to this repository. The newest changes are at the top.
 ### Changed
 - Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.
 - Serve the Vite output in `apps/web/dist` from the Host with an SPA fallback and a dynamic `/theme.js`, and remove `loadWebAssets`, `apps/web/src/index.ts` and the Host dependency on `@deckagent/local-web`.
-- Move the provider error class into `providers.errors.ts` as `ProviderError`, rename the provider check type to `ProviderCheckCode`, move the API protocol list into `@deckagent/host-contracts`, and replace `ProviderConfigurations` with `ProviderService`, dropping `ProviderOperations` and narrowing `modules/providers/index.ts`.
+- Refactor `providers` and `research` behind `ProviderService`, `ProviderError`, `ResearchService`, `ResearchError`, `TavilyErrorCode` and split `ResearchChats`/`ResearchRuns` ports, move `providerProtocols` into `@deckagent/host-contracts`, narrow both module indexes, and enable `role-file-symbol` for both modules.
 - Replace the chat operation functions with `ChatService` and `ChatRequestService`, move the chat error class, the error map and the conversation contribution into their own files, and narrow `modules/chats/index.ts` to the symbols that other modules use.
 - Add Zod chat and approval body decoders in `@deckagent/host-contracts`, and split `apps/host/src/modules/chats/message.ts` into `message-validation.ts` and `chat-text.ts`.
 - Move HTTP helpers into Host and remove the host-api package. Enforce HTTP helper boundaries for module routes and error maps.

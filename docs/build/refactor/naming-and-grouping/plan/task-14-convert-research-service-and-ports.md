@@ -62,7 +62,7 @@ export class ResearchService {
 
 **Forbidden:** Do not change `apps/host/src/db/`. Do not change the bodies of the methods of the research service, except the names `this.sessions.getInfo` and `this.sessions.requests`. In `apps/host/src/modules/chats/chats.service.ts`, keep the other interfaces of the `implements` clause.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `apps/host/tests/research.test.mjs`, add these two tests at the end of the file:
 
@@ -129,12 +129,12 @@ test('research index exports ResearchService and only the operations that caller
 })
 ```
 
-- [ ] **Step 2: Build and run the tests, and make sure that they fail**
+- [x] **Step 2: Build and run the tests, and make sure that they fail**
 
 Run: `corepack pnpm@11.28.5 build; node --test --test-reporter=tap apps/host/tests/research.test.mjs`
 Expected: FAIL. `app.ResearchService` is not a constructor, and the index exports `ResearchCoordinator` and `TavilyError`.
 
-- [ ] **Step 3: Split the ports and rename the class**
+- [x] **Step 3: Split the ports and rename the class**
 
 1. In `apps/host/src/modules/research/research.service.ts`, replace `ResearchSessionStore` with `ResearchChats` and `ResearchRuns` as Interfaces gives them. Remove `ResearchOperations`. Rename `ResearchCoordinator` to `ResearchService` and use the constructor of Interfaces. Replace `this.sessions.getInfo` with `this.chats.getInfo`, and each `this.sessions.requests.` with `this.runs.`.
 2. In `apps/host/src/modules/research/research.routes.ts`, import `type { ResearchService }` from `./research.service.ts` and change the parameter type of `createResearchRoutes`.
@@ -143,7 +143,7 @@ Expected: FAIL. `app.ResearchService` is not a constructor, and the index export
 5. In `apps/host/src/modules/deck/image-research.ts`, replace `ResearchCoordinator` with `ResearchService` in the import and in `Pick<..., 'imageSearch'>`.
 6. In `apps/host/src/server.ts`, replace `ResearchCoordinator` with `ResearchService`. In `createRuntimeLayer`, replace the argument `{ getInfo: id => sessions.chats.getInfo(id), requests: sessions.runs }` with the two arguments `chats, sessions.runs`. `chats` is the `ChatService` that `createRuntimeLayer` already creates.
 
-- [ ] **Step 4: Build, run the tests and run the checks**
+- [x] **Step 4: Build, run the tests and run the checks**
 
 Run: `corepack pnpm@11.28.5 build && node --test --test-reporter=tap apps/host/tests/research.test.mjs apps/host/tests/image-research.test.mjs apps/host/tests/research-image-generation.test.mjs e2e/source-requests.test.mjs`
 Expected: exit code 0 and `# fail 0`.
@@ -154,6 +154,6 @@ Expected: no line.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

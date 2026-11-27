@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { CredentialStore } from '../../credential-store.ts'
 import { TavilyError, type TavilyClient, type ResearchResult } from './tavily.ts'
 import type { SqliteResearchStore } from './research.store.ts'
+import { ResearchError } from './research.errors.ts'
 
 export interface ResearchSourceRecord {
   readonly sourceId: string
@@ -19,18 +20,19 @@ export interface ResearchSourceRecord {
   readonly location: { readonly kind: 'research-result'; readonly start: 0; readonly end: number }
 }
 
-export interface ResearchSessionStore {
+export interface ResearchChats {
   getInfo(sessionId: string): Promise<unknown>
-  readonly requests: {
-    reserveResearch(requestId: string, sessionId: string): void
-    recordResearch(
-      requestId: string,
-      sessionId: string,
-      query: string,
-      result: ResearchResult,
-    ): readonly ResearchSourceRecord[]
-    researchSources(sessionId: string): readonly ResearchSourceRecord[]
-  }
+}
+
+export interface ResearchRuns {
+  reserveResearch(requestId: string, sessionId: string): void
+  recordResearch(
+    requestId: string,
+    sessionId: string,
+    query: string,
+    result: ResearchResult,
+  ): readonly ResearchSourceRecord[]
+  researchSources(sessionId: string): readonly ResearchSourceRecord[]
 }
 
 export interface ResearchSettings {
@@ -42,24 +44,8 @@ export interface ResearchSettings {
 
 type ResearchSaveInput = { readonly key: string } | { readonly useEnvironment: true }
 
-export interface ResearchOperations {
-  save(value: ResearchSaveInput, expectedVersion: number): Promise<void>
-  remove(expectedVersion: number): Promise<void>
-  sources(sessionId: string): Promise<readonly ResearchSourceRecord[]>
-}
-
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-
-export class ResearchFailure extends Error {
-  constructor(
-    readonly code: string,
-    readonly detail?: Readonly<Record<string, string | boolean>>,
-  ) {
-    super(code)
-    this.name = 'ResearchFailure'
-  }
-}
 
 interface Configuration {
   readonly revision: string
@@ -69,14 +55,15 @@ interface Configuration {
 }
 
 /** Web configuration owns references only; immutable request capabilities retain the admitted key. */
-export class ResearchCoordinator {
+export class ResearchService {
   private queue: Promise<void> = Promise.resolve()
   private settingsQueue: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly store: SqliteResearchStore,
     private readonly credentials: CredentialStore,
-    private readonly sessions: ResearchSessionStore,
+    private readonly chats: ResearchChats,
+    private readonly runs: ResearchRuns,
     private readonly environmentKey: string | undefined,
     private readonly client: Pick<TavilyClient, 'check' | 'search' | 'images'>,
     private readonly onPreferencesChanged?: (version: number) => void,
@@ -96,7 +83,7 @@ export class ResearchCoordinator {
       } catch {
         /* Fail closed on damaged configuration. */
       }
-      throw new ResearchFailure('RESEARCH_UNAVAILABLE')
+      throw new ResearchError('RESEARCH_UNAVAILABLE')
     }
     return {
       revision: createHash('sha256')
@@ -116,13 +103,13 @@ export class ResearchCoordinator {
   }
 
   private async key(config: Configuration): Promise<string> {
-    if (config.disabled) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
+    if (config.disabled) throw new ResearchError('RESEARCH_UNAVAILABLE')
     try {
       const key = config.reference ? await this.credentials.read(config.reference) : this.environmentKey
       if (!key?.trim() || key.length > 4096) throw new Error()
       return key
     } catch {
-      throw new ResearchFailure('RESEARCH_KEY_UNAVAILABLE')
+      throw new ResearchError('RESEARCH_KEY_UNAVAILABLE')
     }
   }
 
@@ -134,13 +121,13 @@ export class ResearchCoordinator {
 
   async save(value: ResearchSaveInput, expectedVersion: number) {
     await this.change(async () => {
-      if (expectedVersion !== this.store.version()) throw new ResearchFailure('PREFERENCES_STALE')
+      if (expectedVersion !== this.store.version()) throw new ResearchError('PREFERENCES_STALE')
       const key = 'useEnvironment' in value ? this.environmentKey : value.key
-      if (!key) throw new ResearchFailure('RESEARCH_KEY_UNAVAILABLE')
+      if (!key) throw new ResearchError('RESEARCH_KEY_UNAVAILABLE')
       try {
         await this.client.check(key, AbortSignal.timeout(15_000))
       } catch (error) {
-        if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+        if (error instanceof TavilyError) throw new ResearchError(error.code)
         throw error
       }
       const previous = this.configuration()
@@ -154,11 +141,11 @@ export class ResearchCoordinator {
         )
       } catch {
         if (reference) await this.credentials.remove(reference).catch(() => {})
-        throw new ResearchFailure('RESEARCH_NOT_SAVED')
+        throw new ResearchError('RESEARCH_NOT_SAVED')
       }
       if (version === undefined) {
         if (reference) await this.credentials.remove(reference).catch(() => {})
-        throw new ResearchFailure('PREFERENCES_STALE')
+        throw new ResearchError('PREFERENCES_STALE')
       }
       this.onPreferencesChanged?.(version)
       if (previous.reference) await this.credentials.remove(previous.reference).catch(() => {})
@@ -167,18 +154,18 @@ export class ResearchCoordinator {
 
   async remove(expectedVersion: number) {
     await this.change(async () => {
-      if (expectedVersion !== this.store.version()) throw new ResearchFailure('PREFERENCES_STALE')
+      if (expectedVersion !== this.store.version()) throw new ResearchError('PREFERENCES_STALE')
       const previous = this.configuration()
       const version = this.store.put(JSON.stringify({ revision: randomUUID(), disabled: true }), expectedVersion)
-      if (version === undefined) throw new ResearchFailure('PREFERENCES_STALE')
+      if (version === undefined) throw new ResearchError('PREFERENCES_STALE')
       this.onPreferencesChanged?.(version)
       if (previous.reference) await this.credentials.remove(previous.reference).catch(() => {})
     })
   }
 
   async sources(sessionId: string): Promise<readonly ResearchSourceRecord[]> {
-    if (!(await this.sessions.getInfo(sessionId))) throw new ResearchFailure('SESSION_NOT_FOUND')
-    return this.sessions.requests.researchSources(sessionId)
+    if (!(await this.chats.getInfo(sessionId))) throw new ResearchError('SESSION_NOT_FOUND')
+    return this.runs.researchSources(sessionId)
   }
 
   async prepare(selected: boolean) {
@@ -190,17 +177,17 @@ export class ResearchCoordinator {
       search: async (query: string, requestId: string, sessionId: string, signal: AbortSignal) => {
         // Reserve outside the queue: waiting, failed and cancelled attempts never replenish a budget.
         signal.throwIfAborted()
-        this.sessions.requests.reserveResearch(requestId, sessionId)
+        this.runs.reserveResearch(requestId, sessionId)
         const work = this.queue.then(async () => {
           signal.throwIfAborted()
-          if (query.includes(key)) throw new ResearchFailure('SOURCE_ARGUMENTS_INVALID')
+          if (query.includes(key)) throw new ResearchError('SOURCE_ARGUMENTS_INVALID')
           const result = await this.client.search(key, query, signal).catch(error => {
-            if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+            if (error instanceof TavilyError) throw new ResearchError(error.code)
             throw error
           })
           signal.throwIfAborted()
-          if (JSON.stringify(result).includes(key)) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
-          return this.sessions.requests.recordResearch(requestId, sessionId, query, result)
+          if (JSON.stringify(result).includes(key)) throw new ResearchError('RESEARCH_UNAVAILABLE')
+          return this.runs.recordResearch(requestId, sessionId, query, result)
         })
         this.queue = work.then(
           () => {},
@@ -214,15 +201,15 @@ export class ResearchCoordinator {
   /** Image-only capability: neither grants text research nor writes text source receipts. */
   async imageSearch(query: string, signal: AbortSignal) {
     const key = await this.key(this.configuration())
-    if (query.includes(key)) throw new ResearchFailure('SOURCE_ARGUMENTS_INVALID')
+    if (query.includes(key)) throw new ResearchError('SOURCE_ARGUMENTS_INVALID')
     const work = this.queue.then(async () => {
       signal.throwIfAborted()
       const images = await this.client.images(key, query, signal).catch(error => {
-        if (error instanceof TavilyError) throw new ResearchFailure(error.code)
+        if (error instanceof TavilyError) throw new ResearchError(error.code)
         throw error
       })
       signal.throwIfAborted()
-      if (JSON.stringify(images).includes(key)) throw new ResearchFailure('RESEARCH_UNAVAILABLE')
+      if (JSON.stringify(images).includes(key)) throw new ResearchError('RESEARCH_UNAVAILABLE')
       return images
     })
     this.queue = work.then(

@@ -27,7 +27,7 @@ Read this file to learn the steps of Task 15, which enables `role-file-symbol` f
 
 **Forbidden:** Do not change `apps/web/`, `packages/presentation/` or the expected values of HTTP black-box tests. Do not remove or reorder the entries that `ROLE_FILE_MODULES` already has.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/check-boundaries.test.mjs`:
 
@@ -78,19 +78,19 @@ test('checkBoundaries applies role symbol checks to providers and research by de
 })
 ```
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/check-boundaries.test.mjs`
 Expected: FAIL. The new test fails because `providers` and `research` are not in `ROLE_FILE_MODULES`.
 
-- [ ] **Step 3: Add `providers` and `research` to `ROLE_FILE_MODULES`**
+- [x] **Step 3: Add `providers` and `research` to `ROLE_FILE_MODULES`**
 
 In `scripts/check-boundaries.mjs`, add `'providers', 'research'` to the end of the array `ROLE_FILE_MODULES`.
 
 Run: `node --test --test-reporter=tap tests/check-boundaries.test.mjs && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0, `# fail 0` and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 4: Check that no old provider or research symbol stays**
+- [x] **Step 4: Check that no old provider or research symbol stays**
 
 Run: `git grep -n -E "ProviderConfigurations|ProviderOperations|\bProviderFailure\b|mapProviderFailure|ResearchCoordinator|ResearchOperations|ResearchSessionStore|ResearchFailure|mapResearchFailure" -- apps/host/src apps/host/tests e2e`
 Expected: exit code 1 and no line.
@@ -113,6 +113,6 @@ If a suite fails because of a Phase 4 defect, fix the defect, build again, and r
 
 Expected: exit code 0, and `# fail 0` for each of the 19 suites. Record the table `Script | Exit code | Tests passed` in the report.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

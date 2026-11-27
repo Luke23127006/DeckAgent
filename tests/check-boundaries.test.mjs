@@ -499,3 +499,49 @@ test('checkBoundaries applies role symbol checks to attachments by default', () 
     ],
   )
 })
+
+test('checkBoundaries applies role symbol checks to providers and research by default', () => {
+  const invalid = [
+    {
+      path: 'apps/host/src/modules/providers/providers.service.ts',
+      content: 'export class ProviderConfigurations {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/providers/providers.errors.ts',
+      content: 'export class ProviderFailure extends Error {}\nexport function mapProviderFailure() {}\n',
+    },
+    { path: 'apps/host/src/modules/research/research.service.ts', content: 'export class ResearchCoordinator {}\n' },
+    { path: 'apps/host/src/modules/research/tavily.ts', content: 'export class TavilyService {}\n' },
+  ]
+  assert.deepEqual(findings(invalid), [
+    { path: 'apps/host/src/modules/providers/providers.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/providers/providers.errors.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/providers/providers.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/research/research.service.ts', line: 1, rule: 'role-file-symbol' },
+    { path: 'apps/host/src/modules/research/tavily.ts', line: 1, rule: 'role-file-symbol' },
+  ])
+  const valid = [
+    { path: 'apps/host/src/modules/providers/providers.service.ts', content: 'export class ProviderService {}\n' },
+    { path: 'apps/host/src/modules/providers/providers.store.ts', content: 'export class SqliteProviderStore {}\n' },
+    {
+      path: 'apps/host/src/modules/providers/providers.routes.ts',
+      content: 'export function createProviderRoutes() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/providers/providers.errors.ts',
+      content: 'export class ProviderError extends Error {}\nexport function mapProviderError() {}\n',
+    },
+    { path: 'apps/host/src/modules/research/research.service.ts', content: 'export class ResearchService {}\n' },
+    { path: 'apps/host/src/modules/research/research.store.ts', content: 'export class SqliteResearchStore {}\n' },
+    {
+      path: 'apps/host/src/modules/research/research.routes.ts',
+      content: 'export function createResearchRoutes() {}\n',
+    },
+    {
+      path: 'apps/host/src/modules/research/research.errors.ts',
+      content: 'export class ResearchError extends Error {}\nexport function mapResearchError() {}\n',
+    },
+    { path: 'apps/host/src/modules/research/tavily.ts', content: 'export class TavilyClient {}\n' },
+  ]
+  assert.deepEqual(findings(valid), [])
+})

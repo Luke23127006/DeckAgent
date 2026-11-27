@@ -112,3 +112,19 @@ This refactor changed their symbol names only. It did not repair that older simu
 After concurrent source and build changes stabilize, run Step 6 of Task 16 again.
 Repair failures owned by Phase 5. Record failures outside Phase 5 without changing their owners.
 Mark Task 16 and Phase 5 Done only after every required exit check passes or the user explicitly accepts an exception.
+
+## Re-verification after Phase 4 completion
+
+After Tasks 13 to 15 mounted, Step 6 checks ran again on the stabilized workspace:
+
+| Check | Exit code | Result |
+| --- | --- | --- |
+| `corepack pnpm@11.28.5 build` | 0 | All packages and `apps/web/dist` built cleanly |
+| `corepack pnpm@11.28.5 lint` | 0 | 0 warnings, 0 errors |
+| `corepack pnpm@11.28.5 check:boundaries` | 0 | `0 violation(s)` with `chats`, `attachments`, `workspaces`, `providers`, `research` |
+| `corepack pnpm@11.28.5 check:docs` | 0 | 0 errors |
+| `corepack pnpm@11.28.5 --filter @deckagent/local-web exec vitest run --configLoader native` | 0 | 5/5 files, 13/13 tests passed |
+| 18 of 19 non-live `test:*` scripts (including `test:attachments` 32/32 and `test:local-foundation` 63/63) | 0 | All passed with `# fail 0` |
+| `test:browser-smoke` | 1 | 20/22 passed; 2 failed outside Phase 5 (`Create deck UI ...` line 762 and `interactive composer ...` line 1261 `History discard guard missing`). Attachment browser tests passed |
+
+Task 16 remains `Blocked: implementation complete, exit check failed` because `test:browser-smoke` still has 2 failures outside Phase 5.

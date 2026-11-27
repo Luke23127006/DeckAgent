@@ -1,5 +1,13 @@
+export type TavilyErrorCode =
+  | 'SOURCE_ARGUMENTS_INVALID'
+  | 'RESEARCH_KEY_REJECTED'
+  | 'RESEARCH_QUOTA_EXHAUSTED'
+  | 'RESEARCH_UNAVAILABLE'
+  | 'RESEARCH_RESPONSE_TOO_LARGE'
+  | 'RESEARCH_FREE_ONLY'
+
 export class TavilyError extends Error {
-  constructor(readonly code: string) {
+  constructor(readonly code: TavilyErrorCode) {
     super(code)
     this.name = 'TavilyError'
   }
@@ -17,7 +25,7 @@ export interface ResearchResult {
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-const failure = (code = 'RESEARCH_UNAVAILABLE') => new TavilyError(code)
+const failure = (code: TavilyErrorCode = 'RESEARCH_UNAVAILABLE') => new TavilyError(code)
 
 export interface ImageSearchCandidate {
   readonly imageUrl: string

@@ -1,4 +1,4 @@
-import { ResearchFailure } from '../research/index.ts'
+import { ResearchError } from '../research/index.ts'
 import { DeckError, validateConfirmation } from '@deckagent/deck'
 import type { DeckStore, ConfirmationReceipt } from '@deckagent/deck'
 import { RunFailure } from '../../runs/ports.ts'
@@ -130,7 +130,7 @@ export class ConfirmationCoordinator {
       error instanceof DeckWorkflowFailure ||
       error instanceof RunFailure ||
       error instanceof ChatError ||
-      error instanceof ResearchFailure ||
+      error instanceof ResearchError ||
       (error instanceof Error &&
         'status' in error &&
         typeof error.status === 'number' &&

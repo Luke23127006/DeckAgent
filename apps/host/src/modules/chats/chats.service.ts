@@ -8,6 +8,7 @@ import type {
   WebSession,
 } from '@deckagent/host-contracts'
 import type { WorkspaceChats, WorkspaceLookup } from '../workspaces/index.ts'
+import type { ResearchChats } from '../research/index.ts'
 import { ChatError } from './chats.errors.ts'
 
 /** One saved chat as the chat store reads it. */
@@ -59,7 +60,7 @@ export interface ChatMarks {
 }
 
 /** Coordinates chat creation, model selection, listing, search, and Browser projection. */
-export class ChatService implements WorkspaceChats, AttachmentChats {
+export class ChatService implements WorkspaceChats, AttachmentChats, ResearchChats {
   constructor(
     private readonly store: ChatStore,
     private readonly runs: ChatRuns,

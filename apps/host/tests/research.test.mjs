@@ -7,6 +7,8 @@ import { join } from 'node:path'
 import { startApp, finished, filesContaining, waitFor, MemoryCredentials } from './fixtures/b02-helpers.mjs'
 import { openSessionStore } from './fixtures/session-store.mjs'
 import { DatabaseSync } from 'node:sqlite'
+import { ResearchError, mapResearchError } from '../lib/types/modules/research/research.errors.js'
+import { TavilyError } from '../lib/types/modules/research/tavily.js'
 
 const freeUsage = {
   key: { usage: 0, limit: null },
@@ -295,4 +297,87 @@ test('Stop aborts research network work and prevents late sources from being com
   assert.equal((await f.client.stop(accepted.requestId)).status, 'stopped')
   await waitFor(() => aborted)
   assert.deepEqual((await f.call('sessions/' + chat.sessionId + '/research-sources')).data, [])
+})
+
+test('ResearchError and mapResearchError map codes to HTTP status and detail', () => {
+  const freeOnly = new ResearchError('RESEARCH_FREE_ONLY')
+  assert.equal(freeOnly.name, 'ResearchError')
+  assert.deepEqual(mapResearchError(freeOnly), { status: 503, code: 'RESEARCH_FREE_ONLY' })
+  assert.deepEqual(mapResearchError(new ResearchError('SESSION_NOT_FOUND')), { status: 404, code: 'SESSION_NOT_FOUND' })
+  assert.deepEqual(mapResearchError(new ResearchError('SOURCE_ARGUMENTS_INVALID')), {
+    status: 400,
+    code: 'SOURCE_ARGUMENTS_INVALID',
+  })
+  assert.deepEqual(mapResearchError(new ResearchError('PREFERENCES_STALE', { field: 'expectedVersion' })), {
+    status: 409,
+    code: 'PREFERENCES_STALE',
+    detail: { field: 'expectedVersion' },
+  })
+  assert.deepEqual(mapResearchError(new ResearchError('RESEARCH_NOT_SAVED')), {
+    status: 500,
+    code: 'RESEARCH_NOT_SAVED',
+  })
+  assert.equal(mapResearchError(new TavilyError('RESEARCH_UNAVAILABLE')), undefined)
+  assert.equal(mapResearchError(new Error('other')), undefined)
+})
+
+test('ResearchService reads chats through ResearchChats and records sources through ResearchRuns', async () => {
+  const db = new DatabaseSync(':memory:')
+  db.exec(
+    "CREATE TABLE preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL); CREATE TABLE change_versions (topic TEXT NOT NULL, key TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY (topic, key)); INSERT INTO change_versions (topic, key, version) VALUES ('preferences', 'host', 0)",
+  )
+  const source = { sourceId: 'research-1' }
+  const calls = []
+  const chats = { getInfo: async id => (id === 'chat-1' ? { sessionId: id } : undefined) }
+  const runs = {
+    reserveResearch: (requestId, sessionId) => calls.push(['reserve', requestId, sessionId]),
+    recordResearch: (requestId, sessionId, query) => {
+      calls.push(['record', requestId, sessionId, query])
+      return [source]
+    },
+    researchSources: sessionId => {
+      calls.push(['sources', sessionId])
+      return [source]
+    },
+  }
+  const client = {
+    check: async () => {},
+    search: async () => ({
+      requestId: 'tavily-1',
+      results: [{ title: 'Public source', url: 'https://example.org/a', content: 'Known.', partial: true }],
+    }),
+    images: async () => [],
+  }
+  const research = new app.ResearchService(
+    new app.SqliteResearchStore(db),
+    new MemoryCredentials(),
+    chats,
+    runs,
+    'environment-key',
+    client,
+  )
+  assert.deepEqual(await research.sources('chat-1'), [source])
+  await assert.rejects(
+    research.sources('missing'),
+    error => error instanceof app.ResearchError && error.code === 'SESSION_NOT_FOUND',
+  )
+  const prepared = await research.prepare(true)
+  assert.deepEqual(await prepared.search('public topic', 'request-1', 'chat-1', new AbortController().signal), [source])
+  assert.deepEqual(calls, [
+    ['sources', 'chat-1'],
+    ['reserve', 'request-1', 'chat-1'],
+    ['record', 'request-1', 'chat-1', 'public topic'],
+  ])
+  db.close()
+})
+
+test('research index exports ResearchService and only the operations that callers use', () => {
+  assert.deepEqual(Object.keys(app).toSorted(), [
+    'ResearchError',
+    'ResearchService',
+    'SqliteResearchStore',
+    'TavilyClient',
+    'createResearchRoutes',
+    'mapResearchError',
+  ])
 })

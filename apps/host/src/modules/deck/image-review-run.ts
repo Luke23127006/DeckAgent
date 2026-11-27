@@ -10,11 +10,11 @@ import type {
 import { ImageReadError, ImageSourceError, imageSource } from './images/index.ts'
 import type { CommonsCandidate } from './images/index.ts'
 import type { ImageSearchCandidate } from '../research/index.ts'
-import { ResearchFailure } from '../research/index.ts'
+import { ResearchError } from '../research/index.ts'
 import type { WebImageResearch } from './image-research.ts'
 
 const code = (error: unknown) =>
-  error instanceof DeckError || error instanceof ResearchFailure ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
+  error instanceof DeckError || error instanceof ResearchError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
 
 export interface Candidate extends ImageSearchCandidate {
   readonly candidateId: string

@@ -56,11 +56,11 @@ import {
 } from './modules/attachments/index.ts'
 import { prepareSourceTools, createSourceToolsContribution, mapSourceToolFailure } from './tools/index.ts'
 import {
-  ResearchCoordinator,
+  ResearchService,
   SqliteResearchStore,
   TavilyClient,
   createResearchRoutes,
-  mapResearchFailure,
+  mapResearchError,
 } from './modules/research/index.ts'
 import { createSettingsRoutes } from './settings-routes.ts'
 import {
@@ -147,7 +147,7 @@ interface RuntimeLayer {
   readonly chats: ChatService
   readonly providers: ProviderService
   readonly runtime: OpenCodeAgentRuntime
-  readonly research: ResearchCoordinator
+  readonly research: ResearchService
   readonly images: WebImageResearch
   readonly inputs: AttachmentService
   readonly generationRuntime?: GenerationRuntimeOverride
@@ -340,10 +340,11 @@ async function createRuntimeLayer(
     options.openCode,
   )
   await openCode.availability()
-  const research = new ResearchCoordinator(
+  const research = new ResearchService(
     new SqliteResearchStore(web.db),
     credentials,
-    { getInfo: id => sessions.chats.getInfo(id), requests: sessions.runs },
+    chats,
+    sessions.runs,
     options.researchAccess ? options.researchAccess.key : process.env.TAVILY_API_KEY,
     new TavilyClient(options.researchAccess?.fetch),
     version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
@@ -587,7 +588,7 @@ function createHostOptions(
       mapChatError(error) ??
       mapProviderError(error) ??
       mapAttachmentError(error) ??
-      mapResearchFailure(error) ??
+      mapResearchError(error) ??
       mapDeckFailure(error) ??
       mapSourceToolFailure(error) ??
       mapWebStateFailure(error) ??

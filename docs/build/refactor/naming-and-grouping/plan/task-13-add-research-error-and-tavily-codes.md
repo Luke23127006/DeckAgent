@@ -36,7 +36,7 @@ Read this file to learn the steps of Task 13, which moves the research error cla
 
 **Forbidden:** Do not rename `ResearchCoordinator`, `ResearchOperations` or `ResearchSessionStore` in this task. In `apps/host/src/modules/deck/`, change only the import and the name `ResearchFailure`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `apps/host/tests/research.test.mjs`, add these imports:
 
@@ -68,12 +68,12 @@ test('ResearchError and mapResearchError map codes to HTTP status and detail', (
 })
 ```
 
-- [ ] **Step 2: Build and run the test, and make sure that it fails**
+- [x] **Step 2: Build and run the test, and make sure that it fails**
 
 Run: `corepack pnpm@11.28.5 build; node --test --test-reporter=tap apps/host/tests/research.test.mjs`
 Expected: FAIL. `ResearchError` is not exported from `research.errors.js`.
 
-- [ ] **Step 3: Move the research error and type the Tavily codes**
+- [x] **Step 3: Move the research error and type the Tavily codes**
 
 1. In `apps/host/src/modules/research/research.errors.ts`, add `ResearchErrorCode` with the 11 keys of `researchStatus`, and `ResearchError` as Interfaces gives it. Type `researchStatus` as `Readonly<Record<ResearchErrorCode, number>>`. Rename `mapResearchFailure` to `mapResearchError`, and use `researchStatus[error.code]` without `?? 500`. Remove the import of `./research.service.ts`.
 2. In `apps/host/src/modules/research/tavily.ts`, add `TavilyErrorCode` and change `TavilyError` and `failure` as Interfaces gives them.
@@ -82,7 +82,7 @@ Expected: FAIL. `ResearchError` is not exported from `research.errors.js`.
 5. In the three files of `apps/host/src/modules/deck/` in the `Files` block, replace `ResearchFailure` with `ResearchError` in the import and in each use.
 6. In `apps/host/src/server.ts`, replace `mapResearchFailure` with `mapResearchError` in the import and in the call.
 
-- [ ] **Step 4: Build, run the tests and run the checks**
+- [x] **Step 4: Build, run the tests and run the checks**
 
 Run: `corepack pnpm@11.28.5 build && node --test --test-reporter=tap apps/host/tests/research.test.mjs apps/host/tests/image-research.test.mjs apps/host/tests/research-image-generation.test.mjs`
 Expected: exit code 0 and `# fail 0`.
@@ -93,6 +93,6 @@ Expected: no line.
 Run: `corepack pnpm@11.28.5 lint && corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
