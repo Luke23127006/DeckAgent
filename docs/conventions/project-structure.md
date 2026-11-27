@@ -67,10 +67,23 @@ apps/host/src/
   runtimes/<name>/     adapter cho port AgentRuntime
   db/                  connection, migration, persistence adapter cho port của runs/
 apps/host/tests/
-apps/web/src/          React và Vite, chia theo feature
-  api/                 HTTP/SSE client
-  features/<name>/
-apps/web/tests/
+apps/web/
+  components.json      cấu hình shadcn/ui
+  src/                 React và Vite, chia theo layer, component của một page đặt cạnh page đó
+    main.tsx           React root, QueryClient, router
+    routes.tsx         bảng route
+    text.ts            văn bản hiển thị cho người dùng
+    pages/<page>/      một màn hình, component riêng của page trong pages/<page>/components/
+    components/        component mà từ hai page trở lên dùng
+      ui/              primitive của shadcn/ui và cn()
+    layouts/           app shell
+    hooks/             query hook, mutation hook, hook UI
+    api/               HTTP/SSE client
+    contexts/          UI state mà từ hai page trở lên đọc
+    editor/            editor core của canvas, không có React và DOM
+    styles/            file Tailwind, theme variable
+  mocks/               MSW handler và fixture, chỉ cho development
+  tests/
 packages/
   contracts/
   presentation/{deck,design,document,html,pptx}/
@@ -97,15 +110,29 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
-| `src/` | Người dùng tương tác với DeckAgent thế nào? | Component và page React, UI-local state, navigation, văn bản lỗi cho người dùng | Request execution authority, filesystem, SQLite, agent process |
-| `src/api/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client | Permission policy, vòng đời run, bảng văn bản lỗi UI |
-| `src/features/<name>/` | UI của một product feature gồm những gì? | Component, hook và state của feature. Feature có editor (ví dụ canvas) tách editor core thuần (model, command, undo) khỏi component React | Lệnh ghi không đi qua `src/api/` |
+| `src/main.tsx`, `src/routes.tsx` | Browser khởi động và chọn màn hình thế nào? | React root, `QueryClient`, bảng route, đọc token từ hash một lần, bật mock khi development | Load data, business rule, request execution authority, filesystem, SQLite, agent process |
+| `src/pages/<page>/` | Một màn hình gồm những gì? | Màn hình của một route, UI-local state, component chỉ page đó dùng trong `pages/<page>/components/` | Gọi `fetch`, decode wire payload |
+| `src/components/` | Component nào nhiều màn hình dùng chung? | Component mà từ hai page trở lên dùng. `components/ui/` chứa primitive của shadcn/ui và `cn()` | Component chỉ một page dùng, product workflow trong `components/ui/` |
+| `src/layouts/` | Khung chung của các màn hình là gì? | App shell, sidebar, window frame | Load data |
+| `src/hooks/` | Màn hình đọc và ghi server data thế nào? | Query hook, mutation hook, hook đọc change feed, hook đọc request stream, hook UI | JSX, gọi `fetch` trực tiếp |
+| `src/api/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response bằng contracts package, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client, query key | React, bảng văn bản lỗi UI, permission policy, vòng đời run |
+| `src/contexts/` | UI state nào nhiều màn hình đọc? | UI state mà từ hai page trở lên đọc, ví dụ workspace đang chọn | Bản sao của server data |
+| `src/editor/` | Editor của canvas giữ model và lệnh thế nào? | Model, command, undo của canvas editor | React, DOM, `fetch` |
+| `src/styles/` | Theme của Browser là gì? | File Tailwind, theme variable cho light và dark, global app shell | Style của từng component |
+| `src/text.ts` | Browser hiển thị chữ gì cho người dùng? | Bảng văn bản UI, bảng ánh xạ mã lỗi typed của client sang văn bản | Logic |
+| `mocks/` | Development chạy không cần Host thế nào? | MSW handler, fixture và file khởi động mock trong browser | Code production, fixture của test |
+
+Component chỉ một page dùng đặt trong `pages/<page>/components/`. Component chỉ lên `components/` khi từ hai page trở lên dùng nó. Khả năng tái sử dụng sau này không phải lý do để chuyển lên sớm *(review)*. Browser không có folder `utils/`, `types/` hay `common/`: helper đặt ở owner dùng nó, type chỉ UI dùng đặt trong file của owner, wire type lấy từ contracts package *(review)*.
+
+Route khai báo bằng React Router ở declarative mode. Router không load data, vì TanStack Query sở hữu server state. Path gồm `/`, `/chats/:sessionId` và `/settings`. Deck đi theo chat và không có path riêng. Host trả `index.html` cho mọi path không phải `/api/` và không phải asset *(review, test)*.
+
+Canvas editor tách editor core trong `src/editor/` khỏi component React trong `pages/deck/`. Lệnh ghi của editor đi qua một mutation hook tới edit operation của `modules/deck/` *(lint: oxlint `no-restricted-imports`)*. Quy tắc viết code của Browser nằm trong [Coding Guidelines](code.md#browser).
 
 ### `packages/`
 
 | Path | Câu hỏi | Sở hữu | Không sở hữu |
 | --- | --- | --- | --- |
-| `contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Zod schema, wire DTO, event envelope, protocol error payload, decode wire payload | HTTP server, store, Browser client, type chỉ Local Host dùng |
+| `contracts/` | Browser và Local Host trao đổi dữ liệu theo contract nào? | Zod schema, wire DTO, event envelope, protocol error payload, decode wire payload. Decoder cho mỗi payload deck mà Browser đọc, gọi decoder của `presentation/document/` | HTTP server, store, Browser client, type chỉ Local Host dùng |
 | `presentation/design/` | Design system, template và layout xác định thế nào? | Design contract, design system và template catalog, theme, layout, compatibility rule | Deck lifecycle, generation, native conversion |
 | `presentation/document/` | Nội dung slide được biểu diễn và kiểm tra thế nào trước khi gắn với format? | SlideDocument, content node, provenance contract, document validation, FormatAdapter contract | Publication authority, concrete conversion |
 | `presentation/html/` | Portable content thành HTML artifact an toàn thế nào? | HTML conversion, giới hạn HTML/CSS, HTML validation | Deck lifecycle, request permission, publication authority |
@@ -148,7 +175,12 @@ flowchart LR
 
 | From | Được phụ thuộc | Không được phụ thuộc |
 | --- | --- | --- |
-| `apps/web/` | `packages/contracts` | `apps/host/`, Node-only module, `packages/presentation/` runtime |
+| Folder mới của `apps/web/src/` | `packages/contracts` | `apps/host/`, Node-only module, package khác của workspace, `mocks/` và `msw` (trừ `main.tsx`) |
+| `apps/web/src/pages/` | `hooks/`, `components/`, `layouts/`, `contexts/`, `text.ts` | `api/` |
+| `apps/web/src/{components,layouts,contexts}/` | `hooks/`, `components/`, `text.ts` | `pages/`, `api/` |
+| `apps/web/src/hooks/` | `api/`, `contexts/`, TanStack Query | `pages/`, `components/`, `layouts/` |
+| `apps/web/src/api/` | `packages/contracts` | React, TanStack Query, `pages/`, `components/`, `layouts/`, `hooks/`, `contexts/` |
+| `apps/web/src/editor/` | `packages/contracts` | React, TanStack Query, `api/` và mọi folder UI |
 | `http/` | Route registrar của module | Service và store của module, business rule |
 | Route của module | Service của cùng module, `packages/contracts` | Store, SQL driver |
 | Service của module | Store của cùng module, public operation của service module khác, public operation của `runs/` | Express, store của module khác |
@@ -179,14 +211,12 @@ Layout cũ và layout đích cùng chạy cho tới khi Target Structure Refacto
 | --- | --- |
 | `packages/host/contracts/` | `packages/contracts/` |
 | `apps/web/src/browser/transport/` | `apps/web/src/api/` |
-| `apps/web/src/browser/**`, `apps/web/src/index.ts` | Component và page React trong `apps/web/src/` |
+| `apps/web/src/browser/**`, `apps/web/src/index.ts` | Các folder trong bảng [`apps/web/`](#appsweb) |
 
 Rule khi đặt và chuyển code:
 
 1. Code mới của một khu vực đã có code cũ đặt vào folder đích khi folder đích của khu vực đó đã có. Khi folder đích chưa có, code mới đặt cạnh code cũ của khu vực đó và theo trách nhiệm của folder đích. Revision chuyển khu vực đó mang cả code cũ và code mới sang folder đích *(review)*.
-2. Code của một khu vực mới, không có folder cũ trong bảng trên, đặt theo trạng thái của `apps/host/` *(review)*:
-   - Khi `apps/host/` chưa có: đặt vào `apps/web/src/features/<name>/` và theo trách nhiệm của `apps/host/src/modules/<name>/`.
-   - Khi `apps/host/` đã có: đặt thẳng vào `apps/host/src/modules/<name>/`.
+2. Code Host của một khu vực mới, không có folder cũ trong bảng trên, đặt thẳng vào `apps/host/src/modules/<name>/` *(review)*.
 3. Chỉ một revision trong plan của Target Structure Refactor chuyển folder cũ, hoặc tạo folder đích cho một khu vực đã có code cũ *(review)*. Ngoại lệ duy nhất: revision của Phase 2 chuyển toàn bộ Node code trong `apps/web/src/` sang `apps/host/src/` và giữ tên file và tên folder (`features/`, `integrations/`). Phase 3 và Phase 4 chuyển các folder đó một lần nữa, sang folder đích trong bảng trên.
 4. Revision chuyển code sửa mọi caller trong cùng revision. Không để lại file re-export ở path cũ *(review)*.
 5. HTTP contract giữa Browser và Local Host giữ nguyên trong lúc chuyển: path, status code và JSON body chỉ đổi khi revision ghi rõ thay đổi đó *(test)*.
@@ -202,7 +232,7 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | --- | --- | --- |
 | Import package chỉ qua `exports`, không qua private subpath, relative path hoặc alias | `oxlint` (`no-restricted-imports`), `check:boundaries` (`private-package-import`, `tsconfig-private-alias`, `unresolved-internal-import`) | — |
 | Browser không import Node-only module | Browser build, `oxlint` (`no-restricted-imports`), `check:boundaries` (`browser-node-import`) | — |
-| Feature, Browser feature, integration, runtime và module không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | Rule theo folder cho `apps/web/src/api/` |
+| Feature, Browser feature, integration, runtime và module không lộ private implementation; Browser transport không import Browser UI feature | `check:boundaries` (`feature-private-import`, `browser-feature-private-import`, `browser-transport-ui-import`, `integration-private-import`, `runtime-private-import`, `module-private-import`) | — |
 | Package graph, feature graph, Browser feature graph và module graph trong `apps/host/src/modules/` không có vòng | `check:boundaries` (`package-cycle`, `feature-cycle`, `browser-feature-cycle`, `module-cycle`) | — |
 | `host/contracts/` không import runtime implementation | `oxlint` (`no-restricted-imports`), `check:boundaries` (`contracts-runtime-import`) | Cùng rule cho `packages/contracts/` |
 | `runs/` không import module, HTTP, Express, SQL driver, `db/`, tool, `@deckagent/deck` hoặc adapter trong `runtimes/` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runs/`, `check:boundaries` (`lifecycle-transport-import`) cho `apps/host/src/runs` | — |
@@ -212,7 +242,12 @@ Cột "Chặn bởi" chỉ ghi công cụ đã có trong repo. Cột "Check mụ
 | `http/` không import feature, module, integration, runtime, `runs/`, store, `db/`, tool, `node:sqlite` hoặc `@deckagent/deck` | `oxlint` (`no-restricted-imports`) cho `apps/host/src/http/` | — |
 | Adapter runtime không import module, Express, `node:sqlite`, `db/`, HTTP edge hoặc Host tools | `oxlint` (`no-restricted-imports`) cho `apps/host/src/runtimes/`, `check:boundaries` (`runtime-private-import`) | — |
 | Route không import store, `schema.ts`, `db/` hoặc SQL driver. Service không import Express, `db/` hoặc SQL driver. Chỉ `*.store.ts` được import `db/`. Chỉ `*.routes.ts` và `*.errors.ts` được import `http/route-helpers.ts` (vẫn chặn `http/{app,start-host,error-handler,change-feed}*`). Module không import store của module khác, tool hoặc runtime | `oxlint` (`no-restricted-imports`) cho `apps/host/src/modules/`, `*.store.ts`, `*.routes.ts`, `*.service.ts` và `*.errors.ts` | — |
-| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host` và domain package trong `apps/web/src/browser/` | `oxlint` (`no-restricted-imports`) cho `apps/web/` |
+| `apps/web/` chỉ import `packages/contracts/` | `check:boundaries` (`browser-node-import`) cho phần Node-only của `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn `@deckagent/host` và domain package trong `apps/web/src/browser/`. `oxlint` (`no-restricted-imports`) chặn Node-only module và mọi package khác `@deckagent/host-contracts` trong các folder mới của `apps/web/src/` | `check:boundaries` (`browser-node-import`) cho toàn bộ `apps/web/src/`, sau khi Phase 7 của Browser in React xoá `apps/web/src/index.ts` |
+| Page, layout, context và component không gọi `api/`. Component, layout và context không import page. Hook không import page, component hay layout | `oxlint` (`no-restricted-imports`) cho `apps/web/src/{pages,components,layouts,contexts,hooks}/` | — |
+| `api/` và `editor/` không import React, TanStack Query hay UI code. `editor/` không gọi `api/` | `oxlint` (`no-restricted-imports`) cho `apps/web/src/{api,editor}/` | — |
+| Code production không import `mocks/` hay `msw`, trừ `src/main.tsx` | `oxlint` (`no-restricted-imports`) cho import tĩnh. Review cho import động | Build check từ chối chunk chứa `mocks/` hoặc MSW |
+| Không dùng `dangerouslySetInnerHTML`. Tên file trong `apps/web/src/` và `apps/web/mocks/` là kebab-case | `oxlint` (`react/no-danger`, `unicorn/filename-case`) | — |
+| Một page không import page khác | Review | — |
 | Tool executor không tự cấp capability, không import module, HTTP, `node:fs`, `node:sqlite`, `db/` hoặc Express | `oxlint` (`no-restricted-imports`) cho `apps/host/src/tools/executors/` | — |
 | State authority, permission, failure invariant | Behavioral test, review | — |
 

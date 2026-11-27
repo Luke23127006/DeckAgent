@@ -115,6 +115,52 @@ Không đưa credential, private storage field hoặc internal error detail vào
 - Khi test cần mô phỏng clock, process hoặc external service, operation nhận dependency đó qua boundary. Cách test dùng fake nằm trong [Testware](testware.md) *(review)*.
 - Không sửa production contract chỉ để một test phụ thuộc implementation detail tiếp tục pass *(review)*.
 
+## Browser
+
+Phần này áp dụng cho code React trong `apps/web/src/`. Folder và dependency của Browser nằm trong [Project Structure](project-structure.md#appsweb).
+
+### File và tên
+
+| File | Symbol chính | Ví dụ |
+| --- | --- | --- |
+| `pages/<page>/<page>-page.tsx` | `<Page>Page` | `chat-page.tsx` export `ChatPage` |
+| `<name>.tsx` trong `components/` hoặc trong một page | Component `<Name>` | `request-row.tsx` export `RequestRow` |
+| `hooks/use-<name>.ts` | `use<Name>` | `use-chats.ts` export `useChats` |
+| `api/<module>.ts` | Function của client và key factory `<module>Keys` | `api/chats.ts` export `listChats` và `chatsKeys` |
+| `api/client.ts` | Function HTTP có bearer token và decode lỗi | — |
+
+- Tên file là kebab-case, kể cả file component *(lint: oxlint `unicorn/filename-case`)*.
+- Tên khái niệm theo bảng [Tên cho khái niệm kỹ thuật](#tên-cho-khái-niệm-kỹ-thuật): type và symbol mới dùng `Chat`. Tham số route của chat là `sessionId` *(review)*.
+
+### Server state và UI state
+
+- Page chỉ đọc server data qua query hook và chỉ ghi qua mutation hook. Hook gọi `api/`. Page, layout, context và component không gọi `api/` *(lint: oxlint `no-restricted-imports`)*.
+- TanStack Query sở hữu server state. Context không giữ bản sao của server data *(review)*.
+- Query key là mảng bắt đầu bằng tên module của Host, ví dụ `['chats']` và `['chats', sessionId, 'requests']`. `api/<module>.ts` export key factory `<module>Keys` *(review)*.
+- Hook đọc change feed invalidate các query có key bắt đầu bằng topic của notice. Hook đó không ghi data vào cache *(review)*.
+- Lệnh ghi gửi kèm `version` mà client đã đọc. Khi nhận lỗi stale, client invalidate query và hiển thị văn bản của mã lỗi đó *(review)*.
+- Hook đọc request stream sở hữu SSE reader và `AbortController` của nó, và dừng reader khi unmount *(review)*.
+- Không lưu vào state một giá trị mà render tính được *(review)*.
+- `api/` và `editor/` không import React hay TanStack Query *(lint: oxlint `no-restricted-imports`)*.
+
+### Style
+
+- Component dùng utility class của Tailwind và không có file CSS riêng *(review)*.
+- Màu lấy từ theme variable của shadcn/ui trong `src/styles/`, không viết giá trị màu trong component. Dark mode dùng class `.dark` *(review)*.
+- Primitive của shadcn/ui nằm trong `components/ui/`. Primitive là code của DeckAgent, nên sửa primitive cũng qua review. Alias `utils` của `components.json` trỏ tới `components/ui/cn` *(review)*.
+
+### Văn bản và lỗi
+
+- Mọi văn bản người dùng thấy nằm trong `src/text.ts`. Component không chứa string cho người dùng *(review)*.
+- `api/` chuyển lỗi HTTP hoặc SSE thành lỗi typed của client, với mã lỗi lấy từ contracts package. `api/` không chọn văn bản *(review)*.
+- `text.ts` ánh xạ mỗi mã lỗi của client sang văn bản với type `Readonly<Record<ClientErrorCode, string>>`, để TypeScript báo mã chưa có văn bản *(typecheck)*.
+
+### Preview
+
+- HTML của deck chỉ render trong `iframe` có attribute `sandbox` rỗng, và `srcDoc` có CSP của slide *(review)*.
+- Không dùng `dangerouslySetInnerHTML` *(lint: oxlint `react/no-danger`)*.
+- Một component sở hữu iframe preview và giữ iframe mounted khi đổi mode *(review)*.
+
 ## Error handling
 
 ### Biểu diễn

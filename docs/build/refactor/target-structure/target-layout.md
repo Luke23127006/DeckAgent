@@ -33,8 +33,8 @@ apps/host/src/
     opencode/          adapter cho port AgentRuntime: process, MCP bridge, parse event
     <name>/            runtime khác, ví dụ coding agent CLI có sẵn trên máy
   db/                  connection và migration
-apps/web/src/          React và Vite, chia theo feature
-  features/canvas/     khi có canvas: editor core thuần (model, command, undo) tách khỏi component React
+apps/web/src/          React và Vite, chia theo layer với page colocation (xem Browser Rules)
+  editor/              khi có canvas: editor core thuần (model, command, undo) tách khỏi component React trong pages/deck/
 packages/contracts/    Zod schema và wire DTO, thuần
 packages/presentation/ design, document, html, pptx: thuần, không I/O
 ```
@@ -112,11 +112,11 @@ create(input: CreateWorkspace) {
 | --- | --- |
 | Một agent runtime thứ hai, ví dụ coding agent CLI có sẵn trên máy (UC-005-A18) | `runtimes/<name>/`, implement port `AgentRuntime` |
 | Skill do hệ thống chọn cho một run | Catalog trong `modules/skills/`. Phần góp skill vào run đăng ký với `runs/preparation/` |
-| Canvas có editing tools (UC-007) | Editor core và component trong `apps/web/src/features/canvas/`. Lệnh ghi gọi edit operation của `modules/deck/` |
+| Canvas có editing tools (UC-007) | Editor core trong `apps/web/src/editor/`, component trong `apps/web/src/pages/deck/`. Lệnh ghi đi qua mutation hook tới edit operation của `modules/deck/` |
 | Design system tự tạo (UC-010) | `modules/design-systems/`. Run đề xuất design system có owner là design system đó |
 | Connector, ví dụ cloud drive | `tools/sources/<connector>/`, đi qua `tools/policy/` |
 | Một format export mới | `packages/presentation/<format>/`, implement FormatAdapter contract của `presentation/document` |
-| Một màn hình settings mới | Folder feature của màn hình đó trong `apps/web/src/`. Endpoint nằm trong module sở hữu setting đó |
+| Một màn hình settings mới | Page của màn hình đó trong `apps/web/src/pages/`. Endpoint nằm trong module sở hữu setting đó |
 | Một rule áp cho toàn bộ HTTP, ví dụ một header | `http/` |
 
 ## Điểm còn mở

@@ -666,6 +666,454 @@
           }
         ]
       }
+    },
+    {
+      "files": [
+        "**/apps/web/src/{pages,components,layouts,contexts,hooks,api,editor,styles}/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/src/routes.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/src/text.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/pages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "UI code must not call src/api/. Read and write server data through a hook in src/hooks/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/{components,layouts,contexts}/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "UI code must not call src/api/. Read and write server data through a hook in src/hooks/."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "@/pages/*"
+                ],
+                "message": "Shared code must not import a page. Move the shared code to src/components/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/hooks/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "@/pages/*"
+                ],
+                "message": "Shared code must not import a page. Move the shared code to src/components/."
+              },
+              {
+                "group": [
+                  "**/components/**",
+                  "@/components/*",
+                  "**/layouts/**",
+                  "@/layouts/*"
+                ],
+                "message": "A hook must not import a component or a layout. Keep JSX out of src/hooks/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/api/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "react",
+                  "react/*",
+                  "react-dom",
+                  "react-dom/*",
+                  "@tanstack/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "**/components/**",
+                  "**/layouts/**",
+                  "**/hooks/**",
+                  "**/contexts/**",
+                  "@/pages/*",
+                  "@/components/*",
+                  "@/layouts/*",
+                  "@/hooks/*",
+                  "@/contexts/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import UI code."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/editor/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "react",
+                  "react/*",
+                  "react-dom",
+                  "react-dom/*",
+                  "@tanstack/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "**/components/**",
+                  "**/layouts/**",
+                  "**/hooks/**",
+                  "**/contexts/**",
+                  "@/pages/*",
+                  "@/components/*",
+                  "@/layouts/*",
+                  "@/hooks/*",
+                  "@/contexts/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import UI code."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "src/editor/ must not call the Host. A page sends editor writes through a mutation hook."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/main.tsx"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/mocks/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "plugins": [
+        "react"
+      ],
+      "rules": {
+        "react/no-danger": "error",
+        "react/react-in-jsx-scope": "off",
+        "unicorn/filename-case": [
+          "error",
+          {
+            "case": "kebabCase"
+          }
+        ]
+      }
     }
   ]
 }

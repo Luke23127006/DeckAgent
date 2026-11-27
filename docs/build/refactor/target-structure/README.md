@@ -46,7 +46,7 @@ The facts below come from a run on 2026-11-25 on branch `refactor` at commit `d0
 | 2 | Host application and Express edge | `plan/` Revision 2 | Phase 1 is done | `apps/host/src/server.ts` and `http/` serve every current route through Express 5. `node:http` routing with regular expressions is removed. HTTP black-box tests pass without changes to their expected values. Folder-level `no-restricted-imports` rules exist, each with a negative fixture (TS-09) |
 | 3 | Domain modules | `plan/` Revisions 3 and later | Phase 2 is done | `workspaces`, `chats`, `providers`, `attachments`, `research`, and `deck` live in `apps/host/src/modules/` with the common module shape. The interface `WebManagement` and `packages/host/api/` are removed. Every store has a `version` and a change notice (TS-12) |
 | 4 | Agent core | `plan/` Revisions after Phase 3 | Phases 1 and 3 are done | `runs/`, `tools/`, and `runtimes/opencode/` implement the Phase 1 contracts. `runs/` imports no module, no Express, and no SQL driver (TS-04, TS-13) |
-| 5 | Browser in React | `plan/` revisions in parallel with Phases 3 and 4 | Phase 2 is done | Every screen is a React component in `apps/web/src/`. No helper that builds DOM by hand remains (TS-07). `apps/web/` imports only `packages/contracts/` (TS-06) |
+| 5 | Browser in React | Browser in React workstream (see [Phase 5](#phase-5-browser-in-react)) | Phase 2 is done | Every screen is a React component in `apps/web/src/`. No helper that builds DOM by hand remains (TS-07). `apps/web/` imports only `packages/contracts/` (TS-06) |
 | 6 | Final hygiene, flow docs, and exit scan | `plan/` last revision | Phases 3, 4, and 5 are done | The items carried from Module Design Phases 3 to 5 are done on the new code. Flow docs exist in Architecture [[7]](#ref-7). A rescan checks every criterion in Target Structure Criteria [[3]](#ref-3) |
 
 ### Phase 1: Conventions and agent core contracts
@@ -78,7 +78,9 @@ Move `packages/host/api/src/lifecycle/`, `packages/tools/filesystem/`, and `apps
 
 ### Phase 5: Browser in React
 
-Replace one screen at a time, so that the Browser works after every revision. Keep the clients in `apps/web/src/browser/transport/` and move them to `apps/web/src/api/`. Add TanStack Query only for server state that more than one screen reads [[10]](#ref-10).
+The Browser in React workstream [[11]](#ref-11) holds the layout, the conventions, the reference products and the phases of this phase. Its plan replaces the plan location in the table above.
+
+Replace one screen at a time, so that the Browser works after every revision. Keep the clients in `apps/web/src/browser/transport/` and move them to `apps/web/src/api/`. TanStack Query owns the server state of every screen, as the Browser Rules of the Browser in React workstream give [[11]](#ref-11).
 
 ### Phase 6: Final hygiene, flow docs, and exit scan
 
@@ -116,3 +118,4 @@ A new chat starts the next phase in four steps:
 8. <a id="ref-8"></a>[Khoảng cách hiện tại](current-gap.md)
 9. <a id="ref-9"></a>[Open Questions](../../../open-questions.md)
 10. <a id="ref-10"></a>[Thư viện](libraries.md)
+11. <a id="ref-11"></a>[Browser in React](../web-react/README.md)

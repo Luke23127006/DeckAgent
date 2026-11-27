@@ -10,12 +10,12 @@
 - Zod 4.6.7 cho validation tại boundary.
 - `node:sqlite` với SQL viết tay.
 - OpenCode 1.19.5 làm agent runtime.
-- `node:test` cho test.
+- `node:test` cho test. Ngoại lệ: test mới của `apps/web/` chạy bằng Vitest, từ khi Vitest được cài.
 - oxlint 1.94.0 cho lint, Biome 2.5.15 cho format.
 - Express 5.2.1 cho HTTP của Local Host, type từ `@types/express` 5.0.6.
 - `busboy` 1.6.0 cho multipart của Local Host. Không dùng `multer`.
 - Security headers của Local Host dùng `setSecurityHeaders` trong `apps/host/src/http/app.ts`. Không dùng `helmet`.
-- Thư viện đích đã chọn, chưa cài: React với Vite cho Browser, TanStack Query cho server state ở Browser. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
+- Thư viện đích của Browser đã chọn, chưa cài: React với Vite, React Router ở declarative mode, TanStack Query cho server state, Tailwind CSS 4 với shadcn/ui, Vitest với jsdom và Testing Library cho test, MSW cho HTTP mock. Phase cài thư viện nào thì chốt version của thư viện đó. Drizzle chưa được chọn.
 
 ## Commands
 

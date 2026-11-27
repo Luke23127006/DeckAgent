@@ -5,6 +5,7 @@
 // - node:fs/promises bypassed node:* in packages/client/runtime/src; test failed until node:*/* was added to .oxlintrc.json.
 // - @ts-expect-error with description bypassed default typescript/ban-ts-comment; test failed until ts-expect-error: true was set.
 // - Removing @deckagent/deck from the apps/web/src/browser override caused the @deckagent/deck browser test to fail.
+// - Each apps/web/src folder test failed before the Browser folder overrides existed in .oxlintrc.json.
 // Run: node --test --test-reporter=tap tests/oxlint-boundaries.test.mjs
 // Expected values source: docs/conventions/project-structure.md (Dependency rules) and docs/conventions/code.md (TypeScript).
 import assert from 'node:assert/strict'
@@ -603,4 +604,94 @@ test('rejects a const enum', () => {
     result.diagnostics.map(d => d.code),
     ['oxc(no-const-enum)'],
   )
+})
+
+const restrictedHelps = result =>
+  result.diagnostics.filter(d => d.code === 'eslint(no-restricted-imports)').map(d => d.help).toSorted()
+
+test('browser pages reject src/api, Node modules, domain packages and mocks', () => {
+  const result = lintFixture(
+    'apps/web/src/pages/chat/chat-page.tsx',
+    "import { a } from '../../api/chats.ts'\nimport { b } from '@/api/chats'\nimport { c } from 'node:path'\nimport { d } from '@deckagent/design'\nimport { e } from '../../../mocks/handlers.ts'\nexport const all = [a, b, c, d, e]\n",
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(restrictedHelps(result), [
+    'Browser code imports only @deckagent/host-contracts from the workspace.',
+    'Browser code must not import Node-only modules.',
+    'Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks.',
+    'UI code must not call src/api/. Read and write server data through a hook in src/hooks/.',
+    'UI code must not call src/api/. Read and write server data through a hook in src/hooks/.',
+  ])
+})
+
+test('browser components, layouts and contexts reject pages and src/api', () => {
+  for (const path of ['apps/web/src/components/request-row.tsx', 'apps/web/src/layouts/app-shell.tsx', 'apps/web/src/contexts/workspace-context.tsx']) {
+    const result = lintFixture(path, "import { a } from '../pages/chat/chat-page.tsx'\nimport { b } from '../api/chats.ts'\nexport const all = [a, b]\n")
+    assert.equal(result.status, 1, path)
+    assert.deepEqual(restrictedHelps(result), [
+      'Shared code must not import a page. Move the shared code to src/components/.',
+      'UI code must not call src/api/. Read and write server data through a hook in src/hooks/.',
+    ], path)
+  }
+})
+
+test('browser hooks reject pages, components and layouts', () => {
+  const result = lintFixture(
+    'apps/web/src/hooks/use-chats.ts',
+    "import { a } from '../pages/chat/chat-page.tsx'\nimport { b } from '../components/request-row.tsx'\nimport { c } from '../layouts/app-shell.tsx'\nexport const all = [a, b, c]\n",
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(restrictedHelps(result), [
+    'A hook must not import a component or a layout. Keep JSX out of src/hooks/.',
+    'A hook must not import a component or a layout. Keep JSX out of src/hooks/.',
+    'Shared code must not import a page. Move the shared code to src/components/.',
+  ])
+})
+
+test('browser api rejects React, TanStack Query, UI code and Node modules', () => {
+  const result = lintFixture(
+    'apps/web/src/api/chats.ts',
+    "import { a } from 'react'\nimport { b } from '@tanstack/react-query'\nimport { c } from '../hooks/use-chats.ts'\nimport { d } from 'node:fs'\nexport const all = [a, b, c, d]\n",
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(restrictedHelps(result), [
+    'Browser code must not import Node-only modules.',
+    'src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code.',
+    'src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code.',
+    'src/api/ and src/editor/ must not import UI code.',
+  ])
+})
+
+test('browser editor rejects React and src/api', () => {
+  const result = lintFixture(
+    'apps/web/src/editor/deck-model.ts',
+    "import { a } from 'react-dom'\nimport { b } from '../api/deck.ts'\nexport const all = [a, b]\n",
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(restrictedHelps(result), [
+    'src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code.',
+    'src/editor/ must not call the Host. A page sends editor writes through a mutation hook.',
+  ])
+})
+
+test('browser files reject a PascalCase file name and dangerouslySetInnerHTML', () => {
+  const result = lintFixture(
+    'apps/web/src/components/RequestRow.tsx',
+    "export const RequestRow = ({ html }: { html: string }) => <div dangerouslySetInnerHTML={{ __html: html }} />\n",
+  )
+  assert.equal(result.status, 1)
+  assert.deepEqual(result.diagnostics.map(d => d.code).toSorted(), ['react(no-danger)', 'unicorn(filename-case)'])
+})
+
+test('browser folders accept the allowed data flow and main.tsx accepts mocks', () => {
+  const fixtures = [
+    ['apps/web/src/pages/chat/chat-page.tsx', "import { useChats } from '../../hooks/use-chats.ts'\nimport { Button } from '../../components/ui/button.tsx'\nimport type { AgentRequest } from '@deckagent/host-contracts'\nimport { useState } from 'react'\nexport const all = [useChats, Button, useState]\nexport type R = AgentRequest\n"],
+    ['apps/web/src/hooks/use-chats.ts', "import { listChats } from '../api/chats.ts'\nimport { useQuery } from '@tanstack/react-query'\nexport const all = [listChats, useQuery]\n"],
+    ['apps/web/src/main.tsx', "import { worker } from '../mocks/browser.ts'\nimport { createRoot } from 'react-dom/client'\nexport const all = [worker, createRoot]\n"],
+  ]
+  for (const [path, code] of fixtures) {
+    const result = lintFixture(path, code)
+    assert.equal(result.status, 0, result.output)
+    assert.deepEqual(result.diagnostics, [], path)
+  }
 })
