@@ -25,7 +25,7 @@ Read this file to learn the steps of Task 2, which adds the function `listDenseB
 
 **Forbidden:** Do not change `formatLayout` or `isLayoutTarget`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/format-layout.test.mjs`, change the import from `../scripts/format-layout.mjs` to `import { formatLayout, isLayoutTarget, listDenseBodies } from '../scripts/format-layout.mjs'`, and add these imports:
 
@@ -92,12 +92,12 @@ test('the command checks, writes and lists files in a folder', () => {
 
 Add to the header comment: the file also tests the dense body list and the command, and the command test uses a temporary folder.
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/format-layout.test.mjs`
 Expected: FAIL. The output contains `listDenseBodies`.
 
-- [ ] **Step 3: Implement `listDenseBodies` and the command**
+- [x] **Step 3: Implement `listDenseBodies` and the command**
 
 The command prints these lines:
 
@@ -110,7 +110,7 @@ The command prints these lines:
 
 The command runs only when `process.argv[1]` is the script file, as in `scripts/hooks/post-edit.mjs`.
 
-- [ ] **Step 4: Run the tests and the checks**
+- [x] **Step 4: Run the tests and the checks**
 
 Run: `corepack pnpm@11.28.5 exec biome format --write scripts/format-layout.mjs tests/format-layout.test.mjs`
 Expected: exit code 0.
@@ -124,7 +124,7 @@ Expected: `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint`
 Expected: exit code 0.
 
-- [ ] **Step 5: Prove that the tests catch a fault**
+- [x] **Step 5: Prove that the tests catch a fault**
 
 Do each change, run `node --test --test-reporter=tap tests/format-layout.test.mjs`, and undo the change:
 
@@ -133,6 +133,6 @@ Do each change, run `node --test --test-reporter=tap tests/format-layout.test.mj
 
 Expected: each change makes one or more tests fail. Add one line for each change to the list `Faults caught during mutant verification` in the header comment of `tests/format-layout.test.mjs`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

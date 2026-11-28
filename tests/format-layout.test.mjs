@@ -1,16 +1,22 @@
 /**
- * Tests: the layout rules of scripts/format-layout.mjs, which selects the Biome file set and adds the blank lines between imports, top-level declarations and class members.
- * Environment: in-memory source text with the real TypeScript compiler API. The tests do not read or write files.
+ * Tests: the layout rules of scripts/format-layout.mjs, which selects the Biome file set and adds the blank lines between imports, top-level declarations and class members. The file also tests the dense body list and the command.
+ * Environment: in-memory source text with the real TypeScript compiler API. The command test uses a temporary folder.
  * Run: node --test --test-reporter=tap tests/format-layout.test.mjs
  * Expected values source: docs/build/refactor/code-layout/plan/README.md (Decisions).
  * Faults caught during mutant verification:
  * - Removing the overload exception: 'formatLayout keeps one-line groups and overloads together' and 'formatLayout adds blank lines between class members' fail.
  * - Measuring the gap from node.getStart(): 'formatLayout adds the blank line before the leading comment' fails.
  * - Always writing \n as the line ending: 'formatLayout keeps CRLF line endings and a second run changes nothing' fails.
+ * - Removing the blank-line check in listDenseBodies: 'listDenseBodies lists bodies with 6 statements, 12 lines and no blank line' fails.
+ * - Making --check always exit with code 0: 'the command checks, writes and lists files in a folder' fails.
  */
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { formatLayout, isLayoutTarget } from '../scripts/format-layout.mjs'
+import { formatLayout, isLayoutTarget, listDenseBodies } from '../scripts/format-layout.mjs'
 
 const layout = source => formatLayout('apps/host/src/sample.ts', source)
 
@@ -110,4 +116,54 @@ test('formatLayout parses TSX and keeps one finding for each line', () => {
   const source = "import { x } from 'x'\nexport function A() {\n  return <div>{x}</div>\n}\n"
   const result = formatLayout('apps/web/src/a.tsx', source)
   assert.deepEqual(result.findings, [{ line: 2, rule: 'layout-after-imports' }])
+})
+
+test('listDenseBodies lists bodies with 6 statements, 12 lines and no blank line', () => {
+  const body = ['  const b = a + 1', '  const c = b + 1', '  if (c > 10) {', '    return c', '  }', '  const d = c * 2']
+  body.push('  const e = d * 2', '  const f = e * 2', '  const g = f * 2', '  return g', '}')
+  const short = ['function short(a: number) {', '  const b = a', '  const c = b', '  const d = c', '  const e = d']
+  short.push('  const f = e', '  return f', '}')
+  const source = [
+    'export function dense(a: number) {',
+    ...body,
+    '',
+    'export function spaced(a: number) {',
+    ...body.slice(0, 5),
+    '',
+    ...body.slice(5),
+    '',
+    'export const denseArrow = (a: number) => {',
+    ...body,
+    '',
+    ...short,
+    '',
+  ].join('\n')
+  assert.deepEqual(listDenseBodies('apps/host/src/sample.ts', source), [
+    { line: 1, name: 'dense', statements: 8 },
+    { line: 28, name: 'denseArrow', statements: 8 },
+  ])
+})
+
+test('the command checks, writes and lists files in a folder', () => {
+  const root = mkdtempSync(join(tmpdir(), 'format-layout-'))
+  mkdirSync(join(root, 'src'))
+  writeFileSync(join(root, 'src', 'a.ts'), "import a from 'a'\nexport const b = a\n")
+  const script = resolve('scripts/format-layout.mjs')
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { cwd: root, encoding: 'utf8' })
+
+  const before = run('--check', 'src')
+  assert.equal(before.status, 1)
+  assert.equal(
+    before.stdout,
+    'src/a.ts:2 layout-after-imports Add one blank line before this line.\nformat-layout: 1 finding(s)\n',
+  )
+
+  const write = run('--write', 'src')
+  assert.equal(write.status, 0)
+  assert.equal(write.stdout, 'format-layout: 1 file(s) changed\n')
+  assert.equal(readFileSync(join(root, 'src', 'a.ts'), 'utf8'), "import a from 'a'\n\nexport const b = a\n")
+
+  assert.equal(run('--check', 'src').status, 0)
+  assert.equal(run('--dense', 'src').stdout, 'format-layout: 0 dense function bodies\n')
+  assert.equal(run('--fix').status, 2)
 })

@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 
 const TARGET_PREFIXES = ['apps/', 'packages/', 'scripts/', 'tests/']
@@ -145,3 +148,164 @@ export const formatLayout = (filePath, sourceText) => {
     findings: lineNumbers.map(line => ({ line, rule: findings.get(line) })),
   }
 }
+
+const DENSE_MIN_STATEMENTS = 6
+
+const DENSE_MIN_LINES = 12
+
+const ANONYMOUS_NAME = '<anonymous>'
+
+const functionBodyOf = node => {
+  const isFunction =
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node)
+  if (!isFunction) return undefined
+  return ts.isBlock(node.body) ? node.body : undefined
+}
+
+const functionNameOf = node => {
+  if (ts.isFunctionDeclaration(node)) return node.name?.text ?? ANONYMOUS_NAME
+  if (ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) {
+    return propertyNameText(node.name) ?? ANONYMOUS_NAME
+  }
+  if (ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
+    const parent = node.parent
+    if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) return parent.name.text
+  }
+  return ANONYMOUS_NAME
+}
+
+const hasBlankLineBetweenStatements = (sourceFile, statements) => {
+  for (let index = 1; index < statements.length; index += 1) {
+    const previous = statements[index - 1]
+    const next = statements[index]
+    if (startLineOf(sourceFile, next) > endLineOf(sourceFile, previous) + 1) return true
+  }
+  return false
+}
+
+export const listDenseBodies = (filePath, sourceText) => {
+  const normalizedPath = toPosix(filePath)
+  const sourceFile = ts.createSourceFile(
+    normalizedPath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKindOf(normalizedPath),
+  )
+  const bodies = []
+  const visit = node => {
+    const body = functionBodyOf(node)
+    if (
+      body !== undefined &&
+      body.statements.length >= DENSE_MIN_STATEMENTS &&
+      spanLinesOf(sourceFile, body) >= DENSE_MIN_LINES &&
+      !hasBlankLineBetweenStatements(sourceFile, body.statements)
+    ) {
+      bodies.push({
+        line: lineOfPosition(sourceFile, node.getStart(sourceFile)),
+        name: functionNameOf(node),
+        statements: body.statements.length,
+      })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+
+  return bodies.toSorted((left, right) => left.line - right.line)
+}
+
+const DEFAULT_FOLDERS = TARGET_PREFIXES.map(prefix => prefix.slice(0, -1))
+
+const isTargetFileName = fileName => {
+  if (fileName.endsWith('.d.ts')) return false
+  return TARGET_EXTENSIONS.some(extension => fileName.endsWith(extension))
+}
+
+const collectFolderFiles = (folderPath, files) => {
+  const entries = readdirSync(folderPath, { withFileTypes: true }).toSorted((left, right) =>
+    left.name.localeCompare(right.name),
+  )
+  for (const entry of entries) {
+    const entryPath = path.join(folderPath, entry.name)
+    if (entry.isDirectory()) {
+      if (!EXCLUDED_SEGMENTS.has(entry.name)) collectFolderFiles(entryPath, files)
+      continue
+    }
+    if (entry.isFile() && isTargetFileName(entry.name)) files.push(entryPath)
+  }
+}
+
+const collectFiles = targets => {
+  const files = []
+  for (const target of targets) {
+    const absolutePath = path.resolve(target)
+    const stats = statSync(absolutePath, { throwIfNoEntry: false })
+    if (stats === undefined) continue
+    if (stats.isDirectory()) {
+      collectFolderFiles(absolutePath, files)
+      continue
+    }
+    if (stats.isFile()) files.push(absolutePath)
+  }
+  return files
+}
+
+const relativePathOf = absolutePath => toPosix(path.relative(process.cwd(), absolutePath))
+
+const runCheck = files => {
+  let findings = 0
+  for (const file of files) {
+    const relativePath = relativePathOf(file)
+    const result = formatLayout(relativePath, readFileSync(file, 'utf8'))
+    for (const finding of result.findings) {
+      process.stdout.write(`${relativePath}:${finding.line} ${finding.rule} Add one blank line before this line.\n`)
+    }
+    findings += result.findings.length
+  }
+  process.stdout.write(`format-layout: ${findings} finding(s)\n`)
+  return findings === 0 ? 0 : 1
+}
+
+const runWrite = files => {
+  let changed = 0
+  for (const file of files) {
+    const sourceText = readFileSync(file, 'utf8')
+    const result = formatLayout(relativePathOf(file), sourceText)
+    if (result.text === sourceText) continue
+    writeFileSync(file, result.text)
+    changed += 1
+  }
+  process.stdout.write(`format-layout: ${changed} file(s) changed\n`)
+  return 0
+}
+
+const runDense = files => {
+  let count = 0
+  for (const file of files) {
+    const relativePath = relativePathOf(file)
+    for (const body of listDenseBodies(relativePath, readFileSync(file, 'utf8'))) {
+      process.stdout.write(`${relativePath}:${body.line} ${body.name} ${body.statements} statements\n`)
+      count += 1
+    }
+  }
+  process.stdout.write(`format-layout: ${count} dense function bodies\n`)
+  return 0
+}
+
+const main = () => {
+  const [mode, ...targets] = process.argv.slice(2)
+  if (mode !== '--check' && mode !== '--write' && mode !== '--dense') {
+    process.stderr.write('format-layout: use --check, --write or --dense.\n')
+    process.exit(2)
+  }
+  const files = collectFiles(targets.length === 0 ? DEFAULT_FOLDERS : targets)
+  const exitCode = mode === '--check' ? runCheck(files) : mode === '--write' ? runWrite(files) : runDense(files)
+  process.exit(exitCode)
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
