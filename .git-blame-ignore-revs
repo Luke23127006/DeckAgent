@@ -1,0 +1,15 @@
+# Code Layout Refactor: commits that change only formatting and blank lines.
+# style(format): apply biome format
+68e37e5b97c5de8b6ba55c42dfc8bf4d428975ef
+# style(layout): add blank lines between declarations and members
+3c6a67330f9c21f23d2f1afcbe27916c958f5612
+# style(layout): add steps in the Host deck module
+925f8ef5434f96b92a0218c6fdbfd1c79fd66f3a
+# style(layout): add steps in the other Host folders
+f8597347d1ae32aa6bb6b470e1be20ae9dfaf703
+# style(layout): add steps in the Browser
+9c1497dbc3338568b86cd0d747ed4ee4d1afa4db
+# style(layout): add steps in the deck package
+3b90129c4e8ea8e3ecd2d0be9f85e99bee32a051
+# style(layout): add steps in the other packages
+0577d59745e37e7d9766211a34aec189c04745dd

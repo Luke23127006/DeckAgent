@@ -15,3 +15,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 9 | [Add steps in the Browser](task-09-add-steps-in-browser.md) |
 | 10 | [Add steps in the deck package](task-10-add-steps-in-deck-package.md) |
 | 11 | [Add steps in the other packages](task-11-add-steps-in-other-packages.md) |
+| 12 | [Record the style commits and run the exit checks](task-12-record-style-commits-and-exit.md) |

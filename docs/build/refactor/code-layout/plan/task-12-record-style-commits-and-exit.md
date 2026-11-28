@@ -23,17 +23,17 @@ Read this file to learn the steps of Task 12, which records the style commits in
 - Change `git config`. Tell the person the command in the report.
 - Change a file under `apps/`, `packages/`, `scripts/` or `tests/`. If a check fails, STOP.
 
-- [ ] **Step 1: Make sure that the working tree has no code change**
+- [x] **Step 1: Make sure that the working tree has no code change**
 
 Run: `git status --porcelain -- apps packages scripts tests`
 Expected: no line.
 
-- [ ] **Step 2: Find the style commits**
+- [x] **Step 2: Find the style commits**
 
 Run: `git log --reverse -E --grep='^style\((format|layout)\):' --format='%H %s'`
 Expected: 7 lines. The first line contains `style(format): apply biome format`. Each other line contains `style(layout):`.
 
-- [ ] **Step 3: Create `.git-blame-ignore-revs`**
+- [x] **Step 3: Create `.git-blame-ignore-revs`**
 
 Create `.git-blame-ignore-revs`. The first line is `# Code Layout Refactor: commits that change only formatting and blank lines.` After it, write two lines for each commit of Step 2, in the same order. The first line is `# <subject>`. The second line is the full hash.
 
@@ -43,12 +43,12 @@ Expected: `7`.
 Run: `git blame --ignore-revs-file .git-blame-ignore-revs -- package.json > /dev/null`
 Expected: exit code 0.
 
-- [ ] **Step 4: Prove that each layout commit adds only blank lines in code**
+- [x] **Step 4: Prove that each layout commit adds only blank lines in code**
 
 Run: `for h in $(git log -E --grep='^style\(layout\):' --format=%H); do git show -U0 --ignore-blank-lines --format= "$h" -- apps packages scripts tests | grep -E '^@@'; done`
 Expected: no line.
 
-- [ ] **Step 5: Run the exit checks**
+- [x] **Step 5: Run the exit checks**
 
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
@@ -71,7 +71,7 @@ Expected: exit code 0.
 Run: `node scripts/format-layout.mjs --dense apps/host/src apps/web/src packages/*/*/src | tail -n 1`
 Expected: one line that matches `format-layout: <n> dense function bodies`. Write `<n>` in the report.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. In the report:
 
