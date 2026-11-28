@@ -7,6 +7,7 @@ import { requestLimit, sendBlocked, useConversation } from '../hooks/use-convers
 import { DeckScreens, useDeckScreens } from '../hooks/use-deck-screens.ts'
 import { useMotion } from '../hooks/use-motion.ts'
 import { usePreferences, useThemeMutation } from '../hooks/use-preferences.ts'
+import { BackgroundControl } from './background-control.tsx'
 import { conversationText, deckText, researchText, settingsText, attachmentText } from '../text.ts'
 import { AttachmentDraft, AttachmentPicker, AttachmentPreviewDialog } from './attachment-draft.tsx'
 import { ChatList } from './chat-list.tsx'
@@ -149,6 +150,10 @@ function AccountMenu(props: {
         <div className="menu-section">
           <span>{conversationText.theme}</span>
           <ThemeControl />
+        </div>
+        <div className="menu-section">
+          <span>{conversationText.background}</span>
+          <BackgroundControl />
         </div>
         <button type="button" onClick={choose(props.onResearch)}>
           {researchText.settings}

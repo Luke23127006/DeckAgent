@@ -26,7 +26,7 @@ const settings = {
 
 const server = setupServer(
   http.get(`${origin}/api/settings`, () => HttpResponse.json(settings)),
-  http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'light', version: 2 })),
+  http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'light', background: 'none', version: 2 })),
 )
 
 beforeAll(() => {
@@ -100,10 +100,10 @@ it('saves theme using the read version and applies the saved theme', async () =>
     http.put(`${origin}/api/preferences`, async ({ request }) => {
       expect(await request.json()).toEqual({ theme: 'dark', expectedVersion: 2 })
       saved = true
-      return HttpResponse.json({ theme: 'dark', version: 3 })
+      return HttpResponse.json({ theme: 'dark', background: 'none', version: 3 })
     }),
     http.get(`${origin}/api/preferences`, () =>
-      HttpResponse.json({ theme: saved ? 'dark' : 'light', version: saved ? 3 : 2 }),
+      HttpResponse.json({ theme: saved ? 'dark' : 'light', background: 'none', version: saved ? 3 : 2 }),
     ),
   )
   mount()
@@ -272,7 +272,9 @@ it('follows system theme changes and removes the listener when settings unmounts
       removeEventListener: (_name: string, listener: () => void) => listeners.delete(listener),
     }),
   })
-  server.use(http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'system', version: 2 })))
+  server.use(
+    http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'system', background: 'none', version: 2 })),
+  )
   try {
     const rendered = mount()
     await screen.findByRole('button', { name: 'System', pressed: true })

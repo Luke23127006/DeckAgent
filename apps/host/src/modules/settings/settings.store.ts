@@ -1,6 +1,22 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { decodeModelSelection, type ModelSelection, type WebPreferences } from '@deckagent/host-contracts'
+import {
+  type BackgroundId,
+  backgroundIds,
+  decodeModelSelection,
+  type ModelSelection,
+  type WebPreferences,
+} from '@deckagent/host-contracts'
 import { SettingsError } from './settings.errors.ts'
+
+/** The preferences that one write changes. */
+export interface PreferencesChange {
+  readonly theme?: WebPreferences['theme']
+  readonly background?: BackgroundId
+}
+
+function isBackground(value: unknown): value is BackgroundId {
+  return typeof value === 'string' && (backgroundIds as readonly string[]).includes(value)
+}
 
 /** Durable SQLite store for Host preferences and last model selection in `web.sqlite`. */
 export class SqliteSettingsStore {
@@ -17,23 +33,29 @@ export class SqliteSettingsStore {
   }
 
   preferences(): WebPreferences {
-    const row = this.db.prepare("SELECT value FROM preferences WHERE key='theme'").get()
+    const rows = this.db.prepare("SELECT key, value FROM preferences WHERE key IN ('theme', 'background')").all()
+    const stored = (key: string): unknown => rows.find(row => row.key === key)?.value
+    const theme = stored('theme')
+    const background = stored('background')
     return {
-      theme: row?.value === 'light' || row?.value === 'dark' ? row.value : 'system',
+      theme: theme === 'light' || theme === 'dark' ? theme : 'system',
+      // `/theme.js` writes this value into the page, so a stored value outside the list is never returned.
+      background: isBackground(background) ? background : 'none',
       version: this.preferencesVersion(),
     }
   }
 
-  savePreferences(theme: WebPreferences['theme'], expectedVersion: number): WebPreferences {
+  /** Saves the preferences that `change` contains. The other preferences keep their saved values. */
+  savePreferences(change: PreferencesChange, expectedVersion: number): WebPreferences {
     this.db.exec('BEGIN IMMEDIATE')
     let version: number
     try {
       if (this.preferencesVersion() !== expectedVersion) throw new SettingsError('PREFERENCES_STALE')
-      this.db
-        .prepare(
-          "INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        )
-        .run(theme)
+      const save = this.db.prepare(
+        'INSERT INTO preferences (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+      )
+      if (change.theme !== undefined) save.run('theme', change.theme)
+      if (change.background !== undefined) save.run('background', change.background)
       this.db
         .prepare("UPDATE change_versions SET version = version + 1 WHERE topic = 'preferences' AND key = 'host'")
         .run()
@@ -44,7 +66,7 @@ export class SqliteSettingsStore {
       throw error
     }
     this.onPreferencesChanged?.(version)
-    return { theme, version }
+    return this.preferences()
   }
 
   /** FR-053: the most recent choice of a model in any chat, kept across restarts. */

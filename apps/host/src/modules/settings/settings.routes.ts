@@ -27,7 +27,8 @@ export function createSettingsRoutes(settings: SettingsService): Router {
         if (error instanceof RequestValidationError) throw new HttpError(400, error.code)
         throw error
       }
-      json(res, 200, settings.savePreferences(body.theme, body.expectedVersion))
+      const { expectedVersion, ...change } = body
+      json(res, 200, settings.savePreferences(change, expectedVersion))
     }),
   )
   return router

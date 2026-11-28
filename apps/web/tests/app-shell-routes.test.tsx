@@ -62,7 +62,7 @@ const server = setupServer(
   http.get(`${ORIGIN}/api/sessions/:id/deck`, ({ params }) =>
     HttpResponse.json({ sessionId: String(params.id), revision: 0, slides: [] }),
   ),
-  http.get(`${ORIGIN}/api/preferences`, () => HttpResponse.json({ theme: 'system', version: 0 })),
+  http.get(`${ORIGIN}/api/preferences`, () => HttpResponse.json({ theme: 'system', background: 'none', version: 0 })),
   http.get(`${ORIGIN}/api/changes`, () => new HttpResponse(null, { status: 401 })),
   http.get(`${ORIGIN}/api/sessions/:id/changes`, () => new HttpResponse(null, { status: 401 })),
 )

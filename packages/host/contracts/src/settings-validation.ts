@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { providerProtocols } from './management.ts'
+import { backgroundIds, providerProtocols } from './management.ts'
 import { nonNegativeInt } from './validation-primitives.ts'
 
 const providerSchema = z.object({
@@ -38,7 +38,11 @@ const settingsSchema = z.object({
     .optional(),
 })
 
-const preferencesSchema = z.object({ theme: z.enum(['light', 'dark', 'system']), version: nonNegativeInt })
+const preferencesSchema = z.object({
+  theme: z.enum(['light', 'dark', 'system']),
+  background: z.enum(backgroundIds),
+  version: nonNegativeInt,
+})
 
 function decode<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value)

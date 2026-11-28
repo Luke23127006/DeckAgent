@@ -93,8 +93,15 @@ export interface ChatDraft {
   readonly attachments?: readonly AttachmentView[]
 }
 
+/** Backdrops the user can choose. `none` keeps the static gradient and runs no animation. The Browser draws each one. */
+export const backgroundIds = ['none', 'koi', 'rain', 'forest', 'stars', 'sakura'] as const
+
+export type BackgroundId = (typeof backgroundIds)[number]
+
 /** Interface preferences kept by the Host, so they survive a change of origin (the local port is random). */
 export interface WebPreferences {
   readonly theme: 'light' | 'dark' | 'system'
+  /** The backdrop behind the glass window. */
+  readonly background: BackgroundId
   readonly version: number
 }

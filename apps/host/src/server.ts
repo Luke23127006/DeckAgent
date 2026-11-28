@@ -539,9 +539,8 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
       credentials,
       changeFeed,
     )
-    const assets = await loadWebDistAssets(
-      fileURLToPath(new URL('../../web/dist', import.meta.url)),
-      () => storage.settingsStore.preferences().theme,
+    const assets = await loadWebDistAssets(fileURLToPath(new URL('../../web/dist', import.meta.url)), () =>
+      storage.settingsStore.preferences(),
     )
     host = await startHost(createHostOptions(layout, options, storage, runtime, attachments, assets, changeFeed))
     return {

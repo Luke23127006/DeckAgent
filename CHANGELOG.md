@@ -5,13 +5,13 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
+- **Animated backgrounds:** the Settings menu of the Browser offers a background behind the glass window: Default (the static gradient), Koi pond, Night rain, Firefly forest, Starry sky and Cherry blossom. Each one has a light and a dark design, pauses when the tab is hidden, draws one still frame for reduced motion and runs at about 30 frames a second. The Host keeps the choice: `GET` and `PUT /api/preferences` carry `background` next to `theme`, a write may send one or both, and `/theme.js` sets `data-background` before the first paint. The drawing code comes from the `feat/b-01/ui` branch.
 - **Code layout:** add `scripts/format-layout.mjs` with `isLayoutTarget`, `formatLayout` and `listDenseBodies`, plus the command modes `--check`, `--write` and `--dense` that add the missing blank lines between imports, top-level declarations and class members and list the dense function bodies.
 - **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, pin the React, Vite, TanStack Query, Tailwind CSS, shadcn/ui, Vitest and MSW toolchain, and add the typed API client, the change feed hooks and the React shell with declarative routes.
 - Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 - Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
-- Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
-- Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
+- Add schema 3 preferences versioning, change notices and strict write validation, reject stale writes with `PREFERENCES_STALE`, and move research into a Host module whose controls follow preferences notices.
 - **Host modules and change notices:** move `workspaces`, `chats` and `providers` into `apps/host/src/modules/`, publish `ChangeNotice` values (`workspaces`, `chats`, `providers`) through `GET /api/changes`, refuse stale writes with `409 WORKSPACES_STALE` and `409 PROVIDERS_STALE`, and refresh Browser lists from those notices.
 - **Host package and HTTP edge:** add `@deckagent/host` (`apps/host/`), serve every route through Express 5.2.1, and record 15 shared HTTP behaviors in `e2e/http-edge.test.mjs` before the move.
 - **Boundaries and tooling:** add `@deckagent/host-contracts`, `check:boundaries` (with `module-private-import` and `module-cycle` rules and negative fixtures), `scan:module-design`, `check:docs` and `test:local-foundation`; enable the TypeScript safety and import-restriction rules in `.oxlintrc.json`.

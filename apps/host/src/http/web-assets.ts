@@ -17,17 +17,29 @@ const contentTypes: Readonly<Record<string, string>> = {
   '.woff2': 'font/woff2',
 }
 
-/** Applies the Host-saved choice before first paint. "system" follows the media query. */
-export function themeBootstrap(theme: WebPreferences['theme']): string {
+type PagePreferences = Pick<WebPreferences, 'theme' | 'background'>
+
+function themeLine(theme: WebPreferences['theme']): string {
   if (theme === 'dark') return "document.documentElement.classList.add('dark')"
   if (theme === 'light') return "document.documentElement.classList.remove('dark')"
   return "if(matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.classList.add('dark')"
 }
 
+/**
+ * Applies the Host-saved choices before first paint. "system" follows the media query, and the backdrop `none` sets
+ * no attribute, so the static gradient shows. Both values come from fixed lists and never from user text.
+ */
+export function themeBootstrap(preferences: PagePreferences): string {
+  const lines = [themeLine(preferences.theme)]
+  if (preferences.background !== 'none')
+    lines.push(`document.documentElement.dataset.background='${preferences.background}'`)
+  return lines.join(';')
+}
+
 /** Reads the Vite build output once. Requests never read the disk. */
 export async function loadWebDistAssets(
   distDir: string,
-  getTheme: () => WebPreferences['theme'],
+  getPreferences: () => PagePreferences,
 ): Promise<NonNullable<HostOptions['assets']>> {
   const assets: Record<string, WebAsset> = {}
   for (const entry of await readdir(distDir, { recursive: true, withFileTypes: true })) {
@@ -44,7 +56,7 @@ export async function loadWebDistAssets(
   }
   Object.defineProperty(assets, '/theme.js', {
     enumerable: true,
-    get: () => ({ contentType: 'text/javascript; charset=utf-8', body: themeBootstrap(getTheme()) }),
+    get: () => ({ contentType: 'text/javascript; charset=utf-8', body: themeBootstrap(getPreferences()) }),
   })
   return assets
 }

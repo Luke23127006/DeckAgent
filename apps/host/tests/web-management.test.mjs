@@ -297,7 +297,11 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
     })
   let app = await open()
   try {
-    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system', version: 0 })
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), {
+      theme: 'system',
+      background: 'none',
+      version: 0,
+    })
     assert.match(
       await (await fetch(`${app.origin}/theme.js`)).text(),
       /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
@@ -322,13 +326,78 @@ test('The interface theme is kept by the Host, so it survives a restart on a dif
   }
   app = await open()
   try {
-    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark', version: 1 })
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), {
+      theme: 'dark',
+      background: 'none',
+      version: 1,
+    })
     assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /classList\.add\('dark'\)/)
     await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system","expectedVersion":1}' })
     assert.match(
       await (await fetch(`${app.origin}/theme.js`)).text(),
       /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
     )
+  } finally {
+    await app.close()
+  }
+})
+
+test('The Host keeps the backdrop next to the theme, and a write of one preference keeps the other', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-background-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const open = () => startLocalWeb({ dataDir: join(dir, 'data'), port: 0 })
+  const call = (app, path, init = {}) =>
+    fetch(`${app.origin}${path}`, {
+      ...init,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+    })
+  const put = (app, body) => call(app, '/api/preferences', { method: 'PUT', body: JSON.stringify(body) })
+  let app = await open()
+  try {
+    for (const body of [
+      { background: 'lava', expectedVersion: 0 },
+      { background: null, expectedVersion: 0 },
+      { expectedVersion: 0 },
+      { background: 'koi' },
+    ]) {
+      assert.equal((await put(app, body)).status, 400, JSON.stringify(body))
+    }
+    assert.equal((await put(app, { theme: 'dark', expectedVersion: 0 })).status, 200)
+    const saved = await put(app, { background: 'koi', expectedVersion: 1 })
+    assert.deepEqual(await saved.json(), { theme: 'dark', background: 'koi', version: 2 })
+    assert.equal((await put(app, { background: 'rain', expectedVersion: 1 })).status, 409, 'A stale write is refused')
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /dataset\.background='koi'/)
+  } finally {
+    await app.close()
+  }
+  app = await open()
+  try {
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), {
+      theme: 'dark',
+      background: 'koi',
+      version: 2,
+    })
+    const both = await put(app, { theme: 'light', background: 'none', expectedVersion: 2 })
+    assert.deepEqual(await both.json(), { theme: 'light', background: 'none', version: 3 })
+    assert.doesNotMatch(await (await fetch(`${app.origin}/theme.js`)).text(), /background/)
+  } finally {
+    await app.close()
+  }
+})
+
+test('A stored backdrop outside the list reads as none and never reaches the page script', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-background-stored-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const options = { dataDir: join(dir, 'data'), port: 0 }
+  await (await startLocalWeb(options)).close()
+  const db = new DatabaseSync(join(dir, 'data', 'db', 'web.sqlite'))
+  db.prepare("INSERT INTO preferences (key, value) VALUES ('background', ?)").run("koi';alert(1);'")
+  db.close()
+  const app = await startLocalWeb(options)
+  try {
+    const response = await fetch(`${app.origin}/api/preferences`, { headers: { authorization: `Bearer ${app.token}` } })
+    assert.equal((await response.json()).background, 'none')
+    assert.doesNotMatch(await (await fetch(`${app.origin}/theme.js`)).text(), /background|alert/)
   } finally {
     await app.close()
   }
@@ -345,7 +414,7 @@ test('An existing web.sqlite without the preferences table is upgraded in place'
   const app = await startLocalWeb(options)
   try {
     const response = await fetch(`${app.origin}/api/preferences`, { headers: { authorization: `Bearer ${app.token}` } })
-    assert.deepEqual(await response.json(), { theme: 'system', version: 0 })
+    assert.deepEqual(await response.json(), { theme: 'system', background: 'none', version: 0 })
   } finally {
     await app.close()
   }
