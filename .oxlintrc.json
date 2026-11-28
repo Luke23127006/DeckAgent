@@ -1,0 +1,1161 @@
+{
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    "eslint/no-shadow": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": true,
+        "ts-ignore": true,
+        "ts-nocheck": true
+      }
+    ],
+    "typescript/no-explicit-any": "error",
+    "oxc/no-const-enum": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/apps/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/packages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/db/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../http/**",
+                  "../runs/lifecycle/**",
+                  "../runs/preparation/**",
+                  "../runs/budget/**",
+                  "../runtimes/**",
+                  "../tools/**",
+                  "express",
+                  "express/*"
+                ],
+                "message": "Database layer db/ must not import modules, HTTP, runs implementation, runtimes, tools or Express."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/http/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../features/**",
+                  "../modules/**",
+                  "../integrations/**",
+                  "../runtimes/**",
+                  "../runs/**",
+                  "../*-store.ts",
+                  "../*-state.ts",
+                  "node:sqlite",
+                  "../db/**",
+                  "../storage/**",
+                  "../tools/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/storage/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../http/**",
+                  "../runs/**",
+                  "../runtimes/**",
+                  "../tools/**",
+                  "../db/**",
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
+                "message": "Application storage layer storage/ must not import modules, HTTP, runs, runtimes, tools, db, Express or SQLite."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/http/error-handler.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../features/**",
+                  "../modules/**",
+                  "../integrations/**",
+                  "../runtimes/**",
+                  "../runs/index*",
+                  "../runs/lifecycle/**",
+                  "../runs/preparation/**",
+                  "../runs/budget/**",
+                  "node:sqlite",
+                  "../db/**",
+                  "../storage/**",
+                  "../tools/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "The HTTP edge must not import module services, stores or storage. Register module routes and error maps in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/runtimes/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite",
+                  "../../db/**",
+                  "../../modules/**",
+                  "../../http/**",
+                  "../../tools/**"
+                ],
+                "message": "A runtime adapter must not import Express, SQL, HTTP edge or Host tools directly."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/runs/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../modules/**",
+                  "../../modules/**",
+                  "../runtimes/**",
+                  "../../runtimes/**",
+                  "../tools/**",
+                  "../../tools/**",
+                  "../http/**",
+                  "../../http/**",
+                  "express",
+                  "express/*",
+                  "node:http",
+                  "node:https",
+                  "node:sqlite",
+                  "../db/**",
+                  "../../db/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "Agent core runs/ must not import modules, HTTP, SQL, tools or concrete runtimes."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/tools/executors/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../../modules/**",
+                  "../../http/**",
+                  "node:fs",
+                  "node:fs/*",
+                  "node:sqlite",
+                  "express",
+                  "express/*",
+                  "../../db/**"
+                ],
+                "message": "Tool executors must not import modules, HTTP, SQL or node:fs directly. Read files through tools/policy/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/deck/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../db/**",
+                  "../../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.store.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../tools/**",
+                  "../../runtimes/**",
+                  "express",
+                  "express/*",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module store must not import another module store, HTTP, tools, runtimes, Express or @deckagent/deck."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.routes.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": [
+                  "./*.store.ts",
+                  "./*.migrations.ts",
+                  "node:sqlite"
+                ],
+                "message": "A module route must not import a store or the SQL driver. Call the service of the module."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.service.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
+                "message": "A module service must not import Express or the SQL driver. The routes file owns HTTP, and the store file owns SQL."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/deck/deck.service.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../http/**",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              },
+              {
+                "group": [
+                  "express",
+                  "express/*",
+                  "node:sqlite"
+                ],
+                "message": "A module service must not import Express or the SQL driver. The routes file owns HTTP, and the store file owns SQL."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/packages/host/contracts/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*",
+                  "@deckagent/browser-runtime",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "@deckagent/html-format",
+                  "@deckagent/pptx-format",
+                  "@deckagent/host"
+                ],
+                "message": "Host contracts must not import runtime implementations."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/*/*.errors.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "@deckagent/deck",
+                  "@deckagent/deck/*",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/host/src/modules/deck/deck.errors.ts"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "../*/*.store.ts",
+                  "../../db/**",
+                  "../../tools/**",
+                  "../../../tools/**",
+                  "../../runtimes/**",
+                  "../../../runtimes/**",
+                  "../../http/app*",
+                  "../../http/start-host*",
+                  "../../http/error-handler*",
+                  "../../http/change-feed*"
+                ],
+                "message": "A module must not import the store of another module, a storage package or the HTTP edge. Use the public operation of the other module, and wire it in server.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/{pages,components,layouts,contexts,hooks,api,editor,styles}/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/src/routes.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/src/text.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/pages/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "UI code must not call src/api/. Read and write server data through a hook in src/hooks/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/{components,layouts,contexts}/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "UI code must not call src/api/. Read and write server data through a hook in src/hooks/."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "@/pages/*"
+                ],
+                "message": "Shared code must not import a page. Move the shared code to src/components/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/hooks/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "@/pages/*"
+                ],
+                "message": "Shared code must not import a page. Move the shared code to src/components/."
+              },
+              {
+                "group": [
+                  "**/components/**",
+                  "@/components/*",
+                  "**/layouts/**",
+                  "@/layouts/*"
+                ],
+                "message": "A hook must not import a component or a layout. Keep JSX out of src/hooks/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/api/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "react",
+                  "react/*",
+                  "react-dom",
+                  "react-dom/*",
+                  "@tanstack/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "**/components/**",
+                  "**/layouts/**",
+                  "**/hooks/**",
+                  "**/contexts/**",
+                  "@/pages/*",
+                  "@/components/*",
+                  "@/layouts/*",
+                  "@/hooks/*",
+                  "@/contexts/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import UI code."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/editor/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              },
+              {
+                "group": [
+                  "**/mocks",
+                  "**/mocks/**",
+                  "msw",
+                  "msw/*"
+                ],
+                "message": "Product code must not import development mocks or MSW. Only src/main.tsx starts the mocks."
+              },
+              {
+                "group": [
+                  "react",
+                  "react/*",
+                  "react-dom",
+                  "react-dom/*",
+                  "@tanstack/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import React or TanStack Query. Keep them free of UI code."
+              },
+              {
+                "group": [
+                  "**/pages/**",
+                  "**/components/**",
+                  "**/layouts/**",
+                  "**/hooks/**",
+                  "**/contexts/**",
+                  "@/pages/*",
+                  "@/components/*",
+                  "@/layouts/*",
+                  "@/hooks/*",
+                  "@/contexts/*"
+                ],
+                "message": "src/api/ and src/editor/ must not import UI code."
+              },
+              {
+                "group": [
+                  "**/api",
+                  "**/api/**",
+                  "@/api",
+                  "@/api/*"
+                ],
+                "message": "src/editor/ must not call the Host. A page sends editor writes through a mutation hook."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/main.tsx"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@deckagent/*/src/*",
+                  "@deckagent/*/lib/*",
+                  "**/packages/*/*/src/*",
+                  "**/packages/*/*/lib/*",
+                  "**/apps/*/src/*",
+                  "**/apps/*/lib/*"
+                ],
+                "message": "Import another package through its public exports only."
+              },
+              {
+                "group": [
+                  "node:*",
+                  "node:*/*"
+                ],
+                "message": "Browser code must not import Node-only modules."
+              },
+              {
+                "group": [
+                  "@deckagent/*",
+                  "!@deckagent/host-contracts"
+                ],
+                "message": "Browser code imports only @deckagent/host-contracts from the workspace."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/apps/web/src/**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+        "**/apps/web/mocks/**/*.{ts,tsx,mts,cts,js,mjs,cjs}"
+      ],
+      "plugins": [
+        "react"
+      ],
+      "rules": {
+        "react/no-danger": "error",
+        "react/react-in-jsx-scope": "off",
+        "unicorn/filename-case": [
+          "error",
+          {
+            "case": "kebabCase"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,58 +1,29 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/tools/presentation" },
-    { "path": "packages/presentation/deck" },
     {
-      "path": "vendor/cosmokit"
+      "path": "packages/presentation/design"
     },
     {
-      "path": "vendor/cordis"
+      "path": "packages/presentation/deck"
     },
     {
-      "path": "vendor/schemastery"
+      "path": "packages/host/contracts"
     },
     {
-      "path": "vendor/loader"
+      "path": "apps/web"
     },
     {
-      "path": "vendor/include"
+      "path": "apps/host"
     },
     {
-      "path": "vendor/group"
+      "path": "packages/presentation/document"
     },
     {
-      "path": "packages/testing/cordis-fixture"
+      "path": "packages/presentation/html"
     },
     {
-      "path": "apps/cordis-smoke"
-    },
-    {
-      "path": "packages/agent/runtime"
-    },
-    {
-      "path": "packages/llm/providers"
-    },
-    {
-      "path": "apps/agent-runtime"
-    },
-    {
-      "path": "packages/session/persistence"
-    },
-    {
-      "path": "packages/workspace/registry"
-    },
-    {
-      "path": "packages/tools/filesystem"
-    },
-    {
-      "path": "packages/host/api"
-    },
-    {
-      "path": "packages/client/runtime"
-    },
-    {
-      "path": "apps/local-web"
+      "path": "packages/presentation/pptx"
     }
   ]
 }

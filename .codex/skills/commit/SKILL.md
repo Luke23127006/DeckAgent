@@ -28,26 +28,18 @@ When committing changes, follow these steps:
    - What's the nature of the change (fix, feature, refactor, docs, etc.)?
    - What's the primary purpose?
 
-4. **Update CHANGELOG.md** - Add a description of the changes under the `## [Unreleased]` section:
-   - Read the top of `CHANGELOG.md` to see the current format
-   - If there's no `## [Unreleased]` section, create one at the top (after the header)
-   - Add entries under the appropriate category header:
-     - `### Added` - New features or capabilities
-     - `### Changed` - Changes to existing functionality
-     - `### Fixed` - Bug fixes
-     - `### Removed` - Removed features or code
-     - `### Security` - Security-related changes
-   - Each entry should be a bullet point with a clear description
-   - Use sub-bullets for additional context when helpful
-   - Example format:
-     ```markdown
-     ## [Unreleased]
-     ### Added
-     - New phone agent limitation directives
-       - Agent now clarifies it cannot make calls including 911
-       - Redirects persistent requests to main clinic
-     ```
-   - Stage the CHANGELOG.md changes with `git add CHANGELOG.md`
+4. **Update CHANGELOG.md** - Keep the file **under 50 lines**:
+   - Read `CHANGELOG.md`. If there is no `## [Unreleased]` section, create one at the top, after the header.
+   - Remove entries that no longer have value **before** you add the new entry. The file states what a reader needs now; git keeps the history. Remove an entry when any of these is true:
+     - a report, an ADR or a file in `docs/` already gives the detail
+     - the entry records a plan step, a task number or a process
+     - a later entry makes the change unreachable or irrelevant
+     - the entry is older than the current build and no reader acts on it
+   - Merge entries on the same subject into one bullet.
+   - Add the new entry under the matching category: `### Added`, `### Changed`, `### Fixed`, `### Removed`, `### Security`.
+   - Each entry is one bullet on one line. Do not use sub-bullets. When an entry is still valuable but long, keep its subject and its effect only.
+   - Count the lines (`wc -l CHANGELOG.md`, or `(Get-Content CHANGELOG.md).Count` in PowerShell). If the count is 50 or more, remove more entries from the lowest value up until the count is 49 or less. The newest entry stays.
+   - Stage the file with `git add CHANGELOG.md`.
 
 5. **Generate a commit message** following this format:
    ```
@@ -76,6 +68,7 @@ When committing changes, follow these steps:
 
 ## Guidelines
 
+- **`CHANGELOG.md` stays under 50 lines.** Remove low-value entries instead of letting the file grow; a new entry earns its line by replacing one that no longer matters
 - Keep the **first line under 72 characters**
 - Use **imperative mood** ("add feature" not "added feature")
 - Focus on **WHY** the change was made, **not just WHAT** changed

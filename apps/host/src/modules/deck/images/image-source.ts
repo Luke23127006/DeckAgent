@@ -1,0 +1,80 @@
+import { DeckError } from '@deckagent/deck'
+import type { ImageCredit, ImageSourceCheck } from '@deckagent/deck'
+import type { ImageSearchCandidate } from '../../research/index.ts'
+
+export class ImageSourceError extends DeckError {
+  constructor(
+    code: string,
+    readonly checks: readonly ImageSourceCheck[],
+  ) {
+    super(code)
+  }
+}
+
+/** These identities come from publisher-controlled stock/file paths, never model licence claims. */
+export function imageSource(candidate: ImageSearchCandidate): {
+  readonly sourceUrl?: string
+  readonly pexels?: ImageCredit
+  readonly commonsFile?: string
+  readonly downloadUrl?: string
+} {
+  let image: URL
+
+  try {
+    image = new URL(candidate.imageUrl)
+  } catch {
+    return {}
+  }
+
+  if (image.protocol !== 'https:' || image.username || image.password || image.port) return {}
+
+  if (image.hostname === 'images.pexels.com') {
+    const match = /^\/photos\/([1-9]\d{0,11})\/([\w-]+)\.(?:jpe?g|png)$/.exec(image.pathname)
+    const id = match?.[1]
+    const slug = match?.[2]
+    if (id && slug && (!slug.startsWith('pexels-photo-') || slug === `pexels-photo-${id}`)) {
+      const sourceUrl = `https://www.pexels.com/photo/${id}/`
+      const download = new URL(image.href)
+      download.search = new URLSearchParams({
+        auto: 'compress',
+        cs: 'tinysrgb',
+        dpr: '2',
+        h: '650',
+        w: '940',
+      }).toString()
+      return {
+        sourceUrl,
+        downloadUrl: download.href,
+        pexels: {
+          url: sourceUrl,
+          author: 'Unknown author · Pexels',
+          license: 'Pexels',
+          licenseUrl: 'https://www.pexels.com/license/',
+          unknownLicense: false,
+          retrievedAt: new Date().toISOString(),
+          evidence: 'pexels-cdn',
+          downloadUrl: download.href,
+        },
+      }
+    }
+  }
+
+  if (image.hostname === 'upload.wikimedia.org' || image.hostname === 'thumb.wikimedia.org') {
+    const parts = image.pathname.split('/').filter(Boolean)
+    if (parts[0] === 'wikipedia' && parts[1] === 'commons') {
+      const name = parts[2] === 'thumb' ? parts[5] : parts[4]
+      if (name && /\.(?:jpe?g|png)$/i.test(name)) {
+        try {
+          return {
+            sourceUrl: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(decodeURIComponent(name))}`,
+            commonsFile: decodeURIComponent(name).replace(/ /g, '_'),
+          }
+        } catch {
+          return {}
+        }
+      }
+    }
+  }
+
+  return candidate.sourceUrl ? { sourceUrl: candidate.sourceUrl } : {}
+}

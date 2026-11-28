@@ -1,0 +1,431 @@
+import assert from 'node:assert/strict'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import test from 'node:test'
+import { startLocalWeb } from '../lib/server.js'
+import { createServer } from 'node:http'
+import { once } from 'node:events'
+import { HostClient, ManagementClient, ManagementError } from '../../../e2e/fixtures/browser-driver/index.mjs'
+import { DatabaseSync } from 'node:sqlite'
+import { openSessionStore } from './fixtures/session-store.mjs'
+import { ProviderError, mapProviderError } from '../lib/types/modules/providers/providers.errors.js'
+import { ProviderCheckError } from '../lib/types/modules/providers/provider-catalog.js'
+
+test('provider display names cannot become invalid management URL identities', async () => {
+  const client = new ManagementClient('http://127.0.0.1:1', 'local-fixture')
+  const provider = {
+    displayName: 'River AI',
+    protocol: 'chat-completions',
+    baseUrl: 'https://example.com/v1',
+    models: [],
+  }
+  for (const id of ['River AI', 'river/ai', '', 'r'.repeat(101)])
+    await assert.rejects(
+      client.save(id, provider),
+      error =>
+        error instanceof ManagementError && error.message === 'INVALID_PROVIDER' && error.detail.field === 'providerId',
+    )
+})
+
+test('History summaries derive titles and timestamps from saved sessions without starting work', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-history-summary-'))
+  const store = openSessionStore(join(dir, 'db', 'sessions.sqlite'))
+  const input = `  Tái chế\n${'nội dung '.repeat(12)}`
+  await store.open('saved')
+  await store.append('saved', [{ role: 'user', content: input }])
+  const saved = await store.getInfo('saved')
+  store.close()
+  const app = await startLocalWeb({
+    dataDir: dir,
+    confirmedDecks: [{ sessionId: 'saved', outlineId: 'outline', slides: [{ slideId: 'one', title: 'Pending' }] }],
+  })
+  t.after(async () => {
+    await app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const headers = { authorization: `Bearer ${app.token}` }
+  const list = await (await fetch(`${app.origin}/api/sessions`, { headers })).json()
+  const summary = list.find(session => session.sessionId === 'saved')
+  assert.equal(summary.title, `${input.replace(/\s+/g, ' ').trim().slice(0, 64)}…`)
+  assert.equal(summary.updatedAt, saved.updatedAt)
+  assert.equal(summary.hasSlides, false, 'A pending plan must not count as published slides')
+  assert.equal(summary.messageCount, 1)
+  assert.equal(
+    summary.workspaceId,
+    'default',
+    'A chat saved before workspaces existed belongs to the default workspace',
+  )
+  assert.equal(summary.readable, true)
+  assert.deepEqual(await new HostClient(app.origin, app.token).history('saved'), [{ role: 'user', content: input }])
+  const response = await fetch(`${app.origin}/api/sessions`, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: '{}',
+  })
+  assert.equal(response.status, 201)
+  const created = await response.json()
+  assert.equal(created.title, 'New chat')
+})
+
+test('empty Web opens Settings without a model and can create an empty chat; sending is refused', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-management-'))
+  let app
+  t.after(async () => {
+    await app?.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  app = await startLocalWeb({ dataDir: join(dir, 'data') })
+  const headers = { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' }
+  const settings = await fetch(`${app.origin}/api/settings`, { headers })
+  assert.equal(settings.status, 200)
+  assert.deepEqual((await settings.json()).providers, [])
+  const created = await fetch(`${app.origin}/api/sessions`, { method: 'POST', headers, body: '{}' })
+  assert.equal(created.status, 201)
+  const session = await created.json()
+  assert.equal(session.selection, undefined, 'A chat may exist without a selected model; none is chosen for it')
+  const history = await fetch(`${app.origin}/api/sessions/${session.sessionId}/history`, { headers })
+  assert.deepEqual(await history.json(), [])
+  const denied = await fetch(`${app.origin}/api/requests`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ sessionId: session.sessionId, input: 'Hello' }),
+  })
+  // B02: requests run, but a chat with no selectable model sends nothing and says why (FR-046).
+  assert.equal(denied.status, 409)
+  const refusal = (await denied.json()).error
+  assert.equal(refusal.code, 'NO_SELECTABLE_MODEL')
+  assert.deepEqual(refusal.detail, { reason: 'no-provider' })
+  assert.deepEqual(
+    await (await fetch(`${app.origin}/api/sessions/${session.sessionId}/history`, { headers })).json(),
+    [],
+    'A refused request appends nothing to the conversation',
+  )
+})
+
+test('deleting an environment-bootstrapped provider persists across restart with the same startup options', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-provider-deletion-'))
+  const options = {
+    dataDir: join(dir, 'data'),
+    selection: { provider: 'seeded', model: 'a' },
+    connections: [{ id: 'seeded', protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:1' }],
+  }
+  let app = await startLocalWeb(options)
+  t.after(async () => {
+    await app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const headers = { authorization: `Bearer ${app.token}` }
+  assert.equal((await (await fetch(`${app.origin}/api/settings`, { headers })).json()).providers.length, 1)
+  assert.equal(
+    (
+      await fetch(`${app.origin}/api/providers/seeded`, {
+        method: 'DELETE',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedVersion: 0 }),
+      })
+    ).status,
+    200,
+  )
+  await app.close()
+  app = await startLocalWeb(options)
+  const settings = await (
+    await fetch(`${app.origin}/api/settings`, { headers: { authorization: `Bearer ${app.token}` } })
+  ).json()
+  assert.deepEqual(settings.providers, [])
+})
+
+// B02: the key lives in the credential store (Windows DPAPI files), not in web.sqlite, and every save is checked
+// with the provider first (FR-041); the fixture endpoint answers the check.
+test('settings persist encrypted keys, keep the chat selection across restart, and open for repair of a damaged key', {
+  timeout: 60000,
+  skip: process.platform !== 'win32',
+}, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-model-snapshot-'))
+  let app
+  const server = createServer((req, res) => {
+    if (req.url === '/models' && (req.headers.authorization ?? '').startsWith('Bearer fixture-key-')) {
+      res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[{"id":"a"}]}')
+    } else res.writeHead(401).end()
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  t.after(async () => {
+    await app?.close()
+    await new Promise(resolve => {
+      server.close(resolve)
+      server.closeAllConnections()
+    })
+    await rm(dir, { recursive: true, force: true })
+  })
+  const options = { dataDir: join(dir, 'data') }
+  app = await startLocalWeb(options)
+  const api = async (path, method = 'GET', value) => {
+    const response = await fetch(`${app.origin}/api/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      ...(value === undefined ? {} : { body: JSON.stringify(value) }),
+    })
+    return { status: response.status, data: await response.json() }
+  }
+  const provider = {
+    displayName: 'Local fixture',
+    protocol: 'chat-completions',
+    baseUrl: `http://127.0.0.1:${server.address().port}`,
+    models: ['a', 'b'],
+    key: 'fixture-key-one',
+  }
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
+  assert.equal(
+    (
+      await api('providers/other', 'PUT', {
+        ...provider,
+        displayName: 'Other',
+        key: 'wrong',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
+    'PROVIDER_KEY_REFUSED',
+  )
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        key: undefined,
+        baseUrl: 'http://127.0.0.1:1',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
+    'NEW_ENDPOINT_REQUIRES_KEY',
+  )
+  assert.equal(
+    (
+      await api('providers/other', 'PUT', {
+        ...provider,
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
+    'PROVIDER_NAME_EXISTS',
+  )
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        protocol: 'gemini',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).data.error.code,
+    'PROTOCOL_IMMUTABLE',
+  )
+  const session = (await api('sessions', 'POST', { selection: { provider: 'fixture', model: 'a' } })).data
+  assert.equal(
+    (await api(`sessions/${session.sessionId}/selection`, 'PUT', { provider: 'fixture', model: 'b' })).status,
+    200,
+  )
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        key: 'fixture-key-two',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
+  await app.close()
+  const storedBytes = await readFile(join(dir, 'data', 'db', 'web.sqlite'))
+  assert.equal(storedBytes.includes(Buffer.from('fixture-key-one')), false)
+  assert.equal(storedBytes.includes(Buffer.from('fixture-key-two')), false)
+  const stored = new DatabaseSync(join(dir, 'data', 'db', 'web.sqlite'))
+  const payload = JSON.parse(stored.prepare("SELECT payload FROM providers WHERE id='fixture'").get().payload)
+  stored.close()
+  assert.match(payload.credentialRef, /^cred-/, 'SQLite keeps only a reference')
+  assert.equal(payload.encryptedKey, undefined)
+  app = await startLocalWeb(options)
+  const settings = (await api('settings')).data
+  assert.equal(settings.providers[0].hasKey, true)
+  assert.equal(JSON.stringify(settings).includes('fixture-key'), false)
+  assert.equal((await api('sessions')).data[0].selection.model, 'b')
+  await app.close()
+  // Deliberately damaged on-disk credential fixture: Settings must still open for repair.
+  await writeFile(join(dir, 'data', 'credentials', `${payload.credentialRef}.key`), 'bm90LWEtZHBhcGktYmxvYg==')
+  app = await startLocalWeb(options)
+  const unavailable = (await api('settings')).data.providers[0]
+  assert.equal(unavailable.hasKey, true)
+  assert.equal(unavailable.keyAvailable, false)
+  assert.equal(
+    (
+      await api('providers/fixture', 'PUT', {
+        ...provider,
+        models: [],
+        key: 'fixture-key-two',
+        expectedVersion: (await api('settings')).data.providersVersion,
+      })
+    ).status,
+    200,
+  )
+  assert.equal((await api('settings')).data.providers[0].keyAvailable, true)
+  assert.equal(
+    (await api('sessions')).data[0].selectable,
+    false,
+    'A removed model leaves the chat with no selectable model',
+  )
+  assert.equal(
+    (await api('providers/fixture', 'DELETE', { expectedVersion: (await api('settings')).data.providersVersion }))
+      .status,
+    200,
+  )
+  assert.equal((await api('sessions')).data[0].selectable, false)
+})
+
+test('The interface theme is kept by the Host, so it survives a restart on a different port', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-theme-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const open = () => startLocalWeb({ dataDir: join(dir, 'data'), port: 0 })
+  const call = (app, path, init = {}) =>
+    fetch(`${app.origin}${path}`, {
+      ...init,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+    })
+  let app = await open()
+  try {
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'system', version: 0 })
+    assert.match(
+      await (await fetch(`${app.origin}/theme.js`)).text(),
+      /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
+      'System theme follows the media query before first paint',
+    )
+    for (const body of ['{"theme":"neon"}', '{"theme":"dark","extra":1}', '{}', '[]']) {
+      const rejected = await call(app, '/api/preferences', { method: 'PUT', body })
+      assert.equal(rejected.status, 400, body)
+    }
+    assert.equal(
+      (await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"dark","expectedVersion":0}' })).status,
+      200,
+    )
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /classList\.add\('dark'\)/)
+    assert.equal(
+      (await fetch(`${app.origin}/api/preferences`)).status,
+      401,
+      'Preferences need the Host token like every other API',
+    )
+  } finally {
+    await app.close()
+  }
+  app = await open()
+  try {
+    assert.deepEqual(await (await call(app, '/api/preferences')).json(), { theme: 'dark', version: 1 })
+    assert.match(await (await fetch(`${app.origin}/theme.js`)).text(), /classList\.add\('dark'\)/)
+    await call(app, '/api/preferences', { method: 'PUT', body: '{"theme":"system","expectedVersion":1}' })
+    assert.match(
+      await (await fetch(`${app.origin}/theme.js`)).text(),
+      /prefers-color-scheme:dark.*classList\.add\('dark'\)/,
+    )
+  } finally {
+    await app.close()
+  }
+})
+
+test('An existing web.sqlite without the preferences table is upgraded in place', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-theme-upgrade-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const options = { dataDir: join(dir, 'data'), port: 0 }
+  await (await startLocalWeb(options)).close()
+  const db = new DatabaseSync(join(dir, 'data', 'db', 'web.sqlite'))
+  db.exec('DROP TABLE preferences')
+  db.close()
+  const app = await startLocalWeb(options)
+  try {
+    const response = await fetch(`${app.origin}/api/preferences`, { headers: { authorization: `Bearer ${app.token}` } })
+    assert.deepEqual(await response.json(), { theme: 'system', version: 0 })
+  } finally {
+    await app.close()
+  }
+})
+
+test('Chat HTTP routes reject invalid create, selection and search payloads with stable error codes', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'deckagent-chat-validation-'))
+  const app = await startLocalWeb({ dataDir: join(dir, 'data') })
+  t.after(async () => {
+    await app.close()
+    await rm(dir, { recursive: true, force: true })
+  })
+  const send = async (path, method, body) => {
+    const res = await fetch(`${app.origin}${path}`, {
+      method,
+      headers: { authorization: `Bearer ${app.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { status: res.status, data: await res.json() }
+  }
+  const created = (await send('/api/sessions', 'POST', {})).data
+  for (const [path, method, body, code] of [
+    ['/api/sessions', 'POST', { extra: true }, 'INVALID_SESSION'],
+    ['/api/sessions', 'POST', { selection: { provider: 'bad space', model: 'm' } }, 'INVALID_SELECTION'],
+    [`/api/sessions/${created.sessionId}/selection`, 'PUT', { provider: 'openai', model: '   ' }, 'INVALID_SELECTION'],
+    ['/api/sessions/search', 'POST', { words: 'x'.repeat(501) }, 'INVALID_REQUEST'],
+  ]) {
+    const reply = await send(path, method, body)
+    assert.equal(reply.status, 400)
+    assert.equal(reply.data.error.code, code)
+  }
+})
+
+test('ProviderError and mapProviderError map codes to HTTP status and detail', () => {
+  const stale = new ProviderError('PROVIDERS_STALE')
+  assert.equal(stale.name, 'ProviderError')
+  assert.deepEqual(mapProviderError(stale), { status: 409, code: 'PROVIDERS_STALE' })
+  assert.deepEqual(mapProviderError(new ProviderError('INVALID_PROVIDER', { field: 'baseUrl' })), {
+    status: 400,
+    code: 'INVALID_PROVIDER',
+    detail: { field: 'baseUrl' },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_ID_TAKEN', { provider: 'OpenAI', builtIn: true })), {
+    status: 409,
+    code: 'PROVIDER_ID_TAKEN',
+    detail: { provider: 'OpenAI', builtIn: true },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_NOT_FOUND')), {
+    status: 404,
+    code: 'PROVIDER_NOT_FOUND',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_KEY_REFUSED')), {
+    status: 422,
+    code: 'PROVIDER_KEY_REFUSED',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('CATALOG_UNAVAILABLE', { reason: 'no-answer' })), {
+    status: 502,
+    code: 'CATALOG_UNAVAILABLE',
+    detail: { reason: 'no-answer' },
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('PROVIDER_NO_ANSWER')), {
+    status: 504,
+    code: 'PROVIDER_NO_ANSWER',
+  })
+  assert.deepEqual(mapProviderError(new ProviderError('CREDENTIAL_NOT_SAVED')), {
+    status: 500,
+    code: 'CREDENTIAL_NOT_SAVED',
+  })
+  assert.equal(mapProviderError(new ProviderCheckError('PROVIDER_HTTP', 500)), undefined)
+  assert.equal(mapProviderError(new Error('other')), undefined)
+})
+
+test('providers index exports ProviderService and only the operations that callers use', async () => {
+  const providers = await import('../lib/types/modules/providers/index.js')
+  assert.deepEqual(Object.keys(providers).toSorted(), [
+    'ProviderService',
+    'SqliteProviderStore',
+    'createProviderRoutes',
+    'listModels',
+    'mapProviderError',
+    'validBaseUrl',
+  ])
+})

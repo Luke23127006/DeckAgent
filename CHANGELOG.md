@@ -4,41 +4,46 @@ Notable changes to this repository. The newest changes are at the top.
 
 ## [Unreleased]
 
-### Changed
-- Local Web runs the B01 local foundation without a model or a provider key
-  - App data lives in the OS app-data folder, or in the folder that `--data-dir` or `DECKAGENT_DATA_DIR` names, with databases in `db/` and files in `files/`; a damaged, unwritable or misplaced data folder stops startup with the next step to take, and nothing is reset
-  - Each chat belongs to a workspace, and a chat whose workspace is removed is listed as ungrouped; the chat list has search, marks a chat that cannot be read, and the Host keeps each chat's draft until DeckAgent stops
-  - The chat database moves to schema version 2 and migrates version 1 files in place
-  - Send is unavailable until B02 connects OpenCode: the Host answers `503 REQUESTS_UNAVAILABLE` and the UI says why
-- ADR-0002 and `builds/B01.md` state the draft rule of FR-038: the Host keeps drafts while DeckAgent runs, not in SQLite
-- `docs/spec/` now holds the MVP spec: use cases, requirements, business rules and a backlog of behaviors left for later
-  - The spec states each design choice as its result, or `pending` while it is open, and links no decision record or research note
-- The `spec-authoring` skill follows the MVP use case format: the interaction diagram is the source of each step, and the Steps table holds the same steps
-- `docs/AGENTS.md` drops the `Updated at` date rule and the rule that the spec holds no release, which the MVP spec replaces
-- `docs/research/` holds one file per product (open-design, OpenCode, DeepSeek Harness, Claude Slide Design, Napkin AI, the legacy DeckAgent v2 code, folders on Windows), with observed conclusions only; screenshots and recordings sit under `docs/research/evidence/`
-- Markdown files follow the no-hard-wrap rule in `docs/development/writing-documents.md`: each paragraph, list item and sentence sits on one line, and the named rules in `apps/local-web/DESIGN.md` are separate paragraphs
-
 ### Added
-- `docs/build/rebuild/adr/` holds seven decision records for the rebuild: local storage and data ownership, chat and session history, tools and permissions, request and event lifecycle, deck artifacts and revisions, credentials and models, and the design system and templates
-- `docs/build/rebuild/architecture/` states the contracts those decisions imply, one file per area: data, session, events, tools and permissions, credentials and models, and the design system and templates, with `overview.md` as the entry point
-- `docs/build/rebuild/planning/` maps each product behavior family to the minimum prerequisites it needs and lists the technical gaps that no decision covers yet
-  - The dependency analysis hands off to the build sequence in `implementation-plan.md`
-  - The decision records, the architecture notes and the planning notes are written in Vietnamese and keep their decision and behavior IDs inside `docs/build/`, which departs from the plain-English rule in `AGENTS.md` and the no-plan-detail rule in `docs/AGENTS.md`
-- `docs/build/rebuild/implementation-plan.md` and `builds/B01.md` to `builds/B08.md`: the eight rebuild builds with their developer tasks; B01 is implemented and waits for independent testing
-- `docs/build/rebuild/architecture/repository-structure.md` and `deck-artifacts.md`: package ownership and dependency direction, and the deck artifact contract
-- `packages/workspace/registry/`: the workspace registry, with the project-folder rules of BR-019 and the name rules of BR-020
-- The `test:local-foundation` script, which runs the workspace registry, chat persistence and local foundation tests
-- `commit` and `commit-push` skills, which write a conventional commit message and an entry in this file
-- `docs/development/writing-documents.md`: living documents and records, outcomes and not the conversation, one line per paragraph, clickable links, no bare ID
-- `docs/research/_STYLE.md`: how a research note is written
-- A GitHub conventions section in `AGENTS.md`: no agent is named as author or co-author
+- **Code layout:** add `scripts/format-layout.mjs` with `isLayoutTarget`, `formatLayout` and `listDenseBodies`, plus the command modes `--check`, `--write` and `--dense` that add the missing blank lines between imports, top-level declarations and class members and list the dense function bodies.
+- **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, pin the React, Vite, TanStack Query, Tailwind CSS, shadcn/ui, Vitest and MSW toolchain, and add the typed API client, the change feed hooks and the React shell with declarative routes.
+- Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
+- Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
+- Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
+- Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
+- Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.
+- **Host modules and change notices:** move `workspaces`, `chats` and `providers` into `apps/host/src/modules/`, publish `ChangeNotice` values (`workspaces`, `chats`, `providers`) through `GET /api/changes`, refuse stale writes with `409 WORKSPACES_STALE` and `409 PROVIDERS_STALE`, and refresh Browser lists from those notices.
+- **Host package and HTTP edge:** add `@deckagent/host` (`apps/host/`), serve every route through Express 5.2.1, and record 15 shared HTTP behaviors in `e2e/http-edge.test.mjs` before the move.
+- **Boundaries and tooling:** add `@deckagent/host-contracts`, `check:boundaries` (with `module-private-import` and `module-cycle` rules and negative fixtures), `scan:module-design`, `check:docs` and `test:local-foundation`; enable the TypeScript safety and import-restriction rules in `.oxlintrc.json`.
+- **Use cases and architecture:** add the use case index, the six area files with an independent baseline, the gap analysis against OWASP ASVS 5.0.0 and the OWASP Top 10 for LLM Applications 2025, `docs/UCs/quality-attributes.md`, and the agent core contracts with ADR-001 to ADR-004 (Accepted).
+- **Skills:** add `review-change`, `correct`, `commit`, `commit-push`, one `test-design` skill with a reference file for each test technique and activity, and skills for UI design review and use case and architecture writing; `write-implementation-plan` limits each plan README and task file to 15,000 bytes and keeps task reports to summary and failure lines.
+- **Deck generation:** add HTML Basic version 3 with seven controlled layouts, image search through Commons and Pexels with licence evidence, credits and per-image attempt history, resumable image progress, continuation of a confirmed Deck, and presenter notes with a Host closing report. Image generation stays deferred in [issue 106](https://github.com/Luke23127006/DeckAgent/issues/106).
+- **Attachments, sources and approvals:** add Tavily research, bounded attachment preparation, revisioned streaming uploads, saved approvals, and the request-scoped loopback MCP bridge that keeps native OpenCode tools denied.
+- **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
+
+### Changed
+- **English source:** write all Browser text, Host and deck messages and source comments in English (ASD-STE100), and block Vietnamese text in `apps/*/src` and `packages/**/src` with `check-source-language` in `pnpm lint` and the post-edit hook.
+- **Code layout:** format every source file with Biome, so `format:check` accepts all 312 files.
+- Rename the workspace store to `SqliteWorkspaceStore`, convert `WorkspaceService` to a class wired into the workspace routes, and enable `role-file-symbol` for `workspaces`.
+- Render every Browser screen with React (Settings, workspaces and the chat list, the conversation and requests, the deck screens) and decode each response through the contracts package. Remove the legacy Browser folder `apps/web/src/browser/` and its second TypeScript project, so `apps/web/` depends only on the contracts package and `check:boundaries` applies `browser-node-import` to all of `apps/web/src/`. The legacy transport clients are now the HTTP test driver in `e2e/fixtures/browser-driver/`.
+- Reduce the Host `server.ts` to startup, shutdown, configuration and wiring. Move run failure statuses to `http/error-handler.ts`, the admission allowlist to `RunController`, settings to `modules/settings/`, the storage layout and credentials to `storage/`, and rename the chat database to `ChatDatabase` and `DatabaseError` so `db/` maps no HTTP status. Narrow each Host barrel to the exports that other folders use.
+- Refactor the Host deck module into capability folders behind `DeckService`, `DeckWorkflowError`, `DeckChats` and `DeckAttachments`, move deck run planning out of `server.ts`, remove the `chatSessions` adapter by splitting `ToolSessionStore`, and enable `role-file-symbol` for `deck`.
+- Refactor attachment storage and errors behind `AttachmentService`. Preserve HTTP responses and separate chat access from attachment metadata.
+- Serve the Vite output in `apps/web/dist` from the Host with an SPA fallback and a dynamic `/theme.js`, and remove `loadWebAssets`, `apps/web/src/index.ts` and the Host dependency on `@deckagent/local-web`.
+- Refactor `providers` and `research` behind `ProviderService`, `ProviderError`, `ResearchService`, `ResearchError`, `TavilyErrorCode` and split `ResearchChats`/`ResearchRuns` ports, move `providerProtocols` into `@deckagent/host-contracts`, narrow both module indexes, and enable `role-file-symbol` for both modules.
+- Replace the chat operation functions with `ChatService` and `ChatRequestService`, move the chat error class, the error map and the conversation contribution into their own files, and narrow `modules/chats/index.ts` to the symbols that other modules use.
+- Add Zod chat and approval body decoders in `@deckagent/host-contracts`, and split `apps/host/src/modules/chats/message.ts` into `message-validation.ts` and `chat-text.ts`.
+- Move HTTP helpers into Host and remove the host-api package. Enforce HTTP helper boundaries for module routes and error maps.
+- Move deck routes, deck workflows and image and rendering adapters into the Host deck module, and session activity and request reads into chats. Keep the deck package boundary and remove the old management contracts.
+- Rewrite `docs/conventions/code.md` around the rules production code follows; use oxlint 1.94.0 as the only linter and Biome as the formatter only.
+- Separate Browser transport from UI features, Node builds from Browser builds, and application failure classes from HTTP status mapping.
+
+### Fixed
+- Share one strict Brief schema between Host validation, Browser decoding and model tools; validate layout capacities before image search; report exact field errors and derived layout blockers.
+- Reuse request-scoped web images on layout retries, register concurrent identical image calls once, and explain that web images are already attached.
+- Write MCP responses with native Node HTTP framing so the pinned OpenCode client can read tool replies.
+- Keep Chat and Create deck guidance, research permissions and Outline revision targets aligned, with the interface layout and theme unchanged.
 
 ### Removed
-- The legacy Agent Loop in Local Web: the outline, editing and web-request workflows, the Cordis and agent-runtime dependencies of `apps/local-web`, and the `--workspace` flag
-  - The tests that checked only that legacy path (`outline-workflow`, `recovery-editing`, their fixtures and the `test:recovery-editing` script and CI step); tests of behavior that B01 keeps were adapted
-- `docs/build/rebuild/research/`: its conclusions now live in the decision records, the architecture notes and the implementation plan
-- The product vision, the user segments, and the use cases and requirements that the MVP spec does not take
-- `docs/versions/` and `docs/design/`: plans, tasks and handoffs live in GitHub Issues
-  - The UX prototype regression test and its CI step, which only checked the removed prototype page
-- The research report on EthanGuo2022 OpenDesign, the spec question backlog, and the research plans and handoffs
-- The unused agent guides under `docs/agents/` (domain, issue tracker, triage labels, verification), with their references in `AGENTS.md` and the skill router
+- Remove `apps/web/src/ui-assets.ts`, the Node dependencies of `@deckagent/local-web`, `@deckagent/workspace-registry`, `@deckagent/browser-runtime`, the legacy Agent Loop and the Cordis runtime.
+- Remove `check:comments`, the `domain-modeling` and `spec-authoring` skills, `docs/versions/`, `docs/design/` and the unused agent guides.

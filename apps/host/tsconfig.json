@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/presentation/deck"
+    },
+    {
+      "path": "../../packages/presentation/design"
+    },
+    {
+      "path": "../../packages/presentation/document"
+    },
+    {
+      "path": "../../packages/presentation/html"
+    },
+    {
+      "path": "../../packages/host/contracts"
+    },
+    {
+      "path": "../web"
+    }
+  ]
+}

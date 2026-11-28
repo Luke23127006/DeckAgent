@@ -1,0 +1,247 @@
+import { decodeAttachment, requestEvent } from '@deckagent/host-contracts'
+import { fetchAuthorized, readJsonError, readSseFrames } from './http.mjs'
+function approvalView(value) {
+  if (
+    !object(value) ||
+    typeof value.approvalId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.approvalId) ||
+    typeof value.requestId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.requestId) ||
+    value.operation !== 'read-file' ||
+    typeof value.target !== 'string' ||
+    !value.target ||
+    value.target.length > 4096 ||
+    typeof value.reason !== 'string' ||
+    !value.reason ||
+    value.reason.length > 500
+  )
+    throw new Error('INVALID_RESPONSE')
+  const state = value.state
+  if (state !== 'pending' && state !== 'allowed' && state !== 'refused' && state !== 'cancelled')
+    throw new Error('INVALID_RESPONSE')
+  return {
+    approvalId: value.approvalId,
+    requestId: value.requestId,
+    operation: 'read-file',
+    target: value.target,
+    reason: value.reason,
+    state,
+  }
+}
+function object(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+const statuses = ['active', 'waiting_approval', 'completed', 'failed', 'stopped', 'interrupted']
+const code = /^[A-Z][A-Z0-9_]{0,63}$/
+const requestId = /^[\w-]{1,100}$/
+/** Whether a request still holds its chat's active slot. */
+export function isActive(status) {
+  return status === 'active' || status === 'waiting_approval'
+}
+function status(value) {
+  const found = statuses.find(item => item === value)
+  if (!found) throw new Error('INVALID_RESPONSE')
+  return found
+}
+function snapshot(value) {
+  if (
+    !object(value) ||
+    typeof value.requestId !== 'string' ||
+    !requestId.test(value.requestId) ||
+    typeof value.sessionId !== 'string' ||
+    !/^[\w-]{1,100}$/.test(value.sessionId) ||
+    typeof value.text !== 'string' ||
+    typeof value.sequence !== 'number' ||
+    !Number.isSafeInteger(value.sequence) ||
+    value.sequence < 0 ||
+    (value.errorCode !== undefined && (typeof value.errorCode !== 'string' || !code.test(value.errorCode)))
+  )
+    throw new Error('INVALID_RESPONSE')
+  const pending =
+    value.pendingApproval === null || value.pendingApproval === undefined
+      ? value.pendingApproval
+      : approvalView(value.pendingApproval)
+  if (pending && (pending.requestId !== value.requestId || pending.state !== 'pending'))
+    throw new Error('INVALID_RESPONSE')
+  return {
+    requestId: value.requestId,
+    sessionId: value.sessionId,
+    status: status(value.status),
+    text: value.text,
+    sequence: value.sequence,
+    ...(typeof value.errorCode === 'string' ? { errorCode: value.errorCode } : {}),
+    ...(pending === undefined ? {} : { pendingApproval: pending }),
+  }
+}
+/** A refused Host call: `message` is the stable code; `detail` holds only safe facts such as a reason word. */
+export class HostRequestError extends Error {
+  detail
+  constructor(code, detail = {}) {
+    super(code)
+    this.detail = detail
+    this.name = 'HostRequestError'
+  }
+}
+const allowed = [
+  'BRIEF_REPAIR_LIMIT',
+  'BRIEF_PROPOSAL_REQUIRED',
+  'RESEARCH_UNAVAILABLE',
+  'RESEARCH_KEY_UNAVAILABLE',
+  'RESEARCH_KEY_REJECTED',
+  'RESEARCH_FREE_ONLY',
+  'RESEARCH_QUOTA_EXHAUSTED',
+  'DRAFT_CONFLICT',
+  'ATTACHMENT_NOT_FOUND',
+  'ATTACHMENT_NOT_READY',
+  'ATTACHMENT_REJECTED',
+  'ATTACHMENT_COUNT_EXCEEDED',
+  'ATTACHMENT_TOO_LARGE',
+  'REQUEST_EMPTY',
+  'APPROVAL_NOT_FOUND',
+  'APPROVAL_CONFLICT',
+  'REQUEST_CLOSED',
+  'SOURCE_CHANGED',
+  'SOURCE_UNAVAILABLE',
+  'IMAGE_PREPARATION_REQUIRED',
+  'SLIDE_CORRECTION_LIMIT',
+  'AUTH_REQUIRED',
+  'SESSION_BUSY',
+  'HOST_BUSY',
+  'HOST_CLOSED',
+  'MODEL_NOT_SELECTABLE',
+  'NO_SELECTABLE_MODEL',
+  'PROVIDER_KEY_UNAVAILABLE',
+  'RUNTIME_UNAVAILABLE',
+  'RUNTIME_VERSION_UNSUPPORTED',
+  'REQUEST_NOT_FOUND',
+  'REQUEST_NOT_SAVED',
+  'REQUEST_TEXT_TOO_LONG',
+  'CHAT_UNREADABLE',
+  'SESSION_NOT_FOUND',
+  'SESSION_UNAVAILABLE',
+  'REQUESTS_UNAVAILABLE',
+  'INVALID_REQUEST',
+]
+/** Uses fetch for authenticated SSE: credentials never enter query strings or history. */
+export class HostClient {
+  origin
+  token
+  async decide(request, approvalId, decision) {
+    return approvalView(
+      await (
+        await this.request(
+          `/api/requests/${encodeURIComponent(request)}/approvals/${encodeURIComponent(approvalId)}/decision`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ decision }),
+          },
+        )
+      ).json(),
+    )
+  }
+  constructor(origin, token) {
+    this.origin = origin
+    this.token = token
+  }
+  async request(path, init = {}) {
+    const response = await fetchAuthorized(this.origin, this.token, path, init)
+    if (!response.ok) {
+      const { code, detail } = await readJsonError(response, allowed, 'HOST_REQUEST_FAILED', {
+        includeDetail: true,
+        fallback401: true,
+      })
+      throw new HostRequestError(code, detail)
+    }
+    return response
+  }
+  async send(request) {
+    return snapshot(
+      await (
+        await this.request('/api/requests', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(request),
+        })
+      ).json(),
+    )
+  }
+  async outlineImage(sessionId, outlineId, needId) {
+    const response = await this.request(
+      `/api/sessions/${encodeURIComponent(sessionId)}/outlines/${encodeURIComponent(outlineId)}/images/${encodeURIComponent(needId)}`,
+    )
+    if (response.headers.get('content-type') !== 'image/png') throw new HostRequestError('HOST_REQUEST_FAILED')
+    const blob = await response.blob()
+    if (blob.size > 256 * 1024) throw new HostRequestError('HOST_REQUEST_FAILED')
+    return blob
+  }
+  async snapshot(id) {
+    return snapshot(await (await this.request(`/api/requests/${encodeURIComponent(id)}`)).json())
+  }
+  async stop(id) {
+    return snapshot(
+      await (await this.request(`/api/requests/${encodeURIComponent(id)}/stop`, { method: 'POST' })).json(),
+    )
+  }
+  async history(id) {
+    const data = await (await this.request(`/api/sessions/${encodeURIComponent(id)}/history`)).json()
+    if (!Array.isArray(data)) throw new Error('INVALID_RESPONSE')
+    return data.map(message => {
+      if (
+        !object(message) ||
+        (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'tool') ||
+        typeof message.content !== 'string' ||
+        (message.interrupted !== undefined && (message.role !== 'assistant' || message.interrupted !== true)) ||
+        (message.toolCallId !== undefined &&
+          (message.role !== 'tool' ||
+            typeof message.toolCallId !== 'string' ||
+            !message.toolCallId ||
+            message.toolCallId.length > 2000)) ||
+        (message.name !== undefined &&
+          (message.role !== 'tool' ||
+            typeof message.name !== 'string' ||
+            !/^[A-Za-z0-9_-]{1,64}$/.test(message.name))) ||
+        (message.isError !== undefined && (message.role !== 'tool' || typeof message.isError !== 'boolean'))
+      )
+        throw new Error('INVALID_RESPONSE')
+      if (message.attachments !== undefined && (message.role !== 'user' || !Array.isArray(message.attachments)))
+        throw new Error('INVALID_RESPONSE')
+      return {
+        role: message.role,
+        content: message.content,
+        ...(Array.isArray(message.attachments) ? { attachments: message.attachments.map(decodeAttachment) } : {}),
+        ...(message.interrupted === true ? { interrupted: true } : {}),
+        ...(typeof message.toolCallId === 'string' ? { toolCallId: message.toolCallId } : {}),
+        ...(typeof message.name === 'string' ? { name: message.name } : {}),
+        ...(typeof message.isError === 'boolean' ? { isError: message.isError } : {}),
+      }
+    })
+  }
+  /**
+   * Saved events after `after`, then live ones, until the request ends. A dropped connection throws
+   * `CONNECTION_LOST`; calling again with the last sequence continues with no gap and no repeat.
+   */
+  async *watch(id, signal, after = 0) {
+    const response = await this.request(`/api/requests/${encodeURIComponent(id)}/events`, {
+      headers: after ? { 'last-event-id': String(after) } : {},
+      ...(signal ? { signal } : {}),
+    })
+    const frames = readSseFrames(response, {
+      maxBufferBytes: 4 * 1024 * 1024,
+      lostError: 'CONNECTION_LOST',
+      invalidError: 'INVALID_RESPONSE',
+      eventName: 'request',
+      matchMode: 'line',
+    })
+    let last = after
+    for await (const data of frames) {
+      const event = requestEvent(JSON.parse(data))
+      if (event.requestId !== id) throw new Error('INVALID_RESPONSE')
+      if (event.sequence > last) {
+        last = event.sequence
+        yield event
+        if (event.kind === 'status' && !isActive(event.status)) return
+      }
+    }
+  }
+}

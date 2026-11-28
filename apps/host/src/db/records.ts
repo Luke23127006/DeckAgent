@@ -1,0 +1,219 @@
+import type { RunOwner } from '../runs/ports.ts'
+
+/** Persistence records shared by `db/`, `modules/chats/`, and `modules/attachments/`. */
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
+
+export interface SourceRef {
+  readonly sourceId: string
+  readonly version: number
+  readonly kind: 'attachment'
+  readonly label: string
+}
+
+/** Metadata only. Physical storage locations never cross this interface. */
+export interface AttachmentRecord {
+  readonly attachmentId: string
+  readonly name: string
+  readonly state: 'preparing' | 'ready' | 'rejected'
+  readonly byteSize: number
+  readonly detectedType?: string
+  readonly rejectionCode?: string
+  readonly fingerprint?: string
+  readonly source?: SourceRef
+  readonly preparation?: AttachmentPreparation
+  readonly parsedFingerprint?: string
+}
+
+export interface AttachmentPreparation {
+  readonly parserVersion: string
+  readonly capabilities: readonly string[]
+  readonly completeness: 'complete' | 'partial'
+  readonly omitted: readonly { readonly code: string; readonly entry?: string }[]
+}
+
+export interface ToolCall {
+  readonly id: string
+  readonly name: string
+  readonly arguments: Readonly<Record<string, JsonValue>>
+}
+
+export interface ModelSelection {
+  readonly provider: string
+  readonly model: string
+}
+
+/** Protocol metadata replayed only by the matching connection and model. Never credentials. */
+export interface ProviderState extends ModelSelection {
+  readonly data: JsonValue
+}
+
+export type Message =
+  | { readonly role: 'system'; readonly content: string }
+  | { readonly role: 'user'; readonly content: string; readonly attachments?: readonly AttachmentRecord[] }
+  | {
+      readonly role: 'assistant'
+      readonly content: string
+      readonly toolCalls?: readonly ToolCall[]
+      readonly interrupted?: true
+      readonly providerState?: ProviderState
+    }
+  | {
+      readonly role: 'tool'
+      readonly content: string
+      readonly toolCallId: string
+      readonly name: string
+      readonly isError: boolean
+    }
+
+export interface SessionInfo {
+  readonly sessionId: string
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly selection?: ModelSelection
+  /** The selected model that was removed from its provider configuration; the chat has no selected model (FR-065). */
+  readonly removedSelection?: ModelSelection
+  readonly messageCount: number
+  /** `null` is an ungrouped chat: its workspace was removed. */
+  readonly workspaceId: string | null
+}
+
+/** Request lifecycle owned by the Host (ADR-0004). `active` and `waiting_approval` hold the chat's one active slot. */
+export type RequestStatus = 'active' | 'waiting_approval' | 'completed' | 'failed' | 'stopped' | 'interrupted'
+export type ActivityStatus = 'running' | 'completed' | 'failed' | 'stopped'
+export type TerminalStatus = 'completed' | 'failed' | 'stopped' | 'interrupted'
+
+/** A sanitized product event. Raw runtime output, provider errors and credentials never become an event. */
+export type RequestEventBody =
+  | { readonly kind: 'status'; readonly status: RequestStatus; readonly errorCode?: string }
+  | {
+      readonly kind: 'activity'
+      readonly id: string
+      readonly label: string
+      readonly type: 'model' | 'tool'
+      readonly status: ActivityStatus
+    }
+  | { readonly kind: 'text'; readonly part: string; readonly text: string }
+  | { readonly kind: 'notice'; readonly code: string }
+  | { readonly kind: 'approval'; readonly approval: ApprovalView }
+
+export interface ApprovalView {
+  readonly approvalId: string
+  readonly requestId: string
+  readonly operation: 'read-file'
+  readonly target: string
+  readonly reason: string
+  readonly state: 'pending' | 'allowed' | 'refused' | 'cancelled'
+}
+
+export type RequestEvent = RequestEventBody & {
+  readonly requestId: string
+  /** Monotonic within the request; the reconnect cursor. */
+  readonly sequence: number
+  readonly timestamp: string
+}
+
+export interface ResearchSource {
+  readonly sourceId: string
+  readonly version: 1
+  readonly kind: 'research'
+  readonly provider: 'tavily'
+  readonly query: string
+  readonly title: string
+  readonly url: string
+  readonly content: string
+  readonly partial: true
+  readonly fingerprint: string
+  readonly retrievedAt: string
+  readonly providerRequestId?: string
+  readonly location: { readonly kind: 'research-result'; readonly start: 0; readonly end: number }
+}
+
+export interface RequestRecord {
+  readonly publicResearch?: boolean
+  readonly requestId: string
+  readonly owner: RunOwner
+  readonly status: RequestStatus
+  /** Model the request was admitted with; later changes never apply to it (FR-042). */
+  readonly selection: ModelSelection
+  /** Index of the request's user message in the conversation. */
+  readonly historyStart: number
+  readonly startedAt: string
+  readonly endedAt?: string
+  readonly errorCode?: string
+  /** Sequence of the newest saved event. */
+  readonly lastSequence: number
+  /**
+   * FR-079: during this request the conversation before it was summarized for the model. The summary starts at
+   * this request's user message; every earlier message stays readable.
+   */
+  readonly summarized?: true
+}
+
+/** Latest state of one activity; `sequence` is where it first happened, so activities keep their order. */
+export interface ActivityRecord {
+  readonly requestId: string
+  readonly sequence: number
+  readonly id: string
+  readonly label: string
+  readonly type: 'model' | 'tool'
+  readonly status: ActivityStatus
+}
+
+/** Chat -> OpenCode native session, saved only after a completed request (ADR-0002). */
+export interface RuntimeBinding {
+  readonly ownerKey: string
+  readonly nativeSessionId: string
+  readonly selection: ModelSelection
+  /** Execution context identity: managed working folder and tool boundary. */
+  readonly context: string
+  /** The completed request that last used the native session. */
+  readonly lastRequestId: string
+}
+
+/** One earlier chat as the list shows it. `readable: false` keeps a damaged chat listed instead of hiding it. */
+export interface ChatSummary extends SessionInfo {
+  readonly title: string
+  readonly readable: boolean
+}
+
+export class DatabaseError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'DatabaseError'
+  }
+}
+
+export function isAttachmentPreparation(value: unknown): value is AttachmentPreparation {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('parserVersion' in value) ||
+    typeof value.parserVersion !== 'string' ||
+    !/^[a-zA-Z0-9_.-]{1,80}$/.test(value.parserVersion)
+  )
+    return false
+  if (
+    !('capabilities' in value) ||
+    !Array.isArray(value.capabilities) ||
+    value.capabilities.length > 32 ||
+    !value.capabilities.every(item => typeof item === 'string' && /^[a-z0-9-]{1,80}$/.test(item))
+  )
+    return false
+  if (!('completeness' in value) || !['complete', 'partial'].includes(String(value.completeness))) return false
+  return (
+    'omitted' in value &&
+    Array.isArray(value.omitted) &&
+    value.omitted.length <= 1000 &&
+    value.omitted.every(
+      item =>
+        item &&
+        typeof item === 'object' &&
+        typeof item.code === 'string' &&
+        /^[A-Z_]{1,64}$/.test(item.code) &&
+        (item.entry === undefined || (typeof item.entry === 'string' && item.entry.length <= 512)),
+    )
+  )
+}

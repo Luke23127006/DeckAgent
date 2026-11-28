@@ -53,41 +53,20 @@ jobs:
         id: build
         run: pnpm build
 
-      - name: Lint (Biome)
+      - name: Enforce dependency boundaries
+        id: boundaries
+        run: pnpm check:boundaries
+
+      - name: Lint (oxlint)
         id: lint
         run: pnpm lint
 
-      - name: Cordis smoke tests
-        id: smoke
-        timeout-minutes: 2
-        run: pnpm test:cordis-smoke
-
-      - name: DeckAgent runtime tests (TASK-002-A)
-        id: runtime
-        timeout-minutes: 2
-        run: pnpm test:agent-runtime
-
-      - name: Model provider and manual CLI checks (TASK-002-B, local HTTP only)
-        id: providers
-        timeout-minutes: 2
-        run: pnpm test:model-providers
-
-      - name: Boot and unload Cordis smoke CLI
-        id: boot
-        timeout-minutes: 2
-        run: pnpm start:cordis-smoke
-
-      - name: Durable Session and process restart checks (TASK-002-C, local HTTP only)
+      - name: Durable conversation storage (local SQLite)
         id: sessions
         timeout-minutes: 2
         run: pnpm test:session-persistence
 
-      - name: Chat first-run setup and Windows encrypted credentials (local HTTP only)
-        id: chat_setup
-        timeout-minutes: 3
-        run: pnpm test:chat-setup
-
-      - name: File Tools, Host API and browser connection (TASK-003, local fixtures)
+      - name: Host API and browser connection (local fixtures)
         id: tools_browser
         timeout-minutes: 2
         run: pnpm test:tools-browser
@@ -107,10 +86,35 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:local-foundation
 
+      - name: Models and requests through a fake OpenCode CLI (B02, local SQLite, HTTP and DPAPI)
+        id: model_requests
+        timeout-minutes: 4
+        run: pnpm test:model-requests
+
+      - name: Installed and packaged OpenCode resources (no global CLI or provider key)
+        id: opencode_resources
+        timeout-minutes: 2
+        run: pnpm test:opencode-resources
+
+      - name: Sources, request-scoped MCP and one-step approval (local fixtures)
+        id: source_permissions
+        timeout-minutes: 3
+        run: pnpm test:source-permissions
+
+      - name: Attachment parsing, upload, admission and durable source content (local fixtures)
+        id: attachments
+        timeout-minutes: 3
+        run: pnpm test:attachments
+
       - name: Real browser workspaces, chats, drafts and deck canvas smoke (Chrome headless, local fixtures)
         id: browser
         timeout-minutes: 2
         run: pnpm test:browser-smoke
+
+      - name: Public research selection, free-only policy and durable provenance (local fixtures)
+        id: research
+        timeout-minutes: 3
+        run: pnpm test:research
 
       - name: Slide publication, Deck SSE and client state (TASK-005, local fixtures)
         id: slide_pipeline
@@ -122,6 +126,21 @@ jobs:
         timeout-minutes: 2
         run: pnpm test:outline-workflow
 
+      - name: Design catalog and Brief storage/API/client (local fixtures)
+        id: brief_foundation
+        timeout-minutes: 2
+        run: pnpm test:brief-foundation
+
+      - name: Interview and versioned Outline review (local fixtures)
+        id: deck_review
+        timeout-minutes: 2
+        run: pnpm test:deck-review
+
+      - name: Generation confirmation and durable artifacts (local browser and fixtures)
+        id: generation_publication
+        timeout-minutes: 6
+        run: pnpm test:generation-publication
+
       - name: Record verification evidence
         if: always()
         env:
@@ -130,20 +149,24 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
+          BOUNDARIES_RESULT: ${{ steps.boundaries.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
-          SMOKE_RESULT: ${{ steps.smoke.outcome }}
-          RUNTIME_RESULT: ${{ steps.runtime.outcome }}
-          PROVIDERS_RESULT: ${{ steps.providers.outcome }}
           SESSIONS_RESULT: ${{ steps.sessions.outcome }}
-          CHAT_SETUP_RESULT: ${{ steps.chat_setup.outcome }}
-          BOOT_RESULT: ${{ steps.boot.outcome }}
           TOOLS_BROWSER_RESULT: ${{ steps.tools_browser.outcome }}
           BROWSER_RESULT: ${{ steps.browser.outcome }}
           ENV_STARTUP_RESULT: ${{ steps.env_startup.outcome }}
           LOCAL_WEB_RESULT: ${{ steps.local_web.outcome }}
           SLIDE_PIPELINE_RESULT: ${{ steps.slide_pipeline.outcome }}
           OUTLINE_WORKFLOW_RESULT: ${{ steps.outline_workflow.outcome }}
+          BRIEF_FOUNDATION_RESULT: ${{ steps.brief_foundation.outcome }}
+          DECK_REVIEW_RESULT: ${{ steps.deck_review.outcome }}
+          GENERATION_PUBLICATION_RESULT: ${{ steps.generation_publication.outcome }}
           LOCAL_FOUNDATION_RESULT: ${{ steps.local_foundation.outcome }}
+          MODEL_REQUESTS_RESULT: ${{ steps.model_requests.outcome }}
+          OPENCODE_RESOURCES_RESULT: ${{ steps.opencode_resources.outcome }}
+          SOURCE_PERMISSIONS_RESULT: ${{ steps.source_permissions.outcome }}
+          ATTACHMENTS_RESULT: ${{ steps.attachments.outcome }}
+          RESEARCH_RESULT: ${{ steps.research.outcome }}
         run: |
           @"
           ## Workspace verification
@@ -152,25 +175,27 @@ jobs:
           - Environment: windows-2022, Node 22.19.0; pnpm from package.json
           - Install: $env:INSTALL_RESULT
           - Build/typecheck: $env:BUILD_RESULT
-          - Lint (Biome): $env:LINT_RESULT
-          - Integration smoke: $env:SMOKE_RESULT
-          - DeckAgent runtime (TASK-002-A only): $env:RUNTIME_RESULT
-          - Model providers (TASK-002-B, local HTTP only): $env:PROVIDERS_RESULT
-          - Session persistence (TASK-002-C, local HTTP only): $env:SESSIONS_RESULT
-          - Chat first-run setup (local HTTP, Windows DPAPI): $env:CHAT_SETUP_RESULT
-          - Boot/unload: $env:BOOT_RESULT
-          - File Tools / Host API / browser client: $env:TOOLS_BROWSER_RESULT
+          - Dependency boundaries (check:boundaries): $env:BOUNDARIES_RESULT
+          - Lint (oxlint): $env:LINT_RESULT
+          - Session persistence (local SQLite): $env:SESSIONS_RESULT
+          - Host API / browser client: $env:TOOLS_BROWSER_RESULT
           - Local foundation / workspaces / chats / storage: $env:LOCAL_FOUNDATION_RESULT
+          - Models / requests / fake OpenCode CLI (no real CLI or provider): $env:MODEL_REQUESTS_RESULT
+          - Installed / packaged OpenCode resources / version / integrity checks: $env:OPENCODE_RESOURCES_RESULT
+          - Sources / request-scoped MCP / one-step approval (local fixtures): $env:SOURCE_PERMISSIONS_RESULT
+          - Attachment parsing / upload / admission / source content (local fixtures): $env:ATTACHMENTS_RESULT
+          - Public research / free-only policy / durable provenance (local fixtures): $env:RESEARCH_RESULT
           - Real browser workspaces / chats / drafts / deck canvas: $env:BROWSER_RESULT
-          - Dotenv startup / environment precedence / Web settings without credentials: $env:ENV_STARTUP_RESULT
+          - Dotenv startup / Web settings without credentials: $env:ENV_STARTUP_RESULT
           - Local Web / model snapshots / encrypted settings / activity persistence: $env:LOCAL_WEB_RESULT
           - Slide publication / immutable storage / Deck SSE / reconnect: $env:SLIDE_PIPELINE_RESULT
           - Outline state / client: $env:OUTLINE_WORKFLOW_RESULT
+          - Design catalog / Brief versions / source ownership / API and client: $env:BRIEF_FOUNDATION_RESULT
+          - Interview / versioned Outline review / restart and atomic receipts: $env:DECK_REVIEW_RESULT
+          - Generation confirmation / admission faults / artifact safety and real rendering: $env:GENERATION_PUBLICATION_RESULT
           - Run: $env:RUN_URL
 
           Record this run URL and tested SHA in the task's GitHub Issue. A successful push run on
-          dev supplies automated evidence; also verify every criterion of the gate.
-          Gate 002 additionally requires a real-model request and history readback
-          after Host restart on the accepted baseline (manual evidence; no cloud keys
-          are required by this workflow). PR runs verify the proposed merge only.
+          dev supplies automated evidence. Real-provider requests and hosted checks
+          need separate evidence. PR runs verify the proposed merge only.
           "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8

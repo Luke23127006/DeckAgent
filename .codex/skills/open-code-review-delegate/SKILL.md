@@ -16,7 +16,7 @@ The project rule file (`.opencodereview/rule.json`) excludes the generated Claud
 
 ## Prerequisite
 
-Run from the repository root. On Windows use `pnpm.cmd`; on macOS or Linux use `pnpm`.
+Run from the repository root.
 
 Verify the workspace dependency with:
 

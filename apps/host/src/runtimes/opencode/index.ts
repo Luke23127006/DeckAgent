@@ -1,0 +1,5 @@
+export { OpenCodeAgentRuntime } from './agent-runtime.ts'
+export type { OpenCodeOptions } from './agent-runtime.ts'
+export { pinnedVersion } from './config.ts'
+export { openToolBridge } from './mcp-bridge.ts'
+export { findExecutable } from './resources.ts'

@@ -1,0 +1,10 @@
+{
+  "name": "@deckagent/pptx-format",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": { ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" } },
+  "dependencies": { "@deckagent/design": "workspace:*", "@deckagent/presentation-document": "workspace:*", "pptxgenjs": "4.0.1", "jszip": "3.10.1" }
+}

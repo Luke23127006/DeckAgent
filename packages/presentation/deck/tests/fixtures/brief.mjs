@@ -1,0 +1,15 @@
+export const brief = () => ({
+  topic: 'Dự án Hoa Sen',
+  audience: 'Sinh viên',
+  durationMinutes: 10,
+  language: 'vi',
+  requirements: ['Không bịa số liệu'],
+  answers: [],
+  assumptions: ['Dự kiến 4 slide'],
+  sources: { material: true, modelKnowledge: false, publicResearch: false, refs: [] },
+  images: { mode: 'none', attachmentIds: [], unmetRequirements: [] },
+  proposedSlideCount: 4,
+  generationFormat: 'html',
+  designSystem: { id: 'deckagent-neutral', version: 1 },
+  template: { id: 'html-basic', version: 1 },
+})

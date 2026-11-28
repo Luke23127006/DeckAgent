@@ -1,5 +1,6 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../design" }, { "path": "../document" }]
 }

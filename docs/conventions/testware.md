@@ -1,0 +1,20 @@
+# Testware
+
+Đọc file này để biết các quy tắc viết test code của DeckAgent và công cụ nào chặn từng quy tắc.
+
+Test sống lâu hơn task tạo ra nó: một test viết cho một tính năng sẽ còn chạy làm regression cho các thay đổi sau này. Người sửa test thường chưa đọc tài liệu đã dùng để viết test đó.
+
+- Đặt tên file và thư mục test theo tính năng, không theo task hay test scope.
+- Comment đầu mỗi file test nói: file kiểm hành vi gì, test chạy trên môi trường nào (fake nào, dịch vụ nào, vì sao), cách chạy, và nơi có expected result. Một người chưa đọc tài liệu test phải sửa được file sau khi đọc comment này.
+- Test kiểm hành vi theo requirement, không theo code hiện tại. Expected value là literal lấy từ test case hoặc requirement. Không lấy expected value từ hằng số, cấu hình hay hàm của code đang được test, và không assert giá trị của một hằng số hay cấu hình thay cho hành vi. Khi code sai, expected value lấy từ code cũng sai theo, nên test vẫn pass. Input cũng vậy: giá trị biên viết thành literal từ test case, không import hằng số của app.
+- Code production không export hằng số, hàm hay type mà không module production nào import: export chỉ để test dùng làm test bám vào cấu trúc của module. Test hành vi qua hàm public của module.
+- Không thay module của app bằng mock. Mock như vậy chép cách code chia module: test fail khi chỉ sắp xếp lại code, và pass khi module thật hỏng. Chỉ thay boundary: truyền fake qua tham số (logger, clock, client của dịch vụ bên ngoài).
+- Assert đúng kết quả mà test case cho input đó, kèm side effect khi test case có ghi. Không assert một khoảng hay một phủ định ("status khác 429"): response 500 cũng khác 429. Khi kết quả lấy từ thư viện mà requirement không quy định, test design ghi kết quả đó là contract của version thư viện, có người duyệt. Mỗi test có ít nhất một assertion.
+- Khi môi trường test mô phỏng một sự kiện (khởi động lại, client thứ hai, mất kết nối), bản mô phỏng phải làm mất đúng trạng thái mà sự kiện thật làm mất. Ví dụ: khởi động lại server là chạy process mới, không phải tạo object mới trong cùng process, vì thư viện có thể giữ trạng thái trong biến của module. Trước khi dùng một mock, stub hoặc driver, người viết test làm hỏng một lần hành vi mà thành phần đó thay thế, rồi chạy test dùng thành phần đó. Test phải fail. Comment đầu file test ghi lỗi đã thử và test đã fail. Tên test và comment chỉ nói điều mà assertion kiểm được.
+- Mỗi test chạy được riêng và chạy được theo mọi thứ tự. Test không dùng chung dữ liệu có thể thay đổi với test khác. Mỗi test tạo dữ liệu riêng. Một mock phải trả được lỗi khi test cần lỗi. Một mock luôn trả thành công làm test không fail được.
+- Test không phụ thuộc vào thời gian thật. Test điều khiển thời gian bằng fake clock hoặc bằng clock truyền qua tham số. Test chờ theo điều kiện, không chờ một số giây cố định. Khi máy chậm, test chờ cố định có thể fail mà sản phẩm không sai.
+- Khi một tính chất chỉ kiểm được bằng đọc code của dependency, ví dụ token được sinh từ CSPRNG, test tự động không thay được việc đọc code đó: một bộ đếm cũng tạo được token không trùng. Ghi kết quả là review, kèm file, dòng và version của dependency đã đọc, không ghi là test đã chứng minh.
+- Khi môi trường test không cho tạo một precondition mà người dùng thật tạo được, sửa môi trường test (biến môi trường, server thứ hai, dữ liệu riêng), không sửa test để né.
+- Test của `apps/web/` chạy bằng Vitest. Test component dùng môi trường jsdom và Testing Library, và kiểm điều người dùng thấy. Test component thay HTTP bằng MSW chạy trong Node ở mức network, không mock hook. Handler và fixture của test nằm trong `apps/web/tests/`. Logic thuần (`editor/`, decode trong `api/`, key factory) có test không cần render.
+- Test HTTP của Host và test trong `e2e/` gọi Host qua HTTP driver trong `e2e/fixtures/browser-driver/`. Driver này không phải Browser: hành vi của Browser được kiểm trong `apps/web/tests/`. Code production không import driver *(review)*.
+- `apps/web/mocks/` là code cho development, không phải testware. Test không import handler hay fixture trong `apps/web/mocks/`.
