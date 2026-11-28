@@ -36,11 +36,13 @@ function extractImageObjectCredit(
     link === undefined
   )
     return undefined
+
   const license = licenseFromLink(link)
   const author = authorOf(item)
   if (!license) rejected?.('RESEARCH_IMAGE_LICENSE_UNSUPPORTED')
   else if (license === 'CC BY' && !author.trim()) rejected?.('RESEARCH_IMAGE_AUTHOR_REQUIRED')
   if (!license || (!author.trim() && license === 'CC BY')) return undefined
+
   return {
     url: sourceUrl,
     license,
@@ -74,6 +76,7 @@ export function imagePageCredit(
   let count = 0
   const visit = (item: unknown, depth: number): ImageCredit | undefined => {
     if (++count > 500 || depth > 10) return undefined
+
     if (Array.isArray(item)) {
       for (const child of item) {
         const credit = visit(child, depth + 1)
@@ -81,13 +84,17 @@ export function imagePageCredit(
       }
       return undefined
     }
+
     if (!object(item)) return undefined
+
     const credit = extractImageObjectCredit(item, imageUrl, sourceUrl, rejected)
     if (credit) return credit
+
     for (const child of Object.values(item)) {
       const credit = visit(child, depth + 1)
       if (credit) return credit
     }
+
     return undefined
   }
   return visit(items, 0)

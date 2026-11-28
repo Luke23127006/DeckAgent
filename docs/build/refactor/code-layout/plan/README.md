@@ -105,7 +105,7 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 | 4 | Done | [Apply the layout script to the repository](task-04-apply-layout-script.md) ([report](../reports/task-04-apply-layout-script.md)) | `style(layout): add blank lines between declarations and members` |
 | 5 | Done | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) ([report](../reports/task-05-enforce-layout-in-format-and-hook.md)) | `chore(scripts): run the layout check in format and the post-edit hook` |
 | 6 | Done | [Write the layout rules into the conventions](task-06-write-layout-rules-into-conventions.md) ([report](../reports/task-06-write-layout-rules-into-conventions.md)) | `docs(conventions): add the code layout rules` |
-| 7 | Pending | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) | `style(layout): add steps in the Host deck module` |
+| 7 | Done | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) ([report](../reports/task-07-add-steps-in-host-deck-module.md)) | `style(layout): add steps in the Host deck module` |
 | 8 | Pending | [Add steps in the other Host folders](task-08-add-steps-in-other-host-folders.md) | `style(layout): add steps in the other Host folders` |
 | 9 | Pending | [Add steps in the Browser](task-09-add-steps-in-browser.md) | `style(layout): add steps in the Browser` |
 | 10 | Pending | [Add steps in the deck package](task-10-add-steps-in-deck-package.md) | `style(layout): add steps in the deck package` |

@@ -68,15 +68,18 @@ function buildSearchUrl(query: string, title?: string): URL {
 
 function parseCandidatePage(page: unknown, fallbackTitle: string): CommonsCandidate | undefined {
   if (!object(page) || !Array.isArray(page.imageinfo) || !object(page.imageinfo[0])) return undefined
+
   const info = page.imageinfo[0]
   const image =
     safeUrl(info.thumburl ?? info.url, 'upload.wikimedia.org') ?? safeUrl(info.thumburl, 'thumb.wikimedia.org')
   const source = safeUrl(info.descriptionurl, 'commons.wikimedia.org')
   if (!image || !source || !object(info.extmetadata)) return undefined
+
   const ext = info.extmetadata
   const name = extMetadataValue(ext, 'LicenseShortName').trim()
   const link = extMetadataValue(ext, 'LicenseUrl')
   if (name && !/^CC0$|^public domain$|^CC BY [1-4]\.\d(?: [A-Z-]+)?$/i.test(name)) return undefined
+
   let license: ImageCredit['license']
   if (name === 'CC0' || /^https:\/\/creativecommons\.org\/publicdomain\/zero\/1\.0\/?$/.test(link)) license = 'CC0'
   else if (/^public domain$/i.test(name) || (!name && extMetadataValue(ext, 'Copyrighted') === 'False'))
@@ -88,6 +91,7 @@ function parseCandidatePage(page: unknown, fallbackTitle: string): CommonsCandid
     license = 'CC BY'
   else if (!name && !link) license = 'unknown'
   else return undefined
+
   return {
     imageUrl: image,
     sourceUrl: source,
@@ -132,12 +136,14 @@ export class CommonsImages {
 
   async candidates(query: string, signal: AbortSignal, title?: string): Promise<readonly CommonsCandidate[]> {
     if ((!query.trim() && !title) || query.length > 500) throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+
     const operation = AbortSignal.any([signal, AbortSignal.timeout(20000)])
     const headers = {
       'User-Agent': 'DeckAgent/0.0.0 (https://github.com/Luke23127006/DeckAgent)',
       Accept: 'application/json',
     }
     const url = buildSearchUrl(query, title)
+
     try {
       const metadata: unknown = JSON.parse(
         (
@@ -155,6 +161,7 @@ export class CommonsImages {
     } catch {
       signal.throwIfAborted()
     }
+
     throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
   }
 
@@ -162,16 +169,19 @@ export class CommonsImages {
     const operation = AbortSignal.any([signal, AbortSignal.timeout(20000)])
     if (!(safeUrl(candidate.imageUrl, 'upload.wikimedia.org') ?? safeUrl(candidate.imageUrl, 'thumb.wikimedia.org')))
       throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
+
     const response = await this.request(candidate.imageUrl, {
       signal: operation,
       redirect: 'error',
       headers: { Accept: 'image/png,image/jpeg' },
     })
+
     const type = response.headers.get('content-type')?.split(';')[0]
     if (type !== 'image/png' && type !== 'image/jpeg') {
       await response.body?.cancel().catch(() => {})
       throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     }
+
     const bytes = await limited(response, 8 * 1024 * 1024)
     const parsed = await this.parser.parse({
       name: type === 'image/png' ? 'commons.png' : 'commons.jpg',
@@ -182,6 +192,7 @@ export class CommonsImages {
     if (!image || image.type !== 'image' || !('data' in image) || typeof image.data !== 'string')
       throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     operation.throwIfAborted()
+
     const normalized = Buffer.from(image.data, 'base64')
     return {
       bytes: normalized,

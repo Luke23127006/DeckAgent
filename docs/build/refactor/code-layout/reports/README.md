@@ -10,3 +10,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 4 | [Apply the layout script to the repository](task-04-apply-layout-script.md) |
 | 5 | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) |
 | 6 | [Write the layout rules into the conventions](task-06-write-layout-rules-into-conventions.md) |
+| 7 | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) |

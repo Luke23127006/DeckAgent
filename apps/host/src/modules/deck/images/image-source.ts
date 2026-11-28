@@ -19,12 +19,15 @@ export function imageSource(candidate: ImageSearchCandidate): {
   readonly downloadUrl?: string
 } {
   let image: URL
+
   try {
     image = new URL(candidate.imageUrl)
   } catch {
     return {}
   }
+
   if (image.protocol !== 'https:' || image.username || image.password || image.port) return {}
+
   if (image.hostname === 'images.pexels.com') {
     const match = /^\/photos\/([1-9]\d{0,11})\/([\w-]+)\.(?:jpe?g|png)$/.exec(image.pathname)
     const id = match?.[1]
@@ -55,6 +58,7 @@ export function imageSource(candidate: ImageSearchCandidate): {
       }
     }
   }
+
   if (image.hostname === 'upload.wikimedia.org' || image.hostname === 'thumb.wikimedia.org') {
     const parts = image.pathname.split('/').filter(Boolean)
     if (parts[0] === 'wikipedia' && parts[1] === 'commons') {
@@ -71,5 +75,6 @@ export function imageSource(candidate: ImageSearchCandidate): {
       }
     }
   }
+
   return candidate.sourceUrl ? { sourceUrl: candidate.sourceUrl } : {}
 }

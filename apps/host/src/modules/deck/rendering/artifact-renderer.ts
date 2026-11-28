@@ -30,10 +30,12 @@ class ManagedRenderer implements ArtifactRenderer {
 
   async render(html: string, requiredText: readonly string[], caller: AbortSignal): Promise<void> {
     if (activeRenders >= 2) throw new DeckError('ARTIFACT_RENDERER_BUSY')
+
     activeRenders++
     this.inFlight++
     this.clearIdleTimer()
     const signal = AbortSignal.any([caller, AbortSignal.timeout(15000)])
+
     try {
       const current = await this.acquireBrowser(signal)
       if (await this.runIsolatedRender(current, html, requiredText, signal)) await this.recycle(current)
@@ -86,11 +88,13 @@ class ManagedRenderer implements ArtifactRenderer {
     if (this.closed) throw new DeckError('ARTIFACT_RENDERER_FAILED')
     if (this.browser) return this.browser
     if (this.launching) return this.launching
+
     const current = ++this.generation
     const starting = launchManagedBrowser(this.root, signal, () => {
       if (current === this.generation) this.browser = undefined
     })
     this.launching = starting
+
     try {
       const value = await starting
       this.browser = value
@@ -110,10 +114,12 @@ class ManagedRenderer implements ArtifactRenderer {
     const context = await current.cdp.call('Target.createBrowserContext', { disposeOnDetach: true }, { signal })
     if (!object(context) || typeof context.browserContextId !== 'string')
       throw new DeckError('ARTIFACT_RENDERER_FAILED')
+
     const browserContextId = context.browserContextId
     let targetId: string | undefined
     let poisoned = false
     let failure: unknown
+
     try {
       const target = await current.cdp.call('Target.createTarget', { url: 'about:blank', browserContextId }, { signal })
       if (!object(target) || typeof target.targetId !== 'string') throw new DeckError('ARTIFACT_RENDERER_FAILED')
@@ -159,10 +165,12 @@ class ManagedRenderer implements ArtifactRenderer {
         poisoned = true
       })
     }
+
     if (failure !== undefined) {
       if (poisoned) await this.recycle(current)
       throw failure
     }
+
     return poisoned
   }
 }

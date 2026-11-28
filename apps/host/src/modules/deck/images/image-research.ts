@@ -93,6 +93,7 @@ export class WebImageResearch {
     const resolved = imageSource(candidate)
     const pages = [...new Set([...(resolved.sourceUrl ? [resolved.sourceUrl] : []), ...(candidate.sourcePages ?? [])])]
     const checks: ImageSourceCheck[] = []
+
     for (const sourceUrl of pages.slice(0, 3)) {
       try {
         const source = new URL(sourceUrl)
@@ -128,6 +129,7 @@ export class WebImageResearch {
         })
       }
     }
+
     const failure =
       checks.find(c => c.code === 'RESEARCH_IMAGE_LICENSE_UNSUPPORTED' || c.code === 'RESEARCH_IMAGE_AUTHOR_REQUIRED')
         ?.code ??
@@ -178,6 +180,7 @@ export class WebImageResearch {
     if (!image || image.type !== 'image' || !('data' in image) || typeof image.data !== 'string')
       throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
     operation.throwIfAborted()
+
     const normalized = Buffer.from(image.data, 'base64')
     return {
       bytes: normalized,

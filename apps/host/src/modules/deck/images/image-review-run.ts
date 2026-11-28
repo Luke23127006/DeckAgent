@@ -144,14 +144,17 @@ export class ImageReviewRun {
 
   async search(needId: string, query: string) {
     this.signal.throwIfAborted()
+
     const state = this.states.get(needId)
     if (!state || !query.trim() || query.length > 500) throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
     if (state.searches >= 2) throw new DeckError('RESEARCH_IMAGE_BUDGET')
+
     state.searches++
     const version = ++state.version
     delete state.selected
     state.candidates.length = 0
     state.query = query
+
     try {
       this.reserve()
       const candidates = await this.service.candidates(state.need, query, this.signal)
@@ -167,6 +170,7 @@ export class ImageReviewRun {
         throw new DeckError('RESEARCH_IMAGE_SELECTION_STALE')
       state.failure = code(error)
     }
+
     return this.view(state)
   }
 
@@ -185,14 +189,18 @@ export class ImageReviewRun {
     alternatives: readonly { readonly candidateId: string; readonly reason: string }[] = [],
   ) {
     this.signal.throwIfAborted()
+
     const state = this.states.get(needId)
     if (!state) throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
+
     const choices = this.resolveRankedChoices(state, candidateId, reason, alternatives)
     if (state.attempts >= 4) throw new DeckError('RESEARCH_IMAGE_BUDGET')
     if (state.selecting) throw new DeckError('RESEARCH_IMAGE_SELECTION_BUSY')
+
     state.selecting = true
     const version = state.version
     delete state.selected
+
     try {
       for (const choice of choices) {
         if (state.attempts >= 4) break
@@ -272,6 +280,7 @@ export class ImageReviewRun {
       throw new DeckError('RESEARCH_IMAGE_DUPLICATE')
     if (state.need.replace && this.previous.some(n => n.digest === image.parsedDigest))
       throw new DeckError('RESEARCH_IMAGE_DUPLICATE')
+
     const selection: ImageSelection = {
       provider: state.need.provider,
       query: state.query,
@@ -287,6 +296,7 @@ export class ImageReviewRun {
       code: 'IMAGE_PREPARED',
       checks: [],
     })
+
     state.selected = { ...image, selection, attempts: [...state.attemptLog] }
     delete state.failure
     return { credit: image.credit, selection }

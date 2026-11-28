@@ -34,9 +34,11 @@ export function assertBriefChoices(draft: BriefDraft, initial: BriefDraft, comma
       'The user selected HTML for this request.',
       'Use generationFormat html and canonical requestedFormat html.',
     )
+
   if (command.imageChoice && draft.images.mode !== command.imageChoice) throw new DeckError('IMAGE_CHOICE_REQUIRED')
   if ((draft.images.provider ?? 'tavily') !== (initial.images.provider ?? 'tavily'))
     throw new DeckError('IMAGE_CHOICE_REQUIRED')
+
   if (
     draft.template?.version === 1 &&
     command.imageProviderChoice === 'tavily' &&
@@ -48,6 +50,7 @@ export function assertBriefChoices(draft: BriefDraft, initial: BriefDraft, comma
       'Tavily candidate review requires HTML Basic version 2 or later. Keep the legacy Commons path only with an explicit Commons choice.',
       'Choose HTML Basic version 2 or later for Tavily, or Commons for the pinned legacy template.',
     )
+
   if (
     draft.images.mode === 'public-research' &&
     initial.images.mode !== 'public-research' &&
@@ -62,6 +65,7 @@ export function assertBriefChoices(draft: BriefDraft, initial: BriefDraft, comma
     throw new DeckError('FORMAT_CHOICE_REQUIRED')
   if (initial.images.mode === 'unavailable' && draft.images.mode !== 'unavailable' && !command.imageChoice)
     throw new DeckError('IMAGE_CHOICE_REQUIRED')
+
   if (
     ['material', 'modelKnowledge', 'publicResearch'].some(
       k =>

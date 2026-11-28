@@ -108,14 +108,17 @@ export function decodeImageToolCall(name: string, value: Record<string, unknown>
       throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
     return { kind: 'search', query: value.query }
   }
+
   if (
     typeof value.candidateId !== 'string' ||
     typeof value.reason !== 'string' ||
     Object.keys(value).some(k => !['needId', 'candidateId', 'reason', 'alternatives'].includes(k))
   )
     throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
+
   const list = 'alternatives' in value ? value.alternatives : []
   if (!Array.isArray(list) || list.length > 2) throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
+
   const alternatives = list.map(alternative => {
     if (
       !isRecord(alternative) ||

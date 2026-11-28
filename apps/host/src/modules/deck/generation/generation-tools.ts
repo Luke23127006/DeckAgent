@@ -37,8 +37,10 @@ function createEvidenceLedger(attachments: readonly DeckAttachmentRecord[]) {
   const remember = (data: Record<string, unknown>): Record<string, unknown> => {
     const ref = object(data.source) ? data.source : data
     if (typeof ref.sourceId !== 'string' || typeof ref.version !== 'number') return data
+
     const kind = ref.kind
     if (!isSourceKind(kind)) return data
+
     const excerpt = typeof data.text === 'string' ? data.text : typeof data.content === 'string' ? data.content : ''
     const evidenceId = `evidence-${randomUUID()}`
     const label =
@@ -47,12 +49,14 @@ function createEvidenceLedger(attachments: readonly DeckAttachmentRecord[]) {
         : typeof data.title === 'string'
           ? data.title
           : (attachments.find(a => a.source?.sourceId === ref.sourceId)?.name ?? ref.sourceId)
+
     entries.set(evidenceId, {
       source: { sourceId: ref.sourceId, version: ref.version, kind },
       label,
       excerpt,
       location: JSON.stringify(data.location ?? { kind: 'lines', start: 1, end: excerpt.split('\n').length }),
     })
+
     return { ...data, evidenceId }
   }
   const get = (id: string): EvidenceRecord | undefined => entries.get(id)
@@ -70,6 +74,7 @@ function parseProvenanceEntries(rawEntries: readonly unknown[], evidence: Eviden
       Object.keys(entry).some(k => !['text', 'kind', 'evidenceId', 'quote'].includes(k))
     )
       throw new DeckError('PROVENANCE_INVALID')
+
     const proof = typeof entry.evidenceId === 'string' ? evidence.get(entry.evidenceId) : undefined
     if (entry.evidenceId !== undefined && !proof) throw new DeckError('PROVENANCE_INVALID')
     if (entry.kind === 'fact' && !proof) throw new DeckError('PROVENANCE_REQUIRED')
@@ -79,9 +84,11 @@ function parseProvenanceEntries(rawEntries: readonly unknown[], evidence: Eviden
         kind: entry.kind,
         origin: entry.kind === 'placeholder' ? 'unknown' : 'general-knowledge',
       }
+
     const quote = entry.quote
     if (typeof quote !== 'string' || !quote.trim() || !proof.excerpt.includes(quote))
       throw new DeckError('PROVENANCE_INVALID')
+
     return {
       text: entry.text,
       kind: entry.kind,
@@ -148,6 +155,7 @@ async function callAuthorizedSourceTool(
     return result('SOURCE_ACCESS_DENIED', true)
   if (name === 'read_research' && !research.some(s => s.sourceId === args.sourceId))
     return result('SOURCE_ACCESS_DENIED', true)
+
   const read = await tools.call(name, args)
   if (!read.isError && (name === 'read_source' || name === 'read_external' || name === 'read_attachment')) {
     const text = read.content.find(c => c.type === 'text')
@@ -161,6 +169,7 @@ async function callAuthorizedSourceTool(
     )
       return result('SOURCE_CHANGED', true)
   }
+
   if (!read.isError) {
     const first = read.content.find(c => c.type === 'text')
     if (first?.type === 'text') {
@@ -180,6 +189,7 @@ async function callAuthorizedSourceTool(
       }
     }
   }
+
   return read
 }
 
@@ -206,10 +216,12 @@ async function dispatchStageTool(
   const { capability } = dispatch
   if (name === 'read_slide_draft' && onlyKeys(v, 'stageId') && typeof v.stageId === 'string')
     return { handled: true, value: capability.draft(v.stageId) }
+
   if (name === 'record_slide_content' && onlyKeys(v, 'stageId', 'document') && typeof v.stageId === 'string') {
     capability.document(v.stageId, decodeSlideDocument(v.document))
     return { handled: true, value: { recorded: true } }
   }
+
   if (
     name === 'validate_slide' &&
     onlyKeys(v, 'stageId', 'slideId') &&
@@ -224,6 +236,7 @@ async function dispatchStageTool(
     })
     return { handled: true, value: { valid: !issues.length, issues } }
   }
+
   if (
     name === 'record_slide_provenance' &&
     onlyKeys(v, 'stageId', 'entries', 'notes') &&
@@ -239,6 +252,7 @@ async function dispatchStageTool(
     typeof v.query === 'string'
   )
     return { handled: true, value: await capability.researchImage(v.stageId, v.slideId, v.query) }
+
   return { handled: false }
 }
 
@@ -277,10 +291,12 @@ async function dispatchPublishOrContentTool(
     typeof v.attachmentId === 'string'
   )
     return { handled: true, value: await capability.image(v.stageId, v.slideId, v.attachmentId) }
+
   if (name === 'discard_slide' && onlyKeys(v, 'stageId') && typeof v.stageId === 'string') {
     capability.discard(v.stageId)
     return { handled: true, value: { discarded: true } }
   }
+
   if (
     name === 'publish_slide' &&
     onlyKeys(v, 'stageId', 'slideId', 'expectedRevision', 'publicationId') &&
@@ -301,6 +317,7 @@ async function dispatchPublishOrContentTool(
       }),
     }
   }
+
   return { handled: false }
 }
 

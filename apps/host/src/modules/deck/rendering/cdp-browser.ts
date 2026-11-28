@@ -113,11 +113,13 @@ export async function connectBrowser(url: string, onDisconnect: () => void): Pro
     failPending()
     onDisconnect()
   }
+
   await new Promise<void>((done, reject) => {
     socket.addEventListener('open', () => done(), { once: true })
     socket.addEventListener('error', () => reject(new DeckError('ARTIFACT_RENDERER_FAILED')), { once: true })
     socket.addEventListener('close', () => reject(new DeckError('ARTIFACT_RENDERER_FAILED')), { once: true })
   })
+
   socket.addEventListener('message', event => {
     const value: unknown = JSON.parse(String(event.data))
     if (!object(value) || typeof value.id !== 'number') return
@@ -128,6 +130,7 @@ export async function connectBrowser(url: string, onDisconnect: () => void): Pro
     if (value.error) waiter.reject(new DeckError('ARTIFACT_RENDERER_FAILED'))
     else waiter.resolve(value.result)
   })
+
   socket.addEventListener('close', disconnect)
   socket.addEventListener('error', disconnect)
   return {
@@ -196,6 +199,7 @@ export async function launchManagedBrowser(
   let child: ChildProcess | undefined
   let cdp: CdpConnection | undefined
   const abort = () => child?.kill()
+
   try {
     child = spawn(
       await executable(),

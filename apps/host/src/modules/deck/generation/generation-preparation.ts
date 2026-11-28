@@ -34,7 +34,9 @@ export async function prepareGeneration(
     deps.onOverrideSelection?.(prepared.selection)
     return { selection: prepared.selection, override: prepared }
   }
+
   let selected: ModelSelection
+
   try {
     selected = await deps.readSelection(request.sessionId)
   } catch (error) {
@@ -43,8 +45,10 @@ export async function prepareGeneration(
     }
     throw error
   }
+
   const availability = await deps.runtimeAvailability()
   if (!availability.available) throw new RunFailure(availability.code, availability.detail)
+
   await deps.preflightResearch(request.publicResearch === true)
   return { selection: selected }
 }

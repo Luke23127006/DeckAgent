@@ -10,6 +10,7 @@ export function generationReport(
 ): string | undefined {
   const generation = decks.generation(sessionId)
   if (!generation || (generation.activeRequestId ?? generation.receipt.requestId) !== requestId) return undefined
+
   const snapshot = decks.snapshot(sessionId)
   const saved = snapshot.slides.filter(s => s.revision > 0)
   const complete = status === 'completed' && saved.length === snapshot.slides.length
@@ -18,6 +19,7 @@ export function generationReport(
   ]
   const outline = decks.outlineSnapshot(sessionId).proposals.find(p => p.outlineId === snapshot.outlineId)
   const brief = outline?.brief?.draft
+
   for (const slide of snapshot.slides) {
     if (!slide.revision) {
       lines.push(`- ${slide.title}: chưa hoàn tất.`)
@@ -51,8 +53,10 @@ export function generationReport(
       lines.push(`- ${slide.title}: revision đã lưu không đọc được; chưa xác định được nguồn.`)
     }
   }
+
   lines.push(`Giả định: ${brief?.assumptions.join('; ') || 'Không có giả định được ghi nhận.'}`)
   for (const need of brief?.images.unmetRequirements ?? []) lines.push(`Ảnh chưa đáp ứng: ${need}`)
   lines.push('Nguồn ghi nhận không phải bằng chứng rằng mọi dữ kiện đã được kiểm chứng.')
+
   return lines.join('\n')
 }

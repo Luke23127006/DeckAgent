@@ -72,6 +72,7 @@ export async function createGenerationRunPlan(
   const sessionId = request.sessionId
   const brief = deps.decks.briefSnapshot(sessionId).current?.draft
   if (!brief) throw new DeckWorkflowError('BRIEF_NOT_FOUND')
+
   const publicResearch = brief.sources.publicResearch
   const prepared = await deps.generationRuntime?.prepare({ ...request, publicResearch })
   let lifecycle: RunLifecycleContext | undefined
@@ -106,11 +107,13 @@ export async function createGenerationRunPlan(
         name: 'deck-generation',
         async contribute() {
           if (!lifecycle || !grant || !capability) throw new DeckWorkflowError('GENERATION_GRANT_REQUIRED')
+
           const runContext = lifecycle
           const cap = capability
           const confirmed = cap.plan()
           const frozen = confirmed.outline.brief?.draft
           if (!frozen) throw new DeckWorkflowError('BRIEF_NOT_FOUND')
+
           const selected = (sourceId: string, version: number) =>
             frozen.sources.refs.some(r => r.sourceId === sourceId && r.version === version)
           const files = deps.runs
@@ -156,6 +159,7 @@ export async function createGenerationRunPlan(
             portable,
             selected,
           })
+
           return {
             instructions: [buildGenerationInstructions(confirmed, context, portable)],
             tools: {
@@ -193,6 +197,7 @@ export async function createGenerationRunPlan(
     },
   }
   if (!prepared) return { plan }
+
   const runtime: AgentRuntime = {
     name: 'deck-generation-override',
     availability: async () => ({ available: true }),

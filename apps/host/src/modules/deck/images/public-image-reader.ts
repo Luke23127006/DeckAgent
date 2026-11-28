@@ -101,12 +101,14 @@ function fetchPinnedHttps(
         const responseHeaders = new Headers()
         for (const [key, value] of Object.entries(incoming.headers))
           if (value !== undefined) responseHeaders.set(key, Array.isArray(value) ? value.join(',') : value)
+
         const status = incoming.statusCode ?? 0
         if ([204, 205, 304].includes(status)) {
           incoming.resume()
           resolve(new Response(null, { status, headers: responseHeaders }))
           return
         }
+
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
             incoming.on('data', chunk => {
@@ -134,13 +136,16 @@ function fetchPinnedHttps(
 async function readBoundedBody(response: Response, signal: AbortSignal, max: number): Promise<Buffer> {
   const body = response.body
   if (!body) throw new ImageReadError('RESEARCH_IMAGE_CONTENT_TYPE')
+
   if (Number(response.headers.get('content-length') ?? 0) > max) {
     await body.cancel()
     throw new ImageReadError('RESEARCH_IMAGE_RESPONSE_TOO_LARGE')
   }
+
   const reader = body.getReader()
   const chunks: Uint8Array[] = []
   let size = 0
+
   try {
     for (;;) {
       signal.throwIfAborted()
@@ -192,6 +197,7 @@ export class PublicImageReader {
     hops: number,
   ): Promise<Buffer> {
     signal.throwIfAborted()
+
     const url = parsePublicUrl(value)
     const hostname = url.hostname.replace(/^\[|\]$/g, '')
     const address = await resolvePublicAddress(hostname, signal, this.resolve)
@@ -199,12 +205,14 @@ export class PublicImageReader {
     const response = this.fetcher
       ? await this.fetcher(url.href, { signal, redirect: 'manual', headers })
       : await fetchPinnedHttps(url, address, hostname, headers, signal)
+
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       await response.body?.cancel()
       const location = response.headers.get('location')
       if (hops >= 2 || !location) throw fail()
       return this.read(new URL(location, url).href, signal, max, accept, hops + 1)
     }
+
     if (!response.ok) {
       await response.body?.cancel()
       throw new ImageReadError(
@@ -214,10 +222,12 @@ export class PublicImageReader {
         response.status,
       )
     }
+
     if (!response.body || !accept.includes(response.headers.get('content-type')?.split(';')[0]?.trim() ?? '')) {
       await response.body?.cancel()
       throw new ImageReadError('RESEARCH_IMAGE_CONTENT_TYPE')
     }
+
     return readBoundedBody(response, signal, max)
   }
 }

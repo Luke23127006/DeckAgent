@@ -57,6 +57,7 @@ export function buildValidationExpression(requiredText: readonly string[]): stri
 export function assertValidationReport(report: unknown): void {
   if (!object(report) || report.exceptionDetails || !object(report.result) || !object(report.result.value))
     throw new DeckError('ARTIFACT_RENDERER_FAILED')
+
   const validation = report.result.value
   if (typeof validation.code !== 'string') throw new DeckError('ARTIFACT_RENDERER_FAILED')
   if (validation.code === 'ok') return
@@ -68,6 +69,7 @@ export function assertValidationReport(report: unknown): void {
     validation.expected.length > 250
   )
     throw new DeckError('ARTIFACT_RENDERER_FAILED')
+
   throw new DeckError(validation.code, [
     {
       code: validation.code,

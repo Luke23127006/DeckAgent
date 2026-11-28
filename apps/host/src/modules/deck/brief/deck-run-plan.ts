@@ -114,6 +114,7 @@ export async function createDeckRunPlan(
         emit: ctx.emit,
         tools: baseTools,
       }
+
       const previous = deps.decks.outlineSnapshot(request.sessionId).proposals.find(p => p.status === 'current')
       review = await createDeckImageReview(
         deps.decks,
@@ -124,9 +125,11 @@ export async function createDeckRunPlan(
         restoredDraft,
         run,
       )
+
       const expected = outlines.proposals.find(p => p.outlineId === command.expectedOutline?.outlineId) ?? null
       const context = buildDeckWorkflowContext(command, initial, previous, review, expected)
       instructions = buildDeckInstructions(context)
+
       runTools = createDeckRunTools({
         briefs: deps.briefs,
         command,
@@ -185,6 +188,7 @@ export async function createDeckRunPlan(
     },
     async finalize(result) {
       if (!runTools || !review || !run) return failed(result, 'BRIEF_PROPOSAL_REQUIRED')
+
       if (recovery) await recovery.settle(result.status === 'completed')
       const state = runTools.state
       if (run.signal.aborted) return result
@@ -193,6 +197,7 @@ export async function createDeckRunPlan(
       if (result.status !== 'completed' && !recovery) return result
       if (state.outlineError) return failed(result, state.outlineError)
       if (state.imageToolError) return failed(result, state.imageToolError)
+
       if (
         !readOnly &&
         !state.proposalChanged &&
@@ -203,13 +208,16 @@ export async function createDeckRunPlan(
         await run.emit({ kind: 'text', part: 'deck-workflow-result', text: unchangedOutlineText })
         return result
       }
+
       if (!readOnly && (!state.staged || state.rejected)) return failed(result, 'BRIEF_PROPOSAL_REQUIRED')
       if (!readOnly && state.staged && interviewState(state.staged).readyForOutline && !state.outline)
         return failed(result, 'OUTLINE_PROPOSAL_REQUIRED')
+
       if (!readOnly && state.staged) {
         const failure = await commitProposal(deps, request, command, state.staged, state.outline, review, run)
         if (failure?.status === 'failed') return failed(result, failure.errorCode)
       }
+
       return recovery
         ? {
             status: 'completed',

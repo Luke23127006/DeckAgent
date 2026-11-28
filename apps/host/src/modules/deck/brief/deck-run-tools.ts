@@ -161,6 +161,7 @@ export async function createDeckImageReview(
       : undefined,
   )
   if (resumeImages) await imageReview?.resume(resumedNeeds)
+
   return { resumeImages: resumeImages === true, staged, outline, previousReviews, imageReview, restored }
 }
 
@@ -195,8 +196,10 @@ async function callTool(
   if (state.repairingImages && !imageTools.includes(name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
   if (!stagingTools.includes(name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
   if (!schemas.some(s => s.name === name)) return deckToolResult('TOOL_NOT_ALLOWED', true)
+
   const blocked = deckRepairLimitResult(state)
   if (blocked) return blocked
+
   try {
     const response = await dispatchStagingTool(name, args, options, state)
     return deckToolResult(response)
@@ -226,10 +229,13 @@ async function executeImageTool(
 ): Promise<unknown> {
   if (!state.staged || !state.outline || !imageReview) throw new DeckError('RESEARCH_IMAGE_CONTEXT_REQUIRED')
   if (state.staged.images.mode !== 'public-research') throw new DeckError('IMAGE_CHOICE_REQUIRED')
+
   const value = decodeDeckToolArgs(args)
   if (!isRecord(value) || typeof value.needId !== 'string') throw new DeckError('RESEARCH_IMAGE_ARGUMENTS_INVALID')
+
   const needId = value.needId
   if (!imageReview.snapshot().some(n => n.needId === needId)) throw new DeckError('RESEARCH_IMAGE_SELECTION_STALE')
+
   state.proposalChanged = true
   const call = decodeImageToolCall(name, value)
   const response =
@@ -237,6 +243,7 @@ async function executeImageTool(
       ? await imageReview.search(needId, call.query)
       : await imageReview.select(needId, call.candidateId, call.reason, call.alternatives)
   state.imageToolError = undefined
+
   return response
 }
 
@@ -252,11 +259,13 @@ function executeStageBrief(
   assertBriefChoices(draft, initial, command)
   if (command.action !== 'revise' && initial.requirements.some(r => !draft.requirements.includes(r)))
     throw new DeckError('BRIEF_REQUIREMENTS_LOST')
+
   briefs.verify(sessionId, draft)
   state.staged = draft
   state.proposalChanged = true
   state.outline = undefined
   state.rejected = false
+
   return interviewState(draft)
 }
 
@@ -271,14 +280,17 @@ function withImageProvider(draft: BriefDraft, initial: BriefDraft): BriefDraft {
 async function executeStageOutline(args: unknown, state: DeckStagingState, imageReview: ImageReviewRun | undefined) {
   const staged = state.staged
   if (!staged || !interviewState(staged).readyForOutline) throw new DeckError('BRIEF_INCOMPLETE')
+
   const outline = validateBoundOutline(decodeDeckToolArgs(args))
   const layoutIssues = reviewLayouts(outline.slides, staged.template)
   if (layoutIssues.length) throw new DeckError('DESIGN_LAYOUT_INCOMPATIBLE', layoutIssues)
   if (outline.slides.some(s => s.blocks.some(b => b.kind === 'web-image')) && staged.images.mode !== 'public-research')
     throw new DeckError('IMAGE_CHOICE_REQUIRED')
+
   const provider = staged.images.provider ?? 'tavily'
   if (outline.slides.some(s => s.blocks.some(b => b.kind === 'web-image' && b.provider && b.provider !== provider)))
     throw new DeckError('IMAGE_CHOICE_REQUIRED')
+
   const bound: BoundOutlineDraft = {
     ...outline,
     slides: outline.slides.map(s => ({
@@ -294,6 +306,7 @@ async function executeStageOutline(args: unknown, state: DeckStagingState, image
   state.outlineError = undefined
   state.proposalChanged = true
   state.outline = bound
+
   return {
     staged: true,
     imageNeeds,
@@ -329,12 +342,14 @@ async function prepareImageRecovery(
     !hasRecoverableImages(pending)
   )
     return
+
   state.repairingImages = true
   const recovery = JSON.stringify({ outline: state.outline, imageNeeds: pending })
   const recoveryId = `image-recovery-${randomUUID()}`
   const activity = (status: 'running' | 'completed' | 'failed') =>
     run.emit({ kind: 'activity', id: recoveryId, label: 'recover_slide_images', type: 'tool', status })
   await activity('running')
+
   return {
     recovery,
     async settle(completed, threw = false) {

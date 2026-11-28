@@ -36,6 +36,7 @@ export class GenerationConfirmation {
     const tail = previous.then(() => pending)
     this.queues.set(sessionId, tail)
     await previous
+
     try {
       const target = validateConfirmation(value)
       const existing = this.findExistingConfirmation(sessionId, target)
@@ -60,8 +61,10 @@ export class GenerationConfirmation {
       )
     )
       throw new DeckWorkflowError('CONFIRMATION_CONFLICT')
+
     const request = this.runs.get(old.receipt.requestId)
     if (!request) return undefined
+
     return {
       receipt: old.receipt,
       request: {
@@ -88,6 +91,7 @@ export class GenerationConfirmation {
     )
       throw new DeckWorkflowError('BRIEF_STALE')
     if (this.runs.activeFor({ kind: 'chat', id: sessionId })) throw new DeckWorkflowError('SESSION_BUSY')
+
     const request: AgentRequest = {
       sessionId,
       input: 'Generate the explicitly confirmed Outline.',
@@ -97,6 +101,7 @@ export class GenerationConfirmation {
     const selection = prepared.selection
     if (old && (old.selection.provider !== selection.provider || old.selection.model !== selection.model))
       throw new DeckWorkflowError('GENERATION_MODEL_CHANGED')
+
     const receipt: ConfirmationReceipt = this.decks.confirmGeneration(sessionId, target, selection)
     const override = prepared.override
     const built = await createGenerationRunPlan(
@@ -120,6 +125,7 @@ export class GenerationConfirmation {
       },
     })
     const { owner, ...fields } = admitted
+
     return { receipt, request: { ...fields, sessionId: owner.id } }
   }
 
