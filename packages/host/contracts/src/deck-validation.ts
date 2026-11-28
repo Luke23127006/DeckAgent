@@ -22,18 +22,23 @@ import { invalidResponse } from './validation-primitives.ts'
 function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
+
 function id(value: unknown): value is string {
   return typeof value === 'string' && /^[\w-]{1,100}$/.test(value)
 }
+
 function integer(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
+
 function positive(value: unknown): value is number {
   return integer(value) && value > 0
 }
+
 function text(value: unknown, max: number): value is string {
   return typeof value === 'string' && !!value.trim() && value.length <= max
 }
+
 function wellFormed(value: unknown): value is string {
   return typeof value === 'string' && !!value.trim() && value.isWellFormed()
 }

@@ -10,6 +10,7 @@ export class DeckError extends FormatError {
     this.name = 'DeckError'
   }
 }
+
 export class ImagePreparationError extends DeckError {
   constructor(
     code: string,
@@ -55,6 +56,7 @@ const failureMessages: Readonly<Record<string, string>> = {
   ARTIFACT_CORRUPT:
     'Published bytes are missing or changed. Keep a backup of the data folder and restore a known-good copy.',
 }
+
 export function deckFailureMessage(code: string): string | undefined {
   return failureMessages[code]
 }

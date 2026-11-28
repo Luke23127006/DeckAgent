@@ -22,19 +22,19 @@ Read this file to learn the steps of Task 4, which runs `scripts/format-layout.m
 - Change a file by hand.
 - Change `scripts/format-layout.mjs` or `tests/format-layout.test.mjs`. If the script is wrong, STOP.
 
-- [ ] **Step 1: Make sure that the working tree has no code change**
+- [x] **Step 1: Make sure that the working tree has no code change**
 
 Run: `git status --porcelain -- apps packages scripts tests`
 Expected: no line.
 
-- [ ] **Step 2: Record the findings before the change**
+- [x] **Step 2: Record the findings before the change**
 
 Run: `node scripts/format-layout.mjs --check > /tmp/layout-before.txt; tail -n 1 /tmp/layout-before.txt`
 Expected: one line that matches `format-layout: <n> finding(s)`.
 
 Write the table `Findings by rule` with the columns `Rule | Count`. Get the counts from `/tmp/layout-before.txt` with `grep -c " <rule> " /tmp/layout-before.txt` for each of `layout-after-imports`, `layout-between-declarations` and `layout-between-members`.
 
-- [ ] **Step 3: Run the script**
+- [x] **Step 3: Run the script**
 
 Run: `node scripts/format-layout.mjs --write`
 Expected: exit code 0 and one line that matches `format-layout: <n> file(s) changed`.
@@ -42,7 +42,7 @@ Expected: exit code 0 and one line that matches `format-layout: <n> file(s) chan
 Run: `node scripts/format-layout.mjs --write`
 Expected: exit code 0 and `format-layout: 0 file(s) changed`.
 
-- [ ] **Step 4: Prove that the diff adds only blank lines**
+- [x] **Step 4: Prove that the diff adds only blank lines**
 
 Run: `git diff -U0 --ignore-blank-lines -- apps packages scripts tests | grep -E '^@@'`
 Expected: no line.
@@ -53,7 +53,7 @@ Expected: no line.
 Run: `git diff -U0 -- apps packages scripts tests | grep -E '^\+.*[^[:space:]]' | grep -v -E '^\+\+\+'`
 Expected: no line. Each added line is blank.
 
-- [ ] **Step 5: Run the checks**
+- [x] **Step 5: Run the checks**
 
 Run: `node scripts/format-layout.mjs --check`
 Expected: exit code 0 and `format-layout: 0 finding(s)`.
@@ -70,6 +70,6 @@ Expected: exit code 0.
 Run: `node scripts/format-layout.mjs --dense apps/host/src apps/web/src packages/*/*/src | tail -n 1`
 Expected: one line that matches `format-layout: <n> dense function bodies`. Write `<n>` in the report.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.

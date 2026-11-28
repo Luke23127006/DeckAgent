@@ -127,12 +127,15 @@ export class ProtectedFileCredentialStore implements CredentialStore {
 /** No protected store on this computer: keys are refused instead of kept in plain text. */
 export class UnavailableCredentialStore implements CredentialStore {
   readonly persistent = false
+
   async save(): Promise<string> {
     throw new CredentialError('CREDENTIAL_STORE_UNAVAILABLE')
   }
+
   async read(): Promise<string> {
     throw new CredentialError('CREDENTIAL_UNAVAILABLE')
   }
+
   async remove(): Promise<void> {}
 }
 

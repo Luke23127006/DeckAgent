@@ -7,6 +7,7 @@ import type { FormatContext, SlideNode } from '@deckagent/presentation-document'
 
 const escapeHtml = (text: string) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
+
 const style = `
 .da3-slide{height:100%;min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:32px;overflow-wrap:anywhere}
 .da3-slide h1{margin:0;max-width:100%;align-self:start}

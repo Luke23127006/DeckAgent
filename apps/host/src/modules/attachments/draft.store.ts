@@ -1,4 +1,5 @@
 import { AttachmentError } from './attachments.errors.ts'
+
 export interface DraftSnapshot {
   readonly text: string
   readonly attachmentIds: readonly string[]

@@ -21,6 +21,7 @@ export interface Candidate extends ImageSearchCandidate {
   readonly candidateId: string
   readonly commons?: CommonsCandidate
 }
+
 interface NeedState {
   readonly need: ImageNeed
   readonly candidates: Candidate[]
@@ -33,10 +34,12 @@ interface NeedState {
   selecting: boolean
   searches: number
 }
+
 interface RankedChoice {
   readonly candidate: Candidate
   readonly reason: string
 }
+
 interface PreparedChoice {
   readonly credit: ImageCredit
   readonly selection: ImageSelection
@@ -46,6 +49,7 @@ interface PreparedChoice {
 export class ImageReviewRun {
   private readonly states = new Map<string, NeedState>()
   private readonly pagesCache = new Map<string, Promise<Buffer>>()
+
   constructor(
     private readonly service: WebImageResearch,
     private readonly signal: AbortSignal,
@@ -53,6 +57,7 @@ export class ImageReviewRun {
     private readonly previous: readonly OutlineImageReview[],
     private readonly retained?: (needId: string) => Promise<PreparedResearchImage>,
   ) {}
+
   private state(need: ImageNeed): NeedState {
     return {
       need,
@@ -65,6 +70,7 @@ export class ImageReviewRun {
       selecting: false,
     }
   }
+
   /** Resume local progress without spending a search or reviving candidates from another request. */
   async resume(needs: readonly ImageNeed[]) {
     if (needs.length > 32) throw new DeckError('RESEARCH_IMAGE_BUDGET')
@@ -86,6 +92,7 @@ export class ImageReviewRun {
     }
     return this.snapshot()
   }
+
   async stage(needs: readonly ImageNeed[]) {
     if (needs.length > 32) throw new DeckError('RESEARCH_IMAGE_BUDGET')
     const ids = new Set(needs.map(n => n.needId))
@@ -111,6 +118,7 @@ export class ImageReviewRun {
     }
     return [...this.states.values()].map(s => this.view(s))
   }
+
   private view(state: NeedState) {
     return {
       ...state.need,
@@ -133,6 +141,7 @@ export class ImageReviewRun {
       })),
     }
   }
+
   async search(needId: string, query: string) {
     this.signal.throwIfAborted()
     const state = this.states.get(needId)
@@ -160,12 +169,15 @@ export class ImageReviewRun {
     }
     return this.view(state)
   }
+
   pending() {
     return [...this.states.values()].filter(s => !s.selected).map(s => this.view(s))
   }
+
   snapshot() {
     return [...this.states.values()].map(s => this.view(s))
   }
+
   async select(
     needId: string,
     candidateId: string,
@@ -205,6 +217,7 @@ export class ImageReviewRun {
       state.selecting = false
     }
   }
+
   resolve = async (need: ImageNeed): Promise<PreparedResearchImage> => {
     this.signal.throwIfAborted()
     const state = this.states.get(need.needId)
@@ -212,6 +225,7 @@ export class ImageReviewRun {
       throw new ImagePreparationError(state?.failure ?? 'RESEARCH_IMAGE_SELECTION_REQUIRED', state?.attemptLog ?? [])
     return state.selected
   }
+
   private resolveRankedChoices(
     state: NeedState,
     candidateId: string,
@@ -238,6 +252,7 @@ export class ImageReviewRun {
     }
     return choices
   }
+
   private async attemptChoice(state: NeedState, version: number, choice: RankedChoice): Promise<PreparedChoice> {
     const candidate = choice.candidate
     state.attempts++
@@ -276,6 +291,7 @@ export class ImageReviewRun {
     delete state.failure
     return { credit: image.credit, selection }
   }
+
   private recordAttemptFailure(state: NeedState, candidate: Candidate, error: unknown): string {
     state.failure = error instanceof Error && error.name === 'TimeoutError' ? 'RESEARCH_IMAGE_TIMEOUT' : code(error)
     state.attemptLog.push({

@@ -21,6 +21,7 @@ export function usePreferences() {
   }, [query.data])
   return query
 }
+
 export function useThemeMutation() {
   const cache = useQueryClient()
   return useMutation({

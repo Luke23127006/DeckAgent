@@ -35,6 +35,7 @@ function chat(sessionId: string, fields: Partial<WebSession> = {}): WebSession {
 }
 
 const defaultWorkspace = { id: 'default', name: 'Mặc định', folder: null, isDefault: true, folderStatus: 'none' }
+
 const projectWorkspace = {
   id: 'w1',
   name: 'Dự án',
@@ -42,7 +43,9 @@ const projectWorkspace = {
   isDefault: false,
   folderStatus: 'available',
 }
+
 const twoWorkspaces = { selectedId: 'default', version: 4, workspaces: [defaultWorkspace, projectWorkspace] }
+
 const chats = [
   chat('older', { updatedAt: '2026-11-01T00:00:00.000Z' }),
   chat('newer', { updatedAt: '2026-11-03T00:00:00.000Z' }),
@@ -56,6 +59,7 @@ const server = setupServer(
   http.get(`${origin}/api/sessions`, () => HttpResponse.json(chats)),
   http.get(`${origin}/api/workspaces`, () => HttpResponse.json(twoWorkspaces)),
 )
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' })
   // jsdom has no modal dialog behavior; an open attribute is enough for these checks.
@@ -66,12 +70,14 @@ beforeAll(() => {
     this.open = false
   }
 })
+
 afterEach(() => {
   cleanup()
   server.resetHandlers()
   document.body.replaceChildren()
   vi.restoreAllMocks()
 })
+
 afterAll(() => server.close())
 
 interface Slots {

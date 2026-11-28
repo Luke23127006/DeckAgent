@@ -102,11 +102,13 @@ class StreamTracking implements StreamTracker {
   private readonly assistantMessages = new Set<string>()
   private readonly texts = new Map<string, string>()
   private readonly tools = new Map<string, string>()
+
   constructor(
     private readonly sink: RunStream,
     private readonly abortLocal: () => void,
     private readonly onUsage?: (usage: RunUsage) => void,
   ) {}
+
   onLine(value: unknown): void {
     const event = parseEvent(value)
     if (!event) {
@@ -128,6 +130,7 @@ class StreamTracking implements StreamTracker {
     else if (event.type === 'tool') this.recordTool(event)
     else if (event.type === 'error') this.failEvent(event)
   }
+
   async finalize(aborted: boolean, timedOut: boolean): Promise<void> {
     // A summary not written ends the request even when the CLI said nothing more (FR-079, as UC-003 A11).
     if (this.summary !== 'none' && !this.failure && !aborted && !timedOut) {
@@ -136,6 +139,7 @@ class StreamTracking implements StreamTracker {
     }
     await this.writes
   }
+
   classify(result: ProcessResult, runAborted: boolean, timedOut: boolean, localAborted: boolean): ClassifiedAttempt {
     // Work was done when a step ran or the native session already took part in a summary: never retried elsewhere.
     const noWork = this.steps === 0 && this.overflows === 0
@@ -160,6 +164,7 @@ class StreamTracking implements StreamTracker {
       noWork: false,
     }
   }
+
   private usage(): RunUsage {
     return {
       modelCalls: this.modelSteps,
@@ -167,24 +172,29 @@ class StreamTracking implements StreamTracker {
       ...(this.outputTokens === undefined ? {} : { outputTokens: this.outputTokens }),
     }
   }
+
   private emit(event: RunEvent): void {
     // A refused write (the request ended or could not be saved) stops the run.
     this.writes = this.writes.then(() => this.sink.emit(event)).catch(() => this.abortLocal())
   }
+
   private activity(id: string, label: string, status: 'running' | 'completed' | 'failed'): void {
     this.emit({ kind: 'activity', id, label, type: 'model', status })
   }
+
   private ofSummary(messageId: string | undefined): boolean {
     return (
       this.summary === 'writing' &&
       (this.summaryMessage === undefined || messageId === undefined || messageId === this.summaryMessage)
     )
   }
+
   private endSummary(status: 'completed' | 'failed'): void {
     this.activity(this.summaryActivity, 'Conversation summary', status)
     this.summary = 'none'
     this.summaryMessage = undefined
   }
+
   private startStep(event: Extract<OpenCodeEvent, { type: 'step_start' }>): void {
     this.steps++
     if (event.messageId) this.assistantMessages.add(event.messageId)
@@ -198,6 +208,7 @@ class StreamTracking implements StreamTracker {
     this.modelActivity = `model-${this.modelSteps}`
     this.activity(this.modelActivity, 'Model response', 'running')
   }
+
   private finishStep(event: Extract<OpenCodeEvent, { type: 'step_finish' }>): void {
     if (event.tokens?.input !== undefined) this.inputTokens = (this.inputTokens ?? 0) + event.tokens.input
     if (event.tokens?.output !== undefined) this.outputTokens = (this.outputTokens ?? 0) + event.tokens.output
@@ -217,6 +228,7 @@ class StreamTracking implements StreamTracker {
     if (this.modelActivity) this.activity(this.modelActivity, 'Model response', 'completed')
     this.modelActivity = undefined
   }
+
   private saveText(event: Extract<OpenCodeEvent, { type: 'text' }>): void {
     // The summary is what the model reads, not the reply; the user keeps the whole conversation (FR-079).
     if (this.ofSummary(event.messageId)) return
@@ -227,6 +239,7 @@ class StreamTracking implements StreamTracker {
     this.texts.set(event.partId, event.text)
     this.emit({ kind: 'text', part: event.partId, text: event.text })
   }
+
   private recordTool(event: Extract<OpenCodeEvent, { type: 'tool' }>): void {
     // Native tools are denied in this build: a denied call is a failed activity, not a failed request (FR-070).
     if (this.tools.get(event.callId) === event.status) return
@@ -235,6 +248,7 @@ class StreamTracking implements StreamTracker {
     if (!event.tool.startsWith('deckagent_'))
       this.emit({ kind: 'activity', id: `tool-${event.callId}`, label: event.tool, type: 'tool', status: event.status })
   }
+
   private failEvent(event: Extract<OpenCodeEvent, { type: 'error' }>): void {
     if (isContextOverflow(event) && this.summary === 'none') {
       // The call was refused as too long; OpenCode summarizes and answers again.

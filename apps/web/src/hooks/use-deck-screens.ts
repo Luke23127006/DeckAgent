@@ -70,6 +70,7 @@ export function saveSampleLayout(layout: SampleLayout): void {
  */
 export class DeckScreens implements ConversationDeck {
   readonly model: DeckModel
+
   readonly controls: WorkflowControls = {
     mode: null,
     material: null,
@@ -79,6 +80,7 @@ export class DeckScreens implements ConversationDeck {
     format: null,
     action: null,
   }
+
   sampleOpen: boolean
   publishedOpen = false
   /** Whether the user chose the deck mode. A locked Brief keeps the mode, but no longer prepares a deck. */

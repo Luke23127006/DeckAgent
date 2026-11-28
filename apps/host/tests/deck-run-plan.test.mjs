@@ -21,6 +21,7 @@ import { createSourceToolsContribution } from '../lib/types/tools/index.js'
 import { waitFor } from './fixtures/wait-for.mjs'
 
 const selection = { provider: 'fixture', model: 'model-a' }
+
 const providers = {
   resolve: async () => ({ ...selection, protocol: 'chat-completions', baseUrl: 'http://127.0.0.1:9/v1' }),
 }

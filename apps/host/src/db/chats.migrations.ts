@@ -3,6 +3,7 @@ import { DatabaseError } from './records.ts'
 
 const applicationId = 0x44414754 // DAGT; distinguishes this file from another application's SQLite database.
 const schemaVersion = 9
+
 const researchTables = `
   CREATE TABLE request_research (
     request_id TEXT PRIMARY KEY REFERENCES requests(id), selected INTEGER NOT NULL CHECK(selected IN (0,1)),
@@ -14,6 +15,7 @@ const researchTables = `
   ) STRICT;
   CREATE INDEX research_sources_chat ON research_sources(session_id);
 `
+
 /** One version for the chat list of the Host (ADR-004). It starts at 0 on a new file and on an upgrade. */
 const changeVersionsTable = `
   CREATE TABLE change_versions (
@@ -21,6 +23,7 @@ const changeVersionsTable = `
   ) STRICT;
   INSERT INTO change_versions (topic, key, version) VALUES ('chats', 'host', 0);
 `
+
 /** Chats saved before workspaces existed belong to the default workspace. */
 export const defaultWorkspaceId = 'default'
 

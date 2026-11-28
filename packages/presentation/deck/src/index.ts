@@ -8,6 +8,7 @@ export { validateConfirmation } from './generation-store.ts'
 export { outlineImageNeeds } from './image-store.ts'
 export type { BriefDraft, BriefSourceRef, InterviewState } from './brief-contracts.ts'
 export type { BoundOutlineDraft, OutlineReader } from './outline-contracts.ts'
+
 export type {
   ConfirmationReceipt,
   ContentProvenance,
@@ -21,4 +22,5 @@ export type {
   OutlineImageReview,
   PreparedResearchImage,
 } from './generation-contracts.ts'
+
 export type { ConfirmedDeckPlan, DeckChange, DeckReader } from './deck-contracts.ts'

@@ -32,15 +32,18 @@ const origin = 'http://localhost:4321'
 const chatId = 'chat-1'
 
 const server = setupServer()
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' })
   configureApiClient({ origin, token: 'test-token' })
 })
+
 afterEach(() => {
   cleanup()
   server.resetHandlers()
   vi.restoreAllMocks()
 })
+
 afterAll(() => server.close())
 
 function briefRecord(fields: Partial<BriefRecord['draft']> = {}): BriefRecord {

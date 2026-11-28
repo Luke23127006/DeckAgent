@@ -3,6 +3,7 @@ export { SettingsDatabase } from './settings-database.ts'
 export { SqliteRunStore } from './run-store.ts'
 export { defaultWorkspaceId } from './chats.migrations.ts'
 export { DatabaseError, isAttachmentPreparation } from './records.ts'
+
 export type {
   ActivityRecord,
   ActivityStatus,

@@ -7,3 +7,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 1 | [Add the layout rules](task-01-add-layout-rules.md) |
 | 2 | [Add the dense body list and the command](task-02-add-dense-list-and-command.md) |
 | 3 | [Apply Biome to the repository](task-03-apply-biome-format.md) |
+| 4 | [Apply the layout script to the repository](task-04-apply-layout-script.md) |

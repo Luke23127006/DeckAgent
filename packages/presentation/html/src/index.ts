@@ -17,7 +17,9 @@ export { validateLegacySlideHtml } from './legacy-policy.ts'
 
 const escapeHtml = (v: string) =>
   v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
+
 const normalize = (v: string) => v.replace(/\s+/g, ' ').trim()
+
 const nodeText = (n: SlideNode): string =>
   n.kind === 'bullets'
     ? n.items.join(' ')
@@ -28,7 +30,9 @@ const nodeText = (n: SlideNode): string =>
         : n.kind === 'image'
           ? (n.caption ?? '')
           : n.text
+
 const css = `.da-slide{height:100%;display:flex;flex-direction:column;gap:20px}.da-slide h1{margin:0}.da-body{min-height:0;display:flex;flex-direction:column;gap:16px}.da-body p,.da-body ul,.da-body figure{margin:0}.da-columns,.da-image-text,.da-image-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}.da-images{min-width:0;display:grid;gap:16px}.da-image-pair .da-images{grid-template-columns:repeat(2,minmax(0,1fr))}.da-image-pair{display:flex;flex-direction:column}.da-images img{display:block;width:100%;height:240px;object-fit:contain}.da-images figcaption{font-size:var(--type-caption)}.da-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}.da-metrics strong{font-size:var(--type-heading)}.da-cover{justify-content:center}.da-section{justify-content:center}`
+
 function nodeHtml(n: SlideNode): string {
   const key = `data-node-id="${escapeHtml(n.id)}"`
   if (n.kind === 'image')
@@ -40,8 +44,10 @@ function nodeHtml(n: SlideNode): string {
     return `<div ${key} class="da-metrics">${n.items.map(m => `<div><strong>${escapeHtml(m.value)}</strong><p>${escapeHtml(m.label)}</p></div>`).join('')}</div>`
   return `<p ${key}>${escapeHtml(n.text)}</p>`
 }
+
 export type { HtmlTemplateBundle } from './contracts.ts'
 import type { HtmlTemplateBundle } from './contracts.ts'
+
 function starter(input: FormatContext, style = css): string {
   if (!input.document) return '<h1>Replace with the confirmed slide title</h1>'
   const d = decodeSlideDocument(input.document)
@@ -52,6 +58,7 @@ function starter(input: FormatContext, style = css): string {
     : `<div class="da-body">${d.nodes.map(nodeHtml).join('')}</div>`
   return `<style>${style}</style><section class="da-slide da-${escapeHtml(input.layoutId)}"><h1 data-node-id="__title">${escapeHtml(d.title)}</h1>${content}</section>`
 }
+
 function verifyContent(source: string, input: FormatContext): void {
   if (!input.document) return
   const d = decodeSlideDocument(input.document),
@@ -135,9 +142,11 @@ function verifyContent(source: string, input: FormatContext): void {
       },
     ])
 }
+
 export class HtmlFormatAdapter implements FormatAdapter {
   readonly id = 'html'
   constructor(private readonly template?: HtmlTemplateBundle) {}
+
   context(input: FormatContext) {
     const controlled =
       !this.template && input.design.template.id === 'html-basic' && input.design.template.version === 3
@@ -156,6 +165,7 @@ export class HtmlFormatAdapter implements FormatAdapter {
       ],
     }
   }
+
   build(source: string, input: FormatContext): BuiltArtifact {
     try {
       if (
@@ -202,6 +212,7 @@ export class HtmlFormatAdapter implements FormatAdapter {
       throw error
     }
   }
+
   read(bytes: Uint8Array, assets: readonly FormatAsset[]): string {
     return materializeArtifact(new TextDecoder().decode(bytes), assets)
   }

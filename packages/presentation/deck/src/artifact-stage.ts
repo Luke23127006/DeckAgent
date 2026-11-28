@@ -46,21 +46,25 @@ export interface Stage {
 export class ArtifactStaging {
   private readonly stageAttempts = new WeakMap<GenerationGrant, Map<string, number>>()
   private readonly stages = new Map<string, Stage>()
+
   constructor(
     private readonly files: ArtifactFileStore,
     private readonly images: PreparedImageStore,
     private readonly formats: ReadonlyMap<string, FormatAdapter>,
   ) {}
+
   stage(grant: GenerationGrant, stageId: string): Stage {
     const stage = this.stages.get(stageId)
     if (!stage || stage.grant !== grant) throw new DeckError('STAGE_NOT_FOUND')
     return stage
   }
+
   source(stage: Stage): string {
     return Buffer.concat(
       stage.chunks.map((c, i) => this.files.read(`${stage.stageId}-${i}.part`, c.digest, 8 * 1024)),
     ).toString('utf8')
   }
+
   context(stage: Stage, generation: GenerationSnapshot): FormatContext {
     return {
       design: generation.design,
@@ -73,6 +77,7 @@ export class ArtifactStaging {
       ...(stage.document ? { document: stage.document } : {}),
     }
   }
+
   matchesNeed(stage: Stage, asset: ArtifactAsset, index: number, query: string): boolean {
     const record = this.images.preparedRecord(
       stage.grant.sessionId,
@@ -83,6 +88,7 @@ export class ArtifactStaging {
     )
     return asset.imageNeedId ? asset.imageNeedId === record?.needId : asset.webQuery === query
   }
+
   documentFromPlan(stage: Stage): void {
     const nodes: SlideNode[] = []
     ;(stage.plan.blocks ?? []).forEach((block, index) => {
@@ -114,6 +120,7 @@ export class ArtifactStaging {
       ...(stage.notes ? { notes: stage.notes } : {}),
     })
   }
+
   private status(stage: Stage): StageStatus {
     return {
       stageId: stage.stageId,
@@ -129,6 +136,7 @@ export class ArtifactStaging {
         : {}),
     }
   }
+
   begin(
     grant: GenerationGrant,
     slide: OutlineProposal['slides'][number],
@@ -195,6 +203,7 @@ export class ArtifactStaging {
     }
     return this.status(stage)
   }
+
   setDocument(grant: GenerationGrant, stageId: string, input: SlideDocument): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
@@ -214,9 +223,11 @@ export class ArtifactStaging {
     stage.document = { ...content, provenance: stage.provenance, ...(stage.notes ? { notes: stage.notes } : {}) }
     stage.documentAuthored = true
   }
+
   draft(grant: GenerationGrant, stageId: string): StageStatus {
     return this.status(this.stage(grant, stageId))
   }
+
   append(grant: GenerationGrant, stageId: string, value: StageChunk): StageStatus {
     const stage = this.stage(grant, stageId)
     if (
@@ -251,6 +262,7 @@ export class ArtifactStaging {
     }
     return this.status(stage)
   }
+
   setProvenance(grant: GenerationGrant, stageId: string, records: readonly ContentProvenance[], notes?: string): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
@@ -268,6 +280,7 @@ export class ArtifactStaging {
       stage.document = { ...document, provenance: validated, ...(notes ? { notes } : {}) }
     }
   }
+
   published(grant: GenerationGrant, stageId: string): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) return
@@ -275,6 +288,7 @@ export class ArtifactStaging {
     // Keep an in-memory receipt description so an identical publish retry can be checked without staged bytes.
     stage.published = true
   }
+
   discard(grant: GenerationGrant, stageId: string): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')

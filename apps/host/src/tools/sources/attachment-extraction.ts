@@ -29,9 +29,11 @@ const media: Readonly<Record<string, string>> = {
 function fail(code = 'ATTACHMENT_UNREADABLE'): never {
   throw new SourceError(code)
 }
+
 function unsafeArchive(): never {
   throw new SourceError('ARCHIVE_UNREADABLE')
 }
+
 function omission(budget: Budget, code: string, entry?: string): void {
   if (!budget.omitted.some(item => item.code === code && item.entry === entry))
     budget.omitted.push({ code, ...(entry === undefined ? {} : { entry }) })

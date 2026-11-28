@@ -49,12 +49,16 @@ const mainEntries = {
 const discovered = discoverWorkspacePackages()
   .filter(pkg => pkg.name !== 'deckagent-tooling') // exclude the root project
   .toSorted((a, b) => a.path.localeCompare(b.path)) // deterministic build order
+
 // Browser bundles inline the pure document contract. Build public dependency
 // entries first so a fresh checkout does not need artifacts from an earlier build.
 const packages = []
+
 const visited = new Set(),
   visiting = new Set()
+
 const byName = new Map(discovered.map(pkg => [pkg.name, pkg]))
+
 function visit(pkg) {
   if (visited.has(pkg.name)) return
   if (visiting.has(pkg.name)) throw new Error(`Cyclic workspace dependency: ${pkg.name}`)
@@ -65,6 +69,7 @@ function visit(pkg) {
   visited.add(pkg.name)
   packages.push(pkg)
 }
+
 for (const pkg of discovered) visit(pkg)
 
 for (const pkg of packages) {

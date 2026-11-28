@@ -14,6 +14,7 @@ import { AppRoutes } from '../src/routes.tsx'
 import { appText } from '../src/text.ts'
 
 const ORIGIN = 'http://127.0.0.1:4321'
+
 const emptySettings = {
   providers: [],
   providersVersion: 0,
@@ -22,6 +23,7 @@ const emptySettings = {
   builtIns: [],
   runtime: { available: false },
 }
+
 const emptyChat = {
   sessionId: 'chat-1',
   workspaceId: 'default',
@@ -33,6 +35,7 @@ const emptyChat = {
   hasSlides: false,
   hasDraft: false,
 }
+
 const server = setupServer(
   http.get(`${ORIGIN}/api/settings`, () => HttpResponse.json(emptySettings)),
   http.get(`${ORIGIN}/api/workspaces`, () =>
@@ -76,6 +79,7 @@ beforeAll(() => {
     disconnect() {}
   }
 })
+
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 

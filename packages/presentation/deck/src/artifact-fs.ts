@@ -27,6 +27,7 @@ import type {
 
 export const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 export const IMAGE_LICENSES: readonly string[] = ['public-domain', 'CC0', 'CC BY', 'Pexels', 'unknown']
+
 const managedName =
   /^(?:stage-[a-f0-9-]{36}-\d{1,2}\.part|artifact-[a-f0-9-]{36}\.[a-z0-9]{1,10}|asset-[a-f0-9-]{36}\.png)$/
 
@@ -236,6 +237,7 @@ function parseAttempts(value: unknown): readonly ImageAttempt[] | undefined {
 
 export class ArtifactFileStore {
   readonly root: string | undefined
+
   constructor(artifactRoot?: string) {
     if (!artifactRoot) return
     const root = resolve(artifactRoot)
@@ -252,6 +254,7 @@ export class ArtifactFileStore {
       throw new DeckError('ARTIFACT_STORAGE_UNAVAILABLE')
     this.root = root
   }
+
   path(name: string): string {
     if (
       !this.root ||
@@ -262,10 +265,12 @@ export class ArtifactFileStore {
       throw new DeckError('ARTIFACT_STORAGE_UNAVAILABLE')
     return join(this.root, name)
   }
+
   exists(name: string): boolean {
     if (!this.root) return false
     return existsSync(this.path(name))
   }
+
   write(name: string, bytes: string | Uint8Array): void {
     const file = openSync(this.path(name), 'wx', 0o600)
     try {
@@ -275,6 +280,7 @@ export class ArtifactFileStore {
       closeSync(file)
     }
   }
+
   read(name: string, fingerprint: string, limit: number): Buffer {
     const path = this.path(name),
       stat = lstatSync(path)
@@ -288,9 +294,11 @@ export class ArtifactFileStore {
       closeSync(fd)
     }
   }
+
   remove(name: string): void {
     unlinkSync(this.path(name))
   }
+
   listFiles(): readonly string[] {
     return this.root ? readdirSync(this.root) : []
   }

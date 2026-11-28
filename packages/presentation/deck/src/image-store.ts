@@ -55,6 +55,7 @@ export function outlineImageNeeds(outline: BoundOutlineDraft | OutlineProposal):
 /** Owns the prepared_images rows and image_search_attempts budget that belong to one Outline. */
 export class PreparedImageStore {
   private readonly preparations = new WeakMap<object, { fingerprint: string; records: PreparedRecord[] }>()
+
   constructor(
     private readonly db: DatabaseSync,
     private readonly files: ArtifactFileStore,

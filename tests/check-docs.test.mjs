@@ -153,7 +153,9 @@ const questions = [
   '| <a id="oq-001"></a>OQ-001 | Q |',
   '',
 ].join('\n')
+
 const questionsIo = { exists: () => true, readFile: () => questions }
+
 const gapRules = row =>
   checkMarkdown('docs/UCs/a.md', `# Title\n\nĐọc file này để biết A.\n\n${row}\n`, questionsIo).map(error => error.rule)
 

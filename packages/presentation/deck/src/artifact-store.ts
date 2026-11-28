@@ -32,12 +32,14 @@ function stagedState(stage: Stage): string {
 export class ArtifactStorage {
   private readonly imageAttempts = new WeakMap<GenerationGrant, number>()
   private readonly researchImages = new WeakMap<GenerationGrant, Map<string, Promise<PreparedResearchImage>>>()
+
   constructor(
     private readonly files: ArtifactFileStore,
     private readonly staging: ArtifactStaging,
     private readonly formats: ReadonlyMap<string, FormatAdapter>,
     private readonly options: DeckOptions,
   ) {}
+
   begin(
     grant: GenerationGrant,
     slide: OutlineProposal['slides'][number],
@@ -46,24 +48,31 @@ export class ArtifactStorage {
   ): StageStatus {
     return this.staging.begin(grant, slide, layoutId, generation)
   }
+
   setDocument(grant: GenerationGrant, stageId: string, document: SlideDocument): void {
     this.staging.setDocument(grant, stageId, document)
   }
+
   draft(grant: GenerationGrant, stageId: string): StageStatus {
     return this.staging.draft(grant, stageId)
   }
+
   append(grant: GenerationGrant, stageId: string, chunk: StageChunk): StageStatus {
     return this.staging.append(grant, stageId, chunk)
   }
+
   setProvenance(grant: GenerationGrant, stageId: string, records: readonly ContentProvenance[], notes?: string): void {
     this.staging.setProvenance(grant, stageId, records, notes)
   }
+
   published(grant: GenerationGrant, stageId: string): void {
     this.staging.published(grant, stageId)
   }
+
   discard(grant: GenerationGrant, stageId: string): void {
     this.staging.discard(grant, stageId)
   }
+
   async asset(
     grant: GenerationGrant,
     stageId: string,
@@ -115,6 +124,7 @@ export class ArtifactStorage {
     if (stage.generation.design.template.version >= 2) this.staging.documentFromPlan(stage)
     return { ...asset }
   }
+
   async researchImage(
     grant: GenerationGrant,
     stageId: string,
@@ -163,6 +173,7 @@ export class ArtifactStorage {
     if (stage.generation.design.template.version >= 2) this.staging.documentFromPlan(stage)
     return { ...asset }
   }
+
   private assertResearchImage(stage: Stage, image: PreparedResearchImage, bytes: Buffer): void {
     if (
       !isValidPngBytes(bytes) ||
@@ -175,6 +186,7 @@ export class ArtifactStorage {
     )
       throw new DeckError('ARTIFACT_ASSET_INVALID')
   }
+
   private async loadCachedResearchImage(
     grant: GenerationGrant,
     slide: OutlineProposal['slides'][number],
@@ -214,6 +226,7 @@ export class ArtifactStorage {
     }
     return work
   }
+
   private dropCachedResearchImage(
     grant: GenerationGrant,
     slide: OutlineProposal['slides'][number],
@@ -221,6 +234,7 @@ export class ArtifactStorage {
   ): void {
     this.researchImages.get(grant)?.delete(JSON.stringify([slide.slideId, query]))
   }
+
   private assertStageReadyForBuild(
     stage: Stage,
     input: ArtifactPublication,
@@ -259,6 +273,7 @@ export class ArtifactStorage {
     )
       throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
   }
+
   async prepare(
     grant: GenerationGrant,
     input: ArtifactPublication,
@@ -278,6 +293,7 @@ export class ArtifactStorage {
     const artifact = await adapter.build(source, this.staging.context(stage, generation))
     return this.verifyBuiltArtifact(grant, input, slide, stage, generation, artifact, checkedState, check, signal)
   }
+
   private async verifyBuiltArtifact(
     grant: GenerationGrant,
     input: ArtifactPublication,
@@ -322,6 +338,7 @@ export class ArtifactStorage {
       fingerprint: sha256Hex(JSON.stringify([input.slideId, input.expectedRevision, stage.digest, manifest])),
     }
   }
+
   private manifest(stage: Stage, generation: GenerationSnapshot, slide: OutlineProposal['slides'][number]): string {
     return JSON.stringify({
       policyVersion: stage.descriptor?.policyVersion ?? 'b04-artifact-v1',
@@ -343,6 +360,7 @@ export class ArtifactStorage {
       ...(stage.notes ? { notes: stage.notes } : {}),
     })
   }
+
   receiptFingerprint(
     grant: GenerationGrant,
     input: ArtifactPublication,
@@ -353,6 +371,7 @@ export class ArtifactStorage {
     const manifest = this.manifest(stage, generation, slide)
     return sha256Hex(JSON.stringify([input.slideId, input.expectedRevision, stage.digest, manifest]))
   }
+
   removeValidationArtifact(artifact: PreparedArtifact): void {
     const manifest = parseJsonObject(artifact.manifest)
     const descriptor = manifest.artifact

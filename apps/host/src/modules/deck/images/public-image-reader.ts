@@ -5,6 +5,7 @@ import { DeckError } from '@deckagent/deck'
 
 export type ImageLookup = (hostname: string) => Promise<readonly { address: string; family: number }[]>
 const blocked = new BlockList()
+
 for (const [address, prefix] of [
   ['0.0.0.0', 8],
   ['10.0.0.0', 8],
@@ -23,6 +24,7 @@ for (const [address, prefix] of [
   ['240.0.0.0', 4],
 ] as const)
   blocked.addSubnet(address, prefix, 'ipv4')
+
 for (const [address, prefix] of [
   ['2001::', 32],
   ['2001:db8::', 32],
@@ -33,6 +35,7 @@ for (const [address, prefix] of [
   ['3fff::', 20],
 ] as const)
   blocked.addSubnet(address, prefix, 'ipv6')
+
 const publicAddress = (address: string) =>
   isIP(address) === 4
     ? !blocked.check(address, 'ipv4')
@@ -170,6 +173,7 @@ export class PublicImageReader {
     private readonly fetcher?: typeof fetch,
     private readonly resolve: ImageLookup = hostname => lookup(hostname, { all: true, verbatim: true }),
   ) {}
+
   async read(value: string, signal: AbortSignal, max: number, accept: readonly string[], hops = 0): Promise<Buffer> {
     try {
       return await this.load(value, signal, max, accept, hops)
@@ -179,6 +183,7 @@ export class PublicImageReader {
       throw new ImageReadError('RESEARCH_IMAGE_NETWORK')
     }
   }
+
   private async load(
     value: string,
     signal: AbortSignal,

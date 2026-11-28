@@ -1,7 +1,9 @@
 import type { ContentBlock } from '@deckagent/design'
 import { FormatError } from './contracts.ts'
 import type { ContentOrigin, SlideDocument, SlideNode, ArtifactDescriptor } from './contracts.ts'
+
 export { FormatError } from './contracts.ts'
+
 export type {
   SourceReference,
   ContentOrigin,
@@ -16,12 +18,16 @@ export type {
 } from './contracts.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+
 const text = (v: unknown, limit = 8000): v is string =>
   typeof v === 'string' && !!v.trim() && v.length <= limit && v.isWellFormed() && !v.includes('\0')
+
 const id = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
 const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
+
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length > 0 && v.length <= 100 && v.every(s => text(s))
+
 const fail = (path: string, expected: string): never => {
   throw new FormatError('SLIDE_DOCUMENT_INVALID', [
     { code: 'SLIDE_DOCUMENT_INVALID', path, message: 'Invalid portable content.', expected },
@@ -62,6 +68,7 @@ export function decodeContentOrigins(value: unknown): readonly ContentOrigin[] {
   }
   return structuredClone(value) as ContentOrigin[]
 }
+
 export function decodeSlideDocument(value: unknown): SlideDocument {
   if (
     !object(value) ||
@@ -128,6 +135,7 @@ export function decodeSlideDocument(value: unknown): SlideDocument {
     ...(typeof value.notes === 'string' ? { notes: value.notes } : {}),
   }
 }
+
 export function documentText(value: SlideDocument): readonly string[] {
   const d = decodeSlideDocument(value)
   return [

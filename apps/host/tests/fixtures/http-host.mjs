@@ -4,6 +4,7 @@ import { HttpError, json, param, params, route, WORD_ID } from '../../lib/types/
 import { RunController } from '../../lib/types/runs/lifecycle/index.js'
 import { RunFailure } from '../../lib/types/runs/ports.js'
 import { ChatService, createChatRequestRoutes } from '../../lib/types/modules/chats/index.js'
+
 export { startHost, HttpError }
 
 export async function startRequestHost({

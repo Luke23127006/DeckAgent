@@ -10,8 +10,10 @@ import type {
   ThemeValues,
   LayoutIssue,
 } from './contracts.ts'
+
 export { DesignError } from './contracts.ts'
 export type { WebImageIntent } from './contracts.ts'
+
 export type {
   CatalogRef,
   ContentBlock,
@@ -31,6 +33,7 @@ function immutable<T>(value: T): T {
   }
   return value
 }
+
 const system: DesignSystem = immutable({
   id: 'deckagent-neutral',
   version: 1,
@@ -59,6 +62,7 @@ const system: DesignSystem = immutable({
   ],
   brandAssets: [],
 })
+
 const template: Template = immutable({
   id: 'html-basic',
   version: 1,
@@ -85,6 +89,7 @@ const template: Template = immutable({
     },
   ],
 })
+
 const templateV2: Template = immutable({
   ...template,
   version: 2,
@@ -97,6 +102,7 @@ const templateV2: Template = immutable({
     },
   ],
 })
+
 const templateV3: Template = immutable({
   ...templateV2,
   version: 3,
@@ -111,6 +117,7 @@ const templateV3: Template = immutable({
     },
   })),
 })
+
 function selectedTemplate(value: unknown): Template {
   if (value === undefined) return templateV3
   if (isRecord(value) && only(value, ['id', 'version']) && value.id === template.id) {
@@ -127,10 +134,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export function listDesignSystems(): readonly DesignSystem[] {
   return [system]
 }
+
 export function listTemplates(format: string): readonly Template[] {
   if (format !== 'html') throw new DesignError('DESIGN_FORMAT_UNAVAILABLE')
   return [templateV3, templateV2, template]
 }
+
 function reference(value: unknown, expected: CatalogRef, code: string): void {
   if (
     value !== undefined &&
@@ -141,6 +150,7 @@ function reference(value: unknown, expected: CatalogRef, code: string): void {
   )
     throw new DesignError(code)
 }
+
 export function validateTheme(value: unknown): ThemeValues {
   if (!isRecord(value) || Object.keys(value).length !== Object.keys(system.theme).length)
     throw new DesignError('DESIGN_THEME_INVALID')
@@ -158,6 +168,7 @@ export function validateTheme(value: unknown): ThemeValues {
   }
   return immutable(result)
 }
+
 export function resolveDesign(value: unknown = {}): DesignSnapshot {
   if (
     !isRecord(value) ||
@@ -233,6 +244,7 @@ export function decodeDesignSnapshot(value: unknown): DesignSnapshot {
 
 const only = (value: Record<string, unknown>, keys: readonly string[]) =>
   Object.keys(value).every(key => keys.includes(key))
+
 const text = (value: unknown): value is string => typeof value === 'string' && !!value.trim() && value.isWellFormed()
 const texts = (value: unknown): value is string[] => Array.isArray(value) && value.length > 0 && value.every(text)
 

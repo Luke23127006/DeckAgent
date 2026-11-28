@@ -43,6 +43,7 @@ export class DeckService {
   private readonly imageResearch: WebImageResearch | undefined
   private readonly briefs: BriefWorkflow
   private readonly confirmations: GenerationConfirmation
+
   private readonly generationDeps: {
     readonly decks: DeckStore
     readonly attachments: DeckAttachments

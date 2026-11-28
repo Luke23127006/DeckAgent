@@ -8,11 +8,13 @@ import { startLocalWeb } from '../../lib/server.js'
 import { HostClient } from '../../../../e2e/fixtures/browser-driver/index.mjs'
 
 export { AttachmentParser } from '../../lib/types/tools/index.js'
+
 export {
   AttachmentFileStore,
   MemoryDraftStore,
   createAttachmentRoutes,
 } from '../../lib/types/modules/attachments/index.js'
+
 export { defaultCredentialStore } from '../../lib/types/storage/index.js'
 export { pinnedVersion } from '../../lib/types/runtimes/opencode/index.js'
 
@@ -22,15 +24,18 @@ export const fakeCli = resolve(fileURLToPath(new URL('./fake-opencode.mjs', impo
 export class MemoryCredentials {
   persistent = true
   values = new Map()
+
   async save(secret) {
     const ref = `cred-${randomUUID()}`
     this.values.set(ref, secret)
     return ref
   }
+
   async read(ref) {
     if (!this.values.has(ref)) throw new Error('CREDENTIAL_UNAVAILABLE')
     return this.values.get(ref)
   }
+
   async remove(ref) {
     this.values.delete(ref)
   }

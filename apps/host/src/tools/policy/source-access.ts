@@ -8,11 +8,14 @@ import type { SourceAccess, SourceAccessOptions, SourceReadPlan } from './policy
 // Technical read/list budgets, not attachment admission values or product limits.
 const readBudget = 256 * 1024
 const entryBudget = 200
+
 const inside = (root: string, path: string) => {
   const value = relative(root, path)
   return value === '' || (!isAbsolute(value) && value !== '..' && !value.startsWith(`..${sep}`))
 }
+
 const identity = (stat: { dev: bigint; ino: bigint }) => `${stat.dev}:${stat.ino}`
+
 const fileIdentity = (stat: { dev: bigint; ino: bigint; size: bigint; mtimeNs: bigint; ctimeNs: bigint }) =>
   `${identity(stat)}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`
 

@@ -69,11 +69,13 @@ export interface DeckRunTools {
 
 const imageTools = ['search_slide_images', 'select_slide_image']
 const stagingTools = ['stage_brief', 'stage_outline', ...imageTools]
+
 const unrecoverableFailures = new Set(
   'RESEARCH_KEY_UNAVAILABLE RESEARCH_KEY_REJECTED RESEARCH_FREE_ONLY RESEARCH_QUOTA_EXHAUSTED RESEARCH_IMAGE_BUDGET'.split(
     ' ',
   ),
 )
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 

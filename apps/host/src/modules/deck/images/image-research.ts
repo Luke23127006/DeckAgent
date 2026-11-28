@@ -19,6 +19,7 @@ import { ImageReadError, PublicImageReader } from './public-image-reader.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
+
 const code = (error: unknown) =>
   error instanceof DeckError || error instanceof ResearchError ? error.code : 'RESEARCH_IMAGE_UNAVAILABLE'
 
@@ -33,9 +34,11 @@ export class WebImageResearch {
     private readonly parser: ImageParserPort,
     private readonly reader = new PublicImageReader(),
   ) {}
+
   close() {
     return this.parser.close()
   }
+
   open(
     signal: AbortSignal,
     reserve: () => void,
@@ -44,6 +47,7 @@ export class WebImageResearch {
   ) {
     return new ImageReviewRun(this, signal, reserve, previous, retained)
   }
+
   async candidates(need: ImageNeed, query: string, signal: AbortSignal): Promise<readonly Candidate[]> {
     const entries =
       need.provider === 'commons'
@@ -58,6 +62,7 @@ export class WebImageResearch {
       }
     })
   }
+
   async prepare(
     candidate: Candidate,
     signal: AbortSignal,
@@ -70,6 +75,7 @@ export class WebImageResearch {
     const source = await this.resolveSourceCredit(candidate, pagesCache, operation)
     return source.kind === 'image' ? source.image : this.downloadAndNormalize(candidate, source.credit, operation)
   }
+
   private prepareCommonsCandidate(commons: CommonsCandidate, operation: AbortSignal): Promise<PreparedResearchImage> {
     if (
       commons.credit.unknownLicense ||
@@ -78,6 +84,7 @@ export class WebImageResearch {
       throw new DeckError('RESEARCH_IMAGE_LICENSE_REQUIRED')
     return this.commons.prepare(commons, operation)
   }
+
   private async resolveSourceCredit(
     candidate: Candidate,
     pagesCache: Map<string, Promise<Buffer>>,
@@ -129,6 +136,7 @@ export class WebImageResearch {
       'RESEARCH_IMAGE_SOURCE_UNRESOLVED'
     throw new ImageSourceError(failure, checks)
   }
+
   private readCachedPage(
     sourceUrl: string,
     pagesCache: Map<string, Promise<Buffer>>,
@@ -144,6 +152,7 @@ export class WebImageResearch {
     })
     return pending
   }
+
   private async downloadAndNormalize(
     candidate: Candidate,
     credit: ImageCredit,

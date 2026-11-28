@@ -7,6 +7,7 @@ import type { AttachmentRecord, AttachmentPreparation } from '../../db/index.ts'
 export class SqliteAttachmentStore {
   private readonly db
   private readonly access: ChatDatabase
+
   constructor(sessionDb: ChatDatabase) {
     this.db = sessionDb.db
     this.access = sessionDb
@@ -175,6 +176,7 @@ export class SqliteAttachmentStore {
       this.db.prepare('DELETE FROM attachments WHERE id = ?').run(attachmentId)
     })
   }
+
   validateReadyInTx(sessionId: string, attachmentIds: readonly string[]): readonly AttachmentRecord[] {
     if (new Set(attachmentIds).size !== attachmentIds.length)
       throw new DatabaseError('INVALID_REQUEST', 'Attachment IDs must be unique')
@@ -189,6 +191,7 @@ export class SqliteAttachmentStore {
       return item
     })
   }
+
   linkToRequestInTx(requestId: string, messageSequence: number | undefined, attachmentIds: readonly string[]): void {
     for (const id of attachmentIds)
       this.db

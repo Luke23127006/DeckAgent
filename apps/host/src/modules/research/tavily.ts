@@ -25,6 +25,7 @@ export interface ResearchResult {
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
+
 const failure = (code: TavilyErrorCode = 'RESEARCH_UNAVAILABLE') => new TavilyError(code)
 
 export interface ImageSearchCandidate {

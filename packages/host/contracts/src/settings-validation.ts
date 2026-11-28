@@ -12,6 +12,7 @@ const providerSchema = z.object({
   keyAvailable: z.boolean(),
   builtIn: z.boolean(),
 })
+
 const settingsSchema = z.object({
   providers: z.array(providerSchema),
   providersVersion: nonNegativeInt,
@@ -36,21 +37,27 @@ const settingsSchema = z.object({
     })
     .optional(),
 })
+
 const preferencesSchema = z.object({ theme: z.enum(['light', 'dark', 'system']), version: nonNegativeInt })
+
 function decode<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value)
   if (!result.success) throw new Error('INVALID_RESPONSE')
   return result.data
 }
+
 export function decodeSettings(value: unknown) {
   return decode(settingsSchema, value)
 }
+
 export function decodePreferences(value: unknown) {
   return decode(preferencesSchema, value)
 }
+
 export function decodeCatalog(value: unknown) {
   return decode(z.array(z.string()), value)
 }
+
 export function decodeSettingsSaved(value: unknown) {
   return decode(z.object({ saved: z.literal(true) }), value)
 }

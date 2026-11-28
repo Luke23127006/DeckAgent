@@ -6,6 +6,7 @@ import type { ProviderDraft } from '../api/providers.ts'
 export function useSettings() {
   return useQuery({ queryKey: providersKeys.settings, queryFn: ({ signal }) => getSettings(signal), retry: false })
 }
+
 export function useProviderMutation() {
   const cache = useQueryClient()
   async function refresh() {
@@ -27,9 +28,11 @@ export function useProviderMutation() {
     },
   })
 }
+
 export function useProviderCatalog() {
   return useMutation({ mutationFn: getCatalog })
 }
+
 export function settingsError(error: unknown) {
   return error instanceof ApiClientError ? error.code : 'HOST_REQUEST_FAILED'
 }

@@ -7,6 +7,7 @@ import type { BuiltArtifact, FormatAdapter, FormatContext, SlideNode } from '@de
 export class PptxFormatAdapter implements FormatAdapter {
   readonly id = 'pptx'
   constructor(private readonly fonts: Readonly<Record<string, string>>) {}
+
   context(input: FormatContext) {
     return {
       starter: input.document ? JSON.stringify(input.document) : '',
@@ -15,6 +16,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       ],
     }
   }
+
   async build(_source: string, input: FormatContext): Promise<BuiltArtifact> {
     const d = decodeSlideDocument(input.document)
     if (
@@ -120,6 +122,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       },
     }
   }
+
   read(bytes: Uint8Array): Uint8Array {
     return bytes
   }

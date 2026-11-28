@@ -9,6 +9,7 @@ import { HtmlFormatAdapter } from '../lib/index.js'
 import { resolveDesign, findCompatibleLayouts } from '@deckagent/design'
 
 const v3 = () => resolveDesign({ template: { id: 'html-basic', version: 3 } })
+
 const document = {
   schemaVersion: 1,
   slideId: 'forest',

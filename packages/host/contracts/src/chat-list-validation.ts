@@ -3,6 +3,7 @@ import type { WebSession, WorkspaceList } from './management.ts'
 import { nonNegativeInt } from './validation-primitives.ts'
 
 const selectionSchema = z.object({ provider: z.string(), model: z.string() })
+
 const chatSchema = z.object({
   sessionId: z.string(),
   createdAt: z.string(),
@@ -18,6 +19,7 @@ const chatSchema = z.object({
   selection: selectionSchema.optional(),
   removedSelection: selectionSchema.optional().catch(undefined),
 })
+
 const workspaceListSchema = z.object({
   selectedId: z.string(),
   version: nonNegativeInt,

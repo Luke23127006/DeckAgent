@@ -8,10 +8,12 @@ import type { DeckAttachmentRecord, DeckToolRun } from '../ports.ts'
 import type { GenerationContext, GenerationSource } from './generation-prompts.ts'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+
 const result = (value: unknown, isError = false): ToolResult => ({
   isError,
   content: [{ type: 'text', text: JSON.stringify(value) }],
 })
+
 const onlyKeys = (value: Record<string, unknown>, ...keys: string[]) =>
   Object.keys(value).every(key => keys.includes(key))
 

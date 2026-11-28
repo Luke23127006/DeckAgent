@@ -6,6 +6,7 @@ export type {
   BriefView,
   InterviewState,
 } from './brief.ts'
+
 export type {
   ConfirmationReceipt,
   ConfirmationTarget,
@@ -16,6 +17,7 @@ export type {
   OutlineSnapshot,
   SlideContent,
 } from './deck.ts'
+
 export type {
   ProviderProtocol,
   ProviderSettings,
@@ -28,9 +30,11 @@ export type {
   WorkspaceView,
   ChatDraft,
 } from './management.ts'
+
 export { providerProtocols } from './management.ts'
 export { decodeSettings, decodePreferences, decodeCatalog, decodeSettingsSaved } from './settings-validation.ts'
 export { decodeChat, decodeChatList, decodeWorkspaceList } from './chat-list-validation.ts'
+
 export {
   decodeAttachmentUpload,
   decodeChatDraft,
@@ -42,6 +46,7 @@ export {
   decodeStoredRequests,
   type ResearchSource,
 } from './conversation-validation.ts'
+
 export type {
   ActivityStatus,
   AgentRequest,
@@ -59,6 +64,7 @@ export type {
   StoredRequest,
   TerminalStatus,
 } from './requests.ts'
+
 export {
   decodeAgentRequest,
   decodeApprovalDecisionBody,
@@ -68,15 +74,19 @@ export {
   RequestValidationError,
   type RequestValidationCode,
 } from './request-validation.ts'
+
 export { decodeChatCreateBody, decodeChatSearchBody, decodeModelSelection } from './chat-validation.ts'
+
 export {
   decodeAttachmentRemoveBody,
   decodeDraftSaveBody,
   type DraftSaveBody,
 } from './attachment-validation.ts'
+
 export { decodeBriefView } from './brief-validation.ts'
 export { decodeBoundProposal } from './outline-validation.ts'
 export { decodeGeneration } from './generation-validation.ts'
+
 export {
   decodeConfirmationResult,
   decodeDeckChange,
@@ -86,11 +96,14 @@ export {
   decodeSlideContent,
   type InterviewView,
 } from './deck-validation.ts'
+
 export { decodeChangeNotice, type ChangeNotice, type ChangeTopic, type PublishChange } from './changes.ts'
+
 export {
   decodeProviderRemoveBody,
   decodeProviderSaveBody,
 } from './provider-validation.ts'
+
 export {
   decodeWorkspaceAddBody,
   decodeWorkspaceRelinkBody,
@@ -98,6 +111,7 @@ export {
   decodeWorkspaceRenameBody,
   decodeWorkspaceSelectBody,
 } from './workspace-validation.ts'
+
 export {
   decodePreferencesSaveBody,
   decodeResearchSaveBody,

@@ -44,6 +44,7 @@ export interface OutlineChanges {
   readonly changed: readonly string[]
   readonly orderChanged: boolean
 }
+
 export interface BoundOutlineDraft {
   readonly overview: string
   readonly revisionSuggestions: readonly string[]
@@ -55,6 +56,7 @@ export interface BoundOutlineDraft {
     readonly sources: readonly BriefSourceRef[]
   }[]
 }
+
 export interface BoundOutlineInput {
   readonly requestId: string
   readonly responseIndex: number

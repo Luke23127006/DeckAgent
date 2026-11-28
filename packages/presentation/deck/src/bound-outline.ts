@@ -13,6 +13,7 @@ import type {
 
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && v.isWellFormed()
 const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every(k => keys.includes(k))
+
 const exceedsOutlineSize = (value: unknown): boolean => {
   try {
     return Buffer.byteLength(JSON.stringify(value)) > 128 * 1024

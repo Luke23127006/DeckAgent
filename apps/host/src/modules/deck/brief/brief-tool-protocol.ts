@@ -56,13 +56,16 @@ export function decodeDeckToolArgs(args: unknown): unknown {
 
 const codeOf = (error: unknown, fallback: string) =>
   error instanceof DeckError || error instanceof DeckWorkflowError ? error.code : fallback
+
 const repairInfo = (failures: number) => ({
   remaining: Math.max(0, 3 - failures),
   maxRepairs: 2,
   retryable: failures < 3,
 })
+
 const issuesOf = (error: unknown, code: string, path: string, message: string, expected: string) =>
   error instanceof DeckError && error.issues.length ? error.issues : [{ code, path, message, expected }]
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 

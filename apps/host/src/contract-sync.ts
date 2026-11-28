@@ -53,10 +53,12 @@ type DeckOutlineSnapshot = ReturnType<OutlineReader['outlineSnapshot']>
 type DeckOutlineProposal = DeckOutlineSnapshot['proposals'][number]
 type DeckBriefRecord = NonNullable<DeckOutlineProposal['brief']>
 type DeckBriefSnapshot = ReturnType<DeckStore['briefSnapshot']>
+
 type DeckConfirmationTarget = Pick<
   DeckConfirmationReceipt,
   'confirmationId' | 'outlineId' | 'outlineVersion' | 'briefId' | 'briefVersion'
 >
+
 type HostContentBlock = NonNullable<HostOutlineProposal['slides'][number]['blocks']>[number]
 type DeckContentBlock = NonNullable<DeckOutlineProposal['slides'][number]['blocks']>[number]
 type HostWebImageIntent = NonNullable<Extract<HostContentBlock, { kind: 'web-image' }>['intent']>

@@ -13,6 +13,7 @@ import { join } from 'node:path'
 
 const png = await readFile(new URL('./fixtures/attachments/sample.png', import.meta.url))
 const digest = createHash('sha256').update(png).digest('hex')
+
 const credit = {
   url: 'https://photos.example/solar',
   author: 'Photographer',
@@ -21,6 +22,7 @@ const credit = {
   unknownLicense: false,
   retrievedAt: '2026-11-22T00:00:00Z',
 }
+
 const prepared = {
   bytes: png,
   source: { sourceId: 'src-00000000-0000-4000-8000-000000000000', kind: 'research', version: 1 },
@@ -28,6 +30,7 @@ const prepared = {
   parsedDigest: digest,
   credit,
 }
+
 const outline = {
   overview: 'Renewable energy',
   revisionSuggestions: [],
@@ -53,6 +56,7 @@ const outline = {
     },
   ],
 }
+
 const candidates = [
   {
     imageUrl: 'https://photos.example/wind.png',
@@ -69,6 +73,7 @@ const candidates = [
     credit,
   },
 ]
+
 function service(t, entries = candidates) {
   const downloads = []
   const commons = {

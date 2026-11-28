@@ -180,6 +180,7 @@ function rejectionCode(error: unknown) {
 /** Managed bytes only. File preparation and HTTP admission belong to their later owners. */
 export class AttachmentFileStore {
   private readonly uploads = new Map<string, { readonly abort: AbortController; readonly done: Promise<void> }>()
+
   private constructor(
     private readonly root: string,
     private readonly log: AttachmentLogPort,

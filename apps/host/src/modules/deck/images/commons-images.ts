@@ -5,6 +5,7 @@ import type { ImageCredit, PreparedResearchImage } from '@deckagent/deck'
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
+
 const safeUrl = (value: unknown, host: string): string | undefined => {
   try {
     const url = new URL(String(value))
@@ -124,6 +125,7 @@ export class CommonsImages {
     private readonly parser: ImageParserPort,
     private readonly request: typeof fetch = fetch,
   ) {}
+
   close(): Promise<void> {
     return this.parser.close()
   }
@@ -155,6 +157,7 @@ export class CommonsImages {
     }
     throw new DeckError('RESEARCH_IMAGE_UNAVAILABLE')
   }
+
   async prepare(candidate: CommonsCandidate, signal: AbortSignal): Promise<PreparedResearchImage> {
     const operation = AbortSignal.any([signal, AbortSignal.timeout(20000)])
     if (!(safeUrl(candidate.imageUrl, 'upload.wikimedia.org') ?? safeUrl(candidate.imageUrl, 'thumb.wikimedia.org')))
@@ -188,6 +191,7 @@ export class CommonsImages {
       credit: candidate.credit,
     }
   }
+
   /** Compatibility for pinned legacy generation only. Reviewed plans use explicit candidate selection. */
   async find(query: string, signal: AbortSignal): Promise<PreparedResearchImage> {
     const candidates = [...(await this.candidates(query, signal))].toSorted(

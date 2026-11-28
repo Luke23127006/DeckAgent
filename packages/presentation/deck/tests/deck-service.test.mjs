@@ -14,6 +14,7 @@ const plan = {
     { slideId: 'end', title: 'Conclusion' },
   ],
 }
+
 const publication = {
   outlineId: 'outline-1',
   slideId: 'intro',

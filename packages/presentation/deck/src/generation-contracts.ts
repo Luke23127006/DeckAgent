@@ -11,6 +11,7 @@ export interface ConfirmationTarget {
   readonly briefId: string
   readonly briefVersion: number
 }
+
 export interface ConfirmationReceipt extends ConfirmationTarget {
   readonly sessionId: string
   readonly deckId: string
@@ -19,6 +20,7 @@ export interface ConfirmationReceipt extends ConfirmationTarget {
   readonly fingerprint: string
   readonly createdAt: string
 }
+
 export interface GenerationSnapshot {
   readonly receipt: ConfirmationReceipt
   /** The current execution; the original confirmation receipt remains immutable. */
@@ -30,12 +32,14 @@ export interface GenerationSnapshot {
   readonly design: DesignSnapshot
   readonly selection: { readonly provider: string; readonly model: string }
 }
+
 /** An object identity issued by DeckStore, never a model-supplied grant or a persisted credential. */
 export interface GenerationGrant {
   readonly intentId: string
   readonly requestId: string
   readonly sessionId: string
 }
+
 export interface DeckOptions {
   readonly onDeckChanged?: (sessionId: string, version: number) => void
   readonly onBriefChanged?: (sessionId: string, version: number) => void
@@ -48,12 +52,14 @@ export interface DeckOptions {
   readonly renderCheck?: (html: string, requiredText: readonly string[], signal: AbortSignal) => Promise<void>
   readonly preparedImage?: (sessionId: string, attachmentId: string, signal: AbortSignal) => Promise<PreparedImageAsset>
 }
+
 export interface PreparedImageAsset {
   readonly bytes: Uint8Array
   readonly source: BriefSourceRef
   readonly originalDigest: string
   readonly parsedDigest: string
 }
+
 export interface ImageCredit {
   readonly url: string
   readonly author: string
@@ -64,11 +70,13 @@ export interface ImageCredit {
   readonly unknownLicense: boolean
   readonly retrievedAt: string
 }
+
 export interface PreparedResearchImage extends PreparedImageAsset {
   readonly credit: ImageCredit
   readonly selection?: ImageSelection
   readonly attempts?: readonly ImageAttempt[]
 }
+
 export interface ImageNeed {
   readonly contextBlocks: readonly ContentBlock[]
   readonly needId: string
@@ -83,6 +91,7 @@ export interface ImageNeed {
   readonly required: boolean
   readonly replace: boolean
 }
+
 export interface ImageSelection {
   readonly provider: 'tavily' | 'commons'
   readonly query: string
@@ -92,18 +101,22 @@ export interface ImageSelection {
   readonly evidence: 'metadata'
   readonly policy: 'web-images-v1' | 'web-images-v2'
 }
+
 export interface ImageSourceCheck {
   readonly sourceUrl: string
   readonly code: string
   readonly httpStatus?: number
 }
+
 export interface ImageAttempt {
   readonly candidateId: string
   readonly imageUrl: string
   readonly code: string
   readonly checks: readonly ImageSourceCheck[]
 }
+
 export type ImageResolver = (need: ImageNeed, signal: AbortSignal) => Promise<PreparedResearchImage>
+
 export interface OutlineImageReview {
   readonly attempts?: readonly ImageAttempt[]
   readonly digest?: string
@@ -116,6 +129,7 @@ export interface OutlineImageReview {
   readonly credit?: ImageCredit
   readonly selection?: ImageSelection
 }
+
 export interface StageStatus {
   readonly rules?: readonly string[]
   readonly starter?: string
@@ -126,17 +140,20 @@ export interface StageStatus {
   readonly finalized: boolean
   readonly digest: string | null
 }
+
 export interface StageChunk {
   readonly sequence: number
   readonly text: string
   readonly final: boolean
 }
+
 export interface ArtifactPublication {
   readonly stageId: string
   readonly slideId: string
   readonly expectedRevision: number
   readonly publicationId: string
 }
+
 export interface ArtifactAsset {
   readonly assetId: string
   readonly source: BriefSourceRef
@@ -150,7 +167,9 @@ export interface ArtifactAsset {
   readonly parsedDigest: string
   readonly byteSize: number
 }
+
 export type ContentProvenance = ContentOrigin
+
 export interface GenerationCapability {
   draft(stageId: string): StageStatus
   document(stageId: string, document: SlideDocument): void

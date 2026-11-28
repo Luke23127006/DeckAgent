@@ -5,6 +5,7 @@ export interface SourceReference {
   readonly version: number
   readonly kind: 'attachment' | 'project-file' | 'approved-file' | 'research'
 }
+
 export interface ContentOrigin {
   readonly text: string
   readonly kind: 'fact' | 'wording' | 'placeholder'
@@ -14,6 +15,7 @@ export interface ContentOrigin {
   readonly location?: string
   readonly quote?: string
 }
+
 export type SlideNode = { readonly id: string } & (
   | { readonly kind: 'subtitle' | 'lead' | 'text' | 'source-note'; readonly text: string }
   | { readonly kind: 'bullets'; readonly items: readonly string[] }
@@ -21,6 +23,7 @@ export type SlideNode = { readonly id: string } & (
   | { readonly kind: 'metrics'; readonly items: readonly { readonly value: string; readonly label: string }[] }
   | { readonly kind: 'image'; readonly assetId: string; readonly caption?: string }
 )
+
 export interface SlideDocument {
   readonly schemaVersion: 1
   readonly slideId: string
@@ -30,12 +33,14 @@ export interface SlideDocument {
   readonly provenance: readonly ContentOrigin[]
   readonly notes?: string
 }
+
 export interface ValidationIssue {
   readonly code: string
   readonly path: string
   readonly message: string
   readonly expected?: string
 }
+
 export class FormatError extends Error {
   constructor(
     readonly code: string,
@@ -45,11 +50,13 @@ export class FormatError extends Error {
     this.name = 'FormatError'
   }
 }
+
 export interface FormatAsset {
   readonly assetId: string
   readonly byteSize: number
   readonly bytes: Uint8Array
 }
+
 export interface ArtifactDescriptor {
   readonly format: string
   readonly mediaType: string
@@ -58,17 +65,20 @@ export interface ArtifactDescriptor {
   readonly documentVersion?: 1
   readonly template: { readonly id: string; readonly version: number }
 }
+
 export interface FormatContext {
   readonly design: DesignSnapshot
   readonly layoutId: string
   readonly assets: readonly FormatAsset[]
   readonly document?: SlideDocument
 }
+
 export interface BuiltArtifact {
   readonly bytes: Uint8Array
   readonly descriptor: ArtifactDescriptor
   readonly preview?: string
 }
+
 /** Native adapters have no request grant, publication pointer or filesystem authority. */
 export interface FormatAdapter {
   readonly id: string

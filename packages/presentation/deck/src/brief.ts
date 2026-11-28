@@ -3,9 +3,11 @@ import type { ThemeValues } from '@deckagent/design'
 import { DeckError, isRecord } from './errors.ts'
 import type { BriefDraft } from './brief-contracts.ts'
 import type { ValidationIssue } from '@deckagent/presentation-document'
+
 export type { BriefDraft, BriefSourceRef, InterviewTopic } from './brief-contracts.ts'
 
 export const briefContractVersion = 'brief-v1'
+
 export const briefTopics = [
   'topic',
   'audience',
@@ -18,19 +20,23 @@ export const briefTopics = [
   'template',
   'design-system',
 ] as const
+
 const text = z
   .string()
   .min(1)
   .refine(s => !!s.trim() && s.isWellFormed(), 'Use nonempty, well-formed text.')
+
 const texts = z.array(text)
 const positive = z.number().positive()
 const integer = z.number().int().positive()
 const reference = z.strictObject({ id: text, version: integer })
+
 const source = z.strictObject({
   sourceId: z.string().regex(/^src-[a-f0-9-]{36}$/),
   version: integer,
   kind: z.enum(['attachment', 'project-file', 'approved-file', 'research']),
 })
+
 const sources = z
   .strictObject({
     material: z.boolean(),
@@ -41,6 +47,7 @@ const sources = z
   .describe(
     'All flags are explicit Host-admitted choices. References never grant permission. Do not invent source IDs.',
   )
+
 const images = z
   .strictObject({
     mode: z.enum(['none', 'attachments', 'public-research', 'unavailable']),
@@ -51,10 +58,13 @@ const images = z
   .describe(
     'Only attachments mode has attachmentIds, and requires material access. Unavailable mode retains a nonempty unmetRequirements list.',
   )
+
 const answers = z
   .array(z.strictObject({ topic: z.enum(briefTopics), value: text }))
   .describe('One answer per topic. Do not invent missing answers; Interview supplies questions or explicit skip.')
+
 const color = z.string().regex(/^#[a-fA-F0-9]{6}$/)
+
 const overrides = z
   .strictObject({
     'color.background': color,
@@ -74,6 +84,7 @@ const overrides = z
     'type.lineHeight': positive,
   })
   .partial()
+
 const shape = z
   .strictObject({
     topic: text.optional(),
@@ -109,8 +120,10 @@ function immutable<T>(value: T): T {
   }
   return value
 }
+
 /** The same structural schema used by the Host decoder is supplied to model tools. */
 export const briefJsonSchema = immutable(z.toJSONSchema(shape, { io: 'input', target: 'draft-07' }))
+
 const fieldPath = (parts: readonly PropertyKey[]) =>
   parts
     .map((p, i) => {

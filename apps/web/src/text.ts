@@ -123,6 +123,7 @@ export const errorText: Readonly<Record<ClientErrorCode, string>> = {
 export function formatClientError(code: ClientErrorCode): string {
   return errorText[code]
 }
+
 export const settingsText = {
   protocols: {
     'chat-completions': 'OpenAI Chat Completions',

@@ -14,6 +14,7 @@ import { configureApiClient } from '../src/api/client.ts'
 import { SettingsPage } from '../src/pages/settings/settings-page.tsx'
 
 const origin = 'http://localhost:4321'
+
 const settings = {
   providers: [],
   builtIns: [],
@@ -22,10 +23,12 @@ const settings = {
   persistentKeys: true,
   runtime: { available: true },
 }
+
 const server = setupServer(
   http.get(`${origin}/api/settings`, () => HttpResponse.json(settings)),
   http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'light', version: 2 })),
 )
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' })
   Object.defineProperty(window, 'matchMedia', {
@@ -33,12 +36,15 @@ beforeAll(() => {
     value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
   })
 })
+
 afterEach(() => {
   cleanup()
   server.resetHandlers()
   document.documentElement.classList.remove('dark')
 })
+
 afterAll(() => server.close())
+
 function mount() {
   configureApiClient({ origin, token: 'test-token' })
   return render(
@@ -49,6 +55,7 @@ function mount() {
     </QueryClientProvider>,
   )
 }
+
 it('creates a provider with a version and clears the credential after submission', async () => {
   let body: unknown
   server.use(
@@ -80,11 +87,13 @@ it('creates a provider with a version and clears the credential after submission
   expect(screen.getByLabelText('API key')).toHaveValue('')
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Đã lưu'))
 })
+
 it('rejects malformed settings responses', async () => {
   server.use(http.get(`${origin}/api/settings`, () => HttpResponse.json({ ...settings, providersVersion: -1 })))
   mount()
   expect(await screen.findByRole('alert')).toHaveTextContent('Chưa đọc được dữ liệu từ Host')
 })
+
 it('saves theme using the read version and applies the saved theme', async () => {
   let saved = false
   server.use(
@@ -102,6 +111,7 @@ it('saves theme using the read version and applies the saved theme', async () =>
   await user.click(await screen.findByRole('button', { name: 'Tối' }))
   await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
 })
+
 it('updates an existing provider without sending a blank key, then explicitly removes its key', async () => {
   const provider = {
     id: 'river',
@@ -148,6 +158,7 @@ it('updates an existing provider without sending a blank key, then explicitly re
     expectedVersion: 3,
   })
 })
+
 it('reads fresh settings after a stale write and never retries the write', async () => {
   let reads = 0
   let writes = 0
@@ -172,6 +183,7 @@ it('reads fresh settings after a stale write and never retries the write', async
   expect(reads).toBe(2)
   expect(screen.getByLabelText('Provider ID')).toHaveValue('')
 })
+
 it('loads a catalog, adds a model, and deletes the selected provider with the read version', async () => {
   const provider = {
     id: 'river',
@@ -207,6 +219,7 @@ it('loads a catalog, adds a model, and deletes the selected provider with the re
     window.confirm = original
   }
 })
+
 it('keeps the saved theme when the Host refuses a preference write', async () => {
   server.use(
     http.put(`${origin}/api/preferences`, () =>
@@ -220,6 +233,7 @@ it('keeps the saved theme when the Host refuses a preference write', async () =>
   expect(document.documentElement).not.toHaveClass('dark')
   expect(screen.getByRole('button', { name: 'Sáng' })).toHaveAttribute('aria-pressed', 'true')
 })
+
 it('clears a rejected credential and shows only the stable error text', async () => {
   server.use(
     http.put(`${origin}/api/providers/river`, () =>
@@ -242,6 +256,7 @@ it('clears a rejected credential and shows only the stable error text', async ()
   expect(screen.getByLabelText('API key')).toHaveValue('')
   expect(document.body).not.toHaveTextContent('private-test-key')
 })
+
 it('follows system theme changes and removes the listener when settings unmounts', async () => {
   const original = window.matchMedia
   let matches = false

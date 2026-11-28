@@ -34,6 +34,7 @@ export function validateConfirmation(value: unknown): ConfirmationTarget {
     briefVersion: Number(value.briefVersion),
   }
 }
+
 export function sameConfirmation(a: ConfirmationTarget, b: ConfirmationTarget): boolean {
   return (
     a.confirmationId === b.confirmationId &&

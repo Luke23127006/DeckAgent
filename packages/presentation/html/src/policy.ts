@@ -3,26 +3,32 @@ import type { DefaultTreeAdapterMap } from 'parse5'
 import { parse as parseCss, walk, generate, lexer } from 'css-tree'
 import { FormatError as DeckError } from '@deckagent/presentation-document'
 import type { DesignSnapshot } from '@deckagent/design'
+
 type ArtifactAsset = { readonly assetId: string; readonly byteSize: number }
 
 type Node = DefaultTreeAdapterMap['node']
+
 const tags = new Set(
   'div section article header footer main h1 h2 h3 h4 h5 h6 p span strong em b i small ul ol li dl dt dd blockquote table thead tbody tr th td img figure figcaption br hr style'.split(
     ' ',
   ),
 )
+
 const geometry = new Set(
   'display position top right bottom left width height min-width max-width min-height max-height margin margin-top margin-right margin-bottom margin-left padding padding-top padding-right padding-bottom padding-left gap row-gap column-gap grid-template-columns grid-template-rows grid-auto-flow grid-column grid-row align-items align-content align-self justify-items justify-content justify-self flex flex-direction flex-wrap flex-grow flex-shrink flex-basis order overflow overflow-x overflow-y box-sizing text-align vertical-align white-space word-break overflow-wrap font-weight font-style letter-spacing border-width border-style border-radius border-top-width border-right-width border-bottom-width border-left-width object-fit object-position'.split(
     ' ',
   ),
 )
+
 export const htmlCapabilities = Object.freeze({
   tags: [...tags],
   geometry: [...geometry],
   attributes: ['class', 'style', 'alt', 'src', 'colspan', 'rowspan', 'data-node-id'],
 })
+
 const roleVar = (value: string, roles: readonly string[]) =>
   roles.some(r => value === `var(--${r.replaceAll('.', '-')})`)
+
 function css(source: string, inline: boolean, design: DesignSnapshot) {
   try {
     const ast = parseCss(source, {
@@ -105,10 +111,12 @@ function css(source: string, inline: boolean, design: DesignSnapshot) {
     throw error instanceof DeckError ? error : new DeckError('ARTIFACT_UNSAFE_CSS')
   }
 }
+
 function visit(node: Node, operation: (node: Node) => void): void {
   operation(node)
   if ('childNodes' in node) for (const child of node.childNodes) visit(child, operation)
 }
+
 export function compileArtifact(source: string, design: DesignSnapshot, assets: readonly ArtifactAsset[]): string {
   try {
     if (!source.trim() || !source.isWellFormed() || source.includes('\0') || Buffer.byteLength(source) > 256 * 1024)

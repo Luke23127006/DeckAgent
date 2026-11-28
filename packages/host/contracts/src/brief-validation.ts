@@ -27,20 +27,24 @@ const briefTopics = [
 const texts = z.array(nonEmptyText)
 const positive = z.number().finite().positive()
 const reference = z.strictObject({ id: nonEmptyText, version: positiveInt })
+
 const sources = z.strictObject({
   material: z.boolean(),
   modelKnowledge: z.boolean(),
   publicResearch: z.boolean(),
   refs: z.array(briefSourceSchema),
 })
+
 const images = z.strictObject({
   mode: z.enum(['none', 'attachments', 'public-research', 'unavailable']),
   provider: z.enum(['tavily', 'commons']).optional(),
   attachmentIds: z.array(attachmentId),
   unmetRequirements: texts,
 })
+
 const answers = z.array(z.strictObject({ topic: z.enum(briefTopics), value: nonEmptyText }))
 const color = z.string().regex(/^#[a-fA-F0-9]{6}$/)
+
 const themeFields = {
   'color.background': color,
   'color.surface': color,
@@ -58,6 +62,7 @@ const themeFields = {
   'space.unit': positive,
   'type.lineHeight': positive,
 }
+
 const overrides = z.strictObject(themeFields).partial()
 const themeSchema = z.strictObject(themeFields)
 

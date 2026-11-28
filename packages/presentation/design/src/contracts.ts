@@ -2,6 +2,7 @@ export interface CatalogRef {
   readonly id: string
   readonly version: number
 }
+
 export interface ThemeValues {
   readonly 'color.background': string
   readonly 'color.surface': string
@@ -19,22 +20,26 @@ export interface ThemeValues {
   readonly 'space.unit': number
   readonly 'type.lineHeight': number
 }
+
 export interface DesignSystem extends CatalogRef {
   readonly name: string
   readonly theme: ThemeValues
   readonly rules: readonly string[]
   readonly brandAssets: readonly string[]
 }
+
 export interface Layout {
   readonly id: 'cover' | 'section' | 'title-body' | 'two-column' | 'key-figures' | 'image-text' | 'image-pair'
   readonly contentKinds: readonly ContentBlock['kind'][]
   readonly capacity: Readonly<Record<string, number>>
 }
+
 export interface Template extends CatalogRef {
   readonly name: string
   readonly format: 'html'
   readonly layouts: readonly Layout[]
 }
+
 export interface DesignSnapshot {
   readonly format: 'html'
   readonly designSystem: CatalogRef
@@ -45,6 +50,7 @@ export interface DesignSnapshot {
   readonly viewport: { readonly width: 1280; readonly height: 720 }
   readonly fingerprint: string
 }
+
 export type ContentBlock =
   | { readonly kind: 'subtitle' | 'lead' | 'text' | 'source-note'; readonly text: string }
   | { readonly kind: 'bullets'; readonly items: readonly string[] }
@@ -60,6 +66,7 @@ export type ContentBlock =
       readonly provider?: 'tavily' | 'commons'
       readonly replace?: boolean
     }
+
 export interface WebImageIntent {
   readonly subject: string
   readonly role: string
@@ -67,10 +74,12 @@ export interface WebImageIntent {
   readonly mustAvoid: readonly string[]
   readonly aspect: 'landscape' | 'portrait' | 'square' | 'any'
 }
+
 export interface SlideContentPlan {
   readonly title: string
   readonly blocks: readonly ContentBlock[]
 }
+
 export interface LayoutIssue {
   readonly code: 'DESIGN_LAYOUT_INCOMPATIBLE'
   readonly slideIndex: number
@@ -81,6 +90,7 @@ export interface LayoutIssue {
   readonly actual?: number
   readonly limit?: number
 }
+
 export class DesignError extends Error {
   constructor(readonly code: string) {
     super(code)

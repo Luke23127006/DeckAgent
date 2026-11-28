@@ -14,6 +14,7 @@ const freeUsage = {
   key: { usage: 0, limit: null },
   account: { current_plan: 'Researcher', plan_usage: 0, plan_limit: 1000, paygo_usage: 0, paygo_limit: null },
 }
+
 test('research accepts only free accounts and checks usage before bounded basic search', async () => {
   const calls = []
   let usage = freeUsage

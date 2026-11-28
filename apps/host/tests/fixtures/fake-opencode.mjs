@@ -12,8 +12,10 @@ const [logFile, ...args] = process.argv.slice(2)
 const mode = existsSync(`${logFile}.mode.json`) ? JSON.parse(readFileSync(`${logFile}.mode.json`, 'utf8')) : {}
 const key = process.env.DECKAGENT_PROVIDER_KEY
 const content = process.env.OPENCODE_CONFIG_CONTENT ?? ''
+
 const log = entry =>
   appendFileSync(logFile, `${JSON.stringify({ pid: process.pid, cwd: process.cwd(), args, ...entry })}\n`)
+
 const out = value => process.stdout.write(`${JSON.stringify(value)}\n`)
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -40,15 +42,18 @@ if (args[0] !== 'run') process.exit(64)
 
 let prompt = ''
 for await (const chunk of process.stdin) prompt += chunk
+
 const marker = prompt.includes("The user's new request:\n")
   ? prompt.slice(prompt.lastIndexOf("The user's new request:\n"))
   : prompt
+
 const has = name => marker.includes(`[${name}]`)
 const sessionIndex = args.indexOf('--session')
 const resume = sessionIndex >= 0 ? args[sessionIndex + 1] : undefined
 const store = join(process.env.XDG_DATA_HOME ?? '.', 'fake-opencode-sessions.json')
 mkdirSync(process.env.XDG_DATA_HOME ?? '.', { recursive: true })
 const sessions = existsSync(store) ? JSON.parse(readFileSync(store, 'utf8')) : {}
+
 log({
   command: 'run',
   resume: resume ?? null,
@@ -66,14 +71,18 @@ if (resume && !sessions[resume]) {
   process.stderr.write('Error: Session not found\n')
   process.exit(1)
 }
+
 const sessionID = resume ?? `ses_${randomUUID().replaceAll('-', '')}`
 sessions[sessionID] = (sessions[sessionID] ?? 0) + 1
 writeFileSync(store, JSON.stringify(sessions))
 // Every part names its native message, as in 1.19.5; assistant steps start with a step_start part.
 let messageID = `msg_a${sessions[sessionID]}_1`
+
 const event = (type, part = {}) =>
   out({ type, timestamp: Date.now(), sessionID, ...(part ? { part: { messageID, sessionID, ...part } } : {}) })
+
 const text = `Echo ${sessions[sessionID]}: ${marker.split('\n').at(-1)?.slice(0, 200) ?? ''}`
+
 const overflow = () =>
   out({
     type: 'error',
@@ -83,11 +92,14 @@ const overflow = () =>
   })
 
 if (has('crash')) process.exit(2)
+
 if (has('malformed')) {
   process.stdout.write('this is not json\n')
   process.exit(0)
 }
+
 if (has('stderr-secret')) process.stderr.write(`provider said: invalid key ${key}\n`)
+
 if (has('overflow') || has('overflow-fail')) {
   // 1.19.5 with compaction.auto: the refused call is reported, a summary message is written, the request is
   // answered again; the run then exits 1 because an error was reported.
@@ -116,7 +128,9 @@ if (has('overflow') || has('overflow-fail')) {
   event('step_finish', { id: 'prt_answer_finish', type: 'step-finish', reason: 'stop' })
   process.exit(1)
 }
+
 event('step_start', { id: 'prt_step1', type: 'step-start' })
+
 if (existsSync(`${logFile}.generation.json`)) {
   const config = JSON.parse(
     content
@@ -275,6 +289,7 @@ if (existsSync(`${logFile}.generation.json`)) {
     }
   }
 }
+
 if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
   const workflow = JSON.parse(readFileSync(`${logFile}.workflow.json`, 'utf8'))
   const config = JSON.parse(
@@ -415,6 +430,7 @@ if (has('workflow') && existsSync(`${logFile}.workflow.json`)) {
     }
   }
 }
+
 if (
   has('mcp-read') ||
   has('mcp-external') ||
@@ -472,6 +488,7 @@ if (
     event('text', { id: `prt_mcp_${i}`, type: 'text', text: result.result?.content?.[0]?.text ?? 'TOOL_FAILED' })
   }
 }
+
 if (has('auth')) {
   out({
     type: 'error',
@@ -481,11 +498,13 @@ if (has('auth')) {
   })
   process.exit(1)
 }
+
 if (has('hang')) {
   event('text', { id: 'prt_partial', type: 'text', text: 'Partial answer before Stop' })
   process.on('SIGTERM', () => {})
   await sleep(10 * 60 * 1000)
 }
+
 if (has('tool')) {
   event('tool_use', {
     id: 'prt_tool',
@@ -496,10 +515,12 @@ if (has('tool')) {
   event('step_finish', { id: 'prt_finish1', type: 'step-finish', reason: 'tool-calls' })
   event('step_start', { id: 'prt_step2', type: 'step-start' })
 }
+
 if (has('slow')) {
   event('text', { id: 'prt_text', type: 'text', text: 'Partial' })
   await sleep(1500)
 }
+
 if (has('split')) {
   // One JSON line written in two chunks.
   const line = JSON.stringify({
@@ -512,6 +533,7 @@ if (has('split')) {
   await sleep(100)
   process.stdout.write(`${line.slice(20)}\n`)
 }
+
 event('text', { id: 'prt_text', type: 'text', text })
 // A repeated frame of the same part must not duplicate the reply.
 event('text', { id: 'prt_text', type: 'text', text })

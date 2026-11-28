@@ -79,6 +79,7 @@ function failed(error: RunError, usage: RunUsage = noUsage, noWork = true): Clas
 export class OpenCodeAgentRuntime implements AgentRuntime {
   readonly name = 'opencode'
   private versionCheck: Promise<boolean> | undefined
+
   private get launcher(): readonly string[] {
     return this.options.launcherArgs ?? []
   }

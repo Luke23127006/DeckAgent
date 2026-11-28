@@ -18,12 +18,14 @@ import { SourceToolFailure, createSourceToolsContribution, mapSourceToolFailure 
 import { waitFor } from './fixtures/wait-for.mjs'
 
 const owner = { kind: 'chat', id: 'chat-1' }
+
 const settings = {
   provider: 'fixture',
   protocol: 'chat-completions',
   baseUrl: 'http://127.0.0.1:9/v1',
   model: 'model-a',
 }
+
 const providers = { resolve: async () => settings }
 
 function schema(name) {

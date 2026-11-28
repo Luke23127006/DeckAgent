@@ -5,6 +5,7 @@ import type { OutlineTarget } from './outline-contracts.ts'
 
 export type BriefSourceRef = SourceReference
 export type InterviewTopic = (typeof briefTopics)[number]
+
 export interface BriefDraft {
   readonly presenterNotes?: boolean
   readonly topic?: string
@@ -34,6 +35,7 @@ export interface BriefDraft {
   readonly designSystem?: CatalogRef
   readonly themeOverrides?: Partial<ThemeValues>
 }
+
 export interface BriefRecord {
   readonly sessionId: string
   readonly briefId: string
@@ -42,6 +44,7 @@ export interface BriefRecord {
   readonly draft: BriefDraft
   readonly design: DesignSnapshot | null
 }
+
 export interface InterviewState {
   readonly questions: readonly {
     readonly topic: InterviewTopic
@@ -54,6 +57,7 @@ export interface InterviewState {
   readonly skipAllowed: boolean
   readonly notice: string
 }
+
 export interface BriefSnapshot {
   readonly sessionId: string
   readonly version: number

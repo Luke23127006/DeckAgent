@@ -15,6 +15,7 @@ const preferencesSaveBody = z.strictObject({
   theme: z.enum(['light', 'dark', 'system']),
   expectedVersion: nonNegativeInt,
 })
+
 const researchSaveBody = z.union([
   z.strictObject({
     key: z
@@ -26,6 +27,7 @@ const researchSaveBody = z.union([
   }),
   z.strictObject({ useEnvironment: z.literal(true), expectedVersion: nonNegativeInt }),
 ])
+
 const researchRemoveBody = z.strictObject({ expectedVersion: nonNegativeInt })
 
 function invalidBody(): never {
