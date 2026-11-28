@@ -5,11 +5,11 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
+- **Debugging phase:** add `docs/build/debugging/README.md`, which debugs one feature area at a time (Provider, Workspace, Chat, Request, Deck) with a UI pass first and then nine aspects, each with its own baseline.
 - **Code layout:** add `scripts/format-layout.mjs` with `isLayoutTarget`, `formatLayout` and `listDenseBodies`, plus the command modes `--check`, `--write` and `--dense` that add the missing blank lines between imports, top-level declarations and class members and list the dense function bodies.
 - **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, complete Phase 1 conventions and oxlint folder rules, install and pin Phase 2 Browser dependencies (React 19.3.1, Vite 8.4.0, React Router 8.5.3, TanStack Query 5.108.4, Tailwind CSS 4.3.5, shadcn/ui, Vitest 5.1.2, MSW 3.0.8) with `components.json` and `vitest.config.ts`, and add the Phase 2 React shell execution plan (Revision 2), then configure Vite, Tailwind CSS 4 and shadcn/ui for `apps/web/` with the legacy CSS behind Tailwind layers and a build guard against mocks and MSW, then add the typed browser API client in `apps/web/src/api/` with a Vietnamese error text map, then add the host connection and change feed hooks, the React shell with declarative routes, `main.tsx`, and the temporary mount for the legacy screens with explicit cleanup.
 - Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
-- Add deck review and generation run plans with source grants and image recovery contributions.
 - Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
 - Add schema 3 preferences versioning, change notices and strict write validation. Reject stale research and theme writes with `PREFERENCES_STALE`.
 - Move research into a Host module. Keep Browser research controls and theme synchronized through preferences notices without resending stale writes.

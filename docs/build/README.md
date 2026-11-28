@@ -16,4 +16,5 @@
 | [refactor/web-react/README.md](refactor/web-react/README.md) | Browser in React: abstract phase plan, reference products (open-design, crypto-force), problems and Browser rules for Phase 5 of the target structure refactor |
 | [refactor/web-react/plan/README.md](refactor/web-react/plan/README.md) | Browser in React implementation plan (Revision 1: Phase 1 Browser folder rules, conventions and exit check. Revision 2: Phase 2 React shell, Vite build, Host SPA serving, theme variables, API client, change feed hook and legacy mount) |
 | [refactor/code-layout/README.md](refactor/code-layout/README.md) | Code layout refactor: problems of blank lines and statement order, scope and phases |
+| [debugging/README.md](debugging/README.md) | Debugging phase: feature areas with a UI pass first, nine aspects with their baselines, the method for each finding and the order of the areas |
 | [refactor/code-layout/plan/README.md](refactor/code-layout/plan/README.md) | Code layout implementation plan (Revision 1: layout script, Biome and layout passes, format and post-edit enforcement, `code.md` rules, steps in dense function bodies, blame ignore and exit checks) |
