@@ -9,3 +9,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 3 | [Apply Biome to the repository](task-03-apply-biome-format.md) |
 | 4 | [Apply the layout script to the repository](task-04-apply-layout-script.md) |
 | 5 | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) |
+| 6 | [Write the layout rules into the conventions](task-06-write-layout-rules-into-conventions.md) |

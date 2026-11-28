@@ -1,6 +1,6 @@
 # Coding Guidelines
 
-Đọc file này để biết cách viết code production trong DeckAgent: naming, TypeScript, comment, validation, state và error handling.
+Đọc file này để biết cách viết code production trong DeckAgent: naming, TypeScript, bố cục, comment, validation, state và error handling.
 
 Vị trí đặt code, public API và dependency được phép nằm trong [Project Structure](project-structure.md). Cách viết test nằm trong [Testware](testware.md). Khi framework hoặc tool đang dùng đã có convention, áp dụng convention đó. File này chỉ quy định phần framework không quy định.
 
@@ -56,6 +56,16 @@ Tên trong code theo bảng thuật ngữ sản phẩm trong [Use Cases](../UCs/
 - Không thêm tiền tố `I` cho interface. Không dùng hậu tố `_` *(review)*.
 
 TypeScript không thay runtime validation. Dữ liệu từ HTTP, file, database, model hoặc external service phải được kiểm tại boundary (xem [Validation](#validation)) *(review)*.
+
+## Bố cục
+
+Biome quyết định indent, độ dài dòng và dấu câu *(format: Biome)*. Biome giữ dòng trống có sẵn nhưng không thêm dòng trống. Mục này quy định dòng trống và thứ tự câu lệnh.
+
+- Một dòng trống sau block import ở đầu file *(format, hook post-edit: `format-layout` rule `layout-after-imports`)*.
+- Một dòng trống giữa hai khai báo top-level khi một trong hai khai báo dài hơn một dòng. Các khai báo một dòng liền nhau là một nhóm, không cách dòng. Các overload của một function không cách dòng *(format, hook post-edit: `format-layout` rule `layout-between-declarations`)*.
+- Member của class theo cùng quy tắc: field một dòng liền nhau là một nhóm, `constructor` và method nhiều dòng cách member bên cạnh một dòng trống *(format, hook post-edit: `format-layout` rule `layout-between-members`)*.
+- Thân hàm chia thành đoạn theo bước: kiểm precondition, đổi state, side effect, trả kết quả. Các đoạn cách nhau một dòng trống. Trong React component và hook, các lệnh gọi hook là một đoạn, giá trị tính từ hook là đoạn sau, `return` là đoạn cuối. Lệnh `node scripts/format-layout.mjs --dense <path>` liệt kê thân hàm có từ 6 câu lệnh và 12 dòng trở lên mà không có dòng trống *(review)*.
+- Khai báo biến ở đoạn dùng biến đó lần đầu. Không gom khai báo lên đầu hàm, vì `const` và `let` có scope là block. Ngoại lệ: React component gọi mọi hook trước điều kiện đầu tiên, theo Rules of Hooks *(review)*.
 
 ## Comments
 

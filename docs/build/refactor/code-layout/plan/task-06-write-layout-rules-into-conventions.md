@@ -21,11 +21,11 @@ Read this file to learn the steps of Task 6, which adds the section `Bố cục`
 
 **Forbidden:** Do not change other sections of `docs/conventions/code.md`.
 
-- [ ] **Step 1: Change the first paragraph**
+- [x] **Step 1: Change the first paragraph**
 
 In the first paragraph of `docs/conventions/code.md`, change `naming, TypeScript, comment, validation, state và error handling` to `naming, TypeScript, bố cục, comment, validation, state và error handling`.
 
-- [ ] **Step 2: Add the section `Bố cục`**
+- [x] **Step 2: Add the section `Bố cục`**
 
 Add this section after the section `TypeScript` and before the section `Comments`:
 
@@ -41,7 +41,7 @@ Biome quyết định indent, độ dài dòng và dấu câu *(format: Biome)*.
 - Khai báo biến ở đoạn dùng biến đó lần đầu. Không gom khai báo lên đầu hàm, vì `const` và `let` có scope là block. Ngoại lệ: React component gọi mọi hook trước điều kiện đầu tiên, theo Rules of Hooks *(review)*.
 ```
 
-- [ ] **Step 3: Run the checks**
+- [x] **Step 3: Run the checks**
 
 Run: `corepack pnpm@11.28.5 check:docs`
 Expected: exit code 0.
@@ -49,6 +49,6 @@ Expected: exit code 0.
 Run: `git grep -n "format-layout" -- docs/conventions/code.md`
 Expected: each line is in the section `Bố cục`.
 
-- [ ] **Step 4: Write the report file and stop**
+- [x] **Step 4: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
