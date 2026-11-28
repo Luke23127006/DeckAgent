@@ -49,7 +49,7 @@ Each pass after the UI pass looks at one aspect. Each aspect has its own baselin
 | --- | --- | --- | --- | --- | --- |
 | 1 | UI and UX | Confusing screens, wrong patterns, missing components | Reference products (Claude.ai, Gamma, Perplexity), Nielsen 10 heuristics | The interview is a fixed panel with raw checkboxes and selects. The select "Loại yêu cầu Outline" makes the user classify the message | Now, pass 1 |
 | 2 | Business flow | Wrong steps, missing exception flows | Main flows and exception flows in `docs/UCs/`, as a point of comparison | The user cannot skip one interview question, only all remaining questions [[3]](#ref-3). A chat gets its name from an interview chip answer [[4]](#ref-4) | Now |
-| 3 | State and lifecycle | Invalid state transitions, lost state | State transition model (skill `test-technique-state-transition`) | The interview choices live in DOM nodes and can get lost when the user changes the chat (Inferred). The outline lifecycle: current, previous, accepted [[3]](#ref-3) | Now |
+| 3 | State and lifecycle | Invalid state transitions, lost state | State transition model (skill `test-design`, `references/state-transition.md`) | The interview choices live in DOM nodes and can get lost when the user changes the chat (Inferred). The outline lifecycle: current, previous, accepted [[3]](#ref-3) | Now |
 | 4 | Errors and recovery | Swallowed errors, messages without meaning, no way out | Exception flows of the use cases, HAX G9 to G11 | A provider error during slide generation. No way to run a failed request again ([OQ-064](../../open-questions.md#oq-064)) | Now |
 | 5 | Data integrity and concurrency | Overwritten data, duplicates, data out of sync | Race condition checklist: lost update, double submit, stale tab, retry that is not idempotent | Two tabs, or two clicks on Send. The code handles part of it. The open part is what the second tab shows ([OQ-061](../../open-questions.md#oq-061)) | Later, lower priority |
 | 6 | Security and privacy | Private data that leaves the machine, harmful input | STRIDE, OWASP ASVS 5.0.0 [[2]](#ref-2) (V5, V12), OWASP Top 10 for LLM Applications 2025 [[5]](#ref-5) | A Tavily query can contain text from the documents, against the rule for private content in public research [[3]](#ref-3) (Inferred). Prompt injection through an attached file | Now, for areas where data crosses a boundary |
@@ -61,7 +61,7 @@ Rules for the aspects:
 
 - An area does not go through all nine aspects. The team selects the aspects for each area. For example, Chat needs almost no security pass, but Request needs one for research and attachments.
 - After the UI pass, the order is: business flow (2), state (3), errors (4), AI output (7), security (6), concurrency (5). A broken business flow makes the other aspects meaningless.
-- The team tests the risks with the highest impact first (skill `test-risk-analysis`). The test technique follows from the aspect, not from a list of test types.
+- The team tests the risks with the highest impact first (skill `test-design`, `references/risk-analysis.md`). The test technique follows from the aspect, not from a list of test types.
 
 ## Method for each finding
 
@@ -80,7 +80,7 @@ Two steps of this flow stop the slop from coming back:
 - **An independent review.** A subagent that did not read the spec reviews the fix, as in the gap analysis of the use cases.
 - **An automatic check for a repeated defect.** When a defect can occur again, it becomes a lint rule or a test that fails on the old defect (skill `correct`). Without this step, an agent can generate the same defect again.
 
-The skill `test-defect-classification` gives the severity and priority scales.
+The skill `test-design` (`references/defect-classification.md`) gives the severity and priority scales.
 
 ## Order of feature areas
 

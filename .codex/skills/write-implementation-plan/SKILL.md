@@ -81,7 +81,7 @@ After you create the folder, add a link to `<topic>/plan/README.md` in `docs/bui
    - When the user can decide, ask the user.
    - When a measurement can decide, write an investigation task. The task gives the measurement and the pass criteria, and it ends with STOP. Do not write the tasks that use the result. Write them in a later revision of the plan.
 3. Map the files. List each file that the plan creates or changes, and its one responsibility. Follow the patterns of the existing codebase.
-4. Read the repository rules: `AGENTS.md`, `docs/conventions/` and `LESSONS.md`. Copy the rules that the executor needs into Global Constraints. The executor does not read `AGENTS.md` by itself.
+4. Read the repository rules: `AGENTS.md`, `docs/conventions/` and `LESSONS.md`. The executor does not read `AGENTS.md` by itself, so copy each rule that the executor needs. Put a rule in Global Constraints only when two or more tasks need it. Put a rule that one task needs in that task file. Do not copy a rule that no task needs.
 
 ## Small-model rules
 
@@ -103,7 +103,12 @@ Every task must obey all eleven rules.
 8. **Forbidden list.** The default forbidden actions are in the Task protocol. A task lists only the forbidden actions that are special to the task.
 9. **Decision tables for judgment.** When a task needs judgment (for example, to sort comments or to rename symbols), give a decision table: `Signal | Action`. Each row has one signal that the executor can see in the file, and one action. The last row is always: `No row matches | Add the item to the report. Do not change it.`
 10. **Fixed report file.** Each task ends with the step `Write the report file and stop`. The Task protocol gives the contents of that step. The task is complete only when each command in the report has the expected output and the report file exists.
-11. **Size.** A task file has a maximum of approximately 150 lines. When a task is longer, first remove the facts that the executor can find. If the task is still longer, divide it into two tasks.
+11. **Size.** The executor reads the plan README, the task file and each file in `Read first` before it starts. All of this text uses the context of the executor. So obey these limits:
+    - A task file has a maximum of 15,000 bytes and approximately 150 lines.
+    - The plan README has a maximum of 15,000 bytes.
+    - In `Read first`, for a file or a skill longer than 10,000 bytes, name the heading or the symbol to read.
+
+    When a task file is longer, first remove the facts that the executor can find. If the task file is still longer, divide it into two tasks. When the plan README is longer, see [Size of the plan README](#size-of-the-plan-readme).
 
 ## Task types
 
@@ -184,7 +189,7 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 2. Create `../reports/task-NN-<slug>.md` with:
    - One-sentence purpose line after H1 (`Read this file to ...`)
    - Files changed
-   - Commands run, with exit codes and key output of each command
+   - Commands run, with the exit code of each command. For a failed command, copy only the failure lines. For a passed command, copy only the summary line. Do not copy a full log.
    - The tables that the task asks for
    - Items that a decision table sent to the report
    - Each STOP and each retry, with the step and the cause. Write `none` when no STOP or retry occurred.
@@ -206,6 +211,18 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 
 <The tasks that wait for the result of an investigation task. One line each. Leave out this section when no task waits.>
 ```
+
+### Size of the plan README
+
+Each executor reads the full plan README for each task. So the plan README contains only the text that a `Pending` task uses. When the plan README is longer than 15,000 bytes, do these steps in this order:
+
+1. Move each decision and each constraint that only one task uses into that task file.
+2. Remove each decision and each constraint that no `Pending` task uses. The Git history and the task reports keep the removed text.
+3. Replace long text with a reference to a heading in a convention file, and add that heading to `Read first` of each task that uses it.
+
+When you add a revision to a plan, do these steps before you add the new tasks.
+
+To change a file that exists, edit only the sections that change. Do not write the full file again. Each full write of a plan file costs output tokens for all of its text.
 
 ## Task file
 
@@ -288,7 +305,13 @@ After you write the complete plan, do these checks:
 4. **Name consistency.** A name in a later task must be the same as the name that an earlier task produces.
 5. **Review Focus.** Each line has a test in the task that owns the code.
 6. **Proportion.** If code blocks are most of the plan, replace function bodies with signatures and tests.
-7. **Facts and size.** Search each task for line numbers, line ranges and copied command output. Each match must be a value that an earlier task or a decision fixed. Each task file has a maximum of approximately 150 lines (rule 11).
+7. **Facts and size.** Search each task for line numbers, line ranges and copied command output. Each match must be a value that an earlier task or a decision fixed. Then measure the size of each file:
+
+   ```bash
+   wc -c <plan-folder>/*.md
+   ```
+
+   Expected: each value is 15000 or less. Each task file also has a maximum of approximately 150 lines (rule 11).
 8. **Language.** The linter command in [Overview](#overview) exits with code 0.
 9. **Location.** The plan is in `docs/build/<workstream>/<topic>/plan/`. The Tasks table links each task file. `docs/build/README.md` links the plan README.
 10. **Task protocol.** The plan README has the section `Task protocol`. Each task has a `Type` line and ends with the step `Write the report file and stop`.
