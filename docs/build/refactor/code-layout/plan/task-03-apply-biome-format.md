@@ -22,24 +22,24 @@ Read this file to learn the steps of Task 3, which runs the Biome formatter on t
 - Change `biome.json`.
 - Change a file by hand.
 
-- [ ] **Step 1: Make sure that the working tree has no code change**
+- [x] **Step 1: Make sure that the working tree has no code change**
 
 Run: `git status --porcelain -- apps packages scripts tests`
 Expected: no line.
 
-- [ ] **Step 2: Run Biome**
+- [x] **Step 2: Run Biome**
 
 Run: `corepack pnpm@11.28.5 format`
 Expected: exit code 0.
 
-- [ ] **Step 3: Record the changed files**
+- [x] **Step 3: Record the changed files**
 
 Run: `git diff --name-only`
 Expected: each line starts with `apps/`, `packages/`, `scripts/`, `tests/` or `docs/build/refactor/code-layout/`.
 
 Write the table `Changed files` with the columns `File | Added lines | Removed lines`. Get the numbers from `git diff --numstat`.
 
-- [ ] **Step 4: Run the checks**
+- [x] **Step 4: Run the checks**
 
 Run: `corepack pnpm@11.28.5 format:check`
 Expected: exit code 0.
@@ -53,6 +53,6 @@ Expected: exit code 0.
 Run: `corepack pnpm@11.28.5 check:boundaries`
 Expected: exit code 0 and `check-boundaries: 0 violation(s)`.
 
-- [ ] **Step 5: Write the report file and stop**
+- [x] **Step 5: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. In the report, tell the person to commit the diff with the subject `style(format): apply biome format`.

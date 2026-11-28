@@ -34,7 +34,10 @@ export function useWorkspaceChange() {
       if (change.kind === 'remove') await cache.invalidateQueries({ queryKey: chatsKeys.all })
     },
     onError: async error => {
-      if (error instanceof ApiClientError && (error.code === 'WORKSPACES_STALE' || error.code === 'WORKSPACE_NOT_FOUND'))
+      if (
+        error instanceof ApiClientError &&
+        (error.code === 'WORKSPACES_STALE' || error.code === 'WORKSPACE_NOT_FOUND')
+      )
         await cache.invalidateQueries({ queryKey: workspacesKeys.all })
     },
   })

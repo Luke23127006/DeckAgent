@@ -24,7 +24,12 @@ export function AttachmentDraft(props: {
       hidden={items.length === 0 && !props.busy}
     >
       {items.map(item => (
-        <div key={item.attachmentId} className="attachment-row" data-attachment-id={item.attachmentId} data-state={item.state}>
+        <div
+          key={item.attachmentId}
+          className="attachment-row"
+          data-attachment-id={item.attachmentId}
+          data-state={item.state}
+        >
           <span className="attachment-name">{item.name}</span>
           <small>{stateText(item)}</small>
           {item.preparation?.completeness === 'partial' && <small>{attachmentText.partialNote}</small>}

@@ -23,6 +23,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- **Code layout:** format every source file with Biome, so `format:check` accepts all 312 files.
 - Rename the workspace store to `SqliteWorkspaceStore`, convert `WorkspaceService` to a class wired into the workspace routes, and enable `role-file-symbol` for `workspaces`.
 - Render every Browser screen with React (Settings, workspaces and the chat list, the conversation and requests, the deck screens) and decode each response through the contracts package. Remove the legacy Browser folder `apps/web/src/browser/` and its second TypeScript project, so `apps/web/` depends only on the contracts package and `check:boundaries` applies `browser-node-import` to all of `apps/web/src/`. The legacy transport clients are now the HTTP test driver in `e2e/fixtures/browser-driver/`.
 - Reduce the Host `server.ts` to startup, shutdown, configuration and wiring. Move run failure statuses to `http/error-handler.ts`, the admission allowlist to `RunController`, settings to `modules/settings/`, the storage layout and credentials to `storage/`, and rename the chat database to `ChatDatabase` and `DatabaseError` so `db/` maps no HTTP status. Narrow each Host barrel to the exports that other folders use.

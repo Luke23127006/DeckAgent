@@ -1,12 +1,6 @@
 import { z } from 'zod'
 import type { ChatDraft } from './management.ts'
-import type {
-  AttachmentView,
-  HistoryMessage,
-  RequestSnapshot,
-  StoredActivity,
-  StoredRequest,
-} from './requests.ts'
+import type { AttachmentView, HistoryMessage, RequestSnapshot, StoredActivity, StoredRequest } from './requests.ts'
 import { decodeApprovalView, decodeAttachment } from './request-validation.ts'
 import { entityId, errorCode, nonNegativeInt } from './validation-primitives.ts'
 

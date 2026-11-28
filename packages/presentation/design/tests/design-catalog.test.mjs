@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {
-  decodeDesignSnapshot,
-  findCompatibleLayouts,
-  resolveDesign,
-} from '../lib/index.js'
+import { decodeDesignSnapshot, findCompatibleLayouts, resolveDesign } from '../lib/index.js'
 
 test('each catalog layout admits its content at capacity and refuses excess or duplicate blocks', () => {
   const image = { kind: 'image', attachmentId: 'att-00000000-0000-0000-0000-000000000001', caption: 'c'.repeat(160) }
@@ -75,9 +71,7 @@ test('snapshot round trips preserve overrides without applying catalog defaults 
 })
 
 test('offline catalog resolves accepted defaults and retains an immutable effective snapshot', async () => {
-  const { resolveDesign, listDesignSystems, listTemplates } = await import(
-    '../lib/index.js'
-  )
+  const { resolveDesign, listDesignSystems, listTemplates } = await import('../lib/index.js')
   const selection = { format: 'html', overrides: { 'color.accent': '#CC3311' } }
   const snapshot = resolveDesign(selection)
   assert.equal(snapshot.designSystem.id, 'deckagent-neutral')

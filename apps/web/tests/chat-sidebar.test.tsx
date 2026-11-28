@@ -81,7 +81,11 @@ interface Slots {
 }
 
 /** The navigation parts of the chat screen, each in its own element, as the chat screen places them. */
-function Sidebar(props: { readonly slots: Slots; readonly open: OpenChatState; readonly onOpen: (chat: WebSession) => void }) {
+function Sidebar(props: {
+  readonly slots: Slots
+  readonly open: OpenChatState
+  readonly onOpen: (chat: WebSession) => void
+}) {
   const [words, setWords] = useState('')
   return (
     <>

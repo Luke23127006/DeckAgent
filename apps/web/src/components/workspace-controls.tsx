@@ -70,7 +70,8 @@ export function WorkspaceControls(props: { readonly busy: boolean }) {
     if (locked || !dialog || !input) return
     change.reset()
     setMode(next)
-    input.value = next.kind === 'rename' ? (selected?.name ?? '') : next.kind === 'relink' ? (selected?.folder ?? '') : ''
+    input.value =
+      next.kind === 'rename' ? (selected?.name ?? '') : next.kind === 'relink' ? (selected?.folder ?? '') : ''
     dialog.showModal()
     input.focus()
   }
@@ -171,7 +172,10 @@ export function WorkspaceControls(props: { readonly busy: boolean }) {
         disabled={locked}
         onClick={() => {
           if (selected?.folder)
-            send({ kind: 'relink', id: selected.id, folder: selected.folder, expectedVersion: list.version }, 'controls')
+            send(
+              { kind: 'relink', id: selected.id, folder: selected.folder, expectedVersion: list.version },
+              'controls',
+            )
         }}
       >
         {workspaceText.adopt}

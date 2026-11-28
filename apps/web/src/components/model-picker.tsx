@@ -33,8 +33,12 @@ export function ModelPicker(props: {
   const trigger = useRef<HTMLButtonElement>(null)
   const options = useRef<HTMLDivElement>(null)
   const tabs = useRef<HTMLDivElement>(null)
-  const selectedProvider = providers.find(provider => provider.models.some(model => optionValue(provider.id, model) === value))
-  const active = providers.some(provider => provider.id === tab) ? tab : (selectedProvider?.id ?? providers[0]?.id ?? '')
+  const selectedProvider = providers.find(provider =>
+    provider.models.some(model => optionValue(provider.id, model) === value),
+  )
+  const active = providers.some(provider => provider.id === tab)
+    ? tab
+    : (selectedProvider?.id ?? providers[0]?.id ?? '')
   const selectedModel = selectedProvider ? selection?.model : undefined
 
   const close = (focus: boolean) => {
