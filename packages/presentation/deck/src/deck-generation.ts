@@ -44,10 +44,12 @@ export class GenerationWorkflow {
       const target = validateConfirmation(value)
       const result = host.transaction(() => {
         const old = host.generations.get(sessionId)
+
         if (old) {
           if (!sameConfirmation(old.receipt, target)) throw new DeckError('CONFIRMATION_CONFLICT')
           return { receipt: old.receipt, fresh: false, deckVersion: 0, outlineVersion: 0 }
         }
+
         const proposal = host.outlines.current(sessionId, {
           outlineId: target.outlineId,
           version: target.outlineVersion,
@@ -64,13 +66,16 @@ export class GenerationWorkflow {
           throw new DeckError('BRIEF_STALE')
         if (!interviewState(brief.draft).readyForOutline || !brief.design || !proposal.slides.length)
           throw new DeckError('BRIEF_INCOMPLETE')
+
         this.assertLayoutsFit(brief, proposal)
         if (host.images.imageBlockers(sessionId, proposal).length) throw new DeckError('IMAGE_PREPARATION_REQUIRED')
+
         host.insertPlan(sessionId, proposal)
         host.outlines.confirm(sessionId, proposal)
         const receipt = host.generations.insert(sessionId, target, brief, selection)
         const head = host.db.prepare('SELECT version FROM outline_heads WHERE session_id=?').get(sessionId)
         if (!head) throw new DeckError('DECK_CORRUPT')
+
         return {
           receipt,
           fresh: true,
@@ -151,6 +156,7 @@ export class GenerationWorkflow {
   granted(grant: GenerationGrant): { generation: GenerationSnapshot; outline: OutlineProposal } {
     const host = this.host
     if (!grant || !this.grants.has(grant)) throw new DeckError('GENERATION_GRANT_INVALID')
+
     const generation = host.generations.get(grant.sessionId)
     if (
       !generation ||
@@ -160,6 +166,7 @@ export class GenerationWorkflow {
       !host.options.activeRequest?.(grant.sessionId, grant.requestId)
     )
       throw new DeckError('GENERATION_REQUEST_INACTIVE')
+
     const outline = host.outlines
       .snapshot(grant.sessionId)
       .proposals.find(
@@ -170,6 +177,7 @@ export class GenerationWorkflow {
       )
     if (!outline || outline.brief?.design?.fingerprint !== generation.design.fingerprint)
       throw new DeckError('GENERATION_SCOPE_INVALID')
+
     return { generation, outline }
   }
 }

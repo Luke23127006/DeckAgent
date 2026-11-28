@@ -24,17 +24,17 @@ Read this file to learn the steps of Task 10, which adds steps to the dense func
 - Add a blank line as the first or the last line inside a block, or two blank lines next to each other.
 - Change a function body that Step 2 does not list.
 
-- [ ] **Step 1: Make sure that the working tree has no code change**
+- [x] **Step 1: Make sure that the working tree has no code change**
 
 Run: `git status --porcelain -- apps packages scripts tests`
 Expected: no line.
 
-- [ ] **Step 2: List the dense bodies**
+- [x] **Step 2: List the dense bodies**
 
 Run: `node scripts/format-layout.mjs --dense packages/presentation/deck/src > /tmp/dense-before.txt; tail -n 1 /tmp/dense-before.txt`
 Expected: one line that matches `format-layout: <n> dense function bodies`. Write `<n>` in the report.
 
-- [ ] **Step 3: Add blank lines to each listed body**
+- [x] **Step 3: Add blank lines to each listed body**
 
 Open each body in the list of Step 2. Read only the direct statements of the body, not the statements inside nested blocks. Use this table. One statement can match more than one row. Do each row that matches.
 
@@ -50,7 +50,7 @@ Open each body in the list of Step 2. Read only the direct statements of the bod
 | After the rows above, the body has no blank line | Add `<path>:<line> <name>` to the table `Unchanged bodies` in the report |
 | No row matches | Add the item to the report. Do not change it. |
 
-- [ ] **Step 4: Prove that the diff adds only blank lines**
+- [x] **Step 4: Prove that the diff adds only blank lines**
 
 Run: `git diff -U0 --ignore-blank-lines -- packages/presentation/deck/src | grep -E '^@@'`
 Expected: no line.
@@ -64,7 +64,7 @@ Expected: no line.
 Run: `git diff --name-only`
 Expected: each line starts with `packages/presentation/deck/src` or `docs/build/refactor/code-layout/`.
 
-- [ ] **Step 5: Run the checks**
+- [x] **Step 5: Run the checks**
 
 Run: `node scripts/format-layout.mjs --dense packages/presentation/deck/src | tail -n 1`
 Expected: `format-layout: <n> dense function bodies`, where `<n>` is the number of rows in the table `Unchanged bodies`.
@@ -75,6 +75,6 @@ Expected: exit code 0.
 Run: `corepack pnpm@11.28.5 build`
 Expected: exit code 0.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol. The report has the tables `Far declarations` and `Unchanged bodies`, with the columns `Location | Name`.

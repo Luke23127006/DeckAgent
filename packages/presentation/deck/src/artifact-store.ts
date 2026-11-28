@@ -83,6 +83,7 @@ export class ArtifactStorage {
   ): Promise<ArtifactAsset> {
     const stage = this.staging.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
+
     const preparedImage = this.options.preparedImage
     if (
       stage.slideId !== slide.slideId ||
@@ -90,15 +91,19 @@ export class ArtifactStorage {
       !preparedImage
     )
       throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
+
     const old = stage.assets.find(a => a.attachmentId === attachmentId)
     if (old) return old
     if (stage.documentAuthored) throw new DeckError('STAGE_DOCUMENT_FINALIZED')
     if (stage.finalized) throw new DeckError('STAGE_ASSETS_FINALIZED')
+
     const image = await preparedImage(grant.sessionId, attachmentId, signal)
     signal.throwIfAborted()
+
     check()
     this.staging.stage(grant, stageId)
     if (stage.finalized || stage.published) throw new DeckError('STAGE_ASSETS_FINALIZED')
+
     const bytes = Buffer.from(image.bytes)
     if (
       !isValidPngBytes(bytes) ||
@@ -110,6 +115,7 @@ export class ArtifactStorage {
       )
     )
       throw new DeckError('ARTIFACT_ASSET_INVALID')
+
     const asset: ArtifactAsset = {
       assetId: `asset-${randomUUID()}`,
       attachmentId,
@@ -122,6 +128,7 @@ export class ArtifactStorage {
     this.files.write(`${asset.assetId}.png`, bytes)
     stage.assets.push(asset)
     if (stage.generation.design.template.version >= 2) this.staging.documentFromPlan(stage)
+
     return { ...asset }
   }
 
@@ -141,23 +148,30 @@ export class ArtifactStorage {
       !this.options.researchImage
     )
       throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
+
     const old = stage.assets.find(a => a.webQuery === query)
     if (old) return old
     if (stage.finalized || stage.published) throw new DeckError('STAGE_ASSETS_FINALIZED')
+
     const image = await this.loadCachedResearchImage(grant, slide, query, limit, signal)
     signal.throwIfAborted()
+
     check()
     this.staging.stage(grant, stageId)
     if (stage.finalized || stage.published) throw new DeckError('STAGE_ASSETS_FINALIZED')
+
     const registered = stage.assets.find(a => a.webQuery === query)
     if (registered) return { ...registered }
+
     const bytes = Buffer.from(image.bytes)
+
     try {
       this.assertResearchImage(stage, image, bytes)
     } catch (error) {
       this.dropCachedResearchImage(grant, slide, query)
       throw error
     }
+
     const asset: ArtifactAsset = {
       assetId: `asset-${randomUUID()}`,
       webQuery: query,
@@ -171,6 +185,7 @@ export class ArtifactStorage {
     this.files.write(`${asset.assetId}.png`, bytes)
     stage.assets.push(asset)
     if (stage.generation.design.template.version >= 2) this.staging.documentFromPlan(stage)
+
     return { ...asset }
   }
 
@@ -195,15 +210,18 @@ export class ArtifactStorage {
     signal: AbortSignal,
   ): Promise<PreparedResearchImage> {
     let cached = this.researchImages.get(grant)
+
     if (!cached) {
       cached = new Map()
       this.researchImages.set(grant, cached)
       const grantCache = cached
       signal.addEventListener('abort', () => grantCache.clear(), { once: true })
     }
+
     const cache = cached
     const key = JSON.stringify([slide.slideId, query])
     let work = cache.get(key)
+
     if (!work) {
       const research = this.options.researchImage
       if (!research) throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
@@ -224,6 +242,7 @@ export class ArtifactStorage {
         })
       cache.set(key, work)
     }
+
     return work
   }
 
@@ -308,9 +327,12 @@ export class ArtifactStorage {
     const descriptor = decodeArtifactDescriptor(artifact.descriptor)
     stage.descriptor = descriptor
     if (descriptor.format !== generation.format) throw new DeckError('ARTIFACT_DESCRIPTOR_INVALID')
+
     const document = Buffer.from(artifact.bytes)
     signal.throwIfAborted()
+
     check()
+
     if (artifact.preview !== undefined) {
       if (!this.options.renderCheck) throw new DeckError('ARTIFACT_RENDERER_UNAVAILABLE')
       await this.options.renderCheck(
@@ -323,14 +345,18 @@ export class ArtifactStorage {
         signal,
       )
     }
+
     signal.throwIfAborted()
+
     check()
     this.staging.stage(grant, input.stageId)
     if (stagedState(stage) !== checkedState) throw new DeckError('STAGE_CHANGED')
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
+
     const artifactId = `artifact-${randomUUID()}`
     this.files.write(`${artifactId}.${descriptor.extension}`, document)
     const manifest = this.manifest(stage, generation, slide)
+
     return {
       artifactId,
       digest: sha256Hex(document),

@@ -41,6 +41,7 @@ export class ArtifactReadback {
     const manifest = parseJsonObject(row.manifest)
     const rawAssets = manifest.assets
     if (!Array.isArray(rawAssets)) throw new DeckError('ARTIFACT_CORRUPT')
+
     const assets: readonly unknown[] = rawAssets
     const imageCredits: ImageCredit[] = []
     for (const asset of assets) {
@@ -48,6 +49,7 @@ export class ArtifactReadback {
       if (!isValidImageCredit(asset.credit)) throw new DeckError('ARTIFACT_CORRUPT')
       imageCredits.push(asset.credit)
     }
+
     return { imageCredits, imageOmissions: this.imageOmissions(manifest.imageOmissions) }
   }
 
@@ -81,6 +83,7 @@ export class ArtifactReadback {
     const manifest = parseJsonObject(row.manifest)
     const rawAssets = manifest.assets
     if (!Array.isArray(rawAssets)) throw new DeckError('ARTIFACT_CORRUPT')
+
     const assets: readonly unknown[] = rawAssets
     const files = assets.map(asset => {
       if (!isRecord(asset) || !validId(asset.assetId) || typeof asset.digest !== 'string')
@@ -95,11 +98,13 @@ export class ArtifactReadback {
     )
     const format = this.formats.get(descriptor?.format ?? 'html')
     if (!format) throw new DeckError('FORMAT_UNAVAILABLE')
+
     const preview = format.read(
       bytes,
       files.map(a => ({ ...a, byteSize: a.bytes.length })),
     )
     if (typeof preview !== 'string') throw new DeckError('ARTIFACT_PREVIEW_UNAVAILABLE')
+
     return preview
   }
 
@@ -133,11 +138,14 @@ export class ArtifactReadback {
   recover(): void {
     const root = this.files.root
     if (!root) return
+
     const keep = new Set<string>()
+
     for (const row of this.db.prepare('SELECT payload FROM prepared_images').all()) {
       const record = parsePreparedRecord(row.payload)
       if (record.asset) keep.add(`${record.asset.assetId}.png`)
     }
+
     for (const row of this.db.prepare('SELECT artifact_id,manifest FROM artifact_revisions').all()) {
       keep.add(`${String(row.artifact_id)}.${this.metadata(row).artifact?.extension ?? 'html'}`)
       const manifest = parseJsonObject(row.manifest)
@@ -149,6 +157,7 @@ export class ArtifactReadback {
         keep.add(`${asset.assetId}.png`)
       }
     }
+
     for (const name of this.files.listFiles()) {
       if (keep.has(name) || !isManagedArtifactName(name)) continue
       const path = this.files.path(name)

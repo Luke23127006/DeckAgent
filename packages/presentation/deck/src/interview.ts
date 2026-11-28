@@ -99,6 +99,7 @@ export function skipInterview(input: unknown): BriefDraft {
   const missing = interviewState(draft).questions
   const answers = [...draft.answers]
   const assumptions = [...draft.assumptions]
+
   for (const { topic } of missing) {
     if (
       ['topic', 'sources', 'format'].includes(topic) &&
@@ -109,12 +110,15 @@ export function skipInterview(input: unknown): BriefDraft {
     const note = `Interview ${topic} was skipped; no specific requirement was supplied.`
     if (!assumptions.includes(note)) assumptions.push(note)
   }
+
   let templateRef: { readonly id: string; readonly version: number } | undefined
+
   if (!draft.template) {
     const defaultTemplate = listTemplates('html')[0]
     if (!defaultTemplate) throw new DeckError('DECK_CONFIG')
     templateRef = { id: defaultTemplate.id, version: defaultTemplate.version }
   }
+
   return validateBriefDraft({
     ...draft,
     answers,

@@ -146,7 +146,9 @@ export class ArtifactStaging {
     if (!this.files.root) throw new DeckError('ARTIFACT_STORAGE_UNAVAILABLE')
     if ([...this.stages.values()].filter(s => s.grant.requestId === grant.requestId && !s.published).length >= 2)
       throw new DeckError('STAGE_LIMIT')
+
     resolveLayout({ title: slide.title, blocks: slide.blocks }, layoutId, generation.design.template)
+
     if (generation.design.template.version >= 2) {
       let attempts = this.stageAttempts.get(grant)
       if (!attempts) {
@@ -157,6 +159,7 @@ export class ArtifactStaging {
       if (count >= 4) throw new DeckError('SLIDE_CORRECTION_LIMIT')
       attempts.set(slide.slideId, count + 1)
     }
+
     const stage: Stage = {
       stageId: `stage-${randomUUID()}`,
       grant,
@@ -175,6 +178,7 @@ export class ArtifactStaging {
       documentAuthored: false,
     }
     this.stages.set(stage.stageId, stage)
+
     if (generation.design.template.version >= 2) {
       for (const [blockIndex, block] of (slide.blocks ?? []).entries())
         if (block.kind === 'web-image') {
@@ -201,12 +205,14 @@ export class ArtifactStaging {
         }
       this.documentFromPlan(stage)
     }
+
     return this.status(stage)
   }
 
   setDocument(grant: GenerationGrant, stageId: string, input: SlideDocument): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
+
     const document = decodeSlideDocument(input)
     if (
       document.slideId !== stage.slideId ||
@@ -216,9 +222,11 @@ export class ArtifactStaging {
       throw new DeckError('SLIDE_DOCUMENT_SCOPE')
     if (stage.assets.some(a => !document.nodes.some(n => n.kind === 'image' && n.assetId === a.assetId)))
       throw new DeckError('ARTIFACT_ASSET_UNAVAILABLE')
+
     const actual = documentText(document).join('\n').replace(/\s+/g, ' ')
     if (requiredSlideText(stage.plan).some(text => !actual.includes(text.replace(/\s+/g, ' '))))
       throw new DeckError('ARTIFACT_REQUIRED_CONTENT_MISSING')
+
     const { notes: _notes, ...content } = document
     stage.document = { ...content, provenance: stage.provenance, ...(stage.notes ? { notes: stage.notes } : {}) }
     stage.documentAuthored = true
@@ -244,37 +252,46 @@ export class ArtifactStaging {
       Buffer.byteLength(JSON.stringify(value)) > 64 * 1024
     )
       throw new DeckError('STAGE_CHUNK_INVALID')
+
     const fingerprint = sha256Hex(value.text),
       old = stage.chunks[value.sequence]
+
     if (old) {
       if (old.digest !== fingerprint || old.final !== value.final) throw new DeckError('STAGE_CHUNK_CONFLICT')
       return this.status(stage)
     }
+
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
     if (stage.finalized || value.sequence !== stage.chunks.length) throw new DeckError('STAGE_SEQUENCE_CONFLICT')
     if (stage.chunks.reduce((n, c) => n + c.bytes, 0) + Buffer.byteLength(value.text) > 256 * 1024)
       throw new DeckError('STAGE_SOURCE_TOO_LARGE')
+
     this.files.write(`${stage.stageId}-${value.sequence}.part`, value.text)
     stage.chunks.push({ digest: fingerprint, final: value.final, bytes: Buffer.byteLength(value.text) })
+
     if (value.final) {
       stage.finalized = true
       stage.digest = sha256Hex(this.source(stage))
     }
+
     return this.status(stage)
   }
 
   setProvenance(grant: GenerationGrant, stageId: string, records: readonly ContentProvenance[], notes?: string): void {
     const stage = this.stage(grant, stageId)
     if (stage.published) throw new DeckError('STAGE_ALREADY_PUBLISHED')
+
     const validated = validateProvenance(records)
     if (
       notes !== undefined &&
       (typeof notes !== 'string' || !notes.trim() || notes.length > 16000 || !notes.isWellFormed())
     )
       throw new DeckError('PROVENANCE_INVALID')
+
     stage.provenance = validated
     if (notes === undefined) delete stage.notes
     else stage.notes = notes
+
     if (stage.document) {
       const { notes: _old, ...document } = stage.document
       stage.document = { ...document, provenance: validated, ...(notes ? { notes } : {}) }

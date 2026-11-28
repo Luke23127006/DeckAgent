@@ -195,11 +195,13 @@ export class DeckAuthoring {
       const brief = host.transaction(() => {
         const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex')
         const receipt = host.db.prepare('SELECT * FROM brief_request_receipts WHERE request_id=?').get(input.requestId)
+
         if (receipt) {
           if (receipt.session_id !== sessionId || receipt.fingerprint !== fingerprint)
             throw new DeckError('BRIEF_REQUEST_CONFLICT')
           return host.briefs.version(sessionId, String(receipt.brief_id), Number(receipt.version))
         }
+
         const state = host.outlines.snapshot(sessionId)
         const current = state.proposals.find(p => p.outlineId === state.currentId)
         if (
@@ -210,8 +212,10 @@ export class DeckAuthoring {
               current.version !== input.expectedOutline.version
         )
           throw new DeckError('OUTLINE_STALE')
+
         const brief = host.briefs.save(sessionId, { expectedVersion: input.expectedBriefVersion, draft: input.draft })
         fresh = true
+
         if (input.outline !== undefined) {
           const outline = saveBoundOutline(
             host.db,
@@ -230,15 +234,19 @@ export class DeckAuthoring {
           host.images.commitImages(sessionId, input, outline, preparedImages)
           outlineVersion = outline.version
         }
+
         host.db
           .prepare('INSERT INTO brief_request_receipts VALUES(?,?,?,?,?)')
           .run(input.requestId, sessionId, brief.briefId, brief.version, fingerprint)
+
         return brief
       })
+
       if (fresh) {
         host.notifyBrief(sessionId, brief.version)
         if (outlineVersion !== undefined) host.notifyOutline(sessionId, outlineVersion)
       }
+
       return brief
     })
   }
@@ -311,15 +319,19 @@ export class DeckAuthoring {
       slides: plan.slides.map(s => ({ slideId: s.slideId, title: s.title })),
     })
     const existing = host.db.prepare('SELECT plan FROM decks WHERE session_id=?').get(sessionId)
+
     if (existing) {
       if (existing.plan !== normalized) throw new DeckError('DECK_PLAN_CONFLICT')
       return null
     }
+
     host.db.prepare('INSERT INTO decks VALUES(?,?,?,1)').run(sessionId, plan.outlineId, normalized)
     const insert = host.db.prepare('INSERT INTO slides(session_id,slide_id,title,position) VALUES(?,?,?,?)')
+
     plan.slides.forEach((s, i) => {
       insert.run(sessionId, s.slideId, s.title, i)
     })
+
     return deckVersion(host.db, sessionId)
   }
 }

@@ -88,10 +88,12 @@ export class PreparedImageStore {
     const needs = brief.template?.version === 1 || !outline ? [] : outlineImageNeeds(outline)
     if (needs.length && brief.images.mode !== 'public-research') throw new DeckError('IMAGE_CHOICE_REQUIRED')
     if (needs.length > 32) throw new DeckError('RESEARCH_IMAGE_BUDGET')
+
     const records: PreparedRecord[] = []
     for (const need of needs) records.push(await this.prepareSingleNeed(sessionId, input, need, signal, resolver))
     const token = Object.freeze({})
     this.preparations.set(token, { fingerprint: sha256Hex(JSON.stringify([sessionId, input])), records })
+
     return token
   }
 
@@ -107,11 +109,13 @@ export class PreparedImageStore {
     signal.throwIfAborted()
     if (this.options.activeRequest && !this.options.activeRequest(sessionId, input.requestId))
       throw new DeckError('REQUEST_CLOSED')
+
     const previous = this.db
       .prepare('SELECT payload FROM prepared_images WHERE session_id=? AND image_key=? ORDER BY rowid DESC')
       .all(sessionId, needId)
       .map(r => parsePreparedRecord(r.payload))
       .find(r => r.asset)
+
     if (!resolver && !need.replace && previous?.asset) {
       try {
         this.files.read(`${previous.asset.assetId}.png`, previous.asset.digest, 256 * 1024)
@@ -120,6 +124,7 @@ export class PreparedImageStore {
         /* A new reviewed proposal is allowed to prepare a replacement, without changing old records. */
       }
     }
+
     try {
       const image = resolver ? await resolver(need, signal) : await this.research(sessionId, query, signal)
       signal.throwIfAborted()
@@ -214,8 +219,10 @@ export class PreparedImageStore {
     return outlineImageNeeds(outline).map(need => {
       const slide = outline.slides[need.slideIndex]
       if (!slide) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
       const row = this.preparedRecord(sessionId, outline.outlineId, slide.slideId, need.blockIndex, need.query)
       let available = false
+
       if (row?.asset)
         try {
           if (verify) this.files.read(`${row.asset.assetId}.png`, row.asset.digest, 256 * 1024)
@@ -223,6 +230,7 @@ export class PreparedImageStore {
         } catch {
           /* Kept for review. */
         }
+
       return {
         needId: row?.needId ?? need.needId,
         slideIndex: need.slideIndex,
@@ -244,8 +252,10 @@ export class PreparedImageStore {
   imagePreview(sessionId: string, outline: OutlineProposal, needId: string): Uint8Array {
     const need = this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared')
     if (!need) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
     const slide = outline.slides[need.slideIndex]
     if (!slide) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
     const block = slide.blocks?.[need.blockIndex]
     const record = this.preparedRecord(
       sessionId,
@@ -255,6 +265,7 @@ export class PreparedImageStore {
       block?.kind === 'web-image' ? block.query : '',
     )
     if (!record?.asset) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
     return this.files.read(`${record.asset.assetId}.png`, record.asset.digest, 256 * 1024)
   }
 
@@ -263,8 +274,10 @@ export class PreparedImageStore {
       this.imageReview(sessionId, outline).find(n => n.needId === needId && n.status === 'prepared') ??
       outlineImageNeeds(outline).find(n => n.needId === needId)
     if (!need) throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
+
     const slide = outline.slides[need.slideIndex]
     if (!slide) throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
+
     const block = slide.blocks?.[need.blockIndex]
     const record = this.preparedRecord(
       sessionId,
@@ -276,6 +289,7 @@ export class PreparedImageStore {
     const asset = record?.asset
     if (!asset?.credit || asset.credit.unknownLicense || !asset.selection)
       throw new DeckError('RESEARCH_IMAGE_SELECTION_REQUIRED')
+
     return {
       bytes: this.files.read(`${asset.assetId}.png`, asset.digest, 256 * 1024),
       source: asset.source,

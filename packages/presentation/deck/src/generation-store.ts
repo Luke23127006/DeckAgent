@@ -170,13 +170,17 @@ export class GenerationStorage {
     if (generation.state !== 'incomplete') throw new DeckError('GENERATION_ALREADY_STARTED')
     if (!activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
     if (!selection.provider || !selection.model) throw new DeckError('CONFIRMATION_INVALID')
+
     const row = this.db.prepare('SELECT payload FROM generation_intents WHERE session_id=?').get(sessionId)
     if (!row) throw new DeckError('GENERATION_NOT_FOUND')
+
     const payload: unknown = JSON.parse(String(row.payload))
     if (!isRecord(payload)) throw new DeckError('DECK_CORRUPT')
+
     this.db
       .prepare("UPDATE generation_intents SET state='admitted',payload=? WHERE session_id=?")
       .run(JSON.stringify({ ...payload, activeRequestId: requestId, selection }), sessionId)
+
     this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
     return deckVersion(this.db, sessionId)
   }
@@ -204,13 +208,16 @@ export class GenerationStorage {
     activeRequest?: (sessionId: string, requestId: string) => boolean,
   ): { readonly grant: GenerationGrant; readonly version: number } {
     if (!activeRequest?.(sessionId, requestId)) throw new DeckError('GENERATION_REQUEST_INACTIVE')
+
     const g = this.get(sessionId)
     if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
       throw new DeckError('GENERATION_NOT_FOUND')
     if (g.state !== 'admitted' || (g.startedAt && !g.activeRequestId)) throw new DeckError('GENERATION_ALREADY_STARTED')
+
     this.db
       .prepare("UPDATE generation_intents SET state='generating',started_at=COALESCE(started_at,?) WHERE session_id=?")
       .run(new Date().toISOString(), sessionId)
+
     this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
     return { grant: Object.freeze({ sessionId, intentId, requestId }), version: deckVersion(this.db, sessionId) }
   }
@@ -225,10 +232,13 @@ export class GenerationStorage {
     if (!g || g.receipt.intentId !== intentId || (g.activeRequestId ?? g.receipt.requestId) !== requestId)
       throw new DeckError('GENERATION_NOT_FOUND')
     if (g.state === 'generated' || g.state === 'incomplete') return null
+
     const unfinished = this.db.prepare('SELECT 1 FROM slides WHERE session_id=? AND revision=0').get(sessionId)
+
     this.db
       .prepare('UPDATE generation_intents SET state=? WHERE session_id=?')
       .run(outcome === 'completed' && g.startedAt && !unfinished ? 'generated' : 'incomplete', sessionId)
+
     this.db.prepare('UPDATE decks SET version=version+1 WHERE session_id=?').run(sessionId)
     return deckVersion(this.db, sessionId)
   }

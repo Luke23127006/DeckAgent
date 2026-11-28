@@ -10,12 +10,14 @@ import type { ValidationIssue } from '@deckagent/presentation-document'
 export function validateBriefDraft(value: unknown): BriefDraft {
   let draft: BriefDraft | undefined
   const issues: ValidationIssue[] = []
+
   try {
     draft = decodeBriefDraft(value)
   } catch (error) {
     if (!(error instanceof DeckError)) throw error
     issues.push(...error.issues)
   }
+
   const rejected = (path: string) =>
     issues.some(i => i.path === path || i.path.startsWith(path + '.') || i.path.startsWith(path + '['))
   const check = (selection: unknown, path: string) => {
@@ -33,6 +35,7 @@ export function validateBriefDraft(value: unknown): BriefDraft {
       })
     }
   }
+
   if (value && typeof value === 'object' && !Array.isArray(value) && issues.length < 64) {
     if ('template' in value && value.template !== undefined) check({ template: value.template }, 'template')
     if ('designSystem' in value && value.designSystem !== undefined)
@@ -48,11 +51,13 @@ export function validateBriefDraft(value: unknown): BriefDraft {
           check({ overrides: { [role]: token } }, 'themeOverrides[' + JSON.stringify(role) + ']')
     }
   }
+
   if (issues.length || !draft)
     throw new DeckError(
       issues.some(i => i.code === 'BRIEF_INVALID') ? 'BRIEF_INVALID' : (issues[0]?.code ?? 'BRIEF_INVALID'),
       issues.slice(0, 65),
     )
+
   return draft
 }
 
@@ -85,9 +90,11 @@ export class BriefStorage {
   save(sessionId: string, input: { readonly expectedVersion: number; readonly draft: unknown }): BriefRecord {
     if (!validId(sessionId) || !input || !Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0)
       throw new DeckError('BRIEF_INVALID')
+
     const previous = this.snapshot(sessionId)
     if (previous.locked) throw new DeckError('BRIEF_LOCKED')
     if (previous.version !== input.expectedVersion) throw new DeckError('BRIEF_STALE')
+
     const draft = validateBriefDraft(input.draft)
     const briefId = previous.current?.briefId ?? `brief-${randomUUID()}`
     const version = previous.version + 1
@@ -101,14 +108,17 @@ export class BriefStorage {
             ...(draft.themeOverrides ? { overrides: draft.themeOverrides } : {}),
           })
         : null
+
     this.db
       .prepare(
         'INSERT INTO brief_heads(session_id,brief_id,version) VALUES(?,?,?) ON CONFLICT(session_id) DO UPDATE SET version=excluded.version',
       )
       .run(sessionId, briefId, version)
+
     this.db
       .prepare('INSERT INTO brief_versions(brief_id,version,session_id,payload,design,created_at) VALUES(?,?,?,?,?,?)')
       .run(briefId, version, sessionId, JSON.stringify(draft), design ? JSON.stringify(design) : null, createdAt)
+
     return { sessionId, briefId, version, createdAt, draft, design }
   }
 

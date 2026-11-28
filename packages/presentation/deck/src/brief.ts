@@ -218,10 +218,12 @@ export function decodeBriefDraft(value: unknown): BriefDraft {
       },
     ])
   }
+
   const parsed = shape.safeParse(value)
   const issues: ValidationIssue[] = []
   const add = (path: string, message: string) =>
     issues.push({ code: 'BRIEF_INVALID', path, message, expected: message })
+
   if (!parsed.success)
     for (const issue of parsed.error.issues) {
       if (issue.code === 'unrecognized_keys')
@@ -232,6 +234,7 @@ export function decodeBriefDraft(value: unknown): BriefDraft {
           )
       else add(fieldPath(issue.path), `${issue.message} Optional fields must be omitted when unknown, not set to null.`)
     }
+
   if (isRecord(value)) collectCrossFieldIssues(value, add)
   if (issues.length || !parsed.success)
     throw new DeckError(
@@ -248,5 +251,6 @@ export function decodeBriefDraft(value: unknown): BriefDraft {
           ]
         : issues,
     )
+
   return normalizeBriefDraft(parsed.data)
 }

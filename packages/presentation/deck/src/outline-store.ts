@@ -96,6 +96,7 @@ export class OutlineStorage {
       (v.restoredFrom !== undefined && !validId(v.restoredFrom))
     )
       throw new DeckError('DECK_CORRUPT')
+
     const draft = validateBoundOutline({
       overview: v.overview,
       slides: v.slides,
@@ -162,23 +163,30 @@ export class OutlineStorage {
   ): OutlineProposal {
     if (!validId(input.requestId) || !Number.isSafeInteger(input.responseIndex) || input.responseIndex < 0)
       throw new DeckError('OUTLINE_INVALID')
+
     const draft = validateOutlineDraft(input.draft)
     if (this.db.prepare('SELECT 1 FROM decks WHERE session_id=?').get(sessionId))
       throw new DeckError('OUTLINE_READ_ONLY')
+
     const state = this.snapshot(sessionId)
     if (state.proposals.length >= 100) throw new DeckError('OUTLINE_LIMIT')
     if (state.proposals.some(p => p.requestId === input.requestId)) throw new DeckError('OUTLINE_REQUEST_CONFLICT')
+
     const outlineId = randomUUID(),
       version = state.version + 1
+
     this.db
       .prepare('INSERT INTO outline_proposals VALUES(?,?,?,?,?,?,0)')
       .run(sessionId, outlineId, version, input.requestId, input.responseIndex, JSON.stringify(draft))
+
     this.db
       .prepare(`INSERT INTO outline_heads VALUES(?,?,?,NULL)
       ON CONFLICT(session_id) DO UPDATE SET version=excluded.version,current_id=excluded.current_id`)
       .run(sessionId, version, outlineId)
+
     const created = this.snapshot(sessionId).proposals.at(-1)
     if (!created) throw new DeckError('DECK_CORRUPT')
+
     return created
   }
 

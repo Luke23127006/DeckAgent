@@ -95,6 +95,7 @@ export interface PreparedRecord {
 export function parsePreparedRecord(raw: unknown): PreparedRecord {
   const obj = parseJsonObject(raw)
   if (typeof obj.query !== 'string') throw new DeckError('ARTIFACT_CORRUPT')
+
   const needId = optionalString(obj, 'needId')
   const slideId = optionalString(obj, 'slideId')
   const failure = optionalString(obj, 'failure')
@@ -102,6 +103,7 @@ export function parsePreparedRecord(raw: unknown): PreparedRecord {
   const blockIndex = optionalNumber(obj, 'blockIndex')
   const asset = parseAsset(obj.asset)
   const attempts = parseAttempts(obj.attempts)
+
   return {
     query: obj.query,
     ...(needId === undefined ? {} : { needId }),
@@ -177,11 +179,13 @@ function parseAsset(value: unknown): ArtifactAsset | undefined {
     !Number.isSafeInteger(value.byteSize)
   )
     throw new DeckError('ARTIFACT_CORRUPT')
+
   const credit = value.credit === undefined ? undefined : parseCredit(value.credit)
   const selection = value.selection === undefined ? undefined : parseSelection(value.selection)
   const attachmentId = optionalString(value, 'attachmentId')
   const webQuery = optionalString(value, 'webQuery')
   const imageNeedId = optionalString(value, 'imageNeedId')
+
   return {
     assetId: value.assetId,
     source: parseSource(value.source),

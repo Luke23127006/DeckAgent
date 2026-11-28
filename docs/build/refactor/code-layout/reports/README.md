@@ -13,3 +13,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 7 | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) |
 | 8 | [Add steps in the other Host folders](task-08-add-steps-in-other-host-folders.md) |
 | 9 | [Add steps in the Browser](task-09-add-steps-in-browser.md) |
+| 10 | [Add steps in the deck package](task-10-add-steps-in-deck-package.md) |

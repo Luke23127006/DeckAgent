@@ -87,12 +87,15 @@ export class DeckReads implements DeckReader {
     const host = this.host
     return host.access(() => {
       if (!Number.isSafeInteger(revision) || revision < 1) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
       const row = host.db
         .prepare('SELECT html FROM revisions WHERE session_id=? AND slide_id=? AND revision=?')
         .get(sessionId, slideId, revision)
       if (!row) throw new DeckError('DECK_CONTENT_NOT_FOUND')
+
       const artifact = this.artifactRow(sessionId, slideId, revision)
       if (!artifact) return { sessionId, slideId, revision, html: String(row.html) }
+
       const notes = host.readback.notes(artifact)
       return {
         sessionId,

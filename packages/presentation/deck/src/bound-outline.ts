@@ -56,6 +56,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
         'A title, string content, structured blocks array and sources array; slideId is optional',
       )
     if (!Array.isArray(s.blocks)) return invalid(`slides[${index}].blocks`, 'An array of structured content blocks')
+
     for (const [blockIndex, block] of s.blocks.entries()) {
       try {
         validateContentPlan({ title: s.title, blocks: [block] })
@@ -66,6 +67,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
         )
       }
     }
+
     const content = validateContentPlan({ title: s.title, blocks: s.blocks })
     const kinds = ['attachment', 'project-file', 'approved-file', 'research'] as const
     const sources = s.sources.map((r: unknown) => {
@@ -83,6 +85,7 @@ export function validateBoundOutline(value: unknown): BoundOutlineDraft {
       return { sourceId: r.sourceId, version: Number(r.version), kind }
     })
     if (new Set(sources.map(r => `${r.sourceId}:${r.version}`)).size !== sources.length) return invalid()
+
     return {
       ...(typeof s.slideId === 'string' ? { slideId: s.slideId } : {}),
       title: content.title,
@@ -110,6 +113,7 @@ export function outlineChanges(
     JSON.stringify({ title: s.title, content: s.content, blocks: s.blocks, sources: s.sources })
   const retainedBefore = prior.filter(s => slides.some(n => n.slideId === s.slideId)).map(s => s.slideId)
   const retainedAfter = slides.filter(s => prior.some(n => n.slideId === s.slideId)).map(s => s.slideId)
+
   return {
     overviewChanged: previous?.overview !== overview,
     suggestionsChanged: JSON.stringify(previous?.revisionSuggestions ?? []) !== JSON.stringify(suggestions),
@@ -143,6 +147,7 @@ export function saveBoundOutline(
   const slides = resolveBoundSlides(draft, brief, state)
   if (input.restoredFrom && !state.proposals.some(p => p.outlineId === input.restoredFrom))
     throw new DeckError('OUTLINE_NOT_FOUND')
+
   const proposal: OutlineProposal = {
     outlineId: randomUUID(),
     version: state.version + 1,
@@ -157,6 +162,7 @@ export function saveBoundOutline(
     ...(previous ? { previousOutlineId: previous.outlineId } : {}),
     ...(input.restoredFrom ? { restoredFrom: input.restoredFrom } : {}),
   }
+
   db.prepare('INSERT INTO outline_proposals VALUES(?,?,?,?,?,?,0)').run(
     sessionId,
     proposal.outlineId,
@@ -165,14 +171,17 @@ export function saveBoundOutline(
     input.responseIndex,
     JSON.stringify({ overview: draft.overview, slides: slides.map(s => ({ title: s.title, content: s.content })) }),
   )
+
   db.prepare('INSERT INTO outline_details VALUES(?,?,?)').run(
     sessionId,
     proposal.outlineId,
     JSON.stringify({ ...proposal, brief: { briefId: brief.briefId, version: brief.version } }),
   )
+
   db.prepare(
     'INSERT INTO outline_heads VALUES(?,?,?,NULL) ON CONFLICT(session_id) DO UPDATE SET version=excluded.version,current_id=excluded.current_id',
   ).run(sessionId, proposal.version, proposal.outlineId)
+
   return proposal
 }
 
@@ -189,6 +198,7 @@ function assertBoundOutlinePreconditions(
     throw new DeckError('OUTLINE_READ_ONLY')
   if (brief.briefId !== input.expectedBrief.briefId || brief.version !== input.expectedBrief.version)
     throw new DeckError('BRIEF_STALE')
+
   const previous = state.proposals.find(p => p.outlineId === state.currentId)
   if (
     input.expectedOutline === null

@@ -52,6 +52,7 @@ function applyMigrations(db: DatabaseSync, version: number): void {
         PRAGMA user_version=2;
       `)
   }
+
   if (version < 3)
     db.exec(`
       CREATE TABLE brief_heads(session_id TEXT PRIMARY KEY, brief_id TEXT NOT NULL UNIQUE, version INTEGER NOT NULL CHECK(version>0)) STRICT;
@@ -59,6 +60,7 @@ function applyMigrations(db: DatabaseSync, version: number): void {
         session_id TEXT NOT NULL, payload TEXT NOT NULL, design TEXT, created_at TEXT NOT NULL, PRIMARY KEY(brief_id,version)) STRICT;
       PRAGMA user_version=3;
     `)
+
   if (version < 4)
     db.exec(`
       CREATE TABLE outline_details(session_id TEXT NOT NULL,outline_id TEXT NOT NULL,payload TEXT NOT NULL,
@@ -67,12 +69,14 @@ function applyMigrations(db: DatabaseSync, version: number): void {
         FOREIGN KEY(brief_id,version) REFERENCES brief_versions(brief_id,version)) STRICT;
       PRAGMA user_version=4;
     `)
+
   if (version < 5)
     db.exec(`
       CREATE TABLE generation_intents(session_id TEXT PRIMARY KEY REFERENCES decks(session_id),intent_id TEXT NOT NULL UNIQUE,
         request_id TEXT NOT NULL UNIQUE,state TEXT NOT NULL CHECK(state IN ('pending','admitted','generating','generated','incomplete')),started_at TEXT,payload TEXT NOT NULL) STRICT;
       PRAGMA user_version=5;
     `)
+
   if (version < 6)
     db.exec(`
       CREATE TABLE artifact_revisions(session_id TEXT NOT NULL,slide_id TEXT NOT NULL,revision INTEGER NOT NULL,
@@ -80,30 +84,37 @@ function applyMigrations(db: DatabaseSync, version: number): void {
         PRIMARY KEY(session_id,slide_id,revision),FOREIGN KEY(session_id,slide_id,revision) REFERENCES revisions(session_id,slide_id,revision)) STRICT;
       PRAGMA user_version=6;
     `)
+
   // Version 7 records a continuation's active request in the generation payload; older readers must refuse it.
   if (version < 7) db.exec('PRAGMA user_version=7')
+
   if (version < 8)
     db.exec(`CREATE TABLE prepared_images(session_id TEXT NOT NULL,outline_id TEXT NOT NULL,query TEXT NOT NULL,payload TEXT NOT NULL,
       PRIMARY KEY(session_id,outline_id,query),FOREIGN KEY(session_id,outline_id) REFERENCES outline_proposals(session_id,outline_id)) STRICT;
       PRAGMA user_version=8;`)
+
   if (version < 9)
     db.exec(`ALTER TABLE prepared_images RENAME COLUMN query TO image_key;
       CREATE TABLE image_search_attempts(request_id TEXT PRIMARY KEY,session_id TEXT NOT NULL,attempts INTEGER NOT NULL) STRICT;
       PRAGMA user_version=9;`)
+
   if (version < 10) db.exec('PRAGMA user_version=10')
 }
 
 function verifySchema(db: DatabaseSync): void {
   if (db.prepare('PRAGMA quick_check').get()?.quick_check !== 'ok' || db.prepare('PRAGMA foreign_key_check').get())
     throw new DeckError('DECK_CORRUPT')
+
   db.prepare('SELECT session_id,outline_id,plan,version FROM decks LIMIT 0').all()
   db.prepare('SELECT session_id,slide_id,title,position,revision FROM slides LIMIT 0').all()
   db.prepare('SELECT session_id,slide_id,revision,html FROM revisions LIMIT 0').all()
   db.prepare('SELECT session_id,publication_id,fingerprint,receipt FROM publications LIMIT 0').all()
   db.prepare('SELECT session_id,version,current_id,confirmed_id FROM outline_heads LIMIT 0').all()
+
   db.prepare(
     'SELECT session_id,outline_id,version,request_id,response_index,payload,cancelled FROM outline_proposals LIMIT 0',
   ).all()
+
   db.prepare('SELECT session_id,brief_id,version FROM brief_heads LIMIT 0').all()
   db.prepare('SELECT brief_id,version,session_id,payload,design,created_at FROM brief_versions LIMIT 0').all()
   db.prepare('SELECT session_id,outline_id,payload FROM outline_details LIMIT 0').all()
