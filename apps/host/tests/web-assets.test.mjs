@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { startHost } from '../lib/types/http/start-host.js'
-import { loadWebDistAssets, themeBootstrap } from '../lib/types/http/web-assets.js'
+import { loadWebDistAssets } from '../lib/types/http/web-assets.js'
 
 test('loadWebDistAssets and Host SPA fallback enforce static, sandbox and 404 boundaries', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'deckagent-web-assets-'))
@@ -23,8 +23,8 @@ test('loadWebDistAssets and Host SPA fallback enforce static, sandbox and 404 bo
   await writeFile(join(dir, 'assets', 'app.js'), 'console.log("ok")')
   await writeFile(join(dir, 'samples', '2.html'), '<!doctype html><h1>Sample</h1>')
 
-  let theme = 'system'
-  const assets = await loadWebDistAssets(dir, () => theme)
+  let preferences = { theme: 'system', background: 'none' }
+  const assets = await loadWebDistAssets(dir, () => preferences)
   const host = await startHost({ assets, spaFallback: true })
   t.after(() => host.close())
 
@@ -40,8 +40,15 @@ test('loadWebDistAssets and Host SPA fallback enforce static, sandbox and 404 bo
   assert.match(sample.headers.get('content-security-policy'), /^sandbox;/)
 
   assert.match(await (await fetch(`${host.origin}/theme.js`)).text(), /prefers-color-scheme:dark/)
-  theme = 'dark'
-  assert.equal(await (await fetch(`${host.origin}/theme.js`)).text(), themeBootstrap('dark'))
-  theme = 'light'
-  assert.equal(await (await fetch(`${host.origin}/theme.js`)).text(), themeBootstrap('light'))
+  preferences = { theme: 'dark', background: 'none' }
+  assert.equal(
+    await (await fetch(`${host.origin}/theme.js`)).text(),
+    "document.documentElement.classList.add('dark')",
+    'The backdrop none sets no attribute',
+  )
+  preferences = { theme: 'light', background: 'koi' }
+  assert.equal(
+    await (await fetch(`${host.origin}/theme.js`)).text(),
+    "document.documentElement.classList.remove('dark');document.documentElement.dataset.background='koi'",
+  )
 })

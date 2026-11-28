@@ -1,6 +1,6 @@
 import type { ModelSelection, WebPreferences, WebSettings } from '@deckagent/host-contracts'
 import type { RuntimeAvailability } from '../../runs/ports.ts'
-import type { SqliteSettingsStore } from './settings.store.ts'
+import type { PreferencesChange, SqliteSettingsStore } from './settings.store.ts'
 
 export interface SettingsProviders {
   selectable(value: ModelSelection): boolean
@@ -31,8 +31,8 @@ export class SettingsService {
     return this.store.preferences()
   }
 
-  savePreferences(theme: WebPreferences['theme'], expectedVersion: number): WebPreferences {
-    return this.store.savePreferences(theme, expectedVersion)
+  savePreferences(change: PreferencesChange, expectedVersion: number): WebPreferences {
+    return this.store.savePreferences(change, expectedVersion)
   }
 
   rememberSelection(value: ModelSelection): void {

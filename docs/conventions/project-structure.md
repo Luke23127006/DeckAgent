@@ -84,6 +84,7 @@ apps/web/
     api/               HTTP/SSE client
     contexts/          UI state mà từ hai page trở lên đọc
     editor/            editor core của canvas, không có React và DOM
+    background/        code vẽ background động trên canvas, không có React
     styles/            file Tailwind, theme variable
   mocks/               MSW handler và fixture, chỉ cho development
   tests/
@@ -124,6 +125,7 @@ Cột "Không sở hữu" chỉ ghi các trách nhiệm dễ bị đặt nhầm 
 | `src/api/` | Browser gọi Local Host thế nào? | HTTP/SSE client, serialize request, decode response bằng contracts package, ánh xạ lỗi HTTP/SSE sang mã lỗi typed của client, query key | React, bảng văn bản lỗi UI, permission policy, vòng đời run |
 | `src/contexts/` | UI state nào nhiều màn hình đọc? | UI state mà từ hai page trở lên đọc, ví dụ workspace đang chọn | Bản sao của server data |
 | `src/editor/` | Editor của canvas giữ model và lệnh thế nào? | Model, command, undo của canvas editor | React, DOM, `fetch` |
+| `src/background/` | Background động sau cửa sổ kính được vẽ thế nào? | Scene canvas, vòng lặp animation, dừng khi tab ẩn hoặc khi reduced motion | React, `fetch`, lựa chọn đã lưu (Host giữ lựa chọn) |
 | `src/styles/` | Theme của Browser là gì? | File Tailwind, theme variable cho light và dark, global app shell | Style của từng component |
 | `src/text.ts` | Browser hiển thị chữ gì cho người dùng? | Bảng văn bản UI, bảng ánh xạ mã lỗi typed của client sang văn bản | Logic |
 | `mocks/` | Development chạy không cần Host thế nào? | MSW handler, fixture và file khởi động mock trong browser | Code production, fixture của test |

@@ -19,6 +19,7 @@ export type {
 } from './deck.ts'
 
 export type {
+  BackgroundId,
   ProviderProtocol,
   ProviderSettings,
   ProviderTemplate,
@@ -31,7 +32,7 @@ export type {
   ChatDraft,
 } from './management.ts'
 
-export { providerProtocols } from './management.ts'
+export { backgroundIds, providerProtocols } from './management.ts'
 export { decodeSettings, decodePreferences, decodeCatalog, decodeSettingsSaved } from './settings-validation.ts'
 export { decodeChat, decodeChatList, decodeWorkspaceList } from './chat-list-validation.ts'
 

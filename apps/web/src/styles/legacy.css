@@ -14,8 +14,8 @@ font:var(--t-md)/var(--lh) var(--sans);color:var(--ink);background:var(--canvas)
 --hover:rgba(255,255,255,.08);--press:rgba(255,255,255,.14);--hover-p:rgba(0,0,0,.14);--press-p:rgba(0,0,0,.24);--selected:rgba(235,235,245,.14);--seg:rgba(255,255,255,.18);--vw-bg:#0f1116;--vw-ink:#f2f2f5;--vw-mut:rgba(255,255,255,.34);--vw-hover:rgba(255,255,255,.14);--vw-press:rgba(255,255,255,.22);--vw-line:rgba(255,255,255,.14);--vw-key:rgba(255,255,255,.16);--vw-ph:#15151a;--vw-ph-ink:rgba(255,255,255,.72);--vw-ph-line:rgba(255,255,255,.28);
 --lift:0 1px 2px rgba(0,0,0,.4);--pop:0 16px 48px rgba(0,0,0,.6),0 0 0 .5px rgba(235,235,245,.16);--window-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.16);--rim:inset 1.5px 1.5px 0 rgba(255,255,255,.24),inset -1px -1px 0 rgba(255,255,255,.07),inset 0 0 48px rgba(255,255,255,.05);--scrim:rgba(0,0,0,.55);--disabled-fg:rgba(245,245,247,.4)}
 :root.dark{color-scheme:dark}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root{--blur:none;--window-tint:var(--s-window);--side:var(--s-side);--content:var(--s-content);--card:var(--s-card)}}
-@media(prefers-reduced-transparency:reduce){:root{--blur:none;--window-tint:var(--s-window);--side:var(--s-side);--content:var(--s-content);--card:var(--s-card)}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root{--blur:none;--window-blur:none;--window-tint:var(--s-window);--side:var(--s-side);--content:var(--s-content);--card:var(--s-card)}}
+@media(prefers-reduced-transparency:reduce){:root{--blur:none;--window-blur:none;--window-tint:var(--s-window);--side:var(--s-side);--content:var(--s-content);--card:var(--s-card)}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;overflow:hidden}
@@ -37,7 +37,7 @@ h1,h2,h3{font-size:inherit;font-weight:600;text-wrap:balance}
 p{overflow-wrap:anywhere;text-wrap:pretty}
 small{font-size:inherit}
 #app{position:relative;isolation:isolate;display:flex;height:100dvh;margin:0;overflow:hidden;min-width:0}
-#app::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--window-tint);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+#app::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--window-tint);-webkit-backdrop-filter:var(--window-blur,var(--blur));backdrop-filter:var(--window-blur,var(--blur))}
 #app::after{content:'';position:absolute;inset:0;z-index:2;box-shadow:var(--rim);pointer-events:none}
 @media(max-width:720px){html,body{overflow:auto}#app{height:auto;min-height:100dvh;margin:0;border:0;border-radius:0;flex-wrap:wrap;align-content:flex-start}}
 summary{list-style:none}
@@ -430,3 +430,10 @@ body.deck-resizing iframe{pointer-events:none}
 
 @keyframes mark-turn{to{transform:rotate(360deg)}}
 .requests-unavailable{font-size:12px;margin:0 0 6px;opacity:.85}
+#backdrop{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:none;pointer-events:none}
+:root[data-background]:not([data-background=none]) #backdrop{display:block}
+@media(prefers-reduced-transparency:no-preference){@supports((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root[data-background]:not([data-background=none]){--window-blur:blur(6px) saturate(1.5);--content:rgba(255,255,255,.42);--side:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0)),rgba(246,247,252,.3)}:root.dark[data-background]:not([data-background=none]){--content:rgba(20,20,24,.4);--side:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0)),rgba(22,22,26,.34)}}}
+.background-control{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.account-menu .background-control button{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:0;padding:4px;font-size:var(--t-xs);font-weight:500;text-align:center;border-radius:var(--r-sm);border:1px solid transparent;box-shadow:none;background:var(--fill)}
+.account-menu .background-control button[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.background-control .swatch{display:block;height:26px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
