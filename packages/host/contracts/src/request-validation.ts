@@ -182,6 +182,7 @@ export function decodeAttachment(value: unknown): AttachmentView {
 export function requestEvent(value: unknown): RequestEvent {
   const parsed = requestEventSchema.safeParse(value)
   if (!parsed.success) return invalidResponse()
+
   const data = parsed.data
   const base = { requestId: data.requestId, sequence: data.sequence, timestamp: data.timestamp }
   if (data.kind === 'status') {
@@ -192,10 +193,12 @@ export function requestEvent(value: unknown): RequestEvent {
       ...(data.errorCode !== undefined ? { errorCode: data.errorCode } : {}),
     }
   }
+
   if (data.kind === 'approval') {
     if (data.approval.requestId !== data.requestId) return invalidResponse()
     return { ...base, kind: 'approval', approval: buildApprovalView(data.approval) }
   }
+
   return data
 }
 
@@ -223,6 +226,7 @@ export function decodeAgentRequest(value: unknown, maxAttachments: number): Agen
   if (!parsed.success) {
     throw new RequestValidationError('INVALID_REQUEST', 'Request payload is invalid')
   }
+
   const data = parsed.data
   if (
     data.continueDeck === true &&
@@ -230,6 +234,7 @@ export function decodeAgentRequest(value: unknown, maxAttachments: number): Agen
   ) {
     throw new RequestValidationError('INVALID_REQUEST', 'Request payload is invalid')
   }
+
   const deck = data.deck !== undefined ? decodeDeckRequest(data.deck) : undefined
   const ids = data.attachmentIds
   if (ids !== undefined && (ids.length > maxAttachments || new Set(ids).size !== ids.length)) {
@@ -244,6 +249,7 @@ export function decodeAgentRequest(value: unknown, maxAttachments: number): Agen
   if (!data.input.isWellFormed()) {
     throw new RequestValidationError('INVALID_REQUEST', 'Request payload is invalid')
   }
+
   return {
     ...(data.continueDeck === true ? { continueDeck: true } : {}),
     ...(deck !== undefined ? { deck } : {}),

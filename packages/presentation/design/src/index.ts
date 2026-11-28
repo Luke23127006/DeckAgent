@@ -176,6 +176,7 @@ export function resolveDesign(value: unknown = {}): DesignSnapshot {
   )
     throw new DesignError('DESIGN_SELECTION_INVALID')
   if (value.format !== undefined && value.format !== 'html') throw new DesignError('DESIGN_FORMAT_UNAVAILABLE')
+
   reference(value.designSystem, system, 'DESIGN_SYSTEM_NOT_FOUND')
   const chosenTemplate = selectedTemplate(value.template)
   if (
@@ -183,6 +184,7 @@ export function resolveDesign(value: unknown = {}): DesignSnapshot {
     (!isRecord(value.overrides) || Object.keys(value.overrides).some(k => !Object.hasOwn(system.theme, k)))
   )
     throw new DesignError('DESIGN_THEME_INVALID')
+
   const theme = validateTheme({ ...system.theme, ...(isRecord(value.overrides) ? value.overrides : {}) })
   const snapshot = {
     format: 'html' as const,
@@ -217,6 +219,7 @@ export function decodeDesignSnapshot(value: unknown): DesignSnapshot {
     value.brandAssets.length !== 0
   )
     return invalid()
+
   const ref = (v: Record<string, unknown>): CatalogRef => {
     if (
       !only(v, ['id', 'version']) ||
@@ -239,6 +242,7 @@ export function decodeDesignSnapshot(value: unknown): DesignSnapshot {
   }
   const fingerprint = createHash('sha256').update(JSON.stringify(snapshot)).digest('hex')
   if (value.fingerprint !== fingerprint) return invalid()
+
   return immutable({ ...snapshot, fingerprint })
 }
 
@@ -261,14 +265,17 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
   }
   const blocks = value.blocks.map((block: unknown): ContentBlock => {
     if (!isRecord(block)) return invalid()
+
     if (block.kind === 'subtitle' || block.kind === 'lead' || block.kind === 'text' || block.kind === 'source-note') {
       if (!only(block, ['kind', 'text']) || !text(block.text)) return invalid()
       return { kind: block.kind, text: block.text }
     }
+
     if (block.kind === 'bullets') {
       if (!only(block, ['kind', 'items']) || !texts(block.items)) return invalid()
       return { kind: block.kind, items: [...block.items] }
     }
+
     if (block.kind === 'columns') {
       if (!only(block, ['kind', 'columns']) || !Array.isArray(block.columns) || !block.columns.length) return invalid()
       return {
@@ -279,6 +286,7 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         }),
       }
     }
+
     if (block.kind === 'metrics') {
       if (!only(block, ['kind', 'items']) || !Array.isArray(block.items) || !block.items.length) return invalid()
       return {
@@ -290,6 +298,7 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         }),
       }
     }
+
     if (block.kind === 'web-image') {
       if (
         !only(block, ['kind', 'query', 'caption', 'required', 'intent', 'provider', 'replace']) ||
@@ -325,6 +334,7 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         ...(block.intent ? { intent: block.intent as unknown as import('./contracts.ts').WebImageIntent } : {}),
       }
     }
+
     if (block.kind === 'image') {
       if (
         !only(block, ['kind', 'attachmentId', 'caption']) ||
@@ -339,6 +349,7 @@ export function validateContentPlan(value: unknown): SlideContentPlan {
         ...(typeof block.caption === 'string' ? { caption: block.caption } : {}),
       }
     }
+
     return invalid()
   })
   return immutable({ title: value.title, blocks })
@@ -358,12 +369,14 @@ export function findCompatibleLayouts(
       plan.blocks.some(block => !layout.contentKinds.includes(block.kind === 'web-image' ? 'image' : block.kind))
     )
       return false
+
     const count = (kind: ContentBlock['kind']) =>
       plan.blocks.filter(b => (b.kind === 'web-image' ? 'image' : b.kind) === kind).length
     const bulletsFit = (items: readonly string[]) =>
       items.length >= c.minBullets! && items.length <= c.maxBullets! && items.every(item => length(item) <= c.bullet!)
     if (layout.id === 'cover')
       return count('subtitle') <= 1 && plan.blocks.every(b => 'text' in b && length(b.text) <= c.subtitle!)
+
     if (layout.id === 'section')
       if (template.version >= 3)
         return (
@@ -372,6 +385,7 @@ export function findCompatibleLayouts(
           plan.blocks.length >= 1 &&
           plan.blocks.every(b => 'text' in b && length(b.text) <= (b.kind === 'lead' ? c.lead! : c.text!))
         )
+
     if (layout.id === 'section')
       return plan.blocks.length === 1 && plan.blocks.every(b => 'text' in b && length(b.text) <= c.lead!)
     if (layout.id === 'title-body')
@@ -396,6 +410,7 @@ export function findCompatibleLayouts(
             : 'text' in b && length(b.text) <= c.note!,
         )
       )
+
     return (
       count('image') === c.images &&
       (layout.id === 'image-pair' ? count('bullets') <= 1 : count('bullets') === 1) &&

@@ -68,6 +68,7 @@ export function decodeDeckSnapshot(value: unknown, sessionId: string): DeckSnaps
     (value.generation === undefined && value.slides.length > 100)
   )
     return invalidResponse()
+
   const slides = value.slides.map((slide: unknown, position: number) => {
     if (
       !record(slide) ||
@@ -88,14 +89,17 @@ export function decodeDeckSnapshot(value: unknown, sessionId: string): DeckSnaps
       status: slide.revision ? ('published' as const) : ('pending' as const),
     }
   })
+
   if (
     new Set(slides.map(slide => slide.slideId)).size !== slides.length ||
     (base.version === 0 ? value.outlineId !== null || slides.length > 0 : value.outlineId === null || !slides.length)
   )
     return invalidResponse()
+
   const generation =
     value.generation === undefined ? undefined : guarded(() => decodeGeneration(value.generation, sessionId))
   if (generation && generation.receipt.outlineId !== value.outlineId) return invalidResponse()
+
   return { ...base, outlineId: value.outlineId, slides, ...(generation ? { generation } : {}) }
 }
 
@@ -149,6 +153,7 @@ export function decodeSlideContent(value: unknown, sessionId: string, slideId: s
     (value.notes !== undefined && (typeof value.notes !== 'string' || value.notes.length > 16000))
   )
     return invalidResponse()
+
   const imageCredits = value.imageCredits === undefined ? undefined : decodeImageCredits(value.imageCredits)
   const imageOmissions = value.imageOmissions === undefined ? undefined : decodeStrings(value.imageOmissions)
   const document = value.document === undefined ? undefined : guarded(() => decodeSlideDocument(value.document))
@@ -161,6 +166,7 @@ export function decodeSlideContent(value: unknown, sessionId: string, slideId: s
   )
     return invalidResponse()
   if (artifact?.documentVersion && !document) return invalidResponse()
+
   const provenance = Array.isArray(value.provenance) ? guarded(() => decodeContentOrigins(value.provenance)) : undefined
   return {
     sessionId,
@@ -278,6 +284,7 @@ export interface InterviewView {
 /** Decodes the Brief interview of `GET /api/sessions/:sessionId/interview`. */
 export function decodeInterview(value: unknown, sessionId: string): InterviewView {
   if (!record(value) || !record(value.state)) return invalidResponse()
+
   const s = value.state
   if (
     !Array.isArray(s.questions) ||
@@ -287,6 +294,7 @@ export function decodeInterview(value: unknown, sessionId: string): InterviewVie
     !wellFormed(s.notice)
   )
     return invalidResponse()
+
   const questions = s.questions.map((q: unknown) => {
     if (
       !record(q) ||
@@ -309,6 +317,7 @@ export function decodeInterview(value: unknown, sessionId: string): InterviewVie
     new Set(questions.map(q => q.topic)).size !== questions.length
   )
     return invalidResponse()
+
   return {
     brief: guarded(() => decodeBriefView(value.brief, sessionId)),
     state: { questions, blockers, readyForOutline: s.readyForOutline, skipAllowed: s.skipAllowed, notice: s.notice },
@@ -360,6 +369,7 @@ export function decodeConfirmationResult(
   target: ConfirmationTarget,
 ): ConfirmationResult {
   if (!record(value) || !record(value.request)) return invalidResponse()
+
   const receipt = decodeReceipt(value.receipt, sessionId)
   const request = value.request
   const status = requestStatuses.find(known => known === request.status)
@@ -378,6 +388,7 @@ export function decodeConfirmationResult(
     receipt.briefVersion !== target.briefVersion
   )
     return invalidResponse()
+
   return {
     receipt,
     request: {

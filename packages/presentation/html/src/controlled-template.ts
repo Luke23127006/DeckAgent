@@ -57,6 +57,7 @@ function node(n: SlideNode): string {
 
 export function controlledStarter(input: FormatContext, validate = false): string {
   if (!input.document) throw new FormatError('SLIDE_DOCUMENT_REQUIRED')
+
   const d = decodeSlideDocument(input.document)
   const imageCount = d.nodes.filter(n => n.kind === 'image').length
   const expectedImages = input.layoutId === 'image-pair' ? 2 : input.layoutId === 'image-text' ? 1 : 0
@@ -73,9 +74,11 @@ export function controlledStarter(input: FormatContext, validate = false): strin
       return block
     }),
   }
+
   // Required images are enforced by Deck before build. An explicitly optional omission keeps a bounded composition.
   for (let i = imageCount; i < expectedImages; i++)
     plan.blocks.push({ kind: 'image', attachmentId: 'att-00000000-0000-4000-8000-000000000000' })
+
   const visualLayout =
     expectedImages && imageCount < expectedImages ? (imageCount === 1 ? 'image-text' : 'title-body') : input.layoutId
   const layouts = ['cover', 'section', 'title-body', 'two-column', 'key-figures', 'image-text', 'image-pair']
@@ -93,6 +96,7 @@ export function controlledStarter(input: FormatContext, validate = false): strin
           'Choose a compatible layout or revise the document explicitly while preserving required content. Never hide, truncate or shrink text.',
       },
     ])
+
   const words = d.nodes
     .filter(n => n.kind !== 'image')
     .map(node)
@@ -102,6 +106,7 @@ export function controlledStarter(input: FormatContext, validate = false): strin
     .map(node)
     .join('')
   let content: string
+
   switch (visualLayout) {
     case 'cover':
     case 'section':
@@ -122,6 +127,7 @@ export function controlledStarter(input: FormatContext, validate = false): strin
     default:
       content = `<div class="da3-composition"><div class="da3-pair">${images}</div><div class="da3-words">${words}</div></div>`
   }
+
   return `<style>${style}</style><section class="da3-slide da3-${visualLayout} da3-plan-${input.layoutId}"><h1 data-node-id="__title">${escapeHtml(d.title)}</h1>${content}</section>`
 }
 

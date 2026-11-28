@@ -109,5 +109,5 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 | 8 | Done | [Add steps in the other Host folders](task-08-add-steps-in-other-host-folders.md) ([report](../reports/task-08-add-steps-in-other-host-folders.md)) | `style(layout): add steps in the other Host folders` |
 | 9 | Done | [Add steps in the Browser](task-09-add-steps-in-browser.md) ([report](../reports/task-09-add-steps-in-browser.md)) | `style(layout): add steps in the Browser` |
 | 10 | Done | [Add steps in the deck package](task-10-add-steps-in-deck-package.md) ([report](../reports/task-10-add-steps-in-deck-package.md)) | `style(layout): add steps in the deck package` |
-| 11 | Pending | [Add steps in the other packages](task-11-add-steps-in-other-packages.md) | `style(layout): add steps in the other packages` |
+| 11 | Done | [Add steps in the other packages](task-11-add-steps-in-other-packages.md) ([report](../reports/task-11-add-steps-in-other-packages.md)) | `style(layout): add steps in the other packages` |
 | 12 | Pending | [Record the style commits and run the exit checks](task-12-record-style-commits-and-exit.md) | `chore: ignore the code layout commits in git blame` |

@@ -182,6 +182,7 @@ function decodeOutlineSource(value: unknown): BriefSourceRef {
 function decodeContentBlock(value: unknown): ContentBlock {
   const parsed = contentBlockSchema.safeParse(value)
   if (!parsed.success) return invalidResponse()
+
   const data = parsed.data
   if (data.kind === 'web-image') {
     return {
@@ -201,6 +202,7 @@ function decodeContentBlock(value: unknown): ContentBlock {
       ...(data.caption !== undefined ? { caption: data.caption } : {}),
     }
   }
+
   return data
 }
 
@@ -275,11 +277,13 @@ function decodeProposalSlide(
 ): OutlineProposal['slides'][number] {
   const parsed = proposalSlideSchema.safeParse(value)
   if (!parsed.success) return invalidResponse()
+
   const sources = parsed.data.sources.map(decodeOutlineSource)
   const hasInvalidSource = sources.some(
     r => !allowedRefs.some(b => b.sourceId === r.sourceId && b.version === r.version && b.kind === r.kind),
   )
   if (hasInvalidSource) return invalidResponse()
+
   return {
     slideId: parsed.data.slideId,
     title: parsed.data.title,
@@ -293,6 +297,7 @@ function decodeProposalSlide(
 export function decodeBoundProposal(value: Record<string, unknown>, sessionId: string): OutlineProposal {
   const parsed = proposalHeaderSchema.safeParse(value)
   if (!parsed.success) return invalidResponse()
+
   const data = parsed.data
   const brief = decodeBriefView(
     {
@@ -305,8 +310,10 @@ export function decodeBoundProposal(value: Record<string, unknown>, sessionId: s
     sessionId,
   ).current
   if (!brief) return invalidResponse()
+
   const slides = data.slides.map(slide => decodeProposalSlide(slide, brief.draft.sources.refs))
   if (new Set(slides.map(s => s.slideId)).size !== slides.length) return invalidResponse()
+
   return {
     outlineId: data.outlineId,
     requestId: data.requestId,

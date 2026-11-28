@@ -163,6 +163,7 @@ export function decodeChatDraft(value: unknown, sessionId: string): ChatDraft {
   if (data.revision === undefined && data.attachmentIds === undefined && data.attachments === undefined)
     return { sessionId, text: data.text }
   if (data.revision === undefined || !data.attachmentIds || !data.attachments) throw new Error('INVALID_RESPONSE')
+
   const attachments = data.attachments.map(decodeAttachment)
   const ids = data.attachmentIds
   if (
@@ -171,6 +172,7 @@ export function decodeChatDraft(value: unknown, sessionId: string): ChatDraft {
     ids.some((id, index) => id !== attachments[index]?.attachmentId)
   )
     throw new Error('INVALID_RESPONSE')
+
   return { sessionId, text: data.text, revision: data.revision, attachmentIds: ids, attachments }
 }
 

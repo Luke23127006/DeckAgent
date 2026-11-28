@@ -25,6 +25,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       )
     )
       throw new FormatError('FORMAT_CAPABILITY_UNSUPPORTED')
+
     const font = (role: 'font.body' | 'font.heading') => {
       const face = this.fonts[input.design.theme[role]]
       if (!face || !/^[\w -]{1,100}$/.test(face)) throw new FormatError('FORMAT_FONT_MAPPING_REQUIRED')
@@ -35,6 +36,7 @@ export class PptxFormatAdapter implements FormatAdapter {
     const slide = pptx.addSlide()
     const theme = input.design.theme
     slide.background = { color: theme['color.background'].slice(1) }
+
     slide.addText(d.title, {
       x: 0.5,
       y: 0.4,
@@ -46,6 +48,7 @@ export class PptxFormatAdapter implements FormatAdapter {
       margin: 0,
       breakLine: false,
     })
+
     const images = d.nodes.filter(n => n.kind === 'image')
     const words = d.nodes.filter(n => n.kind !== 'image')
     const lines = (n: SlideNode): string[] =>
@@ -64,6 +67,7 @@ export class PptxFormatAdapter implements FormatAdapter {
     // Reject content the proof cannot lay out; it never shrinks or truncates it to fit.
     if (text.length > (images.length > 1 ? 350 : 1600) || words.flatMap(lines).length > 12 || images.length > 2)
       throw new FormatError('FORMAT_CAPACITY_EXCEEDED')
+
     if (text)
       slide.addText(text, {
         x: 0.5,
@@ -77,6 +81,7 @@ export class PptxFormatAdapter implements FormatAdapter {
         paraSpaceAfter: 12,
         breakLine: false,
       })
+
     for (const [i, node] of images.entries()) {
       const asset = input.assets.find(a => a.assetId === node.assetId)
       if (!asset) throw new FormatError('ARTIFACT_ASSET_UNAVAILABLE')
@@ -107,9 +112,11 @@ export class PptxFormatAdapter implements FormatAdapter {
           margin: 0,
         })
     }
+
     if (d.notes) slide.addNotes(d.notes)
     const bytes = await pptx.write({ outputType: 'uint8array', compression: true })
     if (!(bytes instanceof Uint8Array)) throw new FormatError('FORMAT_BUILD_FAILED')
+
     return {
       bytes,
       descriptor: {

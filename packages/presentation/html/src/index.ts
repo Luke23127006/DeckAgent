@@ -61,6 +61,7 @@ function starter(input: FormatContext, style = css): string {
 
 function verifyContent(source: string, input: FormatContext): void {
   if (!input.document) return
+
   const d = decodeSlideDocument(input.document),
     root = parseFragment(source)
   const found = new Map<string, string[]>()
@@ -90,6 +91,7 @@ function verifyContent(source: string, input: FormatContext): void {
     if ('childNodes' in node) for (const child of node.childNodes) walk(child, binding)
   }
   walk(root)
+
   for (const id of ['__title', ...d.nodes.map(n => n.id)])
     if (!bindings.has(id))
       throw new FormatError('ARTIFACT_REQUIRED_CONTENT_MISSING', [
@@ -99,6 +101,7 @@ function verifyContent(source: string, input: FormatContext): void {
           message: 'The native representation is missing this content node.',
         },
       ])
+
   for (const n of d.nodes)
     if (n.kind === 'image') {
       let matched = false
@@ -121,6 +124,7 @@ function verifyContent(source: string, input: FormatContext): void {
           },
         ])
     }
+
   for (const [id, text] of [['__title', d.title], ...d.nodes.map(n => [n.id, nodeText(n)] as const)]) {
     if (normalize((found.get(id!) ?? []).join(' ')) !== normalize(text!))
       throw new FormatError('ARTIFACT_REQUIRED_CONTENT_MISSING', [
@@ -132,6 +136,7 @@ function verifyContent(source: string, input: FormatContext): void {
         },
       ])
   }
+
   const tokens = (v: string) => normalize(v).split(' ').toSorted().join('\0')
   if (tokens(all.join(' ')) !== tokens(documentText(d).join(' ')))
     throw new FormatError('ARTIFACT_UNRECORDED_CONTENT', [

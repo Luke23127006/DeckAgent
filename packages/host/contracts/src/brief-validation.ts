@@ -138,6 +138,7 @@ export function isWireBriefDraft(value: unknown): value is BriefDraft {
     value.requestedFormat !== 'html'
   )
     return false
+
   const a = parsed.data.answers
   const s = parsed.data.sources
   const im = parsed.data.images
@@ -148,6 +149,7 @@ export function isWireBriefDraft(value: unknown): value is BriefDraft {
   if (im.mode !== 'attachments' && im.attachmentIds.length) return false
   if (im.mode === 'attachments' && !s.material) return false
   if (im.mode === 'unavailable' && !im.unmetRequirements.length) return false
+
   return true
 }
 
@@ -159,12 +161,15 @@ export function isDesignSnapshot(value: unknown): value is DesignSnapshot {
 export function decodeBriefView(value: unknown, sessionId: string): BriefView {
   const parsed = briefViewSchema.safeParse(value)
   if (!parsed.success || parsed.data.sessionId !== sessionId) return invalidResponse()
+
   const data = parsed.data
+
   const current = data.current
   if (current === null) {
     if (data.version !== 0 || data.sourceStates.length > 0) return invalidResponse()
     return { sessionId, version: 0, current: null, locked: data.locked, sourceStates: [] }
   }
+
   if (
     current.sessionId !== sessionId ||
     current.version !== data.version ||
@@ -172,8 +177,10 @@ export function decodeBriefView(value: unknown, sessionId: string): BriefView {
   ) {
     return invalidResponse()
   }
+
   const refs = current.draft.sources.refs
   if (data.sourceStates.length !== refs.length) return invalidResponse()
+
   const matchesRefs = data.sourceStates.every((state, index) => {
     const ref = refs[index]
     return (
@@ -184,6 +191,7 @@ export function decodeBriefView(value: unknown, sessionId: string): BriefView {
     )
   })
   if (!matchesRefs) return invalidResponse()
+
   return {
     sessionId,
     version: data.version,

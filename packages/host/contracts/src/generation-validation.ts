@@ -52,6 +52,7 @@ function buildReceipt(data: z.infer<typeof receiptSchema>, sessionId: string): C
 export function decodeGeneration(value: unknown, sessionId: string): GenerationSnapshot {
   const parsed = generationSchema.safeParse(value)
   if (!parsed.success) return invalidGenerationResponse()
+
   const data = parsed.data
   const receipt = buildReceipt(data.receipt, sessionId)
   if (
@@ -62,6 +63,7 @@ export function decodeGeneration(value: unknown, sessionId: string): GenerationS
   ) {
     return invalidGenerationResponse()
   }
+
   return {
     receipt,
     ...(data.activeRequestId !== undefined ? { activeRequestId: data.activeRequestId } : {}),

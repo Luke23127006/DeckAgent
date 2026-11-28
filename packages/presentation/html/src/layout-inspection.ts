@@ -1,6 +1,7 @@
 /** This self-contained, read-only probe runs inside the offline render-check browser. */
 export function inspectControlledLayout(): { code: string; path: string; expected: string } | undefined {
   if (!document.head.querySelector('meta[name="deckagent-layout-policy"][content="html-layout-v3"]')) return
+
   const root = document.querySelector<HTMLElement>('section.da3-slide')
   const issue = (element: Element | null, expected: string) => ({
     code: 'ARTIFACT_LAYOUT_GEOMETRY',
@@ -10,11 +11,13 @@ export function inspectControlledLayout(): { code: string; path: string; expecte
     expected,
   })
   if (!root) return issue(null, 'The controlled slide root is required.')
+
   const title = root.querySelector('h1'),
     content = root.querySelector('.da3-composition')
   if (!title) return issue(root, 'The title occupies its own region above the composition.')
   if (content && title.getBoundingClientRect().bottom + 8 > content.getBoundingClientRect().top)
     return issue(title, 'The title must remain above, without overlapping the content region.')
+
   for (const image of root.querySelectorAll('img')) {
     const rect = image.getBoundingClientRect(),
       caption = image.closest('figure')?.querySelector('figcaption')
@@ -27,13 +30,16 @@ export function inspectControlledLayout(): { code: string; path: string; expecte
     if (caption && caption.getBoundingClientRect().top < rect.bottom - 1)
       return issue(image, 'The caption must remain below its image region.')
   }
+
   const pair = root.querySelector('.da3-pair'),
     columns = root.querySelector('.da3-column-grid')
+
   if (pair) {
     const frames = [...pair.querySelectorAll('img')].map(image => image.getBoundingClientRect())
     if (frames.length !== 2 || Math.abs(frames[0]!.height - frames[1]!.height) > 2)
       return issue(pair, 'Both image frames must keep the same height when captions have different lengths.')
   }
+
   for (const group of [pair, columns]) {
     if (!group) continue
     const children = [...group.children],

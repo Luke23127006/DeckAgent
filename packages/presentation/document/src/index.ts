@@ -83,7 +83,9 @@ export function decodeSlideDocument(value: unknown): SlideDocument {
   )
     return fail('document', 'A versioned SlideDocument without native-format fields')
   if (new TextEncoder().encode(JSON.stringify(value)).length > 256 * 1024) return fail('document', 'At most 256 KiB')
+
   const seen = new Set<string>()
+
   for (const [index, node] of value.nodes.entries()) {
     const path = `nodes[${index}]`
     if (!object(node) || !id(node.id) || node.id === '__title' || seen.has(node.id))
@@ -124,6 +126,7 @@ export function decodeSlideDocument(value: unknown): SlideDocument {
       continue
     return fail(path, 'A structured text, columns, metrics or prepared-image node')
   }
+
   const provenance = decodeContentOrigins(value.provenance)
   return {
     schemaVersion: 1,

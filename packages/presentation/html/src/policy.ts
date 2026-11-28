@@ -132,6 +132,7 @@ export function compileArtifact(source: string, design: DesignSnapshot, assets: 
       if (!('tagName' in node)) return
       if (node.namespaceURI !== 'http://www.w3.org/1999/xhtml' || !tags.has(node.tagName))
         throw new DeckError('ARTIFACT_UNSAFE_HTML')
+
       for (const a of node.attrs) {
         if (a.namespace || !htmlCapabilities.attributes.includes(a.name))
           throw new DeckError('ARTIFACT_UNSAFE_HTML', [
@@ -146,8 +147,10 @@ export function compileArtifact(source: string, design: DesignSnapshot, assets: 
         if (a.name === 'src' && (node.tagName !== 'img' || !assets.some(asset => a.value === `asset:${asset.assetId}`)))
           throw new DeckError('ARTIFACT_ASSET_INVALID')
       }
+
       if (node.tagName === 'img' && !node.attrs.some(a => a.name === 'src'))
         throw new DeckError('ARTIFACT_ASSET_INVALID')
+
       if (node.tagName === 'img') {
         const asset = assets.find(a =>
           node.attrs.some(attr => attr.name === 'src' && attr.value === `asset:${a.assetId}`),
@@ -156,6 +159,7 @@ export function compileArtifact(source: string, design: DesignSnapshot, assets: 
         if (asset) usedAssets.add(asset.assetId)
         if (imageBytes > 1024 * 1024) throw new DeckError('ARTIFACT_ASSET_INVALID')
       }
+
       if (node.tagName === 'style') css(node.childNodes.map(n => ('value' in n ? n.value : '')).join(''), false, design)
     })
     if (assets.some(asset => !usedAssets.has(asset.assetId))) throw new DeckError('ARTIFACT_ASSET_INVALID')
