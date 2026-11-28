@@ -130,17 +130,20 @@ async function main() {
       opencode: { type: 'string' },
     },
   })
+
   if (values.help) {
     console.log(
       'pnpm web [--provider <connection-id> --model <model-id>] [--config config/models.example.json] [--data-dir <folder>] [--confirmed-deck config/deck.confirmed.example.json] [--opencode <path-to-opencode-executable>] [--port 0] [--no-open]\nRequests run with the OpenCode CLI (pinned version), found by --opencode, else DECKAGENT_OPENCODE, prepared app resources, the installed platform dependency, then opencode on PATH. Windows x64 dependency installation includes the runtime; no global install is needed. Startup checks its version; unavailable runtime keeps Settings, history and drafts. Data folder: --data-dir, else DECKAGENT_DATA_DIR, else the app-data folder of the OS. Optional CLI configuration bootstraps an existing environment connection. Saved Web Settings take precedence. --confirmed-deck imports a trusted Host-confirmed plan for manual testing only. Ctrl+C shuts down Host.',
     )
     return
   }
+
   const provider = values.provider ?? process.env.DECKAGENT_PROVIDER
   const model = values.model ?? process.env.DECKAGENT_MODEL
   const connections = provider || model ? await loadConnections(provider, model, values.config) : []
   const port = Number(values.port ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid port')
+
   const confirmedDecks = values['confirmed-deck'] ? await loadConfirmedDecks(values['confirmed-deck']) : []
   const app = await startLocalWeb({
     confirmedDecks,
@@ -152,10 +155,12 @@ async function main() {
   })
   process.once('SIGINT', () => shutdown(app))
   process.once('SIGTERM', () => shutdown(app))
+
   if (values['no-open']) {
     console.log(`DeckAgent Local Host: ${app.origin}. Browser opening disabled. Ctrl+C to stop.`)
     return
   }
+
   try {
     await openBrowser(app.origin, app.token)
     console.log(`DeckAgent Local Host: ${app.origin}. Browser opened. Ctrl+C to stop.`)

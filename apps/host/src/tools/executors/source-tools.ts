@@ -151,6 +151,7 @@ function buildSourceSchemas(
 ): readonly ToolSchema[] {
   const kinds = new Set(sourceKinds)
   const schemas: ToolSchema[] = []
+
   if (kinds.has('workspace-files'))
     schemas.push(
       schema(
@@ -167,6 +168,7 @@ function buildSourceSchemas(
         true,
       ),
     )
+
   if (kinds.has('attachments'))
     schemas.push({
       name: 'read_attachment',
@@ -179,6 +181,7 @@ function buildSourceSchemas(
         additionalProperties: false,
       },
     })
+
   if (kinds.has('research') && hasResearchSources)
     schemas.push(
       schema(
@@ -188,6 +191,7 @@ function buildSourceSchemas(
         true,
       ),
     )
+
   if (kinds.has('research') && hasResearch)
     schemas.push(
       schema(
@@ -197,6 +201,7 @@ function buildSourceSchemas(
         true,
       ),
     )
+
   return schemas
 }
 
@@ -217,6 +222,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
   const sourceKinds = options.sourceKinds ?? allSourceKinds
   const chat = await chats.getInfo(sessionId)
   if (!chat) throw new SourceToolFailure('SESSION_NOT_FOUND')
+
   const workspace = chat.workspaceId ? await registry.get(chat.workspaceId) : undefined
   const root = workspace?.folderStatus === 'available' ? (workspace.folder ?? undefined) : undefined
   const access = await createSourceAccess({
@@ -246,6 +252,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
     !!options.research,
   )
   const schemas = buildSourceSchemas(sourceKinds, researchSources.length > 0, !!options.research)
+
   return {
     context: createHash('sha256')
       .update(
@@ -270,6 +277,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
       if (!isRecord(args)) throw new SourceError('SOURCE_ARGUMENTS_INVALID')
       if (name === 'read_research' || name === 'research_public')
         return executeResearchTool(name, args, researchSources, options.research, sessionId, context)
+
       const field = name === 'read_attachment' ? 'attachmentId' : 'path'
       if (
         Object.keys(args).some(key => key !== field && !(name === 'read_attachment' && key === 'cursor')) ||
@@ -284,6 +292,7 @@ async function buildSourceTools(options: SourceToolOptions): Promise<SourceTools
       if (name === 'list_sources') return textResult(await access.list(String(args.path ?? ''), context.signal))
       if (name === 'read_attachment')
         return readAttachmentPart(args, attachments, options.attachments, sessionId, context.signal)
+
       return readFileSource(name, String(args[field]), access, runs, context)
     },
   }
@@ -431,8 +440,10 @@ async function readAttachmentPart(
 ): Promise<ToolResult> {
   const item = attachments.find(entry => entry.attachmentId === value.attachmentId)
   if (!item || item.state !== 'ready' || !item.source) throw new SourceError('SOURCE_NOT_FOUND')
+
   const prepared = await loadPreparedAttachment(item, managed, sessionId, signal)
   signal.throwIfAborted()
+
   const [index = 0, offset = 0] = String(value.cursor ?? '0:0')
     .split(':')
     .map(Number)
@@ -443,6 +454,7 @@ async function readAttachmentPart(
     throw new SourceError('SOURCE_ARGUMENTS_INVALID')
   if (!part || (part.type === 'image' && offset !== 0) || (part.type === 'text' && offset >= part.text.length))
     throw new SourceError('SOURCE_ARGUMENTS_INVALID')
+
   const nextCursor = index + 1 < prepared.parts.length ? `${index + 1}:0` : undefined
   const completeness = prepared.parts.length === 1 ? prepared.completeness : 'partial'
   const base: PartMetadata = {
@@ -451,6 +463,7 @@ async function readAttachmentPart(
     capabilities: prepared.capabilities,
     omitted: prepared.omitted,
   }
+
   if (part.type === 'image') {
     if (Buffer.byteLength(part.data, 'base64') > attachmentLimits.imageBytes)
       throw new SourceError('IMAGE_INPUT_UNAVAILABLE')
@@ -472,6 +485,7 @@ async function readAttachmentPart(
       ],
     }
   }
+
   let end = Math.min(part.text.length, offset + 16_384)
   const prev = part.text[end - 1]
   if (end < part.text.length && prev !== undefined && /[\uD800-\uDBFF]/.test(prev)) end--
@@ -479,6 +493,7 @@ async function readAttachmentPart(
   const lines = (limit: number) => part.text.slice(0, limit).split('\n').length
   const location =
     part.location.kind === 'lines' ? { ...part.location, start: lines(offset), end: lines(end) } : part.location
+
   return textResult({
     ...base,
     text: part.text.slice(offset, end),
@@ -496,6 +511,7 @@ async function readFileSource(
   context: ToolContext,
 ): Promise<ToolResult> {
   if (name !== 'read_source' && name !== 'read_external') throw new SourceError('SOURCE_ACCESS_DENIED')
+
   const plan = await access.planRead(pathValue, name === 'read_external', context.signal)
   if (
     plan.decision === 'ask' &&
@@ -508,8 +524,10 @@ async function readFileSource(
   )
     return { isError: true, content: [{ type: 'text', text: 'STEP_REFUSED' }] }
   context.signal.throwIfAborted()
+
   const read = await plan.read(context.signal)
   context.signal.throwIfAborted()
+
   const source = runs.recordSourceRead(context.requestId, {
     origin: plan.origin,
     label: plan.target,

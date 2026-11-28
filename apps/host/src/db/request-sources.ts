@@ -43,11 +43,13 @@ export function saveSourceRead(
     (value.kind !== 'project-file' && value.kind !== 'approved-file')
   )
     throw new DatabaseError('INVALID_REQUEST', 'Invalid source receipt')
+
   const previous = db
     .prepare('SELECT * FROM source_reads WHERE session_id = ? AND origin = ? ORDER BY version DESC LIMIT 1')
     .get(request.owner.id, value.origin)
   const sourceId = previous ? String(previous.source_id) : `src-${randomUUID()}`
   let version = previous ? Number(previous.version) : 0
+
   if (!previous || previous.fingerprint !== value.fingerprint) {
     version++
     db.prepare(
@@ -64,6 +66,7 @@ export function saveSourceRead(
       requestId,
     )
   }
+
   return {
     sourceId,
     version,

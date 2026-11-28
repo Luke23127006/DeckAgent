@@ -63,9 +63,11 @@ export class MemoryDraftStore {
       value.attachmentIds.some(id => typeof id !== 'string' || !/^att-[a-f0-9-]{36}$/.test(id))
     )
       throw new AttachmentError('INVALID_REQUEST', 'Invalid draft attachment references')
+
     const next = { text: value.text, attachmentIds: [...value.attachmentIds], revision: current.revision + 1 }
     this.drafts.set(chatId, next)
     this.touch(chatId)
+
     return structuredClone(next)
   }
 

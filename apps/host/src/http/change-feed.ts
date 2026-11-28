@@ -97,11 +97,13 @@ export function createChangeRoutes(
       route(async (req, res) => {
         const sessionId = param(req, 'sessionId')
         if (session.exists && !(await session.exists(sessionId))) throw new HttpError(404, 'SESSION_NOT_FOUND')
+
         const send = (notice: ChangeNotice) => writeNotice(res, notice)
         const unsubscribes = session.topics.map(entry => feed.subscribe(entry.topic, sessionId, send))
         const unsubscribeAll = () => {
           for (const unsubscribe of unsubscribes) unsubscribe()
         }
+
         try {
           const initial: ChangeNotice[] = session.topics.map(entry => ({
             topic: entry.topic,

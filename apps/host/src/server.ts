@@ -187,6 +187,7 @@ async function openStorageLayer(
   let sessions: ChatStorage | undefined
   let decks: DeckStore | undefined
   let settingsDb: SettingsDatabase | undefined
+
   try {
     try {
       registry = new SqliteWorkspaceStore({
@@ -321,6 +322,7 @@ async function createRuntimeLayer(
     runtimeAvailability: () => openCode.availability(),
   })
   const chats = new ChatService(sessions.chats, sessions.runs, registry, settings, chatMarks(decks, drafts))
+
   research = new ResearchService(
     new SqliteResearchStore(settingsDb.db),
     credentials,
@@ -330,6 +332,7 @@ async function createRuntimeLayer(
     new TavilyClient(options.researchAccess?.fetch),
     version => changeFeed.publish({ topic: 'preferences', key: 'host', version }),
   )
+
   const images = new WebImageResearch(
     research,
     commonsImages,
@@ -520,6 +523,7 @@ export async function startLocalWeb(options: LocalWebOptions = {}) {
     () => renderer.close(),
     () => host?.close(),
   ]
+
   try {
     opened = await openStorageLayer(layout, options, renderer, commonsImages, () => runtime?.inputs, changeFeed)
     const storage = opened

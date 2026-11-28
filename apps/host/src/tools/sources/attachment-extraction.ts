@@ -41,13 +41,18 @@ function omission(budget: Budget, code: string, entry?: string): void {
 
 function textPart(budget: Budget, text: string, location: AttachmentLocation): void {
   if (!text.trim()) return
+
   const bytes = Buffer.from(text)
+
   let end = Math.min(bytes.length, limits.textBytes - budget.text)
   while (end < bytes.length && end > 0 && (bytes[end]! & 0xc0) === 0x80) end--
+
   if (end < bytes.length) omission(budget, 'TEXT_LIMIT', location.entry)
   if (!end) return
+
   const content = bytes.subarray(0, end).toString('utf8')
   budget.text += end
+
   budget.parts.push({
     type: 'text',
     text: content,
@@ -62,11 +67,13 @@ function record(value: unknown): value is Record<string, unknown> {
 function xml(bytes: Uint8Array | undefined): unknown[] {
   if (!bytes) fail()
   let text: string
+
   try {
     text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
   } catch {
     fail()
   }
+
   if (/<!DOCTYPE|<!ENTITY/i.test(text) || XMLValidator.validate(text) !== true) fail()
   const result: unknown = new XMLParser({
     preserveOrder: true,
@@ -161,6 +168,7 @@ async function container(bytes: Uint8Array, budget: Budget): Promise<Map<string,
 async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: string): Promise<void> {
   const extension = extname(name).toLowerCase()
   const location = entry === undefined ? {} : { entry }
+
   if (extension === '.txt' || extension === '.md') {
     let text: string
     try {
@@ -176,6 +184,7 @@ async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: 
     textPart(budget, text, { kind: 'lines', ...location })
     return
   }
+
   if (extension === '.zip') {
     if (entry !== undefined) {
       omission(budget, 'NESTED_ZIP_NOT_READ', entry)
@@ -198,6 +207,7 @@ async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: 
     budget.capabilities.add('archive-entry-locations')
     return
   }
+
   if (extension === '.pdf') {
     if (!Buffer.from(bytes.subarray(0, 5)).equals(Buffer.from('%PDF-'))) fail()
     const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -233,6 +243,7 @@ async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: 
     }
     return
   }
+
   if (extension === '.docx' || extension === '.pptx') {
     const files = await container(bytes, budget)
     const types = xml(files.get('[Content_Types].xml'))
@@ -281,6 +292,7 @@ async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: 
     omission(budget, 'DOCUMENT_FEATURES_NOT_EXTRACTED', entry)
     return
   }
+
   if (extension === '.png' || extension === '.jpg' || extension === '.jpeg') {
     const expectedPng = extension === '.png'
     const signature = Buffer.from(bytes.subarray(0, expectedPng ? 8 : 3))
@@ -322,6 +334,7 @@ async function extract(name: string, bytes: Uint8Array, budget: Budget, entry?: 
       omission(budget, 'IMAGE_RESIZED', entry)
     return
   }
+
   fail('ATTACHMENT_TYPE_UNSUPPORTED')
 }
 
@@ -330,12 +343,14 @@ export async function extractAttachment(name: string, bytes: Uint8Array): Promis
   if (!mediaType) fail('ATTACHMENT_TYPE_UNSUPPORTED')
   if (!bytes.length) fail()
   const budget: Budget = { entries: 0, expanded: 0, text: 0, parts: [], omitted: [], capabilities: new Set() }
+
   try {
     await extract(name, bytes, budget)
   } catch (error) {
     if (error instanceof SourceError && error.code === 'ARCHIVE_UNREADABLE') fail()
     throw error
   }
+
   if (!budget.parts.length) fail()
   return {
     mediaType,

@@ -128,10 +128,12 @@ export class AttachmentService implements DeckAttachments {
       !this.attachments.sent(sessionId).some(a => a.attachmentId === attachmentId)
     )
       throw new AttachmentError('ATTACHMENT_UNREADABLE', 'The selected image is unavailable')
+
     const parsed = await this.files.prepared(sessionId, attachmentId, signal)
     const part = parsed.parts.find(p => p.type === 'image')
     if (!part || part.type !== 'image')
       throw new AttachmentError('ATTACHMENT_UNREADABLE', 'The selected image has no prepared pixels')
+
     return {
       bytes: Buffer.from(part.data, 'base64'),
       source: item.source,
@@ -153,14 +155,18 @@ export class AttachmentService implements DeckAttachments {
     await this.chat(id)
     const current = this.drafts.snapshot(id)
     if (input.expectedRevision !== current.revision) throw new AttachmentError('DRAFT_CONFLICT')
+
     const ids = input.attachmentIds ?? current.attachmentIds
     const selected: string[] = []
+
     for (const item of ids) {
       if (!current.attachmentIds.includes(item)) throw new AttachmentError('ATTACHMENT_NOT_FOUND')
       selected.push(item)
     }
+
     const removed = current.attachmentIds.filter(item => !selected.includes(item))
     for (const item of removed) await this.cancel(item)
+
     try {
       this.drafts.save(id, { text: input.text, attachmentIds: selected }, current.revision)
       for (const item of removed) await this.files.discardUnsent(id, item)
@@ -291,16 +297,19 @@ export class AttachmentService implements DeckAttachments {
     if (input.draftRevision !== undefined && (input.draftRevision !== draft.revision || input.input !== draft.text))
       throw new AttachmentError('DRAFT_CONFLICT')
     if (draft.attachmentIds.length > this.limits.files) throw new AttachmentError('ATTACHMENT_COUNT_EXCEEDED')
+
     for (const id of draft.attachmentIds) {
       const item = this.attachments.get(input.sessionId, id)
       if (item.state !== 'ready')
         throw new AttachmentError(item.state === 'rejected' ? 'ATTACHMENT_REJECTED' : 'ATTACHMENT_NOT_READY')
     }
+
     const ids = input.attachmentIds ?? []
     if (ids.length !== draft.attachmentIds.length || ids.some(id => !draft.attachmentIds.includes(id)))
       throw new AttachmentError('DRAFT_CONFLICT')
     if (ids.length && input.draftRevision === undefined) throw new AttachmentError('DRAFT_CONFLICT')
     if (!input.input.trim() && !ids.length) throw new AttachmentError('REQUEST_EMPTY')
+
     const admitted = admit(input)
     if (input.draftRevision !== undefined) this.drafts.clear(input.sessionId, input.draftRevision)
     return admitted

@@ -7,6 +7,7 @@ function isJsonValue(value: unknown, parents = new Set<object>()): value is Json
   if (typeof value === 'number') return Number.isFinite(value)
   if (typeof value !== 'object' || parents.has(value) || Object.getOwnPropertySymbols(value).length) return false
   if (!Array.isArray(value) && ![Object.prototype, null].includes(Object.getPrototypeOf(value))) return false
+
   parents.add(value)
   const result = Array.isArray(value)
     ? Object.keys(value).length === value.length && Array.from(value).every(item => isJsonValue(item, parents))

@@ -19,6 +19,7 @@ export function migrateSettingsDatabase(db: DatabaseSync): void {
   const ownerRow = db.prepare('PRAGMA application_id').get()
   const versionRow = db.prepare('PRAGMA user_version').get()
   if (!ownerRow || !versionRow) throw new DatabaseError('SETTINGS_SCHEMA', 'Settings database metadata is missing')
+
   const owner = Number(ownerRow.application_id)
   const version = Number(versionRow.user_version)
   const fresh =
@@ -27,7 +28,9 @@ export function migrateSettingsDatabase(db: DatabaseSync): void {
     !db.prepare("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()
   if (!fresh && (owner !== applicationId || (version !== 1 && version !== 2 && version !== schemaVersion)))
     throw new DatabaseError('SETTINGS_SCHEMA', 'Unsupported settings database format')
+
   db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;')
+
   try {
     // Requests and activities moved to chat persistence (B02); older files keep their unused tables unchanged.
     if (fresh)

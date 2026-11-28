@@ -95,21 +95,27 @@ function createLineReader(options: ProcessOptions, onMalformed: () => void): Lin
     }
     options.onLine(value)
   }
+
   return {
     push(data: string) {
       if (malformed) return
+
       total += Buffer.byteLength(data)
+
       if (total > limit) {
         fail()
         return
       }
+
       pending += data
       const lines = pending.split('\n')
       pending = lines.pop() ?? ''
+
       if (pending.length > maxLine) {
         fail()
         return
       }
+
       for (const text of lines) {
         if (malformed) return
         line(text)
@@ -135,13 +141,16 @@ export function runProcess(
       resolve({ startFailed: false, code: null, malformed: false, killed: true, stdout: '' })
       return
     }
+
     let child: ReturnType<typeof spawn>
+
     try {
       child = spawnCliProcess(executable, args, options)
     } catch {
       resolve({ startFailed: true, code: null, malformed: false, killed: false, stdout: '' })
       return
     }
+
     const { stdin, stdout, stderr } = child
     let collected = ''
     let malformed = false
@@ -164,28 +173,34 @@ export function runProcess(
       killed = true
       stop()
     }
+
     if (!stdin || !stdout || !stderr) {
       finish({ startFailed: true, code: null, malformed: false, killed: false })
       return
     }
+
     options.signal.addEventListener('abort', abort, { once: true })
     const reader = createLineReader(options, () => {
       malformed = true
       stop()
     })
     stdout.setEncoding('utf8')
+
     stdout.on('data', (data: string) => {
       if (malformed || killed) return
       if (options.collect) collected += data
       reader.push(data)
     })
+
     stderr.resume()
     stdin.on('error', () => {})
     child.on('error', () => finish({ startFailed: true, code: null, malformed, killed }))
+
     child.on('close', code => {
       if (!malformed && !killed) reader.flush()
       void Promise.resolve(killing).then(() => finish({ startFailed: false, code, malformed, killed }))
     })
+
     stdin.end(options.input ?? '')
   })
 }

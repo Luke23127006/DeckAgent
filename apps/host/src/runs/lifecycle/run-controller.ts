@@ -93,6 +93,7 @@ export class RunController {
 
   async start(plan: RunPlan, options?: RunStartOptions): Promise<RunSnapshot> {
     if (this.closed) throw new RunFailure('HOST_CLOSED')
+
     if (plan.requestId) {
       const saved = this.options.store.get(plan.requestId)
       if (saved) {
@@ -101,9 +102,12 @@ export class RunController {
         return this.get(plan.requestId)
       }
     }
+
     const key = runOwnerKey(plan.owner)
     if (this.admitting.has(key)) throw new RunFailure('RUN_OWNER_BUSY')
+
     this.admitting.add(key)
+
     try {
       const previous = this.busy.get(key)
       if (previous && !previous.ended) throw new RunFailure('RUN_OWNER_BUSY')
@@ -261,6 +265,7 @@ export class RunController {
   ): Promise<void> {
     const budget = createRunBudget(this.options.budget, () => execution.abort.abort())
     let result: RunResult = { status: 'completed', usage: budget.latest() }
+
     try {
       let current = plan
       for (;;) {
@@ -302,6 +307,7 @@ export class RunController {
           error: { category: 'runtime-failed', code: error instanceof RunFailure ? error.code : 'RUNTIME_FAILED' },
         }
     }
+
     if (!execution.ended) {
       const saved =
         result.status === 'completed'
@@ -315,8 +321,10 @@ export class RunController {
         }
       }
     }
+
     const key = runOwnerKey(execution.owner)
     if (this.busy.get(key) === execution) this.busy.delete(key)
+
     // Keep a bounded number of settled executions; saved records remain readable from the store.
     if (this.executions.size > 256)
       for (const [id, item] of this.executions) {
@@ -341,6 +349,7 @@ export class RunController {
     delete execution.waiting
     waiting?.resolve(false)
     let written: readonly RequestEvent[] | undefined
+
     try {
       const text = execution.closingText?.(status)
       if (text)
@@ -351,12 +360,15 @@ export class RunController {
         errorCode = 'REQUEST_NOT_SAVED'
       }
     }
+
     try {
       written = this.options.store.finish(execution.requestId, status, errorCode)
     } catch {
       written = undefined
     }
+
     for (const event of written ?? []) this.publish(event)
+
     execution.abort.abort()
     return !!written
   }
@@ -406,19 +418,25 @@ export class RunController {
   private async approve(execution: Execution, step: ApprovalStep): Promise<boolean> {
     const approvals = this.options.store.approvals
     if (execution.ended || execution.abort.signal.aborted || !approvals) return false
+
     let change: ReturnType<NonNullable<RunStore['approvals']>['create']>
+
     try {
       change = approvals.create(execution.requestId, step)
     } catch {
       this.end(execution, 'failed', 'REQUEST_NOT_SAVED')
       throw new RunFailure('REQUEST_NOT_SAVED')
     }
+
     if (change.approval.state === 'refused') return false
+
     const allowed = new Promise<boolean>(resolve => {
       execution.waiting = { approvalId: change.approval.approvalId, resolve }
     })
     this.notifyWaiters(execution, true)
+
     for (const event of change.events) this.publish(event)
+
     return allowed
   }
 

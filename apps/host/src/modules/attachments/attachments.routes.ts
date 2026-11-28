@@ -18,6 +18,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const session = params({ sessionId: WORD_ID })
   const ids = params({ sessionId: WORD_ID, attachmentId: WORD_ID })
+
   router.get(
     '/api/sessions/:sessionId/draft',
     session,
@@ -25,6 +26,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       json(res, 200, await attachments.draft(param(req, 'sessionId')))
     }),
   )
+
   router.put(
     '/api/sessions/:sessionId/draft',
     session,
@@ -36,6 +38,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       )
     }),
   )
+
   router.post(
     '/api/sessions/:sessionId/attachments',
     session,
@@ -43,6 +46,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       json(res, 202, await receiveAttachment(req, param(req, 'sessionId'), attachments))
     }),
   )
+
   router.get(
     '/api/sessions/:sessionId/attachments/:attachmentId',
     ids,
@@ -50,6 +54,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       json(res, 200, await attachments.get(param(req, 'sessionId'), param(req, 'attachmentId')))
     }),
   )
+
   router.delete(
     '/api/sessions/:sessionId/attachments/:attachmentId',
     ids,
@@ -62,6 +67,7 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       )
     }),
   )
+
   router.get(
     '/api/sessions/:sessionId/attachments/:attachmentId/preview',
     ids,
@@ -74,5 +80,6 @@ export function createAttachmentRoutes(attachments: AttachmentService): Router {
       res.end(result.body)
     }),
   )
+
   return router
 }

@@ -69,8 +69,10 @@ export async function createSourceAccess(options: SourceAccessOptions): Promise<
     if (!external && !root) throw new SourceError('SOURCE_UNAVAILABLE')
     if ((external && !isAbsolute(value)) || (!external && (isAbsolute(value) || win32.isAbsolute(value))))
       throw new SourceError('SOURCE_ACCESS_DENIED')
+
     const path = external ? resolve(value) : resolve(root!, value)
     if ((!external && !inside(root!, path)) || denied(path)) throw new SourceError('SOURCE_ACCESS_DENIED')
+
     const parts = relative(parse(path).root, path).split(sep).filter(Boolean)
     if (
       value.split(/[\\/]/).includes('..') ||
@@ -82,7 +84,9 @@ export async function createSourceAccess(options: SourceAccessOptions): Promise<
       )
     )
       throw new SourceError('SOURCE_ACCESS_DENIED')
+
     let current = parse(path).root
+
     for (const part of parts) {
       current = join(current, part)
       const stat = await lstat(current, { bigint: true }).catch(() => {
@@ -91,13 +95,16 @@ export async function createSourceAccess(options: SourceAccessOptions): Promise<
       if (stat.isSymbolicLink() || (stat.isFile() && stat.nlink !== 1n)) throw new SourceError('SOURCE_ACCESS_DENIED')
       if (current !== path && !stat.isDirectory()) throw new SourceError('SOURCE_UNAVAILABLE')
     }
+
     const canonical = await realpath(path).catch(() => {
       throw new SourceError('SOURCE_UNAVAILABLE')
     })
     if (denied(canonical) || (!external && !inside(root!, canonical))) throw new SourceError('SOURCE_ACCESS_DENIED')
+
     const stat = await lstat(canonical, { bigint: true })
     if (directory ? !stat.isDirectory() : !stat.isFile()) throw new SourceError('SOURCE_UNAVAILABLE')
     signal.throwIfAborted()
+
     return { path: canonical, stat }
   }
 
@@ -157,6 +164,7 @@ export async function createSourceAccess(options: SourceAccessOptions): Promise<
       const entries: { name: string; kind: 'file' | 'directory' }[] = []
       let truncated = false
       const directory = await opendir(before.path)
+
       try {
         while (true) {
           signal.throwIfAborted()
@@ -173,9 +181,11 @@ export async function createSourceAccess(options: SourceAccessOptions): Promise<
       } finally {
         await directory.close()
       }
+
       await check(signal)
       if (identity((await inspect(value, false, true, signal)).stat) !== identity(before.stat))
         throw new SourceError('SOURCE_CHANGED')
+
       return { entries, truncated }
     },
   }

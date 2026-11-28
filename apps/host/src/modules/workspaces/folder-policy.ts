@@ -61,18 +61,22 @@ export class FolderPolicy {
   refusal(folder: string): { readonly reason: FolderRefusal; readonly allowInside: boolean } | undefined {
     const target = this.key(folder)
     if (this.paths.parse(target).root === target) return { reason: 'drive-root', allowInside: true }
+
     for (const system of this.systemFolders.map(item => this.key(item))) {
       if (this.inside(system, target)) return { reason: 'system', allowInside: false }
       if (this.inside(target, system)) return { reason: 'system', allowInside: true }
     }
+
     // Every value refuses on its own (BR-019); the order only picks the most specific reason to show.
     const data = this.key(this.options.dataRoot)
     if (this.inside(data, target)) return { reason: 'deckagent-data', allowInside: false }
+
     const home = this.key(this.options.home)
     if (keyFolders.some(name => this.inside(this.key(this.paths.join(home, name)), target)))
       return { reason: 'key-folder', allowInside: false }
     if (target === home) return { reason: 'user-folder', allowInside: true }
     if (this.inside(target, data)) return { reason: 'deckagent-data', allowInside: true }
+
     return undefined
   }
 
@@ -94,14 +98,18 @@ export class FolderPolicy {
       throw new WorkspaceError('WORKSPACE_FOLDER_REQUIRED', 'No folder was chosen')
     if (typeof value !== 'string' || value.length > pathLimit || value.includes('\0') || !this.paths.isAbsolute(value))
       throw new WorkspaceError('WORKSPACE_FOLDER_INVALID', 'The folder must be given as a full path')
+
     let canonical: string
+
     try {
       canonical = await realpath(this.paths.resolve(value))
     } catch {
       throw new WorkspaceError('WORKSPACE_FOLDER_UNREADABLE', 'The folder cannot be read')
     }
+
     const refused = this.refusal(canonical)
     if (refused) throw new WorkspaceError('WORKSPACE_FOLDER_REFUSED', 'The folder cannot be a project folder', refused)
+
     return this.identity(canonical)
   }
 

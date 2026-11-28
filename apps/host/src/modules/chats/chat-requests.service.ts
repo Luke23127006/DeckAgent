@@ -49,6 +49,7 @@ export class ChatRequestService {
   async readSelection(sessionId: string): Promise<ModelSelection> {
     const info = await this.deps.chats.getInfo(sessionId).catch(() => undefined)
     if (!info) throw new ChatError('SESSION_NOT_FOUND')
+
     try {
       await this.deps.chats.read(sessionId)
     } catch (error) {
@@ -56,7 +57,9 @@ export class ChatRequestService {
         throw new ChatError('CHAT_UNREADABLE')
       throw new ChatError('SESSION_UNAVAILABLE')
     }
+
     const configured = this.deps.providers.providerSettings()
+
     if (!info.selection || !this.deps.providers.selectable(info.selection)) {
       const reason = !configured.length
         ? 'no-provider'
@@ -67,6 +70,7 @@ export class ChatRequestService {
             : 'no-selection'
       throw new ChatError('NO_SELECTABLE_MODEL', { reason })
     }
+
     return info.selection
   }
 

@@ -54,6 +54,7 @@ export function resolveStorageRoot(input: StorageRootInput = {}): string {
   if (platform === 'win32')
     return paths.join(env.LOCALAPPDATA?.trim() || paths.join(home, 'AppData', 'Local'), 'DeckAgent')
   if (platform === 'darwin') return paths.join(home, 'Library', 'Application Support', 'DeckAgent')
+
   return paths.join(env.XDG_DATA_HOME?.trim() || paths.join(home, '.local', 'share'), 'deckagent')
 }
 

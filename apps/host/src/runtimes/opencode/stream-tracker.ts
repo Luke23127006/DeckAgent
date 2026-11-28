@@ -53,6 +53,7 @@ export function createAttemptTimer(timeoutMs: number, run: AttemptRun): AttemptT
       remaining = Math.max(1, remaining - (Date.now() - started))
     } else arm()
   })
+
   return {
     signal: AbortSignal.any([run.signal, local.signal]),
     local,
@@ -158,6 +159,7 @@ class StreamTracking implements StreamTracker {
     // Exit 0 alone is not completion: the last step must have finished with a final answer, in a known native session.
     if (!this.steps || !this.finishReason || this.finishReason === 'tool-calls' || !this.nativeSessionId)
       return failed(runtimeIncomplete)
+
     return {
       runResult: { status: 'completed', usage: this.usage() },
       nativeSessionId: this.nativeSessionId,
@@ -198,12 +200,15 @@ class StreamTracking implements StreamTracker {
   private startStep(event: Extract<OpenCodeEvent, { type: 'step_start' }>): void {
     this.steps++
     if (event.messageId) this.assistantMessages.add(event.messageId)
+
     if (this.summary === 'waiting') {
       this.summary = 'writing'
       this.summaryMessage = event.messageId
       return
     }
+
     if (this.ofSummary(event.messageId)) return
+
     this.modelSteps++
     this.modelActivity = `model-${this.modelSteps}`
     this.activity(this.modelActivity, 'Model response', 'running')
@@ -212,6 +217,7 @@ class StreamTracking implements StreamTracker {
   private finishStep(event: Extract<OpenCodeEvent, { type: 'step_finish' }>): void {
     if (event.tokens?.input !== undefined) this.inputTokens = (this.inputTokens ?? 0) + event.tokens.input
     if (event.tokens?.output !== undefined) this.outputTokens = (this.outputTokens ?? 0) + event.tokens.output
+
     if (this.ofSummary(event.messageId)) {
       if (event.reason === 'error' || event.reason === 'content-filter') {
         this.failure ??= event.reason === 'content-filter' ? summaryBlocked : summaryLimit
@@ -224,6 +230,7 @@ class StreamTracking implements StreamTracker {
       if (this.summaries === 1) this.emit({ kind: 'notice', code: summarizedNotice })
       return
     }
+
     this.finishReason = event.reason
     if (this.modelActivity) this.activity(this.modelActivity, 'Model response', 'completed')
     this.modelActivity = undefined

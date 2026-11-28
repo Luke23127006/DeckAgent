@@ -46,8 +46,10 @@ export class ChatDatabase {
         this.callbacks = []
         this.db.exec('BEGIN IMMEDIATE')
       }
+
       this.depth++
       let result: T
+
       try {
         result = op()
       } catch (error) {
@@ -58,7 +60,9 @@ export class ChatDatabase {
         }
         throw error
       }
+
       this.depth--
+
       if (this.depth === 0) {
         try {
           this.db.exec('COMMIT')
@@ -71,6 +75,7 @@ export class ChatDatabase {
         this.callbacks = []
         for (const callback of pending) callback()
       }
+
       return result
     })
   }

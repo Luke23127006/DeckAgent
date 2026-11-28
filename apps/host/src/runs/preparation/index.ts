@@ -54,12 +54,14 @@ export async function prepareRunInput(options: {
   const instructions: string[] = []
   const resources: RunResource[] = []
   const toolSets: ToolSet[] = []
+
   for (const contribution of [...registered, ...plan.contributions]) {
     const parts = await contribution.contribute(preparation)
     instructions.push(...(parts.instructions ?? []))
     resources.push(...(parts.resources ?? []))
     if (parts.tools) toolSets.push(parts.tools)
   }
+
   const tools = mergeTools(toolSets, { owner: plan.owner, requestId, signal, approve })
   return {
     owner: plan.owner,

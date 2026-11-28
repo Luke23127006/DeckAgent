@@ -84,10 +84,12 @@ function parse(id: string, value: unknown): ProviderInput {
   )
     throw new ProviderError('INVALID_PROVIDER')
   if (!validBaseUrl(value.baseUrl)) throw new ProviderError('INVALID_PROVIDER', { field: 'baseUrl' })
+
   const protocol = value.protocol
   const models = value.models.map(model => String(model))
   if (protocol === 'gemini' && models.some(model => !/^[A-Za-z0-9._-]+$/.test(model)))
     throw new ProviderError('INVALID_PROVIDER', { field: 'models' })
+
   return {
     displayName: value.displayName.trim(),
     protocol,
@@ -249,6 +251,7 @@ export class ProviderService {
   save(id: string, value: unknown, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
       if (expectedVersion !== this.store.version()) throw new ProviderError('PROVIDERS_STALE')
+
       const input = parse(id, value)
       const previous = this.providers.get(id)
       const template = builtInProviders.find(provider => provider.id === id)
@@ -259,14 +262,17 @@ export class ProviderService {
       if ([...this.providers.values()].some(other => other.id !== id && other.displayName === input.displayName))
         throw new ProviderError('PROVIDER_NAME_EXISTS')
       if (previous && previous.protocol !== input.protocol) throw new ProviderError('PROTOCOL_IMMUTABLE')
+
       const hadKey = !!previous && (!!previous.credentialRef || this.keys.has(id))
       const endpointChanged = !!previous && previous.baseUrl !== input.baseUrl
       // A saved key is never sent to a new endpoint the user did not give a key for.
       if (endpointChanged && hadKey && input.key === undefined) throw new ProviderError('NEW_ENDPOINT_REQUIRES_KEY')
       if (template && input.key === '') throw new ProviderError('PROVIDER_KEY_REQUIRED', { missing: 'key' })
+
       const key = input.key === undefined ? this.keys.get(id) : input.key || undefined
       if (template && !key) throw new ProviderError('PROVIDER_KEY_REQUIRED', { missing: 'key' })
       if (input.key && !this.credentials.persistent) throw new ProviderError('CREDENTIAL_STORE_UNAVAILABLE')
+
       if (!previous || endpointChanged || input.key !== undefined) {
         if (!this.options.check) throw new ProviderError('PROVIDER_NO_ANSWER')
         const endpoint = { protocol: input.protocol, baseUrl: input.baseUrl }
@@ -276,8 +282,10 @@ export class ProviderService {
           throw checkFailure(error)
         }
       }
+
       let credentialRef = previous?.credentialRef
       let created: string | undefined
+
       if (input.key) {
         try {
           created = await this.credentials.save(input.key)
@@ -286,6 +294,7 @@ export class ProviderService {
         }
         credentialRef = created
       } else if (input.key === '') credentialRef = undefined
+
       const saved: SavedProvider = {
         id,
         displayName: input.displayName,
@@ -295,12 +304,14 @@ export class ProviderService {
         ...(credentialRef ? { credentialRef } : {}),
       }
       let version: number
+
       try {
         version = this.store.put(this.row(saved))
       } catch {
         if (created) await this.credentials.remove(created).catch(() => {})
         throw new ProviderError('SETTINGS_STORAGE')
       }
+
       this.providers.set(id, saved)
       this.deleted.delete(id)
       if (input.key) this.keys.set(id, input.key)
@@ -317,8 +328,10 @@ export class ProviderService {
   remove(id: string, expectedVersion: number): Promise<void> {
     return this.serialize(async () => {
       if (expectedVersion !== this.store.version()) throw new ProviderError('PROVIDERS_STALE')
+
       const previous = this.providers.get(id)
       if (!previous) throw new ProviderError('PROVIDER_NOT_FOUND')
+
       // A tombstone keeps a startup flag from bringing a deleted configuration back.
       const version = this.store.put({ id, payload: JSON.stringify({ deleted: true }) })
       this.providers.delete(id)
@@ -335,8 +348,10 @@ export class ProviderService {
     const saved = this.providers.get(id)
     if (!saved) throw new ProviderError('PROVIDER_NOT_FOUND')
     if (!this.options.catalog) throw new ProviderError('CATALOG_UNAVAILABLE', { reason: 'no-answer' })
+
     const endpoint = { protocol: saved.protocol, baseUrl: saved.baseUrl }
     const key = this.keys.get(id)
+
     try {
       return await this.options.catalog(endpoint, key, this.catalogAbort.signal)
     } catch (error) {

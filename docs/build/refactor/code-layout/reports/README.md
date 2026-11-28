@@ -11,3 +11,4 @@ Read this file to find the execution report of each task of the [Code Layout imp
 | 5 | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) |
 | 6 | [Write the layout rules into the conventions](task-06-write-layout-rules-into-conventions.md) |
 | 7 | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) |
+| 8 | [Add steps in the other Host folders](task-08-add-steps-in-other-host-folders.md) |

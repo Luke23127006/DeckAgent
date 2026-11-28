@@ -27,6 +27,7 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.list())
     }),
   )
+
   router.post(
     '/api/workspaces',
     route(async (req, res) => {
@@ -34,6 +35,7 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.add(body.folder, body.expectedVersion))
     }),
   )
+
   router.put(
     '/api/workspaces/selected',
     route(async (req, res) => {
@@ -41,7 +43,9 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.select(body.id, body.expectedVersion))
     }),
   )
+
   const notSelected = params({ workspaceId: /^(?!selected$)[\w-]{1,100}$/ })
+
   router.put(
     '/api/workspaces/:workspaceId',
     notSelected,
@@ -50,6 +54,7 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.rename(param(req, 'workspaceId'), body.name, body.expectedVersion))
     }),
   )
+
   router.delete(
     '/api/workspaces/:workspaceId',
     notSelected,
@@ -58,6 +63,7 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.remove(param(req, 'workspaceId'), body.expectedVersion))
     }),
   )
+
   router.put(
     '/api/workspaces/:workspaceId/folder',
     notSelected,
@@ -66,5 +72,6 @@ export function createWorkspaceRoutes(workspaces: WorkspaceService): Router {
       json(res, 200, await workspaces.relink(param(req, 'workspaceId'), body.folder, body.expectedVersion))
     }),
   )
+
   return router
 }

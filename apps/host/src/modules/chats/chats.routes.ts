@@ -26,12 +26,14 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 200, await chats.history(param(req, 'sessionId')))
     }),
   )
+
   router.get(
     '/api/sessions',
     route(async (_req, res) => {
       json(res, 200, await chats.list())
     }),
   )
+
   router.post(
     '/api/sessions',
     route(async (req, res) => {
@@ -39,6 +41,7 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 201, await chats.create(body.selection))
     }),
   )
+
   router.put(
     '/api/sessions/:sessionId/selection',
     params({ sessionId: /^[\w-]{1,100}$/ }),
@@ -47,6 +50,7 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 200, await chats.selectModel(param(req, 'sessionId'), selection))
     }),
   )
+
   router.post(
     '/api/sessions/search',
     route(async (req, res) => {
@@ -54,6 +58,7 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 200, await chats.search(body.words))
     }),
   )
+
   router.get(
     '/api/sessions/:sessionId/activities',
     params({ sessionId: /^[\w-]{1,100}$/ }),
@@ -61,6 +66,7 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 200, await chats.activities(param(req, 'sessionId')))
     }),
   )
+
   router.get(
     '/api/sessions/:sessionId/requests',
     params({ sessionId: /^[\w-]{1,100}$/ }),
@@ -68,5 +74,6 @@ export function createChatRoutes(chats: ChatService): Router {
       json(res, 200, await chats.requests(param(req, 'sessionId')))
     }),
   )
+
   return router
 }

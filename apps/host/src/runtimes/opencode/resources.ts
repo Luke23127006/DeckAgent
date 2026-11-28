@@ -54,7 +54,9 @@ export async function findExecutable(
     const bundled = await resourceExecutable(resourceDir)
     if (bundled.present) return bundled.executable
   }
+
   let installed: string | undefined
+
   if (!configured && process.platform === 'win32' && process.arch === 'x64') {
     try {
       installed = createRequire(import.meta.url).resolve('opencode-windows-x64/bin/opencode.exe')
@@ -62,6 +64,7 @@ export async function findExecutable(
       // Optional platform packages can be omitted; startup reports the missing runtime.
     }
   }
+
   const candidates = configured
     ? [configured]
     : [
@@ -71,6 +74,7 @@ export async function findExecutable(
           .filter(Boolean)
           .map(folder => join(folder, process.platform === 'win32' ? 'opencode.exe' : 'opencode')),
       ]
+
   for (const candidate of candidates) {
     if (!isAbsolute(candidate)) continue
     try {
@@ -81,5 +85,6 @@ export async function findExecutable(
       /* Next candidate. */
     }
   }
+
   return undefined
 }

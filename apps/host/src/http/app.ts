@@ -41,6 +41,7 @@ function isSpaRoutePath(pathname: string): boolean {
 
 function serveAsset(req: IncomingMessage, res: ServerResponse, pathname: string, options: HostOptions): void {
   if (req.method !== 'GET') throw new HttpError(404, 'NOT_FOUND')
+
   const owned = options.assets && Object.hasOwn(options.assets, pathname) ? options.assets[pathname] : undefined
   const fallback =
     options.spaFallback && isSpaRoutePath(pathname) && options.assets && Object.hasOwn(options.assets, '/')
@@ -48,11 +49,13 @@ function serveAsset(req: IncomingMessage, res: ServerResponse, pathname: string,
       : undefined
   const asset = owned ?? fallback
   if (!asset) throw new HttpError(404, 'NOT_FOUND')
+
   if (asset.sandboxed)
     res.setHeader(
       'content-security-policy',
       "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
     )
+
   res.writeHead(200, { 'content-type': asset.contentType })
   res.end(asset.body)
 }
@@ -65,30 +68,39 @@ export function createHttpApp(config: HttpAppConfig): Express {
   app.set('etag', false)
   app.set('case sensitive routing', true)
   app.set('strict routing', true)
+
   app.use((req: Request, res: Response, next: NextFunction) => {
     setSecurityHeaders(res)
     if (config.closing()) throw new HttpError(503, 'HOST_CLOSED')
+
     const origin = config.origin()
     checkOrigin(req, origin)
     const url = new URL(req.originalUrl, origin)
     if (url.search) throw new HttpError(400, 'INVALID_REQUEST')
+
     if (!url.pathname.startsWith('/api/')) {
       serveAsset(req, res, url.pathname, options)
       return
     }
+
     const auth = Buffer.from(req.headers.authorization ?? '')
     if (auth.length !== expected.length || !timingSafeEqual(auth, expected)) throw new HttpError(401, 'AUTH_REQUIRED')
     if (req.method === 'HEAD' || req.method === 'OPTIONS' || url.pathname.includes('%'))
       throw new HttpError(404, 'NOT_FOUND')
+
     req.url = url.pathname
     next()
   })
+
   app.use(config.router)
+
   app.use(() => {
     throw new HttpError(404, 'NOT_FOUND')
   })
+
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     writeRouteError(res, error, options)
   })
+
   return app
 }

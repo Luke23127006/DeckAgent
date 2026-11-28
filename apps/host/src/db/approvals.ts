@@ -33,18 +33,22 @@ export class ApprovalLog {
         step.reason.length > 500
       )
         throw new DatabaseError('INVALID_REQUEST', 'Invalid approval step')
+
       const refused = this.db
         .prepare("SELECT id FROM request_approvals WHERE request_id = ? AND step_key = ? AND state = 'refused' LIMIT 1")
         .get(requestId, step.key)
       if (refused) return { approval: this.get(requestId, String(refused.id)), events: [] }
       if (this.pending(requestId))
         throw new DatabaseError('APPROVAL_CONFLICT', 'A step is already waiting for approval')
+
       const id = `approval-${randomUUID()}`
+
       this.db
         .prepare(
           "INSERT INTO request_approvals (id, request_id, step_key, operation, target, reason, state) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
         )
         .run(id, requestId, step.key, step.operation, step.target, step.reason)
+
       this.db.prepare("UPDATE requests SET status = 'waiting_approval' WHERE id = ?").run(requestId)
       const approval = this.get(requestId, id)
       return {
@@ -63,12 +67,15 @@ export class ApprovalLog {
       this.access.assertActive(requestId)
       if (decision !== 'allow-once' && decision !== 'refuse')
         throw new DatabaseError('INVALID_REQUEST', 'Invalid approval decision')
+
       const state = decision === 'allow-once' ? 'allowed' : 'refused'
       if (approval.state === state) return { approval, events: [] }
       if (approval.state !== 'pending') throw new DatabaseError('APPROVAL_CONFLICT', 'The step already has a decision')
+
       this.db.prepare('UPDATE request_approvals SET state = ? WHERE id = ?').run(state, approvalId)
       this.db.prepare("UPDATE requests SET status = 'active' WHERE id = ?").run(requestId)
       const saved = this.get(requestId, approvalId)
+
       return {
         approval: saved,
         events: [

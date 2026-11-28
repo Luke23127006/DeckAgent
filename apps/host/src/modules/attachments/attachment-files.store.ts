@@ -129,6 +129,7 @@ export function isParsedAttachmentData(value: unknown): value is ParsedAttachmen
   )
     return false
   if (!('parts' in value) || !Array.isArray(value.parts)) return false
+
   return value.parts.every((part: unknown) => {
     if (
       !part ||
@@ -212,10 +213,13 @@ export class AttachmentFileStore {
     input.signal.throwIfAborted()
     if (!Number.isSafeInteger(input.maxBytes) || input.maxBytes < 0)
       throw new AttachmentError('INVALID_REQUEST', 'A finite attachment byte limit is required')
+
     const draft = this.drafts.snapshot(input.sessionId)
     if (draft.revision !== input.expectedRevision)
       throw new AttachmentError('DRAFT_CONFLICT', 'Reload the draft before adding a file')
+
     const item = this.log.create(input.sessionId, input.name)
+
     try {
       this.drafts.save(
         input.sessionId,
@@ -226,6 +230,7 @@ export class AttachmentFileStore {
       this.log.removeUnsent(input.sessionId, item.attachmentId)
       throw error
     }
+
     const abort = new AbortController()
     const signal = AbortSignal.any([input.signal, abort.signal])
     let settle = () => {}
@@ -233,6 +238,7 @@ export class AttachmentFileStore {
       settle = resolve
     })
     this.uploads.set(item.attachmentId, { abort, done })
+
     try {
       await this.checkRoot()
       const stage = this.path(item.attachmentId, 'part')
@@ -299,25 +305,32 @@ export class AttachmentFileStore {
     const item = this.log.get(sessionId, attachmentId)
     if (item.state !== 'preparing' || !item.fingerprint || !isParsedAttachmentData(value))
       throw new AttachmentError('ATTACHMENT_NOT_READY', 'Preparation is no longer pending')
+
     await this.read(sessionId, attachmentId, signal)
     const bytes = Buffer.from(JSON.stringify(value))
     if (bytes.length > parsedByteLimit)
       throw new AttachmentError('PARSING_LIMIT_EXCEEDED', 'Prepared content exceeds its storage budget')
+
     await this.checkRoot()
     signal.throwIfAborted()
+
     const stage = this.path(attachmentId, 'parsed-part')
     const file = await open(stage, 'wx', 0o600)
+
     try {
       await file.writeFile(bytes, { signal })
       await file.sync()
     } finally {
       await file.close()
     }
+
     signal.throwIfAborted()
+
     await this.checkRoot()
     await link(stage, this.path(attachmentId, 'parsed'))
     await unlink(stage)
     signal.throwIfAborted()
+
     return createHash('sha256').update(bytes).digest('hex')
   }
 
@@ -325,20 +338,24 @@ export class AttachmentFileStore {
     const item = this.log.get(sessionId, attachmentId)
     if (item.state !== 'ready' || !item.parsedFingerprint || !item.preparation)
       throw new AttachmentError('ATTACHMENT_UNREADABLE', 'No saved preparation is available')
+
     await this.read(sessionId, attachmentId, signal)
     const bytes = await this.readStored(attachmentId, 'parsed', item.parsedFingerprint, parsedByteLimit, signal)
     let value: unknown
+
     try {
       value = JSON.parse(bytes.toString('utf8'))
     } catch {
       throw new AttachmentError('ATTACHMENT_UNREADABLE', 'Saved preparation cannot be read')
     }
+
     if (
       !isParsedAttachmentData(value) ||
       value.parserVersion !== item.preparation.parserVersion ||
       value.mediaType !== item.detectedType
     )
       throw new AttachmentError('ATTACHMENT_UNREADABLE', 'Saved preparation does not match its receipt')
+
     return value
   }
 
@@ -404,23 +421,28 @@ export class AttachmentFileStore {
     this.log.get(sessionId, attachmentId)
     if (this.drafts.snapshot(sessionId).revision !== expectedRevision)
       throw new AttachmentError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
+
     const upload = this.uploads.get(attachmentId)
     if (upload) {
       upload.abort.abort()
       await upload.done
     }
+
     const draft = this.drafts.snapshot(sessionId)
     if (draft.revision !== expectedRevision)
       throw new AttachmentError('DRAFT_CONFLICT', 'Reload the draft before removing a file')
     if (!draft.attachmentIds.includes(attachmentId))
       throw new AttachmentError('ATTACHMENT_CONFLICT', 'The file is not in this draft')
+
     // Remove the database reference first. A failed unlink leaves only a recoverable orphan.
     this.log.removeUnsent(sessionId, attachmentId)
+
     this.drafts.save(
       sessionId,
       { text: draft.text, attachmentIds: draft.attachmentIds.filter(id => id !== attachmentId) },
       draft.revision,
     )
+
     await this.erase(attachmentId)
   }
 

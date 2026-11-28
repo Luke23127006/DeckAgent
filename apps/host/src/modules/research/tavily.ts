@@ -43,6 +43,7 @@ export class TavilyClient {
   async images(key: string, query: string, signal: AbortSignal): Promise<readonly ImageSearchCandidate[]> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
     if (!query.trim() || query.length > 500 || !query.isWellFormed()) throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
+
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,
@@ -87,9 +88,12 @@ export class TavilyClient {
       })
     }
     if (!Array.isArray(response.results) || !Array.isArray(response.images)) throw failure()
+
     for (const page of response.results.slice(0, 5))
       if (record(page) && Array.isArray(page.images)) for (const entry of page.images.slice(0, 5)) add(entry, page)
+
     for (const entry of response.images.slice(0, 5)) add(entry)
+
     return candidates.slice(0, 5)
   }
 
@@ -155,6 +159,7 @@ export class TavilyClient {
       (account.paygo_limit !== null && account.paygo_limit !== 0)
     )
       throw failure('RESEARCH_FREE_ONLY')
+
     const count = (n: unknown): n is number => Number.isSafeInteger(n) && Number(n) >= 0
     if (
       !count(account.plan_usage) ||
@@ -165,6 +170,7 @@ export class TavilyClient {
       (item.limit !== null && (!count(item.limit) || item.limit <= item.usage))
     )
       throw failure('RESEARCH_QUOTA_EXHAUSTED')
+
     return {
       remaining: Math.min(
         account.plan_limit - account.plan_usage,
@@ -176,6 +182,7 @@ export class TavilyClient {
   async search(key: string, query: string, signal: AbortSignal): Promise<ResearchResult> {
     const deadline = AbortSignal.any([signal, AbortSignal.timeout(15_000)])
     if (!query.trim() || query.length > 1000 || !query.isWellFormed()) throw new TavilyError('SOURCE_ARGUMENTS_INVALID')
+
     await this.check(key, deadline)
     const response = await this.json('search', key, deadline, {
       query,
@@ -189,6 +196,7 @@ export class TavilyClient {
       include_usage: true,
     })
     if (!Array.isArray(response.results)) throw failure()
+
     const results: ResearchResult['results'][number][] = []
     for (const entry of response.results.slice(0, 5)) {
       if (
@@ -213,6 +221,7 @@ export class TavilyClient {
         partial: true,
       })
     }
+
     return {
       ...(typeof response.request_id === 'string' && /^[\w-]{1,200}$/.test(response.request_id)
         ? { requestId: response.request_id }

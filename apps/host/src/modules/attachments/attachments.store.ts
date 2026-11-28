@@ -38,20 +38,25 @@ export class SqliteAttachmentStore {
         .prepare('SELECT * FROM attachments WHERE id = ? AND session_id = ?')
         .get(attachmentId, sessionId)
       if (!row) throw new DatabaseError('ATTACHMENT_NOT_FOUND', 'Attachment is not available in this chat')
+
       const source = this.db
         .prepare('SELECT * FROM sources WHERE attachment_id = ? AND session_id = ?')
         .get(attachmentId, sessionId)
       const state = row.state
       if (state !== 'preparing' && state !== 'ready' && state !== 'rejected')
         throw new DatabaseError('SESSION_CORRUPT', 'Attachment state is unreadable')
+
       let prepared: unknown
+
       try {
         prepared = row.preparation === null ? undefined : JSON.parse(String(row.preparation))
       } catch {
         throw new DatabaseError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
       }
+
       if (prepared !== undefined && !isAttachmentPreparation(prepared))
         throw new DatabaseError('SESSION_CORRUPT', 'Attachment preparation is unreadable')
+
       return {
         attachmentId,
         name: String(row.name),
@@ -108,20 +113,24 @@ export class SqliteAttachmentStore {
         throw new DatabaseError('INVALID_REQUEST', 'A detected media type is required')
       if (prepared && (!isAttachmentPreparation(prepared) || !/^[a-f0-9]{64}$/.test(prepared.parsedFingerprint)))
         throw new DatabaseError('INVALID_REQUEST', 'Invalid preparation receipt')
+
       this.db
         .prepare("UPDATE attachments SET state = 'ready', detected_type = ? WHERE id = ?")
         .run(detectedType, attachmentId)
+
       if (prepared) {
         const { parsedFingerprint, ...summary } = prepared
         this.db
           .prepare('UPDATE attachments SET preparation = ?, parsed_fingerprint = ? WHERE id = ?')
           .run(JSON.stringify(summary), parsedFingerprint, attachmentId)
       }
+
       this.db
         .prepare(
           'INSERT INTO sources (id, version, session_id, attachment_id, fingerprint, label) VALUES (?, 1, ?, ?, ?, ?)',
         )
         .run(`src-${randomUUID()}`, sessionId, attachmentId, item.fingerprint, item.name)
+
       return this.get(sessionId, attachmentId)
     })
   }

@@ -133,6 +133,7 @@ export class SqliteWorkspaceStore {
         .all(identity.dev, identity.ino),
     )
     let moved: Row | undefined
+
     for (const row of same) {
       if (String(row.folder_key) === key || (await this.status(row)) === 'available') {
         const version = this.access(() =>
@@ -147,6 +148,7 @@ export class SqliteWorkspaceStore {
       }
       moved ??= row
     }
+
     if (moved) {
       const { row, version } = this.access(() =>
         this.transaction(() => {
@@ -161,6 +163,7 @@ export class SqliteWorkspaceStore {
       this.publishVersion(version)
       return { workspace: this.workspace(row), outcome: 'moved' }
     }
+
     const id = `workspace-${randomUUID()}`
     const name = nameFromFolder(basename(identity.path), 'Workspace')
     const { row, version } = this.access(() =>
@@ -176,6 +179,7 @@ export class SqliteWorkspaceStore {
       }),
     )
     this.publishVersion(version)
+
     return { workspace: this.workspace(row), outcome: 'created' }
   }
 
@@ -203,6 +207,7 @@ export class SqliteWorkspaceStore {
       this.assertVersion(expectedVersion)
       this.mutable(id)
     })
+
     const identity = await this.policy.inspect(folder)
     const key = this.policy.key(identity.path)
     const { workspace, version } = this.access(() =>
@@ -216,13 +221,16 @@ export class SqliteWorkspaceStore {
           throw new WorkspaceError('WORKSPACE_FOLDER_IN_USE', 'Another workspace has this folder', {
             workspaceName: String(other.name),
           })
+
         this.db
           .prepare('UPDATE workspaces SET folder = ?, folder_key = ?, dev = ?, ino = ? WHERE id = ?')
           .run(identity.path, key, identity.dev, identity.ino, id)
+
         return { workspace: this.workspace(this.row(id)), version: next }
       }),
     )
     this.publishVersion(version)
+
     return workspace
   }
 

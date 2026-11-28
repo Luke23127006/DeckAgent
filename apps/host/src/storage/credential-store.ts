@@ -105,16 +105,21 @@ export class ProtectedFileCredentialStore implements CredentialStore {
 
   async read(name: string): Promise<string> {
     if (!reference.test(name)) throw new CredentialError('CREDENTIAL_UNAVAILABLE')
+
     let stored: string
+
     try {
       stored = (await readFile(join(this.folder, `${name}.key`), 'utf8')).trim()
     } catch {
       throw new CredentialError('CREDENTIAL_UNAVAILABLE')
     }
+
     const bytes = Buffer.from(stored, 'base64')
     if (!bytes.length || bytes.toString('base64') !== stored) throw new CredentialError('CREDENTIAL_UNAVAILABLE')
+
     const secret = (await this.unprotect(bytes)).toString('utf8')
     if (!secret) throw new CredentialError('CREDENTIAL_UNAVAILABLE')
+
     return secret
   }
 

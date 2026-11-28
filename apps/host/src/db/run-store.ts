@@ -96,8 +96,10 @@ export class SqliteRunStore implements RunStore {
           .get(input.owner.kind, input.owner.id)
       )
         throw new DatabaseError('RUN_OWNER_BUSY', 'The run owner already has an active request')
+
       const prepared = this.hooks.beforeAdmit?.(input) ?? { historyStart: 0 }
       const now = new Date().toISOString()
+
       this.db
         .prepare(
           `INSERT INTO requests (id, owner_kind, owner_id, status, provider, model, history_start, started_at) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)`,
@@ -111,9 +113,11 @@ export class SqliteRunStore implements RunStore {
           prepared.historyStart,
           now,
         )
+
       this.db
         .prepare('INSERT INTO request_research (request_id, selected) VALUES (?, ?)')
         .run(input.requestId, input.publicResearch === true ? 1 : 0)
+
       this.hooks.afterAdmit?.(input, prepared.messageSequence)
       this.insert(input.requestId, { kind: 'status', status: 'active' }, now)
       return requireRequest(this.db, input.requestId)
@@ -242,10 +246,12 @@ export class SqliteRunStore implements RunStore {
   ): readonly RequestEvent[] | undefined {
     const request = requireRequest(this.db, requestId)
     if (request.status !== 'active' && request.status !== 'waiting_approval') return undefined
+
     const now = new Date().toISOString()
     const written: RequestEvent[] = [...this.approvals.cancelPending(requestId)]
     const settled: ActivityStatus = status === 'completed' ? 'completed' : status === 'stopped' ? 'stopped' : 'failed'
     const running = new Map<string, Extract<RequestEventBody, { kind: 'activity' }>>()
+
     for (const event of this.events(requestId)) {
       if (event.kind !== 'activity') continue
       if (event.status === 'running')
@@ -258,7 +264,9 @@ export class SqliteRunStore implements RunStore {
         })
       else running.delete(event.id)
     }
+
     for (const activity of running.values()) written.push(this.insert(requestId, { ...activity, status: settled }, now))
+
     const refused = this.approvals.refusedTargets(requestId)
     if (refused.length)
       written.push(
@@ -272,11 +280,14 @@ export class SqliteRunStore implements RunStore {
           now,
         ),
       )
+
     const text = assembleRequestText(this.db, requestId)
     if (text.trim()) this.hooks.onSettle?.(request.owner, status, text)
+
     this.db
       .prepare('UPDATE requests SET status = ?, ended_at = ?, error_code = ? WHERE id = ?')
       .run(status, now, errorCode ?? null, requestId)
+
     written.push(this.insert(requestId, { kind: 'status', status, ...(errorCode ? { errorCode } : {}) }, now))
     return written
   }

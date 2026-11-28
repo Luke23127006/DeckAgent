@@ -28,6 +28,7 @@ export async function receiveAttachment<T>(
   let uploadError: unknown
   const onAbort = () => abort.abort()
   req.once('aborted', onAbort)
+
   try {
     const parser = busboy({
       headers: req.headers,

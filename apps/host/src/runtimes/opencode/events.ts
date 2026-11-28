@@ -59,12 +59,14 @@ const nativeId = /^[\w.-]{1,200}$/
 /** `undefined` for a value that is not an event object at all; the adapter treats it as a protocol failure. */
 export function parseEvent(value: unknown): OpenCodeEvent | undefined {
   if (!record(value) || typeof value.type !== 'string') return undefined
+
   const sessionId = typeof value.sessionID === 'string' && nativeId.test(value.sessionID) ? value.sessionID : undefined
   const base = sessionId ? { sessionId } : {}
   const part = record(value.part) ? value.part : undefined
   // Parts carry the native message they belong to: assistant steps have a step_start, user parts never do.
   const message =
     part && typeof part.messageID === 'string' && nativeId.test(part.messageID) ? { messageId: part.messageID } : {}
+
   switch (value.type) {
     case 'step_start':
       return { type: 'step_start', ...base, ...message }

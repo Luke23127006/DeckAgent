@@ -47,13 +47,16 @@ export class SqliteChatStore {
   async create(workspaceId: string, selection?: ModelSelection): Promise<SessionInfo> {
     return this.sessionDb.transaction(() => {
       if (!workspaceId.trim()) throw new DatabaseError('SESSION_CONFIG', 'Workspace ID must not be empty')
+
       if (selection) this.validateSelection(selection)
       const sessionId = `chat-${randomUUID()}`
       this.ensure(sessionId, workspaceId)
+
       if (selection)
         this.db
           .prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?')
           .run(selection.provider, selection.model, sessionId)
+
       this.changedChats()
       return this.info(sessionId)!
     })
@@ -74,9 +77,11 @@ export class SqliteChatStore {
           'Session uses a different provider or model. Choose another session ID',
         )
       }
+
       this.db
         .prepare('UPDATE sessions SET provider = ?, model = ? WHERE id = ?')
         .run(selection.provider, selection.model, sessionId)
+
       this.changedChats()
       return this.info(sessionId)!
     })
@@ -248,14 +253,17 @@ export class SqliteChatStore {
       .get(sessionId)!
     let sequence = Number(row.last)
     const insert = this.db.prepare('INSERT INTO messages (session_id, sequence, payload) VALUES (?, ?, ?)')
+
     for (const message of messages) {
       const validated = validateMessage(message)
       insert.run(sessionId, ++sequence, JSON.stringify(validated))
     }
+
     if (messages.length) {
       this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId)
       this.changedChats()
     }
+
     return sequence
   }
 

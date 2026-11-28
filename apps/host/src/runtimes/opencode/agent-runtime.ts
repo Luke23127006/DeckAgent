@@ -105,6 +105,7 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
   async run(input: RunInput, sink: RunSink): Promise<RunResult> {
     const executable = this.executable
     if (!executable) return failed(runtimeUnavailable).runResult
+
     const ownerKey = runOwnerKey(input.owner)
     const folders = await this.folders(ownerKey)
     const instructions = input.instructions.join('\n\n')
@@ -116,10 +117,12 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
       binding.selection.provider === input.provider.provider &&
       binding.selection.model === input.provider.model &&
       binding.context === context
+
     if (binding && !resumable) {
       this.bindings.unbind(ownerKey)
       await sink.emit({ kind: 'notice', code: 'NEW_RUNTIME_SESSION' })
     }
+
     const conversation = input.resources.find(resource => resource.kind === 'conversation')?.messages ?? []
     const request = conversation.at(-1)?.content ?? ''
     const fresh = () => seedConversationPrompt(conversation.slice(0, -1), request)
@@ -132,14 +135,18 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
       resumeSessionId ? request : fresh(),
       resumeSessionId,
     )
+
     if (resumable && attempt.noWork && attempt.runResult.status === 'failed' && !input.signal.aborted) {
       this.bindings.unbind(ownerKey)
       await sink.emit({ kind: 'notice', code: 'NEW_RUNTIME_SESSION' })
       attempt = await this.attempt(executable, input, sink, folders, fresh(), undefined)
     }
+
     if (attempt.runResult.status !== 'completed') return attempt.runResult
+
     const nativeSessionId = attempt.nativeSessionId
     if (!nativeSessionId) return failed(runtimeIncomplete, attempt.runResult.usage).runResult
+
     return {
       status: 'completed',
       usage: attempt.runResult.usage,
@@ -203,6 +210,7 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
   ): Promise<ClassifiedAttempt> {
     const bridge = input.tools ? await openToolBridge({ tools: input.tools, signal: input.signal }) : undefined
     let config: ReturnType<typeof runtimeConfiguration>
+
     try {
       config = runtimeConfiguration(
         input.provider,
@@ -214,6 +222,7 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
       await bridge?.close()
       return failed(error instanceof UnsupportedProviderError ? providerUnsupported : runtimeFailed, noUsage, false)
     }
+
     const env = isolatedEnvironment(folders, encodeConfiguration(config), input.provider.key, bridge?.token)
     const timer = createAttemptTimer(this.options.timeoutMs ?? 600_000, input)
     const tracker = createStreamTracker(
@@ -221,6 +230,7 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
       () => timer.local.abort(),
       usage => sink.usage(usage),
     )
+
     try {
       const audit = await this.auditConfiguration(executable, folders, env, timer.signal, config, timer.timedOut)
       if (audit) return audit
@@ -274,13 +284,17 @@ export class OpenCodeAgentRuntime implements AgentRuntime {
     })
     if (signal.aborted) return failed(expired() ? timeout : stopped)
     if (audit.startFailed) return failed(runtimeUnavailable)
+
     let resolved: unknown
+
     try {
       resolved = JSON.parse(audit.stdout)
     } catch {
       resolved = undefined
     }
+
     if (audit.code !== 0 || !safeConfiguration(resolved, config)) return failed(configurationUnsafe)
+
     return undefined
   }
 }

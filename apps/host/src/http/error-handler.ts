@@ -65,12 +65,14 @@ export function writeRouteError(res: ServerResponse, error: unknown, options: Ho
     res.destroy()
     return
   }
+
   const mapped = options.mapApplicationFailure?.(error) ?? mapRunFailure(error)
   const known = error instanceof HttpError
   const status = mapped ? mapped.status : known ? error.status : 500
   const code = mapped ? mapped.code : known ? error.code : 'HOST_ERROR'
   const detail = mapped?.detail ?? (known ? error.detail : undefined)
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
+
   res.end(
     JSON.stringify({
       error: {

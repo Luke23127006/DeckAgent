@@ -150,10 +150,12 @@ export function isolatedEnvironment(
  */
 export function safeConfiguration(resolved: unknown, expected: ReturnType<typeof runtimeConfiguration>): boolean {
   if (!record(resolved)) return false
+
   const mcp = resolved.mcp
   const provider = record(resolved.provider) ? resolved.provider : undefined
   const agent = record(resolved.agent) ? resolved.agent : undefined
   const deckagent = agent && record(agent.deckagent) ? agent.deckagent : undefined
+
   return (
     isDeepStrictEqual(resolved.permission, expected.permission) &&
     Array.isArray(resolved.plugin) &&

@@ -97,9 +97,11 @@ async function forwardMcpRequest(
   transport.onmessage = (message, extra) => connection.onmessage?.(message, extra)
   transport.onerror = error => connection.onerror?.(error)
   transport.onclose = () => connection.onclose?.()
+
   res.on('close', () => {
     void server.close().catch(() => {})
   })
+
   try {
     await server.connect(connection)
     const headers = new Headers()
@@ -140,12 +142,15 @@ export async function openToolBridge(options: {
       res.writeHead(403).end()
       return
     }
+
     const { body, handled } = await readJsonBody(req, res)
     if (handled) return
+
     if (!active()) {
       res.writeHead(403).end()
       return
     }
+
     const server = createToolServer(options.tools, active, servers)
     await forwardMcpRequest(req, res, expectedHost, body, server)
     servers.delete(server)
@@ -153,12 +158,15 @@ export async function openToolBridge(options: {
   })
   http.requestTimeout = 10_000
   http.headersTimeout = 10_000
+
   await new Promise<void>((resolve, reject) => {
     http.once('error', reject)
     http.listen(0, '127.0.0.1', resolve)
   })
+
   const address = http.address()
   if (!address || typeof address === 'string') throw new Error('MCP_BRIDGE_UNAVAILABLE')
+
   expectedHost = `127.0.0.1:${address.port}`
   return {
     url: `http://${expectedHost}/mcp`,

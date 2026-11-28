@@ -122,17 +122,21 @@ export class ResearchService {
   async save(value: ResearchSaveInput, expectedVersion: number) {
     await this.change(async () => {
       if (expectedVersion !== this.store.version()) throw new ResearchError('PREFERENCES_STALE')
+
       const key = 'useEnvironment' in value ? this.environmentKey : value.key
       if (!key) throw new ResearchError('RESEARCH_KEY_UNAVAILABLE')
+
       try {
         await this.client.check(key, AbortSignal.timeout(15_000))
       } catch (error) {
         if (error instanceof TavilyError) throw new ResearchError(error.code)
         throw error
       }
+
       const previous = this.configuration()
       let reference: string | undefined
       let version: number | undefined
+
       try {
         if (!('useEnvironment' in value)) reference = await this.credentials.save(key)
         version = this.store.put(
@@ -143,10 +147,12 @@ export class ResearchService {
         if (reference) await this.credentials.remove(reference).catch(() => {})
         throw new ResearchError('RESEARCH_NOT_SAVED')
       }
+
       if (version === undefined) {
         if (reference) await this.credentials.remove(reference).catch(() => {})
         throw new ResearchError('PREFERENCES_STALE')
       }
+
       this.onPreferencesChanged?.(version)
       if (previous.reference) await this.credentials.remove(previous.reference).catch(() => {})
     })

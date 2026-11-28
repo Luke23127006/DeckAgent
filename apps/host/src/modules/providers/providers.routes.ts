@@ -15,6 +15,7 @@ function parseBody<T>(decode: (value: unknown) => T, value: unknown): T {
 export function createProviderRoutes(providers: ProviderService): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const providerId = params({ providerId: /^[\w.-]{1,100}$/ })
+
   router.put(
     '/api/providers/:providerId',
     providerId,
@@ -24,6 +25,7 @@ export function createProviderRoutes(providers: ProviderService): Router {
       json(res, 200, { saved: true })
     }),
   )
+
   router.delete(
     '/api/providers/:providerId',
     providerId,
@@ -33,6 +35,7 @@ export function createProviderRoutes(providers: ProviderService): Router {
       json(res, 200, { saved: true })
     }),
   )
+
   router.get(
     '/api/providers/:providerId/catalog',
     providerId,
@@ -40,5 +43,6 @@ export function createProviderRoutes(providers: ProviderService): Router {
       json(res, 200, await providers.catalog(param(req, 'providerId')))
     }),
   )
+
   return router
 }

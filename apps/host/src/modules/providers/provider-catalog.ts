@@ -123,6 +123,7 @@ export async function listModels(
   const ids = new Set<string>()
   const seen = new Set<string>()
   let cursor: string | undefined
+
   try {
     for (let page = 0; page < (options.pages ?? 10); page++) {
       const url = new URL(`${endpoint.baseUrl.replace(/\/+$/, '')}/models`)

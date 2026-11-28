@@ -76,6 +76,7 @@ export class AttachmentParser {
       input.signal.throwIfAborted()
       return await new Promise<ParsedAttachment>((resolve, reject) => {
         let child: ChildProcess
+
         try {
           const env: NodeJS.ProcessEnv = {}
           for (const key of ['SystemRoot', 'SYSTEMROOT', 'PATH', 'Path', 'TEMP', 'TMP'])
@@ -91,6 +92,7 @@ export class AttachmentParser {
           reject(new SourceError('ATTACHMENT_UNREADABLE'))
           return
         }
+
         let result: ParsedAttachment | undefined
         let failure: unknown
         const abort = () => {
@@ -102,9 +104,11 @@ export class AttachmentParser {
           child.kill()
         }, attachmentLimits.preparationMs)
         input.signal.addEventListener('abort', abort, { once: true })
+
         child.once('error', () => {
           failure = new SourceError('ATTACHMENT_UNREADABLE')
         })
+
         child.once('message', (message: unknown) => {
           if (isParsedAttachment(message)) result = message
           else if (
@@ -118,6 +122,7 @@ export class AttachmentParser {
           else failure = new SourceError('ATTACHMENT_UNREADABLE')
           child.kill()
         })
+
         child.once('close', () => {
           clearTimeout(timer)
           input.signal.removeEventListener('abort', abort)
@@ -126,6 +131,7 @@ export class AttachmentParser {
           else if (result) resolve(result)
           else reject(new SourceError('ATTACHMENT_UNREADABLE'))
         })
+
         if (input.signal.aborted) abort()
         else
           child.send({ name: input.name, bytes: input.bytes }, error => {
@@ -164,6 +170,7 @@ export function isParsedAttachment(value: unknown): value is ParsedAttachment {
   )
     return false
   if (!('parts' in value) || !Array.isArray(value.parts)) return false
+
   return value.parts.every((part: unknown) => {
     if (
       !part ||

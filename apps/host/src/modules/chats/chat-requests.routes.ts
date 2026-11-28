@@ -53,18 +53,21 @@ function streamRequestEvents(
     if (replaying) queued.push(event)
     else write(event)
   })
+
   try {
     openSseStream(res, streams, unsubscribe)
   } catch (error) {
     unsubscribe()
     throw error
   }
+
   try {
     for (const event of controller.events(id, after)) write(event)
   } finally {
     replaying = false
     for (const event of queued.splice(0)) write(event)
   }
+
   if (!ended && !activeStatuses.has(controller.get(id).status) && last >= controller.get(id).sequence) {
     ended = true
     res.end()
@@ -78,6 +81,7 @@ export function createChatRequestRoutes(
 ): Router {
   const router = Router({ caseSensitive: true, strict: true })
   const request = params({ requestId: WORD_ID })
+
   router.post(
     '/api/requests',
     route(async (req, res) => {
@@ -85,6 +89,7 @@ export function createChatRequestRoutes(
       json(res, 202, await requests.submit(await readAgentRequest(req, maxFiles)))
     }),
   )
+
   router.post(
     '/api/requests/:requestId/approvals/:approvalId/decision',
     params({ requestId: WORD_ID, approvalId: WORD_ID }),
@@ -94,6 +99,7 @@ export function createChatRequestRoutes(
       json(res, 200, requests.decide(param(req, 'requestId'), param(req, 'approvalId'), decision))
     }),
   )
+
   router.post(
     '/api/requests/:requestId/stop',
     request,
@@ -102,6 +108,7 @@ export function createChatRequestRoutes(
       json(res, 200, requests.stop(param(req, 'requestId')))
     }),
   )
+
   router.get(
     '/api/requests/:requestId',
     request,
@@ -110,6 +117,7 @@ export function createChatRequestRoutes(
       json(res, 200, requests.get(param(req, 'requestId')))
     }),
   )
+
   router.get(
     '/api/requests/:requestId/events',
     request,
@@ -120,5 +128,6 @@ export function createChatRequestRoutes(
       streamRequestEvents(req, res, requestId, requests, streams)
     }),
   )
+
   return router
 }
