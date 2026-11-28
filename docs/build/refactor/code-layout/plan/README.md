@@ -4,7 +4,7 @@ Read this file to learn the goal, the decisions, the global constraints and the 
 
 > **For executors:** Do one task at a time, in the order of the [Tasks](#tasks) table. Read Global Constraints in this file and your task file only. Do every step in order. When you complete a step, change its `- [ ]` to `- [x]` in the task file. After all checks of a task pass, mark the task `Done` in this file and write the task report file in `../reports/`. When a STOP condition occurs, stop and send the report. Do not start the next task until a person approves the report.
 
-> **For the person who approves a report:** Commit the changes of each task before the next task starts. Use the commit subject in the column `Commit subject` of the [Tasks](#tasks) table. Task 12 finds the style commits by these subjects.
+> **For the person who approves a report:** The executor commits and pushes each task with the subject in the column `Commit subject` of the [Tasks](#tasks) table. Task 12 finds the style commits by these subjects. Run `git show --stat HEAD` to see the commit of a task.
 
 **Goal:** Add a script that adds the blank lines that a machine can find. Apply the script and Biome to the repository. Run the script in `format`, `format:check` and the post-edit hook. Write the layout rules into `docs/conventions/code.md`. Add blank lines between the steps of dense function bodies by hand.
 
@@ -61,7 +61,8 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 - Change a file that is not in the `Files` block of the task.
 - Remove, skip or weaken a test or a check.
 - Add a comment, a lint-disable directive or `@ts-expect-error`.
-- Commit or push.
+- Commit or push before the step `Write the report file and stop`, or commit after a STOP.
+- Use `git add -A`, `git add .`, `git commit --amend`, `--no-verify` or `git push --force`.
 
 **Files of each task:** in addition to the `Files` block, each task changes `plan/README.md`, its own task file and `../reports/README.md`, and it creates `../reports/task-NN-<slug>.md`.
 
@@ -77,7 +78,14 @@ Each task obeys this protocol. A task file adds only its special conditions and 
    - Each STOP and each retry, with the step and the cause. Write `none` when no STOP or retry occurred.
    - What the commands do not prove
 3. Add a row for the task in `../reports/README.md` and run `corepack pnpm@11.28.5 check:docs`.
-4. Mark this step as `- [x]`, stop, and send the report summary.
+4. Mark this step as `- [x]`.
+5. Commit and push the task. Do this only when no STOP occurred:
+   - Stage each file of the task by its path: the files of the `Files` block, `docs/build/refactor/code-layout/plan/README.md`, the task file, `docs/build/refactor/code-layout/reports/README.md` and the report file. For a `Files` block that names folders, run `git add -- <folder ...>` with the folders of the task.
+   - Run `git diff --cached --name-only`. Expected: each line is a file of the task. Other changes in the working tree stay unstaged.
+   - Run `git commit -m "<subject>"`. `<subject>` is the value of the column `Commit subject` for the task in the [Tasks](#tasks) table. Expected: exit code 0.
+   - Run `git push origin HEAD`. Expected: exit code 0.
+   - STOP when the commit or the push fails. Write the cause in the report summary.
+6. Stop, and send the report summary with the commit hash from `git rev-parse --short HEAD`.
 
 ## Review Focus
 

@@ -72,4 +72,4 @@ Expected: one line that matches `format-layout: <n> dense function bodies`. Writ
 
 - [ ] **Step 6: Write the report file and stop**
 
-Do the step `Write the report file and stop` of the Task protocol. In the report, tell the person to commit the diff with the subject `style(layout): add blank lines between declarations and members`.
+Do the step `Write the report file and stop` of the Task protocol.

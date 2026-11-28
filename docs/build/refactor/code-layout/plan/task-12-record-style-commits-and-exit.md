@@ -77,4 +77,4 @@ Do the step `Write the report file and stop` of the Task protocol. In the report
 
 - Write the table `Style commits` with the columns `Hash | Subject`.
 - Collect the rows of the tables `Far declarations` and `Unchanged bodies` from the reports of Tasks 7 to 11 in `../reports/`, and write their counts.
-- Tell the person to run `git config blame.ignoreRevsFile .git-blame-ignore-revs` in each clone, and to commit the change with the subject `chore: ignore the code layout commits in git blame`.
+- Tell the person to run `git config blame.ignoreRevsFile .git-blame-ignore-revs` in each clone.

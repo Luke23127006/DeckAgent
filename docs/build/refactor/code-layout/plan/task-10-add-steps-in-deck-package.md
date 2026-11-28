@@ -77,4 +77,4 @@ Expected: exit code 0.
 
 - [ ] **Step 6: Write the report file and stop**
 
-Do the step `Write the report file and stop` of the Task protocol. The report has the tables `Far declarations` and `Unchanged bodies`, with the columns `Location | Name`. In the report, tell the person to commit the diff with the subject `style(layout): add steps in the deck package`.
+Do the step `Write the report file and stop` of the Task protocol. The report has the tables `Far declarations` and `Unchanged bodies`, with the columns `Location | Name`.
