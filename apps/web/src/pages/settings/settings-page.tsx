@@ -18,6 +18,7 @@ export function SettingsPage() {
   const [revision, setRevision] = useState(0)
   const [notice, setNotice] = useState('')
   useSettingsNavigation(dirty, busy)
+
   function canLeave() {
     return !busy && (!dirty || window.confirm(text.discard))
   }
@@ -35,6 +36,7 @@ export function SettingsPage() {
         <button onClick={() => void settings.refetch()}>{text.retry}</button>
       </main>
     )
+
   const saved = settings.data.providers.find(provider => provider.id === selected)
   const template = settings.data.builtIns.find(provider => provider.id === (saved?.id ?? selected.slice(4)))
   function choose(id: string) {
@@ -44,6 +46,7 @@ export function SettingsPage() {
       setDirty(false)
     }
   }
+
   return (
     <main className="h-dvh overflow-y-auto bg-background p-6 text-foreground">
       <header className="mb-6 flex items-center justify-between">

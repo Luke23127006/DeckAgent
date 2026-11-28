@@ -53,6 +53,7 @@ export function usePanelResizer(options: ResizerOptions): {
     const panel = container.current
     const handle = divider.current
     if (!panel || !handle) return
+
     const save = (width: number) => latest.current.save(width)
     const valueText = (width: number) => latest.current.valueText(width)
     let preferred = latest.current.initial
@@ -83,6 +84,7 @@ export function usePanelResizer(options: ResizerOptions): {
     }
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || !event.isPrimary || innerWidth <= compactWidth || drag) return
+
       event.preventDefault()
       handle.focus()
       const overlay = document.createElement('div')
@@ -98,6 +100,7 @@ export function usePanelResizer(options: ResizerOptions): {
       drag = session
       document.body.classList.add('deck-resizing')
       document.body.append(overlay)
+
       // The window listens, not the divider: a pointer capture can be lost over the opaque iframe of a slide.
       window.addEventListener(
         'pointermove',
@@ -111,6 +114,7 @@ export function usePanelResizer(options: ResizerOptions): {
         },
         { capture: true, signal: control.signal },
       )
+
       window.addEventListener(
         'pointerup',
         release => {
@@ -121,11 +125,13 @@ export function usePanelResizer(options: ResizerOptions): {
         },
         { capture: true, signal: control.signal },
       )
+
       window.addEventListener('pointercancel', finish, { capture: true, signal: control.signal })
       window.addEventListener('blur', finish, { signal: control.signal })
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (innerWidth <= compactWidth) return
+
       const current = panel.getBoundingClientRect().width
       const { minimum, maximum } = bounds(panel)
       const step = event.shiftKey ? 64 : 16
@@ -140,6 +146,7 @@ export function usePanelResizer(options: ResizerOptions): {
                 ? maximum
                 : undefined
       if (width === undefined) return
+
       event.preventDefault()
       resize(width)
       save(preferred)
@@ -154,6 +161,7 @@ export function usePanelResizer(options: ResizerOptions): {
     window.addEventListener('pagehide', finish)
     render()
     const frame = requestAnimationFrame(render)
+
     return () => {
       cancelAnimationFrame(frame)
       finish()

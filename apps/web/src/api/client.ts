@@ -182,9 +182,11 @@ export async function readApiError(response: Response): Promise<ApiClientError> 
   const value: unknown = await response.json().catch(() => undefined)
   const error = isRecord(value) && isRecord(value.error) ? value.error : undefined
   const detail: Record<string, string | boolean> = {}
+
   if (error && isRecord(error.detail))
     for (const [key, item] of Object.entries(error.detail))
       if (typeof item === 'string' || typeof item === 'boolean') detail[key] = item
+
   const code = isClientErrorCode(error?.code)
     ? error.code
     : response.status === 401
@@ -216,10 +218,12 @@ export async function apiJson<T>(path: string, decode: (value: unknown) => T, in
 export async function* readSseFrames(response: Response, options: SseFrameOptions): AsyncGenerator<string> {
   if (!response.body || !response.headers.get('content-type')?.startsWith('text/event-stream'))
     throw new ApiClientError(options.invalidError, response.status)
+
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   const eventLine = `event: ${options.eventName}`
   let buffer = ''
+
   try {
     while (true) {
       const part = await reader.read()

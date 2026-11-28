@@ -23,6 +23,7 @@ export function requestFeedback(
   disconnected: boolean,
 ): { readonly label: string; readonly detail: string; readonly toolErrors: boolean } {
   const toolErrors = records.some(entry => entry.type === 'tool' && entry.status === 'failed')
+
   if (state === 'active' || state === 'waiting_approval') {
     const current = records.findLast(entry => entry.status === 'running')
     const label = disconnected
@@ -38,6 +39,7 @@ export function requestFeedback(
       toolErrors,
     }
   }
+
   if (state === 'completed')
     return {
       label: `${requestText.done}${toolErrors ? requestText.doneWithToolErrors : ''}`,
@@ -45,6 +47,7 @@ export function requestFeedback(
       toolErrors,
     }
   if (state === 'stopped') return { label: requestText.stopped, detail: requestText.stoppedDetail, toolErrors }
+
   const failure = failureFeedback(errorCode)
   return {
     label: `${requestText.notFinished}${failure.label}`,
@@ -100,10 +103,12 @@ function RetryActions(props: {
   const { state, errorCode, original, actions } = props
   const [note, setNote] = useState('')
   const asked = useRef<string | undefined>(undefined)
+
   const failed = state === 'failed' || state === 'interrupted'
   const settings = failed && failureOffersSettings(errorCode)
   const text = failed && original?.role === 'user' && original.content ? original.content : undefined
   if (!settings && text === undefined) return <div className="request-actions" hidden />
+
   return (
     <div className="request-actions">
       {settings && (

@@ -32,10 +32,12 @@ export function DeckWorkflow(props: {
     const modeNode = mode.current
     const actionNode = action.current
     if (!modeNode || !actionNode) return
+
     const onMode = () => deck.setMode(modeNode.value === 'deck')
     const onAction = () => deck.chooseAction()
     modeNode.addEventListener('change', onMode)
     actionNode.addEventListener('change', onAction)
+
     return () => {
       modeNode.removeEventListener('change', onMode)
       actionNode.removeEventListener('change', onAction)

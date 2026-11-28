@@ -158,6 +158,7 @@ function SlideBlocks(props: {
   // The legacy content paragraph shows only when the structured blocks do not already hold the same text.
   const showContent =
     !words.length || ![...words, words.join('\n')].some(value => normalize(value) === normalize(slide.content))
+
   return (
     <div aria-label={text.content}>
       {showContent && <p>{slide.content}</p>}
@@ -183,6 +184,7 @@ function SlideBlocks(props: {
         if (block.kind === 'metrics')
           return block.items.map((item, index) => <p key={`${key}:${index}`}>{text.metric(item.value, item.label)}</p>)
         if (block.kind === 'image') return <p key={key}>{text.attachedImage(block.caption)}</p>
+
         const review = proposal.imageReview?.find(
           need => need.slideIndex === slideIndex && need.blockIndex === blockIndex,
         )

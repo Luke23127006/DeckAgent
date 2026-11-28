@@ -41,6 +41,7 @@ function fly(root: HTMLElement, node: HTMLElement): void {
   const distance = composer ? Math.max(0, Math.min(composer.top - box.top, 220)) : 24
   node.style.transformOrigin = '100% 100%'
   utils.set(node, { opacity: 0 })
+
   animate(node, {
     translateY: [distance, 0],
     scale: [0.86, 1],
@@ -79,6 +80,7 @@ function menuIn(menu: HTMLElement): void {
   menu.style.transformOrigin = above ? 'left bottom' : 'left top'
   hold(rows)
   utils.set(rows, { opacity: 0 })
+
   animate(menu, {
     opacity: { from: 0, to: 1, duration: 140, ease: 'outQuad' },
     scale: [0.9, 1],
@@ -86,6 +88,7 @@ function menuIn(menu: HTMLElement): void {
     ease: spring({ bounce: 0.28, duration: 560 }),
     onComplete: () => settle(menu),
   })
+
   animate(rows, {
     opacity: [0, 1],
     translateX: [-14, 0],
@@ -101,6 +104,7 @@ function splitLetters(node: HTMLElement): { letters: HTMLElement[]; restore: () 
   const text = node.textContent ?? ''
   const letters: HTMLElement[] = []
   const parts: (HTMLElement | string)[] = []
+
   for (const word of text.split(/(\s+)/)) {
     if (!word.trim()) {
       parts.push(word)
@@ -119,6 +123,7 @@ function splitLetters(node: HTMLElement): { letters: HTMLElement[]; restore: () 
     }
     parts.push(wrapper)
   }
+
   node.setAttribute('aria-label', text)
   node.replaceChildren(...parts)
   return {
@@ -274,14 +279,17 @@ function intro(root: HTMLElement): void {
   const all = [...rail, ...header, ...dock]
   hold(all)
   utils.set(all, { opacity: 0 })
+
   createTimeline({ defaults: { ease: 'outExpo', duration: 820 }, onComplete: () => settle(all) })
     .add(rail, { opacity: [0, 1], translateX: [-22, 0], delay: stagger(60) }, 0)
     .add(header, { opacity: [0, 1], translateY: [-14, 0] }, 180)
     .add(dock, { opacity: [0, 1], translateY: [20, 0], scale: [0.97, 1] }, 320)
+
   const sheen = document.createElement('div')
   sheen.className = 'motion-sheen'
   sheen.setAttribute('aria-hidden', 'true')
   root.append(sheen)
+
   animate(sheen, {
     translateX: ['-100%', '100%'],
     opacity: [0, 1, 0],
@@ -294,6 +302,7 @@ function intro(root: HTMLElement): void {
 
 function watch(root: HTMLElement): (() => void) | undefined {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+
   root.dataset.motion = 'on'
   intro(root)
   const observer = new MutationObserver(records => {
@@ -345,6 +354,7 @@ function watch(root: HTMLElement): (() => void) | undefined {
         else pop(node)
       }
   })
+
   observer.observe(root, {
     subtree: true,
     childList: true,
@@ -352,6 +362,7 @@ function watch(root: HTMLElement): (() => void) | undefined {
     attributeOldValue: true,
     attributeFilter: ['data-status', 'hidden', 'srcdoc', 'data-presenting'],
   })
+
   return () => {
     observer.disconnect()
     delete root.dataset.motion

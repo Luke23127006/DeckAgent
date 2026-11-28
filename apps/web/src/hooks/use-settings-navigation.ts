@@ -16,6 +16,7 @@ function historyIndex(): number | undefined {
 export function useSettingsNavigation(dirty: boolean, busy: boolean): void {
   useLayoutEffect(() => {
     if (!dirty && !busy) return
+
     const index = historyIndex()
     let restoring = false
     function beforeUnload(event: BeforeUnloadEvent) {
@@ -27,15 +28,18 @@ export function useSettingsNavigation(dirty: boolean, busy: boolean): void {
         event.stopImmediatePropagation()
         return
       }
+
       const next = historyIndex()
       if (index === undefined || next === undefined || index === next) return
       if (!busy && window.confirm(settingsText.discard)) return
+
       event.stopImmediatePropagation()
       restoring = true
       window.history.go(index - next)
     }
     guardNavigation = popstate
     window.addEventListener('beforeunload', beforeUnload)
+
     return () => {
       if (guardNavigation === popstate) guardNavigation = undefined
       window.removeEventListener('beforeunload', beforeUnload)

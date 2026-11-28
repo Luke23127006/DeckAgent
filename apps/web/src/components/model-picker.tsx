@@ -48,6 +48,7 @@ export function ModelPicker(props: {
 
   useEffect(() => {
     if (!open) return
+
     const onPointer = (event: PointerEvent) => {
       if (event.target instanceof Node && !node.current?.contains(event.target)) setOpenFor(false)
     }
@@ -63,6 +64,7 @@ export function ModelPicker(props: {
     document.addEventListener('keydown', onKey)
     window.addEventListener('resize', onResize)
     options.current?.querySelector<HTMLButtonElement>('[aria-pressed=true]')?.focus()
+
     return () => {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey)
@@ -89,14 +91,18 @@ export function ModelPicker(props: {
       show()
       return
     }
+
     if (!open || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+
     const inTabs = !!tabs.current?.contains(document.activeElement)
     const list = (inTabs ? tabs.current : options.current)?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')
     const items = [...(list ?? [])]
     const current = document.activeElement
     if (!(current instanceof HTMLButtonElement)) return
+
     const index = items.indexOf(current)
     if (index < 0) return
+
     event.preventDefault()
     const next =
       event.key === 'Home'

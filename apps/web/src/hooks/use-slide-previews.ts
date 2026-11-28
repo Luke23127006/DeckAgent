@@ -76,13 +76,17 @@ class PreviewQueue {
   readonly register = (slideId: string, node: HTMLElement | null): void => {
     const previous = this.items.get(slideId)
     if (previous === node) return
+
     if (previous) {
       this.observer?.unobserve(previous)
       this.visible.delete(previous)
       this.items.delete(slideId)
     }
+
     if (!node) return
+
     this.items.set(slideId, node)
+
     if (this.observer) this.observer.observe(node)
     else if (typeof IntersectionObserver !== 'function') {
       this.visible.add(node)
@@ -94,15 +98,20 @@ class PreviewQueue {
     const snapshot = this.snapshot
     const slide = snapshot?.slides.find(entry => entry.slideId === item.dataset.slideId)
     if (!snapshot || !slide || slide.status !== 'published' || !this.visible.has(item)) return
+
     const key = `${snapshot.sessionId}/${slide.slideId}/${slide.revision}`
+
     const cached = this.cache.get(key)
     if (cached !== undefined) {
       this.show(snapshot.sessionId, slide.slideId, { key, html: cached })
       return
     }
+
     if (this.loading.has(key)) return
+
     this.loading.add(key)
     const signal = this.control.signal
+
     this.waiting.push(() => {
       this.load(snapshot.sessionId, slide.slideId, slide.revision, signal)
         .then(
@@ -121,6 +130,7 @@ class PreviewQueue {
           this.pump()
         })
     })
+
     this.pump()
   }
 

@@ -49,8 +49,10 @@ function SlideButton(props: {
   const { slide, preview, register } = props
   const slideId = slide.slideId
   const ref = useCallback((node: HTMLButtonElement | null) => register(slideId, node), [register, slideId])
+
   const pending = slide.status === 'pending'
   const label = text.slideLabel(slide.order + 1, slide.title, text.slideState(pending, slide.revision))
+
   return (
     <button
       ref={ref}

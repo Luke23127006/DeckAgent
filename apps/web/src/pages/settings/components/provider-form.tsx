@@ -35,10 +35,12 @@ export function ProviderForm({
   const mutation = useProviderMutation()
   const catalog = useProviderCatalog()
   const busy = mutation.isPending || catalog.isPending
+
   useEffect(() => {
     onBusy(busy)
     return () => onBusy(false)
   }, [busy, onBusy])
+
   useLayoutEffect(() => {
     const changed =
       name !== (saved?.displayName ?? template?.displayName ?? '') ||
@@ -50,8 +52,10 @@ export function ProviderForm({
       removeKey
     onDirty(changed)
   }, [id, name, protocol, url, models, key, removeKey, saved, template, onDirty])
+
   const inputClass = 'block w-full rounded border border-input bg-background p-2'
   const error = failure ?? catalog.error
+
   return (
     <form
       className="space-y-4"
@@ -59,9 +63,11 @@ export function ProviderForm({
       onSubmit={event => {
         event.preventDefault()
         if (busy) return
+
         const credential = key
         setKey('')
         setFailure(null)
+
         mutation.mutate(
           {
             id,

@@ -48,6 +48,7 @@ export function usePresentation(
     const node = panel.current
     const slideStage = stage.current
     if (!node || !slideStage) return
+
     const isPresenting = () => document.fullscreenElement === node
     let timer: ReturnType<typeof setTimeout> | undefined
     const wake = () => {
@@ -66,11 +67,14 @@ export function usePresentation(
       if (event.altKey || event.ctrlKey || event.metaKey || event.target instanceof HTMLTextAreaElement) return
       // Space on a focused button keeps its own meaning.
       if (event.key === ' ' && event.target instanceof HTMLButtonElement) return
+
       const slides = model.state.snapshot?.slides
       if (!slides?.length) return
+
       const index = slides.findIndex(slide => slide.slideId === model.state.selectedId)
       const target = keyTarget(event.key, index, slides.length - 1)
       if (target === undefined) return
+
       event.preventDefault()
       model.go(Math.max(0, Math.min(slides.length - 1, target)))
       wake()
@@ -82,7 +86,9 @@ export function usePresentation(
       model.navigate(event.clientX - box.left < box.width * 0.3 ? -1 : 1)
     }
     document.addEventListener('fullscreenchange', onFullscreen)
+
     for (const type of wakeEvents) node.addEventListener(type, wake, { passive: true })
+
     node.addEventListener('keydown', onKey)
     slideStage.addEventListener('click', onStageClick)
     return () => {

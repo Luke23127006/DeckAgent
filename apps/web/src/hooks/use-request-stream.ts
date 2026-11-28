@@ -38,6 +38,7 @@ async function follow(target: RequestStreamTarget, handlers: RequestStreamHandle
   let cursor = 0
   let failures = 0
   let pendingApproval: ApprovalView | null = null
+
   while (!signal.aborted && isActive(state)) {
     try {
       for await (const event of watchRequest(target.requestId, signal, cursor)) {
@@ -80,6 +81,7 @@ async function follow(target: RequestStreamTarget, handlers: RequestStreamHandle
       await waitForRetry(Math.min(5000, 500 * failures), signal)
     }
   }
+
   if (!signal.aborted) handlers.ended(target)
 }
 
@@ -94,11 +96,14 @@ export function useRequestStream(target: RequestStreamTarget | undefined, handle
   const onSummarized = useEffectEvent(handlers.summarized)
   const onConnectionLost = useEffectEvent(handlers.connectionLost)
   const onEnded = useEffectEvent(handlers.ended)
+
   const requestId = target?.requestId
   const sessionId = target?.sessionId
   const generation = target?.generation
+
   useEffect(() => {
     if (requestId === undefined || sessionId === undefined || generation === undefined) return
+
     const control = new AbortController()
     const current = { requestId, sessionId, generation }
     const proxy: RequestStreamHandlers = {
@@ -109,6 +114,7 @@ export function useRequestStream(target: RequestStreamTarget | undefined, handle
       ended: t => onEnded(t),
     }
     void follow(current, proxy, control.signal)
+
     return () => control.abort()
   }, [requestId, sessionId, generation])
 }

@@ -154,16 +154,19 @@ export class DeckScreens implements ConversationDeck {
   async refreshWorkflow(sessionId: string): Promise<void> {
     const next = await this.loadInterview(sessionId)
     if (this.sessionId !== sessionId) return
+
     const versionChanged = this.interview?.brief.version !== next.brief.version
     if (!this.interview) this.active = next.brief.version > 0
     else if (versionChanged && next.brief.version > 0) this.active = true
     this.interview = next
+
     const sources = next.brief.current?.draft.sources
     if (versionChanged && sources) {
       if (this.controls.material) this.controls.material.checked = sources.material
       if (this.controls.knowledge) this.controls.knowledge.checked = sources.modelKnowledge
       if (this.controls.research) this.controls.research.checked = sources.publicResearch
     }
+
     this.changed()
   }
 
@@ -187,10 +190,12 @@ export class DeckScreens implements ConversationDeck {
   command(skip: boolean, proposal: OutlineProposal | undefined): DeckRequest | undefined {
     if (!this.active || this.locked) return undefined
     if (!this.interview) throw new Error('BRIEF_UNAVAILABLE')
+
     const { material, knowledge, research, images, format, action } = this.controls
     const chosen = action?.value
     const kind = proposal ? (chosen === 'question' || chosen === 'clarify' ? chosen : 'revise') : 'collect'
     const image = images?.value ?? ''
+
     return {
       action: skip ? 'skip' : kind,
       expectedBriefVersion: this.interview.brief.version,
@@ -255,6 +260,7 @@ export class DeckScreens implements ConversationDeck {
         this.publishedOpen = true
       }
     }
+
     const signature = JSON.stringify([
       snapshot?.sessionId,
       snapshot?.outlineId,
@@ -263,6 +269,7 @@ export class DeckScreens implements ConversationDeck {
       this.sampleOpen,
     ])
     if (signature === this.signature) return
+
     this.signature = signature
     this.changed()
   }

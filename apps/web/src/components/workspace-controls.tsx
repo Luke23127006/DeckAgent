@@ -54,6 +54,7 @@ export function WorkspaceControls(props: { readonly busy: boolean }) {
   useEffect(() => {
     const select = selectRef.current
     if (!select) return
+
     select.value = list.selectedId
     const onChange = () => {
       const id = select.value
@@ -82,6 +83,7 @@ export function WorkspaceControls(props: { readonly busy: boolean }) {
     const close = () => dialogRef.current?.close()
     // UC-013 A9: no folder chosen, no workspace set up.
     if (mode.kind === 'add' && !text.trim()) return close()
+
     const expectedVersion = list.version
     if (mode.kind === 'rename') send({ kind: 'rename', id: mode.id, name: text, expectedVersion }, 'dialog', close)
     else if (mode.kind === 'relink')

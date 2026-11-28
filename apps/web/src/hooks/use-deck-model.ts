@@ -62,21 +62,25 @@ export class DeckModel {
     const sessionId = this.sessionId,
       signal = this.control?.signal
     if (!sessionId || !signal || signal.aborted) return
+
     const snapshot = await this.api.snapshot(sessionId, signal)
     if (signal.aborted || sessionId !== this.sessionId || snapshot.sessionId !== sessionId) return
     if (this.current.snapshot && snapshot.version < this.current.snapshot.version) return
+
     const selection = this.current.selectedId ?? this.selections.get(sessionId)
     const selectedId = snapshot.slides.find(s => s.slideId === selection)?.slideId ?? snapshot.slides[0]?.slideId
     const before = this.current.snapshot?.slides.find(s => s.slideId === this.current.selectedId)
     const after = snapshot.slides.find(s => s.slideId === selectedId)
     const html =
       before?.slideId === after?.slideId && before?.revision === after?.revision ? this.current.html : undefined
+
     this.set({
       snapshot,
       ...(selectedId ? { selectedId } : {}),
       ...(html !== undefined ? { html } : {}),
       connection: this.current.connection,
     })
+
     await this.readSelected(sessionId, signal)
   }
 
@@ -85,9 +89,11 @@ export class DeckModel {
     const signal = this.control?.signal
     if (!sessionId || !signal || signal.aborted || !this.current.snapshot?.slides.some(s => s.slideId === slideId))
       return
+
     this.selections.set(sessionId, slideId)
     const { snapshot, connection } = this.current
     this.set({ ...(snapshot ? { snapshot } : {}), selectedId: slideId, connection })
+
     this.readSelected(sessionId, signal).catch(() => {
       if (!signal.aborted) this.set({ ...this.current, connection: 'error' })
     })

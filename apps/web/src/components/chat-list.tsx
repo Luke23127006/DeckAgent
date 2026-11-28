@@ -35,6 +35,7 @@ function ChatButton(props: {
   const updated = Number.isNaN(date.getTime()) ? chatListText.unknownTime : date.toLocaleString('vi-VN')
   const slides = slidesText(chat)
   const name = chatName(chat)
+
   return (
     <button
       type="button"
@@ -65,6 +66,7 @@ export function ChatList(props: {
   const chats = useChats()
   const found = useChatSearch(words)
   const workspaces = useWorkspaces()
+
   const selectedId = workspaces.data?.selectedId ?? 'default'
   const foundIds = words && found.data ? new Set(found.data.map(chat => chat.sessionId)) : undefined
   const listed = (chat: WebSession) =>
@@ -90,6 +92,7 @@ export function ChatList(props: {
     />
   )
   if (!grouped.length && !ungrouped.length) return <p>{foundIds ? chatListText.noMatch : chatListText.empty}</p>
+
   return (
     <>
       {grouped.map(button)}

@@ -75,6 +75,7 @@ function AccountMenu(props: {
 
   useEffect(() => {
     if (!open) return
+
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setOpen(false)
@@ -184,6 +185,7 @@ function Composer(props: {
   useEffect(() => {
     const node = input.current
     if (!node) return
+
     conversation.attachInput(node)
     const fit = () => {
       node.style.height = 'auto'
@@ -203,6 +205,7 @@ function Composer(props: {
     node.addEventListener('input', onInput)
     node.addEventListener('keydown', onKey)
     fit()
+
     return () => {
       node.removeEventListener('input', onInput)
       node.removeEventListener('keydown', onKey)
@@ -338,6 +341,7 @@ export function ChatScreen(props: { readonly initialSessionId?: string; readonly
       if (box) root.current?.style.setProperty('--navigation-height', `${box.height}px`)
     })
     if (navigation.current) size.observe(navigation.current)
+
     return () => {
       media.removeEventListener('change', onChange)
       size.disconnect()

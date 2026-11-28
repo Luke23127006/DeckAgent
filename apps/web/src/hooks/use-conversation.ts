@@ -97,11 +97,14 @@ export function sendBlocked(chat: WebSession | undefined, settings: WebSettings)
     const feedback = failureFeedback(settings.runtime.reason)
     return `${feedback.label}. ${feedback.detail}`
   }
+
   if (!chat || chat.selectable) return undefined
   if (!settings.providers.length) return conversationText.noProviders
   if (!settings.providers.some(provider => provider.models.length)) return conversationText.noModels
   const removed = chat.removedSelection ?? chat.selection
+
   if (removed) return conversationText.removedModel(removed.model)
+
   return conversationText.noModel
 }
 
@@ -347,22 +350,27 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   /** Saved records only move forward: an older response never turns an ended request active again. */
   setRecords(requests: readonly StoredRequest[], activities: readonly StoredActivity[]): void {
     const knownRequests = new Map(this.requests.map(request => [request.requestId, request]))
+
     for (const request of requests) {
       const previous = knownRequests.get(request.requestId)
       if (!previous || isActive(previous.status) || !isActive(request.status))
         knownRequests.set(request.requestId, request)
     }
+
     this.requests = [...knownRequests.values()]
     const knownActivities = new Map(this.activities.map(activity => [`${activity.requestId}/${activity.id}`, activity]))
+
     for (const activity of activities) {
       const key = `${activity.requestId}/${activity.id}`
       const previous = knownActivities.get(key)
       if (!previous || previous.status === 'running' || activity.status !== 'running')
         knownActivities.set(key, { ...activity, sequence: previous?.sequence ?? activity.sequence })
     }
+
     this.activities = [...knownActivities.values()].toSorted((a, b) =>
       a.requestId === b.requestId ? a.sequence - b.sequence : a.requestId < b.requestId ? -1 : 1,
     )
+
     this.changed()
   }
 
@@ -391,12 +399,15 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     const id = listed.sessionId
     const switching = this.currentId !== id
     if (switching && this.switchingBlocked()) return
+
     // Read everything before replacing current state. A failed open leaves the old chat intact.
     const previousGeneration = this.generation
+
     if (this.currentId) {
       this.saveDraft()
       await this.flushDraft(this.currentId)
     }
+
     const [history, activities, requests, outlines, text] = await Promise.all([
       readHistory(id),
       listActivities(id),
@@ -405,6 +416,7 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
       this.readDraft(id),
     ])
     if (this.generation !== previousGeneration || (switching && this.switchingBlocked())) return
+
     this.setText(text)
     this.generation++
     if (switching) this.resetRecords()
@@ -413,11 +425,13 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     this.currentId = id
     this.chatEntry = listed
     this.deck.openChat(id)
+
     try {
       sessionStorage.setItem('deckagent-session', id)
     } catch {
       /* The chat can still be selected from the list. */
     }
+
     const expected = this.generation
     this.opening = expected
     this.status = undefined
@@ -435,14 +449,17 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
 
   async newChat(): Promise<void> {
     if (this.switchingBlocked() || this.creating) return
+
     // An empty current chat of the workspace in use is reused; a new chat always joins the workspace in use.
     const current = this.current
     if (current && !this.historyPresent && current.workspaceId === (this.workspaces?.selectedId ?? 'default')) {
       this.input?.focus()
       return
     }
+
     this.creating = true
     this.changed()
+
     try {
       // FR-053: the Host gives the new chat the most recent model choice of any chat, when still selectable.
       const created = await createChat()
@@ -458,6 +475,7 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   async start(): Promise<void> {
     await this.refresh()
     if (this.disposed) return
+
     const wanted = this.options.initialSessionId
     if (wanted !== undefined) {
       const target = this.chats.find(chat => chat.sessionId === wanted)
@@ -468,12 +486,15 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
       await this.open(target)
       return
     }
+
     let remembered: string | null = null
+
     try {
       remembered = sessionStorage.getItem('deckagent-session')
     } catch {
       /* The list stays available. */
     }
+
     const previous = this.chats.find(chat => chat.sessionId === remembered)
     if (previous) await this.open(previous)
     else await this.newChat()
@@ -609,22 +630,27 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   async submit(text: string, skip = false, continueDeck = false): Promise<void> {
     const current = this.current
     if (!current || (continueDeck ? this.continueDisabled() : this.submitDisabled())) return
+
     const id = current.sessionId
     if (continueDeck && this.draftStates.get(id)?.attachments?.length) {
       this.setStatus({ text: conversationText.sendOrRemoveFiles, kind: 'error' })
       return
     }
+
     if (!text.trim() && !this.draftStates.get(id)?.attachments?.length) return
+
     if ([...text].length > requestLimit) {
       this.setStatus({ text: conversationText.tooLong, kind: 'error' })
       return
     }
+
     const expected = this.generation
     const command = continueDeck ? undefined : this.deck.command(skip, this.currentProposal())
     const publicResearch = command?.sourceChoice?.publicResearch ?? this.research.get(id) === true
     this.sending.add(id)
     this.status = { text: conversationText.sending, kind: 'sending' }
     this.changed()
+
     try {
       // A refused send leaves the draft unchanged; only an accepted request empties the composer.
       if (!(await this.flushDraft(id))) return
@@ -640,11 +666,13 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
           ...(command ? { deck: command } : {}),
           ...(consumesDraft ? { draftRevision, attachmentIds: draft?.attachmentIds ?? [] } : {}),
         })
+
         if (consumesDraft)
           this.receiveDraft(
             { sessionId: id, text: '', revision: draftRevision + 1, attachmentIds: [], attachments: [] },
             true,
           )
+
         return reply
       })
       if (this.generation === expected && this.currentId === id) {
@@ -719,13 +747,17 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   async confirmOutline(proposal: OutlineProposal): Promise<void> {
     const current = this.current
     if (!current || this.activeRequestId || this.sending.has(current.sessionId)) return
+
     if (this.text.trim() || this.draftStates.get(current.sessionId)?.attachments?.length) {
       this.setStatus({ text: conversationText.unsentBeforeConfirm })
       return
     }
+
     if (!proposal.brief || this.outlines?.currentId !== proposal.outlineId) throw new Error('OUTLINE_STALE')
+
     const id = current.sessionId
     const key = `${id}/${proposal.outlineId}/${proposal.version}/${proposal.brief.version}`
+
     let target = this.confirmationTargets.get(key)
     if (!target) {
       let confirmationId: string | null = null
@@ -748,16 +780,19 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
         /* In-memory retries remain idempotent. */
       }
     }
+
     await this.confirmTarget(target)
   }
 
   async confirmTarget(target: ConfirmationTarget): Promise<void> {
     const current = this.current
     if (!current || this.activeRequestId || this.sending.has(current.sessionId)) return
+
     const id = current.sessionId
     const expected = this.generation
     this.sending.add(id)
     this.changed()
+
     try {
       if (!(await this.flushDraft(id))) return
       const draft = await drafts.readDraft(id)
@@ -800,11 +835,13 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   private receiveDraft(draft: ChatDraft, acknowledgedText = false): void {
     const before = this.draftStates.get(draft.sessionId)
     if (before?.revision !== undefined && draft.revision !== undefined && draft.revision < before.revision) return
+
     if (!acknowledgedText && before && draft.text !== before.text && draft.text !== this.drafts.get(draft.sessionId)) {
       // A read must not take a newer revision while the editor keeps older text.
       this.setStatus({ text: conversationText.draftChanged, kind: 'error' })
       return
     }
+
     const attachments = draft.attachments?.map(item => {
       const known = before?.attachments?.find(previous => previous.attachmentId === item.attachmentId)
       return known && known.state !== 'preparing' && item.state === 'preparing' ? known : item
@@ -941,13 +978,17 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
   async previewAttachment(item: AttachmentView): Promise<void> {
     const id = this.currentId
     if (!id) return
+
     const preview = await drafts.previewAttachment(id, item.attachmentId)
     if (this.currentId !== id) return
+
     this.closePreview()
+
     this.preview =
       typeof preview === 'string'
         ? { name: item.name, text: preview }
         : { name: item.name, imageUrl: URL.createObjectURL(preview) }
+
     this.changed()
   }
 
@@ -970,14 +1011,17 @@ export class Conversation<D extends ConversationDeck = ConversationDeck> {
     const id = this.currentId
     if (!id || notice.key !== id) return
     if (notice.topic === 'draft') return this.onDraftNotice(id, notice.version)
+
     if (notice.topic === 'brief') {
       if (this.deck.briefVersion === undefined || notice.version <= this.deck.briefVersion) return
       await this.deck.refreshWorkflow(id)
       this.changed()
       return
     }
+
     if (notice.topic !== 'outline') return
     if (this.outlines?.sessionId !== id || notice.version <= this.outlines.version) return
+
     return this.showOutlines(id, this.generation)
   }
 
@@ -1022,6 +1066,7 @@ export function useConversation<D extends ConversationDeck>(
     const timer = setInterval(() => conversation.poll(), 750)
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('pageshow', onPageShow)
+
     return () => {
       clearInterval(timer)
       window.removeEventListener('pagehide', onPageHide)

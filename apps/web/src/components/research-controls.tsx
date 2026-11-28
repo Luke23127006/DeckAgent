@@ -67,6 +67,7 @@ export function ResearchDialog(props: {
   useEffect(() => {
     const node = dialog.current
     if (!node) return
+
     const onCancel = (event: Event) => {
       if (busy) event.preventDefault()
     }
@@ -113,9 +114,11 @@ export function ResearchDialog(props: {
     openSources: () => {
       const id = props.chatId
       if (!id || dialog.current?.open) return
+
       dialog.current?.showModal()
       setSources([])
       setStatus(researchText.reading)
+
       void perform(async () => {
         const values = await actions.sources(id)
         setSources(values)
