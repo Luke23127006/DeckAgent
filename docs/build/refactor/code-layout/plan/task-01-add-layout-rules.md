@@ -22,7 +22,7 @@ Read this file to learn the steps of Task 1, which adds `scripts/format-layout.m
 
 **Forbidden:** Do not add a dependency to a `package.json` file. Do not add a command-line entry point in this task.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/format-layout.test.mjs`. Start the file with a header comment that tells these items:
 
@@ -139,16 +139,16 @@ test('formatLayout parses TSX and keeps one finding for each line', () => {
 })
 ```
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/format-layout.test.mjs`
 Expected: FAIL. The output contains `ERR_MODULE_NOT_FOUND`.
 
-- [ ] **Step 3: Implement `isLayoutTarget` and `formatLayout` in `scripts/format-layout.mjs`**
+- [x] **Step 3: Implement `isLayoutTarget` and `formatLayout` in `scripts/format-layout.mjs`**
 
 Implement the rules, the gap and the line endings of the Decisions in `README.md`. A line has a maximum of one finding. When `layout-after-imports` and `layout-between-declarations` find the same line, keep `layout-after-imports`. Use `ts.ScriptKind.TSX` for `.tsx`, `ts.ScriptKind.JS` for `.js`, `.mjs` and `.cjs`, and `ts.ScriptKind.TS` for `.ts`.
 
-- [ ] **Step 4: Run the tests and make sure that they pass**
+- [x] **Step 4: Run the tests and make sure that they pass**
 
 Run: `corepack pnpm@11.28.5 exec biome format --write scripts/format-layout.mjs tests/format-layout.test.mjs`
 Expected: exit code 0.
@@ -159,7 +159,7 @@ Expected: `# fail 0`.
 Run: `corepack pnpm@11.28.5 lint`
 Expected: exit code 0.
 
-- [ ] **Step 5: Prove that the tests catch a fault**
+- [x] **Step 5: Prove that the tests catch a fault**
 
 Do each change, run `node --test --test-reporter=tap tests/format-layout.test.mjs`, and undo the change:
 
@@ -169,6 +169,6 @@ Do each change, run `node --test --test-reporter=tap tests/format-layout.test.mj
 
 Expected: each change makes one or more tests fail. Add one line for each change to the header comment of `tests/format-layout.test.mjs`, in the list `Faults caught during mutant verification`.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
