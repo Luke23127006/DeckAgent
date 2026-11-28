@@ -103,7 +103,7 @@ Each task obeys this protocol. A task file adds only its special conditions and 
 | 2 | Done | [Add the dense body list and the command](task-02-add-dense-list-and-command.md) ([report](../reports/task-02-add-dense-list-and-command.md)) | `feat(scripts): add the dense body list and the layout command` |
 | 3 | Done | [Apply Biome to the repository](task-03-apply-biome-format.md) ([report](../reports/task-03-apply-biome-format.md)) | `style(format): apply biome format` |
 | 4 | Done | [Apply the layout script to the repository](task-04-apply-layout-script.md) ([report](../reports/task-04-apply-layout-script.md)) | `style(layout): add blank lines between declarations and members` |
-| 5 | Pending | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) | `chore(scripts): run the layout check in format and the post-edit hook` |
+| 5 | Done | [Enforce the layout in format and the post-edit hook](task-05-enforce-layout-in-format-and-hook.md) ([report](../reports/task-05-enforce-layout-in-format-and-hook.md)) | `chore(scripts): run the layout check in format and the post-edit hook` |
 | 6 | Pending | [Write the layout rules into the conventions](task-06-write-layout-rules-into-conventions.md) | `docs(conventions): add the code layout rules` |
 | 7 | Pending | [Add steps in the Host deck module](task-07-add-steps-in-host-deck-module.md) | `style(layout): add steps in the Host deck module` |
 | 8 | Pending | [Add steps in the other Host folders](task-08-add-steps-in-other-host-folders.md) | `style(layout): add steps in the other Host folders` |

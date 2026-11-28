@@ -27,7 +27,7 @@ Read this file to learn the steps of Task 5, which makes `format`, `format:check
 
 **Forbidden:** Do not change the behavior of `runPostEdit` for files where `isDocsTarget` returns `true`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add these tests to the end of `tests/post-edit-hook.test.mjs`:
 
@@ -73,12 +73,12 @@ The file has no header comment. Add one at the start of the file that tells thes
 - The run command is `node --test --test-reporter=tap tests/post-edit-hook.test.mjs`.
 - The expected values come from `docs/build/refactor/code-layout/plan/README.md` (Decisions) and from the rule IDs of `scripts/check-docs.mjs`.
 
-- [ ] **Step 2: Run the tests and make sure that they fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `node --test --test-reporter=tap tests/post-edit-hook.test.mjs`
 Expected: FAIL. The test `blocks an edited source file with a missing blank line` fails. The other tests pass.
 
-- [ ] **Step 3: Implement the change**
+- [x] **Step 3: Implement the change**
 
 In `runPostEdit`, after the existing check for an existing file, use this table:
 
@@ -90,7 +90,7 @@ In `runPostEdit`, after the existing check for an existing file, use this table:
 
 In `package.json`, change the scripts `format` and `format:check` to the values in the `Interfaces` block.
 
-- [ ] **Step 4: Run the tests and the checks**
+- [x] **Step 4: Run the tests and the checks**
 
 Run: `node --test --test-reporter=tap tests/post-edit-hook.test.mjs tests/format-layout.test.mjs`
 Expected: `# fail 0`.
@@ -101,12 +101,12 @@ Expected: exit code 0. The output contains `format-layout: 0 finding(s)`.
 Run: `corepack pnpm@11.28.5 lint`
 Expected: exit code 0.
 
-- [ ] **Step 5: Prove that the test catches a fault**
+- [x] **Step 5: Prove that the test catches a fault**
 
 Remove the row `isLayoutTarget` of the table in Step 3 from `runPostEdit`, run `node --test --test-reporter=tap tests/post-edit-hook.test.mjs`, and restore the row.
 
 Expected: the test `blocks an edited source file with a missing blank line` fails. Write the result in the report.
 
-- [ ] **Step 6: Write the report file and stop**
+- [x] **Step 6: Write the report file and stop**
 
 Do the step `Write the report file and stop` of the Task protocol.
