@@ -125,9 +125,9 @@ function mountWorkflow(view: InterviewView, props: { researchAvailable?: boolean
 it('switches to the deck mode on a change event that does not bubble and sends the choices of the form', async () => {
   const { deck, onChoose, root } = mountWorkflow(interview())
   await act(() => deck.openWorkflow(chatId))
-  const mode = screen.getByLabelText('Chế độ hội thoại') as HTMLSelectElement
+  const mode = screen.getByLabelText('Conversation mode') as HTMLSelectElement
   expect(mode.value).toBe('chat')
-  expect(screen.getByLabelText('Câu hỏi cần bổ sung')).not.toBeVisible()
+  expect(screen.getByLabelText('Open questions')).not.toBeVisible()
   act(() => {
     mode.value = 'deck'
     mode.dispatchEvent(new Event('change'))
@@ -135,16 +135,16 @@ it('switches to the deck mode on a change event that does not bubble and sends t
   expect(deck.preparingDeck).toBe(true)
   const inputs = root.querySelectorAll('input')
   expect([...inputs].map(input => input.closest('label')?.textContent)).toEqual([
-    'Dùng tài liệu của chat',
-    'Dùng kiến thức chung của mô hình',
-    'Tìm nguồn công khai (chỉ miễn phí)',
+    'Use the chat documents',
+    'Use the general knowledge of the model',
+    'Search public sources (free only)',
   ])
   expect(inputs[2], 'unconfigured research does not look available').toBeDisabled()
-  fireEvent.click(within(screen.getByLabelText('Câu hỏi cần bổ sung')).getByRole('button', { name: 'Giáo viên' }))
+  fireEvent.click(within(screen.getByLabelText('Open questions')).getByRole('button', { name: 'Giáo viên' }))
   expect(onChoose).toHaveBeenCalledWith('Giáo viên')
   // A script sets a choice without an event; the request reads the form as it is now.
   ;(inputs[1] as HTMLInputElement).checked = true
-  ;(screen.getByLabelText('Lựa chọn ảnh') as HTMLSelectElement).value = 'commons'
+  ;(screen.getByLabelText('Image options') as HTMLSelectElement).value = 'commons'
   expect(deck.command(false, undefined)).toEqual({
     action: 'collect',
     expectedBriefVersion: 0,
@@ -163,13 +163,15 @@ it('takes the source choices of a saved Brief and asks about the current Outline
   const proposal = boundProposal()
   const { deck, root } = mountWorkflow(view, { proposal })
   await act(() => deck.openWorkflow(chatId))
-  expect(screen.getByLabelText('Chế độ hội thoại')).toHaveValue('deck')
+  expect(screen.getByLabelText('Conversation mode')).toHaveValue('deck')
   expect(root.querySelectorAll('input')[1]).toBeChecked()
-  expect(root.querySelector('details summary')).toHaveTextContent('Brief hiện tại · v1 và giả định')
-  expect(root.querySelector('details')).toHaveTextContent('Giả định: Người nghe là sinh viên')
-  const action = screen.getByLabelText('Loại yêu cầu Outline') as HTMLSelectElement
+  expect(root.querySelector('details summary')).toHaveTextContent('Current Brief · v1 and assumptions')
+  expect(root.querySelector('details')).toHaveTextContent('Assumption: Người nghe là sinh viên')
+  const action = screen.getByLabelText('Outline request type') as HTMLSelectElement
   expect(action).toBeVisible()
-  const skip = [...root.querySelectorAll('button')].find(button => button.textContent === 'Bỏ qua câu hỏi còn lại')
+  const skip = [...root.querySelectorAll('button')].find(
+    button => button.textContent === 'Skip the remaining questions',
+  )
   expect(skip).not.toBeVisible()
   action.value = 'question'
   expect(deck.command(false, proposal)).toMatchObject({
@@ -186,7 +188,7 @@ it('keeps a locked Brief read-only and sends a chat request without deck fields'
   const view = interview({ version: 2, current: { ...briefRecord(), version: 2 }, locked: true }, { questions: [] })
   const { deck, root } = mountWorkflow(view)
   await act(() => deck.openWorkflow(chatId))
-  expect(root.querySelector('details summary')).toHaveTextContent('Brief đã khóa cho deck này')
+  expect(root.querySelector('details summary')).toHaveTextContent('The Brief is locked for this deck')
   expect(root.querySelector('label')).not.toBeVisible()
   expect(deck.preparingDeck).toBe(false)
   expect(deck.command(false, undefined)).toBeUndefined()
@@ -243,22 +245,22 @@ it('blocks the confirmation while a required image is missing and asks for anoth
   )
   const card = container.querySelector('.outline-proposal[data-status=current]') as HTMLElement
   expect(card.querySelector('.outline-status')).toHaveTextContent(
-    'Chưa thể xác nhận · còn 1 ảnh bắt buộc chưa chuẩn bị',
+    'You cannot confirm yet · required images not ready: 1',
   )
-  const planned = card.querySelector('.planned-slide [aria-label="Nội dung dự kiến"]')
+  const planned = card.querySelector('.planned-slide [aria-label="Planned content"]')
   expect(planned?.textContent?.split('Mở đầu').length, 'structured content does not repeat the content paragraph').toBe(
     2,
   )
   const dock = container.querySelector('.outline-dock') as HTMLElement
   expect(dock.dataset.outlineId).toBe('out-2')
-  expect(dock).toHaveTextContent('Outline v2 · 2 slide · Brief v1')
-  expect(within(dock).getByRole('button', { name: 'Xác nhận outline và tạo slide' })).toBeDisabled()
-  expect(within(dock).queryByRole('button', { name: 'Hủy outline' })).toBeNull()
-  fireEvent.click(within(card).getByRole('button', { name: 'Tìm ảnh khác', hidden: true }))
+  expect(dock).toHaveTextContent('Outline v2 · 2 slides · Brief v1')
+  expect(within(dock).getByRole('button', { name: 'Confirm the outline and make slides' })).toBeDisabled()
+  expect(within(dock).queryByRole('button', { name: 'Cancel the outline' })).toBeNull()
+  fireEvent.click(within(card).getByRole('button', { name: 'Find a different image', hidden: true }))
   expect(handlers.revise).toHaveBeenCalledWith(
-    expect.stringContaining('Thay ảnh tại slide 1 “Giới thiệu”, vị trí ảnh 2.'),
+    expect.stringContaining('Replace the image on slide 1 “Giới thiệu”, image position 2.'),
   )
-  fireEvent.click(within(dock).getByRole('button', { name: 'Yêu cầu sửa outline' }))
+  fireEvent.click(within(dock).getByRole('button', { name: 'Ask for outline changes' }))
   expect(handlers.revise).toHaveBeenLastCalledWith()
 })
 
@@ -266,16 +268,16 @@ it('confirms the current Outline once it is ready and keeps an older proposal re
   const ready = boundProposal({ imageReview: [] })
   const handlers = actions()
   const { container, rerender } = render(<OutlineDock proposal={ready} actions={handlers} />)
-  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận outline và tạo slide' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm the outline and make slides' }))
   expect(handlers.confirm).toHaveBeenCalledWith(ready)
   rerender(<OutlineDock proposal={ready} actions={actions({ busy: true })} />)
-  expect(screen.getByRole('button', { name: 'Xác nhận outline và tạo slide' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Confirm the outline and make slides' })).toBeDisabled()
   rerender(<OutlineDock proposal={{ ...ready, status: 'superseded' }} actions={handlers} />)
   expect(container.querySelector('.outline-dock')).not.toBeVisible()
   cleanup()
   render(<OutlineCard proposal={{ ...boundProposal(), status: 'superseded' }} actions={handlers} />)
-  expect(screen.getByText('Đề xuất cũ · không còn là hiện tại')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Tìm ảnh khác', hidden: true })).toBeDisabled()
+  expect(screen.getByText('Old proposal · no longer current')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Find a different image', hidden: true })).toBeDisabled()
 })
 
 function deckSnapshot(): DeckSnapshot {
@@ -311,17 +313,17 @@ it('renders the saved slide in a sandboxed frame with the slide CSP and shows a 
   await waitFor(() => expect(stageFrame().getAttribute('srcdoc')).toBe(`${slideCsp}<h1>intro published</h1>`))
   expect(stageFrame().getAttribute('sandbox')).toBe('')
   expect(container.querySelector('.deck-placeholder')).not.toBeVisible()
-  expect(container.querySelector('.deck-progress')).toHaveTextContent('1/2 slide đã lưu')
-  expect(screen.getByRole('button', { name: 'Trước' })).toBeDisabled()
+  expect(container.querySelector('.deck-progress')).toHaveTextContent('1/2 slides saved')
+  expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
   const list = container.querySelector('.deck-slide-list') as HTMLElement
-  expect(list.querySelector('[aria-current=true]')).toHaveAttribute('aria-label', '1. Giới thiệu · Bản 1')
+  expect(list.querySelector('[aria-current=true]')).toHaveAttribute('aria-label', '1. Giới thiệu · Version 1')
   await waitFor(() => expect(list.querySelector('.thumbnail iframe')?.getAttribute('srcdoc')).toContain('thumbnail'))
   expect(list.querySelector('.thumbnail iframe')).toHaveAttribute('sandbox', '')
-  fireEvent.click(screen.getByRole('button', { name: 'Sau' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }))
   expect(list.querySelector('[aria-current=true]')).toHaveAttribute('data-status', 'pending')
   expect(stageFrame()).not.toBeVisible()
-  expect(container.querySelector('.deck-placeholder')).toHaveTextContent('Slide này chưa được tạo xong.')
-  expect(container.querySelector('.slide-caption')).toHaveTextContent('Slide 2/2 · Chưa tạo xong')
+  expect(container.querySelector('.deck-placeholder')).toHaveTextContent('This slide is not complete.')
+  expect(container.querySelector('.slide-caption')).toHaveTextContent('Slide 2/2 · Not complete')
   act(() => model.close())
 })
 

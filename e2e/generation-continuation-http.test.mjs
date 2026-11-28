@@ -73,7 +73,7 @@ test('Stop at two of five, restart and explicitly continue publishes only missin
   await finished(f.client, accepted.request.requestId)
   assert.ok(
     (await f.client.history(id)).some(
-      m => m.content.includes('2/5') && m.content.includes('chưa được kiểm tra để thống nhất'),
+      m => m.content.includes('2/5') && m.content.includes('for consistency with each other'),
     ),
   )
   const before = await client.snapshot(id)

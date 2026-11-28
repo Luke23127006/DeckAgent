@@ -1,6 +1,6 @@
 # Coding Guidelines
 
-Đọc file này để biết cách viết code production trong DeckAgent: naming, TypeScript, bố cục, comment, validation, state và error handling.
+Đọc file này để biết cách viết code production trong DeckAgent: naming, TypeScript, bố cục, ngôn ngữ, comment, validation, state và error handling.
 
 Vị trí đặt code, public API và dependency được phép nằm trong [Project Structure](project-structure.md). Cách viết test nằm trong [Testware](testware.md). Khi framework hoặc tool đang dùng đã có convention, áp dụng convention đó. File này chỉ quy định phần framework không quy định.
 
@@ -66,6 +66,12 @@ Biome quyết định indent, độ dài dòng và dấu câu *(format: Biome)*.
 - Member của class theo cùng quy tắc: field một dòng liền nhau là một nhóm, `constructor` và method nhiều dòng cách member bên cạnh một dòng trống *(format, hook post-edit: `format-layout` rule `layout-between-members`)*.
 - Thân hàm chia thành đoạn theo bước: kiểm precondition, đổi state, side effect, trả kết quả. Các đoạn cách nhau một dòng trống. Trong React component và hook, các lệnh gọi hook là một đoạn, giá trị tính từ hook là đoạn sau, `return` là đoạn cuối. Lệnh `node scripts/format-layout.mjs --dense <path>` liệt kê thân hàm có từ 6 câu lệnh và 12 dòng trở lên mà không có dòng trống *(review)*.
 - Khai báo biến ở đoạn dùng biến đó lần đầu. Không gom khai báo lên đầu hàm, vì `const` và `let` có scope là block. Ngoại lệ: React component gọi mọi hook trước điều kiện đầu tiên, theo Rules of Hooks *(review)*.
+
+## Ngôn ngữ
+
+- Code production trong `apps/*/src` và `packages/**/src` chỉ dùng tiếng Anh. Quy tắc này áp dụng cho văn bản người dùng thấy, error message, status message, text gửi cho model và comment *(lint, hook post-edit: `check-source-language` rule `source-language`)*.
+- Message mà người dùng hoặc agent đọc theo ASD-STE100. Dùng skill `asd-ste100` khi viết hoặc sửa message *(review)*.
+- Ngoại lệ: test và script được dùng dữ liệu mẫu tiếng Việt, ví dụ để kiểm deck tiếng Việt hiển thị đúng.
 
 ## Comments
 

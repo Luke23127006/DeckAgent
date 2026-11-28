@@ -265,21 +265,21 @@ test('chat and deck controls show one effective research choice and matching inp
   const { protocol, evaluate } = session
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.chat-navigation [aria-current=true]')`), 'Chat not ready')
-  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'Bạn muốn trao đổi điều gì?')
+  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'What do you want to discuss?')
   await eventually(
-    () => evaluate(`!!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`),
+    () => evaluate(`!!document.querySelector('[aria-label="Conversation mode"]:not(:disabled)')`),
     'Conversation mode is not ready',
   )
   const mode = async value =>
     evaluate(`{
-    const control=document.querySelector('[aria-label="Chế độ hội thoại"]');
+    const control=document.querySelector('[aria-label="Conversation mode"]');
     control.value=${JSON.stringify(value)};control.dispatchEvent(new Event('change'));
   } true`)
   await mode('deck')
-  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'Hãy mô tả deck bạn muốn')
+  assert.equal(await evaluate(`document.querySelector('.welcome h2').textContent`), 'Describe the deck that you want')
   assert.equal(
     await evaluate(`document.querySelector('.composer textarea').placeholder`),
-    'Mô tả deck hoặc trả lời các câu hỏi ở trên…',
+    'Describe the deck or answer the questions above…',
   )
   assert.equal(await evaluate(`document.querySelector('.public-research-choice').checkVisibility()`), false)
   assert.equal(
@@ -290,15 +290,15 @@ test('chat and deck controls show one effective research choice and matching inp
   await mode('chat')
   assert.equal(await evaluate(`document.querySelector('.public-research-choice').checkVisibility()`), true)
   assert.equal(
-    await evaluate(`document.querySelector('[aria-label="Thông tin tìm nguồn"]').textContent`),
-    'Chưa cấu hình',
+    await evaluate(`document.querySelector('[aria-label="Source search details"]').textContent`),
+    'Not set up',
   )
   assert.equal(
     await evaluate(`document.querySelector('.public-research-choice').checked`),
     false,
     'Changing mode must not grant generic Chat research',
   )
-  assert.equal(await evaluate(`document.querySelector('.composer textarea').placeholder`), 'Nhập tin nhắn của bạn…')
+  assert.equal(await evaluate(`document.querySelector('.composer textarea').placeholder`), 'Type your message…')
 })
 
 test('research checkbox stays beside its clickable label on desktop and mobile without sending a request', {
@@ -328,7 +328,7 @@ test('research checkbox stays beside its clickable label on desktop and mobile w
   await eventually(
     () =>
       evaluate(
-        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`,
+        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Conversation mode"]:not(:disabled)')`,
       ),
     'Chat is not ready for research selection',
   )
@@ -366,7 +366,7 @@ test('research checkbox stays beside its clickable label on desktop and mobile w
   })()`),
     { checked: true, disabled: false, associated: true },
   )
-  await evaluate(`document.querySelector('[aria-label="Thông tin tìm nguồn"]').click(); true`)
+  await evaluate(`document.querySelector('[aria-label="Source search details"]').click(); true`)
   assert.equal(await evaluate(`document.querySelector('.research-dialog').open`), true)
   assert.equal(
     await evaluate(`document.querySelector('.public-research-choice').checked`),
@@ -485,23 +485,23 @@ test('Outline review names its exact target, hides resolved interview questions 
   )
   assert.equal(await evaluate(`document.querySelector('.outline-dock').dataset.outlineId`), current.outlineId)
   assert.equal(
-    await evaluate(`document.querySelector('.deck-workflow [aria-label="Câu hỏi cần bổ sung"]').hidden`),
+    await evaluate(`document.querySelector('.deck-workflow [aria-label="Open questions"]').hidden`),
     true,
   )
   assert.equal(
     await evaluate(
-      `document.querySelector('.outline-proposal[data-status=current] [aria-label="Nội dung dự kiến"]').textContent.split('Explain the purpose').length-1`,
+      `document.querySelector('.outline-proposal[data-status=current] [aria-label="Planned content"]').textContent.split('Explain the purpose').length-1`,
     ),
     1,
     'Structured content must not repeat the same legacy content paragraph',
   )
   await evaluate(`{
-    const action=document.querySelector('[aria-label="Loại yêu cầu Outline"]');
+    const action=document.querySelector('[aria-label="Outline request type"]');
     action.value='question';action.dispatchEvent(new Event('change'));
     const input=document.querySelector('.composer textarea');input.value='Giữ bản nháp này';input.dispatchEvent(new Event('input'));
-    [...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent==='Yêu cầu sửa outline').click();
+    [...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent==='Ask for outline changes').click();
   } true`)
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value`), 'revise')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Outline request type"]').value`), 'revise')
   assert.equal(await evaluate(`document.querySelector('.composer textarea').value`), 'Giữ bản nháp này')
   assert.equal(await evaluate(`document.activeElement===document.querySelector('.composer textarea')`), true)
   await protocol.call('Page.reload')
@@ -540,11 +540,11 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.composer textarea') && !document.querySelector('[aria-label="Chọn model"]').disabled`,
+        `document.querySelector('.composer textarea') && !document.querySelector('[aria-label="Select model"]').disabled`,
       ),
     'Composer missing',
   )
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
+  await evaluate(`document.querySelector('[aria-label="Select model"]').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.model-options button:not(:disabled)')`), 'Model missing')
   await evaluate(`document.querySelector('.model-options button:not(:disabled)').click(); true`)
   await eventually(() => evaluate(`!document.querySelector('.send-action').disabled`), 'Model not ready').catch(
@@ -553,7 +553,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     },
   )
   await evaluate(
-    `{const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
+    `{const mode=document.querySelector('[aria-label="Conversation mode"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
   )
   const send = async text => {
     await evaluate(
@@ -569,7 +569,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   }
   await send('Tạo bài giới thiệu [workflow]')
   await eventually(
-    () => evaluate(`document.querySelector('.deck-workflow').textContent.includes('sau bài trình bày')`),
+    () => evaluate(`document.querySelector('.deck-workflow').textContent.includes('after the presentation')`),
     'Missing interview questions',
   )
   assert.equal(await evaluate(`document.querySelectorAll('.outline-proposal').length`), 0)
@@ -583,7 +583,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   await eventually(
     () =>
       evaluate(
-        `[...document.querySelectorAll('.request-state')].some(node=>node.textContent.includes('Chưa chuẩn bị được Brief hợp lệ'))`,
+        `[...document.querySelectorAll('.request-state')].some(node=>node.textContent.includes('A valid Brief was not prepared'))`,
       ),
     'Brief repair exhaustion must have specific feedback',
   )
@@ -605,18 +605,18 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     'Outline not shown',
   )
   assert.equal(
-    await evaluate(`[...document.querySelectorAll('.outline-actions button')].some(b=>b.textContent==='Hủy outline')`),
+    await evaluate(`[...document.querySelectorAll('.outline-actions button')].some(b=>b.textContent==='Cancel the outline')`),
     false,
   )
   const old = await evaluate(`document.querySelector('.outline-proposal[data-status=current]').dataset.outlineId`)
-  await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value='question'; true`)
+  await evaluate(`document.querySelector('[aria-label="Outline request type"]').value='question'; true`)
   await send('Vì sao chia thành ba phần? [workflow]')
   assert.equal(
     await evaluate(`document.querySelector('.outline-proposal[data-status=current]').dataset.outlineId`),
     old,
     'A pure question must keep the proposal',
   )
-  await evaluate(`document.querySelector('[aria-label="Loại yêu cầu Outline"]').value='revise'; true`)
+  await evaluate(`document.querySelector('[aria-label="Outline request type"]').value='revise'; true`)
   await writeFile(
     `${log}.workflow.json`,
     JSON.stringify({ brief: draft, outline: { ...plan, overview: 'Revised three slides' } }),
@@ -640,14 +640,14 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   )
   // A mixed unsent draft cannot be silently discarded by confirmation.
   await evaluate(
-    `{const ta=document.querySelector('.composer textarea');ta.value='Thêm một slide nữa';ta.dispatchEvent(new Event('input'));[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click()} true`,
+    `{const ta=document.querySelector('.composer textarea');ta.value='Thêm một slide nữa';ta.dispatchEvent(new Event('input'));[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Confirm')).click()} true`,
   )
-  assert.equal(await evaluate(`document.querySelector('.request-status').textContent.includes('chưa gửi')`), true)
+  assert.equal(await evaluate(`document.querySelector('.request-status').textContent.includes('did not send')`), true)
   await evaluate(
     `{const original=window.fetch;window.__lostConfirmation=false;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).endsWith('/deck/confirm')&&!window.__lostConfirmation){window.__lostConfirmation=true;throw new TypeError('Simulated lost confirmation response')}return response}} true`,
   )
   await evaluate(
-    `{const ta=document.querySelector('.composer textarea');ta.value='';ta.dispatchEvent(new Event('input'));const confirm=[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận'));confirm.click();confirm.click()} true`,
+    `{const ta=document.querySelector('.composer textarea');ta.value='';ta.dispatchEvent(new Event('input'));const confirm=[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Confirm'));confirm.click();confirm.click()} true`,
   )
   await eventually(
     () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('3/3')`),
@@ -667,7 +667,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.deck-progress')?.textContent.includes('3/3') && document.querySelector('.deck-workflow').textContent.includes('Brief đã khóa')`,
+        `document.querySelector('.deck-progress')?.textContent.includes('3/3') && document.querySelector('.deck-workflow').textContent.includes('The Brief is locked')`,
       ),
     'Reload lost confirmed output',
   )
@@ -707,7 +707,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     'New chat not ready',
   )
   await evaluate(
-    `{const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
+    `{const mode=document.querySelector('[aria-label="Conversation mode"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;} true`,
   )
   await send('Tạo deck mới [workflow]')
   await eventually(
@@ -721,7 +721,7 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
     },
   )
   await evaluate(
-    `[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Xác nhận')).click(); true`,
+    `[...document.querySelectorAll('.outline-dock button')].find(b=>b.textContent.includes('Confirm')).click(); true`,
   )
   await eventually(
     () =>
@@ -732,24 +732,24 @@ test('Create deck UI collects missing answers, revises, confirms once, previews 
   )
   await evaluate(`document.querySelector('.stop-action').click(); true`)
   await eventually(
-    () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('Chưa hoàn tất')`),
+    () => evaluate(`document.querySelector('.deck-progress')?.textContent.includes('Not complete')`),
     'Stopped deck not marked incomplete',
   )
   await protocol.call('Page.reload')
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.deck-progress')?.textContent.includes('1/3') && document.querySelector('.deck-progress')?.textContent.includes('Chưa hoàn tất')`,
+        `document.querySelector('.deck-progress')?.textContent.includes('1/3') && document.querySelector('.deck-progress')?.textContent.includes('Not complete')`,
       ),
     'Reload lost the last published slide after Stop',
   )
   await writeFile(`${log}.generation.json`, '{}')
   await eventually(
     () =>
-      evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent==='Tiếp tục tạo deck' && !b.disabled)`),
+      evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent==='Continue the deck' && !b.disabled)`),
     'Incomplete deck does not offer explicit continuation',
   )
-  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Tiếp tục tạo deck').click(); true`)
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Continue the deck').click(); true`)
   try {
     await eventually(
       () =>
@@ -875,14 +875,14 @@ test('web-image Outline completion clears request controls and history reopens a
   )
   await chooseChat(evaluate, target)
   await eventually(
-    () => evaluate(`!document.querySelector('[aria-label="Chế độ hội thoại"]').disabled`),
+    () => evaluate(`!document.querySelector('[aria-label="Conversation mode"]').disabled`),
     'Deck mode not ready',
   )
   await evaluate(
     `window.__originalOutlineFetch=window.fetch.bind(window);window.__outlineFaultSeen=false;window.fetch=async (...args)=>{const url=String(args[0]);if(url.endsWith('/outline')){const requests=await (await window.__originalOutlineFetch(url.replace(/\\/outline$/,'/requests'),args[1])).json();if(requests.some(r=>r.status==='completed')){window.__outlineFaultSeen=true;throw new Error('fixture Outline refresh unavailable')}}return window.__originalOutlineFetch(...args)};true`,
   )
   await evaluate(
-    `{ const mode=document.querySelector('[aria-label="Chế độ hội thoại"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;document.querySelector('[aria-label="Lựa chọn ảnh"]').value='commons';const input=document.querySelector('.composer textarea');input.value='Create the forest deck [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit(); } true`,
+    `{ const mode=document.querySelector('[aria-label="Conversation mode"]');mode.value='deck';mode.dispatchEvent(new Event('change'));document.querySelectorAll('.deck-workflow input')[1].checked=true;document.querySelector('[aria-label="Image options"]').value='commons';const input=document.querySelector('.composer textarea');input.value='Create the forest deck [workflow]';input.dispatchEvent(new Event('input'));document.querySelector('.composer').requestSubmit(); } true`,
   )
   await eventually(
     () => evaluate(`document.querySelector('.stop-action').hidden && !document.querySelector('.send-action').disabled`),
@@ -894,7 +894,7 @@ test('web-image Outline completion clears request controls and history reopens a
     'The post-completion Outline failure must be exercised',
   )
   await evaluate(
-    `window.fetch=window.__originalOutlineFetch;[...document.querySelectorAll('button')].find(b=>b.textContent==='Kết nối lại / đọc lịch sử').click();true`,
+    `window.fetch=window.__originalOutlineFetch;[...document.querySelectorAll('button')].find(b=>b.textContent==='Connect again / read history').click();true`,
   )
   await eventually(
     () => evaluate(`!!document.querySelector('.outline-proposal[data-status=current]')`),
@@ -965,7 +965,7 @@ test('web-image Outline completion clears request controls and history reopens a
   assert.equal(await evaluate(`document.querySelector('.outline-actions button').disabled`), true)
   assert.equal(
     await evaluate(
-      `document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('chưa chuẩn bị')`,
+      `document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('not ready')`,
     ),
     true,
   )
@@ -977,7 +977,7 @@ test('web-image Outline completion clears request controls and history reopens a
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận') && document.querySelector('.stop-action').hidden`,
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('waiting for your confirmation') && document.querySelector('.stop-action').hidden`,
       ),
     'Resumed image progress is not ready for confirmation',
   )
@@ -987,7 +987,7 @@ test('web-image Outline completion clears request controls and history reopens a
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận')`,
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('waiting for your confirmation')`,
       ),
     'Reload lost the resumed image progress',
   )
@@ -1013,12 +1013,12 @@ test('saving a Custom API model ID from the input makes it available without a s
   await eventually(
     () =>
       evaluate(
-        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Chế độ hội thoại"]:not(:disabled)')`,
+        `!!document.querySelector('.chat-navigation [aria-current=true]') && !!document.querySelector('[aria-label="Conversation mode"]:not(:disabled)')`,
       ),
     'Chat is not ready',
   )
   await evaluate(
-    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click(); true`,
+    `document.querySelector('[aria-label="Select model"]').click();document.querySelector('[aria-label="Add provider"]').click(); true`,
   )
   await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
   const setField = async (label, value, textarea = false) => evaluate(`{
@@ -1030,22 +1030,22 @@ test('saving a Custom API model ID from the input makes it available without a s
   assert.equal(await evaluate(`document.querySelector('[aria-label="Provider ID"]').validity.patternMismatch`), true,
     'A display name with spaces must not be accepted as a provider URL identity')
   await setField('Provider ID', 'custom-fixture')
-  await setField('Tên hiển thị', 'Custom fixture')
+  await setField('Display name', 'Custom fixture')
   await setField('Base URL', endpoint.baseUrl)
   await setField('Model ID', 'wizard-model', true)
   await evaluate(`document.querySelector('main form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Đã lưu')`), 'Model save did not finish')
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('is saved')`), 'Model save did not finish')
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`location.pathname === '/settings' && document.querySelector('main nav')?.textContent.includes('Custom fixture')`), 'Settings reload lost authentication or the saved provider', {
     describe: () => evaluate(`({path:location.pathname,hasToken:location.hash.startsWith('#token='),text:document.body.innerText.slice(0,400)})`),
   })
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 390, height: 600, deviceScaleFactor: 1, mobile: false })
-  await eventually(() => evaluate(`!![...document.querySelectorAll('main button')].find(button => button.textContent === 'Hệ thống')`), 'Theme controls missing')
+  await eventually(() => evaluate(`!![...document.querySelectorAll('main button')].find(button => button.textContent === 'System')`), 'Theme controls missing')
   await evaluate(`document.querySelector('main').scrollTop=document.querySelector('main').scrollHeight;true`)
   assert.equal(await evaluate(`document.querySelector('main').scrollHeight > document.querySelector('main').clientHeight`), true, 'Mobile Settings must scroll inside the app frame')
-  assert.equal(await evaluate(`[...document.querySelectorAll('main button')].find(button => button.textContent === 'Hệ thống').getBoundingClientRect().bottom <= innerHeight`), true, 'Mobile Settings must expose its final controls')
+  assert.equal(await evaluate(`[...document.querySelectorAll('main button')].find(button => button.textContent === 'System').getBoundingClientRect().bottom <= innerHeight`), true, 'Mobile Settings must expose its final controls')
   await protocol.call('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
-  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Back to chat').click();true`)
   await eventually(() => evaluate(`document.querySelector('.composer select')?.textContent.includes('wizard-model')`), 'Saved model is missing')
   assert.equal(await evaluate(`document.querySelector('.composer select').value`), '',
     'Adding a model must not choose it for the Chat automatically')
@@ -1072,24 +1072,24 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   })
   await protocol.call('Page.navigate', { url: `${app.origin}/#token=${app.token}` })
   await eventually(() => evaluate(`!!document.querySelector('.welcome:not([hidden])')`), 'Welcome missing')
-  const send = `document.querySelector('.composer [aria-label="Gửi yêu cầu"]')`
+  const send = `document.querySelector('.composer [aria-label="Send request"]')`
   const note = `document.querySelector('.requests-unavailable')`
   // FR-046: no selected model, no Send, and the composer says why.
   await eventually(
-    () => evaluate(`${note}.checkVisibility() && ${note}.textContent.includes('chưa chọn model')`),
+    () => evaluate(`${note}.checkVisibility() && ${note}.textContent.includes('no selected model')`),
     'No reason shown for a chat without a model',
   )
   assert.equal(await evaluate(`${send}.disabled`), true)
   assert.equal(
-    await evaluate(`!!document.querySelector('[aria-label="Chọn model"]')`),
+    await evaluate(`!!document.querySelector('[aria-label="Select model"]')`),
     true,
     'The composer must offer the provider/model popover',
   )
   await eventually(
-    () => evaluate(`document.querySelector('[aria-label="Chọn model"]')?.disabled === false`),
+    () => evaluate(`document.querySelector('[aria-label="Select model"]')?.disabled === false`),
     'Chat not ready for model selection',
   )
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click(); true`)
+  await evaluate(`document.querySelector('[aria-label="Select model"]').click(); true`)
   await eventually(() => evaluate(`!!document.querySelector('.model-options button')`), 'Model popover empty')
   await evaluate(`document.querySelector('.model-options button').click(); true`)
   await eventually(
@@ -1121,13 +1121,13 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.request-record[data-status=completed] .request-state')?.textContent.startsWith('Đã xong')`,
+        `document.querySelector('.request-record[data-status=completed] .request-state')?.textContent.startsWith('Done')`,
       ),
     'Completed state not shown',
   )
   assert.equal(
     await evaluate(`document.querySelector('.activity-detail summary').textContent`),
-    'Phản hồi model · hoàn tất',
+    'Model response · completed',
   )
   assert.equal(
     await evaluate(`document.querySelector('.composer textarea').value`),
@@ -1192,7 +1192,7 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.request-record[data-status=stopped] .request-state')?.textContent === 'Đã dừng'`,
+        `document.querySelector('.request-record[data-status=stopped] .request-state')?.textContent === 'Stopped'`,
       ),
     'Stop not shown',
   )
@@ -1207,7 +1207,7 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
   assert.equal(await requestCount(app, chatId), 2)
   // FR-079: the runtime summarized the conversation; the boundary sits right above the request's own message and
   // every earlier message stays readable.
-  const boundary = `(()=>{const b=document.querySelector('.summary-boundary');const next=b?.nextElementSibling;return !!b&&b.checkVisibility()&&b.textContent.includes('đã được tóm tắt')&&next?.matches('.message.user')&&next.textContent.includes('Dài [overflow]')&&[...document.querySelectorAll('.message.user')].some(n=>n.textContent.includes('Xin chào'))})()`
+  const boundary = `(()=>{const b=document.querySelector('.summary-boundary');const next=b?.nextElementSibling;return !!b&&b.checkVisibility()&&b.textContent.includes('summarized the conversation')&&next?.matches('.message.user')&&next.textContent.includes('Dài [overflow]')&&[...document.querySelectorAll('.message.user')].some(n=>n.textContent.includes('Xin chào'))})()`
   await evaluate(
     `{const ta=document.querySelector('.composer textarea'); ta.value='Dài [overflow]'; ta.dispatchEvent(new Event('input')); document.querySelector('.composer').requestSubmit()} true`,
   )
@@ -1258,7 +1258,7 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
     'The toggle restores the chat list',
   )
   await evaluate(
-    `document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`,
+    `document.querySelector('[aria-label="Select model"]').click();document.querySelector('.model-manage').click();true`,
   )
   await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
   const setProviderField = async (label, value, textarea = false) => evaluate(`{
@@ -1266,28 +1266,28 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
     Object.getOwnPropertyDescriptor(${textarea ? 'HTMLTextAreaElement' : 'HTMLInputElement'}.prototype, 'value').set.call(input, ${JSON.stringify(value)});
     input.dispatchEvent(new Event('input', {bubbles: true}));
   } true`)
-  await setProviderField('Tên hiển thị', 'Unsaved')
+  await setProviderField('Display name', 'Unsaved')
   await evaluate(`window.__discardPrompts=0;window.__settingsIndex=history.state.idx;window.confirm=()=>{window.__discardPrompts++;return false};history.back();true`)
   await eventually(() => evaluate(`window.__discardPrompts === 1 && history.state.idx === window.__settingsIndex`), 'History discard guard missing', {
     describe: () => evaluate(`({prompts:window.__discardPrompts,index:history.state.idx,expected:window.__settingsIndex,path:location.pathname})`),
   })
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'Unsaved', 'Rejected history navigation must keep the draft')
-  await evaluate(`window.confirm=()=>false;[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Display name"]').value`), 'Unsaved', 'Rejected history navigation must keep the draft')
+  await evaluate(`window.confirm=()=>false;[...document.querySelectorAll('button')].find(button => button.textContent === 'Back to chat').click();true`)
   assert.equal(await evaluate(`location.pathname`), '/settings', 'Declining discard must keep Settings open')
-  await evaluate(`window.confirm=()=>true;[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await evaluate(`window.confirm=()=>true;[...document.querySelectorAll('button')].find(button => button.textContent === 'Back to chat').click();true`)
   await eventually(() => evaluate(`!!document.querySelector('.composer select')`), 'Settings did not return to chat')
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('[aria-label="Thêm provider"]').click();true`)
+  await evaluate(`document.querySelector('[aria-label="Select model"]').click();document.querySelector('[aria-label="Add provider"]').click();true`)
   await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Provider form missing')
   await setProviderField('Provider ID', 'wizard-api')
-  await setProviderField('Tên hiển thị', 'Wizard API')
+  await setProviderField('Display name', 'Wizard API')
   await setProviderField('Base URL', 'http://127.0.0.1:1/v1')
   await evaluate(`document.querySelector('main form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('[role=alert]')?.textContent.includes('không trả lời')`), 'A silent provider was not refused')
+  await eventually(() => evaluate(`document.querySelector('[role=alert]')?.textContent.includes('did not answer')`), 'A silent provider was not refused')
   await setProviderField('Base URL', endpoint.baseUrl)
   await setProviderField('Model ID', 'wizard-model', true)
   await evaluate(`document.querySelector('main form').requestSubmit();true`)
-  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Đã lưu')`), 'Provider save did not finish')
-  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Quay lại chat').click();true`)
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('is saved')`), 'Provider save did not finish')
+  await evaluate(`[...document.querySelectorAll('button')].find(button => button.textContent === 'Back to chat').click();true`)
   await eventually(() => evaluate(`document.querySelector('.composer select')?.textContent.includes('wizard-model')`), 'Saved model missing from chat')
   assert.equal(
     await evaluate(`document.querySelector('.composer select').value.includes('interactive')`),
@@ -1311,7 +1311,7 @@ test('interactive composer: model choice, Send, live reply and Stop survive a re
     true,
     'Mobile chat must wrap below the rail with usable width',
   )
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();true`)
+  await evaluate(`document.querySelector('[aria-label="Select model"]').click();true`)
   assert.equal(
     await evaluate(
       `(() => {const panel=document.querySelector('.model-popover');const box=panel.getBoundingClientRect();return panel.checkVisibility()&&box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight;})()`,
@@ -1409,7 +1409,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   )
   assert.equal(
     await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`),
-    'Có slide',
+    'Has slides',
     'The chat list says the chat has slides',
   )
   await eventually(
@@ -1421,12 +1421,12 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   )
   assert.equal(
     await evaluate(`document.querySelector('.published-deck-sidebar .deck-progress').textContent`),
-    '2/3 slide đã lưu',
+    '2/3 slides saved',
   )
   assert.equal(await evaluate(`document.querySelector('.published-deck-sidebar .deck-placeholder').hidden`), true)
   assert.equal(
     await evaluate(
-      `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').disabled`,
+      `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Previous').disabled`,
     ),
     true,
     'Previous must be disabled at the first slide',
@@ -1450,10 +1450,10 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     await evaluate(
       `document.querySelector('.published-deck-sidebar .deck-slide-list [aria-current=true]').getAttribute('aria-label')`,
     ),
-    '1. Introduction · Bản 1',
+    '1. Introduction · Version 1',
   )
   await evaluate(
-    `[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Sau').click(); true`,
+    `[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Next').click(); true`,
   )
   await eventually(
     () =>
@@ -1473,7 +1473,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
     'Selecting pending must show a placeholder without old HTML',
   )
   await evaluate(
-    `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Trước').click(); true`,
+    `[...document.querySelectorAll('.published-deck-sidebar button')].find(button=>button.textContent==='Previous').click(); true`,
   )
   await eventually(
     () =>
@@ -1581,7 +1581,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   await protocol.call('Page.bringToFront')
   assert.equal(await evaluate('document.hasFocus()'), true, 'Presentation requires the active browser tab')
   const presentButton = await evaluate(
-    `(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Trình chiếu').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`,
+    `(() => { const r=[...document.querySelectorAll('.published-deck-sidebar button')].find(b=>b.textContent==='Present').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`,
   )
   await protocol.call('Input.dispatchMouseEvent', { type: 'mouseMoved', ...presentButton })
   await protocol.call('Input.dispatchMouseEvent', {
@@ -1676,7 +1676,7 @@ test('Deck Canvas renders saved revisions, keeps selection and restores content 
   )
   assert.equal(
     await evaluate(`document.querySelector('.chat-navigation nav button[aria-current=true] small').textContent`),
-    'Có slide',
+    'Has slides',
     'Published state must survive Host restart',
   )
   await eventually(
@@ -1822,10 +1822,10 @@ test('public research is explicit, config checks the free key and stored excerpt
   )
   await eventually(
     () =>
-      evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm')?.disabled === false`),
+      evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Found sources')?.disabled === false`),
     'Restored Chat sources are not ready',
   )
-  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Nguồn đã tìm').click(); true`)
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Found sources').click(); true`)
   await eventually(
     () => evaluate(`document.querySelector('.research-dialog pre')?.textContent.includes('Research marker 482')`),
     'Saved excerpts not visible after reload',
@@ -1834,12 +1834,12 @@ test('public research is explicit, config checks the free key and stored excerpt
   assert.equal(await evaluate(`document.querySelector('.research-dialog input[type=password]').value`), '')
   assert.equal(await evaluate(`document.querySelector('.research-dialog a').href`), 'https://example.org/report')
   await evaluate(
-    `document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra key từ .env').click(); true`,
+    `document.querySelector('.research-dialog').close(); [...document.querySelectorAll('button')].find(b=>b.textContent==='Search settings').click(); [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Check the key from .env').click(); true`,
   )
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.research-dialog [role=status]').textContent.includes('Key môi trường hợp lệ')`,
+        `document.querySelector('.research-dialog [role=status]').textContent.includes('The environment key is valid')`,
       ),
     'Free environment key check not shown',
   )
@@ -2040,7 +2040,7 @@ test('step approval survives reload and chat switching; refusal continues and St
     throw new Error(`${error.message}: ${await evaluate('document.body.innerText')}`)
   })
   assert.equal(await evaluate(`${visible}.textContent.includes('outside.txt')`), true)
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').hidden`), false)
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Stop the request"]').hidden`), false)
   await chooseChat(evaluate, other.sessionId)
   await eventually(() => evaluate(`!${visible}`), 'Approval leaked into another chat')
   await chooseChat(evaluate, chat.sessionId)
@@ -2048,20 +2048,20 @@ test('step approval survives reload and chat switching; refusal continues and St
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!${visible}`), 'Approval lost on reload')
   await evaluate(
-    `Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Từ chối').click(); true`,
+    `Array.from(${visible}.querySelectorAll('button')).find(button => button.textContent === 'Refuse').click(); true`,
   )
   await eventually(
     async () => (await api(`requests/${request.requestId}`)).status === 'completed',
     'Refused request did not continue',
   )
   await eventually(
-    () => evaluate(`document.querySelector('.messages').textContent.includes('Không thực hiện vì bạn đã từ chối')`),
+    () => evaluate(`document.querySelector('.messages').textContent.includes('Not done because you refused')`),
     'Refusal missing from saved closing reply',
   )
   const next = await api('requests', 'POST', { sessionId: chat.sessionId, input: `[mcp-external] ${outside}` })
   await protocol.call('Page.reload')
   await eventually(() => evaluate(`!!${visible}`), 'Next approval missing')
-  await evaluate(`document.querySelector('[aria-label="Dừng yêu cầu"]').click(); true`)
+  await evaluate(`document.querySelector('[aria-label="Stop the request"]').click(); true`)
   await eventually(
     async () => (await api(`requests/${next.requestId}`)).status === 'stopped',
     'Stop failed during approval',
@@ -2114,7 +2114,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
       ),
     'Browser boot failed',
   )
-  assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'Chat mới')
+  assert.equal(await evaluate(`document.querySelector('.conversation-header h1').textContent`), 'New chat')
   assert.equal(
     await evaluate(`document.querySelector('.composer textarea').getBoundingClientRect().height < 95`),
     true,
@@ -2122,7 +2122,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   )
   assert.equal(
     await evaluate(
-      `document.querySelector('.composer [aria-label="Gửi yêu cầu"]').disabled && document.querySelector('.requests-unavailable').checkVisibility()`,
+      `document.querySelector('.composer [aria-label="Send request"]').disabled && document.querySelector('.requests-unavailable').checkVisibility()`,
     ),
     true,
     'Send is unavailable and the composer says why',
@@ -2131,7 +2131,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
     await evaluate(
       `[...document.querySelectorAll('.workspace-controls select option')].map(o=>o.textContent).join('|')`,
     ),
-    'Workspace mặc định · mặc định',
+    'Default workspace · default',
     'First start uses the default workspace and asks for no folder',
   )
   assert.equal(
@@ -2143,7 +2143,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   )
   assert.equal(
     await evaluate(`document.querySelector('.chat-navigation [data-session-id="damaged"] strong').textContent`),
-    'Chat không đọc được',
+    'Unreadable chat',
     'A chat whose saved work cannot be read stays listed',
   )
   const firstChat = await evaluate(
@@ -2157,7 +2157,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.conversation > [role=status]').hidden === false && document.querySelector('.conversation > [role=status]').textContent.includes('Không mở được chat này')`,
+        `document.querySelector('.conversation > [role=status]').hidden === false && document.querySelector('.conversation > [role=status]').textContent.includes('This chat cannot be opened')`,
       ),
     'Unreadable chat was not reported',
   )
@@ -2184,7 +2184,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
     `{const s=document.querySelector('.chat-search input'); s.value='không có từ này'; s.form.requestSubmit()} true`,
   )
   await eventually(
-    () => evaluate(`document.querySelector('.chat-navigation nav').textContent.includes('Không có chat nào khớp')`),
+    () => evaluate(`document.querySelector('.chat-navigation nav').textContent.includes('No chat matches')`),
     'No-match message missing',
   )
   assert.equal(
@@ -2208,7 +2208,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('thư mục gốc của ổ đĩa')`,
+        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('root folder of a drive')`,
       ),
     'Drive root was not refused with its reason',
   )
@@ -2291,7 +2291,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   )
   await eventually(
     () =>
-      evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('ít nhất một ký tự')`),
+      evaluate(`document.querySelector('.workspace-dialog [role=alert]').textContent.includes('at least one character')`),
     'Empty name was not refused',
   )
   await evaluate(
@@ -2311,7 +2311,7 @@ test('real browser boots without a model: workspaces, chats, search, drafts and 
   await eventually(
     () =>
       evaluate(
-        `(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Chat chưa nhóm'); return !!heading && !!heading.parentElement.querySelector('[data-session-id="${projectChat}"]') })()`,
+        `(() => { const heading=[...document.querySelectorAll('.chat-navigation nav h3')].find(h=>h.textContent==='Ungrouped chats'); return !!heading && !!heading.parentElement.querySelector('[data-session-id="${projectChat}"]') })()`,
       ),
     'Chat of the removed workspace is not ungrouped',
   )
@@ -2438,7 +2438,7 @@ test('Browser updates workspaces from /api/changes and handles WORKSPACES_STALE 
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('Danh sách workspace vừa thay đổi ở nơi khác') && window.__workspaceReads >= 1`,
+        `document.querySelector('.workspace-dialog [role=alert]').textContent.includes('The workspace list changed in a different place') && window.__workspaceReads >= 1`,
       ),
     'WORKSPACES_STALE message or list refresh did not appear',
   )
@@ -2568,18 +2568,18 @@ test('A settings save after a change in another client gets PROVIDERS_STALE, rea
   timeout: 60000,
 }, async t => {
   const { evaluate, saveOther } = await openProviderChanges(t, 'provider-stale')
-  await evaluate(`document.querySelector('[aria-label="Chọn model"]').click();document.querySelector('.model-manage').click();true`)
+  await evaluate(`document.querySelector('[aria-label="Select model"]').click();document.querySelector('.model-manage').click();true`)
   await eventually(() => evaluate(`location.pathname === '/settings' && !!document.querySelector('[aria-label="Provider ID"]')`), 'Settings route missing')
   await evaluate(`[...document.querySelectorAll('main nav button')].find(button => button.textContent.startsWith('fixture')).click();true`)
-  await eventually(() => evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value === 'fixture'`), 'Saved provider missing')
+  await eventually(() => evaluate(`document.querySelector('[aria-label="Display name"]').value === 'fixture'`), 'Saved provider missing')
   await evaluate(`{
-    const input = document.querySelector('[aria-label="Tên hiển thị"]');
+    const input = document.querySelector('[aria-label="Display name"]');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Renamed');
     input.dispatchEvent(new Event('input', {bubbles: true}));
   } true`)
   await saveOther()
   await eventually(() => evaluate(`[...document.querySelectorAll('main nav button')].some(button => button.textContent.startsWith('Other'))`), 'Provider notice missing')
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'Renamed', 'A notice must not replace the draft')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Display name"]').value`), 'Renamed', 'A notice must not replace the draft')
   await evaluate(`{
     const original = window.fetch;
     window.__providerWrites = 0;
@@ -2589,8 +2589,8 @@ test('A settings save after a change in another client gets PROVIDERS_STALE, rea
     };
     document.querySelector('main form').requestSubmit();
   } true`)
-  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('Danh sách provider đã thay đổi')`), 'Stale notice missing')
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Tên hiển thị"]').value`), 'fixture')
+  await eventually(() => evaluate(`document.querySelector('[role=status]')?.textContent.includes('The provider list changed')`), 'Stale notice missing')
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Display name"]').value`), 'fixture')
   assert.equal(await evaluate(`[...document.querySelectorAll('main nav button')].some(button => button.textContent.startsWith('Other'))`), true)
   assert.equal(await evaluate('window.__providerWrites'), 1, 'The Browser must not retry a stale write')
 })
@@ -2693,7 +2693,7 @@ test('A draft save after a change in another client gets DRAFT_CONFLICT, keeps t
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.request-status[role=status]')?.textContent.includes('Bản nháp đã đổi ở giao diện khác')`,
+        `document.querySelector('.request-status[role=status]')?.textContent.includes('The draft changed on a different screen')`,
       ),
     'Browser did not show the DRAFT_CONFLICT message',
   )
@@ -2748,7 +2748,7 @@ test('Browser updates research controls and theme from a preferences notice on /
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.public-research-choice').disabled && document.querySelector('.research-info').textContent === 'Chưa cấu hình'`,
+        `document.querySelector('.public-research-choice').disabled && document.querySelector('.research-info').textContent === 'Not set up'`,
       ),
     'Browser did not disable research after preferences notice',
   )
@@ -2798,7 +2798,7 @@ test('A research save after a change in another client gets PREFERENCES_STALE, r
     'Browser boot failed',
   )
   await delay(300)
-  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Cài đặt tìm kiếm').click();true`)
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Search settings').click();true`)
   await eventually(() => evaluate(`document.querySelector('.research-dialog').open`), 'Research dialog missing')
   await evaluate(
     `{const input=document.querySelector('.research-dialog input[type=password]');input.value='typed-in-dialog'} true`,
@@ -2811,7 +2811,7 @@ test('A research save after a change in another client gets PREFERENCES_STALE, r
   })
   assert.equal(remote.status, 200)
   await eventually(
-    () => evaluate(`document.querySelector('.research-info').textContent === 'Chưa cấu hình'`),
+    () => evaluate(`document.querySelector('.research-info').textContent === 'Not set up'`),
     'Browser did not receive the preferences notice',
   )
   assert.equal(
@@ -2828,12 +2828,12 @@ test('A research save after a change in another client gets PREFERENCES_STALE, r
       if (String(url).endsWith('/api/settings') && (!init?.method || init.method === 'GET') && window.__researchWrites > 0) window.__settingsReadsAfterSubmit += 1;
       return original(url, init);
     };
-    [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Kiểm tra và lưu key').click();
+    [...document.querySelectorAll('.research-dialog button')].find(b=>b.textContent==='Check and save the key').click();
   } true`)
   await eventually(
     () =>
       evaluate(
-        `document.querySelector('.research-dialog [role=status]').textContent.includes('vừa thay đổi ở nơi khác')`,
+        `document.querySelector('.research-dialog [role=status]').textContent.includes('changed in a different place')`,
       ),
     'Browser did not show the PREFERENCES_STALE message',
   )

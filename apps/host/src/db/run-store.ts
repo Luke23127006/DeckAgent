@@ -275,7 +275,7 @@ export class SqliteRunStore implements RunStore {
           {
             kind: 'text',
             part: 'host-refused-work',
-            text: `Không thực hiện vì bạn đã từ chối: ${refused.join('; ')}.`,
+            text: `Not done because you refused: ${refused.join('; ')}.`,
           },
           now,
         ),

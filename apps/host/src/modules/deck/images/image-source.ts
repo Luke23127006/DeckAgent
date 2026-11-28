@@ -47,7 +47,7 @@ export function imageSource(candidate: ImageSearchCandidate): {
         downloadUrl: download.href,
         pexels: {
           url: sourceUrl,
-          author: 'Chưa rõ tác giả · Pexels',
+          author: 'Unknown author · Pexels',
           license: 'Pexels',
           licenseUrl: 'https://www.pexels.com/license/',
           unknownLicense: false,

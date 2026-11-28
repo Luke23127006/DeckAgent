@@ -23,7 +23,7 @@ export interface DeckPlanDependencies {
 }
 
 const unchangedOutlineText =
-  'Giữ nguyên Outline và Brief. Chưa tạo slide. Câu hỏi hoặc yêu cầu cần làm rõ không tạo phiên bản mới.'
+  'The Outline and the Brief did not change. No slides were made. A question or a clarification does not make a new version.'
 
 function failed(result: RunResult, code: string): RunResult {
   return { status: 'failed', usage: result.usage, error: { category: 'runtime-failed', code } }
@@ -285,11 +285,11 @@ async function commitProposal(
       part: 'deck-workflow-result',
       text:
         outline && current
-          ? `Đã lưu Outline mới với ${outline.slides.length} slide dự kiến. Chưa tạo slide.\nThay đổi đầy đủ: ${JSON.stringify(current.changes)}\n${deps.decks
+          ? `Saved a new Outline with ${outline.slides.length} planned slides. No slides were made.\nAll changes: ${JSON.stringify(current.changes)}\n${deps.decks
               .imageBlockers(request.sessionId)
               .map(b => b.message)
               .join('\n')}\n${state.notice}`
-          : `${state.questions.map(q => `${q.prompt}${q.suggestions.length ? ` Gợi ý: ${q.suggestions.join('; ')}.` : ''}`).join('\n')}\n${state.blockers.map(b => b.message).join('\n')}\n${state.notice}`,
+          : `${state.questions.map(q => `${q.prompt}${q.suggestions.length ? ` Suggestions: ${q.suggestions.join('; ')}.` : ''}`).join('\n')}\n${state.blockers.map(b => b.message).join('\n')}\n${state.notice}`,
     })
     return undefined
   } catch (error) {

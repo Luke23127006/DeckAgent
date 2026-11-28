@@ -15,14 +15,14 @@ export function generationReport(
   const saved = snapshot.slides.filter(s => s.revision > 0)
   const complete = status === 'completed' && saved.length === snapshot.slides.length
   const lines = [
-    `Đã lưu ${saved.length}/${snapshot.slides.length} slide. ${complete ? 'Đã hoàn tất deck.' : 'Deck chưa hoàn tất; các slide đã lưu được giữ lại. Các slide đã lưu chưa được kiểm tra để thống nhất với nhau.'}`,
+    `Saved ${saved.length}/${snapshot.slides.length} slides. ${complete ? 'The deck is complete.' : 'The deck is not complete. DeckAgent keeps the saved slides. DeckAgent did not check the saved slides for consistency with each other.'}`,
   ]
   const outline = decks.outlineSnapshot(sessionId).proposals.find(p => p.outlineId === snapshot.outlineId)
   const brief = outline?.brief?.draft
 
   for (const slide of snapshot.slides) {
     if (!slide.revision) {
-      lines.push(`- ${slide.title}: chưa hoàn tất.`)
+      lines.push(`- ${slide.title}: not complete.`)
       continue
     }
     try {
@@ -34,29 +34,29 @@ export function generationReport(
             p.source
               ? `${p.label} (${p.location})`
               : p.origin === 'general-knowledge'
-                ? 'kiến thức chung của model'
-                : 'chưa rõ nguồn',
+                ? 'general knowledge of the model'
+                : 'unknown source',
           ),
         ),
       ]
       const placeholders = provenance.filter(p => p.kind === 'placeholder').map(p => p.text)
       lines.push(
-        `- ${slide.title}: ${outline?.slides.find(s => s.slideId === slide.slideId)?.content ?? 'đã lưu'}; nguồn: ${sources.join('; ') || 'chưa lưu nguồn'}.${placeholders.length ? ` Placeholder: ${placeholders.join('; ')}.` : ''}`,
+        `- ${slide.title}: ${outline?.slides.find(s => s.slideId === slide.slideId)?.content ?? 'saved'}; sources: ${sources.join('; ') || 'no saved sources'}.${placeholders.length ? ` Placeholder: ${placeholders.join('; ')}.` : ''}`,
       )
-      if (metadata.notes) lines.push(`  Ghi chú người trình bày: đã lưu cho ${slide.title}.`)
+      if (metadata.notes) lines.push(`  Presenter notes: saved for ${slide.title}.`)
       for (const credit of metadata.imageCredits ?? [])
         lines.push(
-          `  Ảnh: ${credit.url}; tác giả: ${credit.author}; giấy phép: ${credit.license}${credit.unknownLicense ? ' (chưa rõ giấy phép)' : ''}.`,
+          `  Image: ${credit.url}; author: ${credit.author}; license: ${credit.license}${credit.unknownLicense ? ' (license unknown)' : ''}.`,
         )
-      for (const query of metadata.imageOmissions ?? []) lines.push(`  Đã bỏ ảnh tùy chọn: ${query}.`)
+      for (const query of metadata.imageOmissions ?? []) lines.push(`  Removed optional image: ${query}.`)
     } catch {
-      lines.push(`- ${slide.title}: revision đã lưu không đọc được; chưa xác định được nguồn.`)
+      lines.push(`- ${slide.title}: the saved revision cannot be read. The sources are unknown.`)
     }
   }
 
-  lines.push(`Giả định: ${brief?.assumptions.join('; ') || 'Không có giả định được ghi nhận.'}`)
-  for (const need of brief?.images.unmetRequirements ?? []) lines.push(`Ảnh chưa đáp ứng: ${need}`)
-  lines.push('Nguồn ghi nhận không phải bằng chứng rằng mọi dữ kiện đã được kiểm chứng.')
+  lines.push(`Assumptions: ${brief?.assumptions.join('; ') || 'No assumptions recorded.'}`)
+  for (const need of brief?.images.unmetRequirements ?? []) lines.push(`Image not met: ${need}`)
+  lines.push('The recorded sources do not prove that all facts are verified.')
 
   return lines.join('\n')
 }

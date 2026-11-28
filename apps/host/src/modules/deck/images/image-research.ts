@@ -79,7 +79,7 @@ export class WebImageResearch {
   private prepareCommonsCandidate(commons: CommonsCandidate, operation: AbortSignal): Promise<PreparedResearchImage> {
     if (
       commons.credit.unknownLicense ||
-      (commons.credit.license === 'CC BY' && commons.credit.author === 'Chưa rõ tác giả')
+      (commons.credit.license === 'CC BY' && commons.credit.author === 'Unknown author')
     )
       throw new DeckError('RESEARCH_IMAGE_LICENSE_REQUIRED')
     return this.commons.prepare(commons, operation)

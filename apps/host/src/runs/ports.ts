@@ -30,14 +30,14 @@ export interface RunGrants {
 
 export interface RunPlan {
   readonly owner: RunOwner
-  /** ID đã cấp trước, ví dụ khi xác nhận deck. Khi không có, runs/ tạo ID. */
+  /** An ID that the caller already issued, for example when the user confirms a deck. When it is missing, runs/ makes an ID. */
   readonly requestId?: string
   readonly input: string
   readonly selection: ModelSelection
   readonly grants: RunGrants
   readonly stepLimit: number | 'none'
   readonly contributions: readonly RunContribution[]
-  /** Một pass không gọi runtime, ví dụ lệnh deck `restore`. */
+  /** A pass that does not call the runtime, for example the deck command `restore`. */
   readonly skipRuntime?: boolean
   beforeRun?(context: RunLifecycleContext): Promise<void>
   next?(result: RunResult, context?: RunLifecycleContext): Promise<RunPlan | undefined>

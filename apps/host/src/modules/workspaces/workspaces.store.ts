@@ -46,7 +46,7 @@ export class SqliteWorkspaceStore {
     try {
       mkdirSync(dirname(options.path), { recursive: true })
       db = new DatabaseSync(options.path)
-      migrateWorkspacesDatabase(db, options.defaultName ?? 'Workspace mặc định')
+      migrateWorkspacesDatabase(db, options.defaultName ?? 'Default workspace')
       this.db = db
     } catch (error) {
       db?.close()

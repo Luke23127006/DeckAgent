@@ -5,20 +5,20 @@ import { DeckError } from './errors.ts'
 import { listTemplates } from '@deckagent/design'
 
 const questions: readonly [InterviewTopic, string, readonly string[]][] = [
-  ['topic', 'Bạn muốn trình bày chủ đề gì?', []],
-  ['audience', 'Bài trình bày dành cho ai?', ['Người mới tìm hiểu', 'Người có chuyên môn']],
-  ['duration', 'Bạn dự kiến trình bày trong bao lâu?', ['5 phút', '10 phút', '20 phút']],
-  ['purpose', 'Bạn muốn người nghe hiểu hoặc làm gì sau bài trình bày?', ['Giới thiệu', 'Giải thích', 'Đề xuất']],
+  ['topic', 'What topic do you want to present?', []],
+  ['audience', 'Who is the audience of the presentation?', ['Beginners', 'Experts']],
+  ['duration', 'How long do you plan to present?', ['5 minutes', '10 minutes', '20 minutes']],
+  ['purpose', 'What must the audience understand or do after the presentation?', ['Introduce', 'Explain', 'Propose']],
   [
     'sources',
-    'Bạn cho phép dùng những nguồn nào?',
-    ['Tài liệu bạn gửi', 'Kiến thức chung của mô hình', 'Tìm nguồn công khai (chỉ miễn phí)'],
+    'Which sources do you permit?',
+    ['Documents that you sent', 'General knowledge of the model', 'Search public sources (free only)'],
   ],
-  ['language', 'Bạn muốn nội dung dùng ngôn ngữ nào?', ['Tiếng Việt', 'English']],
-  ['images', 'Bạn cần ảnh nào trong bài trình bày?', ['Không cần ảnh', 'Dùng ảnh đã đính kèm']],
-  ['format', 'Bạn muốn tạo ở định dạng nào? Hiện có HTML để xem trực tiếp trong Preview.', ['HTML']],
-  ['template', 'Bạn muốn dùng template nào?', ['HTML Basic']],
-  ['design-system', 'Bạn muốn dùng Design System nào?', ['DeckAgent Neutral']],
+  ['language', 'Which language must the content use?', ['Vietnamese', 'English']],
+  ['images', 'Which images does the presentation need?', ['No images', 'Use the attached images']],
+  ['format', 'Which format do you want? HTML is available now, and you can see it directly in Preview.', ['HTML']],
+  ['template', 'Which template do you want to use?', ['HTML Basic']],
+  ['design-system', 'Which Design System do you want to use?', ['DeckAgent Neutral']],
 ]
 
 export function interviewState(input: unknown, unavailableSources = false): InterviewState {
@@ -37,12 +37,15 @@ export function interviewState(input: unknown, unavailableSources = false): Inte
     'design-system': !!d.designSystem,
   }
   const blockers = [
-    ...(!d.topic ? [{ code: 'TOPIC_REQUIRED', message: 'Cần biết chủ đề trước khi lập Outline.' }] : []),
+    ...(!d.topic
+      ? [{ code: 'TOPIC_REQUIRED', message: 'DeckAgent must know the topic before it makes an Outline.' }]
+      : []),
     ...(!known.sources
       ? [
           {
             code: 'SOURCE_CHOICE_REQUIRED',
-            message: 'Hãy chọn nguồn; bỏ qua câu hỏi không cấp quyền dùng kiến thức mô hình hoặc research.',
+            message:
+              'Select the sources. If you skip the question, DeckAgent gets no permission to use model knowledge or research.',
           },
         ]
       : []),
@@ -50,7 +53,7 @@ export function interviewState(input: unknown, unavailableSources = false): Inte
       ? [
           {
             code: 'FORMAT_UNAVAILABLE',
-            message: `Chưa tạo được định dạng ${d.requestedFormat}. Hiện có HTML; cần bạn chọn lại.`,
+            message: `DeckAgent cannot make the ${d.requestedFormat} format. HTML is available now. Select the format again.`,
           },
         ]
       : []),
@@ -58,7 +61,8 @@ export function interviewState(input: unknown, unavailableSources = false): Inte
       ? [
           {
             code: 'IMAGES_UNAVAILABLE',
-            message: 'Hiện chỉ dùng ảnh đã đính kèm. Cần bạn chọn cách xử lý yêu cầu ảnh chưa đáp ứng.',
+            message:
+              'DeckAgent can use only attached images now. Select what to do with the image request that is not met.',
           },
         ]
       : []),
@@ -66,7 +70,7 @@ export function interviewState(input: unknown, unavailableSources = false): Inte
       ? [
           {
             code: 'SOURCE_UNAVAILABLE',
-            message: 'Có nguồn không còn khả dụng. Hãy chọn lại nguồn hoặc bổ sung tài liệu.',
+            message: 'A source is no longer available. Select the sources again, or add documents.',
           },
         ]
       : []),
@@ -84,7 +88,8 @@ export function interviewState(input: unknown, unavailableSources = false): Inte
     blockers,
     readyForOutline: !missing.length && !blockers.length,
     skipAllowed: true,
-    notice: 'Bạn có thể bỏ qua các câu hỏi còn lại và thêm yêu cầu khác. Chưa tạo slide trước khi xác nhận Outline.',
+    notice:
+      'You can skip the remaining questions and add other requests. DeckAgent makes no slides before you confirm the Outline.',
   }
 }
 

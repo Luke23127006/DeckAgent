@@ -293,7 +293,7 @@ export class PreparedImageStore {
       .filter(n => n.required && n.status !== 'prepared')
       .map(n => ({
         code: 'IMAGE_PREPARATION_REQUIRED',
-        message: `Slide ${n.slideIndex + 1}: chưa chuẩn bị được ảnh. Sửa Outline để đổi ảnh, truy vấn hoặc xác nhận ảnh này không bắt buộc.`,
+        message: `Slide ${n.slideIndex + 1}: the image is not ready. Change the Outline to change the image or the query, or mark this image as optional.`,
       }))
   }
 }

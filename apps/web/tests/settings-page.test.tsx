@@ -68,11 +68,11 @@ it('creates a provider with a version and clears the credential after submission
   mount()
   const user = userEvent.setup()
   await user.type(await screen.findByLabelText('Provider ID'), 'river')
-  await user.type(screen.getByLabelText('Tên hiển thị'), 'River')
+  await user.type(screen.getByLabelText('Display name'), 'River')
   await user.type(screen.getByLabelText('Base URL'), 'https://example.com/v1')
   await user.type(screen.getByLabelText('API key'), 'private-test-key')
   await user.type(screen.getByLabelText('Model ID'), 'deepseek\ndeepseek')
-  await user.click(screen.getByRole('button', { name: 'Lưu provider' }))
+  await user.click(screen.getByRole('button', { name: 'Save provider' }))
   await waitFor(() =>
     expect(body).toEqual({
       displayName: 'River',
@@ -85,13 +85,13 @@ it('creates a provider with a version and clears the credential after submission
     }),
   )
   expect(screen.getByLabelText('API key')).toHaveValue('')
-  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Đã lưu'))
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('The configuration is saved'))
 })
 
 it('rejects malformed settings responses', async () => {
   server.use(http.get(`${origin}/api/settings`, () => HttpResponse.json({ ...settings, providersVersion: -1 })))
   mount()
-  expect(await screen.findByRole('alert')).toHaveTextContent('Chưa đọc được dữ liệu từ Host')
+  expect(await screen.findByRole('alert')).toHaveTextContent('The data from the Host cannot be read')
 })
 
 it('saves theme using the read version and applies the saved theme', async () => {
@@ -108,7 +108,7 @@ it('saves theme using the read version and applies the saved theme', async () =>
   )
   mount()
   const user = userEvent.setup()
-  await user.click(await screen.findByRole('button', { name: 'Tối' }))
+  await user.click(await screen.findByRole('button', { name: 'Dark' }))
   await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
 })
 
@@ -136,7 +136,7 @@ it('updates an existing provider without sending a blank key, then explicitly re
   await user.click(await screen.findByRole('button', { name: /River/ }))
   expect(screen.getByLabelText('Provider ID')).toBeDisabled()
   expect(screen.getByLabelText('API protocol')).toBeDisabled()
-  await user.click(screen.getByRole('button', { name: 'Lưu provider' }))
+  await user.click(screen.getByRole('button', { name: 'Save provider' }))
   await waitFor(() => expect(bodies).toHaveLength(1))
   expect(bodies[0]).toEqual({
     displayName: 'River',
@@ -145,9 +145,9 @@ it('updates an existing provider without sending a blank key, then explicitly re
     models: ['old'],
     expectedVersion: 3,
   })
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu provider' })).toBeEnabled())
-  await user.click(screen.getByLabelText('Gỡ key đã lưu'))
-  await user.click(screen.getByRole('button', { name: 'Lưu provider' }))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save provider' })).toBeEnabled())
+  await user.click(screen.getByLabelText('Remove the saved key'))
+  await user.click(screen.getByRole('button', { name: 'Save provider' }))
   await waitFor(() => expect(bodies).toHaveLength(2))
   expect(bodies[1]).toEqual({
     displayName: 'River',
@@ -175,10 +175,10 @@ it('reads fresh settings after a stale write and never retries the write', async
   mount()
   const user = userEvent.setup()
   await user.type(await screen.findByLabelText('Provider ID'), 'river')
-  await user.type(screen.getByLabelText('Tên hiển thị'), 'River')
+  await user.type(screen.getByLabelText('Display name'), 'River')
   await user.type(screen.getByLabelText('Base URL'), 'https://example.com/v1')
-  await user.click(screen.getByRole('button', { name: 'Lưu provider' }))
-  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Danh sách provider đã thay đổi'))
+  await user.click(screen.getByRole('button', { name: 'Save provider' }))
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('The provider list changed'))
   expect(writes).toBe(1)
   expect(reads).toBe(2)
   expect(screen.getByLabelText('Provider ID')).toHaveValue('')
@@ -207,13 +207,13 @@ it('loads a catalog, adds a model, and deletes the selected provider with the re
   mount()
   const user = userEvent.setup()
   await user.click(await screen.findByRole('button', { name: /River/ }))
-  await user.click(screen.getByRole('button', { name: 'Lấy model catalog' }))
+  await user.click(screen.getByRole('button', { name: 'Get model catalog' }))
   await user.click(await screen.findByRole('button', { name: 'catalog-model' }))
   expect(screen.getByLabelText('Model ID')).toHaveValue('catalog-model')
   const original = window.confirm
   window.confirm = () => true
   try {
-    await user.click(screen.getByRole('button', { name: 'Xóa cấu hình' }))
+    await user.click(screen.getByRole('button', { name: 'Delete configuration' }))
     await waitFor(() => expect(deleted).toEqual({ expectedVersion: 3 }))
   } finally {
     window.confirm = original
@@ -228,10 +228,10 @@ it('keeps the saved theme when the Host refuses a preference write', async () =>
   )
   mount()
   const user = userEvent.setup()
-  await user.click(await screen.findByRole('button', { name: 'Tối' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('Cài đặt hiển thị đã thay đổi')
+  await user.click(await screen.findByRole('button', { name: 'Dark' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('The display settings changed')
   expect(document.documentElement).not.toHaveClass('dark')
-  expect(screen.getByRole('button', { name: 'Sáng' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Light' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 it('clears a rejected credential and shows only the stable error text', async () => {
@@ -248,11 +248,11 @@ it('clears a rejected credential and shows only the stable error text', async ()
   mount()
   const user = userEvent.setup()
   await user.type(await screen.findByLabelText('Provider ID'), 'river')
-  await user.type(screen.getByLabelText('Tên hiển thị'), 'River')
+  await user.type(screen.getByLabelText('Display name'), 'River')
   await user.type(screen.getByLabelText('Base URL'), 'https://example.com/v1')
   await user.type(screen.getByLabelText('API key'), 'private-test-key')
-  await user.click(screen.getByRole('button', { name: 'Lưu provider' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('Provider từ chối key')
+  await user.click(screen.getByRole('button', { name: 'Save provider' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('The provider refused the key')
   expect(screen.getByLabelText('API key')).toHaveValue('')
   expect(document.body).not.toHaveTextContent('private-test-key')
 })
@@ -275,7 +275,7 @@ it('follows system theme changes and removes the listener when settings unmounts
   server.use(http.get(`${origin}/api/preferences`, () => HttpResponse.json({ theme: 'system', version: 2 })))
   try {
     const rendered = mount()
-    await screen.findByRole('button', { name: 'Hệ thống', pressed: true })
+    await screen.findByRole('button', { name: 'System', pressed: true })
     expect(document.documentElement).not.toHaveClass('dark')
     matches = true
     for (const listener of listeners) listener()
@@ -300,7 +300,7 @@ it('keeps the draft guard when the selected provider is clicked again', async ()
   try {
     await user.click(screen.getByRole('button', { name: 'Custom model API' }))
     expect(confirmations).toBe(0)
-    await user.click(screen.getByRole('button', { name: 'Quay lại chat' }))
+    await user.click(screen.getByRole('button', { name: 'Back to chat' }))
     expect(confirmations).toBe(1)
   } finally {
     window.confirm = original

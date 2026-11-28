@@ -114,7 +114,7 @@ test('first start has a default workspace with no folder, in use, and it can be 
   const [only] = await registry.list()
   assert.deepEqual(only, {
     id: 'default',
-    name: 'Workspace mặc định',
+    name: 'Default workspace',
     folder: null,
     isDefault: true,
     folderStatus: 'none',
@@ -329,7 +329,7 @@ test('remove: the default becomes the workspace in use; IDs, names and the selec
   assert.deepEqual(
     (await registry.list()).map(item => [item.id, item.name]),
     [
-      ['default', 'Workspace mặc định'],
+      ['default', 'Default workspace'],
       [kept.id, 'kept'],
     ],
   )

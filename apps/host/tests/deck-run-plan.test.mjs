@@ -237,7 +237,7 @@ test('deck plan stages a proposal and restores it without runtime calls', async 
   )
   const first = await execute(controller, firstPlan.plan)
   assert.equal(first.status, 'completed', JSON.stringify(first))
-  assert.match(first.text, /Đã lưu Outline mới/)
+  assert.match(first.text, /Saved a new Outline/)
   const proposal = decks.outlineSnapshot('chat').proposals[0]
   assert.equal(proposal.slides[0].title, 'Purpose')
   const restore = await deck.prepareRun(
@@ -457,5 +457,5 @@ test('generation plan restricts selected sources, records evidence, finishes inc
   assert.deepEqual(reads, ['selected.txt'])
   assert.equal(typeof evidence[0], 'string')
   assert.equal(decks.generation('chat').state, 'incomplete')
-  assert.match(result.text, /Đã lưu 0\/1 slide/)
+  assert.match(result.text, /Saved 0\/1 slides/)
 })

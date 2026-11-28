@@ -519,7 +519,7 @@ async function readFileSource(
       key: plan.key,
       operation: 'read-file',
       target: plan.target,
-      reason: 'Đọc file nằm ngoài project folder của chat này.',
+      reason: 'Read a file outside the project folder of this chat.',
     }))
   )
     return { isError: true, content: [{ type: 'text', text: 'STEP_REFUSED' }] }

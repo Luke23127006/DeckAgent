@@ -105,7 +105,7 @@ function parseCandidatePage(page: unknown, fallbackTitle: string): CommonsCandid
       author:
         extMetadataValue(ext, 'Artist')
           .replace(/<[^>]*>/g, '')
-          .slice(0, 1000) || 'Chưa rõ tác giả',
+          .slice(0, 1000) || 'Unknown author',
       license,
       licenseUrl: link,
       unknownLicense: license === 'unknown',

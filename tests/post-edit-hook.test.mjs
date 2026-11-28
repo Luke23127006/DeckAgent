@@ -1,5 +1,5 @@
 /**
- * Tests: runPostEdit of scripts/hooks/post-edit.mjs, which runs check-docs on an edited document and the layout rules of scripts/format-layout.mjs on an edited source file.
+ * Tests: runPostEdit of scripts/hooks/post-edit.mjs, which runs check-docs on an edited document, and the layout rules of scripts/format-layout.mjs and the language rule of scripts/check-source-language.mjs on an edited source file.
  * Environment: a temporary folder with real files for each test.
  * Run: node --test --test-reporter=tap tests/post-edit-hook.test.mjs
  * Expected values source: docs/build/refactor/code-layout/plan/README.md (Decisions) and the rule IDs of scripts/check-docs.mjs.
@@ -69,6 +69,22 @@ test('blocks an edited source file with a missing blank line', () => {
 test('accepts an edited source file with the expected blank lines', () => {
   const root = workspace()
   const file = sourceFile(root, "import a from 'a'\n\nexport const b = a\n")
+  assert.deepEqual(runPostEdit({ tool_input: { file_path: file } }, { cwd: root }), { exitCode: 0, stderr: '' })
+})
+
+test('blocks an edited source file with Vietnamese text', () => {
+  const root = workspace()
+  const file = sourceFile(root, "export const a = 'Chưa lưu được tệp'\n")
+  const result = runPostEdit({ tool_input: { file_path: file } }, { cwd: root })
+  assert.equal(result.exitCode, 2)
+  assert.match(result.stderr, /^apps\/host\/src\/a\.ts:1 source-language .*English/)
+})
+
+test('accepts Vietnamese sample data in a test file', () => {
+  const root = workspace()
+  mkdirSync(join(root, 'apps', 'host', 'tests'), { recursive: true })
+  const file = join(root, 'apps', 'host', 'tests', 'a.test.mjs')
+  writeFileSync(file, "export const a = 'Kế hoạch tái chế'\n")
   assert.deepEqual(runPostEdit({ tool_input: { file_path: file } }, { cwd: root }), { exitCode: 0, stderr: '' })
 })
 

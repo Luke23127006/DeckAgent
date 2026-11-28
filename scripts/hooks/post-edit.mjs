@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { checkMarkdown, isDocsTarget } from '../check-docs.mjs'
+import { checkSourceLanguage, formatFinding, isSourceLanguageTarget } from '../check-source-language.mjs'
 import { formatLayout, isLayoutTarget } from '../format-layout.mjs'
 
 const passed = { exitCode: 0, stderr: '' }
@@ -11,7 +12,7 @@ export const runPostEdit = (input, options) => {
   if (!filePath) return passed
   const relativePath = path.relative(options.cwd, filePath).replaceAll('\\', '/')
   const isDocs = isDocsTarget(relativePath)
-  if (!isDocs && !isLayoutTarget(relativePath)) return passed
+  if (!isDocs && !isLayoutTarget(relativePath) && !isSourceLanguageTarget(relativePath)) return passed
   if (!existsSync(filePath)) return passed
   const sourceText = readFileSync(filePath, 'utf8')
   if (isDocs) {
@@ -25,16 +26,18 @@ export const runPostEdit = (input, options) => {
       failures.map(failure => `${relativePath}:${failure.line} ${failure.rule} ${failure.message}`).join('\n') + '\n'
     return { exitCode: 2, stderr }
   }
-  const findings = formatLayout(relativePath, sourceText).findings
-  if (findings.length === 0) return passed
-  const stderr =
-    findings
-      .map(
+  const languageLines = isSourceLanguageTarget(relativePath)
+    ? checkSourceLanguage(sourceText).map(finding => formatFinding(relativePath, finding))
+    : []
+  const layoutLines = isLayoutTarget(relativePath)
+    ? formatLayout(relativePath, sourceText).findings.map(
         finding =>
           `${relativePath}:${finding.line} ${finding.rule} Add one blank line before this line. Run "node scripts/format-layout.mjs --write ${relativePath}".`,
       )
-      .join('\n') + '\n'
-  return { exitCode: 2, stderr }
+    : []
+  const lines = [...languageLines, ...layoutLines]
+  if (lines.length === 0) return passed
+  return { exitCode: 2, stderr: lines.join('\n') + '\n' }
 }
 
 const main = () => {

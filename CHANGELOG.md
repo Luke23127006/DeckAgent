@@ -5,9 +5,8 @@ Notable changes to this repository. The newest changes are at the top.
 ## [Unreleased]
 
 ### Added
-- **Debugging phase:** add `docs/build/debugging/README.md`, which debugs one feature area at a time (Provider, Workspace, Chat, Request, Deck) with a UI pass first and then nine aspects, each with its own baseline.
 - **Code layout:** add `scripts/format-layout.mjs` with `isLayoutTarget`, `formatLayout` and `listDenseBodies`, plus the command modes `--check`, `--write` and `--dense` that add the missing blank lines between imports, top-level declarations and class members and list the dense function bodies.
-- **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, complete Phase 1 conventions and oxlint folder rules, install and pin Phase 2 Browser dependencies (React 19.3.1, Vite 8.4.0, React Router 8.5.3, TanStack Query 5.108.4, Tailwind CSS 4.3.5, shadcn/ui, Vitest 5.1.2, MSW 3.0.8) with `components.json` and `vitest.config.ts`, and add the Phase 2 React shell execution plan (Revision 2), then configure Vite, Tailwind CSS 4 and shadcn/ui for `apps/web/` with the legacy CSS behind Tailwind layers and a build guard against mocks and MSW, then add the typed browser API client in `apps/web/src/api/` with a Vietnamese error text map, then add the host connection and change feed hooks, the React shell with declarative routes, `main.tsx`, and the temporary mount for the legacy screens with explicit cleanup.
+- **Browser in React:** add the seven-phase plan in `docs/build/refactor/web-react/`, pin the React, Vite, TanStack Query, Tailwind CSS, shadcn/ui, Vitest and MSW toolchain, and add the typed API client, the change feed hooks and the React shell with declarative routes.
 - Split `packages/session/persistence/` into `apps/host/src/db/` (schema v9 `(owner_kind, owner_id)` and `SqliteRunStore`) and the chats and attachments module stores, and remove `@deckagent/session-persistence`.
 - Route Host requests through RunController and OpenCodeAgentRuntime. Remove legacy request and deck workflow wrappers.
 - Publish committed Brief, Outline and deck versions through session change notices. Suppress replay notices and isolate observer failures.
@@ -23,6 +22,7 @@ Notable changes to this repository. The newest changes are at the top.
 - **Local foundation:** add the workspace registry, chat persistence with search and drafts, provider keys stored with Windows DPAPI, and the rebuild decisions and plans under `docs/build/rebuild/`.
 
 ### Changed
+- **English source:** write all Browser text, Host and deck messages and source comments in English (ASD-STE100), and block Vietnamese text in `apps/*/src` and `packages/**/src` with `check-source-language` in `pnpm lint` and the post-edit hook.
 - **Code layout:** format every source file with Biome, so `format:check` accepts all 312 files.
 - Rename the workspace store to `SqliteWorkspaceStore`, convert `WorkspaceService` to a class wired into the workspace routes, and enable `role-file-symbol` for `workspaces`.
 - Render every Browser screen with React (Settings, workspaces and the chat list, the conversation and requests, the deck screens) and decode each response through the contracts package. Remove the legacy Browser folder `apps/web/src/browser/` and its second TypeScript project, so `apps/web/` depends only on the contracts package and `check:boundaries` applies `browser-node-import` to all of `apps/web/src/`. The legacy transport clients are now the HTTP test driver in `e2e/fixtures/browser-driver/`.

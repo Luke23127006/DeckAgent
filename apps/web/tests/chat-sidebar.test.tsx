@@ -127,10 +127,10 @@ function listedIds(nav: HTMLElement): string[] {
 it('lists the chats of the workspace in use first, newest first, then the ungrouped chats', async () => {
   const { slots, onOpen } = mount()
   await waitFor(() => expect(listedIds(slots.chats)).toEqual(['newer', 'damaged', 'empty', 'older', 'loose']))
-  expect(within(slots.chats).getByRole('heading', { name: 'Chat chưa nhóm' })).toBeInTheDocument()
+  expect(within(slots.chats).getByRole('heading', { name: 'Ungrouped chats' })).toBeInTheDocument()
   expect(slots.chats.querySelector('[aria-current=true]')).toHaveAttribute('data-session-id', 'empty')
-  expect(slots.chats.querySelector('[data-session-id=empty] strong')).toHaveTextContent('Chat mới')
-  expect(slots.chats.querySelector('[data-session-id=damaged] strong')).toHaveTextContent('Chat không đọc được')
+  expect(slots.chats.querySelector('[data-session-id=empty] strong')).toHaveTextContent('New chat')
+  expect(slots.chats.querySelector('[data-session-id=damaged] strong')).toHaveTextContent('Unreadable chat')
   expect(slots.chats.querySelector('[data-session-id=damaged]')).toHaveAttribute('data-unreadable', 'true')
   await userEvent.setup().click(slots.chats.querySelector('[data-session-id=older]') as HTMLElement)
   expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'older' }))
@@ -157,14 +157,14 @@ it('shows only the chats that hold the words and keeps the words when nothing ma
   )
   const { slots } = mount()
   await waitFor(() => expect(listedIds(slots.chats)).toHaveLength(5))
-  const input = screen.getByRole('searchbox', { name: 'Tìm chat trước theo từ' }) as HTMLInputElement
+  const input = screen.getByRole('searchbox', { name: 'Search previous chats by word' }) as HTMLInputElement
   input.value = 'nhựa'
   fireEvent.submit(input.form as HTMLFormElement)
   await waitFor(() => expect(listedIds(slots.chats)).toEqual(['older']))
   expect(searches).toEqual([{ words: 'nhựa' }])
   input.value = 'không có từ này'
   fireEvent.submit(input.form as HTMLFormElement)
-  await waitFor(() => expect(slots.chats).toHaveTextContent('Không có chat nào khớp với các từ đã nhập.'))
+  await waitFor(() => expect(slots.chats).toHaveTextContent('No chat matches the words that you typed.'))
   expect(input.value).toBe('không có từ này')
   // A script sends an `input` event that does not bubble; the list returns after the wait.
   input.value = ''
@@ -183,7 +183,7 @@ it('switches the workspace with the version it read and shows the chats of the n
   const { slots } = mount()
   const select = (await screen.findByRole('combobox', { name: 'Workspace' })) as HTMLSelectElement
   await waitFor(() => expect(select.options).toHaveLength(2))
-  expect(select.options[0]).toHaveTextContent('Mặc định · mặc định')
+  expect(select.options[0]).toHaveTextContent('Mặc định · default')
   select.value = 'w1'
   select.dispatchEvent(new Event('change'))
   await waitFor(() => expect(body).toEqual({ id: 'w1', expectedVersion: 4 }))
@@ -202,16 +202,16 @@ it('keeps a refused folder out of the list and says why in the dialog', async ()
   )
   mount()
   const user = userEvent.setup()
-  const add = await screen.findByRole('button', { name: '+ Thư mục' })
+  const add = await screen.findByRole('button', { name: '+ Folder' })
   await waitFor(() => expect(add).toBeEnabled())
   await user.click(add)
   const dialog = document.querySelector('.workspace-dialog') as HTMLDialogElement
   expect(dialog.open).toBe(true)
-  await user.type(within(dialog).getByLabelText('Đường dẫn thư mục'), 'C:\\')
-  await user.click(within(dialog).getByRole('button', { name: 'Lưu' }))
+  await user.type(within(dialog).getByLabelText('Folder path'), 'C:\\')
+  await user.click(within(dialog).getByRole('button', { name: 'Save' }))
   await waitFor(() =>
     expect(within(dialog).getByRole('alert')).toHaveTextContent(
-      'Thư mục này không thể là thư mục dự án: đây là thư mục gốc của ổ đĩa. Bạn có thể chọn một thư mục bên trong nó.',
+      'This folder cannot be a project folder: it is the root folder of a drive. You can select a folder inside it.',
     ),
   )
   expect(dialog.open).toBe(true)
@@ -220,11 +220,11 @@ it('keeps a refused folder out of the list and says why in the dialog', async ()
 it('closes the add dialog without a write when no folder is given (UC-013 A9)', async () => {
   mount()
   const user = userEvent.setup()
-  const add = await screen.findByRole('button', { name: '+ Thư mục' })
+  const add = await screen.findByRole('button', { name: '+ Folder' })
   await waitFor(() => expect(add).toBeEnabled())
   await user.click(add)
   const dialog = document.querySelector('.workspace-dialog') as HTMLDialogElement
-  await user.click(within(dialog).getByRole('button', { name: 'Lưu' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Save' }))
   expect(dialog.open).toBe(false)
 })
 
@@ -241,13 +241,13 @@ it('reads the list again after a stale write and names the cause', async () => {
   )
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   mount()
-  const remove = await screen.findByRole('button', { name: 'Gỡ' })
+  const remove = await screen.findByRole('button', { name: 'Remove' })
   await waitFor(() => expect(remove).toBeEnabled())
   await userEvent.setup().click(remove)
-  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Gỡ workspace “Dự án”?'))
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Remove workspace “Dự án”?'))
   await waitFor(() =>
     expect(document.querySelector('.workspace-controls > [role=alert]')).toHaveTextContent(
-      'Danh sách workspace vừa thay đổi ở nơi khác.',
+      'The workspace list changed in a different place.',
     ),
   )
   await waitFor(() => expect(reads).toBe(2))

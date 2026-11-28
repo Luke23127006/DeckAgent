@@ -67,7 +67,7 @@ test('outside reads ask per step and refusal does not reprompt the same denied s
   assert.equal(events.filter(event => event.kind === 'approval' && event.approval.state === 'pending').length, 2)
   const history = (await f.client.history(chat.sessionId)).at(-1).content
   assert.ok(history.includes('outside marker'))
-  assert.ok(history.includes('Không thực hiện vì bạn đã từ chối'))
+  assert.ok(history.includes('Not done because you refused'))
 })
 
 test('Stop while approval is pending cancels it and rejects a late decision', { timeout: 30000 }, async t => {

@@ -143,7 +143,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
   await eventually(
     () =>
       browser.evaluate(
-        `document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('bố cục')`,
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status').textContent.includes('fit the layout')`,
       ),
     'Missing layout blocker',
   )
@@ -154,7 +154,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
   await eventually(
     () =>
       browser.evaluate(
-        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('bố cục')`,
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('fit the layout')`,
       ),
     'Reload lost layout blocker',
   )
@@ -184,7 +184,7 @@ test('a saved v3 Outline with all three images prepared blocks confirmation with
   await eventually(
     () =>
       browser.evaluate(
-        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('chờ bạn xác nhận')`,
+        `document.querySelector('.outline-proposal[data-status=current] .outline-status')?.textContent.includes('waiting for your confirmation')`,
       ),
     'Revised Outline not ready',
   )
